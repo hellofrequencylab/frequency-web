@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
+import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
@@ -65,7 +66,7 @@ const RENDERS = { feed: FeedRender, circles: CirclesRender, events: EventsRender
 const BEAT_COUNT = 5 // 0 oath · 1 intro · 2 reel · 3 identity+place · 4 enter
 // Accessible name for each beat — drives the progress bar's label and the polite
 // live announcement so assistive tech tracks "where am I" through the sequence.
-const BEAT_LABELS = ['Beta Promise', 'Who you are', 'A quick tour', 'Your profile', 'Step in']
+const BEAT_LABELS = ['The promise', 'Who you are', 'A quick tour', 'Your profile', 'Step in']
 
 // No separator — "Daniel Tyack" → "danieltyack".
 function suggestHandle(name: string): string {
@@ -82,7 +83,7 @@ function ArrowRight() {
 
 // Beat headings come from the (operator-editable) copy. A word wrapped in
 // *asterisks* renders in the brand accent — the same convention as the splash
-// "statement" line — so the default "You're a *Founder.*" keeps its highlight
+// "statement" line — so the default "You're a *member.*" keeps its highlight
 // and edited headings can carry one too.
 function accent(text: string): React.ReactNode {
   const parts = text.split(/(\*[^*]+\*)/g)
@@ -290,13 +291,18 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
   const identityValid = displayName.trim().length > 0 && formatOk && handleStatus === 'available'
 
   // ── Helpers ────────────────────────────────────────────────────────────────
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setAvatarFile(file)
-    setAvatarPreview(URL.createObjectURL(file))
     setUploadError('')
     setAvatarUrl('')
+    // Downscale + compress on pick so EVERY downstream path uses a small image: the
+    // signed-out flow parks it in localStorage across the magic-link hop (a raw photo's
+    // base64 overflows the ~5MB quota and was silently dropped), and the immediate
+    // upload is faster. Best-effort: falls back to the original file on any failure.
+    const compressed = await downscaleImageFile(file)
+    setAvatarFile(compressed)
+    setAvatarPreview(URL.createObjectURL(compressed))
   }
 
   async function uploadAvatar(): Promise<string> {
@@ -413,7 +419,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6">
           <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-7 text-center shadow-lg">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-bg text-2xl text-primary-strong">✓</div>
-            <h2 className="mt-4 text-xl font-bold text-text">Welcome in, Founder.</h2>
+            <h2 className="mt-4 text-xl font-bold text-text">Welcome in.</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted">
               In the real induction this writes your profile and drops you into the feed to make your
               first post. Here it just stops, nothing was saved.
@@ -437,7 +443,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-12">
         <div className="flex shrink-0 flex-col items-center">
           <span className="animate-wiggle inline-block rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.35em] text-on-primary shadow-sm shadow-primary/25">
-            Beta
+            Welcome
           </span>
           <span className="brandmark-link mt-5 block">
             <span className="brandmark h-12 aspect-[963/170] sm:h-[52px]" aria-hidden />
@@ -779,7 +785,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                   {/* lock it in: sign in to save, then straight to the feed */}
                   <div className="w-full max-w-xs text-left">
                     <p className="text-lg leading-relaxed text-muted">
-                      Lock in your spot, Founder. Sign in and everything you just set up is saved.
+                      You’re almost in. Sign in and everything you just set up is saved.
                     </p>
 
                     <input
@@ -820,7 +826,7 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
                     </button>
 
                     <button onClick={() => setBeat(3)} className={`${backLink} mt-4 block`}>Back</button>
-                    <p className="mt-4 text-xs text-subtle">Free during the beta. No card. Leave anytime.</p>
+                    <p className="mt-4 text-xs text-subtle">Free to join. No card. Leave anytime.</p>
                   </div>
                 </div>
               </div>

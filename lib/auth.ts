@@ -59,6 +59,7 @@ const resolveCaller = cache(
     webRole: WebRole
     realWebRole: WebRole
     membershipTier: EntitlementTier
+    realMembershipTier: EntitlementTier
   } | null> => {
     const user = await getCachedUser()
     if (!user) return null
@@ -102,6 +103,9 @@ const resolveCaller = cache(
       membershipTier: BETA_OPEN_ACCESS
         ? BETA_GRANTED_TIER
         : ((data.membership_tier ?? 'free') as EntitlementTier),
+      // The TRUE DB tier, never beta-overridden. The creation gates read this so the
+      // free-beta upgrade popup still fires for a genuinely free member (ADR-414).
+      realMembershipTier: (data.membership_tier ?? 'free') as EntitlementTier,
     }
   },
 )
@@ -138,6 +142,8 @@ export async function getCallerProfile(): Promise<{
   communityLevel: CommunityLevel
   webRole: WebRole
   membershipTier: EntitlementTier
+  /** The TRUE DB tier, never beta-overridden (ADR-414) — the creation gates read this. */
+  realMembershipTier: EntitlementTier
 } | null> {
   const c = await resolveCaller()
   if (!c) return null
@@ -147,6 +153,7 @@ export async function getCallerProfile(): Promise<{
     communityLevel: c.communityLevel,
     webRole: c.webRole,
     membershipTier: c.membershipTier,
+    realMembershipTier: c.realMembershipTier,
   }
 }
 
@@ -157,6 +164,12 @@ export async function getCallerProfile(): Promise<{
  */
 export async function getRealCallerRole(): Promise<CommunityRole | null> {
   return (await resolveCaller())?.realRole ?? null
+}
+
+/** The caller's REAL staff web_role (admin/janitor/none), ignoring any view-as
+ *  preview. Use to distinguish admin from janitor for affordances like "Act as". */
+export async function getRealCallerWebRole(): Promise<WebRole> {
+  return (await resolveCaller())?.realWebRole ?? 'none'
 }
 
 /** The caller's profile id, or null if not signed in / no profile row. */

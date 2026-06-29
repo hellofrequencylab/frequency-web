@@ -178,7 +178,21 @@ async function claimAndPay(
     detail,
   })
   if (error) return false // already granted / lost the race
-  return pay()
+  // The claim is the lock, but the payout must actually land. If pay() reports failure
+  // (or throws), release the claim so a later use can re-pay this leg — otherwise the
+  // lock is permanent and the currency is never credited (claimed-but-unpaid).
+  let paid = false
+  try {
+    paid = await pay()
+  } catch (err) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', beneficiaryId)
+    throw err
+  }
+  if (!paid) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', beneficiaryId)
+    return false
+  }
+  return true
 }
 
 export interface ValidatedCreationResult {

@@ -101,7 +101,7 @@ export function ContactsTable({ rows }: { rows: CrmContactRow[] }) {
       rowActions={(m) => (
         <div className="flex items-center gap-1.5">
           <Link
-            href="/messages"
+            href={`/people/${m.handle}`}
             onClick={(e) => e.stopPropagation()}
             aria-label={`Message ${m.displayName}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover"

@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isEventCohost } from '@/lib/events/cohosts'
 import {
   setRsvp,
   approveRsvp,
-  setRsvpMuted,
   type RsvpStatus,
 } from '@/lib/events/rsvp-depth'
 import { composeEventDispatch } from '@/lib/events/dispatch'
@@ -22,6 +22,7 @@ import { composeEventDispatch } from '@/lib/events/dispatch'
 
 const MAX_BODY = 2000
 const MAX_CAPTION = 280
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
 // Is this profile the host or a guest (any RSVP intent) of the event? Gates who
 // may post a comment or add a recap photo. Cohosts count as guests too.
@@ -74,16 +75,16 @@ export async function createEventPost(
   slug: string,
   body: string,
   imageUrl: string | null,
-) {
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to comment.')
 
   const trimmed = (body ?? '').trim().slice(0, MAX_BODY)
   const image = imageUrl?.trim() || null
-  if (!trimmed && !image) return
+  if (!trimmed && !image) return fail('Add a message or a photo first.')
 
   const admin = createAdminClient()
-  if (!(await isOnEvent(admin, eventId, profileId))) return
+  if (!(await isOnEvent(admin, eventId, profileId))) return fail('Only the host and guests can post here.')
 
   const { error } = await admin
     .from('event_posts')
@@ -95,10 +96,11 @@ export async function createEventPost(
     })
   if (error) {
     console.error('[createEventPost]', error.message)
-    return
+    return fail('Could not post your comment. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function deleteEventPost(postId: string, slug: string) {
@@ -128,33 +130,54 @@ export async function deleteEventPost(postId: string, slug: string) {
 export async function uploadEventMedia(
   eventId: string,
   slug: string,
-  imageUrl: string,
-  caption: string | null,
-) {
+  formData: FormData,
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to add a photo.')
 
-  const image = imageUrl?.trim()
-  if (!image) return
-  const cap = caption?.trim().slice(0, MAX_CAPTION) || null
+  const file = formData.get('image')
+  const caption = formData.get('caption')
+  if (!(file instanceof File) || file.size === 0) return fail('Pick a photo first.')
+  if (file.size > MAX_IMAGE_BYTES) return fail('Keep the photo under 10 MB.')
+  if (!file.type.startsWith('image/')) return fail('Only image files work here.')
+  const cap = (typeof caption === 'string' ? caption.trim() : '').slice(0, MAX_CAPTION) || null
 
   const admin = createAdminClient()
-  if (!(await isOnEvent(admin, eventId, profileId))) return
+  if (!(await isOnEvent(admin, eventId, profileId))) return fail('Only the host and guests can add photos.')
+
+  // Upload server-side with the service-role client. The browser upload failed RLS
+  // because the event-media INSERT policy requires the object path to be prefixed with
+  // the caller's auth uid, and the SSR browser client did not carry that session — so it
+  // went out as `anon` and was denied. The admin client side-steps the trap; isOnEvent
+  // above is the real authorization gate (host or guest only).
+  const safeName = (file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `${profileId}/${eventId}/${Date.now()}-${safeName}`
+  const { error: upErr } = await admin.storage
+    .from('event-media')
+    .upload(path, file, { contentType: file.type, upsert: false })
+  if (upErr) {
+    console.error('[uploadEventMedia upload]', upErr.message)
+    return fail('Could not upload your photo. Please try again.')
+  }
+  const {
+    data: { publicUrl },
+  } = admin.storage.from('event-media').getPublicUrl(path)
 
   const { error } = await admin
     .from('event_media')
     .insert({
       event_id: eventId,
       profile_id: profileId,
-      image_url: image,
+      image_url: publicUrl,
       caption: cap,
     })
   if (error) {
     console.error('[uploadEventMedia]', error.message)
-    return
+    return fail('Could not add your photo. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function deleteEventMedia(mediaId: string, slug: string) {
@@ -180,15 +203,21 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
 
 // ── Cohosts ───────────────────────────────────────────────────────────────────
 
-export async function addCohost(eventId: string, slug: string, handle: string) {
+export async function addCohost(
+  eventId: string,
+  slug: string,
+  handle: string,
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to manage cohosts.')
 
   const cleaned = handle.trim().replace(/^@/, '').toLowerCase()
-  if (!cleaned) return
+  if (!cleaned) return fail('Enter a name or @handle.')
 
   const admin = createAdminClient()
-  if (!(await isEventHost(admin, eventId, profileId))) return
+  if (!(await isEventHost(admin, eventId, profileId))) {
+    return fail('Only the host can add cohosts.')
+  }
 
   // Resolve the handle to a real profile. A cohost must exist and not be the host.
   const { data: target } = await admin
@@ -196,9 +225,12 @@ export async function addCohost(eventId: string, slug: string, handle: string) {
     .select('id')
     .eq('handle', cleaned)
     .maybeSingle()
-  if (!target || target.id === profileId) return
+  if (!target) return fail('We could not find that member.')
+  if (target.id === profileId) return fail('You are already the host.')
 
-  // Unique (event_id, profile_id) — ignore a duplicate add.
+  // Unique (event_id, profile_id). A unique violation (Postgres 23505) means they are
+  // already a cohost, which is a success from the caller's view; any OTHER error is a
+  // real failure and must surface rather than be swallowed.
   const { error } = await admin
     .from('event_cohosts')
     .insert({
@@ -206,12 +238,13 @@ export async function addCohost(eventId: string, slug: string, handle: string) {
       profile_id: target.id,
       added_by: profileId,
     })
-  if (error && !error.message.includes('duplicate')) {
+  if (error && error.code !== '23505') {
     console.error('[addCohost]', error.message)
-    return
+    return fail('We could not add that cohost. Please try again.')
   }
 
   revalidateEvent(slug)
+  return ok()
 }
 
 export async function removeCohost(eventId: string, slug: string, cohostProfileId: string) {
@@ -228,6 +261,57 @@ export async function removeCohost(eventId: string, slug: string, cohostProfileI
     .eq('profile_id', cohostProfileId)
 
   revalidateEvent(slug)
+}
+
+// ── Transfer host ───────────────────────────────────────────────────────────────
+// The current host hands the event to another member. The outgoing host is kept on as
+// a cohost so they retain co-management and are never locked out of their own event.
+export async function transferEventHost(
+  eventId: string,
+  slug: string,
+  handle: string,
+): Promise<ActionResult<void>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to transfer the host role.')
+
+  const cleaned = handle.trim().replace(/^@/, '').toLowerCase()
+  if (!cleaned) return fail('Enter a name or @handle.')
+
+  const admin = createAdminClient()
+  if (!(await isEventHost(admin, eventId, profileId))) {
+    return fail('Only the current host can transfer the host role.')
+  }
+
+  const { data: target } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('handle', cleaned)
+    .maybeSingle()
+  if (!target) return fail('We could not find that member.')
+  if (target.id === profileId) return fail('You are already the host.')
+
+  // Hand over the host seat.
+  const { error: upErr } = await admin
+    .from('events')
+    .update({ host_id: target.id })
+    .eq('id', eventId)
+  if (upErr) {
+    console.error('[transferEventHost]', upErr.message)
+    return fail('Could not transfer the host role. Please try again.')
+  }
+
+  // The new host no longer needs a cohost row; the outgoing host gains one so they keep
+  // co-management. A 23505 (already a cohost) on the insert is fine to ignore.
+  await admin.from('event_cohosts').delete().eq('event_id', eventId).eq('profile_id', target.id)
+  const { error: insErr } = await admin
+    .from('event_cohosts')
+    .insert({ event_id: eventId, profile_id: profileId, added_by: profileId })
+  if (insErr && insErr.code !== '23505') {
+    console.error('[transferEventHost cohost]', insErr.message)
+  }
+
+  revalidateEvent(slug)
+  return ok()
 }
 
 // ── RSVP depth (EVENTS-REWORK A1) ──────────────────────────────────────────────
@@ -285,16 +369,6 @@ export async function approveEventRsvp(eventId: string, slug: string, guestProfi
   revalidateEvent(slug)
 }
 
-// Per-event mute: a guest silences Event Dispatch fan-out for this one event.
-// Self-authorized (only the caller's own row).
-export async function setEventRsvpMuted(eventId: string, slug: string, muted: boolean) {
-  const profileId = await getMyProfileId()
-  if (!profileId) return
-
-  await setRsvpMuted(eventId, profileId, muted)
-  revalidateEvent(slug)
-}
-
 // ── Event Dispatch (ADR-255) ──────────────────────────────────────────────────
 // A host's update about one event. The base action always posts to the event
 // page; the host may also send it as a Dispatch (rides the existing rail with an
@@ -305,28 +379,34 @@ export async function postEventDispatch(
   eventId: string,
   slug: string,
   args: { title?: string | null; body: string; toDispatch?: boolean; toSms?: boolean },
-) {
+): Promise<ActionResult<void>> {
   const profileId = await getMyProfileId()
-  if (!profileId) return
+  if (!profileId) return fail('Sign in to post an update.')
 
   const admin = createAdminClient()
   const isAuthor =
     (await isEventHost(admin, eventId, profileId)) || (await isEventCohost(eventId, profileId))
-  if (!isAuthor) return
+  if (!isAuthor) return fail('Only the host or a cohost can post an update.')
 
   const body = (args.body ?? '').trim()
-  if (!body) return
+  if (!body) return fail('Write something to send first.')
 
-  await composeEventDispatch({
-    eventId,
-    authorId: profileId,
-    title: args.title?.trim() || null,
-    body,
-    toPage: true,
-    toDispatch: !!args.toDispatch,
-    toSms: !!args.toSms,
-    eventUrl: `/events/${slug}`,
-  })
+  try {
+    await composeEventDispatch({
+      eventId,
+      authorId: profileId,
+      title: args.title?.trim() || null,
+      body,
+      toPage: true,
+      toDispatch: !!args.toDispatch,
+      toSms: !!args.toSms,
+      eventUrl: `/events/${slug}`,
+    })
+  } catch (e) {
+    console.error('[postEventDispatch]', e)
+    return fail('Could not post your update. Please try again.')
+  }
 
   revalidateEvent(slug)
+  return ok()
 }

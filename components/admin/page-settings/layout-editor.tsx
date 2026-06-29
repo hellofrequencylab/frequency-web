@@ -22,6 +22,73 @@ const ROLE_LABEL: Record<ModuleRole, string> = {
 
 type ScopeChoice = 'page' | 'section' | 'global'
 
+// A tiny vector mock of a template's shape — blocks laid out the way the real page is, so an
+// operator picks a LAYOUT by clicking its picture, not by reading a name. The proportions match the
+// renderer (components/widgets/page-modules.tsx): main + side is the 3:2 split, etc. `active` tints
+// the blocks with the brand colour so the chosen layout reads at a glance.
+function TemplateThumbnail({ id, active }: { id: TemplateId; active: boolean }) {
+  const box = `rounded-[2px] ${active ? 'bg-primary/70' : 'bg-border-strong'}`
+  const row = 'flex flex-1 gap-0.5'
+  const frame = 'flex h-9 w-14'
+  switch (id) {
+    case 'main-side':
+      return (
+        <div className={`${frame} gap-0.5`}>
+          <div className={`${box} basis-3/5`} />
+          <div className={`${box} basis-2/5`} />
+        </div>
+      )
+    case 'two-col':
+      return (
+        <div className={`${frame} flex-col gap-0.5`}>
+          <div className={`${box} h-2`} />
+          <div className={row}>
+            <div className={`${box} flex-1`} />
+            <div className={`${box} flex-1`} />
+          </div>
+        </div>
+      )
+    case 'three-col':
+      return (
+        <div className={`${frame} flex-col gap-0.5`}>
+          <div className={`${box} h-2`} />
+          <div className={row}>
+            <div className={`${box} flex-1`} />
+            <div className={`${box} flex-1`} />
+            <div className={`${box} flex-1`} />
+          </div>
+        </div>
+      )
+    case 'header-side':
+      return (
+        <div className={`${frame} flex-col gap-0.5`}>
+          <div className={`${box} h-2`} />
+          <div className={row}>
+            <div className={`${box} basis-3/5`} />
+            <div className={`${box} basis-2/5`} />
+          </div>
+        </div>
+      )
+    case 'header-two-col':
+      return (
+        <div className={`${frame} flex-col gap-0.5`}>
+          <div className={`${box} h-2`} />
+          <div className={row}>
+            <div className={`${box} flex-1`} />
+            <div className={`${box} flex-1`} />
+          </div>
+        </div>
+      )
+    case 'single':
+    default:
+      return (
+        <div className={`${frame} gap-0.5`}>
+          <div className={`${box} flex-1`} />
+        </div>
+      )
+  }
+}
+
 export function LayoutEditor({ spaceId }: { spaceId?: string }) {
   const pathname = usePathname()
   const [choice, setChoice] = useState<ScopeChoice>('page')
@@ -158,25 +225,36 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
         <div className="h-56 animate-pulse rounded-xl border border-border bg-surface-elevated/50" />
       ) : (
         <>
-          {/* Template: the interior container shape (and the areas modules can sit in). */}
+          {/* Template: pick the interior shape by clicking its mock-up (not a name). Each tile
+              draws the layout's actual block arrangement; the chosen one is ringed + tinted. */}
           <div>
-            <p className="mb-1 text-2xs font-medium uppercase tracking-wide text-subtle">Template</p>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => chooseTemplate(t.id)}
-                  disabled={pending}
-                  aria-pressed={t.id === template}
-                  title={t.description}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
-                    t.id === template ? 'bg-primary text-on-primary' : 'border border-border text-muted hover:text-text'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-subtle">Template</p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {TEMPLATES.map((t) => {
+                const isActive = t.id === template
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => chooseTemplate(t.id)}
+                    disabled={pending}
+                    aria-pressed={isActive}
+                    title={t.description}
+                    className={`flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors disabled:opacity-40 ${
+                      isActive
+                        ? 'border-primary bg-primary-bg/40 ring-1 ring-primary'
+                        : 'border-border bg-surface-elevated/40 hover:border-border-strong'
+                    }`}
+                  >
+                    <span className="flex h-9 w-14 items-center justify-center">
+                      <TemplateThumbnail id={t.id} active={isActive} />
+                    </span>
+                    <span className={`text-center text-3xs font-semibold leading-tight ${isActive ? 'text-primary-strong' : 'text-muted'}`}>
+                      {t.label}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

@@ -33,6 +33,7 @@ interface EventEditRow {
   country: string | null
   is_cancelled: boolean | null
   cover_image_path: string | null
+  gallery_image_paths: string[] | null
 }
 
 // Event times are stored UTC-naive (the host's datetime-local value is kept as-is, rendered in
@@ -53,7 +54,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -92,6 +93,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     postalCode: ev.postal_code ?? '',
     country: ev.country ?? '',
     coverImagePath: ev.cover_image_path ?? '',
+    galleryImagePaths: ev.gallery_image_paths ?? [],
   }
 
   return (

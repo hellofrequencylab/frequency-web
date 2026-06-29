@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { distanceKm } from '@/lib/distance'
+import { pointFromGeog } from '@/lib/events/geo'
 
 // Event Dispatch audience resolver (ADR-255 / EVENTS-REWORK A2).
 //
@@ -27,22 +28,6 @@ import { distanceKm } from '@/lib/distance'
 // events.geog / event_rsvps.muted are in lib/database.types.ts now, so this runs on
 // the typed admin client directly.
 
-/** A GeoJSON-ish point as PostgREST serialises a PostGIS geography column. */
-interface PointGeoJson {
-  type?: string
-  coordinates?: [number, number]
-}
-
-/** Pull (lng, lat) out of a serialised events.geog value; null when absent/malformed. */
-function pointFromGeog(geog: unknown): { lat: number; lng: number } | null {
-  const g = geog as PointGeoJson | null
-  const coords = g?.coordinates
-  if (!coords || coords.length < 2) return null
-  const [lng, lat] = coords
-  if (typeof lat !== 'number' || typeof lng !== 'number') return null
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
-  return { lat, lng }
-}
 
 /**
  * Resolve the deduplicated PUSH recipient set for an Event Dispatch fan-out:

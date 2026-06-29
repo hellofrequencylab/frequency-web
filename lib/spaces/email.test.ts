@@ -20,20 +20,34 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 let resolvedSpace:
-  | { id: string; slug: string; name: string; brandName: string | null; ownerProfileId?: string | null }
+  | {
+      id: string
+      slug: string
+      name: string
+      brandName: string | null
+      ownerProfileId?: string | null
+      entitlements?: unknown
+      featureRoles?: unknown
+    }
   | null = {
   id: 'space-A',
   slug: 'river-studio',
   name: 'River Studio',
   brandName: 'River Studio',
   ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+  // Email is PLAN-GATED: the Space's plan must grant the `email` entitlement for the per-space-roles
+  // Phase 2 gate (spaceFunctionAccess) to allow the email action. Seat it so the email action passes.
+  entitlements: { email: true },
 }
 vi.mock('./store', () => ({
   getSpaceById: async (id: string) => (resolvedSpace && resolvedSpace.id === id ? resolvedSpace : null),
 }))
 
 let canEdit = true
-vi.mock('./entitlements', () => ({
+// Keep the PURE entitlement readers real (the email action now calls spaceFunctionAccess for defense in
+// depth, per-space-roles Phase 2); override only getSpaceCapabilities.
+vi.mock('./entitlements', async (orig) => ({
+  ...(await orig<typeof import('./entitlements')>()),
   getSpaceCapabilities: async () => ({
     isOwner: canEdit,
     isAdmin: canEdit,
@@ -77,9 +91,37 @@ vi.mock('@/lib/suppression', () => ({
   },
 }))
 
+// Contact-consent mock (campaign double-opt-in). Mirrors the real canEmailContact: it composes the
+// SAME global + this-Space suppression sets used above with a per-address marketing consent_state
+// (default 'subscribed' so the happy-path recipients send; a test sets 'unknown'/'unsubscribed' to
+// exercise the new opt-in gate). Pure + deterministic; no DB read.
+const contactConsent = new Map<string, 'subscribed' | 'unsubscribed' | 'unknown'>() // key: lowercased email
+vi.mock('@/lib/crm/contact-consent', () => ({
+  canEmailContact: async (email: string, purpose: 'transactional' | 'marketing', spaceId?: string) => {
+    const e = email.trim().toLowerCase()
+    const suppressed = globalSuppressed.has(e) || (!!spaceId && spaceSuppressed.has(`${spaceId}:${e}`))
+    if (suppressed) return { allowed: false, reason: 'suppressed' }
+    const state = contactConsent.get(e) ?? 'subscribed'
+    if (state === 'unsubscribed') return { allowed: false, reason: 'unsubscribed' }
+    if (purpose === 'marketing' && state !== 'subscribed') return { allowed: false, reason: 'not_opted_in' }
+    return { allowed: true, reason: 'ok' }
+  },
+}))
+
 vi.mock('@/lib/unsubscribe-tokens', () => ({
   buildSpaceUnsubscribeUrl: ({ baseUrl, spaceId, email }: { baseUrl: string; spaceId: string; email: string }) =>
     `${baseUrl}/unsubscribe?s=${spaceId}&e=${encodeURIComponent(email)}&t=tok`,
+}))
+
+// CRM timeline recorder mock (ADR-378): capture the outbound touch the send loop logs per accepted
+// send so we can assert it is owner-scoped + idempotent, without reaching the contact_interactions
+// table (which the in-memory admin client below does not back).
+const interactionCalls: { input: Record<string, unknown>; spaceId?: string | null }[] = []
+vi.mock('@/lib/crm/interactions', () => ({
+  recordContactInteraction: async (input: Record<string, unknown>, spaceId?: string | null) => {
+    interactionCalls.push({ input, spaceId })
+    return { id: 'int-1' }
+  },
 }))
 
 // ── In-memory admin client: spaces.email_enabled, outreach_sends, the today-count query ──────────
@@ -203,6 +245,7 @@ beforeEach(() => {
     name: 'River Studio',
     brandName: 'River Studio',
     ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+    entitlements: { email: true },
   }
   canEdit = true
   sends.length = 0
@@ -210,10 +253,12 @@ beforeEach(() => {
   throwOnSend = false
   globalSuppressed.clear()
   spaceSuppressed.clear()
+  contactConsent.clear()
   suppressCalls.length = 0
   db.enabled.clear()
   db.outreach.length = 0
   db.spaceUpdates.length = 0
+  interactionCalls.length = 0
   // Space A starts ENABLED for the happy-path send tests; specific tests toggle it off.
   db.enabled.set('space-A', true)
 })
@@ -377,6 +422,74 @@ describe('sendSpaceCampaign: happy path + headers', () => {
   })
 })
 
+describe('sendSpaceCampaign: CRM timeline write (ADR-378, owner-scoped + idempotent)', () => {
+  it('logs an outbound email touch only for a recipient that maps to a contact, owner = Space owner', async () => {
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-7',
+      subject: 'Spring sessions',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }, { email: 'c@d.com' }],
+    })
+    expect('error' in r).toBe(false)
+    // Only the recipient WITH a contactId is logged (the bare-email one has no subject to scope to).
+    expect(interactionCalls).toHaveLength(1)
+    expect(interactionCalls[0]!.input).toMatchObject({
+      ownerProfileId: 'owner-0000-4000-a000-0000000ownr',
+      subjectKind: 'contact',
+      subjectId: 'contact-1',
+      channel: 'email',
+      direction: 'outbound',
+      summary: 'Spring sessions',
+      source: 'engagement',
+      idempotencyKey: 'campaign:camp-7:contact-1',
+    })
+    expect(interactionCalls[0]!.spaceId).toBe('space-A')
+  })
+
+  it('uses no idempotency key for a one-off send (no campaign id)', async () => {
+    const r = await sendSpaceCampaign('space-A', {
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls).toHaveLength(1)
+    expect(interactionCalls[0]!.input.idempotencyKey).toBeNull()
+  })
+
+  it('logs NOTHING for a suppressed or failed recipient (only accepted sends)', async () => {
+    globalSuppressed.add('skip@b.com')
+    throwOnSend = false
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-8',
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'skip@b.com', contactId: 'contact-skip' }, { email: 'real@b.com', contactId: 'contact-real' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls.map((c) => c.input.subjectId)).toEqual(['contact-real'])
+  })
+
+  it('logs NOTHING when the Space has no owner (ungated platform Space, no sentinel)', async () => {
+    resolvedSpace = {
+      id: 'space-A',
+      slug: 'river-studio',
+      name: 'River Studio',
+      brandName: 'River Studio',
+      ownerProfileId: null,
+      entitlements: { email: true },
+    }
+    const r = await sendSpaceCampaign('space-A', {
+      campaignId: 'camp-9',
+      subject: 'Hi',
+      html: '<p>x</p>',
+      recipients: [{ email: 'a@b.com', contactId: 'contact-1' }],
+    })
+    expect('error' in r).toBe(false)
+    expect(interactionCalls).toHaveLength(0)
+  })
+})
+
 describe('sendSpaceCampaign: suppression filtering (space + global)', () => {
   it('skips a GLOBALLY suppressed address (logged suppressed, never sent)', async () => {
     globalSuppressed.add('a@b.com')
@@ -401,6 +514,23 @@ describe('sendSpaceCampaign: suppression filtering (space + global)', () => {
     expect('error' in r).toBe(false)
     if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 0, failed: 0 })
     expect(sends.map((s) => s.to)).toEqual(['a@b.com'])
+  })
+
+  it('SKIPS an unknown (never opted-in) contact for a marketing campaign', async () => {
+    contactConsent.set('a@b.com', 'unknown')
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com', 'c@d.com') })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 1, suppressed: 1, failed: 0 })
+    expect(sends.map((s) => s.to)).toEqual(['c@d.com'])
+    expect(db.outreach.find((o) => o.email === 'a@b.com')!.status).toBe('suppressed')
+  })
+
+  it('SKIPS an explicitly unsubscribed contact', async () => {
+    contactConsent.set('a@b.com', 'unsubscribed')
+    const r = await sendSpaceCampaign('space-A', { subject: 'Hi', html: '<p>x</p>', recipients: recips('a@b.com') })
+    expect('error' in r).toBe(false)
+    if (!('error' in r)) expect(r.data).toEqual({ sent: 0, suppressed: 1, failed: 0 })
+    expect(sends).toHaveLength(0)
   })
 })
 

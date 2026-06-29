@@ -4,6 +4,7 @@ import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { listInvites } from '@/lib/spaces/invites'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -11,6 +12,7 @@ import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { InviteForm } from '@/components/spaces/invite-form'
 
 // MEMBERS — the owner back-end's TEAM surface (entity-spaces owner hub). A centered, no-rail Focus
@@ -67,14 +69,36 @@ export default async function SpaceMembersPage({
   )
   if (!canManage && !staffViewing) notFound()
 
+  const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). Members defaults to editor (the old
+  // canEditProfile threshold), so behavior is unchanged unless an operator/owner tunes it. A staff
+  // janitor keeps the read-only roster preview (every write stays gated server-side).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'members', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Members"
+        description="The team for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Members"
+          reason={spaceFunctionAccess(space, 'members', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
   // The INVITE section is owner / admin only (canManageMembers); a staff janitor previewing the
   // Space does not manage it, so they see the roster read-only without the invite controls. The
   // pending-invite list is gated the same way inside listInvites (fail-safe to []), so this only
   // decides whether to mount the section.
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
   const pendingInvites = caps.canManageMembers ? await listInvites(space.id) : []
-
-  const brandName = space.brandName ?? space.name
 
   // The team: the OWNER first (always seated as Admin), then active members. De-duped by profile id
   // (an owner who also carries a member row appears once, as Owner).

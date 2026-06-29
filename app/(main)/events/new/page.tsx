@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { EventForm } from './event-form'
+import { EventSpark } from '../event-spark'
 import { EventEditorWindow } from '@/components/studio/event/event-editor-window'
 
-export default async function NewEventPage() {
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ circle?: string }>
+}) {
+  const { circle: circleParam } = await searchParams
   const supabase = await createClient()
   const {
     data: { user },
@@ -46,9 +51,13 @@ export default async function NewEventPage() {
     circles = (circleRows ?? []) as { id: string; name: string }[]
   }
 
+  // Honor the `?circle=` deep link (the circle-host "New event" affordance), but only when it
+  // names a circle the caller actually belongs to — never let the param scope to someone else's.
+  const defaultGroupId = circles.some((c) => c.id === circleParam) ? circleParam : undefined
+
   return (
     <EventEditorWindow backHref="/events">
-      <EventForm groups={circles} />
+      <EventSpark groups={circles} defaultGroupId={defaultGroupId} />
     </EventEditorWindow>
   )
 }

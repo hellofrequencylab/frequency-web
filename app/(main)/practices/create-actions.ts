@@ -11,7 +11,7 @@
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
-import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
   createPractice,
@@ -38,8 +38,10 @@ async function authorizeCreatePractice(): Promise<
 > {
   const caller = await getCallerProfile()
   if (!caller) return { error: 'Not signed in' }
-  if (!BETA_OPEN_ACCESS && !atLeastRole(caller.community_role, 'crew')) {
-    return { error: 'Only Crew and above can create a practice.' }
+  // Real-Crew create gate (ADR-414) — reads the true tier (pre beta-override) so a free
+  // member is sold the one-tap free-beta upgrade rather than silently allowed.
+  if (!(await canCreate('practice.create'))) {
+    return { error: 'Upgrade to Crew to create a practice. Crew is free during the beta, one tap, no card.' }
   }
   const autoApprove = atLeastRole(caller.community_role, 'host') || caller.webRole !== 'none'
   return { profileId: caller.id, autoApprove }
@@ -50,10 +52,11 @@ async function authorizeCreatePractice(): Promise<
  *  lets them type the identity by hand. */
 export async function sparkPracticeAction(
   answers: PracticeSparkAnswers,
+  sourceText?: string,
 ): Promise<ActionResult<PracticeSpark>> {
   const gate = await authorizeCreatePractice()
   if ('error' in gate) return fail(gate.error)
-  const spark = await draftPracticeSpark({ ...answers, profileId: gate.profileId })
+  const spark = await draftPracticeSpark({ ...answers, sourceText, profileId: gate.profileId })
   if (!spark) return fail('Vera is offline right now. Name it yourself and keep going.')
   return ok(spark)
 }
@@ -67,8 +70,8 @@ export async function createPracticeFromSparkAction(input: {
   summary?: string | null
   description?: string | null
   body?: string | null
-  /** A Pillar slug Vera suggested ('mind' | 'body' | 'spirit' | 'expression'), or null. */
-  pillar?: 'mind' | 'body' | 'spirit' | 'expression' | null
+  /** The Pillar slugs the author chose (a Practice can span more than one Focus). */
+  pillars?: Array<'mind' | 'body' | 'spirit' | 'expression'>
   cadence?: string | null
   durationMin?: number | null
 }): Promise<void> {
@@ -90,17 +93,21 @@ export async function createPracticeFromSparkAction(input: {
   })
   if (!practice) redirect('/practices')
 
-  // Map Vera's suggested Pillar slug to a real domain_id (multi-Focus: write it as the one selected
-  // Focus). updatePractice mirrors domain_id to the first focus_details key.
+  // Map the chosen Pillar slugs to real Focus ids (a Practice can span multiple Focuses).
+  // updatePractice mirrors domain_id to the FIRST focus_details key for back-compat.
   const patch: PracticeEdit = {}
   if (input.summary?.trim()) patch.summary = input.summary.trim()
   if (input.body?.trim()) patch.body = input.body.trim()
   if (input.cadence?.trim()) patch.cadence = input.cadence.trim()
   if (input.durationMin != null) patch.duration_min = input.durationMin
-  if (input.pillar) {
+  if (input.pillars?.length) {
     const ids = await pillarIdsBySlug()
-    const pid = ids[input.pillar]
-    if (pid) patch.focus_details = { [pid]: { instructions: '', timing: '' } }
+    const fd: Record<string, { instructions: string; timing: string }> = {}
+    for (const slug of input.pillars) {
+      const pid = ids[slug]
+      if (pid) fd[pid] = { instructions: '', timing: '' }
+    }
+    if (Object.keys(fd).length) patch.focus_details = fd
   }
   if (Object.keys(patch).length) await updatePractice(practice.id, patch)
 

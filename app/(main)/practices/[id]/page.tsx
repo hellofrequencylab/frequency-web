@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { Zap, Pencil, Wand2 } from 'lucide-react'
+import { notFound, permanentRedirect } from 'next/navigation'
+import { Zap, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
+import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
+import { resolvePracticeSlugRedirect } from '@/lib/practices/clean'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
@@ -12,10 +14,10 @@ import { PracticeTimerButton } from '@/components/practice/practice-timer-button
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
-import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
 import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
+import { EditPracticeButton } from '@/components/practices/edit-practice-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,7 +33,25 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params
   const p = await getRankedPractice(id)
   if (!p) return { title: 'Practice' }
-  return { title: p.title, description: p.summary ?? p.description ?? undefined }
+  const desc = p.summary ?? p.description ?? undefined
+  const img = p.header_image
+  return {
+    title: p.title,
+    description: desc,
+    alternates: { canonical: `/practices/${p.slug ?? p.id}` },
+    openGraph: {
+      title: p.title,
+      description: desc,
+      type: 'article',
+      ...(img ? { images: [{ url: img }] } : {}),
+    },
+    twitter: {
+      card: img ? 'summary_large_image' : 'summary',
+      title: p.title,
+      description: desc,
+      ...(img ? { images: [img] } : {}),
+    },
+  }
 }
 
 // The body's "How to do it" bullets, for the claim wizard's starting steps.
@@ -50,19 +70,30 @@ export default async function PracticeDetailPage({ params }: Params) {
   const { id } = await params
   const profileId = await getMyProfileId()
   const practice = await getRankedPractice(id)
-  if (!practice) notFound()
+  if (!practice) {
+    // A slug that no longer matches a live practice may be a merged duplicate's old link
+    // (Phase 2 dedup): 301 to the canonical so the old URL + its SEO keep working.
+    const canonical = await resolvePracticeSlugRedirect(id)
+    if (canonical) permanentRedirect(`/practices/${canonical}`)
+    notFound()
+  }
 
   const isOwner = !!profileId && practice.created_by === profileId
   // Public practices are world-readable; a private one is only its owner's.
   if (!practice.is_public && !isOwner) notFound()
 
-  const [pillars, state, creator] = await Promise.all([
+  const [pillars, state, creator, practiceCaps] = await Promise.all([
     getPillars(),
     profileId
       ? getPracticeMemberState(profileId, practice.id)
-      : Promise.resolve({ adopted: false, loggedToday: false }),
+      : Promise.resolve({ adopted: false, loggedToday: false, partialToday: null }),
     getPracticeCreator(practice.created_by),
+    getPracticeCapabilities(practice.id),
   ])
+  // The Edit-practice affordance opens the in-place Settings drawer. Show it to a
+  // manager only — practice.editSettings is exactly the owner / staff / parent-space
+  // manager who the settings module itself self-gates on (it never loosens isOwner).
+  const canManagePractice = practiceCaps.has('practice.editSettings')
   const pillarName = practice.domain_id ? pillarsById(pillars).get(practice.domain_id)?.name ?? null : null
 
   const fallback = {
@@ -101,6 +132,7 @@ export default async function PracticeDetailPage({ params }: Params) {
           )}
         </>
       }
+      actions={canManagePractice ? <EditPracticeButton /> : undefined}
     >
       {practice.header_image && (
         // Plain <img>: topical placeholder host (no next/image remote-host coupling).
@@ -124,22 +156,29 @@ export default async function PracticeDetailPage({ params }: Params) {
           </Link>
         ) : isOwner ? (
           <>
-            <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+            {/* The plain one-tap log is ONLY for a non-timed practice. A timed practice must be
+                logged from its timer (the server refuses a one-tap on it), so it shows ONLY the
+                timer button below, never this one. */}
+            {!practice.uses_timer && (
+              <LogPracticeButton
+                practiceId={practice.id}
+                initialLogged={state.loggedToday}
+                resumeFromSec={state.partialToday?.bankedSec}
+                secondsTarget={state.partialToday?.targetSec}
+              />
+            )}
             {/* A timed practice opens the On Air timer pre-set to this practice + its length
-                in place (C.4); a log-only practice has no timer. */}
+                in place (C.4); a log-only practice has no timer. A partial today resumes it
+                ("Continue Practice") instead of starting from zero. */}
             {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
-            <Link
-              href={`/practices/${practice.id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <Pencil className="h-3.5 w-3.5" /> Edit
-            </Link>
             <ProposeToLibraryButton
               type="practice"
               id={practice.id}
@@ -152,12 +191,24 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
+                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
+                    the timer button below. */}
+                {!practice.uses_timer && (
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    initialLogged={state.loggedToday}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
+                  />
+                )}
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
               </>
@@ -168,12 +219,24 @@ export default async function PracticeDetailPage({ params }: Params) {
             <AdoptPracticeButton practiceId={practice.id} adopted={state.adopted} />
             {state.adopted && (
               <>
-                <LogPracticeButton practiceId={practice.id} initialLogged={state.loggedToday} />
+                {/* The plain one-tap log is ONLY for a non-timed practice; a timed practice is
+                    logged from its timer (the server refuses a one-tap on it), so it shows ONLY
+                    the timer button below. */}
+                {!practice.uses_timer && (
+                  <LogPracticeButton
+                    practiceId={practice.id}
+                    initialLogged={state.loggedToday}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
+                  />
+                )}
                 {practice.uses_timer && (
                   <PracticeTimerButton
                     practiceId={practice.id}
                     timerKind={practice.timer_kind}
                     movementMode={practice.movement_config?.mode ?? null}
+                    resumeFromSec={state.partialToday?.bankedSec}
+                    secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
               </>
@@ -183,9 +246,6 @@ export default async function PracticeDetailPage({ params }: Params) {
             <RemixPracticeButton practiceId={practice.id} />
           </>
         )}
-
-        {/* Staff (admin/janitor) can edit any practice they don't own. */}
-        {!isOwner && <StaffEditButton href={`/practices/${practice.id}/edit`} label="Edit practice" />}
       </div>
 
       {/* The arrangeable body — stats · intro · guide · tags · used-in (Settings → Layout). */}

@@ -7,6 +7,7 @@
 
 import { redirect } from 'next/navigation'
 import { getCallerProfile } from '@/lib/auth'
+import { assertCanCreate, canCreate } from '@/lib/core/load-capabilities'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
@@ -25,6 +26,7 @@ import { extractOverviewText } from '@/lib/journeys/extract-text'
 export async function createJourneyDraftAction(title: string): Promise<void> {
   const caller = await getCallerProfile()
   if (!caller) redirect('/journeys')
+  await assertCanCreate('journey.create')
   const clean = title.trim().slice(0, 120)
   if (!clean) redirect('/journeys/new')
 
@@ -99,6 +101,7 @@ export async function createJourneyFromSparkAction(input: {
 }): Promise<void> {
   const caller = await getCallerProfile()
   if (!caller) redirect('/journeys')
+  await assertCanCreate('journey.create')
   const title = input.title.trim().slice(0, 120)
   if (!title) redirect('/journeys/new')
 
@@ -202,6 +205,7 @@ export async function createJourneyFromSparkAction(input: {
 export async function createJourneyFromTemplateAction(templateId: string | null): Promise<void> {
   const caller = await getCallerProfile()
   if (!caller) redirect('/journeys')
+  await assertCanCreate('journey.create')
 
   const template = templateId ? getTemplate(templateId) : null
   const plan = await createPlan({
@@ -250,6 +254,8 @@ export async function createMasterFrameworkAction(input: {
 }): Promise<ActionResult<{ slug: string }>> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Sign in to build a Journey.')
+  if (!(await canCreate('journey.create')))
+    return fail('Upgrade to Crew to build a Journey. Crew is free during the beta, one tap, no card.')
 
   const title = input.title?.trim().slice(0, 120) || MASTER_FRAMEWORK.name
   const plan = await createPlan({ authorId: caller.id, title, emoji: MASTER_FRAMEWORK.emoji })

@@ -163,6 +163,8 @@ ADR-201)
 >
 > `practices_ranked` was recreated (migration `20260718000000`) to read the GENERATED `uses_timer` transparently; it does NOT expose `timer_kind` / `movement_config` (the library does not need them; the editor + timer routing read those from the `practices` table). All three columns are reached through the untyped admin handle until `lib/database.types.ts` is regenerated (ADR-246).
 
+> **`practice_sessions.mode` CHECK widened (migration `20260722000000`; constraint-vs-code drift fix).** `practice_sessions` records timed-practice HISTORY (airtime / depth; the economy itself runs through `practice_logs` + `logPractice`, see "On Air" in [ON-AIR.md](ON-AIR.md)). `completeSession` writes `mode` as a Be Still `SessionMode` (`timer | breath | journal | stillness | ritual | log`) or as `movement:<walk|run|yoga|strength|stretch|play>` for a Get Moving sit, but the old CHECK allowed only `('timer','breath','log')`. Because the session insert is best-effort ("errors never block the log"), every `journal` / `stillness` / `ritual` and EVERY movement sit was SILENTLY rejected: Zaps + streak still ran, but the session history row was lost. The migration widens the constraint to `mode in ('timer','breath','journal','stillness','ritual','log') OR mode like 'movement:%'`, so history records correctly (the `movement:%` pattern is future-proof for new Get Moving sub-modes). Matters more after the timer merge (ADR-360) unified everything under one Mindless door. No schema decision beyond aligning the constraint with the code it always intended to allow, so no new ADR; the rationale lives in the migration header.
+
 **RPCs / views (public read layer)**
 `get_my_role`, `public_circles`, `public_circle_by_id`, `public_events`,
 `public_event_by_slug`, `public_posts`, `search_handles_public`
@@ -206,13 +208,68 @@ ADR-201)
 `area_permissions`, `page_content` (operator-editable headers/SEO/hero/CTA,
 ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_members`,
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
-`profile_personas` (partner hats, P3.1), `conversation_room_migration`
+`profile_personas` (partner hats, P3.1), `conversation_room_migration`,
+`pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362),
+`pricing_stripe_prices` (pricing P2, ADR-363)
+
+> **Pricing foundation (ADR-362, [docs/PRICING.md](PRICING.md); migration
+> `20260723010000_pricing_foundation.sql`). EVERYTHING SHIPS OFF — nothing charges in P1.**
+> The entitlements + admin-config layer for the launch pricing model, built on the THREE
+> INDEPENDENT FLAGS (billing_tier · community_role · gamification_access). Additive + idempotent;
+> operator-config tables are service-role / admin-gated (RLS on, no client write policy), mirroring
+> `platform_settings` / `page_chrome_overrides`. Not yet in `lib/database.types.ts`; the readers
+> (`lib/pricing/*`) reach them untyped (ADR-246) and FAIL-SAFE to the seeded code defaults.
+> - **`profiles` additions** (the personal pricing bits — NOT a new tier column; `membership_tier`
+>   stays the `billing_tier`): `gamification_access_override text CHECK (earn_only|full)` (nullable
+>   = derive from tier — the THIRD flag's switch), `is_founding_member boolean default false`,
+>   `locked_price_id text` (founder price-lock reference, honored at checkout in P2).
+> - **`pricing_settings`** (`key text PK, value jsonb, updated_at, updated_by`): the editable VALUES
+>   (tier/plan prices in cents, take-rate bps per plan, Vera free daily cap, trial days, annual
+>   discount), seeded from the launch spec. Read via `lib/pricing/settings.ts` (`getPricingValues`,
+>   fail-safe to `PRICING_DEFAULTS`).
+> - **`pricing_feature_gates`** (`feature text PK, min_entitlement text, enabled boolean default
+>   true, updated_at, updated_by`): the §4/§5 feature→entitlement map as DATA. A row OVERRIDES the
+>   code default in `lib/pricing/gates.ts` (merged like `page_chrome_overrides`); `featureAllowed`
+>   is fail-safe to the code map.
+> - **Flags** (reuse `platform_flags`, audited in `platform_flag_events`): master `billing_live`
+>   (default **OFF** — the live gate is `billingLive()` = `billingEnabled()` env keys AND this flag,
+>   so OFF even with keys), per-tier/plan `*_enabled` (all OFF), and per-role `gamification_full_*`
+>   (member OFF, crew/supporter ON to match today's derive-from-tier default).
+
+> **Pricing P2 — Stripe products/prices + subscriptions (ADR-363, [docs/PRICING.md](PRICING.md);
+> migration `20260723020000_pricing_stripe.sql`). STILL SHIPS OFF — no charge / no live Stripe call
+> unless env keys + `billing_live` + the per-tier switch are all on.** Additive + idempotent; the new
+> map table is service-role / admin-gated (RLS on, no client write policy). Not yet in
+> `lib/database.types.ts`; the readers/writers reach them untyped (ADR-246) and FAIL-SAFE.
+> - **`pricing_stripe_prices`** (`key text PK`, `stripe_product_id text`, `stripe_price_id text`,
+>   `archived boolean default false`, `updated_at`, `updated_by`): the resolved Stripe Product/Price
+>   per pricing key (e.g. `crew_monthly`, `practitioner_annual`, `crew_monthly_founder`). Written by
+>   `syncPricingProductsToStripe` (`lib/billing/pricing-products.ts`), invoked ONLY from the env-gated
+>   `/admin/pricing` "Sync products to Stripe" action. Founder variants stored `archived=true` so they
+>   are referenced by `profiles.locked_price_id` but never offered publicly.
+> - **`space_membership_tiers` addition**: `stripe_product_id text` (the synced Product for a paid
+>   space tier; NULL until billing live).
+> - **`space_memberships` additions**: `stripe_subscription_id text`, `payment_status text CHECK
+>   (pending|active|past_due|canceled) default 'pending'` (reconciled by the gated `space_membership`
+>   webhook; v1 display-only memberships stay `pending`).
+> - **`spaces` additions**: `stripe_customer_id text` + `stripe_subscription_id text` (the owner's
+>   plan subscription; set by the gated `space_plan` Checkout/webhook → `setSpacePlan`).
 
 > **CRM & marketing** tables (`contacts`, `campaigns`, `automation_rules`, `segments`,
 > `member_tags`, `member_traits`, `network_contacts`, `network_contact_notes`,
-> `network_contact_tags`, `crm_stages`, `crm_deals`, `crm_activities`) are specified in
-> `docs/COMMS-CRM-ARCHITECTURE.md` and `docs/NETWORK-CRM.md`, the source of truth for
-> that domain.
+> `network_contact_tags`, `network_contact_reminders`, `crm_stages`, `crm_deals`,
+> `crm_activities`) are specified in `docs/COMMS-CRM-ARCHITECTURE.md` and
+> `docs/NETWORK-CRM.md`, the source of truth for that domain; the My Contacts CRM layer
+> (the reminders table + `last_contacted_at`) is in [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md).
+
+> **My Contacts CRM · Phase 1** (ADR-361; migration `20260723000000_network_contacts_crm_p1.sql`,
+> additive). `network_contact_reminders` is the owner-scoped follow-up table
+> (`owner_id, contact_id, due_at, note, done_at, created_at`; partial index on
+> `(owner_id, due_at) WHERE done_at IS NULL`; RLS mirrors the `network_contacts` owner
+> policies). `network_contacts` gains `last_contacted_at timestamptz` (stamped on a note or a
+> completed follow-up) and `'qr_scan'` joins its `source` CHECK set. These power the free
+> "reach out" list, sorting, and the Card / QR Scan facet tabs. Source of truth:
+> [`docs/CRM-STRATEGY.md`](CRM-STRATEGY.md) P1.
 
 > *(`spatial_ref_sys` is PostGIS's reference table, not ours, no RLS by design.)*
 
@@ -240,8 +297,8 @@ as today**.
 | `space_follows` | applied (`20260712010000`) | `space_id, follower_profile_id, created_at`; unique `(space_id, follower_profile_id)`; service-role RLS. The network-follow ledger behind FollowSpaceButton + the "Following" directory filter | `space_id` |
 | `space_availability` | applied (ADR-325; `20260711050000`) | `space_id, weekday 0-6, start_minute/end_minute (local-midnight minutes), slot_minutes, timezone (one IANA tz per Space), created_at` (Practitioner 1:1 booking v1 weekly windows) | `space_id` |
 | `space_bookings` | applied (ADR-325; `20260711050000`) | `space_id, member_profile_id, starts_at/ends_at (UTC), status CHECK (confirmed\|cancelled), note`; partial unique `(space_id, starts_at) WHERE status=confirmed` (double-book guard); service-role RLS | `space_id` |
-| `space_membership_tiers` | applied (ADR-327; `20260711070000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
-| `space_memberships` | applied (ADR-327; `20260711070000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
+| `space_membership_tiers` | applied (ADR-327; `20260711070000`, `20260723020000`) | `space_id, name, price_cents, interval CHECK (month\|year\|once), benefits jsonb, sort, is_active`, **+ `stripe_product_id` (P2, ADR-363)**; price/interval DISPLAY-ONLY in v1 (no billing); service-role RLS | `space_id` |
+| `space_memberships` | applied (ADR-327; `20260711070000`, `20260723020000`) | `space_id, member_profile_id, tier_id, status CHECK (active\|cancelled), started_at`, **+ `stripe_subscription_id` + `payment_status` CHECK (pending\|active\|past_due\|canceled) default pending (P2, ADR-363)**; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |
 | `space_donation_asks` | applied (ADR-342; `20260716000000`) | `space_id, fund_label, description, suggested_amounts_cents jsonb, is_active`; display only, NO charge (no Stripe; real giving is Phase 4); unique `(space_id)` (one ask per Space); service-role RLS | `space_id` |
 | `space_programs` | applied (ADR-343; `20260716000100`) | `space_id, name, description, schedule (free text), starts_on/ends_on, capacity (0=no cap), is_published`; NO price column (no payment in v1); partial unique `(space_id)` (one program per Space); service-role RLS | `space_id` |
 | `space_enrollments` | applied (ADR-343; `20260716000100`) | `space_id, program_id, member_profile_id, status CHECK (active\|cancelled), enrolled_at`; partial unique `(space_id, member_profile_id) WHERE status=active` (one-active guard); service-role RLS | `space_id` |

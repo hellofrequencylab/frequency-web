@@ -14,12 +14,14 @@ import {
 } from '@/lib/spaces/campaigns-actions'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
 import { AudiencePicker } from '@/components/spaces/email/audience-picker'
+import { TemplatePicker } from '@/components/spaces/email/template-picker'
 
-// CAMPAIGN COMPOSER (ENTITY-SPACES-BUILD §C Phase 3). Mirrors the global composer pattern
+// CAMPAIGN COMPOSER (ENTITY-SPACES-BUILD §C Phase 3 + ADR-380). Mirrors the global composer pattern
 // (app/(main)/admin/marketing/campaigns/campaign-composer.tsx): a subject + a plain-text body where
 // blank lines become paragraphs, the same block/compose approach with KIT primitives (Input /
-// Textarea / Button). It adds the per-Space AUDIENCE picker (all contacts or by tag, with a live
-// count) and a Send / Schedule control.
+// Textarea / Button). It adds the per-Space AUDIENCE picker (all contacts, by tag, or a saved segment,
+// with a live count), reusable email TEMPLATES (prefill the subject + body), and a Send / Schedule
+// control.
 //
 // FLOW: the composer first CREATES a draft (createSpaceCampaign) so the campaign has an id, then SENDS
 // or SCHEDULES that id. The send action resolves the audience over the Space's own contacts and hands
@@ -33,6 +35,8 @@ export function ComposerShell({
   spaceId,
   slug,
   tags,
+  segments = [],
+  templates = [],
   canSend,
   readOnly = false,
 }: {
@@ -40,6 +44,10 @@ export function ComposerShell({
   slug: string
   /** Tags available to filter the audience by. */
   tags: string[]
+  /** Saved audience segments for this Space (ADR-380). */
+  segments?: { id: string; name: string }[]
+  /** Saved email templates for this Space (ADR-380). */
+  templates?: { id: string; name: string; subject: string; body: string }[]
   /** Whether sending is available (email enabled for the Space). When false, Send/Schedule are off. */
   canSend: boolean
   /** A staff preview renders the whole composer read-only. */
@@ -121,6 +129,19 @@ export function ComposerShell({
   return (
     <fieldset disabled={disabled} className="contents">
       <div className="space-y-6">
+        <TemplatePicker
+          spaceId={spaceId}
+          slug={slug}
+          templates={templates}
+          currentSubject={subject}
+          currentBody={body}
+          onLoadTemplate={(s, b) => {
+            setSubject(s)
+            setBody(b)
+          }}
+          disabled={disabled}
+        />
+
         <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div>
             <Label htmlFor="campaign-subject" className="font-semibold">
@@ -156,7 +177,9 @@ export function ComposerShell({
 
         <AudiencePicker
           spaceId={spaceId}
+          slug={slug}
           tags={tags}
+          segments={segments}
           filter={filter}
           onFilterChange={setFilter}
           onCountChange={setCount}

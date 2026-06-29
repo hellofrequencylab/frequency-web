@@ -6,9 +6,8 @@ import { X, BookOpen, Zap, ChevronRight } from 'lucide-react'
 import { observe } from '@/lib/analytics/observe'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { useMindless } from '@/components/on-air/mindless'
-import { useMovement } from '@/components/on-air/movement'
 import { CaptureBox } from './capture-box'
-import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt, MovementArt } from './zap-menu-art'
+import { EventArt, ContactArt, ConnectArt, PartnersArt, CheckInArt, GhostArt, MindlessArt } from './zap-menu-art'
 
 type Mode = 'post' | 'note' | 'photo' | 'contact'
 
@@ -30,7 +29,6 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
   const [showIntro, setShowIntro] = useState(false)
 
   const mindless = useMindless()
-  const movement = useMovement()
   const close = useCallback(() => {
     // Drop true fullscreen the open gesture entered (C.1-3); the modal's own dvh
     // takeover unmounts with it.
@@ -44,9 +42,9 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     },
     [close],
   )
-  // Mindless opens the in-place overlay (its loading takeover paints instantly) instead of
-  // navigating to /on-air — so the Zap sheet hands straight off to the timer with no flash of
-  // the page behind while the route loads.
+  // Mindless is the ONE timer door now (Be Still + Get Moving in one overlay). It opens in
+  // place (its loading takeover paints instantly) instead of navigating to /on-air — so the Zap
+  // sheet hands straight off to the timer with no flash of the page behind while it loads.
   const openMindless = useCallback(() => {
     observe('zap_menu.tile_tap', { tile: 'mindless' })
     // Hand the fullscreen straight to the Mindless overlay — open it first (it
@@ -55,14 +53,6 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
     mindless.open()
     setOpen(false)
   }, [mindless])
-  // Movement mirrors Mindless: open the in-place timer overlay (keeps/re-requests
-  // fullscreen) then drop the Capture modal WITHOUT exiting fullscreen, so there's
-  // no flicker between the two takeovers.
-  const openMovement = useCallback(() => {
-    observe('zap_menu.tile_tap', { tile: 'movement' })
-    movement.open()
-    setOpen(false)
-  }, [movement])
 
   useEffect(() => {
     if (!open || veraLine) return
@@ -184,9 +174,10 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
             {/* The tools — Mindless leads (the daily ritual outranks the captures),
                 then the live rows. Every tile earns (ADR-236). */}
             <div className="mt-5 grid shrink-0 grid-cols-3 gap-2.5">
-              {/* The featured door: art · title+chip over ONE truncating line ·
-                  a compact Start pill — sized so nothing wraps or collides at
-                  360px (the chip bows out first on very narrow screens). */}
+              {/* ONE Mindless door (the timer-merge): Be Still + Get Moving in a single
+                  overlay the member toggles between. The featured door: art · title+chip
+                  over ONE truncating line · a compact Start pill — sized so nothing wraps
+                  or collides at 360px (the chip bows out first on very narrow screens). */}
               <button
                 type="button"
                 onClick={openMindless}
@@ -197,35 +188,11 @@ export function CaptureLauncher({ scopeId }: { scopeId: string }) {
                   <span className="flex items-center gap-2">
                     <span className="block text-base font-bold leading-tight text-text">Mindless</span>
                     <span className="hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
-                      Daily sit
+                      Daily timer
                     </span>
                   </span>
                   <span className="mt-0.5 block truncate text-xs leading-snug text-muted">
-                    Breathe, sit, or just tune out.
-                  </span>
-                </span>
-                <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">
-                  Start
-                  <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-                </span>
-              </button>
-              {/* The Movement door — the same featured tile, right after Mindless: a
-                  timed walk, flow, play, or workout on the same On Air log path. */}
-              <button
-                type="button"
-                onClick={openMovement}
-                className="group col-span-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/50 bg-gradient-to-br from-primary-bg/80 to-primary-bg/25 p-3.5 text-left shadow-sm transition-all hover:border-primary hover:shadow-md active:scale-[0.99]"
-              >
-                <MovementArt className="block h-12 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="block text-base font-bold leading-tight text-text">Movement</span>
-                    <span className="hidden shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-2xs font-bold uppercase tracking-wide text-primary-strong min-[400px]:inline-block">
-                      On a timer
-                    </span>
-                  </span>
-                  <span className="mt-0.5 block truncate text-xs leading-snug text-muted">
-                    Walk, flow, play, or train.
+                    Be still or get moving.
                   </span>
                 </span>
                 <span className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-primary pl-3 pr-2 text-xs font-bold text-on-primary shadow-sm transition-transform group-hover:scale-105">

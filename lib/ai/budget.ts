@@ -47,9 +47,12 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   // ── Practice builder (member-facing, low-volume authoring; mirrors the Journey builder) ───────
   'practice-spark': 2,         // draft a whole Practice from a few answers (Sonnet; structured, on-demand)
   'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
+  'practice-publish-screen': 1, // advisory pre-publish quality read on one practice (Haiku; operator-triggered, one-shot)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
+  'event-spark': 3,            // draft an event from a few wizard answers or a pasted flyer (Sonnet; structured, on-demand)
   'event-blurb': 2,            // one "why you'd vibe" line per browse (Haiku; cached per day per pairing)
+  'whatsapp-import': 5,        // admin dry-run: classify + extract events/housing from a chat export (Sonnet; batched, on-demand)
   // ── Operator / admin + cron surfaces (Haiku, internal) ────────────────────────────────────────
   'poster-observer': 2,        // admin moderation read on flagged poster events (Haiku; low-volume)
   'creator-tips': 2,           // admin creator-coaching analysis (Haiku; low-volume)
@@ -75,3 +78,9 @@ export const SPACE_DAILY_CAP_USD = 0.5
 export function spaceDailyCapFor(feature: string): number {
   return Math.min(SPACE_DAILY_CAP_USD, dailyCapFor(feature))
 }
+
+// GLOBAL daily spend ceiling (USD) across EVERY AI feature combined. A single hard safety net so a
+// traffic spike or a runaway loop can never run up more than this much Anthropic spend in one UTC day,
+// regardless of the per-feature caps above. Enforced in featureOverBudget (lib/ai/usage.ts), so every
+// AI surface is bounded by it. Tuned for a small / solo launch; raise as real usage and revenue grow.
+export const GLOBAL_DAILY_CAP_USD = 25

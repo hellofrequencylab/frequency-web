@@ -113,8 +113,20 @@ export async function proxy(request: NextRequest) {
   // '/onboarding' protected prefix; the page itself auth-gates the real induction
   // (an unauthed visitor sees the welcome, never the writes). Removed at launch.
   const isBetaEntry = pathname.startsWith('/onboarding/beta')
+  // Public events (SEO/AIO + shareable): the events index and an event's detail page are
+  // anon-readable — a signed-out visitor sees the event and is prompted to sign in for any
+  // action. The CREATE flow (/events/new) and host MANAGE sub-routes stay protected.
+  const isPublicEventView =
+    pathname === '/events' ||
+    (pathname.startsWith('/events/') &&
+      pathname !== '/events/new' &&
+      !pathname.startsWith('/events/new/') &&
+      !/\/manage(\/|$)/.test(pathname))
   const isProtected =
-    !isShareableFeed && !isBetaEntry && PROTECTED_PATHS.some((p) => pathname.startsWith(p))
+    !isShareableFeed &&
+    !isBetaEntry &&
+    !isPublicEventView &&
+    PROTECTED_PATHS.some((p) => pathname.startsWith(p))
 
   if (!user && isProtected) {
     const signInUrl = request.nextUrl.clone()

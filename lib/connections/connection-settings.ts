@@ -64,6 +64,9 @@ export interface MyConnectionPrefs {
   discoverableBy: DiscoverableBy
   locationBand: LocationBand
   discoveryRadiusM: number
+  /** How far the member's FEED reaches (feed_radius_m), distinct from discoverability.
+   *  The ripple widens this on its own when the area is sparse (ADR-416/417). */
+  feedRadiusM: number
   ghostMode: boolean
   /** Whether the member has a home location set (without which proximity is inert). */
   hasHome: boolean
@@ -80,7 +83,7 @@ export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> 
   const db = createAdminClient()
   const { data } = await db
     .from('profiles')
-    .select('directory_visible, discoverable_by, location_band, discovery_radius_m, ghost_mode, home_lat, location_mode, live_updated_at')
+    .select('directory_visible, discoverable_by, location_band, discovery_radius_m, feed_radius_m, ghost_mode, home_lat, location_mode, live_updated_at')
     .eq('id', me.id)
     .maybeSingle()
   const r = (data ?? {}) as Record<string, unknown>
@@ -89,6 +92,7 @@ export async function getMyConnectionPrefs(): Promise<MyConnectionPrefs | null> 
     discoverableBy: (r.discoverable_by as DiscoverableBy) ?? 'community',
     locationBand: (r.location_band as LocationBand) ?? 'city',
     discoveryRadiusM: Number(r.discovery_radius_m ?? 40000),
+    feedRadiusM: Number(r.feed_radius_m ?? 25000),
     ghostMode: !!r.ghost_mode,
     hasHome: r.home_lat != null,
     liveMode: r.location_mode === 'live',

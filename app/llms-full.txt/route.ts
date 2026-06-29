@@ -1,7 +1,7 @@
 import { getAllCategories, helpHref } from '@/lib/help/content'
 import { SITE_NAME, SITE_URL, SITE_DESCRIPTION, SITE_TAGLINE, CONTACT_EMAIL, FOUNDING_PLACE } from '@/lib/site'
 
-// /llms-full.txt — the comprehensive, self-maintaining companion to the curated public/llms.txt
+// /llms-full.txt — the comprehensive, self-maintaining companion to the curated /llms.txt route
 // (AIO, docs/CONTENT-VOICE §8). Where llms.txt is a hand-written brand summary, this dumps the
 // full help-center content (every published article's title, URL, description, and body) so AI
 // answer engines can ingest the real product documentation. Generated from the live help content
@@ -13,7 +13,7 @@ export async function GET() {
   const cats = await getAllCategories()
 
   const out: string[] = [
-    `# ${SITE_NAME} — full content for language models`,
+    `# ${SITE_NAME}: full content for language models`,
     '',
     `> ${SITE_DESCRIPTION} ${SITE_TAGLINE}. Taking root in ${FOUNDING_PLACE}. Contact: ${CONTACT_EMAIL}.`,
     '',

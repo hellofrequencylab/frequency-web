@@ -18,7 +18,7 @@
 // (host_id === me, the host+ admin gate, crew-can-take-tasks). Tune against
 // product as the inline-admin work (Phase 1) lands.
 
-import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor } from './roles'
+import { type CommunityRole, type WebRole, isStaff as webIsStaff, isJanitor as webIsJanitor, atLeastRole } from './roles'
 import { isPaid, type EntitlementTier } from './access-matrix'
 import { type ScopeType } from './stewardship'
 
@@ -32,6 +32,15 @@ export type Capability =
   | 'circle.broadcast'
   // event
   | 'event.editSettings'
+  // practice
+  | 'practice.editSettings'
+  // creation gates (global) — who may AUTHOR a new entity. Real-Crew (paid) or a
+  // community steward (crew+ on the trust ladder). Everyone else is sold the
+  // one-tap free-beta upgrade. See docs/RESONANCE-FEED-ARCHITECTURE.md §"Access".
+  | 'event.create'
+  | 'circle.create'
+  | 'journey.create'
+  | 'practice.create'
   // topical channel (platform-curated — staff only)
   | 'channel.manage'
   // tasks (crew engagement inside a circle)
@@ -39,6 +48,14 @@ export type Capability =
   | 'task.claim'
   // profile
   | 'profile.edit'
+  // spotlight — a member's opt-in public mini-site (docs/NAMING.md "Spotlight page").
+  // OFF for everyone by default. `enable` = a Crew+ OWNER may turn their OWN Spotlight
+  // on (self-serve setup); `manage` = the owner of an enabled Spotlight (or a janitor)
+  // may build/arrange it; `view` = a Crew+ viewer may see a published Spotlight page.
+  // All three are resolved in the 'profile' scope below.
+  | 'spotlight.enable'
+  | 'spotlight.manage'
+  | 'spotlight.view'
   // structural management (admin-side)
   | 'hub.manage'
   | 'nexus.manage'
@@ -59,7 +76,14 @@ export type Scope =
        *  hub/nexus (computed by the caller — avoids over-granting all guides). */
       viewerManagesParent?: boolean
     }
-  | { kind: 'profile'; ownerId: string }
+  | {
+      kind: 'profile'
+      ownerId: string
+      /** The OWNER's Spotlight flags (read from their profiles.meta by the server
+       *  seam). Opt-in is owner state, not a viewer-global flag. Omitted ⇒ off. */
+      ownerSpotlightEnabled?: boolean
+      ownerSpotlightPublished?: boolean
+    }
   | { kind: 'channel'; channelId: string }
   | { kind: 'hub'; hubId: string; guideId?: string | null; viewerManagesParent?: boolean }
   | { kind: 'nexus'; nexusId: string; mentorId?: string | null }
@@ -69,6 +93,14 @@ export type Scope =
       hostId: string | null
       /** True if the viewer manages the event's parent scope (e.g. its circle) —
        *  computed by the caller (avoids over-granting). */
+      viewerManagesScope?: boolean
+    }
+  | {
+      kind: 'practice'
+      practiceId: string
+      /** practices.created_by — the practice's owner. */
+      ownerId: string | null
+      /** True if the viewer manages the practice's parent space (caller-computed). */
       viewerManagesScope?: boolean
     }
 
@@ -86,6 +118,12 @@ export interface Viewer {
   /** Billing entitlement tier. Paid (Crew/Supporter) unlocks the membership-gated
    *  capabilities (e.g. task volunteering). Omitted ⇒ free. */
   tier?: EntitlementTier | null
+  /** The REAL billing tier from the DB, BEFORE any beta open-access override
+   *  (lib/core/beta.ts grants everyone Crew while the beta is open, which `tier`
+   *  reflects). The CREATION gates read this so the free-beta upgrade popup still
+   *  fires for a genuinely free member during the beta — "real Crew to create".
+   *  Omitted ⇒ falls back to `tier` (i.e. no beta override in play). */
+  realTier?: EntitlementTier | null
   /** SCOPED stewardship predicate (P1.6, ADR-218→220): does the viewer hold an
    *  ACTIVE stewardship edge on `(scopeType, scopeId)`? Supplied by the server seam
    *  from the `stewardships` table; OR'd with the legacy leader-FK identity match so
@@ -114,13 +152,55 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       // Staff (admin/janitor) reach the Admin tab. Admin entry is the STAFF axis,
       // not the community ladder (host+ stewardship lives in per-scope caps below).
       if (isStaff) caps.add('admin.access')
+
+      // CREATION gates: who may author a new event / circle / journey / practice.
+      // Real-Crew (paid tier) OR a community steward (crew+ on the trust ladder).
+      // We read `realTier` (the DB tier BEFORE the beta open-access override) so a
+      // genuinely free member still meets the upgrade popup during the beta —
+      // "real Crew to create, free one-tap" (ADR-414). Staff create too (they run
+      // the platform). Plain free members get none of these, by design.
+      const realTier = viewer.realTier ?? viewer.tier
+      if (isPaid(realTier) || atLeastRole(viewer.role, 'crew') || isStaff) {
+        caps.add('event.create')
+        caps.add('circle.create')
+        caps.add('journey.create')
+        caps.add('practice.create')
+      }
       break
     }
 
     case 'profile': {
-      // Owners edit their own profile; janitors may edit any (moderation).
-      if (profileId && (scope.ownerId === profileId || isJanitor)) {
+      // All require sign-in (the outer `profileId &&`, preserved from the original gate
+      // so the gap-prober's hypothetical anon+staff never grants them).
+      const isOwner = !!profileId && scope.ownerId === profileId
+      // profile.edit (basic moderation: name/bio): the owner, or platform STAFF
+      // (admin OR janitor) — admins get basic profile control, janitors get it too.
+      if (isOwner || (!!profileId && isStaff)) {
         caps.add('profile.edit')
+      }
+
+      // Spotlight (opt-in public mini-site). MANAGE goes to the owner of an ENABLED
+      // Spotlight (or a janitor, for moderation) — turning it on is an admin/owner
+      // act recorded in the owner's meta, never inferred from the viewer.
+      if ((isOwner || (!!profileId && isJanitor)) && scope.ownerSpotlightEnabled === true) {
+        caps.add('spotlight.manage')
+      }
+      // VIEW is a Crew+ entitlement read from the REAL tier (pre beta-override,
+      // ADR-414) so the beta's open-access grant can't widen who reaches the public
+      // page — the SAME gate shape as the creation caps. Whether a given page is
+      // actually PUBLISHED is enforced at the route; this caps the affordance.
+      const spotlightTier = viewer.realTier ?? viewer.tier
+      const spotlightCrewPlus = isPaid(spotlightTier) || atLeastRole(viewer.role, 'crew') || isStaff
+      if (spotlightCrewPlus) {
+        caps.add('spotlight.view')
+      }
+      // ENABLE: a Crew+ OWNER may turn their OWN Spotlight on — the self-serve switch
+      // that replaces the janitor-only toggle for setup (the owner still publishes
+      // explicitly). Same Crew+ bar as view / the creation caps (realTier, so the beta
+      // open-access grant can't widen who gets the affordance). A janitor can still flip
+      // it for anyone via the admin path (spotlight.manage / member-admin).
+      if (isOwner && spotlightCrewPlus) {
+        caps.add('spotlight.enable')
       }
       break
     }
@@ -188,6 +268,15 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       if (leadsEvent) caps.add('event.editSettings')
       break
     }
+
+    case 'practice': {
+      // A practice is owned by its creator; the owner, platform staff, or whoever manages
+      // its parent space (caller-computed) may edit it.
+      const leadsPractice =
+        (!!profileId && scope.ownerId === profileId) || isStaff || scope.viewerManagesScope === true
+      if (leadsPractice) caps.add('practice.editSettings')
+      break
+    }
   }
 
   return caps
@@ -245,10 +334,12 @@ export function capabilityGaps(
     attribute(resolveCapabilities(viewer, scopeAsMember), 'needs-membership')
   }
 
-  // Rung 2 — the paid tier (Crew/Supporter), on top of membership.
+  // Rung 2 — the paid tier (Crew/Supporter), on top of membership. Bump BOTH the
+  // effective tier and the real tier so the creation gates (which read realTier)
+  // attribute to 'needs-paid-tier' — that is exactly the rung the upgrade popup sells.
   let viewerPaid = viewer
-  if (!isPaid(viewer.tier)) {
-    viewerPaid = { ...viewer, tier: 'crew' }
+  if (!isPaid(viewer.tier) || !isPaid(viewer.realTier ?? viewer.tier)) {
+    viewerPaid = { ...viewer, tier: 'crew', realTier: 'crew' }
     attribute(resolveCapabilities(viewerPaid, scopeAsMember), 'needs-paid-tier')
   }
 

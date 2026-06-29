@@ -29,10 +29,12 @@ const csp = [
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   // connect-src is the exfiltration gate — every runtime fetch/XHR/WS target is listed:
-  // Supabase (REST + realtime), GA, Vercel insights/live, OpenFreeMap tiles (maplibre),
-  // Photon (address geocoding), ipapi (IP geo).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
-  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com",
+  // Supabase (REST + realtime), GA (incl. GA4's region-routed /g/collect endpoint), Vercel
+  // insights/live, OpenFreeMap tiles (maplibre), Photon (address geocoding), ipapi (IP geo).
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com https://vitals.vercel-insights.com https://*.vercel.live https://tiles.openfreemap.org https://photon.komoot.io https://ipapi.co",
+  // frame-src — the only hosts we may embed. Spotlight media embeds (lib/spotlight/embeds.ts)
+  // reconstruct iframe srcs ONLY for these allowlisted players; keep the two lists in sync.
+  "frame-src 'self' https://*.vercel.live https://www.youtube.com https://player.vimeo.com https://open.spotify.com https://w.soundcloud.com",
   "media-src 'self' blob: https:",
   "worker-src 'self' blob:",
   'report-uri /api/csp-report', // keep reporting even while enforcing — catch any miss
@@ -52,6 +54,13 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Server Action request bodies default to 1MB, which silently rejects image uploads
+  // before they reach the action — our hero/cover uploaders accept up to 8MB
+  // (uploadPageHero, uploadCircleCover). Raise the limit so the framework lets those
+  // through and the action's own size check is the real gate.
+  experimental: {
+    serverActions: { bodySizeLimit: '10mb' },
+  },
   // Keep the wasm rasterizer (styled QR PNG export, lib/qr/raster.ts) external so the
   // bundler doesn't try to bundle its .wasm — it's loaded from node_modules at runtime.
   serverExternalPackages: ['@resvg/resvg-wasm', 'pdf-parse', 'mammoth'],

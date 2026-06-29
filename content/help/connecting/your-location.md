@@ -3,9 +3,9 @@ title: Your location & being found nearby
 description: Exactly what others can see, every control you have, and how live location works.
 category: connecting
 order: 6
-updated: 2026-06-10
+updated: 2026-06-26
 audience: member
-featureKeys: [connections, location, settings]
+featureKeys: [connections, location, settings, resonance]
 status: published
 ---
 
@@ -27,6 +27,9 @@ instantly.
   community. This controls who can surface you by location.
 - **Discoverability radius.** Your own slider for how far away someone can be and
   still discover you.
+- **Feed reach.** A separate slider for how far your own **Nearby feed** casts, from
+  just your block out to the wider region. It's only your starting point: when your
+  area is quiet, we widen it on our own so your feed is never empty.
 
 ## How precisely you're shown
 
@@ -57,6 +60,23 @@ Honest fine print, the same way the app says it:
   it entirely, anytime.
 - **Use it thoughtfully.** Sharing where you are in real time always carries some
   risk. Enable it in communities you trust, and when in doubt, leave it off.
+
+## Resonance matching (optional)
+
+Frequency can quietly find the few people you would most click with, from the Circles,
+Journeys, and practices you already share. It is **off by default**, and turning it on
+never exposes you:
+
+- **You opt in.** Nothing matches you until you turn on **Resonance matching** here. Say
+  nothing and you are simply not in the pool.
+- **We only ever suggest.** Matches show up privately, just for you, on your Friends page.
+  No one is told they were matched with you.
+- **No one is introduced until you both say yes.** Tapping "Introduce us" on a match
+  records your yes and waits for theirs. An intro only happens once both of you say yes,
+  and a person still writes and sends the hello. Nothing goes out automatically.
+- **Mute being suggested.** Stay in for your own matches but stop being suggested to other
+  people, anytime.
+- **One tap off.** Turn matching off here whenever you like.
 
 ## What about maps?
 

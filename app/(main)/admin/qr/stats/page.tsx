@@ -5,7 +5,7 @@ import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { DataTable, type ColumnDef } from '@/components/admin/data-table'
 import { EmptyState } from '@/components/ui/empty-state'
-import { summarizeScans, summarizeLocations, type ScanRow, type ScanGeoRow } from '@/lib/qr/analytics'
+import { scanSummaryFromRpc, type QrStatsRpcPayload } from '@/lib/qr/analytics'
 import { summarizeAcquisition, type AcquisitionRow } from '@/lib/qr/acquisition'
 import { Analytics, type AnalyticsData } from '../analytics'
 import { ScanLocator } from '../scan-locator'
@@ -21,9 +21,9 @@ export default async function QrStatsPage() {
   await requireAdmin('host', { staff: 'qr' })
   const db = createAdminClient()
 
-  const [{ data: scans }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =
+  const [{ data: statsPayload }, { data: codes }, { count: nodeCount }, { data: events }, { data: challenges }, { data: acq }] =
     await Promise.all([
-      db.from('qr_scans').select('qr_code_id, profile_id, scanned_at, city, country, lat, lng, medium'),
+      db.rpc('qr_stats_summary', { p_days: 30 }),
       db.from('qr_codes').select('id, slug, title, purpose, owner_profile_id'),
       db.from('nodes').select('id', { count: 'exact', head: true }),
       db.from('engagement_events').select('event_type').in('event_type', ['qr.referral_signup', 'qr.gift_zap']),
@@ -31,9 +31,7 @@ export default async function QrStatsPage() {
       db.from('profiles').select('acquisition').not('acquisition', 'is', null),
     ])
 
-  const scanRows = scans ?? []
-  const summary = summarizeScans(scanRows as ScanRow[])
-  const locations = summarizeLocations(scanRows as ScanGeoRow[])
+  const { summary, locations } = scanSummaryFromRpc(statsPayload as QrStatsRpcPayload | null)
 
   // Funnel (the in-app actions a scan drives).
   const referralSignups = (events ?? []).filter((e) => e.event_type === 'qr.referral_signup').length

@@ -38,6 +38,11 @@ import {
   SlidersHorizontal,
   TrendingUp,
   Flag,
+  CreditCard,
+  BellRing,
+  HelpCircle,
+  User,
+  Receipt,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -142,6 +147,11 @@ const LUCIDE_BY_NAME: Record<string, ElementType> = {
   SlidersHorizontal,
   TrendingUp,
   Flag,
+  CreditCard,
+  BellRing,
+  HelpCircle,
+  User,
+  Receipt,
 }
 
 // Resolve a menu item's stored `icon` string to an icon component, for the DB-backed

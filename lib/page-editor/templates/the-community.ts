@@ -1,180 +1,286 @@
 import type { Data } from '@measured/puck'
+import {
+  BETA_CTA_LABEL,
+  BETA_CTA_HREF,
+  BETA_CTA_SECONDARY_LABEL,
+  BETA_CTA_SECONDARY_HREF,
+} from '@/lib/site'
 
-// The Community, rebuilt from the standardized block library so the editor mirrors
-// the live page (ADR-055 / "editor = live"). Three bespoke coded sections have no
-// block equivalent and are approximated here: the interactive ProductTour → a
-// FeatureGrid of the four app surfaces; the "one ordinary Tuesday" timeline → a
-// numbered FeatureGrid; the PillarNav triptych (nav chrome) → omitted. Review on
-// the preview before publishing.
+// ─────────────────────────────────────────────────────────────────────────────
+// THE COMMUNITY — the EXEMPLAR template. Every other page template copies this
+// file's shape and section rhythm, so keep it clean and legible.
+//
+// What this page does: says what Frequency's community IS, tells the builder
+// narrative (the people who want to CREATE real-world connection, not just consume
+// a feed), shows the safety net so "starting one Circle" never reads as "doing it
+// alone", and gives a sold reader the concrete next step (How you start) plus a
+// place to act at every high-intent moment.
+//
+// HOW TO READ / COPY THIS FILE (the contract for the other page agents):
+//  • One `const L` layout literal, reused on every block (`...L` or inline) so the
+//    spacing rhythm is consistent. Override per-block only with intent.
+//  • Section rhythm = an alternating beat of tones (surface → canvas → surface …),
+//    with a `Statement` interstitial between major movements and exactly ONE dark
+//    (`ink`) beat near the end (Guru-free) before the ink close.
+//  • Compose ONLY from registered blocks (lib/page-editor/config.tsx). Canon terms
+//    are rendered verbatim (Circle, Run, Channel, Pillar, Journey; Member → Crew →
+//    Host → Guide → Mentor). Pillar > Channel > Circle (docs/NAMING.md). No em
+//    dashes. Sentence-case headings. Contractions always (CONTENT-VOICE §5e).
+//    Honest at day zero: no member counts, no leaderboards, no invented numbers.
+//  • CTA SYSTEM (updated June 2026): the page activates the Latent Leader
+//    (CONTENT-VOICE §2b/§7b). The primary action is BETA_CTA_LABEL ("Start a
+//    Circle") and appears at THREE moments — the hero, a mid-page CallToAction
+//    after the How-you-start steps (highest intent), and the ink close. Each
+//    primary carries ONE quiet secondary text link for the Seeker
+//    (BETA_CTA_SECONDARY_LABEL, "or just join as a member"). Never stack two
+//    buttons; a secondary text link is not a button. The hero's `note` carries
+//    honest founding status instead of fake urgency.
+//
+// Block adjust props every block carries: tone ('surface'|'canvas'|'ink'),
+// width ('default'|'wide'|'full'), align ('left'|'center'), layout (the L below).
+// ─────────────────────────────────────────────────────────────────────────────
+
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
 
 export const data: Data = {
   root: {},
   content: [
+    // ── Hero ── image variant, the one big promise, and the first place to act.
+    // Image is a calm sunrise meditation Circle (a real gathering), not a crowd:
+    // the builder, not the party-goer, is the reader. ───────────────────────────
     {
       type: 'Hero',
       props: {
-        id: 'tc-hero', variant: 'image',
+        id: 'tc-hero',
+        variant: 'image',
         eyebrow: 'The Community',
-        title: 'You don’t need another app. You need your people.',
-        titleAccent: '',
-        subtitle: 'Most communities are a feed and a hope. Frequency has a structure that actually grows, and it only takes two words to belong.',
-        image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg', focal: 'center',
+        title: 'Real connection is something you build, not something you scroll.',
+        titleAccent: 'something you build',
+        subtitle:
+          "Frequency is for people who want to build community where they live. A few neighbors, a standing time, and a room that misses you when you're gone.",
+        image: '/images/site/PHOTO-2020-10-07-14-38-04.jpeg',
+        focal: 'center',
         minHeight: 'screen',
-        ctaPrimaryLabel: 'Join the Beta', ctaPrimaryHref: '/beta',
-        ctaSecondaryLabel: '', ctaSecondaryHref: '', note: '',
-        tone: 'surface', width: 'default', align: 'center', layout: L,
+        ctaPrimaryLabel: BETA_CTA_LABEL,
+        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        note: "We're just opening. The first Hosts set the tone.",
+        tone: 'surface',
+        width: 'default',
+        align: 'center',
+        layout: L,
       },
     },
+
+    // ── Name the reader ── who this is for, said plainly. The builder narrative as
+    // CONTENT, never a gate: you do not apply, you just start. ──────────────────
     {
       type: 'Heading',
       props: {
-        id: 'tc-premise-h', eyebrow: 'The premise',
-        title: 'The cure for too many feeds isn’t one more.', titleAccent: '',
-        kicker: 'It’s a few real people, near you, who notice when you’re gone.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        id: 'tc-reader-h',
+        eyebrow: 'Who this is for',
+        title: 'For the people who start things.',
+        titleAccent: 'start things',
+        kicker: "You're not waiting for the place to appear. You're ready to make it happen.",
+        size: 'default',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'Text',
       props: {
-        id: 'tc-premise-b',
-        body: 'You already have the apps. What you’re missing is the standing time, the handful of faces, the small group small enough that your absence leaves a hole. That’s not a feature you download. It’s a structure you join.\n\nFrequency gives community a shape: four Pillars to find your practice, Channels to find your people, and Circles to actually belong. No application, no audition, two words and you’re in the room.',
-        size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        id: 'tc-reader-b',
+        body: "You already have the apps. What you're missing is a standing time, a handful of faces, and a group small enough that your absence leaves a hole. That's not a feature you download. It's a room someone decides to hold open.\n\nFrequency is for the person who decides. You don't need a big personality or a finished plan. You need a Channel you care about, a few people near you, and a format you can run. We hand you the rest.",
+        size: 'lg',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
       },
     },
     {
       type: 'Statement',
-      props: { id: 'tc-stmt-1', text: 'Not a feed. Not a follower count. A few people who notice.', accent: 'A few people who notice.', tone: 'surface', layout: L },
-    },
-    {
-      type: 'Heading',
       props: {
-        id: 'tc-channels-h', eyebrow: 'The four Pillars',
-        title: 'A whole life has four Pillars.', titleAccent: '',
-        kicker: 'Mind, Body, Spirit, Expression. Start in any of them.',
-        size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
+        id: 'tc-stmt-1',
+        text: "A community is not a feed. It's a few people who notice when you're gone.",
+        accent: 'notice',
+        tone: 'surface',
+        layout: L,
       },
     },
+
+    // ── CircleFirstNight ── make "run one Circle" concrete: here is the actual
+    // shape of one evening, and the host did not have to invent it. ─────────────
     {
-      type: 'Text',
+      type: 'CircleFirstNight',
       props: {
-        id: 'tc-channels-b',
-        body: 'The Pillars are the four parts a real life moves through. They’re the map you arrive on: pick the one that’s calling you right now, and the Channels and Circles inside it are where you actually land.',
-        size: 'lg', tone: 'surface', width: 'default', align: 'left', layout: L,
+        id: 'tc-first-night',
+        eyebrow: 'A Run, up close',
+        title: 'What the first night actually looks like.',
+        titleAccent: 'first night',
+        kicker: 'A Circle running a Journey together is a Run. Here is the shape of one evening.',
+        footnote:
+          'No host has to invent it. The format comes with the Journey, so the first night runs itself and you just hold the door.',
+        cardLabel: 'Weekly Run',
+        cardTitle: 'Tuesday, 6:30pm',
+        rows: [
+          { time: '0:00', title: 'Arrive and settle', note: 'Tea, a folding chair, names around the room.' },
+          { time: '0:15', title: 'Open the week', note: 'The host reads the prompt the Journey set for tonight.' },
+          { time: '0:30', title: 'The practice', note: 'You do the thing together: sit, move, or make.' },
+          { time: '1:00', title: 'Share and close', note: 'A short round, then plans for next week.' },
+        ],
+        tone: 'canvas',
+        width: 'wide',
+        align: 'left',
+        layout: L,
       },
     },
+
+    // ── RolesPath ── the safety net. Member → Crew → Host → Guide → Mentor, with
+    // the "you are never out front alone" beat that answers the builder's fear. ──
+    {
+      type: 'RolesPath',
+      props: {
+        id: 'tc-roles',
+        eyebrow: 'The path',
+        title: 'You are never out front alone.',
+        titleAccent: 'never',
+        kicker: 'Step up as far as you want. Every rung has the one above it for backup.',
+        rungs: [
+          { name: 'Member', blurb: "You show up to a Circle. That's the whole entry fee." },
+          { name: 'Crew', blurb: "You're in for the season, learning the format and lending a hand." },
+          { name: 'Host', blurb: 'You hold a Circle through a Run. The script and the backup come with it.' },
+          { name: 'Guide', blurb: 'You look after the Hosts nearby, so no one runs a room alone.' },
+          { name: 'Mentor', blurb: 'You keep the Guides steady across a whole local community.' },
+        ],
+        safetyNet:
+          'Nobody gets handed a room and left to sink. Whatever rung you take, the rung above it is there for backup: a Guide for every Host, a Mentor for every Guide. Step up exactly as far as feels right, and step back any time.',
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
+      },
+    },
+
+    // ── How you start ── the concrete next step (replaces the old "you set out the
+    // chairs" interstitial). Numbered steps so the sold reader knows exactly what
+    // to do. "We hand you the format" lives inside step 3. ──────────────────────
     {
       type: 'FeatureGrid',
       props: {
-        id: 'tc-channels-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '2',
+        id: 'tc-how',
+        eyebrow: 'How you start',
+        title: "Three steps and you're holding a room.",
+        titleAccent: 'holding a room',
+        style: 'number',
+        columns: '3',
         items: [
-          { icon: 'Star', image: '', title: 'Mind', body: 'Meditation, breathwork, learning, the quiet practices that settle a nervous system and sharpen a life.', href: '' },
-          { icon: 'Flame', image: '', title: 'Body', body: 'Movement, strength, cold and heat, the run club and the sauna night. The practices you feel the next morning.', href: '' },
-          { icon: 'Sparkles', image: '', title: 'Spirit', body: 'Ceremony, sound, human relating, the men’s table and the women’s circle. The work you do shoulder to shoulder.', href: '' },
-          { icon: 'Music', image: '', title: 'Expression', body: 'Music, art, dance, making things with your hands. The creative practices that need a room and a crowd.', href: '' },
+          { icon: 'Compass', image: '', title: 'Pick what you practice', body: "A hike, a book, a supper table, a sit. That's your Channel.", href: '' },
+          { icon: 'Users', image: '', title: 'Find a few people near you', body: "Three is enough to begin. That's your Circle.", href: '' },
+          { icon: 'CalendarDays', image: '', title: 'Hold the door, same time each week', body: 'We hand you the format, the script, and the backup.', href: '' },
         ],
-        tone: 'surface', width: 'default', align: 'left', layout: L,
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
+
+    // ── Mid-page CTA ── the highest-intent moment: they have seen the night, the
+    // path, and the three steps. Ask here, not just at the bottom. Not ink (the
+    // single dark beat is Guru-free, below). ────────────────────────────────────
     {
-      type: 'Heading',
+      type: 'CallToAction',
       props: {
-        id: 'tc-steps-h', eyebrow: 'From the people, not the org chart',
-        title: 'Three steps to belong.', titleAccent: '',
-        kicker: 'No application. No audition. Two words and you’re in the room.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
+        id: 'tc-cta-mid',
+        eyebrow: '',
+        heading: 'Hold the door for one Circle.',
+        headingAccent: 'one Circle',
+        body: "You've seen the night, the path, and the three steps. The first Hosts are setting the tone now.",
+        ctaPrimaryLabel: BETA_CTA_LABEL,
+        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        tone: 'surface',
+        width: 'default',
+        align: 'center',
+        layout: L,
       },
     },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tc-steps-grid', eyebrow: '', title: '', titleAccent: '', style: 'number', columns: '3',
-        items: [
-          { icon: 'Compass', image: '', title: 'Pick what you practice', body: 'Choose a Pillar, then a Channel inside it: breathwork, strength, supper clubs, sound. It’s the thread that ties you to people who care about the same thing.', href: '' },
-          { icon: 'Users', image: '', title: 'Join a Circle', body: 'Find your people near you. A small standing group built around your Channel, with an always-on virtual space and a standing time to meet in person.', href: '' },
-          { icon: 'CalendarDays', image: '', title: 'Show up', body: 'That’s the whole secret. Small enough that you’re missed when you don’t come, so showing up stops feeling like effort and starts feeling like home.', href: '' },
-        ],
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
+
+    // ── Channels and Runs ── the core mechanic, in detail and on canon. A Channel
+    // is what you practice (a topic under a Pillar); a Run is your Circle walking a
+    // Journey together. Pillar > Channel > Circle (docs/NAMING.md). ─────────────
     {
       type: 'MediaText',
       props: {
-        id: 'tc-interests', image: '/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg',
-        alt: 'A Frequency Circle gathered for breathwork outdoors',
-        eyebrow: 'Where you belong', title: 'Channels and Circles', titleAccent: '',
-        kicker: 'Two words are all it takes to find your place.',
-        body: 'A Channel is what you practice: a topic inside a Pillar. Surfing, sound baths, strength, human relating. It connects you to people everywhere who care about the same things you do.\n\nA Circle is your people, near you. A small standing group built around a Channel, with an always-on virtual space, and a standing time to meet in person. Small enough that you’re missed when you don’t show up.',
-        side: 'left', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'surface', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tc-app-h', eyebrow: 'The app', title: 'Your people, in your pocket.', titleAccent: '',
-        kicker: 'The four things you’ll actually use.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tc-app-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '2',
-        items: [
-          { icon: 'Zap', image: '', title: 'The Feed', body: 'The pulse of your people. What’s happening near you, right now. No algorithm, no outrage, just real life.', href: '' },
-          { icon: 'Users', image: '', title: 'Circles', body: 'Small rooms around the things you love. Where strangers near you turn into your people.', href: '' },
-          { icon: 'CalendarDays', image: '', title: 'Events', body: 'Close the laptop and show up. One tap to RSVP, and now you’re expected.', href: '' },
-          { icon: 'MessageCircle', image: '', title: 'Channels', body: 'Pick a Pillar (Mind, Body, Spirit, Expression), tune into a Channel, and the Circles inside light up.', href: '' },
-        ],
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Statement',
-      props: { id: 'tc-stmt-2', text: 'Two words are all you need to belong.', accent: 'belong', tone: 'surface', layout: L },
-    },
-    {
-      type: 'MediaText',
-      props: {
-        id: 'tc-growth', image: '/images/site/PHOTO-2020-09-09-16-38-27.jpeg',
-        alt: 'A large Frequency community practicing yoga together on a lawn',
-        eyebrow: 'How it grows', title: 'It spreads like cells, not franchises.', titleAccent: '', kicker: '',
-        body: 'Circles are designed to divide. When one fills up, it doesn’t put people on a waitlist. It seeds a new Circle, led by someone who was ready to step up.\n\nA handful of neighbouring Circles becomes a neighborhood. Neighborhoods become a whole local community. None of it is appointed from above. It grows on its own momentum, the way real things do.',
-        side: 'right', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tc-shape-h', eyebrow: 'The shape of it', title: 'From one Circle to a whole community.', titleAccent: '',
-        kicker: 'Nobody hands it down. It grows from the inside out.',
-        size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
+        id: 'tc-channels',
+        image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
+        alt: 'A Frequency group spinning hula hoops together on the beach at golden hour',
+        eyebrow: 'Channels and Runs',
+        title: 'Find your people. Walk it together.',
+        titleAccent: 'together',
+        kicker: 'Find what you practice, then the people who practice it too.',
+        body: "A Channel is what you practice: one of the seven topics that live under the four Pillars. Breathwork, strength, sound, supper clubs. It ties you to the people near you who care about the same thing.\n\nA Run is your Circle walking a Journey together, week after week, with a standing time and the same faces. The Channel finds your people. The Run is how you become regulars.",
+        side: 'left',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'canvas',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
       type: 'FeatureGrid',
       props: {
-        id: 'tc-shape-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '3',
+        id: 'tc-pillars-grid',
+        eyebrow: 'The four Pillars',
+        title: 'A whole life has four Pillars.',
+        titleAccent: 'four Pillars',
+        style: 'icon',
+        columns: '2',
         items: [
-          { icon: 'Users', image: '', title: 'A Circle', body: 'A handful of neighbors around one Channel. The smallest unit that can hold you.', href: '' },
-          { icon: 'MapPin', image: '', title: 'A neighborhood', body: 'Circles that divide and multiply until your corner of the map is full of them.', href: '' },
-          { icon: 'Leaf', image: '', title: 'A community', body: 'A whole local ecosystem: leaderful, self-sustaining, grown rather than built.', href: '' },
+          { icon: 'Star', image: '', title: 'Mind', body: 'Meditation, breathwork, learning. The quiet practices that calm you down.', href: '' },
+          { icon: 'Flame', image: '', title: 'Body', body: 'Movement, strength, cold and heat. The practices you feel the next morning.', href: '' },
+          { icon: 'Sparkles', image: '', title: 'Spirit', body: 'Ceremony, sound, human relating. The work you do shoulder to shoulder.', href: '' },
+          { icon: 'Music', image: '', title: 'Expression', body: 'Music, art, dance, making things. The creative practices that need a room and a crowd.', href: '' },
         ],
-        tone: 'surface', width: 'default', align: 'left', layout: L,
+        tone: 'surface',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
+
+    // ── The single dark beat ── why this lasts: leaderful, not leader-dependent.
+    // Exactly one ink section, near the end, before the close. ──────────────────
     {
       type: 'MediaText',
       props: {
-        id: 'tc-guru', image: '/images/site/PHOTO-2020-10-17-13-49-14.jpeg',
-        alt: 'A Frequency music circle gathered on a cliffside at golden hour',
-        eyebrow: 'Why it lasts', title: 'Guru-free. By design.', titleAccent: '', kicker: '',
-        body: 'Communities built around one charismatic founder live and die with that person. We’ve all watched it happen. So Frequency is built to be the opposite: leaderful, not leader-dependent.\n\nLeaders rise from showing up, not from being anointed. Take the same structure away from any one of us and it keeps running, because the practices, the places, and the people were the point all along.',
-        side: 'right', imgAspect: 'landscape', focal: 'center', ctaLabel: '', ctaHref: '',
-        tone: 'ink', width: 'default', align: 'left', layout: L,
+        id: 'tc-guru',
+        image: '/images/site/outdoor-group.jpg',
+        alt: 'Frequency members hanging out together on rugs under a shade tent, nobody at the front',
+        eyebrow: 'Why it lasts',
+        title: 'Guru-free. By design.',
+        titleAccent: 'Guru-free',
+        kicker: '',
+        body: "Communities built around one charismatic founder live and die with that person. We've all watched it happen. So Frequency is built to be the opposite: leaderful, not leader-dependent.\n\nLeaders rise from showing up, never from being anointed. Take the structure away from any one of us and it keeps running, because the practices, the places, and the people were the point all along.",
+        side: 'right',
+        imgAspect: 'landscape',
+        focal: 'center',
+        ctaLabel: '',
+        ctaHref: '',
+        tone: 'ink',
+        width: 'default',
+        align: 'left',
+        layout: L,
       },
     },
     {
@@ -182,80 +288,34 @@ export const data: Data = {
       props: {
         id: 'tc-marquee',
         items: [
-          { text: 'Pick what you practice' }, { text: 'Join a Circle' }, { text: 'Show up' },
-          { text: 'Be missed when you don’t' }, { text: 'Lead by showing up' }, { text: 'Pay it forward' },
+          { text: 'Find your people' },
+          { text: 'Hold the door' },
+          { text: 'Run one Circle' },
+          { text: "Be missed when you're gone" },
+          { text: 'Lead by showing up' },
+          { text: 'Pay it forward' },
         ],
         layout: L,
       },
     },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tc-holds-h', eyebrow: 'What holds it together', title: 'Leaderful, not leader-dependent.', titleAccent: '',
-        kicker: 'Three things keep a Circle standing on its own.',
-        size: 'default', tone: 'surface', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tc-holds-grid', eyebrow: '', title: '', titleAccent: '', style: 'icon', columns: '3',
-        items: [
-          { icon: 'CalendarDays', image: '', title: 'Small and standing', body: 'Circles stay small on purpose. A standing time, the same faces, and the quiet accountability of being noticed.', href: '' },
-          { icon: 'Leaf', image: '', title: 'Earned, not appointed', body: 'Leaders rise from showing up and looking after the people around them, never from being anointed from above.', href: '' },
-          { icon: 'Handshake', image: '', title: 'Pay it forward', body: 'When you can give a little more, you hold the door for the next person. Circulation, not exclusion.', href: '' },
-        ],
-        tone: 'surface', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Statement',
-      props: { id: 'tc-stmt-3', text: 'The practices, the places, and the people are the point.', accent: 'the people', tone: 'surface', layout: L },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tc-day-h', eyebrow: 'A day in Frequency', title: 'One ordinary Tuesday.', titleAccent: '',
-        kicker: 'How the thread pulls you back to people.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'FeatureGrid',
-      props: {
-        id: 'tc-day-grid', eyebrow: '', title: '', titleAccent: '', style: 'number', columns: '2',
-        items: [
-          { icon: 'Sun', image: '', title: '6:15a · The bluff before work', body: 'Your Sunrise Breathwork circle meets on Moonlight Beach. Cold, gold, quiet. You leave regulated instead of wired.', href: '' },
-          { icon: 'MessageCircle', image: '', title: '9:40a · A ping from the circle', body: 'Someone posts a photo from the morning. A few zaps, a couple of replies. The thread keeps the warmth alive between meetings.', href: '' },
-          { icon: 'CalendarDays', image: '', title: '1:00p · One tap to RSVP', body: 'An event drops for Saturday’s thermal circuit. You tap RSVP. Now you’re expected, and you’ll be missed if you don’t show.', href: '' },
-          { icon: 'MapPin', image: '', title: '6:30p · Meet in the flesh', body: 'After work you walk into the room. Faces you know from the feed are already there. The app brought you here; the people take over.', href: '' },
-        ],
-        tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Heading',
-      props: {
-        id: 'tc-where-h', eyebrow: 'Where it starts', title: 'It begins in one real place.', titleAccent: '',
-        kicker: 'The founding community is taking shape in North County San Diego.',
-        size: 'default', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
-    {
-      type: 'Text',
-      props: {
-        id: 'tc-where-b',
-        body: 'Every cell starts somewhere. Ours is taking root in North County San Diego: real Circles, real gatherings, real neighbors who show up for each other. Join the beta and you’re not a number on a waitlist; you’re one of the people this whole thing grows from. And you can start anywhere: a Circle only needs a few people and a standing time.',
-        size: 'lg', tone: 'canvas', width: 'default', align: 'left', layout: L,
-      },
-    },
+
+    // ── Close ── the ink CTA. Primary action plus the quiet member path. ─────────
     {
       type: 'CallToAction',
       props: {
-        id: 'tc-cta', eyebrow: '', heading: 'Find your people.', headingAccent: '',
-        body: 'Pick what you practice, find a Circle near you, and start showing up.',
-        ctaPrimaryLabel: 'Join the Beta', ctaPrimaryHref: '/beta', ctaSecondaryLabel: '', ctaSecondaryHref: '',
-        tone: 'ink', width: 'default', align: 'center', layout: L,
+        id: 'tc-cta',
+        eyebrow: '',
+        heading: 'Be the reason your people have somewhere to go.',
+        headingAccent: 'somewhere to go',
+        body: 'Find a few neighbors, pick what you practice, and hold the door open for one Circle. We hand you the format, the script, and the backup.',
+        ctaPrimaryLabel: BETA_CTA_LABEL,
+        ctaPrimaryHref: BETA_CTA_HREF,
+        ctaSecondaryLabel: BETA_CTA_SECONDARY_LABEL,
+        ctaSecondaryHref: BETA_CTA_SECONDARY_HREF,
+        tone: 'ink',
+        width: 'default',
+        align: 'center',
+        layout: L,
       },
     },
   ],

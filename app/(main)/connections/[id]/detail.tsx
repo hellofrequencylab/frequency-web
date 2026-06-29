@@ -4,16 +4,18 @@ import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles,
+  Mail, Phone, MapPin, Globe, Lock, Pencil, Check, X, Plus, Trash2, Loader2, User, Sparkles, CalendarClock, History,
 } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
 import type { ContactDetail } from '@/lib/connections/store'
-import type { ContactDetails, ContactStatus, Visibility } from '@/lib/connections/types'
+import type { TimelineEntry } from '@/lib/crm/timeline'
+import type { ContactDetails, ContactReminder, ContactStatus, Visibility } from '@/lib/connections/types'
 import {
   updateProfile, setStatus, setVisibility, deleteProfile, addNote, deleteNote, addTag, removeTag,
+  addReminder, completeReminder, deleteReminder, briefContact,
 } from '../actions'
 
 const input = 'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text placeholder-subtle focus:border-border-strong focus:outline-none focus:ring-1 focus:ring-border-strong/30'
@@ -24,13 +26,36 @@ function fmtDate(s: string | null): string {
   return new Date(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+/** A follow-up's due line (overdue / today / upcoming), since relativeTime only speaks past tense. */
+function dueLabel(iso: string): string {
+  const dayMs = 86_400_000
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+  const startDue = new Date(iso); startDue.setHours(0, 0, 0, 0)
+  const days = Math.round((startDue.getTime() - startToday.getTime()) / dayMs)
+  if (days < 0) return days === -1 ? 'Due yesterday' : `${-days} days overdue`
+  if (days === 0) return 'Due today'
+  if (days === 1) return 'Due tomorrow'
+  if (days < 7) return `Due in ${days} days`
+  return `Due ${fmtDate(iso)}`
+}
+
+function isOverdue(iso: string): boolean {
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+  return new Date(iso).getTime() < startToday.getTime()
+}
+
 export function Detail({
   initial,
+  reminders = [],
   timeline,
+  timelineEntries = [],
   back,
 }: {
   initial: ContactDetail
+  reminders?: ContactReminder[]
   timeline?: React.ReactNode
+  /** The unified CRM timeline (ADR-372): logged touches for this contact, newest first. */
+  timelineEntries?: TimelineEntry[]
   /** Back-link rendered by the Detail shell above the identity band (the single back affordance). */
   back?: { href: string; label: string }
 }) {
@@ -42,6 +67,21 @@ export function Detail({
   const [editing, setEditing] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
   const [tagDraft, setTagDraft] = useState('')
+  const [brief, setBrief] = useState<string | null>(null)
+  const [briefBusy, setBriefBusy] = useState(false)
+  const [briefError, setBriefError] = useState<string | null>(null)
+
+  async function onBrief() {
+    setBriefBusy(true)
+    setBriefError(null)
+    try {
+      const res = await briefContact(contact.id)
+      if (res.ok) setBrief(res.brief)
+      else setBriefError(res.reason)
+    } finally {
+      setBriefBusy(false)
+    }
+  }
 
   const name = contact.displayName ?? 'Unnamed'
   const website = contact.website
@@ -71,7 +111,8 @@ export function Detail({
       title={
         <span className="inline-flex items-center gap-3 align-middle">
           {avatarUrl ? (
-            <Image src={avatarUrl} alt="" width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
+            // Private `network-contacts` signed URL — skip the optimizer (see network/contacts page note).
+            <Image src={avatarUrl} alt="" width={48} height={48} unoptimized className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-surface" />
           ) : (
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-base font-semibold text-muted">
               {contact.displayName ? getInitials(name) : <User className="h-6 w-6" />}
@@ -92,6 +133,15 @@ export function Detail({
             </span>
           )}
           <span className="text-xs text-subtle">Added {fmtDate(contact.createdAt)}</span>
+          {contact.lastContactedAt && (
+            <span className="text-xs text-subtle">Last contacted {fmtDate(contact.lastContactedAt)}</span>
+          )}
+          {/* Make it unmistakable this is the viewer's OWN private contact entry, not the
+              person's Frequency profile — Edit/Delete here only touch this private record. */}
+          <span className="inline-flex w-full items-center gap-1.5 text-xs text-muted">
+            <Lock className="h-3 w-3 shrink-0" />
+            Your private contact. Editing or deleting this only changes your own note, never their Frequency profile.
+          </span>
         </span>
       }
       badges={
@@ -186,6 +236,65 @@ export function Detail({
           is enabled (the timeline node is built server-side in page.tsx). */}
       {timeline && <section className="rounded-2xl border border-border/70 bg-surface/60 p-5">{timeline}</section>}
 
+      {/* Before you reach out — a short, grounded brief from Vera (metered, never auto-sends). */}
+      <Section title="Before you reach out">
+        {brief ? (
+          <div className="space-y-2">
+            <p className="whitespace-pre-wrap text-sm text-text">{brief}</p>
+            <button
+              type="button"
+              onClick={onBrief}
+              disabled={briefBusy}
+              className="text-xs font-medium text-primary-strong hover:underline disabled:opacity-50"
+            >
+              {briefBusy ? 'Thinking…' : 'Refresh brief'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-subtle">
+              A quick brief from Vera before you reach out: who they are, your history, and a way in.
+            </p>
+            {briefError && <p className="text-xs text-danger">{briefError}</p>}
+            <button
+              type="button"
+              onClick={onBrief}
+              disabled={briefBusy}
+              className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {briefBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {briefBusy ? 'Thinking…' : 'Prep brief'}
+            </button>
+          </div>
+        )}
+      </Section>
+
+      {/* Follow up — set a reminder to reach out; open ones surface in the daily
+          "Reach out" list on My Contacts. */}
+      <Section title="Follow up">
+        <FollowUp contactId={contact.id} reminders={reminders} />
+      </Section>
+
+      {/* Timeline — the unified history of logged touches (ADR-372). Notes keep their own
+          section, so they are not repeated here; this is reach-outs and, as later phases land,
+          email / sms / calls. Hidden until there is something to show. */}
+      {timelineEntries.length > 0 && (
+        <Section title="Timeline">
+          <ul className="space-y-3">
+            {timelineEntries.map((e) => (
+              <li key={e.id} className="flex items-start gap-2">
+                <History className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-text">{e.title}</p>
+                  {e.detail && <p className="whitespace-pre-wrap text-xs text-muted">{e.detail}</p>}
+                  <p className="text-xs text-subtle">{fmtDate(e.at)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
       {/* Tags */}
       <Section title="Tags">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -253,6 +362,85 @@ export function Detail({
       </Section>
     </div>
     </DetailTemplate>
+  )
+}
+
+/** Follow-up reminders for one contact: the open list + a date/note add row.
+ *  Completing or deleting refreshes the page (and the My Contacts reach-out list). */
+function FollowUp({ contactId, reminders }: { contactId: string; reminders: ContactReminder[] }) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [due, setDue] = useState('')
+  const [note, setNote] = useState('')
+
+  function onAdd() {
+    if (!due) return
+    // A date input gives YYYY-MM-DD (local midnight); send it as a day-precise due.
+    const iso = new Date(`${due}T09:00`).toISOString()
+    setDue(''); setNote('')
+    start(async () => { await addReminder(contactId, iso, note.trim() || undefined); router.refresh() })
+  }
+
+  return (
+    <div>
+      <ul className="space-y-2">
+        {reminders.length === 0 && <li className="text-sm text-subtle">No follow-ups yet.</li>}
+        {reminders.map((r) => (
+          <li key={r.id} className="group flex items-center gap-2 rounded-xl bg-surface-elevated/50 p-3">
+            <CalendarClock className="h-4 w-4 shrink-0 text-subtle" />
+            <div className="min-w-0 flex-1">
+              <p className={`text-sm font-medium ${isOverdue(r.dueAt) ? 'text-danger' : 'text-text'}`}>
+                {dueLabel(r.dueAt)}
+              </p>
+              {r.note && <p className="truncate text-xs text-muted">{r.note}</p>}
+            </div>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => start(async () => { await completeReminder(r.id, contactId); router.refresh() })}
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
+            >
+              <Check className="h-3.5 w-3.5" /> Done
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => start(async () => { await deleteReminder(r.id, contactId); router.refresh() })}
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+              aria-label="Delete follow-up"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-subtle hover:text-danger" />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1">
+          <span className={lbl}>Remind me on</span>
+          <input
+            type="date"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+            className={`${input} w-auto`}
+          />
+        </label>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="What to follow up on… (optional)"
+          className={`${input} min-w-[10rem] flex-1`}
+        />
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={pending || !due}
+          className="inline-flex h-fit items-center gap-1 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+        >
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add
+        </button>
+      </div>
+    </div>
   )
 }
 

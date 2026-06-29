@@ -27,6 +27,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -332,6 +333,9 @@ export async function setTicketTiers(spaceId: string, tiers: TicketTier[]): Prom
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to set ticket tiers for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see lib/spaces/booking.ts.
+  if (!spaceFunctionAccess(space, 'tickets', caps.role))
+    return fail('Tickets is not turned on for this space, or your role cannot use it.')
 
   // Normalize + drop anything invalid. An empty result is a valid "no tiers" state.
   const clean = normalizeTicketTierSet(tiers)

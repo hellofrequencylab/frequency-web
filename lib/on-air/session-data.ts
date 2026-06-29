@@ -15,7 +15,8 @@
 // reuse it without importing route code.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMemberPractices, type TimerKind, type MindlessMode } from '@/lib/practices'
+import { resolveMemberDay } from '@/lib/member-day'
+import { getMemberPractices, type TimerKind, type MindlessMode, type PartialToday } from '@/lib/practices'
 import type { MovementConfig } from '@/lib/movement'
 import { getCurrentLegPracticeIds } from '@/lib/journeys/current-leg'
 import { DEFAULT_PREFS, type OnAirPrefs } from '@/lib/on-air'
@@ -61,15 +62,23 @@ export async function loadOnAirSessionData(
   requestedPracticeId?: string | null,
 ): Promise<OnAirSessionData> {
   const admin = createAdminClient()
-  const today = new Date().toISOString().slice(0, 10)
+  // "Today" must be the member's LOCAL calendar day (profiles.home_timezone), the SAME day
+  // logPractice writes logged_for under — NOT UTC. With UTC, the practice day rolled at UTC
+  // midnight (~5pm Pacific), so an evening partial logged earlier the same local day stopped
+  // matching and the timer opened fresh instead of resuming. resolveMemberDay fixes the boundary.
+  const today = await resolveMemberDay(profileId)
   const [legIds, mine, { data: prof }, { data: todayLogs }, { data: presenceRows }, { data: sitRow }] =
     await Promise.all([
       getCurrentLegPracticeIds(profileId),
       getMemberPractices(profileId),
       admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
+      // Today's logs carry the completion columns (seconds_done/target, completed) so a
+      // banked-but-unfinished sit surfaces as a `partialToday` the timer can auto-resume from,
+      // not just a `loggedToday` flag. Read through the untyped admin handle (ADR-246) since the
+      // completion columns are newer than the generated types.
       admin
         .from('practice_logs')
-        .select('practice_id')
+        .select('practice_id, seconds_done, seconds_target, completed')
         .eq('profile_id', profileId)
         .eq('logged_for', today),
       // Presence: distinct members with a log today. Row-count + Set in JS —
@@ -79,11 +88,29 @@ export async function loadOnAirSessionData(
       admin.from('practices').select('id, title').eq('slug', DEFAULT_SIT_SLUG).maybeSingle(),
     ])
 
+  type TodayLogRow = {
+    practice_id: string | null
+    seconds_done: number | null
+    seconds_target: number | null
+    completed: boolean | null
+  }
+  const todayRows = (todayLogs ?? []) as TodayLogRow[]
   const loggedToday = new Set(
-    ((todayLogs ?? []) as { practice_id: string | null }[])
-      .map((l) => l.practice_id)
-      .filter(Boolean) as string[],
+    todayRows.map((l) => l.practice_id).filter(Boolean) as string[],
   )
+
+  // A partial today = a banked-but-unfinished sit the timer can RESUME (run only the remaining
+  // time, report the total). Keyed by practice_id so each practice can attach its own. Per the
+  // completion economy: completed=false AND banked < target AND banked > 0 (a zero-banked or
+  // already-finished log is not a resume). Last write wins if (rarely) two logs share a practice.
+  const partialByPractice = new Map<string, PartialToday>()
+  for (const l of todayRows) {
+    if (!l.practice_id || l.completed === true) continue
+    const bankedSec = Math.max(0, Math.round(l.seconds_done ?? 0))
+    const targetSec = Math.max(0, Math.round(l.seconds_target ?? 0))
+    if (bankedSec <= 0 || targetSec <= 0 || targetSec - bankedSec <= 0) continue
+    partialByPractice.set(l.practice_id, { bankedSec, targetSec })
+  }
 
   // The base list: when enrolled, ONLY the current leg's practices (the things due now); otherwise
   // the member's adopted practices. Free sit rides on top of either.
@@ -123,6 +150,9 @@ export async function loadOnAirSessionData(
     id: p.id,
     title: p.title,
     loggedToday: loggedToday.has(p.id),
+    // The partial-today resume point, when this practice has a banked-but-unfinished sit today.
+    // Non-null is what tells each engine to auto-resume (run the remaining time, report the total).
+    partialToday: partialByPractice.get(p.id) ?? null,
     durationMin: p.duration_min ?? null,
     timerKind: (p.timer_kind ?? 'mindless') as TimerKind,
     mindlessMode: (p.mindless_mode ?? null) as MindlessMode | null,
@@ -137,8 +167,12 @@ export async function loadOnAirSessionData(
   if (sit) {
     practices.push({
       id: FREE_SIT_ID,
-      title: 'Free sit',
+      // The neutral open-length entry. Labeled "Free Practice" so it reads the same on the
+      // Be Still and Get Moving sides of the door (item #4); kept short so it never wraps.
+      title: 'Free Practice',
       loggedToday: false,
+      // An open-length sit has no target, so it can never be a partial-today resume.
+      partialToday: null,
       durationMin: null,
       logsAs: sit.id,
       timerKind: 'mindless',
@@ -169,6 +203,7 @@ export async function loadOnAirSessionData(
     endBell: stored.endBell ?? DEFAULT_PREFS.endBell,
     bellEveryMin: stored.bellEveryMin ?? DEFAULT_PREFS.bellEveryMin,
     haptics: stored.haptics,
+    ambientTrack: stored.ambientTrack,
   }
 
   // A SPECIFIC entry pre-selects THAT practice so the setup opens already in its mode: a practice

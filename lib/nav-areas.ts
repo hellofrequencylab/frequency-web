@@ -13,7 +13,7 @@ import { ROLE_HIERARCHY, type CommunityRole } from '@/lib/core/roles'
 import { staffCan, type StaffRole, type StaffDomain } from '@/lib/core/staff-roles'
 // The vertical registry contributes nav areas (e.g. Marketplace). Type-only on the way
 // back (verticals imports NavArea as a type), so this is a one-way runtime dependency.
-import { verticalNavPlacements } from '@/lib/verticals'
+import { verticalNavPlacements, type NavPlacement } from '@/lib/verticals'
 
 // Access levels, lowest → highest. 'visitor' = everyone (even logged-out); the
 // rest map onto the community-role ladder.
@@ -46,8 +46,6 @@ export type NavArea = {
    *  permission view (none/limited/full per the owner sheet). Documentation + the seam
    *  for matrix-driven nav gating; `defaultAccess` is the live visibility gate today. */
   surface?: string
-  /** Item is in the menu but its page isn't built yet — renders the Coming Soon stub. */
-  comingSoon?: boolean
 }
 
 // Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
@@ -67,7 +65,7 @@ export type NavArea = {
 // Order + sections + labels are the owner's Roles & Permissions sheet (2026-06-08): four
 // worlds — Community · The Quest · Studio · Platform. `surface` ties each item to the
 // access matrix (the function-level permission view); `defaultAccess` is the live nav
-// visibility gate. Items whose page isn't built yet carry `comingSoon`.
+// visibility gate.
 const BASE_NAV_AREAS: readonly NavArea[] = [
   // ── Home anchor (headerless, pinned at the very top above the worlds) ─────────
   // Feed leads the rail in its own label-less group; the shell drops the member's
@@ -110,6 +108,10 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'lead',             href: '/lead',             label: 'Leadership', section: 'Admin', defaultAccess: 'host',    surface: 'lead' },
   { key: 'admin-programs',   href: '/admin/programs',   label: 'Programs',   section: 'Admin', defaultAccess: 'host',    staffDomain: 'community',  surface: 'platformManage' },
   { key: 'admin-growth',     href: '/admin/growth',     label: 'Growth',     section: 'Admin', defaultAccess: 'host',    staffDomain: 'marketing', surface: 'growthStudio' },
+  // Resonance CRM (ADR-382 to 387): the Vera-driven CRM domain. THIS is the entry that puts it in the
+  // left rail (the rail reads NAV_AREAS only; sections.ts + nav.ts feed the dashboard switcher + the
+  // sub-header, not the rail). Gated 'janitor' to match the cockpit's per-member-prediction sensitivity.
+  { key: 'admin-crm',        href: '/admin/crm',        label: 'Resonance CRM', section: 'Admin', defaultAccess: 'janitor', surface: 'platformManage' },
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
@@ -118,6 +120,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // staff (staffDomain 'platform'), so only Admin + Janitor see it. Telescopes like the rest of
   // the Admin section (hidden, not ghosted, for everyone below).
   { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Spaces',     section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
+  { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Marketplace', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".
 ] as const
@@ -129,11 +132,25 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
 // descriptor declares the area; nothing here changes.
 function composeNavAreas(): NavArea[] {
   const areas: NavArea[] = [...BASE_NAV_AREAS]
-  for (const { area, after } of verticalNavPlacements()) {
-    if (areas.some((a) => a.key === area.key)) continue // a base literal already provides it
-    const at = after ? areas.findIndex((a) => a.key === after) : -1
-    if (at >= 0) areas.splice(at + 1, 0, area)
-    else areas.push(area)
+  // Defense-in-depth (incident 2026-06-24): NAV_AREAS is computed at module load and read by
+  // the shared app shell on EVERY route, so a malformed/throwing vertical placement must never
+  // be fatal. A bad placement is skipped; the rest of the nav still composes.
+  let placements: NavPlacement[] = []
+  try {
+    placements = verticalNavPlacements()
+  } catch {
+    placements = []
+  }
+  for (const { area, after } of placements) {
+    try {
+      if (!area?.key) continue
+      if (areas.some((a) => a.key === area.key)) continue // a base literal already provides it
+      const at = after ? areas.findIndex((a) => a.key === after) : -1
+      if (at >= 0) areas.splice(at + 1, 0, area)
+      else areas.push(area)
+    } catch {
+      /* skip a single bad placement, keep the rest of the nav */
+    }
   }
   return areas
 }

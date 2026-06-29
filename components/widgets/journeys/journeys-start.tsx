@@ -1,10 +1,13 @@
 import Link from 'next/link'
 import { Sparkles, Compass, ArrowRight } from 'lucide-react'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
+import { canCreate } from '@/lib/core/load-capabilities'
 
 // Journeys layout module (ADR-270/294): the two ways in — build your own, or follow the
-// season's official Quest. Static (no per-viewer read), so it never blocks.
+// season's official Quest. Reads the viewer's create gate so a free member gets the
+// free-beta upgrade popup instead of the builder link (ADR-414).
 export async function JourneysStart() {
+  const canBuildJourney = await canCreate('journey.create')
   return (
     <section className="grid grid-cols-1 gap-4 @2xl:grid-cols-2">
       {/* Launch CTA — opens the Studio window in place. */}
@@ -18,7 +21,7 @@ export async function JourneysStart() {
           </p>
         </div>
         <div>
-          <NewJourneyButton />
+          <NewJourneyButton canCreate={canBuildJourney} />
         </div>
       </div>
 

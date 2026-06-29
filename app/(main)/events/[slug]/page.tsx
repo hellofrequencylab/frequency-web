@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -6,35 +6,45 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { JsonLd } from '@/components/json-ld'
 import { toggleRSVP } from '../actions'
 import { EventCheckInButton } from './check-in-button'
-import { TicketButton, RefundTicketButton, type TicketTierView } from './ticket-button'
+import { TicketButton, type TicketTierView } from './ticket-button'
 import { RsvpBottomBar } from './rsvp-bottom-bar'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { hasTicket, recordTicketFromSessionId } from '@/lib/billing/tickets'
 import { getCapacityInfo } from '@/lib/events/capacity'
-import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { StartEditingLink } from '@/components/admin/inline/edit-mode-button'
 import { InlineText } from '@/components/admin/inline/inline-text'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
-import { EventActivity, type ActivityPost } from '@/components/events/event-activity'
-import { EventDispatchCompose } from '@/components/events/event-dispatch-compose'
+import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
-import { EventFactPanel, type FactGuest } from '@/components/events/event-fact-panel'
-import { RecapAlbum, type RecapPhoto } from '@/components/events/recap-album'
-import { CohostManager, type CohostView } from '@/components/events/cohost-manager'
+import { type FactGuest } from '@/components/events/event-fact-panel'
+import { type RecapPhoto } from '@/components/events/recap-album'
+import { EventGallery } from '@/components/events/event-gallery'
+import { ClaimEventBanner } from '@/components/events/claim-event-banner'
+import { type CohostView } from '@/components/events/cohost-manager'
 import { listCohosts } from '@/lib/events/cohosts'
-import { PosterDetails } from '@/components/events/poster-details'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
+import { pointFromGeog } from '@/lib/events/geo'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
-import { Skeleton } from '@/components/ui/skeleton'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
+// The WHOLE event interior (description · poster · cohosts · sales · activity · recap, PLUS the Join
+// box · warm proof · facts · the host "Post an update" composer) renders through the page-settings
+// module engine (ADR-270/294/406), so operators arrange every block from Settings → Layout, shared
+// across every /events/<slug> via the '/events/*' scope — exactly like the circle page. Only the
+// fixed header (cover · title · badges · Edit/Manage) and the mobile action bar stay in the page; the
+// page builds the Join/warm-proof/facts data once and stamps it into the event context for the
+// modules to render (lib/events/active-event.ts), so no module re-derives the ticketing/RSVP logic.
+import { PageModules } from '@/components/widgets/page-modules'
+import { setEventContext } from '@/lib/events/active-event'
+import { EditEventButton } from '@/components/events/edit-event-button'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -98,6 +108,63 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
+// ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
+// for any future anon carve). Resolves the event through the admin client only — no
+// auth round-trip — reading just the card fields. Visibility is NOT re-checked here:
+// metadata never leaks more than the public title/cover, and the page body still
+// enforces the ADR-202 gate.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, description, location, starts_at')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!ev) return { title: 'Event not found' }
+  const event = ev as {
+    title: string
+    description: string | null
+    location: string | null
+    starts_at: string
+  }
+
+  const where = event.location ? ` at ${event.location}` : ''
+  const full =
+    event.description ??
+    `${event.title}: an event on Frequency${where}. Sign in to RSVP.`
+  // Search snippets truncate around 155 chars — keep the meta description tight
+  // (matches the discover detail pages).
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const ogTitle = `${event.title} · ${SITE_NAME}`
+
+  // The share image is the dynamic OG card (opengraph-image.tsx) — Next injects it into
+  // openGraph.images automatically, and Twitter inherits it as a large summary image. So
+  // every event gets a card here without a per-event cover lookup.
+  return {
+    title: event.title,
+    description,
+    // /events/<slug> is the canonical public event URL (the discover detail points here too),
+    // so search + AI engines consolidate on this one page.
+    alternates: { canonical: `/events/${slug}` },
+    openGraph: {
+      title: ogTitle,
+      description,
+      type: 'article',
+      url: `/events/${slug}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description,
+    },
+  }
+}
+
 export default async function EventDetailPage({
   params,
   searchParams,
@@ -105,10 +172,14 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>
   searchParams: Promise<{ ticket?: string; session_id?: string; claimed?: string }>
 }) {
-  const { slug } = await params
-  const { ticket, session_id, claimed } = await searchParams
+  // params, searchParams, and the auth client are mutually independent — resolve
+  // them concurrently instead of one-after-another. (createAdminClient is sync.)
   const admin = createAdminClient()
-  const supabase = await createClient()
+  const [{ slug }, { ticket, session_id, claimed }, supabase] = await Promise.all([
+    params,
+    searchParams,
+    createClient(),
+  ])
 
   const { data: rawEvent } = await admin
     .from('events')
@@ -133,53 +204,98 @@ export default async function EventDetailPage({
     details: EventDetailsWithMedia | null
     poster_path: string | null
     cover_image_path: string | null
+    gallery_image_paths: string[] | null
     attendance_mode: AttendanceMode | null
     online_url: string | null
+    status: string | null
+    // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
+    // GeoJSON object) — decode it with pointFromGeog, never read `.coordinates` directly.
+    geog: unknown
   }
-  const { data: rawExtra } = await (admin)
-    .from('events')
-    .select(
-      'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, attendance_mode, online_url',
-    )
-    .eq('id', event.id)
-    .maybeSingle()
+  // These three only depend on already-resolved values (event.id / session_id) and
+  // not on each other, so resolve them concurrently: the extra-meta read, the
+  // Stripe redirect reconcile (when present), and the viewer's event capabilities.
+  const [{ data: rawExtra }, ticketedCentsResolved, eventCaps] = await Promise.all([
+    (admin)
+      .from('events')
+      .select(
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, geog',
+      )
+      .eq('id', event.id)
+      .maybeSingle(),
+    // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
+    ticket === 'success' && session_id
+      ? recordTicketFromSessionId(session_id)
+      : Promise.resolve(null),
+    getEventCapabilities(event.id),
+  ])
   const extra = (rawExtra ?? null) as ExtraMeta | null
   const postedById = extra?.posted_by_profile_id ?? null
   const isPostedEvent = !!postedById
   const attendanceMode: AttendanceMode = extra?.attendance_mode ?? 'in_person'
   const isOnline = attendanceMode === 'online'
   const onlineUrl = extra?.online_url ?? null
+  const ticketedCents: number | null = ticketedCentsResolved
+  const canManage = eventCaps.has('event.editSettings')
 
-  // Cover image (A1) — a public storage path in the event-media bucket → public URL
-  // (next/image allows the supabase public storage host). Null = token placeholder.
+  // Draft guard (ADR poster-events): an unpublished draft must never render on its
+  // public slug. The admin read above bypasses RLS, so re-apply the status gate the
+  // migration assumes server reads carry — only a manager may preview a draft.
+  if ((extra?.status ?? 'published') !== 'published' && !canManage) notFound()
+
+  // An unclaimed event posted on an organizer's behalf: it has a poster credit, no
+  // host, and was never claimed. Drives the "this is not my event / claim it" UI.
+  const isUnclaimedPosted = isPostedEvent && !extra?.claimed_at && !event.host
+
+  // Uploaded cover (A1) — a public storage path in the event-media bucket → public URL
+  // (next/image allows the supabase public storage host). Null when the host never
+  // uploaded one, which is the case for every event captured by scanning a poster.
   const coverUrl = extra?.cover_image_path
     ? admin.storage.from('event-media').getPublicUrl(extra.cover_image_path).data.publicUrl
     : null
 
-  // The credit: whoever put the event on the map, when they aren't the host.
-  let postedBy: { display_name: string; handle: string } | null = null
-  if (postedById && postedById !== (event.host?.id ?? null)) {
-    const { data: posterProfile } = await admin
-      .from('profiles')
-      .select('display_name, handle')
-      .eq('id', postedById)
-      .maybeSingle()
-    postedBy = (posterProfile as { display_name: string; handle: string } | null) ?? null
-  }
-
-  // The flexible poster harvest + signed URLs for its crops (one batched call).
+  // Both of these depend only on `extra` (not on each other): the "Posted by" credit
+  // lookup and the signed URLs for the poster's media — resolve concurrently. We sign
+  // the poster's crops (details.media) AND the full poster (poster_path) in one batch,
+  // so a scanned poster can serve as the header + gallery below.
   const posterDetails: EventDetailsWithMedia =
     extra?.details && typeof extra.details === 'object' ? extra.details : {}
-  const posterCropUrls = Object.fromEntries(await posterSignedUrlMap(detailsMediaPaths(posterDetails)))
+  const [postedByResolved, posterCropEntries] = await Promise.all([
+    postedById && postedById !== (event.host?.id ?? null)
+      ? admin
+          .from('profiles')
+          .select('display_name, handle')
+          .eq('id', postedById)
+          .maybeSingle()
+          .then(({ data }) => (data as { display_name: string; handle: string } | null) ?? null)
+      : Promise.resolve(null),
+    posterSignedUrlMap(
+      [...detailsMediaPaths(posterDetails), extra?.poster_path].filter((p): p is string => !!p),
+    ),
+  ])
+  // The credit: whoever put the event on the map, when they aren't the host.
+  const postedBy: { display_name: string; handle: string } | null = postedByResolved
+  const posterCropUrls = Object.fromEntries(posterCropEntries)
 
-  // Webhook-independent reconcile when Stripe redirects back from a paid ticket.
-  let ticketedCents: number | null = null
-  if (ticket === 'success' && session_id) {
-    ticketedCents = await recordTicketFromSessionId(session_id)
-  }
+  // Header image: the ORIGINAL poster leads for a scanned event. Priority: uploaded
+  // cover → full poster (the original flyer) → the scanner's cropped cover as a last
+  // resort. (The cropped cover/region crops are NOT shown as separate images anymore —
+  // they just duplicate the poster.)
+  const posterMedia = posterDetails.media
+  const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
+  const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
+  const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
 
-  const eventCaps = await getEventCapabilities(event.id)
-  const canManage = eventCaps.has('event.editSettings')
+  // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
+  // extras. The scanner's crops are intentionally excluded: the original poster is the
+  // header, and the lineup/region crops already render under "From the poster". So a
+  // plain scanned event shows just its original poster, with no duplicate crops.
+  const galleryUrls: string[] = [
+    heroUrl,
+    ...(extra?.gallery_image_paths ?? []).map(
+      (p) => admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
+    ),
+  ].filter((u): u is string => !!u)
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:
@@ -204,11 +320,32 @@ export default async function EventDetailPage({
     }
   }
 
-  const { data: rawRsvps } = await admin
-    .from('event_rsvps')
-    .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: true })
+  // The RSVP roster, capacity/waitlist info, the hosting circle's public area, and
+  // the auth user are mutually independent (each depends only on event fields or the
+  // already-built supabase client) — resolve them concurrently.
+  const [{ data: rawRsvps }, capacityInfo, circleRow, {
+    data: { user },
+  }] = await Promise.all([
+    admin
+      .from('event_rsvps')
+      .select('id, status, plus_ones, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: true }),
+    // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
+    // and the "filling up" line. Never invented.
+    getCapacityInfo(event.id),
+    // The circle's PUBLIC city-level coordinates (the mini map rides the hosting
+    // circle's area, never the exact venue — ADR-186 privacy).
+    event.scope_type === 'circle'
+      ? admin
+          .from('circles')
+          .select('name, slug, latitude, longitude')
+          .eq('id', event.scope_id)
+          .maybeSingle()
+          .then(({ data }) => data as { name: string; slug: string; latitude: number | null; longitude: number | null } | null)
+      : Promise.resolve(null),
+    supabase.auth.getUser(),
+  ])
 
   const rsvps = (rawRsvps ?? []) as unknown as RSVPRow[]
   const goingRsvps = rsvps.filter((r) => r.status === 'going')
@@ -217,32 +354,17 @@ export default async function EventDetailPage({
   // capacity — the trigger counts 'going' rows). Sum across confirmed attendees.
   const guestCount = goingRsvps.reduce((sum, r) => sum + Math.max(0, r.plus_ones ?? 0), 0)
 
-  // Real capacity / waitlist info (lib/events/capacity) — drives the waitlist CTA
-  // and the "filling up" line. Never invented.
-  const capacityInfo = await getCapacityInfo(event.id)
-
-  // Resolve scope name + the circle's PUBLIC city-level coordinates (the mini map
-  // rides the hosting circle's area, never the exact venue — ADR-186 privacy).
+  // Resolve scope name + the circle's PUBLIC city-level coordinates.
   let scopeName: string | null = null
   let scopeSlug: string | null = null
   let circleCoords: { lat: number; lng: number } | null = null
-  if (event.scope_type === 'circle') {
-    const { data: c } = await admin
-      .from('circles')
-      .select('name, slug, latitude, longitude')
-      .eq('id', event.scope_id)
-      .maybeSingle()
-    const circle = c as { name: string; slug: string; latitude: number | null; longitude: number | null } | null
-    scopeName = circle?.name ?? null
-    scopeSlug = circle?.slug ?? null
-    if (circle?.latitude != null && circle?.longitude != null) {
-      circleCoords = { lat: Number(circle.latitude), lng: Number(circle.longitude) }
+  if (circleRow) {
+    scopeName = circleRow.name ?? null
+    scopeSlug = circleRow.slug ?? null
+    if (circleRow.latitude != null && circleRow.longitude != null) {
+      circleCoords = { lat: Number(circleRow.latitude), lng: Number(circleRow.longitude) }
     }
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
   let myRsvpStatus: string | null = null
@@ -262,7 +384,6 @@ export default async function EventDetailPage({
     if (profile) {
       myProfileId = profile.id
       isHost = event.host?.id === myProfileId
-      isCrew = await isPaidViewer()
       const myRsvp = rsvps.find((r) => r.profile.id === myProfileId)
       myRsvpStatus = myRsvp?.status ?? null
       myPlusOnes = myRsvp?.plus_ones ?? 0
@@ -270,23 +391,30 @@ export default async function EventDetailPage({
       // "From your circles" = going attendees (excluding me) who share at least
       // one active circle with me. Two cheap membership reads + a set overlap;
       // mirrors the shared-circle pattern in lib/connections/welcomes.ts. This
-      // is warm proof, never scarcity — it's only ever additive.
+      // is warm proof, never scarcity — it's only ever additive. The Crew check
+      // is independent of the membership reads, so they all run concurrently.
       const otherGoingIds = goingRsvps
         .map((r) => r.profile.id)
         .filter((id) => id !== myProfileId)
-      if (otherGoingIds.length > 0) {
-        const [mineRes, theirsRes] = await Promise.all([
-          admin
-            .from('memberships')
-            .select('circle_id')
-            .eq('profile_id', myProfileId)
-            .eq('status', 'active'),
-          admin
-            .from('memberships')
-            .select('profile_id, circle_id')
-            .in('profile_id', otherGoingIds)
-            .eq('status', 'active'),
-        ])
+      const [paidViewer, mineRes, theirsRes] = await Promise.all([
+        isPaidViewer(),
+        otherGoingIds.length > 0
+          ? admin
+              .from('memberships')
+              .select('circle_id')
+              .eq('profile_id', myProfileId)
+              .eq('status', 'active')
+          : Promise.resolve(null),
+        otherGoingIds.length > 0
+          ? admin
+              .from('memberships')
+              .select('profile_id, circle_id')
+              .in('profile_id', otherGoingIds)
+              .eq('status', 'active')
+          : Promise.resolve(null),
+      ])
+      isCrew = paidViewer
+      if (mineRes && theirsRes) {
         const myCircleIds = new Set(
           (mineRes.data ?? []).map((m) => (m as { circle_id: string }).circle_id)
         )
@@ -358,9 +486,16 @@ export default async function EventDetailPage({
   const isPaidEvent = hasTiers || flatPriceCents > 0
   let hostPayoutReady = false
   let ownsTicket = false
-  if (isPaidEvent && event.host?.id) {
-    if (await payoutsLive()) hostPayoutReady = (await getConnectStatus(event.host.id)).ready
-    if (myProfileId) ownsTicket = await hasTicket(event.id, myProfileId)
+  const hostId = event.host?.id
+  if (isPaidEvent && hostId) {
+    // The payout chain (payoutsLive → getConnectStatus) is sequential within itself,
+    // but it's independent of the viewer's hasTicket lookup — run them concurrently.
+    const [payoutReady, owns] = await Promise.all([
+      (async () => ((await payoutsLive()) ? (await getConnectStatus(hostId)).ready : false))(),
+      myProfileId ? hasTicket(event.id, myProfileId) : Promise.resolve(false),
+    ])
+    hostPayoutReady = payoutReady
+    ownsTicket = owns
   }
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
@@ -415,27 +550,10 @@ export default async function EventDetailPage({
     location: event.location,
   })
 
-  // Practice check-in availability + whether the viewer already checked in.
-  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
-  let alreadyCheckedIn = false
-  if (canCheckIn && myProfileId) {
-    const { data: ci } = await admin
-      .from('engagement_events')
-      .select('id')
-      .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
-      .maybeSingle()
-    alreadyCheckedIn = !!ci
-  }
-
   // ── Post-event social loop (slice B-2, EVENTS-SYSTEM §2.5) ──────────────────
-  // Cohosts, the activity feed, the host's Event Dispatches, and the recap album.
-  const cohosts = (await listCohosts(event.id)) as CohostView[]
-  const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
-  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
-  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
-  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
-  const canDispatch = isHost || isCohost
-
+  // The check-in lookup, cohosts, the activity feed, the host's Event Dispatches,
+  // and the recap album are all independent of each other (each keyed only on
+  // event.id / myProfileId) — resolve them in one concurrent batch.
   type RawActivityPost = {
     id: string
     body: string | null
@@ -443,13 +561,6 @@ export default async function EventDetailPage({
     created_at: string
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
-  const { data: rawActivity } = await (admin)
-    .from('event_posts')
-    .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
   // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
   // the same activity stream with an event badge. event_dispatches isn't in the
   // generated types yet → untyped cast (repo convention).
@@ -460,18 +571,58 @@ export default async function EventDetailPage({
     created_at: string
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
+  type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
   // event_dispatches isn't in lib/database.types.ts yet, so the typed client can't
   // resolve the table name (narrows to `never`). Widen this ONE read to an untyped
   // client — the genuinely-untyped case the ADR-246 rule allows (same convention as
   // the lib/events/* data layer, which writes these rows).
   // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
   const adminUntyped = admin as unknown as SupabaseClient
-  const { data: rawDispatches } = await adminUntyped
-    .from('event_dispatches')
-    .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
-    .eq('event_id', event.id)
-    .order('created_at', { ascending: false })
-    .limit(50)
+
+  // Practice check-in availability + whether the viewer already checked in.
+  const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
+
+  const [ciRes, cohostsRaw, { data: rawActivity }, { data: rawDispatches }, rawMediaRes] =
+    await Promise.all([
+      canCheckIn && myProfileId
+        ? admin
+            .from('engagement_events')
+            .select('id')
+            .eq('idempotency_key', `event_checkin:${event.id}:${myProfileId}`)
+            .maybeSingle()
+        : Promise.resolve(null),
+      listCohosts(event.id),
+      (admin)
+        .from('event_posts')
+        .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      adminUntyped
+        .from('event_dispatches')
+        .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      // Recap album only matters once the event is over.
+      hasEnded
+        ? (admin)
+            .from('event_media')
+            .select('id, image_url, caption, profile_id')
+            .eq('event_id', event.id)
+            .order('created_at', { ascending: false })
+            .limit(200)
+        : Promise.resolve(null),
+    ])
+
+  const alreadyCheckedIn = !!ciRes?.data
+
+  const cohosts = cohostsRaw as CohostView[]
+  const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
+  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
+  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
+  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+  const canDispatch = isHost || isCohost
 
   const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
     id: p.id,
@@ -498,23 +649,13 @@ export default async function EventDetailPage({
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
 
-  // Recap album only matters once the event is over.
-  let recapPhotos: RecapPhoto[] = []
-  if (hasEnded) {
-    type RawMedia = { id: string; image_url: string; caption: string | null; profile_id: string }
-    const { data: rawMedia } = await (admin)
-      .from('event_media')
-      .select('id, image_url, caption, profile_id')
-      .eq('event_id', event.id)
-      .order('created_at', { ascending: false })
-      .limit(200)
-    recapPhotos = ((rawMedia ?? []) as unknown as RawMedia[]).map((m) => ({
-      id: m.id,
-      imageUrl: m.image_url,
-      caption: m.caption,
-      profileId: m.profile_id,
-    }))
-  }
+  // Recap album only matters once the event is over (query ran in the batch above).
+  const recapPhotos: RecapPhoto[] = ((rawMediaRes?.data ?? []) as unknown as RawMedia[]).map((m) => ({
+    id: m.id,
+    imageUrl: m.image_url,
+    caption: m.caption,
+    profileId: m.profile_id,
+  }))
 
   // Warm-proof faces (shared by the reward strip + fact panel).
   const faces = goingRsvps.map(({ profile }) => ({
@@ -529,6 +670,15 @@ export default async function EventDetailPage({
     avatarUrl: profile.avatar_url,
     handle: profile.handle,
   }))
+
+  // Exact-venue point (§5): the event's OWN geog, shown as a precise mini-map. Only
+  // for a PUBLISHED, in-person event that actually has a geocoded point — drafts and
+  // online events never get it, and without a point we render nothing (no regression).
+  // `geog` comes back from PostgREST as an EWKB hex STRING (not GeoJSON), so it must be
+  // decoded — `pointFromGeog` handles both forms. This is why the map was never showing.
+  const isPublished = (extra?.status ?? 'published') === 'published'
+  const venuePoint: { lat: number; lng: number } | null =
+    !isOnline && isPublished ? pointFromGeog(extra?.geog) : null
 
   // Mini-map pin (city-level circle area). Only in-person events with a circle that
   // has public coordinates get a map.
@@ -546,7 +696,7 @@ export default async function EventDetailPage({
       : null
 
   const whenLine = `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}${
-    event.ends_at ? ` – ${formatTime(event.ends_at)}` : ''
+    event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''
   }`
 
   const mode = MODE_CHIP[attendanceMode]
@@ -586,21 +736,19 @@ export default async function EventDetailPage({
             )}
           </div>
         </div>
-      ) : !event.is_cancelled && myProfileId && !isPast && !isHost ? (
+      ) : !event.is_cancelled && myProfileId && !isPast ? (
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
-          <CrewGateButton
-            isCrew={isCrew}
-            label={isGoing ? '✓ Going' : capacityInfo.isFull ? 'Join waitlist' : "RSVP: I'm going"}
-            buttonClassName="rounded-lg px-4 py-2 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 bg-primary text-on-primary hover:bg-primary-hover"
-          >
-            <RsvpControls
-              eventId={event.id}
-              slug={event.slug}
-              status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
-              plusOnes={myPlusOnes}
-              isFull={capacityInfo.isFull}
-            />
-          </CrewGateButton>
+          {/* RSVP is open to every member on any event, INCLUDING the host of their own
+              gathering (a host counts themselves in like anyone else) — it is never
+              Crew-gated. Crew unlocks CREATING events, not attending them (the upgrade
+              gate lives on the create flow, not here). */}
+          <RsvpControls
+            eventId={event.id}
+            slug={event.slug}
+            status={myRsvpStatus as 'going' | 'maybe' | 'waitlist' | 'not_going' | null}
+            plusOnes={myPlusOnes}
+            isFull={capacityInfo.isFull}
+          />
           {/* At-RSVP calendar — the highest-ROI lever, emphasised once going. */}
           {isGoing ? (
             <div className="rounded-xl border border-border bg-surface-elevated/40 px-4 py-3">
@@ -645,13 +793,28 @@ export default async function EventDetailPage({
             On waitlist · tap to leave
           </button>
         </form>
+      ) : !event.is_cancelled && !myProfileId && !isPast ? (
+        /* Signed-out visitor on a free, upcoming event: RSVP is for everyone, so offer the
+           one step that unlocks it — sign in, then you're on the list. (Paid events are
+           handled above with their own "Sign in to get your ticket" line.) */
+        <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+          <Link
+            href={`/sign-in?next=/events/${event.slug}`}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            Sign in to RSVP
+          </Link>
+          <p className="text-xs text-muted">Free to join. Sign in and you&rsquo;re on the list.</p>
+        </div>
       ) : null}
     </div>
   )
 
-  // Whether the mobile bottom bar should appear (there's a real action to take).
+  // Whether the mobile bottom bar should appear (there's a real action to take). A host
+  // CAN RSVP to their own FREE event (so the bar shows), but never buys a ticket to it —
+  // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
   const showBottomBar =
-    !event.is_cancelled && !hasEnded && !isHost && (isPaidEvent ? !ownsTicket && !allTiersSoldOut : !!myProfileId)
+    !event.is_cancelled && !hasEnded && (isPaidEvent ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
   const bottomBarLabel = isPaidEvent
     ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
     : isGoing
@@ -663,8 +826,103 @@ export default async function EventDetailPage({
     ? hasTiers ? 'Tickets' : priceLabel
     : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
 
+  // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior
+  // module (components/widgets/events/*) reads it without prop-drilling — then the single
+  // <PageModules> renders them in the operator-arranged layout. The whole interior is module-driven
+  // now (only the fixed header + the mobile action bar read the locals directly): the Join box,
+  // warm proof, and facts that used to be a hardcoded aside are stamped here as `joinActions` /
+  // `warmProof` / `facts`, each already gated/computed by the page so the modules render verbatim.
+  setEventContext({
+    event: {
+      id: event.id,
+      slug: event.slug,
+      title: event.title,
+      description: event.description,
+      is_cancelled: event.is_cancelled,
+    },
+    myProfileId,
+    canManage,
+    isHost,
+    isCohost,
+    canDispatch,
+    canContribute,
+    isPast,
+    hasEnded,
+    posterDetails,
+    posterCropUrls,
+    cohosts,
+    isPaidEvent,
+    soldTickets,
+    activityPosts,
+    recapPhotos,
+    // The Join box, fully built + gated above; null on a cancelled event so the `event-join`
+    // module renders nothing there (the old aside guarded it the same way).
+    joinActions: event.is_cancelled ? null : joinActions,
+    warmProof: {
+      going: goingRsvps.length,
+      fromYourCircles,
+      maybe: maybeCount,
+      guests: guestCount,
+      faces,
+      nearFull,
+      spotsLeft: capacityInfo.spotsLeft,
+    },
+    facts: {
+      whenLine,
+      isOnline,
+      location: event.location,
+      onlineUrl,
+      mapPin,
+      venuePoint,
+      going: goingRsvps.length,
+      nearFull,
+      spotsLeft: capacityInfo.spotsLeft,
+      guests: factGuests,
+      guestsAreVisible: isCrew,
+      viewerSignedIn: !!myProfileId,
+      signInHref: `/sign-in?next=/events/${event.slug}`,
+    },
+  })
+
+  // Event structured data (schema.org) for SEO + AI answer engines. Canonical URL is this
+  // public /events/<slug> page; the dynamic OG card is the required `image`. Location is the
+  // event's own (public) venue line for an in-person event, a VirtualLocation when online.
+  const eventJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: event.title,
+    startDate: event.starts_at,
+    ...(event.ends_at ? { endDate: event.ends_at } : {}),
+    eventStatus: event.is_cancelled
+      ? 'https://schema.org/EventCancelled'
+      : 'https://schema.org/EventScheduled',
+    eventAttendanceMode:
+      attendanceMode === 'online'
+        ? 'https://schema.org/OnlineEventAttendanceMode'
+        : attendanceMode === 'hybrid'
+          ? 'https://schema.org/MixedEventAttendanceMode'
+          : 'https://schema.org/OfflineEventAttendanceMode',
+    image: [`${SITE_URL}/events/${event.slug}/opengraph-image`, `${SITE_URL}/opengraph-image`],
+    ...(event.description ? { description: event.description } : {}),
+    url: `${SITE_URL}/events/${event.slug}`,
+    location: isOnline
+      ? { '@type': 'VirtualLocation', url: `${SITE_URL}/events/${event.slug}` }
+      : {
+          '@type': 'Place',
+          name: event.location || scopeName || 'In person',
+          ...(event.location ? { address: event.location } : {}),
+        },
+    ...(scopeName
+      ? { organizer: { '@type': 'Organization', name: scopeName } }
+      : event.host
+        ? { organizer: { '@type': 'Person', name: event.host.display_name } }
+        : {}),
+    isAccessibleForFree: !isPaidEvent,
+  }
+
   return (
     <div className="pb-24 lg:pb-0">
+      <JsonLd data={eventJsonLd} />
       {event.is_cancelled && (
         <div className="mb-4 rounded-2xl bg-danger-bg border border-danger px-3 py-2">
           <p className="text-sm font-medium text-danger">This event has been cancelled.</p>
@@ -685,15 +943,51 @@ export default async function EventDetailPage({
         </div>
       )}
 
+      {/* "This is not my event" — for an unclaimed posted event, name the poster +
+          organizer and give the organizer a path to claim it. Hidden for managers. */}
+      {isUnclaimedPosted && !canManage && (
+        <ClaimEventBanner
+          eventId={event.id}
+          organizerName={extra?.organizer_name ?? null}
+          postedByName={postedBy?.display_name ?? null}
+        />
+      )}
+
       <DetailTemplate
-        // [A1] cover — the one big visual win (slot exists; token placeholder when none).
+        // [A1] header image — the one big visual win. Uploaded cover, else the scanned
+        // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
         hero={
-          coverUrl ? (
+          heroUrl ? (
             <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
-              <Image src={coverUrl} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" className="object-cover" preload />
+              {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
+                  scanned poster's hero is a SIGNED URL from the private bucket (path
+                  `/object/sign/...`, outside next.config remotePatterns), so it must
+                  bypass the optimizer — matching PosterDetails' plain <img> crops. */}
+              <Image
+                src={heroUrl}
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover"
+                preload
+                unoptimized={heroUrl !== coverUrl}
+              />
             </div>
           ) : (
-            <div className="aspect-[16/6] w-full rounded-2xl bg-surface-elevated" />
+            // No cover: a designed placeholder, not a blank box. Mirrors the
+            // circle-card no-cover fill (soft DAWN gradient + centered icon) and
+            // leads with the event's date so the slot still says something.
+            <div className="relative flex aspect-[16/6] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+              <div className="flex flex-col items-center gap-1 text-center">
+                <CalendarDays className="h-7 w-7 opacity-80" />
+                <span className="text-3xl font-bold leading-none sm:text-4xl">
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric' })}
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long' })}
+                </span>
+              </div>
+            </div>
           )
         }
         title={
@@ -706,6 +1000,21 @@ export default async function EventDetailPage({
           ) : (
             event.title
           )
+        }
+        // Operator/host entries, stacked: Edit (Settings drawer) then Manage (dashboard).
+        actions={
+          canManage ? (
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <EditEventButton />
+              <Link
+                href={`/events/${event.slug}/manage`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              >
+                <LayoutDashboard className="h-4 w-4 text-subtle" />
+                Manage event
+              </Link>
+            </div>
+          ) : undefined
         }
         // [A2] attendance-mode chip.
         badges={
@@ -781,185 +1090,35 @@ export default async function EventDetailPage({
                 </span>
               </p>
             )}
+
+            {/* [A3] The calm reward line reads as HEADER content — it sits with the
+                date/location/host lines, not floating above the grid with a divider. The
+                check-in Zaps reward (+ streak / Current when real). Hidden for a cancelled
+                event. */}
+            {!event.is_cancelled && (
+              <EventRewardStrip
+                checkInZaps={ZAP_AMOUNTS.event_attend}
+                isPast={isPast}
+                circleName={scopeName}
+              />
+            )}
           </div>
         }
       >
-        {/* Host/cohost: a quiet door to the Manage Dashboard (roster, waitlist,
-            questionnaire, dispatches, analytics). Host-only; everyone else never
-            sees it. */}
-        {canManage && (
-          <div className="mb-6">
-            <Link
-              href={`/events/${event.slug}/manage`}
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-            >
-              <LayoutDashboard className="h-4 w-4 text-subtle" />
-              Manage event
-            </Link>
-          </div>
-        )}
+        {/* Photo gallery — the header image leads, then any host-uploaded extras, each clickable
+            into a full-screen lightbox. It stays in the page (not a module): it's built from the
+            signed/public hero + gallery URLs the header already resolved, and renders only with 2+
+            images. It leads the interior, above the arrangeable blocks. */}
+        <EventGallery images={galleryUrls} />
 
-        {/* [A3] EventRewardStrip — calm gamification chips + warm proof. Hidden for
-            a cancelled event (no rewards to dangle on a dead event). */}
-        {!event.is_cancelled && (
-          <EventRewardStrip
-            checkInZaps={ZAP_AMOUNTS.event_attend}
-            isPast={isPast}
-            circleName={scopeName}
-            going={goingRsvps.length}
-            fromYourCircles={fromYourCircles}
-            maybe={maybeCount}
-            guests={guestCount}
-            faces={faces}
-            nearFull={nearFull}
-            spotsLeft={capacityInfo.spotsLeft}
-          />
-        )}
-
-        {/* MOBILE: the critical-info card stacks ABOVE the Post area so a guest sees
-            the facts before the conversation (EVENTS-DESIGN §2.6). The lg aside is
-            hidden < lg; this block is hidden ≥ lg. */}
-        <div className="mb-8 lg:hidden">
-          <EventFactPanel
-            whenLine={whenLine}
-            isOnline={isOnline}
-            location={event.location}
-            onlineUrl={onlineUrl}
-            mapPin={mapPin}
-            going={goingRsvps.length}
-            nearFull={nearFull}
-            spotsLeft={capacityInfo.spotsLeft}
-            guests={factGuests}
-            guestsAreVisible={isCrew}
-          />
-        </div>
-
-        {/* ── TWO-COLUMN interior grid (no new template; plain grid in the body) ── */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          {/* [B] POST AREA — wide left */}
-          <div className="min-w-0 space-y-8">
-            {/* B1 description (open prose, not boxed) */}
-            {canManage ? (
-              <div className="max-w-2xl">
-                <InlineText
-                  value={event.description}
-                  multiline
-                  placeholder="Add a description…"
-                  save={updateEventField.bind(null, event.id, slug, 'description')}
-                >
-                  {event.description ? (
-                    <p className="text-sm text-text leading-relaxed whitespace-pre-wrap">
-                      {event.description}
-                    </p>
-                  ) : (
-                    <StartEditingLink label="+ Add a description" />
-                  )}
-                </InlineText>
-              </div>
-            ) : event.description ? (
-              <p className="max-w-2xl text-sm text-text leading-relaxed whitespace-pre-wrap">
-                {event.description}
-              </p>
-            ) : null}
-
-            {/* Poster details (captured events) */}
-            <PosterDetails details={posterDetails} signedUrls={posterCropUrls} />
-
-            {/* Cohosts — shown to everyone; the host manages them. */}
-            {(cohosts.length > 0 || isHost) && (
-              <CohostManager
-                eventId={event.id}
-                slug={event.slug}
-                cohosts={cohosts}
-                canManage={isHost}
-              />
-            )}
-
-            {/* Host: sold tickets + refunds (EVENTS-SYSTEM §7) */}
-            {canManage && isPaidEvent && (
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                  Sales <span className="ml-1 font-normal normal-case text-muted">{soldTickets.length} sold</span>
-                </p>
-                {soldTickets.length === 0 ? (
-                  <p className="mt-2 text-sm text-subtle">No tickets sold yet.</p>
-                ) : (
-                  <ul className="mt-3 space-y-1.5">
-                    {soldTickets.map((t) => (
-                      <li key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                        <span className="min-w-0 truncate text-text">
-                          {t.buyer?.display_name ?? 'A member'}
-                          <span className="ml-2 text-subtle">
-                            ${(t.amount_cents / 100).toFixed(2)}
-                            {t.qty > 1 ? ` · ${t.qty}×` : ''}
-                          </span>
-                        </span>
-                        <RefundTicketButton
-                          ticketId={t.id}
-                          eventId={event.id}
-                          slug={event.slug}
-                          amountLabel={`$${(t.amount_cents / 100).toFixed(2)}`}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {/* B2 host Event Dispatch composer (host/cohost only) */}
-            {canDispatch && !event.is_cancelled && (
-              <EventDispatchCompose eventId={event.id} slug={event.slug} />
-            )}
-
-            {/* B2/B3 activity — Event Dispatches + guest comments + Boops + GIF.
-                Behind its own Suspense (PAGE-FRAMEWORK §5). */}
-            <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
-              <EventActivity
-                eventId={event.id}
-                slug={event.slug}
-                posts={activityPosts}
-                canPost={canContribute && !event.is_cancelled}
-                canModerate={isHost}
-                myProfileId={myProfileId}
-                isPast={isPast}
-              />
-            </Suspense>
-
-            {/* B4 recap album — once the event has ended. */}
-            {hasEnded && (
-              <Suspense fallback={<Skeleton className="h-48 rounded-2xl" />}>
-                <RecapAlbum
-                  eventId={event.id}
-                  slug={event.slug}
-                  photos={recapPhotos}
-                  canUpload={canContribute}
-                  canModerate={isHost}
-                  myProfileId={myProfileId}
-                />
-              </Suspense>
-            )}
-          </div>
-
-          {/* [C] JOIN AREA — narrow right, sticky on lg+. Hidden on mobile (it
-              collapses to the bottom bar + the fact panel stacks above). */}
-          <aside className="hidden space-y-4 self-start lg:sticky lg:top-20 lg:block">
-            {!event.is_cancelled && joinActions}
-            {/* C4 critical info */}
-            <EventFactPanel
-              whenLine={whenLine}
-              isOnline={isOnline}
-              location={event.location}
-              onlineUrl={onlineUrl}
-              mapPin={mapPin}
-              going={goingRsvps.length}
-              nearFull={nearFull}
-              spotsLeft={capacityInfo.spotsLeft}
-              guests={factGuests}
-              guestsAreVisible={isCrew}
-            />
-          </aside>
-        </div>
+        {/* ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
+            two-column grid. The '/events/*' layout owns the arrangement — its default Main + side
+            grid reproduces the old two-column page (post area in MAIN; the Join box, warm proof,
+            facts, and the host "Post an update" composer in SIDE), and every block is movable from
+            the on-page Layout editor. On a phone the SIDE column stacks above MAIN (the grid's
+            order-first), so a guest still sees who's going + the facts before the conversation —
+            the old mobile-only duplicate is gone (no double-render). ── */}
+        <PageModules route={`/events/${event.slug}`} />
       </DetailTemplate>
 
       {/* MOBILE sticky action bar — hidden on lg+, hidden for host/past/cancelled. */}

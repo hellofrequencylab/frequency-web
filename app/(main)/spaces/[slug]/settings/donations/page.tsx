@@ -2,10 +2,12 @@ import { notFound } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getOwnerDonationAsk } from '@/lib/spaces/donations'
 import { DonationAskForm } from '@/components/spaces/donations/donation-ask-form'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 
 // OWNER DONATION ASK EDITOR (ENTITY-SPACES-SYSTEM §2.6, donations v1; MASTER-PLAN item ADMIN-01). A
 // centered, no-rail Focus surface (registered 'none' for /spaces/<slug>/settings/donations in
@@ -50,8 +52,31 @@ export default async function SpaceDonationsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  const ask = await getOwnerDonationAsk(space.id)
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The default (donations = editor) reproduces the
+  // old canEditProfile threshold; a staff janitor keeps the read-only preview (write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'donations', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Donations"
+        description="The donation fund for this space."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Donations"
+          reason={spaceFunctionAccess(space, 'donations', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
+  const ask = await getOwnerDonationAsk(space.id)
 
   return (
     <FocusTemplate

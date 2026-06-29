@@ -10,7 +10,6 @@ import {
   MapPin,
   Sparkles,
   Repeat,
-  Trophy,
 } from 'lucide-react'
 import { RoleBadge } from '@/lib/community-roles'
 
@@ -341,40 +340,21 @@ function EventsPanel() {
   )
 }
 
-function LeaderRow({
-  rank,
-  initials,
-  name,
-  zaps,
-  highlight,
-}: {
-  rank: number
-  initials: string
-  name: string
-  zaps: number
-  highlight?: boolean
-}) {
+// One example of giving a Zap. Day zero has no real activity, so this illustrates
+// what a Zap IS (a note of gratitude to a real person) without inventing members,
+// counts, or a leaderboard (docs/CONTENT-VOICE honest-day-zero rule).
+function ZapExample({ note, to }: { note: string; to: string }) {
   return (
-    <div
-      className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${
-        highlight ? 'border border-signal bg-signal-bg' : 'border border-border bg-surface'
-      }`}
-    >
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
       <span
-        className={`w-6 text-center font-display text-lg leading-none ${
-          highlight ? 'text-signal-strong' : 'text-subtle'
-        }`}
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-signal-bg text-signal-strong"
+        aria-hidden
       >
-        {rank}
+        <Zap className="h-3.5 w-3.5" />
       </span>
-      <span className="w-9 h-9 rounded-full bg-surface-elevated text-3xs font-bold text-muted flex items-center justify-center shrink-0 select-none" aria-hidden>
-        {initials}
-      </span>
-      <span className="flex-1 min-w-0 text-sm font-semibold text-text truncate">{name}</span>
-      <span className="inline-flex items-center gap-1 text-sm font-bold text-signal-strong">
-        <Zap className="w-4 h-4" aria-hidden />
-        {zaps}
-      </span>
+      <p className="text-sm leading-snug text-text">
+        <span className="font-semibold">{note}</span> <span className="text-muted">to {to}</span>
+      </p>
     </div>
   )
 }
@@ -384,16 +364,15 @@ function ZapsPanel() {
     <>
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-3">
-          <Trophy className="w-4 h-4 text-signal-strong" aria-hidden />
+          <Zap className="w-4 h-4 text-signal-strong" aria-hidden />
           <span className="text-2xs font-bold uppercase tracking-widest text-muted">
-            This week · North County
+            How a Zap works
           </span>
         </div>
         <div className="space-y-2">
-          <LeaderRow rank={1} initials="MR" name="Maya R." zaps={48} />
-          <LeaderRow rank={2} initials="JL" name="Jordan L." zaps={41} />
-          <LeaderRow rank={3} initials="YOU" name="You" zaps={37} highlight />
-          <LeaderRow rank={4} initials="AC" name="Ana C." zaps={29} />
+          <ZapExample note="Thanks for hosting tonight." to="your Circle host" />
+          <ZapExample note="You made the new person feel at home." to="a regular" />
+          <ZapExample note="Glad you showed up." to="a friend" />
         </div>
       </div>
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">

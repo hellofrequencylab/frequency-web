@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Plus, Zap } from 'lucide-react'
 import { createCrewTask } from '@/app/(main)/admin/actions'
 import { CreateModal, cmInput, cmLabel } from '@/components/create-modal'
+import { TIER_ORDER, TIER_ZAPS, TIER_LABELS } from '@/lib/practices/tiers'
 
 const TASK_TYPES = ['attendance', 'hosting', 'volunteering', 'content', 'referral', 'other'] as const
 type TaskType = typeof TASK_TYPES[number]
@@ -18,7 +19,7 @@ export function NewTaskCompose({
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [taskType, setTaskType] = useState<TaskType>('attendance')
-  const [zapsValue, setZapsValue] = useState(10)
+  const [zapsValue, setZapsValue] = useState(TIER_ZAPS.standard)
   const [isRepeatable, setIsRepeatable] = useState(false)
   const [requiresVerification, setRequiresVerification] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,19 +66,40 @@ export function NewTaskCompose({
           <input type="text" value={name} onChange={e => setName(e.target.value)}
             placeholder="e.g. Attend a circle event" required disabled={isPending} className={cmInput} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className={cmLabel}>Type</label>
-            <select value={taskType} onChange={e => setTaskType(e.target.value as TaskType)}
-              disabled={isPending} className={cmInput}>
-              {TASK_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={cmLabel}>Zaps value</label>
-            <input type="number" min={1} max={500} value={zapsValue}
-              onChange={e => setZapsValue(parseInt(e.target.value) || 10)}
-              disabled={isPending} className={cmInput} />
+        <div>
+          <label className={cmLabel}>Type</label>
+          <select value={taskType} onChange={e => setTaskType(e.target.value as TaskType)}
+            disabled={isPending} className={cmInput}>
+            {TASK_TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+          </select>
+        </div>
+        <div>
+          {/* Effort tier (ADR-442): a constrained Light/Standard/Heavy range, never a free
+              number, so a task can't be set to an unlimited reward. */}
+          <label className={cmLabel}>Effort</label>
+          <div role="radiogroup" aria-label="Effort" className="grid grid-cols-3 gap-2">
+            {TIER_ORDER.map(t => {
+              const zaps = TIER_ZAPS[t]
+              const active = zapsValue === zaps
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  disabled={isPending}
+                  onClick={() => setZapsValue(zaps)}
+                  className={`flex min-h-10 flex-col items-center justify-center rounded-lg border px-2 py-1.5 text-sm font-medium transition-colors ${
+                    active
+                      ? 'border-primary/50 bg-primary-bg text-primary-strong'
+                      : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
+                  }`}
+                >
+                  <span>{TIER_LABELS[t]}</span>
+                  <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-subtle'}`}>{zaps} Zaps</span>
+                </button>
+              )
+            })}
           </div>
         </div>
         <div className="flex items-center gap-4 pt-2">

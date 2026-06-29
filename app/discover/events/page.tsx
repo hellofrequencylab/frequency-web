@@ -18,7 +18,7 @@ import { SITE_NAME, BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 export const metadata: Metadata = {
   title: 'Upcoming events',
   description:
-    'Browse upcoming real-world events across the Frequency community: neighbors gathering in person near you.',
+    'Browse upcoming events across the Frequency community: a sunrise on the bluff, a cold plunge, a supper table. Real plans, on real days, with neighbors near you.',
   alternates: { canonical: '/discover/events' },
   openGraph: {
     title: `Upcoming events · ${SITE_NAME}`,
@@ -56,8 +56,8 @@ export default async function DiscoverEventsPage() {
       />
 
       <PhotoHero
-        image="/images/site/63978107-8b40-4ce2-8eaf-01a2f6f35cb9.jpg"
-        alt="People on the beach at golden hour, arms raised in celebration by the ocean"
+        image="/images/site/adult-playground-parachute.jpg"
+        alt="A group on a bluff lawn at dusk holding the edges of a rainbow parachute, the ocean behind them"
         focal="object-center"
         eyebrow="Coming up"
         title={<>Show up <span className="text-primary">this week</span></>}
@@ -78,14 +78,14 @@ export default async function DiscoverEventsPage() {
             <SectionHeading
               eyebrow="Founding chapter"
               title={<>The first gathering hasn&apos;t <span className="text-primary">happened yet</span></>}
-              kicker="Every circle begins with a few neighbors deciding to show up."
+              kicker="Every Circle begins with a few neighbors deciding to show up."
             />
             <p className="mt-6 text-lg text-muted leading-relaxed">
               We&rsquo;re just getting started in North County San Diego. The calendar is quiet
               for now, but quiet is how every standing time starts: one sunrise, one cold plunge,
-              one supper that someone was brave enough to put on the calendar. Join the beta and
-              you&rsquo;ll be among the first to know when the first one lands, and one of the
-              faces the next person walks in and recognizes.
+              one supper that someone put on the calendar. Join the beta and you&rsquo;ll be among
+              the first to know when the first one lands, and one of the faces the next person walks
+              in and recognizes.
             </p>
             <div className="mt-9">
               <Button href={BETA_CTA_HREF}>{BETA_CTA_LABEL}</Button>
@@ -109,7 +109,7 @@ export default async function DiscoverEventsPage() {
                   kicker="Pick one, RSVP, and you're expected."
                 />
                 <p className="mt-5 text-lg text-muted leading-relaxed">
-                  This is the kind of plan that pulls you off the couch and into a room. Tap
+                  This is the kind of plan that pulls you off the couch and into a room. Look
                   through what&apos;s next, find the one that sounds like your morning, and let
                   a few neighbors start to know your face.
                 </p>
@@ -127,17 +127,17 @@ export default async function DiscoverEventsPage() {
           {/* ── Sensory beat — what an event actually feels like ── */}
           <ZigZag
             tone="canvas"
-            img="/images/site/PHOTO-2020-09-09-16-38-27.jpeg"
-            alt="A large Frequency community practicing yoga together on a lawn at golden hour"
+            img="/images/site/adult-play.jpg"
+            alt="An outdoor class on a beach overlook, one person mid-handstand, the ocean behind"
             imgAspect="natural"
             eyebrow="Why in person"
             title="The room does what the feed can't"
             kicker="Cold, gold, quiet, and the same faces, week after week."
           >
             <p>
-              A sunrise on the bluff. Mats laid out in rows on the grass. The exhale of a circuit
-              that takes you from heat to cold and hands you back a settled nervous system. None
-              of it survives a screen. You have to be in the room.
+              A sunrise on the bluff. Mats laid out in rows on the grass. A circuit that runs you
+              from heat to cold and hands you back calmer than you arrived. None of it survives a
+              screen. You have to be in the room.
             </p>
             <p>
               And the second time you come, you&apos;re not a stranger anymore. The faces you

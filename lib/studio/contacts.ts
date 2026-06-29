@@ -29,16 +29,6 @@ function mapRow(c: Record<string, unknown>): ContactRow {
   }
 }
 
-export async function listContacts(limit = 100): Promise<ContactRow[]> {
-  const db = createAdminClient()
-  const { data } = await db
-    .from('contacts')
-    .select(SELECT)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  return (data ?? []).map((c) => mapRow(c as Record<string, unknown>))
-}
-
 // Subscribed contacts (the marketing list — confirmed opt-ins).
 export async function listSubscribers(limit = 500): Promise<ContactRow[]> {
   const db = createAdminClient()

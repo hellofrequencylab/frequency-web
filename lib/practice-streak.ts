@@ -482,6 +482,130 @@ export async function recomputePracticeStreakAfterUnlog(profileId: string): Prom
     .eq('id', profileId)
 }
 
+// --- auto-freeze streak-save (Resonance Engine Phase 5 · ADR-386) ----------
+// The Phase 1 streak-save playbook only RECORDED the touch (the loop was visible but the
+// freeze was never spent). This is the in-product, reversible action that actually saves the
+// streak: when a member's run is at risk (alive but not logged today), spend ONE banked
+// freeze to bridge today, so a single missed day does not zero weeks of momentum. It is the
+// one `auto`-eligible playbook (no member touch, fully undoable) and still gated by the Phase
+// 3 autonomy slider at the call site (no auto when a Space is suggest_only).
+//
+// Idempotent + fail-closed: if there is no freeze to spend, or the streak is not at risk, or
+// today is already covered, it is a safe no-op (saved:false) and NO freeze is consumed. The
+// bridged day is returned so the action is reversible (revertStreakSave undoes exactly it).
+
+export interface SaveStreakResult {
+  /** A freeze was spent and a day bridged (the streak was actually saved). */
+  saved: boolean
+  /** The UTC day the freeze bridged (for the Undo + audit), or null when nothing was saved. */
+  bridgedDay: string | null
+  /** The freeze reserve after the call. */
+  freezeTokens: number
+  /** Why nothing happened, when saved is false (for the audit line). */
+  reason: 'saved' | 'not_at_risk' | 'no_freeze' | 'already_covered' | 'broken'
+}
+
+/**
+ * Spend one banked freeze to save an at-risk daily practice streak. Service-role path; the
+ * call site (the governed Vera tool) has already authorized the operator + checked the
+ * autonomy slider. Reversible (returns the bridged day for revertStreakSave) and idempotent
+ * (a second call once today is covered is a no-op). NEVER touches the member directly.
+ */
+export async function saveStreakWithFreeze(profileId: string): Promise<SaveStreakResult> {
+  const admin = createAdminClient()
+  const today = todayUTC()
+
+  const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+  const meta = (prof?.meta ?? {}) as Record<string, unknown>
+  const stored = readStored(meta)
+
+  const { data: rows } = await admin
+    .from('practice_logs')
+    .select('logged_for')
+    .eq('profile_id', profileId)
+    .gte('logged_for', shiftDay(today, -WINDOW_DAYS))
+  const logged = new Set((rows ?? []).map((r) => String((r as { logged_for: string }).logged_for)))
+
+  const frozen = new Set(stored.frozenDates)
+  for (const d of pauseCoveredDays(stored.rest, today)) frozen.add(d)
+
+  const { alive, loggedToday } = derivePracticeStreak(logged, frozen, today)
+
+  // Already logged today -> nothing at risk. A dead run cannot be freeze-saved (freezes
+  // bridge a SINGLE slip, not a full reset; that is the "never miss twice" contract).
+  if (!alive) return { saved: false, bridgedDay: null, freezeTokens: stored.freezeTokens, reason: 'broken' }
+  if (loggedToday) return { saved: false, bridgedDay: null, freezeTokens: stored.freezeTokens, reason: 'not_at_risk' }
+
+  // At risk: today is the open day. If it is already covered (a prior save / pause), no-op.
+  if (logged.has(today) || frozen.has(today)) {
+    return { saved: false, bridgedDay: null, freezeTokens: stored.freezeTokens, reason: 'already_covered' }
+  }
+  if (stored.freezeTokens <= 0) {
+    return { saved: false, bridgedDay: null, freezeTokens: 0, reason: 'no_freeze' }
+  }
+
+  const freezeTokens = stored.freezeTokens - 1
+  const nextFrozen = [...new Set([...stored.frozenDates, today])].filter((d) => dayDiff(today, d) <= WINDOW_DAYS)
+
+  const nextMeta = {
+    ...meta,
+    practiceStreak: {
+      ...(meta.practiceStreak as Record<string, unknown> | undefined),
+      freezeTokens,
+      frozenDates: nextFrozen,
+      milestonesPaid: stored.milestonesPaid,
+      longest: stored.longest,
+      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+      rest: stored.rest ?? null,
+      updatedAt: new Date().toISOString(),
+    } satisfies StoredStreak,
+  }
+
+  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  return { saved: true, bridgedDay: today, freezeTokens, reason: 'saved' }
+}
+
+/**
+ * Undo a freeze-save: remove the bridged day from the frozen set and refund the freeze. The
+ * reverse of saveStreakWithFreeze, for the card's Undo toast. Idempotent (if the day is no
+ * longer frozen, it is a no-op and the freeze is not double-refunded). Never raises the
+ * reserve above the cap. Service-role path; the call site authorized the operator.
+ */
+export async function revertStreakSave(profileId: string, bridgedDay: string): Promise<{ reverted: boolean }> {
+  const admin = createAdminClient()
+  const today = todayUTC()
+  const day = String(bridgedDay || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { reverted: false }
+
+  const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+  const meta = (prof?.meta ?? {}) as Record<string, unknown>
+  const stored = readStored(meta)
+
+  // A day folded into the active rest window is not a freeze-save spend; never refund that.
+  const pause = new Set(pauseCoveredDays(stored.rest, today))
+  if (!stored.frozenDates.includes(day) || pause.has(day)) return { reverted: false }
+
+  const nextFrozen = stored.frozenDates.filter((d) => d !== day)
+  const freezeTokens = Math.min(STREAK_FREEZE_CAP, stored.freezeTokens + 1)
+
+  const nextMeta = {
+    ...meta,
+    practiceStreak: {
+      ...(meta.practiceStreak as Record<string, unknown> | undefined),
+      freezeTokens,
+      frozenDates: nextFrozen,
+      milestonesPaid: stored.milestonesPaid,
+      longest: stored.longest,
+      fullDayFreezesApplied: stored.fullDayFreezesApplied ?? 0,
+      rest: stored.rest ?? null,
+      updatedAt: new Date().toISOString(),
+    } satisfies StoredStreak,
+  }
+
+  await admin.from('profiles').update({ meta: nextMeta as unknown as Json }).eq('id', profileId)
+  return { reverted: true }
+}
+
 // --- buy-a-freeze sink (Rewards Economy v3, ADR-305) -----------------------
 
 export interface GrantFreezeResult {

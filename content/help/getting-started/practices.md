@@ -39,9 +39,9 @@ Want to actually do the practice right there, with a timer and guided breathing?
 Tap the little lotus to **[tune out with Mindless](/help/the-quest/on-air)**. Same
 log, same rewards, plus the sit itself.
 
-Practice timers: there are two. Mindless times a sit;
-**[Movement](/help/the-quest/movement)** times a walk, yoga, play or a workout.
-Same log, same rewards.
+One timer, two modes. **[Mindless](/help/the-quest/on-air)** has **Be Still** for
+a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. Pick a
+practice and it opens in the mode that fits. Same log, same rewards.
 
 ## Adopt or change anytime
 
@@ -56,8 +56,12 @@ You can shape practices, not just pick them:
 - **Create one with Vera.** On **Practices**, hit **Create a practice** to open the
   builder. Answer a few quick questions (who it is for, the act itself, what you want
   out of it, how often, and how long) and Vera drafts the whole thing: a name, a hook,
-  the steps, a cadence, and a Pillar. Review it, change anything, and create. Want to
-  start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
+  the steps, a cadence, and a Pillar. Review it, change anything, and create. Already
+  wrote your practice somewhere else? Paste it and Vera shapes it into the same fields.
+  Want to start from scratch instead? Pick "Skip, I'll build it myself" to go straight to the editor.
+  Creating a practice is a **Crew** thing, and Crew is **free during the beta**: if you
+  are not Crew yet, "Create a practice" offers a one-tap upgrade, no card. Any member
+  can still **adopt** a practice and log it.
 - **Edit yours.** Any practice you created shows an **Edit** button. Change its name,
   summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
   **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it

@@ -17,7 +17,26 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { setPlanStatus, setPlanOfficial, deletePlan, type PlanStatus } from '@/lib/journey-plans'
-import { setPracticeFlags, WEIGHT_CLASSES, type WeightClass } from '@/lib/practices'
+import {
+  setPracticeFlags,
+  WEIGHT_CLASSES,
+  archivePractices,
+  restorePractices,
+  resolveAdminPracticeIds,
+  findPracticeDuplicates,
+  ADMIN_BULK_MAX,
+  type WeightClass,
+  type AdminPracticeSearchOpts,
+  type DuplicateCandidate,
+} from '@/lib/practices'
+import {
+  mergePractices,
+  promoteTagToCanonical,
+  mergeTags,
+  type MergeResult,
+  type MergeTagsResult,
+} from '@/lib/practices/clean'
+import { screenPracticeForPublish, type PracticeScreenResult } from '@/lib/ai/practice-publish-screen'
 import {
   setJourneyFeatured,
   setPracticeFeatured,
@@ -226,6 +245,299 @@ export async function bulkUpdatePracticesAction(
   }
   revalidateContent('practices')
   return ok({ count: cleanIds.length })
+}
+
+// --- Archive / restore (Phase 1 item 1.4) --------------------------------------
+
+/**
+ * Bulk-archive the chosen practices (the bulk bar's Archive action). Archiving sets
+ * status='archived' AND is_public=false in one write, so a deprecated practice drops out
+ * of every member-facing read (they gate on is_public=true) while its history is kept and
+ * admins can still filter status='archived' to find it. Curator-gated, re-checked
+ * server-side; scoped to the explicit ids the operator selected. Idempotent + race-safe
+ * (the patch is the same whatever the prior status). Returns the affected count.
+ */
+export async function archivePracticesAction(ids: string[]): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const count = await archivePractices(ids.slice(0, ADMIN_BULK_MAX))
+    if (count === 0) return fail('Select at least one practice.')
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ count })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not archive the practices.')
+  }
+}
+
+/** Restore archived practices to 'approved' (it does NOT auto-republish — the operator's
+ *  Public switch controls visibility, so a restore can't surprise the library). Curator-
+ *  gated, re-checked server-side; scoped to explicit ids. Returns the affected count. */
+export async function restorePracticesAction(ids: string[]): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const count = await restorePractices(ids.slice(0, ADMIN_BULK_MAX))
+    if (count === 0) return fail('Select at least one archived practice.')
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ count })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not restore the practices.')
+  }
+}
+
+// --- Bulk on the WHOLE filtered set (Phase 1 item 1.6) -------------------------
+//
+// The explicit-ids actions above act on checkbox selection. These act on EVERYTHING that
+// matches the current filter — the operator's "select all 1,240 results, not just this
+// page" path. The client never sends ids; it sends the filter spec, and the server re-runs
+// the SAME query (resolveAdminPracticeIds, capped at ADMIN_BULK_MAX) to resolve the target
+// set, then applies the mutation. Authz is re-checked on every path; the resolve is bounded
+// so "act on everything" can never become an unbounded write.
+
+/** What a filter-scoped bulk action may do. Discriminated so each value is validated
+ *  by branch (no computed key — remote-property-injection guard, mirrors the ids path). */
+export type BulkFilteredOp =
+  | { kind: 'setFlag'; flag: 'is_public' | 'is_template'; value: boolean }
+  | { kind: 'setWeight'; weightClass: WeightClass }
+  | { kind: 'archive' }
+  | { kind: 'restore' }
+  | { kind: 'approve' }
+  | { kind: 'reject' }
+
+/**
+ * Apply a bulk operation to the WHOLE filtered set. The filter is the same
+ * AdminPracticeSearchOpts shape searchAdminPractices takes, so "act on what I'm looking
+ * at" runs the identical query server-side. Curator-gated, re-checked here; the resolve is
+ * capped at ADMIN_BULK_MAX. Returns the affected count + whether the cap truncated the set
+ * (so the UI can warn "acted on the first N of M"). Idempotent per op.
+ */
+export async function bulkPracticesByFilterAction(
+  filter: AdminPracticeSearchOpts,
+  op: BulkFilteredOp,
+): Promise<ActionResult<{ count: number; capped: boolean }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+
+  // Validate the op BEFORE resolving ids (cheap reject of a junk weight class).
+  if (op.kind === 'setWeight' && !WEIGHT_CLASSES.includes(op.weightClass)) {
+    return fail('Unknown weight class.')
+  }
+  if (op.kind === 'setFlag' && op.flag !== 'is_public' && op.flag !== 'is_template') {
+    return fail('Unknown flag.')
+  }
+
+  let ids: string[]
+  let capped: boolean
+  try {
+    ;({ ids, capped } = await resolveAdminPracticeIds(filter))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not resolve the filtered set.')
+  }
+  if (ids.length === 0) return fail('No practices match the current filter.')
+
+  try {
+    if (op.kind === 'archive') {
+      const count = await archivePractices(ids)
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    if (op.kind === 'restore') {
+      const count = await restorePractices(ids)
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    if (op.kind === 'approve' || op.kind === 'reject') {
+      // Triage queue bulk decision (item 2.1): approve publishes + stamps the reviewer,
+      // reject leaves the proposal hidden + stamps it. Each row goes through setPracticeStatus
+      // so the reviewer + publish side effects match the single-row review path exactly.
+      const status = op.kind === 'approve' ? 'approved' : 'rejected'
+      let count = 0
+      for (const id of ids) {
+        await setPracticeStatus(id, status, caller.id)
+        count += 1
+      }
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    // Flag / weight: a literal patch built by branch (no computed key — CodeQL).
+    const admin = createAdminClient()
+    const update =
+      op.kind === 'setFlag'
+        ? op.flag === 'is_public'
+          ? { is_public: op.value }
+          : { is_template: op.value }
+        : { weight_class: op.weightClass }
+    const { error } = await admin.from('practices').update(update).in('id', ids)
+    if (error) return fail(error.message)
+    revalidateContent('practices')
+    return ok({ count: ids.length, capped })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+}
+
+/**
+ * Find likely duplicates of ONE practice (the explicit per-practice "find near-duplicates"
+ * lookup, PRACTICE-LIBRARY §5 — NOT an always-on column). Curator-gated, re-checked here;
+ * delegates to the vector-similarity read. Returns the neighbour list (empty when the practice
+ * has no embedding yet) so the row affordance can render inline.
+ */
+export async function findPracticeDuplicatesAction(
+  id: string,
+): Promise<ActionResult<{ candidates: DuplicateCandidate[] }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const candidates = await findPracticeDuplicates(id)
+    return ok({ candidates })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not check for duplicates.')
+  }
+}
+
+/**
+ * Bulk triage decision over the EXPLICIT ids the curator selected (the review queue's
+ * "approve/reject these N" — the checkbox path, alongside the filtered-set path in
+ * bulkPracticesByFilterAction). Curator-gated, re-checked server-side; each row goes through
+ * setPracticeStatus so the publish + reviewer stamp match the single-row review exactly.
+ * De-duped + bounded server-side (never trust the client's list length). Returns the count.
+ */
+export async function bulkReviewAction(
+  ids: string[],
+  decision: 'approved' | 'rejected',
+): Promise<ActionResult<{ count: number }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (decision !== 'approved' && decision !== 'rejected') return fail('Unknown decision.')
+  const cleanIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))].slice(0, ADMIN_BULK_MAX)
+  if (cleanIds.length === 0) return fail('Select at least one practice.')
+  try {
+    for (const id of cleanIds) {
+      await setPracticeStatus(id, decision, caller.id)
+    }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+  revalidateContent('practices')
+  revalidatePath('/practices', 'layout')
+  return ok({ count: cleanIds.length })
+}
+
+/**
+ * Merge a duplicate practice INTO a canonical one (the dedup action, item 2.2). Curator-gated,
+ * re-checked server-side; delegates to the merge_practices RPC, which re-points every FK +
+ * lineage onto the canonical, drops the unique-conflict duplicates, records a slug redirect so
+ * the merged link 301s, and archives + unpublishes the source. Returns the RPC result.
+ */
+export async function mergePracticesAction(
+  fromId: string,
+  toId: string,
+): Promise<ActionResult<{ result: MergeResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!fromId || !toId) return fail('Pick both a duplicate and the practice to keep.')
+  if (fromId === toId) return fail('Pick two different practices to merge.')
+  try {
+    const result = await mergePractices(fromId, toId)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ result })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not merge the practices.')
+  }
+}
+
+/** Promote a member/Vera-proposed tag to canonical (item 2.4). Curator-gated. */
+export async function promoteTagAction(tagId: string): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!tagId) return fail('No tag to promote.')
+  try {
+    await promoteTagToCanonical(tagId)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not promote the tag.')
+  }
+  revalidateContent('practices')
+  revalidatePath('/practices', 'layout')
+  return ok()
+}
+
+/**
+ * Merge one tag INTO another (item 2.4): re-points every practice's link onto the canonical
+ * tag, drops the duplicates a practice would carry twice, and retires the source def. Curator-
+ * gated, re-checked server-side. Returns the re-pointed + dropped counts.
+ */
+export async function mergeTagsAction(
+  fromTagId: string,
+  intoTagId: string,
+): Promise<ActionResult<{ result: MergeTagsResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!fromTagId || !intoTagId) return fail('Pick both a tag to merge and the tag to keep.')
+  if (fromTagId === intoTagId) return fail('Pick two different tags to merge.')
+  try {
+    const result = await mergeTags(fromTagId, intoTagId)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ result })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not merge the tags.')
+  }
+}
+
+/**
+ * Run Vera's advisory pre-publish screen on one practice (item 2.5) — the curator calls this
+ * before approving to see voice / completeness / safety notes. Curator-gated. ADVISORY ONLY:
+ * it never blocks publish (it just returns the notes). Budget-gated + deterministic-fallback
+ * inside screenPracticeForPublish, so it always returns a result (it does not throw on AI off).
+ */
+export async function screenPracticeAction(
+  id: string,
+): Promise<ActionResult<{ screen: PracticeScreenResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to screen.')
+  try {
+    const screen = await screenPracticeForPublish(id)
+    return ok({ screen })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not screen the practice.')
+  }
 }
 
 /**

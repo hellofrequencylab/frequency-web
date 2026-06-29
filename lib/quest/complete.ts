@@ -21,6 +21,7 @@ import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
 import { evaluateJourneyCompletion } from '@/lib/quest/completion'
 import { grantJourneyBadgeOnCompletion, grantStoreItem } from '@/lib/awards/cosmetics'
 import { QUEST } from '@/lib/gamification'
+import { celebrateInCircleFeed } from '@/lib/circles/social-fuel'
 
 export interface CompleteJourneyResult {
   completed: boolean
@@ -50,16 +51,19 @@ async function grantCertificate(
   season: number,
 ): Promise<boolean> {
   try {
-    // Claim-then-pay: one row per (member, season) is the idempotency lock. The amount
-    // mirrors the Gem bonus written below (the ledger row carries the live grant).
-    const { error } = await admin.from('reward_grants').insert({
-      rule_key: `certificate:${season}`,
-      profile_id: profileId,
-      reward_kind: 'gems',
-      amount: 100,
-      detail: 'Certificate (season capstone)',
-    })
-    if (error) return false // already granted / lost the race
+    // Race-proof count + claim (BUG-8, migration 20260826000000): the SECURITY DEFINER RPC counts
+    // the member's finished Journeys for the season AND inserts the certificate:{season} reward_grants
+    // lock under one advisory lock, so two concurrent completions can't both observe a stale count.
+    // Returns true ONLY for the call that wins the claim (>= 3 finished and not already granted), so
+    // the one-time side effects below run exactly once. The RPC isn't in the generated types yet, so
+    // it's called through the untyped surface (repo convention, see lib/traits/refresh.ts).
+    const { data: won, error } = await (admin as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: boolean | null; error: { message: string } | null }>
+    }).rpc('claim_season_certificate', { p_profile_id: profileId, p_season: season })
+    if (error || !won) return false // below the bar, already granted, or lost the race
 
     // The 'certificate' achievement (seeded separately — skip cleanly if absent).
     const { data: ach } = await admin
@@ -106,12 +110,19 @@ async function grantGemsOnce(
     .from('reward_grants')
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'gems', amount, detail: label })
   if (error) return false // already granted / lost the race
-  await admin.from('gem_transactions').insert({
+  // The claim is the lock, but the GEMS must actually land. If the ledger insert fails
+  // (a transient DB error), swallowing it would leave the lock permanent and the Gems
+  // never paid (claimed-but-unpaid). Release the claim so a retry can re-pay.
+  const { error: txErr } = await admin.from('gem_transactions').insert({
     profile_id: profileId,
     action_type: actionType,
     amount,
     metadata: { rule: ruleKey, label },
   })
+  if (txErr) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return false
+  }
   return true
 }
 
@@ -161,15 +172,26 @@ export async function tryCompleteJourney(
 
     const { data: profile } = await admin
       .from('profiles')
-      .select('lifetime_rank')
+      .select('current_season_rank, lifetime_rank')
       .eq('id', profileId)
       .maybeSingle()
-    const currentLifetime = (profile as { lifetime_rank: SeasonRank | null } | null)?.lifetime_rank ?? 'ghost'
+    const prof = profile as { current_season_rank: SeasonRank | null; lifetime_rank: SeasonRank | null } | null
+    const currentSeason = prof?.current_season_rank ?? 'ghost'
+    const currentLifetime = prof?.lifetime_rank ?? 'ghost'
 
-    await admin
-      .from('profiles')
-      .update({ current_season_rank: newRank, lifetime_rank: higherRank(currentLifetime, newRank) })
-      .eq('id', profileId)
+    // NON-LOWERING write: the season-finished count is read non-atomically, so a
+    // concurrent completion can momentarily observe a STALE (lower) count and compute a
+    // lower rank than one already written. Only ever RAISE current_season_rank — never
+    // overwrite a higher rank with a lower one. lifetime_rank is already the monotonic
+    // peak via higherRank. Skip the write entirely when neither would change.
+    const raisedSeason = higherRank(currentSeason, newRank)
+    const raisedLifetime = higherRank(currentLifetime, newRank)
+    if (raisedSeason !== currentSeason || raisedLifetime !== currentLifetime) {
+      await admin
+        .from('profiles')
+        .update({ current_season_rank: raisedSeason, lifetime_rank: raisedLifetime })
+        .eq('id', profileId)
+    }
 
     // +75 Zaps (the finish purse). Reads zap_config, falls back to ZAP_AMOUNTS.
     await awardZapsForAction(profileId, 'journey_finished')
@@ -187,16 +209,37 @@ export async function tryCompleteJourney(
 
     // The Trophy cosmetic: finishing a Journey mints its Pillar (Mind/Body/Spirit) badge
     // (REWARDS-ECONOMY.md §7), and the Full Spectrum banner once all four are held.
-    // Idempotent + best-effort — granted directly here so the Trophy lands with the finish
-    // (the batch sweepJourneyBadges is keyed on legacy journey.complete grants).
+    // Idempotent + best-effort — granted directly here so the Trophy lands with the finish.
     await grantJourneyBadgeOnCompletion(profileId, journeyId).catch(() => false)
 
-    // The Certificate (season capstone): finishing the THIRD Journey this season = Master.
-    // Granted once per member per season (claim-then-pay on reward_grants), best-effort.
-    let certificate = false
-    if (newRank === 'master' && count >= 3) {
-      certificate = await grantCertificate(admin, profileId, season)
-    }
+    // The Certificate (season capstone): finishing the THIRD Journey this season = Master. Granted
+    // race-proof by the claim_season_certificate RPC (migration 20260826000000, BUG-8): it counts the
+    // member's finished Journeys AND claims the certificate:{season} lock under one advisory lock, so
+    // two concurrent completions can never both read a stale count < 3. Called on EVERY completion;
+    // the RPC returns false below the 3-Journey bar, so no separate pre-count read is needed here.
+    const certificate = await grantCertificate(admin, profileId, season)
+
+    // Social fuel (Resonance Engine Phase 5 · ADR-386): fire the milestone into the member's
+    // CIRCLE feeds as peer recognition (crowd-in), not a private modal. Best-effort + swallowed:
+    // a missed shoutout never affects the completion. Master-rank gets its own line when this
+    // finish newly raised them to Master; otherwise the Journey-finished celebration.
+    void (async () => {
+      try {
+        const { data: who } = await admin.from('profiles').select('handle').eq('id', profileId).maybeSingle()
+        const handle = (who as { handle: string | null } | null)?.handle
+        if (!handle) return
+        const { data: jr } = await admin.from('journey_plans').select('title').eq('id', journeyId).maybeSingle()
+        const detail = (jr as { title: string | null } | null)?.title ?? null
+        const becameMaster = newRank === 'master' && raisedSeason === 'master' && currentSeason !== 'master'
+        await celebrateInCircleFeed(profileId, {
+          handle,
+          kind: becameMaster ? 'master_rank' : 'journey_finished',
+          detail: becameMaster ? null : detail,
+        })
+      } catch {
+        /* a missed celebration never breaks the completion */
+      }
+    })()
 
     return { completed: true, rank: newRank, zaps: QUEST.JOURNEY_FINISH_ZAPS, gems: bonus, certificate }
   } catch (err) {

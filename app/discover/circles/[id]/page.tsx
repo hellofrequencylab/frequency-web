@@ -22,9 +22,12 @@ export async function generateMetadata({
   if (!circle) return { title: 'Circle not found' }
 
   const where = circle.city ? ` in ${circle.city}` : ''
-  const description =
+  const full =
     circle.about ??
     `${circle.name} is a Frequency circle${where}. Join to meet your neighbors and show up in person.`
+  // Search snippets truncate around 155 chars — keep the meta description tight (matches the
+  // other discover detail pages: journeys, events, partners, practices).
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   return {
     title: circle.name,
     description,

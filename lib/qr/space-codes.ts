@@ -25,6 +25,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
@@ -257,6 +258,9 @@ export async function createSpaceCode(
 
   const caps = await getSpaceCapabilities(space, caller.id)
   if (!caps.canEditProfile) return fail('You do not have permission to add a code for this space.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see lib/spaces/booking.ts.
+  if (!spaceFunctionAccess(space, 'qr', caps.role))
+    return fail('QR codes is not turned on for this space, or your role cannot use it.')
 
   // Validate the inputs (the form pre-checks, but the server is the authority).
   const title = input.title?.trim().slice(0, MAX_TITLE_LEN) ?? ''
@@ -344,6 +348,9 @@ export async function setCodeSplash(
   if (!space) return fail('Space not found.')
   const caps = await getSpaceCapabilities(space, caller.id)
   if (!caps.canEditProfile) return fail('You do not have permission to edit this code.')
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth) — see lib/spaces/booking.ts.
+  if (!spaceFunctionAccess(space, 'qr', caps.role))
+    return fail('QR codes is not turned on for this space, or your role cannot use it.')
 
   // Normalize the incoming splash. null clears it; a non-null but unfixable splash is rejected (so a
   // half-built splash never lands on a scan).

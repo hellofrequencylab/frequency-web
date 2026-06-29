@@ -2,9 +2,11 @@
 
 import type { ComponentType } from 'react'
 import { CircleSettingsModule } from './circle-settings-module'
+import { CircleTextModule } from './circle-text-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { EventSettingsModule } from './event-settings-module'
+import { PracticeSettingsModule } from './practice-settings-module'
 import { ChannelSettingsModule } from './channel-settings-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
@@ -17,8 +19,10 @@ import { ChannelSettingsModule } from './channel-settings-module'
 
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.settings': CircleSettingsModule,
+  'circle.text': CircleTextModule,
   'hub.settings': HubSettingsModule,
   'nexus.settings': NexusSettingsModule,
   'event.settings': EventSettingsModule,
+  'practice.settings': PracticeSettingsModule,
   'channel.settings': ChannelSettingsModule,
 }

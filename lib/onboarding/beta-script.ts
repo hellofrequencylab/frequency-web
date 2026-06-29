@@ -20,13 +20,12 @@ export const BETA_INDUCTION_VERSION = 1
 export type OathId = 'unfinished' | 'report' | 'build'
 
 /** The gate. All three must be checked to enter. Single source of truth.
- *  The first two are the practical beta pact; the third is the spirit of it,
- *  framed as an identity to step into (echoing "You're not a user. You're a
- *  Founder.") rather than an obligation to "agree to be". */
+ *  Three plain commitments a new member makes about how they'll show up. The
+ *  ids are wired/registered, so only the labels change. */
 export const BETA_OATHS: { id: OathId; label: string }[] = [
-  { id: 'unfinished', label: 'I agree to break things' },
-  { id: 'report', label: 'I agree to report bugs' },
-  { id: 'build', label: "I'm here to help build it" },
+  { id: 'unfinished', label: "I'll show up in person" },
+  { id: 'report', label: "I'll say hi to someone new" },
+  { id: 'build', label: "I'm here to be part of it" },
 ]
 
 /** "How did you hear about us?" — captured on the intake into meta.beta.heard_about. */
@@ -55,13 +54,13 @@ export const REEL: ReelSlide[] = [
     kind: 'render',
     render: 'feed',
     title: 'The Feed',
-    line: 'The pulse of your people. What’s happening near you, right now. No algorithm, no outrage, just real life.',
+    line: 'What’s happening near you, right now. No algorithm, no outrage, just real life.',
   },
   {
     kind: 'render',
     render: 'circles',
     title: 'Circles',
-    line: 'Small rooms around the things you love. This is where strangers turn into your people.',
+    line: 'Small rooms around the things you care about. This is where strangers turn into your people.',
   },
   {
     kind: 'render',
@@ -76,15 +75,15 @@ export const VERA = {
   oath: {
     eyebrow: 'Before you come in',
     heading: "This isn't a product. It's a promise.",
-    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. We’re building it in the open, and you’re one of the very first.',
+    body: 'A promise that the people near you are worth finding, and that gathering can feel good again. Here’s how we ask you to show up.',
     cta: "I'm in",
   },
   intro: {
-    eyebrow: 'Welcome, Founder',
+    eyebrow: 'Welcome in',
     // Headings support a light accent markup in the induction: a word wrapped in
     // *asterisks* renders in the brand accent (same convention as splash statements).
-    heading: "You're not a user. You're a *Founder.*",
-    body: 'Everyone else waits until it’s polished. You’re here while it’s raw, shaping the room they’ll all walk into. Let’s build something worth belonging to.',
+    heading: "You're not a user. You're a *member.*",
+    body: 'Frequency is people meeting in person, near you. Show up, find a Circle, do the practice. That’s the whole thing.',
     cta: "Let's go",
   },
   identity: {
@@ -93,7 +92,7 @@ export const VERA = {
   },
   place: {
     heading: 'Where are you?',
-    body: 'We’ll connect you with the Founders closest to you, and learn what you’re hoping to find.',
+    body: 'We’ll connect you with the people closest to you, and learn what you’re hoping to find.',
     intentLabel: 'What are you hoping to find here?',
     intentPlaceholder: 'Say it plainly. It helps us point you at your people.',
   },
@@ -105,8 +104,8 @@ export const VERA = {
   },
   enter: {
     eyebrow: 'Last step',
-    heading: 'Hey, Founder!',
-    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into. She’ll point you to a circle worth joining, then step aside.',
+    heading: 'Welcome in!',
+    body: 'One thing before you explore: let’s find your people. Vera, your guide, already knows what you’re into. She’ll point you to a Circle worth joining, then step aside.',
     cta: 'Meet Vera',
   },
 } as const

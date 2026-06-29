@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
+import { COMPONENT_IDS } from './registry'
 
 // The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
 // removed in Phase 0.5a; '*' is the single source of the default.)
@@ -26,6 +27,41 @@ describe('moduleIdsForScope', () => {
     expect(j).toEqual(['admin-journeys-stats', 'admin-journeys-review', 'admin-journeys-library'])
   })
 
+  it('the admin practices workspace resolves its curation blocks, in order, no leakage', () => {
+    const p = moduleIdsForScope('/admin/content/practices')
+    expect(p).toBe(ROUTE_MODULE_IDS['/admin/content/practices'])
+    // Default render order: stats → review queue → needs attention → faceted library → tags, then
+    // the Phase 3 "Grow" blocks appended AFTER the original five.
+    expect(p).toEqual([
+      'admin-practices-stats',
+      'admin-practices-review',
+      'admin-practices-attention',
+      'admin-practices-library',
+      'admin-practices-tags',
+      'admin-practices-remix-levers',
+      'admin-practices-contributor-recognition',
+    ])
+    // The faceted library IS a module here too (reads the URL from the x-search header).
+    expect(p).toContain('admin-practices-library')
+    // The two Phase 3 blocks come AFTER tags (the locked append order).
+    expect(p.indexOf('admin-practices-remix-levers')).toBeGreaterThan(p.indexOf('admin-practices-tags'))
+    expect(p.indexOf('admin-practices-contributor-recognition')).toBeGreaterThan(
+      p.indexOf('admin-practices-remix-levers'),
+    )
+    // A distinct exact route — it never inherits the global community blocks or the journeys set.
+    expect(p).not.toContain('community-pulse')
+    expect(p).not.toContain('admin-journeys-library')
+  })
+
+  it('the Phase 3 remix blocks are scoped to the admin practices workspace only (no leak)', () => {
+    // The member practice index, the member detail page, the journeys workspace, and the global
+    // default must never offer the admin remix levers or contributor recognition.
+    for (const scope of ['/practices', '/practices/some-id', '/admin/content/journeys', '*']) {
+      expect(moduleIdsForScope(scope)).not.toContain('admin-practices-remix-levers')
+      expect(moduleIdsForScope(scope)).not.toContain('admin-practices-contributor-recognition')
+    }
+  })
+
   it('the practices page resolves its blocks, including the URL-driven library', () => {
     const p = moduleIdsForScope('/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/practices'])
@@ -35,11 +71,22 @@ describe('moduleIdsForScope', () => {
     expect(p).toContain('practices-library')
   })
 
-  it('/lead has its own explicit set (the deliberate community-blocks footer)', () => {
-    // Phase 0.5a: /lead is no longer an accidental fallback — it declares its own set so the
-    // Layout editor's offering there is intentional. Its set is the community blocks.
+  it('/lead has its own explicit Leadership-dashboard set (not the global blocks)', () => {
+    // /lead is the leader's consolidated home: it declares its OWN block set (the leadership
+    // dashboard), not the generic community footer, so the Layout editor offers the leader blocks.
     expect(moduleIdsForScope('/lead')).toBe(ROUTE_MODULE_IDS['/lead'])
-    expect(moduleIdsForScope('/lead')).toEqual(GLOBAL)
+    expect(moduleIdsForScope('/lead')).toEqual([
+      'lead-stats',
+      'lead-attention',
+      'lead-circles',
+      'lead-coleaders',
+      'lead-networks',
+      'lead-events',
+      'lead-dispatches',
+      'lead-journeys',
+      'lead-recognition',
+      'lead-tools',
+    ])
   })
 
   it('an unconverted route falls back through its section to the global set', () => {
@@ -59,13 +106,28 @@ describe('moduleIdsForScope', () => {
     expect(v).not.toContain('community-pulse')
   })
 
+  it('the Menu Manager (/admin/menu) resolves its five blocks, in render order, with no leakage', () => {
+    const m = moduleIdsForScope('/admin/menu')
+    expect(m).toBe(ROUTE_MODULE_IDS['/admin/menu'])
+    // The five blocks, in the locked render order (ADR-359): surface picker first, then the bulk
+    // groups editor, the global speed panel, layout & defaults, and the rail cards.
+    expect(m).toEqual(['menu-surface', 'menu-groups', 'menu-speed', 'menu-layout', 'menu-rail-cards'])
+    // The retired single `menu-manager` id is gone.
+    expect(m).not.toContain('menu-manager')
+    // A distinct exact route — it never inherits the global community blocks.
+    expect(m).not.toContain('community-pulse')
+  })
+
   it('a practice detail page resolves the shared detail blocks via the /practices/* section scope', () => {
     const d = moduleIdsForScope('/practices/some-practice-id')
     expect(d).toBe(ROUTE_MODULE_IDS['/practices/*'])
     expect(d).toContain('practice-detail-stats')
     expect(d).toContain('practice-detail-guide')
-    // Distinct from the index's own set.
+    // Phase 3 "Grow" (ADR-438): the member remix-lineage surface joins the /practices/* detail set.
+    expect(d).toContain('practice-detail-lineage')
+    // Distinct from the index's own set; the lineage block never leaks onto the index either.
     expect(moduleIdsForScope('/practices')).not.toContain('practice-detail-stats')
+    expect(moduleIdsForScope('/practices')).not.toContain('practice-detail-lineage')
     expect(d).not.toContain('practices-library')
   })
 
@@ -89,20 +151,6 @@ describe('moduleIdsForScope', () => {
   })
 })
 
-// Every module id any blueprint references must be in the '/spaces/*' family set (so the layout
-// editor offers it and the resolver can place it) AND carry metadata (locked above). This keeps the
-// blueprints (lib/spaces/blueprints.ts) and the registered module set from drifting apart.
-describe('entity blueprint ↔ module set alignment', () => {
-  it('every blueprint entity module is in the /spaces/* set and has metadata', async () => {
-    const { allEntityModuleIds } = await import('@/lib/spaces/blueprints')
-    const family = new Set(ROUTE_MODULE_IDS['/spaces/*'])
-    for (const id of allEntityModuleIds()) {
-      expect(family.has(id), `blueprint module ${id} missing from /spaces/* set`).toBe(true)
-      expect(moduleMeta(id), `missing meta for ${id}`).toBeDefined()
-    }
-  })
-})
-
 describe('moduleMeta', () => {
   it('resolves metadata across the whole union (any route block)', () => {
     expect(moduleMeta('quest-season-map')?.label).toBe('Season map')
@@ -115,5 +163,21 @@ describe('moduleMeta', () => {
     for (const ids of Object.values(ROUTE_MODULE_IDS)) {
       for (const id of ids) expect(moduleMeta(id), `missing meta for ${id}`).toBeDefined()
     }
+  })
+})
+
+// Reachability (site-audit BUG-1/BUG-2): a component bound in the registry but absent from every
+// route set can never render or be added from the Layout editor — a silent dead feature. Each
+// bound id must be offered by some route set OR be on the explicit PARKED allowlist (modules kept
+// defined for a future surface, by owner decision). Adding a binding without wiring a route fails here.
+describe('module reachability', () => {
+  // Intentionally defined-but-unoffered, documented in modules.ts (Phase 0.5.11 + event defaults).
+  const PARKED = new Set(['quest-tasks', 'event-details', 'event-dispatch'])
+
+  it('every bound component is route-reachable or explicitly parked', () => {
+    const reachable = new Set<string>()
+    for (const ids of Object.values(ROUTE_MODULE_IDS)) for (const id of ids) reachable.add(id)
+    const stranded = COMPONENT_IDS.filter((id) => !reachable.has(id) && !PARKED.has(id))
+    expect(stranded, `bound but unreachable (wire a route set or add to PARKED): ${stranded.join(', ')}`).toEqual([])
   })
 })

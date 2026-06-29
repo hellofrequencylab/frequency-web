@@ -1,8 +1,6 @@
 import Link from 'next/link'
 import { Search, EyeOff } from 'lucide-react'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
-import { BETA_OPEN_ACCESS } from '@/lib/core/beta'
 import { type PracticeSort } from '@/lib/practices'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
@@ -22,7 +20,7 @@ import { getPageHeaderImage } from '@/lib/page-settings/store'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Practices',
-  description: 'This is where the zaps come from: a growing community library. Adopt or claim a practice, then log it every day to earn zaps, climb the ranks, and keep your streak alive.',
+  description: 'This is where the Zaps come from: a growing community library. Adopt or claim a practice, then log it every day to earn Zaps and keep your streak alive.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
@@ -38,7 +36,7 @@ const SORTS: { key: PracticeSort; label: string }[] = [
   { key: 'trending', label: 'Trending' },
   { key: 'top', label: 'All-time' },
   { key: 'new', label: 'New' },
-  { key: 'az', label: 'A–Z' },
+  { key: 'az', label: 'A-Z' },
 ]
 
 function Chip({ label, href, active }: { label: string; href: string; active: boolean }) {
@@ -72,11 +70,12 @@ export default async function PracticesPage({
   const caps = await getGlobalCapabilities()
   const isAdmin = caps.has('admin.access')
   const showHidden = isAdmin && sp.hidden === '1'
-  // Authoring a library practice is a Crew+ act (ADR-109): a plain Member may adopt/claim/log
-  // but never create. Hide the entry point for Members; the server action is the real gate.
-  // BETA open access (lib/core/beta.ts): any signed-in member may author (kept pending for Host+
-  // review), so the entry point shows for everyone signed in while the flag is on.
-  const canCreatePractice = !!caller && (BETA_OPEN_ACCESS || atLeastRole(caller.community_role, 'crew'))
+  // Authoring a library practice is a Crew act (ADR-109/ADR-414): real Crew (or a steward/
+  // staff) may create; a plain Member may adopt/claim/log but never create. The entry point
+  // now shows for EVERY signed-in member — non-Crew get the free-beta upgrade popup (the
+  // `practice.create` capability reads the REAL tier, so the popup fires during the beta).
+  const signedIn = !!caller
+  const canCreatePractice = caps.has('practice.create')
 
   // The toolbar writes the facets the library module reads back from the URL.
   const base = {
@@ -101,19 +100,22 @@ export default async function PracticesPage({
   }
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } =
+  const { title, description, heroImage: contentHero, ctaLabel, ctaHref } =
     await resolvePageContent('/practices', CONTENT_FALLBACK)
-  // The wide header banner now comes from the SEO & meta panel's Header image (page_settings).
-  const heroImage = await getPageHeaderImage('/practices')
+  // The wide header banner can be set from EITHER the Settings header image (page_settings) OR the
+  // older page-content hero (ADR-180). Prefer the new uploader, then fall back to the page-content
+  // hero so an image set there actually shows (it was being dropped — the page read only the
+  // page_settings field), mirroring how /journeys resolves its banner.
+  const heroImage = (await getPageHeaderImage('/practices')) ?? contentHero
 
   return (
     <IndexTemplate
       title={title}
       description={description}
       action={
-        (canCreatePractice || (ctaLabel && ctaHref)) ? (
+        (signedIn || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
-            {canCreatePractice && <NewPracticeButton />}
+            {signedIn && <NewPracticeButton canCreate={canCreatePractice} />}
             {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
             {ctaLabel && ctaHref && (
               <a
@@ -162,19 +164,11 @@ export default async function PracticesPage({
           </div>
         </div>
       }
-      banner={
-        // Operator-set header image (PX.1) — renders above the title, only when set.
-        heroImage && (
-          // Intrinsic sizing (w-full h-auto): the whole banner scales to the screen and is
-          // never cropped, so wide headers read fully on mobile too. Upload ~1600×500 (16:5).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={heroImage}
-            alt=""
-            className="mb-6 h-auto w-full rounded-2xl border border-border"
-          />
-        )
-      }
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/practices', label: 'Practices' },
+      ]}
+      heroImage={heroImage}
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless

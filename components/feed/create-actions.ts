@@ -21,12 +21,15 @@ export type CreateItem = {
 }
 
 export const CREATE_ITEMS: CreateItem[] = [
-  { href: '/messages?compose=dm', label: 'New Conversation', hint: 'Direct or group message', Icon: MessageSquare, roles: ['member', ...CREW_PLUS] },
+  // A DM starts from a person, so send them to the directory to pick one (the old
+  // ?compose=dm param was never read by /messages, so it dead-ended on the list).
+  { href: '/network', label: 'New Conversation', hint: 'Find someone to message', Icon: MessageSquare, roles: ['member', ...CREW_PLUS] },
   { href: '/events/new', label: 'New Event', hint: 'Gathering, ride, meetup', Icon: CalendarDays, roles: CREW_PLUS },
-  { href: '/messages?compose=room', label: 'New Room', hint: 'Topic-based chat space', Icon: Hash, roles: HOST_PLUS },
-  // The Circles page hosts the "Start a circle" compose modal — there is no /circles/new
-  // route (that link 404'd). Point at /circles where the create affordance lives.
-  { href: '/circles', label: 'New Circle', hint: 'Place-based practice group', Icon: Users, roles: HOST_PLUS },
+  // /messages hosts the New Room compose button; the old ?compose=room param was never read.
+  { href: '/messages', label: 'New Room', hint: 'Topic-based chat space', Icon: Hash, roles: HOST_PLUS },
+  // The canonical circle builder (CircleWizard) lives at /circles/new — every other
+  // "start a circle" affordance already targets it.
+  { href: '/circles/new', label: 'New Circle', hint: 'Place-based practice group', Icon: Users, roles: HOST_PLUS },
   { href: '/broadcast', label: 'New Broadcast', hint: 'Dispatch to the wider community', Icon: Radio, roles: HOST_PLUS },
 ]
 

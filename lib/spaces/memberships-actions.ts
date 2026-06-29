@@ -22,7 +22,9 @@ import {
   cancelMembership as cancelMembershipImpl,
   type MembershipTier,
 } from '@/lib/spaces/memberships'
-import { type ActionResult } from '@/lib/action-result'
+import { getMyProfileId } from '@/lib/auth'
+import { createSpaceMembershipCheckout } from '@/lib/billing/space-membership-checkout'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** Replace a Space's membership tiers. Gated on canEditProfile (see the implementation). */
 export async function setMembershipTiers(
@@ -40,4 +42,21 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
 /** Cancel a membership. The member who joined or a space admin only (gated in the implementation). */
 export async function cancelMembership(membershipId: string): Promise<ActionResult> {
   return cancelMembershipImpl(membershipId)
+}
+
+/** Start a PAID space-membership checkout (Pricing P3). GATED inside createSpaceMembershipCheckout
+ *  on billingLive() + the owner being Connect-ready; it returns a reason (never a charge) when not
+ *  payable, so the caller falls back to the existing display-only joinTier path. Resolves the member
+ *  from the session (the member never passes their own id). On success returns the Stripe URL. */
+export async function startSpaceMembershipCheckout(
+  spaceId: string,
+  tierId: string,
+): Promise<ActionResult<{ url: string }>> {
+  const memberId = await getMyProfileId()
+  if (!memberId) return fail('Not signed in')
+  const result = await createSpaceMembershipCheckout(spaceId, tierId, memberId)
+  if (result.url) return ok({ url: result.url })
+  // 'billing_off' / 'free_tier' / 'no_owner_payouts' etc. — the caller decides whether to fall back
+  // to the free join path; a clean error keeps this from ever being a broken button.
+  return fail(result.reason ?? 'error')
 }

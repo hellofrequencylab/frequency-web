@@ -31,7 +31,8 @@ vi.mock('./store', () => ({
 }))
 
 // canEditProfile is true only when the caller OWNS the space being asked about (the real gate's shape).
-vi.mock('./entitlements', () => ({
+vi.mock('./entitlements', async (orig) => ({
+  ...(await orig<typeof import('./entitlements')>()),
   getSpaceCapabilities: async (
     space: { ownerProfileId?: string | null } | null | undefined,
     profileId: string | null | undefined,
@@ -169,7 +170,6 @@ vi.mock('@/lib/supabase/admin', () => ({
 
 import {
   normalizeSince,
-  normalizeLimit,
   ensureCheckinNode,
   listCheckins,
   countCheckins,
@@ -211,15 +211,6 @@ describe('normalizeSince (pure, fail-safe)', () => {
   })
 })
 
-describe('normalizeLimit (pure)', () => {
-  it('clamps to [1, 500] and defaults a bad value', () => {
-    expect(normalizeLimit(10)).toBe(10)
-    expect(normalizeLimit(99999)).toBe(500)
-    expect(normalizeLimit(0)).toBe(200)
-    expect(normalizeLimit(-5)).toBe(200)
-    expect(normalizeLimit('nope')).toBe(200)
-  })
-})
 
 describe('ensureCheckinNode (create-or-get, gated)', () => {
   it('rejects an anonymous caller (no node created)', async () => {

@@ -4,14 +4,16 @@
 //
 // A 'use server' module may export ONLY async functions, so the reader + its types live in
 // lib/spaces/managed.ts (no directive: the IO + the ManagedSpace type, unit-testable). This thin
-// file is the seam the CLIENT mega-menu imports, so the read crosses the network boundary as a
-// proper Server Action:
-//   manage-mega-menu.tsx -> getManagedSpaces()
+// file is the Server Action seam a client launcher imports, so the read crosses the network
+// boundary as a proper Server Action: someClient -> getManagedSpaces().
 //
-// SERVER components could import listManagedSpaces directly from lib/spaces/managed.ts; the mega-menu
-// is a client component (it owns the open/dismiss interaction), so it reaches the reader through this
-// wrapper. The auth + tenancy + fail-safe guarantees all live in the implementation (it re-resolves
-// the viewer's own id and fails safe to []); this wrapper just re-exposes it.
+// (The original header mega-menu launcher was retired per ADR-349; this wrapper is kept as the
+// stable Server Action seam for any client surface that needs the managed-Spaces list.)
+//
+// SERVER components could import listManagedSpaces directly from lib/spaces/managed.ts; a client
+// surface (owning its own open/dismiss interaction) reaches the reader through this wrapper. The
+// auth + tenancy + fail-safe guarantees all live in the implementation (it re-resolves the
+// viewer's own id and fails safe to []); this wrapper just re-exposes it.
 
 import { listManagedSpaces, type ManagedSpace } from '@/lib/spaces/managed'
 

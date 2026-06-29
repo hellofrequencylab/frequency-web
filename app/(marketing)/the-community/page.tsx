@@ -32,6 +32,9 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -76,17 +79,19 @@ const CHANNELS = [
 ]
 
 export default async function TheCommunityPage() {
-  const data = await getPublishedData('the-community')
+  // getPublishedData -> getTemplate -> legacy: prefer the operator-published doc,
+  // else the designed git template (so the designed page is live without a DB
+  // publish), with the hardcoded legacy component as a last resort.
+  const published = await getPublishedData('the-community')
+  const template = getTemplate('the-community')
+  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])}
       />
-      {data && Array.isArray(data.content) && data.content.length > 0 ? (
-        <Render config={config} data={data} />
-      ) : (
-        <LegacyTheCommunity />
-      )}
+      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
     </>
   )
 }

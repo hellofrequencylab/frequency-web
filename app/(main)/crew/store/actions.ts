@@ -2,12 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import type { Database } from '@/lib/database.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { canCashIn } from '@/lib/core/entitlement'
+import { canCashIn, deriveTier } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { featureAllowed } from '@/lib/pricing/gates'
+import { billingLive } from '@/lib/pricing/settings'
 import { classifyRedemption } from '@/lib/store/fulfillment'
 import { computeSpendableBalance, fetchGiftsSent } from '@/lib/store/balance'
 import { giftGems, type GiftGemsResult } from '@/lib/rewards/gifts'
@@ -58,6 +60,14 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // enforce it here too and hand back a clean upsell pointing at /upgrade.
   const tier = ((profile as { membership_tier?: EntitlementTier | null } | null)?.membership_tier) ?? 'free'
   if (!canCashIn(tier)) {
+    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
+  }
+  // Pricing P3: the SAME gate, now also routed through the operator-tunable entitlements layer
+  // (featureAllowed) so an operator can adjust the cash-in minimum from /admin/pricing once billing
+  // is live. FAIL-SAFE + OFF-PRESERVING: while billing_live is OFF, featureAllowed short-circuits to
+  // true, so this is a no-op and today's behavior (the canCashIn line above) is exactly preserved.
+  const cashInAllowed = await featureAllowed('vault_cash_in', { tier: deriveTier(tier) }, { billingLive: await billingLive() })
+  if (!cashInAllowed) {
     return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
   }
 
@@ -145,14 +155,34 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   const cosmeticType = plan.kind === 'cosmetic' ? plan.cosmeticType : null
   const cosmeticValue = (item.metadata as { value?: string } | null)?.value
 
-  const { error } = await db.from('store_redemptions').insert({
-    profile_id: profileId,
-    item_id: itemId,
-    gems_spent: item.gem_cost,
-    metadata: item.metadata ?? {},
-  } as Database['public']['Tables']['store_redemptions']['Insert'])
+  // Charge ATOMICALLY: redeem_store_item_atomic (migration 20260726000000) takes
+  // pg_advisory_xact_lock on the buyer, rechecks the spendable balance AND the capped-SKU
+  // stock inside the transaction, and inserts the store_redemptions row only if both still
+  // hold — closing the check-then-insert overspend/oversell race the two app-side
+  // pre-checks above cannot close. The after_store_redemption trigger still fires on the
+  // insert (it decrements store_items.stock), so stock handling is unchanged.
+  // Untyped handle (same pattern as lib/blocking.ts): redeem_store_item_atomic is new
+  // (migration 20260726000000) and not yet in the generated Database types, so we widen to
+  // the un-parametrised SupabaseClient. Drop after `supabase gen types` is re-run.
+  const rpc: SupabaseClient = createAdminClient()
+  const { error } = await rpc.rpc('redeem_store_item_atomic', {
+    _profile: profileId,
+    _item: itemId,
+    _cost: item.gem_cost,
+  })
 
-  if (error) return fail(error.message)
+  if (error) {
+    // The RPC raises a typed P0001 message; map the two expected ones to clean copy and
+    // fail CLOSED on anything else (incl. a missing function) — never a silent overspend.
+    if (error.message?.includes('insufficient_balance')) {
+      return fail(`Not enough gems. You need ${item.gem_cost - balance} more.`)
+    }
+    if (error.message?.includes('out_of_stock')) {
+      return fail('Out of stock')
+    }
+    console.error('[redeemItem] redeem_store_item_atomic failed', error.message)
+    return fail('We could not complete that redemption. Your Gems stay safe.')
+  }
 
   // Buy-a-freeze sink (ADR-305): the Gems are now charged (the store_redemptions row
   // above is the debit). Bank the freeze token. The cap was pre-checked before charging;
@@ -160,8 +190,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   if (item.slug === 'streak-freeze') {
     const { grantStreakFreeze } = await import('@/lib/practice-streak')
     await grantStreakFreeze(profileId).catch(() => {})
-    revalidatePath('/crew')
-    revalidatePath('/feed')
+    // Spending changes the spendable balance shown in the global shell header on EVERY
+    // route, so revalidate the root layout — not just /crew — or the stat boxes stay stale.
+    revalidatePath('/', 'layout')
     return ok({ pending: false })
   }
 
@@ -175,8 +206,9 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   }
 
   revalidatePath('/crew/store')
-  revalidatePath('/crew')
-  revalidatePath('/people', 'layout')
+  // The spendable Gem balance shows in the global shell header on every route; revalidate
+  // the root layout so all the stat boxes update immediately after a spend (not just /crew).
+  revalidatePath('/', 'layout')
   return ok({ pending: cosmeticType === null })
 }
 
@@ -197,7 +229,8 @@ export async function giftGemsAction(
   const result = await giftGems(profileId, toProfileId, amount)
 
   revalidatePath('/crew/store')
-  revalidatePath('/crew')
+  // Gifting debits the giver's spendable balance shown site-wide — refresh the shell header.
+  revalidatePath('/', 'layout')
   return result
 }
 

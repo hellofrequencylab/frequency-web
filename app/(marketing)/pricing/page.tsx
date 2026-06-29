@@ -27,6 +27,9 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
@@ -36,36 +39,71 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Membership that keeps the room open. Free during beta, no card required. Crew is $10/mo when paid memberships launch, and early members lock in Founder pricing forever.',
+    'Being a Frequency Member is free, forever: browse Circles and Events, attend gatherings, earn Zaps, and meet Vera. Paid Crew and Supporter plans, plus Space plans for practitioners and businesses, add more. No card today, leave anytime.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: membership that keeps the room open',
+    title: 'Frequency pricing: free to be a Member, forever',
     description:
-      'Free during beta, no card required. Pay-it-forward membership that sustains the spaces. Founder pricing locked for early members.',
+      'Member is free, forever. Crew and Supporter add the full community and the full game. Space plans for practitioners, businesses, and organizations. No card today, leave anytime.',
     url: '/pricing',
   },
 }
 
 export default async function PricingPage() {
-  const data = await getPublishedData('pricing')
+  // Prefer the operator-published document; otherwise render the git template so the new
+  // normal-pricing content is LIVE without a DB publish. The hardcoded LegacyPricing is a
+  // last-resort fallback only (kept, no longer the default renderer).
+  const published = await getPublishedData('pricing')
+  const template = getTemplate('pricing')
+  const data = isRenderable(published)
+    ? published
+    : isRenderable(template)
+      ? template
+      : null
+  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
       <JsonLd
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
-          // FAQPage built from the same Q&A rendered on the page (FaqList below),
-          // so the schema matches what visitors read. Answers are plain strings.
-          faqSchema(FAQS.map((f) => ({ q: f.q, a: String(f.a) }))),
+          // FAQPage built from the same Q&A the live page renders, so the schema matches
+          // what visitors read. Mirrors the FAQ in lib/page-editor/templates/pricing.ts.
+          faqSchema(PRICING_FAQ),
         ]}
       />
-      {data && Array.isArray(data.content) && data.content.length > 0 ? (
-        <Render config={config} data={data} />
-      ) : (
-        <LegacyPricing />
-      )}
+      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyPricing />}
     </>
   )
 }
+
+// Mirrors the Accordion FAQ in lib/page-editor/templates/pricing.ts so the FAQPage
+// structured data matches the live page. Keep the two in sync.
+const PRICING_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'Is being a Member really free?',
+    a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.',
+  },
+  {
+    q: 'What does "Coming soon" mean?',
+    a: 'It means we have built the plan and set its price, but you cannot buy it yet. We show the real numbers so you know what to expect. Nothing charges until we turn billing on and you choose a paid plan.',
+  },
+  {
+    q: 'What is the difference between Member, Crew, and Supporter?',
+    a: 'Member is the free tier. Crew adds the full community and the full game, with Gems, Vault cash-in, unlimited Vera, and the leaderboard, for $9 a month or $90 a year. Supporter adds everything in Crew plus funding a member who cannot pay yet, for $24 a month or $240 a year.',
+  },
+  {
+    q: 'What about refunds?',
+    a: 'There is nothing to refund today, since nothing is charged. When paid plans go live, we will publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.',
+  },
+  {
+    q: 'Can I buy my way into a Host or Guide role?',
+    a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.',
+  },
+  {
+    q: 'Where does the money go?',
+    a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more cover neighbors who cannot pay yet.',
+  },
+]
 
 function LegacyPricing() {
   return (

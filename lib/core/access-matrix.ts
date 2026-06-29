@@ -56,6 +56,7 @@ export type MatrixColumn =
 export type Surface =
   // Community
   | 'feed' | 'broadcast' | 'circles' | 'channels' | 'events' | 'market' | 'people'
+  | 'housing' | 'maker' | 'shop'
   | 'messageBoards'
   // The Quest
   | 'quest' | 'journeys' | 'practices' | 'library' | 'vault'
@@ -97,6 +98,12 @@ export const ACCESS_MATRIX: Record<Surface, Row> = {
   channels: COMMUNITY_OPEN,
   events: COMMUNITY_OPEN,
   market: COMMUNITY_OPEN,
+  // Marketplace verticals (ADR-39X). housing is member-only (high-trust); maker + shop
+  // preview as a visitor like the rest of Community. Registered here so accessTo resolves
+  // them; their nav only appears once the vertical is enabled (lib/verticals).
+  housing: { member: 'full' }, // visitor 🚫
+  maker: COMMUNITY_OPEN,
+  shop: COMMUNITY_OPEN,
   people: { member: 'full' }, // visitor 🚫 (sheet)
   messageBoards: { member: 'full' }, // visitor 🚫 — maps to Messages
 
@@ -192,6 +199,12 @@ export function columnsForHats(h: Hats): Set<MatrixColumn> {
 /** The access level this viewer has on `surface` — the most-open applicable cell. */
 export function accessTo(surface: Surface, h: Hats): AccessLevel {
   const row = ACCESS_MATRIX[surface]
+  // Defense-in-depth: an UNKNOWN/unregistered surface DEFAULT-DENIES rather than throwing.
+  // This is what stops a vertical's nav problem from crashing the shared app shell on every
+  // route. The 2026-06-24 prod /feed outage was exactly this: a vertical declared an
+  // unregistered surface → ACCESS_MATRIX[surface] was undefined → row[col] threw a TypeError
+  // inside the shell's NAV_AREAS.map. A nav item with an unknown surface is simply hidden.
+  if (!row) return 'none'
   let level: AccessLevel = 'none'
   for (const col of columnsForHats(h)) {
     const cell = row[col]
@@ -203,11 +216,6 @@ export function accessTo(surface: Surface, h: Hats): AccessLevel {
 /** Full function on this surface? */
 export function canUse(surface: Surface, h: Hats): boolean {
   return accessTo(surface, h) === 'full'
-}
-
-/** Any access at all (limited preview or full)? */
-export function canPreview(surface: Surface, h: Hats): boolean {
-  return accessTo(surface, h) !== 'none'
 }
 
 /** Limited (preview / upgrade-gated) but not yet full — show the upgrade affordance. */

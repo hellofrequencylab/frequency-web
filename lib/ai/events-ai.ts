@@ -19,7 +19,7 @@ import { estimateCostUsd } from './budget'
 import { recordAiUsage, featureOverBudget } from './usage'
 import { withVoice } from './voice'
 import { coerceEventExtraction } from '@/lib/events/normalize'
-import type { ExtractedEvent } from '@/lib/events/types'
+import type { ExtractedEvent, EventSparkAnswers } from '@/lib/events/types'
 
 type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/webp'
 
@@ -232,6 +232,17 @@ Turn their free text into structured details and call the save_event tool. Rules
 - details: capture any extra structure the text gives into the details fields: a lineup (bands, speakers, performers, hosts), set times (schedule), amenities (features), ticket tiers (tickets), links (links), sponsors, and anything else as other label/value pairs. Do not invent details they did not mention.
 - There is no image, so set cover.found=false and omit corners, imageBox, and imageRegions (those need a photo).`
 
+const SPARK_SYSTEM = `You are Vera, Frequency's assistant. A community member answered a few quick questions about an event they want to post (what it is, when, where, and who it is for), and may have pasted a flyer or write-up. Turn that into an event draft and call the save_event tool. Rules:
+- Only record what the answers or pasted text actually say. Never invent a title, date, venue, organizer, or price.
+- If the member pasted a flyer or write-up, read it closely and let it lead; the short answers fill the gaps.
+- description: a clean 1 to 2 sentence version in plain voice. Say what the event is and who it is for. Do not add facts they did not give.
+- starts_at and ends_at: ISO 8601 from the "when" answer. If only a month and day are given, use the next future occurrence. If the time is vague, leave it out rather than invent a precise time.
+- price: if they say free, set isFree=true. If a paid price is given, set priceCents in whole cents (e.g. 1500 for $15).
+- domain: classify into one of mind, body, spirit, expression.
+- tags: 3 to 6 short lowercase descriptors drawn from what they wrote.
+- details: capture any extra structure they give (a lineup, set times, ticket tiers, sponsors) into the details fields, and anything else as other label/value pairs. Capture EVERY link or handle they include (registration, tickets, website, social) into details.links with the right kind, since a pasted write-up is where those live. Do not invent details.
+- There is no image, so set cover.found=false and omit corners, imageBox, and imageRegions.`
+
 async function runExtraction(opts: {
   tier: ModelTier
   feature: string
@@ -278,22 +289,20 @@ async function runExtraction(opts: {
  *  manual entry). The caller must gate on aiAvailable + featureOverBudget. */
 export async function scanEventPoster(input: {
   images: { base64: string; mediaType: ImageMediaType }[]
+  /** Optional pasted write-up / listing text to read ALONGSIDE the image(s) — the
+   *  smart-uploader case (a poster photo plus the text copied from its event page). */
+  text?: string | null
   profileId?: string | null
 }): Promise<ExtractedEvent | null> {
   const imgs = input.images.slice(0, 6)
   if (!imgs.length) return null
+  const pasted = input.text?.trim().slice(0, 8000) || undefined
   const content: Anthropic.MessageParam['content'] = [
     ...imgs.map((im) => ({
       type: 'image' as const,
       source: { type: 'base64' as const, media_type: im.mediaType, data: im.base64 },
     })),
-    {
-      type: 'text' as const,
-      text:
-        imgs.length > 1
-          ? `These ${imgs.length} images are different views of the SAME event poster. Combine everything you can read across all of them into ONE event. Call save_event.`
-          : 'Turn this event poster into a draft. Call save_event.',
-    },
+    { type: 'text' as const, text: buildScanPrompt(imgs.length, pasted) },
   ]
   return runExtraction({
     tier: 'sonnet',
@@ -302,6 +311,24 @@ export async function scanEventPoster(input: {
     profileId: input.profileId,
     content,
   })
+}
+
+/** The user instruction for a scan. Merges multiple shots, and when a pasted write-up
+ *  accompanies the image, tells Vera to treat the text as the authoritative source for
+ *  names / dates / prices / links and harvest every URL into details.links. */
+function buildScanPrompt(imageCount: number, text?: string): string {
+  const parts: string[] = [
+    imageCount > 1
+      ? `These ${imageCount} images are different views of the SAME event (a flyer, poster, or screenshots). Combine everything you can read across all of them into ONE event.`
+      : 'Turn this event flyer, poster, or screenshot into a draft.',
+  ]
+  if (text) {
+    parts.push(
+      `The member ALSO pasted the event's full write-up or listing text below. Treat the text as the most reliable source for the exact title, date and time, address, prices, and organizer, and ESPECIALLY for any links (registration, tickets, website, social). Merge it with the image into ONE event, and capture every URL you find into details.links with the right kind. When the text and the image disagree, prefer the text for facts and the image for the cover.\n\n"""\n${text}\n"""`,
+    )
+  }
+  parts.push('Call save_event.')
+  return parts.join('\n\n')
 }
 
 /** Text assist on manual entry: free text → an event draft (Haiku). */
@@ -317,5 +344,44 @@ export async function assistEventFromText(input: {
     system: ASSIST_SYSTEM,
     profileId: input.profileId,
     content: [{ type: 'text', text }],
+  })
+}
+
+/** Compose the wizard answers (and any pasted flyer text) into one prompt for the spark. */
+function composeSparkText(a: EventSparkAnswers, sourceText?: string | null): string {
+  const src = sourceText?.trim().slice(0, 4000)
+  return [
+    src
+      ? `The member pasted a flyer or write-up. Read it closely and draft the event FROM it; the short answers below fill any gaps:\n"""\n${src}\n"""\n`
+      : '',
+    `What it is: ${a.what.trim().slice(0, 500) || '(not given)'}`,
+    `When: ${a.when.trim().slice(0, 200) || '(not given)'}`,
+    `Where: ${a.where.trim().slice(0, 300) || '(not given)'}`,
+    `Who it is for and details: ${a.details.trim().slice(0, 800) || '(none)'}`,
+    '',
+    'Turn this into an event draft. Call save_event.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+/**
+ * Vera's Spark for events: a few wizard answers (plus an optional pasted flyer) → an event
+ * draft (Sonnet). Mirrors draftJourneySpark / draftPracticeSpark. Returns null when AI is off
+ * or over budget, so the wizard falls back to plain manual entry. Reuses the shared save_event
+ * tool, so a sparked draft is identical in shape to a poster-scanned one (the same draft editor
+ * and createEventDraft consume it).
+ */
+export async function draftEventSpark(input: {
+  answers: EventSparkAnswers
+  sourceText?: string | null
+  profileId?: string | null
+}): Promise<ExtractedEvent | null> {
+  return runExtraction({
+    tier: 'sonnet',
+    feature: 'event-spark',
+    system: SPARK_SYSTEM,
+    profileId: input.profileId,
+    content: [{ type: 'text', text: composeSparkText(input.answers, input.sourceText) }],
   })
 }

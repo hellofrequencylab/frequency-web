@@ -60,36 +60,6 @@ export async function setRsvp(args: SetRsvpArgs): Promise<{ id: string } | null>
   return { id: data.id }
 }
 
-/** Set just the names of the +1s a guest is bringing (and keep plus_ones in sync).
- *  Used when a host turns on "require +1 names" after the initial RSVP. */
-export async function setPlusOneNames(
-  eventId: string,
-  profileId: string,
-  plusOneNames: string[],
-): Promise<void> {
-  const admin = createAdminClient()
-  const names = plusOneNames.map((n) => n.trim()).filter((n) => n.length > 0)
-  await admin
-    .from('event_rsvps')
-    .update({ plus_ones: names.length, plus_one_names: names })
-    .eq('event_id', eventId)
-    .eq('profile_id', profileId)
-}
-
-/** Record a host-only-visible decline reason (sets status to not_going). */
-export async function setDeclineReason(
-  eventId: string,
-  profileId: string,
-  reason: string | null,
-): Promise<void> {
-  const admin = createAdminClient()
-  await admin
-    .from('event_rsvps')
-    .update({ status: 'not_going', decline_reason: reason })
-    .eq('event_id', eventId)
-    .eq('profile_id', profileId)
-}
-
 /** Host approves a pending RSVP. Approving does NOT force 'going' — the guest's
  *  chosen status stands and the capacity trigger still applies if they're going. */
 export async function approveRsvp(eventId: string, profileId: string): Promise<void> {

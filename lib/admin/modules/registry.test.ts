@@ -16,6 +16,7 @@ const circleScope: Scope = { kind: 'circle', circleId: 'c1', hostId: 'h1' }
 const hubScope: Scope = { kind: 'hub', hubId: 'hub1' }
 const nexusScope: Scope = { kind: 'nexus', nexusId: 'nx1' }
 const eventScope: Scope = { kind: 'event', eventId: 'e1', hostId: 'h1' }
+const practiceScope: Scope = { kind: 'practice', practiceId: 'pr1', ownerId: 'o1' }
 
 describe('admin module registry', () => {
   it('surfaces circle.settings to a viewer holding circle.editSettings', () => {
@@ -58,6 +59,13 @@ describe('admin module registry', () => {
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
 
+  it('surfaces practice.settings only on a practice scope, only with practice.editSettings', () => {
+    const caps = new Set<Capability>(['practice.editSettings'])
+    expect(modulesFor(practiceScope, caps).map((m) => m.id)).toEqual(['practice.settings'])
+    expect(modulesFor(practiceScope, new Set<Capability>())).toHaveLength(0)
+    expect(modulesFor(circleScope, caps)).toHaveLength(0)
+  })
+
   it('returns modules ordered by their `order` field', () => {
     const caps = new Set<Capability>(ADMIN_MODULES.map((m) => m.requiredCapability))
     const circleMods = modulesFor(circleScope, caps)
@@ -82,8 +90,9 @@ describe('admin module registry', () => {
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
-    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings'])
+    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings', 'circle.text'])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
+    expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual(['practice.settings'])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])
     // No sidebar leakage across kinds, and inline surface is empty today.

@@ -418,8 +418,18 @@ export function articleSchema(article: {
   title: string
   description: string
   path: string
+  /** When the article was first published (ISO). Emits datePublished. */
+  published?: string | null
+  /** When the article was last updated (ISO). Emits dateModified. */
   updated?: string | null
+  /** One or more image URLs (absolute, or root-relative — normalized via abs). */
+  image?: string | string[] | null
 }) {
+  const images = article.image
+    ? (Array.isArray(article.image) ? article.image : [article.image]).map((src) =>
+        src.startsWith('http') ? src : abs(src),
+      )
+    : undefined
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -427,7 +437,9 @@ export function articleSchema(article: {
     description: article.description,
     url: abs(article.path),
     mainEntityOfPage: { '@type': 'WebPage', '@id': abs(article.path) },
+    ...(article.published ? { datePublished: article.published } : {}),
     ...(article.updated ? { dateModified: article.updated } : {}),
+    ...(images ? { image: images } : {}),
     author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
     publisher: {
       '@type': 'Organization',
@@ -435,6 +447,146 @@ export function articleSchema(article: {
       url: SITE_URL,
       logo: { '@type': 'ImageObject', url: abs('/icons/icon-192.png') },
     },
+  }
+}
+
+// ── HowTo (generic guide) ───────────────────────────────────────────────────────
+// The general-purpose schema.org/HowTo builder for any step-by-step guide (a
+// "how to do X" article or pillar page). HowTo is the answer-engine lever AI
+// Overviews lift step by step (CONTENT-VOICE §8b). journeySchema and
+// practiceSchema build HowTos from specific game objects; this one takes a plain
+// name + description + ordered steps for editorial guides. Each step is a
+// HowToStep with a name and text; an optional per-step url deep-links it.
+
+export function howToSchema(howTo: {
+  name: string
+  description?: string | null
+  /** One or more image URLs (absolute, or root-relative — normalized via abs). */
+  image?: string | string[] | null
+  /** ISO 8601 duration for the whole guide, e.g. "PT15M". */
+  totalTime?: string | null
+  steps: { name: string; text: string; url?: string | null }[]
+}) {
+  const images = howTo.image
+    ? (Array.isArray(howTo.image) ? howTo.image : [howTo.image]).map((src) =>
+        src.startsWith('http') ? src : abs(src),
+      )
+    : [abs('/opengraph-image')]
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: howTo.name,
+    ...(howTo.description ? { description: howTo.description } : {}),
+    image: images,
+    ...(howTo.totalTime ? { totalTime: howTo.totalTime } : {}),
+    step: howTo.steps.map((s, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: s.name,
+      text: s.text,
+      ...(s.url ? { url: s.url } : {}),
+    })),
+  }
+}
+
+// ── Product / Offer (maker, shop, Space storefront) ─────────────────────────────
+// One crawlable Product per sellable item — the AEO node an answer engine cites for
+// "where can I buy X". Price in major units, 2dp, currency upper-cased (mirrors Event).
+
+export function productSchema(p: {
+  title: string
+  description?: string | null
+  image?: string | null
+  priceCents: number
+  currency?: string | null
+  inStock?: boolean
+  sellerName?: string | null
+  /** Canonical app path, e.g. `/shop/tote` or `/marketplace/makers/<id>`. */
+  path: string
+}) {
+  const url = abs(p.path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.title,
+    ...(p.description ? { description: p.description } : {}),
+    image: [...(p.image ? [p.image] : []), abs('/opengraph-image')],
+    url,
+    ...(p.sellerName ? { brand: { '@type': 'Brand', name: p.sellerName } } : {}),
+    offers: {
+      '@type': 'Offer',
+      price: (p.priceCents / 100).toFixed(2),
+      priceCurrency: (p.currency ?? 'usd').toUpperCase(),
+      availability: p.inStock === false ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+      url,
+      ...(p.sellerName ? { seller: { '@type': 'Organization', name: p.sellerName } } : {}),
+    },
+  }
+}
+
+export function productListSchema(products: { title: string; path: string }[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: products.length,
+    itemListElement: products.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(p.path),
+      name: p.title,
+    })),
+  }
+}
+
+// ── Housing (Accommodation) ─────────────────────────────────────────────────────
+// A rental/roommate listing as schema.org/Accommodation. CITY-LEVEL location only
+// (addressLocality), never street/coords — same privacy contract as Event (ADR-186).
+
+const ROOM_TYPE_SCHEMA: Record<string, string> = {
+  private_room: 'Room',
+  shared_room: 'Room',
+  entire_place: 'Apartment',
+}
+
+export function housingListingSchema(h: {
+  title: string
+  description?: string | null
+  image?: string | null
+  city?: string | null
+  rentCents?: number | null
+  bedrooms?: number | null
+  roomType?: string | null
+  /** Canonical app path, e.g. `/marketplace/housing/<id>`. */
+  path: string
+}) {
+  const url = abs(h.path)
+  return {
+    '@context': 'https://schema.org',
+    '@type': h.roomType ? ROOM_TYPE_SCHEMA[h.roomType] ?? 'Accommodation' : 'Accommodation',
+    name: h.title,
+    ...(h.description ? { description: h.description } : {}),
+    image: [...(h.image ? [h.image] : []), abs('/opengraph-image')],
+    url,
+    ...(typeof h.bedrooms === 'number' ? { numberOfBedrooms: h.bedrooms } : {}),
+    ...(h.city
+      ? { address: { '@type': 'PostalAddress', addressLocality: h.city } }
+      : { address: { '@type': 'PostalAddress', addressLocality: 'Shared with members' } }),
+    ...(h.rentCents && h.rentCents > 0
+      ? {
+          offers: {
+            '@type': 'Offer',
+            priceCurrency: 'USD',
+            priceSpecification: {
+              '@type': 'UnitPriceSpecification',
+              price: (h.rentCents / 100).toFixed(2),
+              priceCurrency: 'USD',
+              unitCode: 'MON',
+            },
+            url,
+          },
+        }
+      : {}),
   }
 }
 

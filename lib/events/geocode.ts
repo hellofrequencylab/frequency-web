@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { safeHttpUrl } from '@/lib/safe-url'
 
 // Event geolocation data layer (EVENTS-REWORK B1).
 //
@@ -22,6 +23,10 @@ export interface EventAddress {
   region?: string | null
   country?: string | null
   postalCode?: string | null
+  /** A free-text location line (the event's `location` field, e.g. what Vera scanned off a
+   *  poster or the onboarding wizard collected). Geocoded when the structured fields are empty,
+   *  so an event that only ever got a one-line address still lands a pin on the map. */
+  query?: string | null
 }
 
 /** A resolved point. lng/lat in WGS-84 (SRID 4326). */
@@ -48,7 +53,8 @@ export function hasGeocodableAddress(address: EventAddress): boolean {
     address.street?.trim() ||
       address.city?.trim() ||
       address.postalCode?.trim() ||
-      address.venueName?.trim(),
+      address.venueName?.trim() ||
+      address.query?.trim(),
   )
 }
 
@@ -61,6 +67,10 @@ export function hasGeocodableAddress(address: EventAddress): boolean {
  * saves the address; a geocode failure leaves geog NULL (the event is simply not
  * "near me"-discoverable until re-saved). online/hybrid events skip geocoding.
  *
+ * A `point` (an explicit lat/lng from the editor's dragged map pin) OVERRIDES the
+ * geocoder: when the host has placed the pin themselves, that is the truth, so we
+ * persist it and never geocode. Geocode-on-save only runs when no manual pin was set.
+ *
  * Returns the point it persisted, or null when none was set.
  */
 export async function saveEventLocation(
@@ -70,10 +80,12 @@ export async function saveEventLocation(
     attendanceMode: AttendanceMode
     onlineUrl?: string | null
     geocoder?: Geocoder
+    /** Explicit pin from the editor's draggable marker. Overrides the geocoder. */
+    point?: GeoPoint | null
   },
 ): Promise<GeoPoint | null> {
   const admin = createAdminClient()
-  const { address, attendanceMode, onlineUrl, geocoder } = args
+  const { address, attendanceMode, onlineUrl, geocoder, point: explicitPoint } = args
 
   // Always persist the structured address + mode (additive columns).
   await admin
@@ -86,12 +98,26 @@ export async function saveEventLocation(
       country: address.country ?? null,
       postal_code: address.postalCode ?? null,
       attendance_mode: attendanceMode,
-      online_url: onlineUrl ?? null,
+      // Only store an http/https join link — block javascript:/data: (stored XSS), since
+      // this URL is later rendered as an <a href> on the event page.
+      online_url: safeHttpUrl(onlineUrl),
     })
     .eq('id', eventId)
 
-  // Online-only events carry no point. Hybrid + in_person geocode if we can.
+  // Online-only events carry no point — even a stray manual pin is ignored.
   if (attendanceMode === 'online') return null
+
+  // A manual pin wins: persist it directly, skip the geocoder entirely.
+  if (explicitPoint && Number.isFinite(explicitPoint.lat) && Number.isFinite(explicitPoint.lng)) {
+    await admin.rpc('set_event_geog', {
+      _event_id: eventId,
+      _lat: explicitPoint.lat,
+      _long: explicitPoint.lng,
+    })
+    return explicitPoint
+  }
+
+  // No manual pin → fall back to geocode-on-save (best-effort) if we have a geocoder.
   if (!geocoder || !hasGeocodableAddress(address)) return null
 
   let point: GeoPoint | null = null

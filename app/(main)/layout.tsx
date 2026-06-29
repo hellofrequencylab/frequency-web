@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
+import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute } from '@/lib/layout/page-chrome'
 import { loadPageSettings } from '@/lib/page-settings/store'
@@ -49,8 +50,48 @@ import { getFounderTasks } from '@/lib/onboarding/founder-tasks'
 import { FOUNDER_COACH } from '@/lib/onboarding/founder-config'
 import { getActiveTraining } from '@/lib/onboarding/training'
 import { atLeastRole, asWebRole, isStaff } from '@/lib/core/roles'
+import { staffCan } from '@/lib/core/staff-roles'
+import {
+  marketplaceVisibility,
+  MARKET_AREAS,
+  AREA_NAV_KEY,
+  AREA_PREFIX,
+} from '@/lib/marketplace/visibility'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 import { viewerRoleFor } from '@/components/layout/menu-role'
+import { MarketingHeader } from '@/components/layout/marketing-header'
+import { MarketingFooter } from '@/components/layout/marketing-footer'
+
+// A logged-out visitor is normally sent back to the splash, but a NETWORKED Space profile
+// (/spaces/<slug> + its public tabs) is public + crawlable (SEO/AIO) — those render in the
+// public chrome instead. The in-app /spaces index routes (directory, new) and the owner
+// sub-surfaces (settings, edit) stay members-only. The space layout itself self-resolves
+// visibility (network only; private/missing → notFound) and emits its own canonical/OG/JSON-LD.
+const SPACES_NON_PROFILE = new Set(['directory', 'new'])
+function isAnonSpaceProfile(p: string | null): boolean {
+  if (!p) return false
+  const m = /^\/spaces\/([^/]+)(?:\/([^/]+))?$/.exec(p)
+  if (!m) return false
+  const [, slug, tab] = m
+  if (SPACES_NON_PROFILE.has(slug)) return false
+  if (tab === 'settings' || tab === 'edit') return false
+  return true
+}
+
+// The events index (/events) and an event's detail page (/events/<slug>) are PUBLIC + crawlable
+// (SEO/AIO) — a signed-out visitor sees the event and is prompted to sign in for any action. Like a
+// Space profile, these render in the public marketing chrome (no member rails). The CREATE flow
+// (/events/new) and host MANAGE sub-routes stay members-only (proxy + this gate both exclude them).
+function isAnonPublicEvent(p: string | null): boolean {
+  if (!p) return false
+  if (p === '/events') return true
+  const m = /^\/events\/([^/]+)(?:\/(.+))?$/.exec(p)
+  if (!m) return false
+  const [, slug, rest] = m
+  if (slug === 'new') return false
+  if (rest) return false // any sub-route (e.g. /manage) is members-only
+  return true
+}
 
 // Per-route SEO overrides (ADR-268): an operator sets a route's title / description /
 // share-image in the on-page Page panel; this applies them as the (main) layout's metadata
@@ -95,7 +136,51 @@ export default async function MainLayout({
 
   // Logged-out visitors hitting an in-app URL go back to the splash (not the
   // sign-in form) — the splash is the front door for anyone who hasn't signed up.
-  if (!user) redirect('/')
+  // EXCEPTION: a public networked Space profile is crawlable + shareable, so render it
+  // in the public marketing chrome (logo header + footer) rather than the member shell
+  // (there is no profile to build the shell from). The space layout walls private/missing.
+  // A PUBLIC view (a networked Space profile or a public events page) renders in the slim public
+  // chrome for ANY viewer who can't get the member shell — signed-out, OR signed-in but pre-profile
+  // / mid-beta-induction. That last case is why /events was bouncing to /onboarding/beta: a session
+  // with onboarding incomplete hit the induction redirect even on a public page. The public surface
+  // must never redirect to onboarding; it just shows the page with a Sign in / Join header.
+  const currentPath = (await headers()).get('x-pathname')
+  const isPublicView = isAnonSpaceProfile(currentPath) || isAnonPublicEvent(currentPath)
+  const publicChrome = async () => {
+    const [headerMenu, footerMenu, menuTimings] = await Promise.all([
+      getMenu('header'),
+      getMenu('footer'),
+      getMenuSettings(),
+    ])
+    return (
+      <>
+        <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
+        {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
+            (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
+        <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+          {/* Mirror the member shell's centered three-column grid (app-shell.tsx) so a public
+              page reads at the SAME width as it does signed in: the page content sits in the
+              centered column flanked by the rail gutters. A public viewer has no nav/community
+              rail, so the side columns stay EMPTY (not removed) — the content never sprawls
+              edge-to-edge, it lines up exactly where the member shell puts it. */}
+          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
+            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
+            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
+            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's <main>. */}
+            <div className="min-w-0 flex-1 py-6">{children}</div>
+            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
+            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
+          </div>
+        </main>
+        <MarketingFooter menu={footerMenu} />
+      </>
+    )
+  }
+
+  if (!user) {
+    if (isPublicView) return publicChrome()
+    redirect('/')
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -103,15 +188,23 @@ export default async function MainLayout({
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
-  // No profile row means the trigger hasn't run yet. Send to onboarding.
-  if (!profile) redirect('/onboarding')
+  // No profile row means the trigger hasn't run yet. Send to onboarding — unless this is a public
+  // page, which stays viewable.
+  if (!profile) {
+    if (isPublicView) return publicChrome()
+    redirect('/onboarding')
+  }
 
   // During beta, the induction is the mandatory opening sequence: anyone who
   // hasn't completed it is routed in. `/onboarding` (outside this layout, so no
   // loop) forwards to /onboarding/beta. Flipping BETA_INDUCTION_ACTIVE off at
-  // launch reverts to the non-blocking model (ADR-047).
+  // launch reverts to the non-blocking model (ADR-047). A public page is exempt so a
+  // not-yet-onboarded session can still read it.
   const meta = profile.meta as { onboarding_completed?: boolean } | null
-  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) redirect('/onboarding')
+  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) {
+    if (isPublicView) return publicChrome()
+    redirect('/onboarding')
+  }
 
   // Effective role honours a steward's (host+) "view as" override so the whole shell
   // (nav + capabilities) previews a role under them; realRole is the true role, used
@@ -146,9 +239,10 @@ export default async function MainLayout({
     space,
     chores,
     staffMember,
-    exploreMenu,
-    adminMenu,
-    leftRailMenu,
+    headerMenu,
+    leftMenu,
+    profileMenu,
+    adminHeaderMenu,
     menuTimings,
   ] = await Promise.all([
     applyViewAs(realRole),
@@ -166,15 +260,15 @@ export default async function MainLayout({
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
     getStaffMember().catch(() => null),
-    // DB-backed header menus (lib/menus). getMenu falls back to the code defaults on any
-    // miss/error, so these reads are safe pre-migration and the header never breaks. The
-    // in-app shell uses Explore (the "Explore Frequency" header mega) + the admin sub-header.
-    getMenu('public_explore'),
-    getMenu('admin_subheader'),
-    // The DB-backed in-app LEFT RAIL (lib/menus). Drives the rail's link list, order,
-    // grouping, icons, and per-item mode; falls back to the code defaults on any miss, so
-    // safe pre-migration and the rail never breaks.
-    getMenu('left_rail'),
+    // The standardized menu containers (lib/menus, ADR-390). getMenu falls back to the code
+    // defaults on any miss/error, so these reads are safe pre-migration and no menu ever breaks.
+    // The in-app shell uses: header (the mega-menu), left (the rail — admin section entry points
+    // live here, role-gated), profile (the account dropdown), and admin_header (the contextual
+    // admin mega sub-nav). Footer is fetched by its own layouts.
+    getMenu('header'),
+    getMenu('left'),
+    getMenu('profile'),
+    getMenu('admin_header'),
     getMenuSettings(),
   ])
   const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
@@ -349,6 +443,30 @@ export default async function MainLayout({
     /* vertical-filtering failure → default skin, no filtering */
   }
 
+  // Marketplace visibility (operator-controlled, per area). An area switched OFF is hidden
+  // from regular members — its nav/footer entry is dropped AND the page itself is gated —
+  // while operators still see it to build it. Mirrors the Space nav-hide above + the
+  // safe-route redirect earlier. FAIL-OPEN: any read error leaves the marketplace visible.
+  // The redirect is decided inside the try but THROWN outside it, so a caught error can
+  // never swallow Next's redirect signal.
+  const isMarketOperator =
+    !previewVisitor && !previewingDown && (isStaff(pageWebRole) || staffCan(staffRole, 'platform', 'read'))
+  let marketAreaHidden = false
+  try {
+    if (!isMarketOperator) {
+      const vis = await marketplaceVisibility()
+      for (const area of MARKET_AREAS) {
+        if (vis[area]) continue
+        navAccess[AREA_NAV_KEY[area]] = 'none'
+        const prefix = AREA_PREFIX[area]
+        if (reqPath && (reqPath === prefix || reqPath.startsWith(prefix + '/'))) marketAreaHidden = true
+      }
+    }
+  } catch {
+    /* visibility read failed → leave the marketplace fully visible (fail-open) */
+  }
+  if (marketAreaHidden) redirect('/feed')
+
   // Resolve the member's theme for the in-app shell: the personal `fxtheme` cookie (skin /
   // generation / occasion) over the Space default over the system default. The per-request
   // cookie + DB-theme reads live HERE, not in the root layout, so the public marketing/discover
@@ -379,18 +497,20 @@ export default async function MainLayout({
       unreadCount={unreadCount}
       permissions={permissions}
       menuAreaKeys={menuAreaKeys}
-      leftRailMenu={leftRailMenu}
+      leftMenu={leftMenu}
       navAccess={navAccess}
       staffRole={staffRole}
       demoMode={demoMode}
       demoHidden={demoHidden}
       hasDemoContent={hasDemoContent}
-      exploreMenu={exploreMenu}
-      adminMenu={adminMenu}
+      headerMenu={headerMenu}
+      profileMenu={profileMenu}
+      adminHeaderMenu={adminHeaderMenu}
       menuViewerRole={menuViewerRole}
       menuTimings={menuTimings}
     >
       <GaConsentGate disabled={!analyticsConsent} />
+      <ImpersonationBanner />
       {children}
       <AchievementToastContainer />
       <ZapToastContainer />

@@ -14,7 +14,7 @@ import { getPracticeStreak } from '@/lib/practice-streak'
 import { amplitudeLevel } from '@/lib/amplitude'
 import { getOrCreateDispatch } from '@/lib/vera-dispatch'
 import { getNextGathering } from '@/lib/quest/next-gathering'
-import { buildSessionDispatch } from '@/lib/on-air'
+import { buildSessionDispatch, statSessionLabel } from '@/lib/on-air'
 import { loadOnAirSessionData, type OnAirSessionData } from '@/lib/on-air/session-data'
 import type { DispatchKind, OnAirPrefs, RevealPayload, SessionMode } from '@/lib/on-air'
 
@@ -79,6 +79,8 @@ export interface CompleteSessionInput {
   endBell?: boolean
   bellEveryMin?: number
   haptics?: boolean
+  /** Ambient loop slug, null = none. */
+  ambientTrack?: string | null
 }
 
 export async function completeSession(
@@ -143,6 +145,8 @@ export async function completeSession(
           ? Math.max(0, Math.round(input.bellEveryMin))
           : prior.bellEveryMin,
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
+      // null = the member turned it off (persist that); undefined = keep prior.
+      ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
     }
     await admin
       .from('profiles')
@@ -244,6 +248,9 @@ export async function completeSession(
   //    both reads already exist and are best-effort; either failing just drops
   //    that branch. Only when BOTH reads throw do we fall back to the cached
   //    Vera Dispatch so the card never blanks.
+  // What was actually practiced — drives both the Dispatch opener and the stats-card
+  // session label, so a walk never reads "Good sit" / "This sit" (ADR-443).
+  const dispatchKind = dispatchKindFor(input.movementMode, input.mode)
   let dispatch: RevealPayload['dispatch']
   try {
     const [toLog, gathering] = await Promise.all([
@@ -251,10 +258,6 @@ export async function completeSession(
       getNextGathering(profileId).catch(() => null),
     ])
     if (toLog === null && gathering === null) throw new Error('state reads failed')
-    // The opener reflects WHAT was practiced (task D): a Movement sit names its
-    // movement kind (walk / run / yoga / strength / stretch / play); a Mindless
-    // sit names its mode. So a walk never reads "Good sit."
-    const dispatchKind = dispatchKindFor(input.movementMode, input.mode)
     dispatch = buildSessionDispatch({
       practicesLeft: (toLog ?? []).map((p) => p.title),
       gathering:
@@ -301,6 +304,7 @@ export async function completeSession(
     },
     stats: {
       sessionSeconds: seconds,
+      sessionLabel: statSessionLabel(dispatchKind),
       todaySeconds,
       totalSeconds,
       lifetimeLogs,

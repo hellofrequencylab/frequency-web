@@ -3,11 +3,13 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllTicketTiers } from '@/lib/spaces/tickets'
 import { TicketTierForm } from '@/components/spaces/tickets/ticket-tier-form'
 import { TicketRsvpList } from '@/components/spaces/tickets/ticket-rsvp-list'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // OWNER TICKET TIER EDITOR + RSVPs (MASTER-PLAN ADMIN-03, "Event Space ticketing owner control"). A
@@ -60,8 +62,31 @@ export default async function SpaceTicketsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  const tiers = await listAllTicketTiers(space.id)
   const brandName = space.brandName ?? space.name
+
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The default (tickets = editor) reproduces the old
+  // canEditProfile threshold; a staff janitor keeps the read-only preview (write stays gated).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'tickets', caps.role)) {
+    return (
+      <FocusTemplate
+        eyebrow={brandName}
+        title="Tickets"
+        description="The ticket tiers for this space's events."
+        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      >
+        <FeatureLockedNotice
+          brandName={brandName}
+          slug={space.slug}
+          label="Tickets"
+          reason={spaceFunctionAccess(space, 'tickets', 'admin') ? 'role' : 'disabled'}
+          canManageMembers={caps.canManageMembers}
+        />
+      </FocusTemplate>
+    )
+  }
+
+  const tiers = await listAllTicketTiers(space.id)
 
   return (
     <FocusTemplate

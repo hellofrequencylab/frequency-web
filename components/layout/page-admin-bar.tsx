@@ -52,6 +52,15 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   const manager = meetsAccess('host', role) || staffRole != null
   const isOperator = isStaff(webRole)
   const shareable = isShareable(pathname)
+  // Entity DETAIL pages render their OWN "Edit X" button in the header (which opens the same drawer
+  // and is gated on entity OWNERSHIP, not this bar's community-role manager gate — so it shows for a
+  // plain-member host/owner the gear would miss). Suppress this bar's duplicate Settings trigger
+  // there so a page has exactly ONE settings button. QR & Share stays.
+  const isEntityDetail = /^\/(circles|events|practices)\/[^/]+$/.test(pathname)
+  // Member PROFILES (/people/<handle>) route their settings to the dedicated Settings RAIL
+  // ("Edit profile" → /settings/profile for the owner; /admin/members for operators) and have NO
+  // on-page drawer modules — so this trigger would open an EMPTY drawer. Suppress it; QR & Share stays.
+  const isProfile = /^\/people\/[^/]+$/.test(pathname)
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
@@ -60,7 +69,7 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
 
   // The Settings trigger — dispatches `open-settings`, which the shell-level
   // SettingsDrawer toggles (D.6). Shown to managers + operators.
-  const settingsTrigger = (manager || isOperator) ? (
+  const settingsTrigger = (manager || isOperator) && !isEntityDetail && !isProfile ? (
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event('open-settings'))}

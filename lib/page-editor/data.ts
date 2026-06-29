@@ -15,24 +15,27 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 // makes the storage space-aware so per-Space micro-site pages are possible later. Full un-gating
 // to per-Space authoring (and offering the editor on a Space's own slugs) is Phase 5 white-label.
 
-// The splash (`/`, slug `home`) AND `about` are deliberately NOT here. They are
-// bespoke coded experiences (the splash's live counts/parallax; the About story's
-// crafted rhythm) that the generic Puck block set can't reproduce — and being in
-// this list is exactly what let a published draft *shadow* the coded design (the
-// trap we hit: About rendered a duplicated, garbled draft over the clean code).
-// Keeping them out is the guard: every editor route, the Pages directory, and
-// publish/draft/unpublish gate on `isEditableSlug`, so the coded page is the single
-// source of truth.
-// Only pages with a faithful editor template (so the editor matches what's live)
-// belong here. `how-it-works` was a retired server redirect (→ /the-community), so
-// editing it did nothing — removed. The Lab, The Community, The Quest, and Pricing
-// have all been ported into the block library ("editor = live"). Pricing relies on
-// the standardized `Tiers` block (added with this port) for its membership cards.
+// Marketing-site rebuild: every PRIMARY public page is editor-backed and renders the
+// getPublishedData -> getTemplate -> legacy chain. The six primaries (Home, The
+// Community, The Quest, The Lab, Spaces, About) each ship a designed template as the
+// default; the bespoke coded experience stays as the legacy fallback under each route,
+// so nothing breaks before a template publishes. Home keeps its live counts OFF (honest
+// empty state): the home template ships the qualitative founding framing, never invented
+// numbers. Pricing keeps its template (linked from Spaces; off the primary nav).
+// Every editor route, the Pages directory, and publish/draft/unpublish gate on
+// `isEditableSlug`. Only pages with a faithful editor template (so the editor matches
+// what's live) belong here. `how-it-works` was a retired server redirect (→
+// /the-community); `build` / `practice` / `spread` were FOLDED into the six primaries
+// and are now 308 redirect stubs, so editing them did nothing — removed.
 export const EDITABLE_PAGES = [
+  { slug: 'home', title: 'Home', path: '/' },
+  { slug: 'about', title: 'About', path: '/about' },
+  { slug: 'spaces', title: 'Spaces', path: '/spaces' },
   { slug: 'the-lab', title: 'The Lab', path: '/the-lab' },
   { slug: 'the-community', title: 'The Community', path: '/the-community' },
   { slug: 'the-quest', title: 'The Quest', path: '/the-quest' },
   { slug: 'pricing', title: 'Pricing', path: '/pricing' },
+  { slug: 'circles', title: 'Circles', path: '/circles' },
 ] as const
 
 export type EditableSlug = (typeof EDITABLE_PAGES)[number]['slug']

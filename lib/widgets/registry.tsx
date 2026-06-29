@@ -14,7 +14,18 @@ import { QuestNextGathering } from '@/components/widgets/quest/quest-next-gather
 import { QuestTasks } from '@/components/widgets/quest/quest-tasks'
 import { QuestExplore } from '@/components/widgets/quest/quest-explore'
 import { QuestLeaderboard } from '@/components/widgets/quest/quest-leaderboard'
-import { MenuManagerBlock } from '@/components/widgets/menu/menu-manager-block'
+import { MenuSurfaceBlock } from '@/components/widgets/menu/menu-surface-block'
+import { MenuGroupsBlock } from '@/components/widgets/menu/menu-groups-block'
+import { MenuSpeedBlock } from '@/components/widgets/menu/menu-speed-block'
+import { MenuLayoutBlock } from '@/components/widgets/menu/menu-layout-block'
+import { MenuRailCardsBlock } from '@/components/widgets/menu/menu-rail-cards-block'
+import { PracticeAdminStats } from '@/components/widgets/practices/admin/stats'
+import { PracticeReviewQueue } from '@/components/widgets/practices/admin/review-queue'
+import { PracticeNeedsAttention } from '@/components/widgets/practices/admin/needs-attention'
+import { PracticeAdminLibrary } from '@/components/widgets/practices/admin/library'
+import { PracticeTagGovernance } from '@/components/widgets/practices/admin/tag-governance'
+import { PracticeRemixLevers } from '@/components/widgets/practices/admin/remix-levers'
+import { PracticeContributorRecognition } from '@/components/widgets/practices/admin/contributor-recognition'
 import { AdminJourneysStats } from '@/components/widgets/admin/admin-journeys-stats'
 import { AdminJourneysReview } from '@/components/widgets/admin/admin-journeys-review'
 import { AdminJourneysLibrary } from '@/components/widgets/admin/admin-journeys-library'
@@ -41,6 +52,7 @@ import { PracticeDetailAbout } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practice-detail-guide'
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
+import { PracticeDetailLineage } from '@/components/widgets/practice-detail/practice-detail-lineage'
 import { ProgramsList } from '@/components/widgets/programs/programs-list'
 import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
 import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
@@ -51,6 +63,48 @@ import { EntityPractices } from '@/components/widgets/entity/entity-practices'
 import { EntityCommunity } from '@/components/widgets/entity/entity-community'
 import { EntityTeam } from '@/components/widgets/entity/entity-team'
 import { EntityCta } from '@/components/widgets/entity/entity-cta'
+import { PagesInAppMember, PagesInAppFocus } from '@/components/widgets/pages/pages-in-app'
+import { PagesSplashFunnels } from '@/components/widgets/pages/pages-splash-funnels'
+import { PagesMarketing } from '@/components/widgets/pages/pages-marketing'
+import { LeadStats } from '@/components/widgets/lead/lead-stats'
+import { LeadAttention } from '@/components/widgets/lead/lead-attention'
+import { LeadCircles } from '@/components/widgets/lead/lead-circles'
+import { LeadNetworks } from '@/components/widgets/lead/lead-networks'
+import { LeadEvents } from '@/components/widgets/lead/lead-events'
+import { LeadJourneys } from '@/components/widgets/lead/lead-journeys'
+import { LeadCoLeaders } from '@/components/widgets/lead/lead-coleaders'
+import { LeadDispatches } from '@/components/widgets/lead/lead-dispatches'
+import { LeadRecognition } from '@/components/widgets/lead/lead-recognition'
+import { LeadTools } from '@/components/widgets/lead/lead-tools'
+import { CircleFeed } from '@/components/widgets/circles/circle-feed'
+import { CircleMembers } from '@/components/widgets/circles/circle-members'
+import { CircleHealth } from '@/components/widgets/circles/circle-health'
+import { CircleMomentumBlock } from '@/components/widgets/circles/circle-momentum'
+import { CirclePracticeBlock } from '@/components/widgets/circles/circle-practice'
+import { CircleEvents } from '@/components/widgets/circles/circle-events'
+import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
+import { CircleInvite } from '@/components/widgets/circles/circle-invite'
+import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
+import { CircleText } from '@/components/widgets/circles/circle-text'
+import { EventDescription } from '@/components/widgets/events/event-description'
+import {
+  EventLineup,
+  EventSchedule,
+  EventGoodToKnow,
+  EventPricing,
+  EventLinks,
+  EventSponsors,
+  EventDetailsBlock,
+} from '@/components/widgets/events/event-poster-sections'
+import { EventCohosts } from '@/components/widgets/events/event-cohosts'
+import { EventSales } from '@/components/widgets/events/event-sales'
+import { EventDispatch } from '@/components/widgets/events/event-dispatch'
+import { EventActivityBlock } from '@/components/widgets/events/event-activity-block'
+import { EventRecap } from '@/components/widgets/events/event-recap'
+import { EventJoin } from '@/components/widgets/events/event-join'
+import { EventWarmProof } from '@/components/widgets/events/event-warm-proof'
+import { EventFacts } from '@/components/widgets/events/event-facts'
+import { EventLocation } from '@/components/widgets/events/event-location'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -75,8 +129,20 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'quest-tasks': QuestTasks,
   'quest-explore': QuestExplore,
   'quest-leaderboard': QuestLeaderboard,
-  // Menu Manager page (/admin/menu) — the DB-backed navigation editor as one coupled block.
-  'menu-manager': MenuManagerBlock,
+  // Menu Manager page (/admin/menu) — the DB-backed navigation editor as five blocks (ADR-359).
+  'menu-surface': MenuSurfaceBlock,
+  'menu-groups': MenuGroupsBlock,
+  'menu-speed': MenuSpeedBlock,
+  'menu-layout': MenuLayoutBlock,
+  'menu-rail-cards': MenuRailCardsBlock,
+  // Admin Practices blocks (/admin/content/practices) — the curation workspace.
+  'admin-practices-stats': PracticeAdminStats,
+  'admin-practices-review': PracticeReviewQueue,
+  'admin-practices-attention': PracticeNeedsAttention,
+  'admin-practices-library': PracticeAdminLibrary,
+  'admin-practices-tags': PracticeTagGovernance,
+  'admin-practices-remix-levers': PracticeRemixLevers,
+  'admin-practices-contributor-recognition': PracticeContributorRecognition,
   // Admin Journeys blocks (/admin/content/journeys).
   'admin-journeys-stats': AdminJourneysStats,
   'admin-journeys-review': AdminJourneysReview,
@@ -112,6 +178,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-guide': PracticeDetailGuide,
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
+  'practice-detail-lineage': PracticeDetailLineage,
   // Programs page (/programs) — the frameworks browse list.
   'programs-list': ProgramsList,
   // Season Challenges (/crew/challenges) — the season KPI band + challenges grid.
@@ -125,8 +192,57 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'entity-community': EntityCommunity,
   'entity-team': EntityTeam,
   'entity-cta': EntityCta,
+  // Pages workspace (/pages) — the operator's find-any-page-and-edit-it surface.
+  'pages-in-app-member': PagesInAppMember,
+  'pages-in-app-focus': PagesInAppFocus,
+  'pages-splash-funnels': PagesSplashFunnels,
+  'pages-marketing': PagesMarketing,
+  // Leadership dashboard (/lead) — a leader's consolidated home.
+  'lead-stats': LeadStats,
+  'lead-attention': LeadAttention,
+  'lead-circles': LeadCircles,
+  'lead-networks': LeadNetworks,
+  'lead-events': LeadEvents,
+  'lead-journeys': LeadJourneys,
+  'lead-coleaders': LeadCoLeaders,
+  'lead-dispatches': LeadDispatches,
+  'lead-recognition': LeadRecognition,
+  'lead-tools': LeadTools,
+  'circle-feed': CircleFeed,
+  'circle-members': CircleMembers,
+  'circle-health': CircleHealth,
+  'circle-momentum': CircleMomentumBlock,
+  'circle-practice': CirclePracticeBlock,
+  'circle-events': CircleEvents,
+  'circle-map': CircleMapBlock,
+  'circle-invite': CircleInvite,
+  'circle-journey-run': CircleJourneyRun,
+  'circle-text': CircleText,
+  // Event detail (/events/<slug>) — the FULL arrangeable interior, every section its own movable
+  // block (post area + the former Join aside + the per-poster-section blocks).
+  'event-join': EventJoin,
+  'event-warm-proof': EventWarmProof,
+  'event-facts': EventFacts,
+  'event-location': EventLocation,
+  'event-description': EventDescription,
+  'event-lineup': EventLineup,
+  'event-schedule': EventSchedule,
+  'event-good-to-know': EventGoodToKnow,
+  'event-pricing': EventPricing,
+  'event-links': EventLinks,
+  'event-sponsors': EventSponsors,
+  'event-details': EventDetailsBlock,
+  'event-cohosts': EventCohosts,
+  'event-sales': EventSales,
+  'event-dispatch': EventDispatch,
+  'event-activity': EventActivityBlock,
+  'event-recap': EventRecap,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {
   return COMPONENTS[id]
 }
+
+/** Every id with a bound component. The reachability test asserts each is either offered by some
+ *  route set or explicitly parked, so a bound-but-unreachable block (site-audit BUG-1) can't recur. */
+export const COMPONENT_IDS: readonly string[] = Object.keys(COMPONENTS)

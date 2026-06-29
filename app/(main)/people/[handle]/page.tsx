@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -13,14 +14,17 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
-import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight } from 'lucide-react'
+import { MessageSquare, CalendarDays, Zap, Users, MapPin, Pencil, Trophy, Star, Contact, Heart, Gem, Flame, ArrowRight, Sparkles, UserCog } from 'lucide-react'
 import { parseVcard } from '@/lib/vcard'
 import { type CommunityRole, RoleBadge } from '@/lib/community-roles'
-import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { getProfileCapabilities, getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { getRealCallerWebRole } from '@/lib/auth'
+import { actAsMember } from '@/app/(main)/impersonate-actions'
+import { readSpotlightPublished, readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { atLeastRole } from '@/lib/core/roles'
 import { MemberSupportPanel } from '@/components/support/member-support-panel'
 import { ConnectionPanel } from '@/components/people/connection-panel'
-import { ModerateProfileButton } from './moderate-profile-button'
+import { ProfileSettingsDrawer } from './profile-settings-drawer'
 import { TipButton } from './tip-button'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { recordTipFromSessionId } from '@/lib/billing/tips'
@@ -30,7 +34,9 @@ import { DemoBadge } from '@/components/ui/demo-badge'
 import { SupporterBadge } from '@/components/supporter-badge'
 import { VeraProfile } from '@/components/people/vera-profile'
 import { getMemberSignature } from '@/lib/frequency-signature-data'
-import { getProfileZapTotal } from '@/lib/profile-zaps'
+import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
+import { getProfileAwards } from '@/lib/profile/awards'
+import { ProfileAwards } from '@/components/profile/profile-awards'
 import { FrequencySignature } from '@/components/profile/frequency-signature'
 import { getLinkedContactForProfile } from '@/lib/connections/matching'
 import { PrivateContactPanel } from '@/components/connections/private-contact-panel'
@@ -57,6 +63,9 @@ export default async function ProfilePage({
   }
 
   const admin = createAdminClient()
+  // One profile read for everything the band needs. header_image_url + meta used to be a
+  // second round-trip; they're folded in here. header_image_url isn't in the generated
+  // types yet (new column) — read it off the row via the cast below, same as before.
   const { data: profile } = await admin
     .from('profiles')
     .select(`
@@ -71,9 +80,12 @@ export default async function ProfilePage({
       created_at,
       current_streak,
       lifetime_gems,
+      lifetime_zaps,
       is_demo,
       is_system,
       vcard,
+      header_image_url,
+      meta,
       nexus_regions!nexus_region_id ( name )
     `)
     .eq('handle', handle)
@@ -96,12 +108,11 @@ export default async function ProfilePage({
   }
 
   // header_image_url isn't in the generated types yet (new column) — read via cast.
-  const { data: hdrRow } = await (admin)
-    .from('profiles')
-    .select('header_image_url')
-    .eq('id', profile.id)
-    .maybeSingle()
-  const headerImageUrl = (hdrRow as { header_image_url?: string | null } | null)?.header_image_url ?? null
+  const headerImageUrl = (profile as { header_image_url?: string | null }).header_image_url ?? null
+  // Spotlight (opt-in public mini-site): show a link to it when this member has
+  // published one. Derived from meta server-side; the blob never reaches the client.
+  const spotlightPublished = readSpotlightPublished((profile as { meta?: unknown }).meta)
+  const spotlightEnabled = readSpotlightEnabled((profile as { meta?: unknown }).meta)
 
   const vcardEnabled = parseVcard(profile.vcard).enabled
 
@@ -132,62 +143,93 @@ export default async function ProfilePage({
 
   const profileId = profile.id as string
 
-  // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the
-  // recipient is actually payouts-ready (and billing is live). The server decides;
-  // the button never appears for someone who can't receive money.
-  const canTipRecipient =
-    !!user && !isOwner && (await payoutsLive()) && (await getConnectStatus(profileId)).ready
+  // Everything the identity band + sidebar needs is mutually independent once we have
+  // user / viewer / profileId, so it all goes through ONE Promise.all instead of a chain
+  // of serial awaits (the band used to wait on the slowest of ~10 round-trips). The
+  // relationship reads (friendship / block / linked contact) are gated exactly as before
+  // — built as conditional promises so we only issue them when the same guard would have.
+  const isRelationalViewer = !!myProfileId && myProfileId !== profileId
 
-  // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
-  const profileCaps = await getProfileCapabilities(profileId)
-  const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
+  // Friendship state — same pairing + status mapping as before, just resolved in-batch.
+  const friendPair = isRelationalViewer
+    ? (myProfileId! < profileId
+        ? { user_a_id: myProfileId!, user_b_id: profileId }
+        : { user_a_id: profileId, user_b_id: myProfileId! })
+    : null
+  const friendPromise = friendPair
+    ? admin.from('friendships').select('status, requested_by').match(friendPair).maybeSingle()
+    : Promise.resolve(null)
+  // Block state — only read for a signed-in non-self viewer, same guard as before.
+  const blockPromise = isRelationalViewer ? hasBlocked(myProfileId!, profileId) : Promise.resolve(false)
+  // The viewer's OWN merged contact card (docs/NETWORK-CRM.md) — same gate (signed-in
+  // non-owner) as before, just folded into the batch.
+  const linkedContactPromise =
+    myProfileId && !isOwner ? getLinkedContactForProfile(myProfileId, profileId) : Promise.resolve(null)
 
-  // Friendship state between viewer and this profile
-  let friendState: FriendState = { kind: 'none' }
-  if (myProfileId && myProfileId !== profileId) {
-    const pair = myProfileId < profileId
-      ? { user_a_id: myProfileId, user_b_id: profileId }
-      : { user_a_id: profileId, user_b_id: myProfileId }
-    const { data: f } = await admin
-      .from('friendships')
-      .select('status, requested_by')
-      .match(pair)
-      .maybeSingle()
-    if (f) {
-      if (f.status === 'accepted') friendState = { kind: 'accepted' }
-      else if (f.requested_by === myProfileId) friendState = { kind: 'pending_outgoing' }
-      else friendState = { kind: 'pending_incoming' }
-    }
-  }
-
-  // Block state between viewer and this profile.
-  let isBlocked = false
-  if (myProfileId && myProfileId !== profileId) {
-    isBlocked = await hasBlocked(myProfileId, profileId)
-  }
-
-  const [totalZaps, completionsCountResult, postsCountResult, circlesResult, signature] = await Promise.all([
-    // Lifetime Zaps as one SQL aggregate (HARD-05): no per-row tally / N+1.
-    getProfileZapTotal(profileId),
+  const [
+    journeysDone, completionsCountResult, postsCountResult, circlesResult, signature, awards,
+    payoutsAreLive, connectStatus, profileCaps, globalCaps, realWebRole,
+    friendResult, isBlocked, myLinkedContact,
+  ] = await Promise.all([
+    // Journeys finished THIS SEASON — the canonical rank-ladder driver (same source the
+    // feed / crew home / leaderboard use). The displayed Zaps number is a separate value
+    // (profiles.lifetime_zaps, read off the row below) — they are not the same metric.
+    journeysFinishedThisSeason(profileId),
     admin.from('crew_completions').select('id', { count: 'exact', head: true }).eq('profile_id', profileId),
     admin.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', profileId).is('parent_id', null).is('hidden_at', null),
     admin.from('memberships').select('circles!circle_id ( id, name, slug )').eq('profile_id', profileId).eq('status', 'active'),
     // The Frequency Signature — the member's practice spread across the four Pillars
     // (docs/JOURNEYS.md §9.2), the identity centerpiece below.
     getMemberSignature(profileId),
+    // Real earned awards + owned shop items for the public awards section.
+    getProfileAwards(profileId),
+    // Tips (ADR-176): payouts-live + the recipient's Connect status. Always fetched; the
+    // canTipRecipient boolean below keeps the signed-in-non-owner short-circuit semantics.
+    payoutsLive(),
+    getConnectStatus(profileId),
+    // Capability-gated moderator edit: profile.edit on a profile you don't own = janitor.
+    getProfileCapabilities(profileId),
+    // Staff (admin/janitor) deep link into the full account editor in Admin → People.
+    getGlobalCapabilities(),
+    // Janitors additionally get "Act as" — full identity impersonation of this member.
+    getRealCallerWebRole(),
+    friendPromise,
+    blockPromise,
+    linkedContactPromise,
   ])
+
+  // Tips (ADR-176): show the Tip control to a signed-in non-owner only when the recipient
+  // is actually payouts-ready (and billing is live). The server decides; the button never
+  // appears for someone who can't receive money.
+  const canTipRecipient = !!user && !isOwner && payoutsAreLive && connectStatus.ready
+  const canModerateProfile = !isOwner && profileCaps.has('profile.edit')
+  const isStaffViewer = !isOwner && globalCaps.has('admin.access')
+  const isJanitorViewer = !isOwner && realWebRole === 'janitor'
+
+  // Friendship state between viewer and this profile (same status mapping as before).
+  let friendState: FriendState = { kind: 'none' }
+  const f = friendResult?.data
+  if (f) {
+    if (f.status === 'accepted') friendState = { kind: 'accepted' }
+    else if (f.requested_by === myProfileId) friendState = { kind: 'pending_outgoing' }
+    else friendState = { kind: 'pending_incoming' }
+  }
 
   const tasksCompleted = completionsCountResult.count ?? 0
   const postCount = postsCountResult.count ?? 0
   const currentStreak = (profile.current_streak as number | null) ?? 0
   const gems = (profile.lifetime_gems as number | null) ?? 0
+  // Lifetime Zaps shown on the standing card + the Spark milestone — the authoritative
+  // profiles.lifetime_zaps (the same headline number the dashboard shows). NOT the
+  // crew-completions subtotal, which read 0 for Zaps earned from posts/reactions/joins.
+  const lifetimeZaps = (profile as { lifetime_zaps?: number | null }).lifetime_zaps ?? 0
 
   const circles = ((circlesResult.data ?? []) as unknown as { circles: { id: string; name: string; slug: string } | null }[])
     .map(m => m.circles).filter((c): c is { id: string; name: string; slug: string } => !!c)
 
   // Rank, next tier, and progress come from the one canonical source (season-ranks),
   // so the profile shows the same ladder as the feed, crew home, and leaderboard.
-  const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(totalZaps)
+  const { rank, def: rankDef, next: rankNext, pct: rankPct, zapsToNext } = rankProgress(journeysDone)
   // Rank is *endorsed* (shown publicly) only on the paid tier (Crew/Supporter); a
   // free member earns it but it stays in their own Vault, not on their public
   // profile (ADR-141, PB.1i: tier, not role). Inert in Beta (everyone is comped Crew).
@@ -201,17 +243,11 @@ export default async function ProfilePage({
   // Earned float to the top; among the rest, the closest comes first.
   const firstName = (profile.display_name as string).trim().split(/\s+/)[0]
 
-  // The viewer's OWN merged contact card for this member (docs/NETWORK-CRM.md) —
-  // private to them, shown only when a signed-in non-owner has linked a personal
-  // contact to this profile. It's their own logged data, surfaced where it helps.
-  const myLinkedContact =
-    myProfileId && !isOwner ? await getLinkedContactForProfile(myProfileId, profileId) : null
-
   const rewards = [
     { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
     { icon: MessageSquare, label: 'First Post', description: 'Said your first hello', current: postCount, target: 1 },
     { icon: Users, label: 'Circle Up', description: 'Found your first circle', current: circles.length, target: 1 },
-    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: totalZaps, target: 50 },
+    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: lifetimeZaps, target: 50 },
     { icon: Trophy, label: 'Task Master', description: '10 tasks done', current: tasksCompleted, target: 10 },
   ]
     .map((r) => ({ ...r, earned: r.current >= r.target, ratio: Math.min(1, r.current / r.target) }))
@@ -241,6 +277,31 @@ export default async function ProfilePage({
   // Edit Profile (and a contact-card download when they enabled one); the profile QR +
   // share link now live in the band's own "Share" panel (PageAdminBar). A signed-in
   // non-owner gets the full friend/contact/message/tip/block/moderate set.
+  // Link to this member's public Spotlight page, shown to any visitor ONLY when it's
+  // published (an unpublished page 404s, so we never link a visitor into a dead end).
+  const spotlightLink = spotlightPublished ? (
+    <Link
+      href={`/spotlight/${profile.handle}`}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    >
+      <Sparkles className="h-3.5 w-3.5" />
+      Spotlight
+    </Link>
+  ) : null
+
+  // The OWNER gets a Spotlight entry whenever it's enabled, so they can always reach it
+  // from their own profile header: the live page once published, otherwise the builder
+  // (where they design + publish it). Falls back to nothing until it's turned on.
+  const ownerSpotlightLink = spotlightEnabled ? (
+    <Link
+      href={spotlightPublished ? `/spotlight/${profile.handle}` : '/settings/profile/spotlight'}
+      className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+    >
+      <Sparkles className="h-3.5 w-3.5" />
+      {spotlightPublished ? 'Spotlight' : 'Build Spotlight'}
+    </Link>
+  ) : null
+
   const ownerActions = (
     <>
       <Link
@@ -250,6 +311,7 @@ export default async function ProfilePage({
         <Pencil className="h-3.5 w-3.5" />
         Edit profile
       </Link>
+      {ownerSpotlightLink}
       {vcardEnabled && (
         <a
           href={`${profilePath}/vcard`}
@@ -262,41 +324,73 @@ export default async function ProfilePage({
     </>
   )
 
+  // The secondary, lower-stakes controls (Block · janitor "Act as") render as small
+  // text LINKS in a row UNDER the primary button row, right-aligned — they shouldn't
+  // compete with Friends/Message/Settings for weight.
+  const hasSecondary = (!isOwner) || isJanitorViewer
   const viewerActions = user ? (
-    <>
-      {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
-      {vcardEnabled && (
-        <a
-          href={`${profilePath}/vcard`}
-          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <Contact className="w-3.5 h-3.5" />
-          Save contact
-        </a>
-      )}
-      {!isBlocked && friendState.kind === 'accepted' && (
-        <form action={startConversation.bind(null, profileId)}>
-          <button
-            type="submit"
-            className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {spotlightLink}
+        {!isBlocked && <FriendButton targetProfileId={profileId} state={friendState} />}
+        {vcardEnabled && (
+          <a
+            href={`${profilePath}/vcard`}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Message
-          </button>
-        </form>
+            <Contact className="w-3.5 h-3.5" />
+            Save contact
+          </a>
+        )}
+        {!isBlocked && friendState.kind === 'accepted' && (
+          <form action={startConversation.bind(null, profileId)}>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-sm font-medium text-primary-strong hover:bg-primary-bg transition-colors"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              Message
+            </button>
+          </form>
+        )}
+        {!isBlocked && canTipRecipient && (
+          <TipButton toProfileId={profileId} recipientName={firstName} />
+        )}
+        {/* One Settings drawer for staff — the member's profile fields, Spotlight admin
+            controls, and a deep link to full account management. */}
+        {isStaffViewer && (
+          <ProfileSettingsDrawer
+            profileId={profileId}
+            handle={profile.handle as string}
+            initialName={profile.display_name}
+            initialBio={profile.bio ?? ''}
+            spotlightEnabled={spotlightEnabled}
+            spotlightPublished={spotlightPublished}
+            canModerate={canModerateProfile}
+            isJanitor={isJanitorViewer}
+          />
+        )}
+      </div>
+      {hasSecondary && (
+        <div className="flex items-center gap-3 pr-0.5">
+          {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} variant="link" />}
+          {/* Janitor full control: become this member (session swap). The server action
+              re-checks the real janitor web_role before swapping. */}
+          {isJanitorViewer && (
+            <form action={actAsMember.bind(null, profileId)}>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1 text-xs font-medium text-signal-strong transition-colors hover:underline"
+                title="Act as this member (full control)"
+              >
+                <UserCog className="h-3 w-3" />
+                Act as {firstName}
+              </button>
+            </form>
+          )}
+        </div>
       )}
-      {!isBlocked && canTipRecipient && (
-        <TipButton toProfileId={profileId} recipientName={firstName} />
-      )}
-      {!isOwner && <BlockButton profileId={profileId} blocked={isBlocked} />}
-      {canModerateProfile && (
-        <ModerateProfileButton
-          profileId={profileId}
-          initialName={profile.display_name}
-          initialBio={profile.bio ?? ''}
-        />
-      )}
-    </>
+    </div>
   ) : null
 
   // ── The profile IS the Detail template (PAGE-FRAMEWORK §3, Template C; the
@@ -399,42 +493,46 @@ export default async function ProfilePage({
                 ]}
               />
             </div>
-            {activeTab === 'posts' ? (
-              <ProfilePosts
-                profileId={profileId}
-                firstName={firstName}
-                isOwner={isOwner}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            ) : (
-              <ProfileFeed
-                profileId={profileId}
-                profileHandle={profile.handle as string}
-                myProfileId={myProfileId}
-                viewerRole={myRole}
-              />
-            )}
+            {/* The timeline/posts list is the slowest async work on the page, so it
+                streams behind its own Suspense boundary — the identity band + sidebar
+                paint first, the feed swaps in when its rows resolve. */}
+            <Suspense fallback={<ProfileFeedSkeleton />}>
+              {activeTab === 'posts' ? (
+                <ProfilePosts
+                  profileId={profileId}
+                  firstName={firstName}
+                  isOwner={isOwner}
+                  myProfileId={myProfileId}
+                  viewerRole={myRole}
+                />
+              ) : (
+                <ProfileFeed
+                  profileId={profileId}
+                  profileHandle={profile.handle as string}
+                  myProfileId={myProfileId}
+                  viewerRole={myRole}
+                />
+              )}
+            </Suspense>
           </div>
         </div>
 
         {/* SIDEBAR (1/3) — tiled info: Standing, Frequency Signature, Achievements. Scrolls
             with the main content (no sticky) so the whole column reads as one page. */}
         <aside className="order-1 min-w-0 space-y-4 self-start xl:order-2 xl:col-span-1">
-          {/* Standing — Zaps · Gems · Streak · Rank as a tidy menu under a rank header. */}
-          {(rankEndorsed || isOwner) && (
-            <ProfileStandingCard
-              isOwner={isOwner}
-              rank={rank}
-              rankDef={rankDef}
-              next={rankNext}
-              pct={rankPct}
-              zapsToNext={zapsToNext}
-              zaps={totalZaps}
-              gems={gems}
-              streak={currentStreak}
-            />
-          )}
+          {/* Standing — Zaps · Gems · Streak · Rank, shown on every profile (the owner asked
+              for everyone's stats to be public, not just paid-tier members). */}
+          <ProfileStandingCard
+            isOwner={isOwner}
+            rank={rank}
+            rankDef={rankDef}
+            next={rankNext}
+            pct={rankPct}
+            zapsToNext={zapsToNext}
+            zaps={lifetimeZaps}
+            gems={gems}
+            streak={currentStreak}
+          />
 
           {/* Frequency Signature — the identity constellation, stacked for the column. */}
           <div>
@@ -459,10 +557,37 @@ export default async function ProfilePage({
               ))}
             </div>
           </div>
+
+          {/* Real earned awards + owned/awarded shop items (renders nothing when empty). */}
+          <ProfileAwards awards={awards} firstName={firstName} isOwner={isOwner} />
         </aside>
       </div>
       </DetailTemplate>
     </>
+  )
+}
+
+// Suspense fallback for the streamed timeline — a few pulsing bars sized to the feed
+// rows, so the space is reserved (no layout shift) while the posts resolve.
+function ProfileFeedSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 animate-pulse rounded-full bg-surface-elevated" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-1/3 animate-pulse rounded bg-surface-elevated" />
+              <div className="h-3 w-1/5 animate-pulse rounded bg-surface-elevated" />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            <div className="h-3 w-full animate-pulse rounded bg-surface-elevated" />
+            <div className="h-3 w-4/5 animate-pulse rounded bg-surface-elevated" />
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 

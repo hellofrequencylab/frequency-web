@@ -14,7 +14,9 @@ import { slugify } from '@/lib/utils'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
+import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
+import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
 import { assignTraining } from '@/lib/onboarding/training'
 import { markWalkthroughPending } from '@/lib/walkthroughs/progress'
@@ -30,9 +32,6 @@ import {
   getEventCapabilities,
   getGlobalCapabilities,
 } from '@/lib/core/load-capabilities'
-
-// Role-ladder comparison — single source in lib/core/roles.
-const hasRole = atLeastRole
 
 // Community-surface mutations accept community host+ OR a staff role with the
 // 'community' capability (ADR-127). Sensitive mutations (member/role management)
@@ -106,8 +105,12 @@ export async function assignRole(profileId: string, role: CommunityRole) {
 }
 
 export async function deactivateMember(profileId: string) {
+  // Deactivating an account is a platform-wide staff action (ADR-127), NOT a steward
+  // power: gate on the STAFF axis (janitor) exactly like its siblings reactivate /
+  // delete / sendMagicLink. The prior community-`host` gate let a host of a single
+  // circle disable ANY account platform-wide via a crafted profileId.
   const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) throw new Error('Unauthorized')
+  if (!caller || !isJanitor(caller.webRole)) throw new Error('Unauthorized')
   const admin = createAdminClient()
   const { error } = await admin.from('profiles').update({ is_active: false }).eq('id', profileId)
   if (error) throw new Error(error.message)
@@ -610,7 +613,7 @@ export async function createCrewTask(fd: FormData) {
   const { error } = await admin.from('crew_tasks').insert({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
+    zaps_value:            coerceTierZaps(parseInt(fd.get('zaps_value') as string, 10)),
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   })
@@ -625,7 +628,7 @@ export async function updateCrewTask(id: string, fd: FormData) {
   const { error } = await admin.from('crew_tasks').update({
     name:                  (fd.get('name') as string).trim(),
     task_type:             fd.get('task_type') as string,
-    zaps_value:            parseInt(fd.get('zaps_value') as string) || 10,
+    zaps_value:            coerceTierZaps(parseInt(fd.get('zaps_value') as string, 10)),
     is_repeatable:         fd.get('is_repeatable') === 'true',
     requires_verification: fd.get('requires_verification') === 'true',
   }).eq('id', id)
@@ -868,9 +871,11 @@ export async function deleteDispatch(id: string) {
 
 export async function toggleCancelEvent(id: string, cancel: boolean) {
   const caps = await getEventCapabilities(id)
-  await requireScopedManage(await getCallerProfile(), caps.has('event.editSettings'), 'community')
+  const caller = await getCallerProfile()
+  await requireScopedManage(caller, caps.has('event.editSettings'), 'community')
   const admin = createAdminClient()
-  const { error } = await admin.from('events').update({ is_cancelled: cancel }).eq('id', id)
+  const update = cancel ? cancelAudit(caller?.id ?? null, null) : reinstateAudit()
+  const { error } = await admin.from('events').update(update).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/events')
   revalidatePath('/events')

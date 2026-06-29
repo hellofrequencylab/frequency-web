@@ -1,12 +1,17 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, Ticket, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, CreditCard, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, SlidersHorizontal, Ticket, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { isStaff } from '@/lib/core/roles'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { DangerDelete } from '@/components/admin/danger-delete'
+import { deleteSpace } from '@/lib/spaces/provision'
+import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
 import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 
 // MANAGE <Space> — the owner back-end HUB (ENTITY-SPACES-BUILD Wave B, Epic 1.7). A centered,
@@ -28,14 +33,14 @@ import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 // DB types yet, ADR-246), so they're read here through the untyped admin client alongside the
 // resolved Space, the same pattern lib/spaces/store.ts uses for `visibility`.
 
-type ExtraRow = { about?: string | null; tagline?: string | null; visibility?: string | null }
+type ExtraRow = { about?: string | null; tagline?: string | null; visibility?: string | null; plan?: string | null }
 
-/** Read the not-yet-typed profile columns (about / tagline / visibility) for a Space id. */
+/** Read the not-yet-typed profile columns (about / tagline / visibility / plan) for a Space id. */
 async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
   try {
     const { data } = (await createAdminClient()
       .from('spaces')
-      .select('about, tagline, visibility')
+      .select('about, tagline, visibility, plan')
       .eq('id', spaceId)
       .maybeSingle()) as { data: ExtraRow | null }
     return data ?? {}
@@ -100,6 +105,20 @@ export default async function SpaceSettingsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The hub stays the navigation entry point, so it
+  // renders for any manager / staff previewer. What it GATES is the cards: a tool the viewer's role
+  // cannot use (or that is turned off / not on the plan) does not render a dead card. The profile FORM
+  // is the `profile` function, so it renders read-only when the viewer cannot use it (default editor =
+  // the old canEditProfile threshold, so behavior is unchanged unless tuned). A staff janitor keeps the
+  // full read-only preview (every card visible, every write gated server-side), exactly as today.
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const canUse = (fn: SpaceFunctionKey): boolean =>
+    staffViewing || spaceFunctionAccess(space, fn, caps.role)
+
+  // Deleting a Space is OWNER-grade (or platform staff) and permanent — it cascades the space's
+  // events, members, circles, and CRM. Never offered for the root space (the platform partition).
+  const canDelete = space.type !== 'root' && (caps.isOwner || isStaff(caller?.webRole))
+
   const extras = await readProfileExtras(space.id)
   const initial: SpaceSettingsValues = {
     brandName: space.brandName ?? '',
@@ -127,11 +146,35 @@ export default async function SpaceSettingsPage({
         spaceId={space.id}
         slug={space.slug}
         initial={initial}
-        readOnly={staffViewing}
+        readOnly={staffViewing || !canUse('profile')}
       />
 
       <div className="mt-4 space-y-3">
-        {space.type === 'practitioner' && (
+        {/* Features and access — the cross-cutting control: turn the tools this space uses on or off, and
+            set who on the team can use each one. It is the gate's own editor, so it is always shown to a
+            manager (it is owner/admin-editable, editor read-only); it is not itself a gateable function. */}
+        <HubCard
+          href={`/spaces/${space.slug}/settings/features`}
+          icon={SlidersHorizontal}
+          title="Features and access"
+          description="Turn the tools this space uses on or off, and set who can use each one."
+        />
+
+        {/* Every card below is GATED on the per-Space function resolver: a tool the viewer's role cannot
+            use (or that is off / not on the plan) does not render a dead card. A staff previewer sees
+            them all (canUse short-circuits true). */}
+
+        {/* Plan and billing — the space's plan ladder. Defaults to admin. */}
+        {canUse('billing') && (
+          <HubCard
+            href={`/spaces/${space.slug}/settings/billing`}
+            icon={CreditCard}
+            title="Plan and billing"
+            description={`Your current plan: ${SPACE_PLAN_LABEL[asSpacePlan(extras.plan)]}. See what each plan unlocks.`}
+          />
+        )}
+
+        {space.type === 'practitioner' && canUse('availability') && (
           // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
           // owner's upcoming bookings). Link to it from the hub rather than nesting another editor.
           <HubCard
@@ -142,7 +185,7 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {space.type === 'business' && (
+        {space.type === 'business' && canUse('memberships') && (
           // The Business's memberships live on their own Focus surface (the tier editor + the member
           // list). Link to it from the hub rather than nesting another editor.
           <HubCard
@@ -153,7 +196,7 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {space.type === 'organization' && (
+        {space.type === 'organization' && canUse('donations') && (
           // An Organization configures its hosted donation asks (a fund label, a short description, and
           // suggested amounts). No money in v1 (ADMIN-01); the member Donate CTA reads this config.
           <HubCard
@@ -164,7 +207,7 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {space.type === 'coaching' && (
+        {space.type === 'coaching' && canUse('enroll') && (
           // The Coaching academy's enrollment lives on its own Focus surface (the program editor + the
           // enrollee list). No money in v1 (ADMIN-02).
           <HubCard
@@ -177,7 +220,7 @@ export default async function SpaceSettingsPage({
 
         {/* `event_space` is a first-class member of `SpaceType` (HARD-01 / ADR-339), so this branch is a
             plain, exhaustively-checked comparison: no `as string` cast. */}
-        {space.type === 'event_space' && (
+        {space.type === 'event_space' && canUse('checkin') && (
           // An Event Space runs door check-in: a reusable QR by the door, and the live roster of who
           // scanned in. Reuses the existing scan path; this card links to the owner roster surface.
           <HubCard
@@ -188,7 +231,7 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {space.type === 'event_space' && (
+        {space.type === 'event_space' && canUse('tickets') && (
           // An Event Space runs free / RSVP ticketing (no money in v1; real paid ticketing is Phase 4):
           // the owner tier editor + the RSVP roster (ADMIN-03).
           <HubCard
@@ -200,33 +243,56 @@ export default async function SpaceSettingsPage({
         )}
 
         {/* Members is available for every Space type: who is on the team, and their roles. */}
-        <HubCard
-          href={`/spaces/${space.slug}/settings/members`}
-          icon={Users}
-          title="Members"
-          description="See who is on your team and the role each one holds."
-        />
+        {canUse('members') && (
+          <HubCard
+            href={`/spaces/${space.slug}/settings/members`}
+            icon={Users}
+            title="Members"
+            description="See who is on your team and the role each one holds."
+          />
+        )}
 
-        {/* QR codes + CRM are owner tools every Space type can use. */}
-        <HubCard
-          href={`/spaces/${space.slug}/settings/qr`}
-          icon={QrCode}
-          title="QR codes"
-          description="Create codes for your space and the landing page they open to."
-        />
-        <HubCard
-          href={`/spaces/${space.slug}/settings/crm`}
-          icon={Briefcase}
-          title="CRM"
-          description="Track your pipeline and contacts, and keep private notes on the people you work with."
-        />
-        <HubCard
-          href={`/spaces/${space.slug}/settings/email`}
-          icon={Mail}
-          title="Email"
-          description="Write a campaign, pick who gets it, and send or schedule it."
-        />
+        {/* QR codes + CRM + Email are owner tools (CRM + Email are plan-gated; QR is universal). */}
+        {canUse('qr') && (
+          <HubCard
+            href={`/spaces/${space.slug}/settings/qr`}
+            icon={QrCode}
+            title="QR codes"
+            description="Create codes for your space and the landing page they open to."
+          />
+        )}
+        {canUse('crm') && (
+          <HubCard
+            href={`/spaces/${space.slug}/crm`}
+            icon={Briefcase}
+            title="CRM"
+            description="Your pipeline and contacts. Bring people over from My Contacts, and keep private notes on the people you work with."
+          />
+        )}
+        {canUse('email') && (
+          <HubCard
+            href={`/spaces/${space.slug}/settings/email`}
+            icon={Mail}
+            title="Email"
+            description="Write a campaign, pick who gets it, and send or schedule it."
+          />
+        )}
       </div>
+
+      {/* Danger zone — owner-grade, permanent, and last on the page. Deleting the space removes it
+          and everything it owns (its events and their RSVPs, its members, circles, pages, and CRM).
+          Typing DELETE is required; the server re-checks owner/staff. */}
+      {canDelete && (
+        <div className="mt-8">
+          <DangerDelete
+            entity="space"
+            warning="Permanently deletes this space and everything it owns: all its events (with their RSVPs and check-ins), members, circles, pages, and CRM. This cannot be undone."
+            onDelete={deleteSpace.bind(null, space.id)}
+            redirectTo="/spaces"
+            confirmText="DELETE"
+          />
+        </div>
+      )}
     </FocusTemplate>
   )
 }

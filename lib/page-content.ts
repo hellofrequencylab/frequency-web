@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { loadPageSettings } from '@/lib/page-settings/store'
 
 // Operator-editable page content, keyed by route (ADR-180/182). A coded page reads
 // this and falls back to its hardcoded default when nothing is set, so editing is
@@ -93,14 +94,25 @@ export async function pageContentMetadata(
   route: string,
   fallback: Pick<PageContent, 'title' | 'description'>,
 ): Promise<Metadata> {
-  const { title, description } = await resolvePageContent(route, {
+  const { title, description, heroImage } = await resolvePageContent(route, {
     title: fallback.title,
     description: fallback.description,
   })
+  // Link previews: prefer the dedicated social image, then the page header image, then the
+  // page-content hero (the banner the page actually shows). Without an image here, Next REPLACES
+  // (not deep-merges) the layout's openGraph, dropping the operator's share card — so we resolve
+  // and re-emit it. loadPageSettings is request-cached, shared with the layout's own read.
+  const settings = await loadPageSettings(route)
+  const ogImage = settings?.og_image_url ?? settings?.header_image_url ?? heroImage ?? null
   return {
     title,
     description,
-    openGraph: { title, description },
-    twitter: { title, description },
+    openGraph: { title, description, ...(ogImage ? { images: [{ url: ogImage }] } : {}) },
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
   }
 }

@@ -20,3 +20,28 @@ export function platformFeeCents(grossCents: number): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   return Math.floor(grossCents * (platformFeePct() / 100))
 }
+
+// ── Space-plan take-rate (Pricing P2, ADR-363) ────────────────────────────────────────────
+// A paid SPACE membership is a Connect destination charge; the platform's application fee is the
+// take-rate SET BY THE SPACE'S PLAN (8% practitioner / 5% business / 3% organization, editable at
+// /admin/pricing → pricing_settings.take_rate). The pure math lives in lib/billing/pricing-keys.ts
+// (takeRateCents); this IO wrapper reads the operator take-rate and applies it. FAIL-SAFE: any error
+// falls back to the seeded defaults via getPricingValues, never to a 0% fee that under-collects.
+
+/** The application fee (cents) on a paid space membership, by the SPACE's plan take-rate. Reads the
+ *  operator pricing_settings (fail-safe to the seeded defaults). Server-only (dynamic imports keep
+ *  the pure platformFee* helpers above client-safe). Floors fractional cents (recipient never short). */
+export async function spaceTakeRateCents(grossCents: number, plan: string | null | undefined): Promise<number> {
+  if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
+  try {
+    const [{ getPricingValues }, { takeRateCents }] = await Promise.all([
+      import('@/lib/pricing/settings'),
+      import('./pricing-keys'),
+    ])
+    const values = await getPricingValues()
+    return takeRateCents(grossCents, plan, values.take_rate)
+  } catch {
+    // Fail-safe to the platform default fee rather than 0 (never under-collect on an error).
+    return platformFeeCents(grossCents)
+  }
+}

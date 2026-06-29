@@ -66,8 +66,6 @@ export const ROLE_HIERARCHY: readonly CommunityRole[] = [
 
 export type WebRole = 'none' | 'admin' | 'janitor'
 
-export const WEB_ROLES: readonly WebRole[] = ['none', 'admin', 'janitor'] as const
-
 /** Narrowing guard for an untyped DB read (profiles.web_role). Anything outside
  *  the enum (incl. null/undefined) is treated as 'none' — fail-closed. */
 export function asWebRole(v: string | null | undefined): WebRole {

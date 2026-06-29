@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { FolderOpen } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates/index-template'
 import { NewJourneyButton } from '@/components/studio/journey/new-journey-button'
+import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
@@ -16,7 +17,7 @@ import { getPageHeaderImage } from '@/lib/page-settings/store'
 // Coded defaults for the operator-editable header content (ADR-180).
 const CONTENT_FALLBACK = {
   title: 'Journeys',
-  description: 'The library to browse and build journeys: a life-development track across Mind, Body, Spirit, and Expression. Keep one for yourself, or share it to the open library for anyone to adopt. This season’s official Quest lives in My Quest.',
+  description: 'The library to browse and build Journeys: guided tracks of Practices across Mind, Body, Spirit, and Expression. Keep one for yourself, or share it to the open library for anyone to adopt. This season’s official Quest lives in My Quest.',
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2);
@@ -37,14 +38,24 @@ export default async function JourneysPage() {
   // Prefer the new uploader so a header set there actually shows here (it was being
   // dropped — the page only read the old field). Same source crew/practices use.
   const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage
+  // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
+  const canBuildJourney = await canCreate('journey.create')
 
   return (
     <IndexTemplate
+      // Standardized header (PAGE-FRAMEWORK): breadcrumb -> cropped hero -> title, all from the
+      // template's first-class props. The hero can be set from either the Settings header image
+      // (page_settings) or the older page-content hero; both resolve into `bannerImage`.
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/journeys', label: 'Journeys' },
+      ]}
+      heroImage={bannerImage}
       title={title}
       description={description}
       action={
         <div className="flex items-center gap-2">
-          <NewJourneyButton />
+          <NewJourneyButton canCreate={canBuildJourney} />
           {/* The member's own management space (store / edit / publish / duplicate / delete). */}
           <Link
             href="/journeys/mine"
@@ -64,18 +75,6 @@ export default async function JourneysPage() {
         </div>
       }
     >
-      {/* Operator-set hero banner (PX.1) — renders only when set. Intrinsic sizing
-          (w-full h-auto): scales to the screen, never cropped, so wide headers read
-          fully on mobile too. Recommended upload ~1600×500 (16:5). */}
-      {bannerImage && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={bannerImage}
-          alt=""
-          className="mb-6 h-auto w-full max-w-4xl rounded-2xl border border-border"
-        />
-      )}
-
       <div className="max-w-4xl">
         <PageModules route="/journeys" />
       </div>

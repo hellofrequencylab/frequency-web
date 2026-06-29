@@ -53,16 +53,19 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
 
   // DB-backed nav megas (lib/menus); getMenu/getMenuSettings fall back to the code defaults
   // on any miss, so these are safe pre-migration and the header always renders.
-  const [discoverMenu, exploreMenu, menuTimings] = await Promise.all([
-    getMenu('public_discover'),
-    getMenu('public_explore'),
+  const [headerMenu, profileMenu, menuTimings] = await Promise.all([
+    getMenu('header'),
+    getMenu('profile'),
     getMenuSettings(),
   ])
   const viewerRole = viewerRoleFor({ loggedIn: isAuth, communityRole, webRole })
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-50 h-16 flex items-center gap-3 px-5 sm:px-8 ${
+      // h-16 + top padding by env(safe-area-inset-top) so the fixed bar fills behind the
+      // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
+      style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 ${
         isDark
           ? 'bg-transparent'
           : 'bg-surface/90 backdrop-blur-md border-b border-border'
@@ -79,15 +82,12 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         />
       </Link>
 
-      {/* Unified primary nav (Discover + About dropdowns). Desktop only; mobile
-          relies on the prominent CTA + footer nav until a drawer ships. Members
-          get the mission-focused About menu. */}
+      {/* Header mega-menu (from the `header` surface). Desktop only; mobile relies on
+          the prominent CTA + footer nav until a drawer ships. */}
       <PrimaryNav
         variant={isDark ? 'dark' : 'light'}
-        showDiscover={!isAuth}
         className="ml-2"
-        discoverMenu={discoverMenu}
-        exploreMenu={exploreMenu}
+        headerMenu={headerMenu}
         viewerRole={viewerRole}
         timings={menuTimings}
       />
@@ -129,9 +129,9 @@ export async function SiteHeader({ profile: profileProp, variant = 'light' }: Si
         <Search className="w-5 h-5" />
       </Link>
 
-      {/* User menu / auth buttons */}
+      {/* Profile menu / auth buttons */}
       {isAuth ? (
-        <UserMenu profile={profile} />
+        <UserMenu profile={profile} menu={profileMenu} />
       ) : (
         <AuthButtons dark={isDark} />
       )}

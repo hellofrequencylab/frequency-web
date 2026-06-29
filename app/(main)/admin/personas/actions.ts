@@ -9,6 +9,7 @@ import { logAdminAction } from '@/lib/admin/audit'
 import {
   PARTNER_PERSONAS,
   canStaffTransition,
+  CONNECT_WIRED,
   type PartnerPersona,
   type PersonaState,
 } from '@/lib/personas'
@@ -44,6 +45,12 @@ export async function transitionPersona(
   const from = (row?.state ?? null) as PersonaState | null
   if (!from) return fail('That persona claim no longer exists.')
   if (from === to) return ok({ state: to })
+  // The money gate (BUG-7): activation needs the per-persona Stripe Connect binding, which isn't
+  // wired yet. `verified` already lights every partner surface, so this withholds nothing
+  // operational — it only blocks the unbacked `active` money state until Connect lands.
+  if (to === 'active' && !CONNECT_WIRED) {
+    return fail('Activation needs the Stripe Connect binding, which is not live yet. Verify keeps every partner tool on.')
+  }
   if (!canStaffTransition(from, to)) return fail(`Can’t move ${from} → ${to}.`)
 
   const patch: Record<string, unknown> = { state: to, ...(notes !== undefined ? { notes } : {}) }

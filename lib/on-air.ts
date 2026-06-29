@@ -166,9 +166,11 @@ export function ringScaleAt(pattern: BreathPattern, elapsed: number): number {
   return band(prev.toScale ?? (prev.kind === 'out' ? 0 : 1))
 }
 
-/** Session duration presets (minutes). The 2-minute floor is deliberate: a
- *  sustainable daily sit beats an ambitious abandoned one. */
-export const DURATION_PRESETS = [2, 5, 10, 15, 20, 30] as const
+/** Session duration presets (minutes) for the silent-timer sit modes (Meditate, Journal,
+ *  Stillness, Ritual). Five chips in one clean row, matching Get Moving's Walk presets so
+ *  the Be Still and Get Moving setup screens share the same minutes layout. The free-form
+ *  stepper below still reaches any length (down to the 1-minute floor). */
+export const DURATION_PRESETS = [5, 10, 15, 20, 30] as const
 
 /** Breath-mode length presets — a shorter, calmer set than Meditate's (owner ask). The
  *  free-form stepper still lets a member pick any length under them. */
@@ -189,12 +191,6 @@ export type SessionMode = 'timer' | 'stillness' | 'ritual' | 'breath' | 'journal
 /** Which underlying path a mode runs on. 'timer' = the silent countdown (Meditate / Stillness /
  *  Ritual / Journal share it); 'breath' = the guided rings; 'log' = the instant log, no countdown. */
 export type SessionEngine = 'timer' | 'breath' | 'log'
-
-/** A mode that runs a countdown (everything but Just Log). The breath path and the
- *  silent-timer path are both "timed"; only Just Log skips the clock. */
-export function isTimedMode(mode: SessionMode): boolean {
-  return mode !== 'log'
-}
 
 /** Whether a mode shows the breath visualizer (vs. the plain countdown). */
 export function isBreathMode(mode: SessionMode): boolean {
@@ -323,6 +319,31 @@ export function bellToneBySlug(slug: string | null | undefined): BellTone {
   return BELL_TONES.find((t) => t.slug === slug) ?? BELL_TONES[0]
 }
 
+// Ambient loops: an optional soft background that plays for the whole sit. The
+// files live in /public/tracks; the player (lib/on-air-ambient.ts) decodes each
+// into a seamless crossfade-to-self loop and fades it in. `credit` keeps the
+// source on record (these are licensed Epidemic Sound tracks); it's never shown
+// to a member.
+export interface AmbientTrack {
+  slug: string
+  /** Member-facing name (setup chip). Plain words. */
+  name: string
+  /** Public path under /public. */
+  src: string
+  /** Source / attribution, for licensing records only. */
+  credit: string
+}
+
+export const AMBIENT_TRACKS: AmbientTrack[] = [
+  { slug: 'forest', name: 'Forest', src: '/tracks/forest.mp3', credit: 'Epidemic Sound: Ambience, Forest, Bird Sing, Black Forest Czech Republic' },
+  { slug: 'ocean', name: 'Ocean', src: '/tracks/ocean.mp3', credit: 'Epidemic Sound: Water, Wave, Ocean, Waves On Shore, Beach, Close' },
+  { slug: 'drift', name: 'Drift', src: '/tracks/drift.mp3', credit: 'Epidemic Sound: Remain (DEX 1200)' },
+]
+
+export function ambientTrackBySlug(slug: string | null | undefined): AmbientTrack | null {
+  return AMBIENT_TRACKS.find((t) => t.slug === slug) ?? null
+}
+
 /** Bell loudness: scales the synth peak. Quiet/Loud sit either side of the
  *  default. Kept well under earbud-hostile levels even at Loud. */
 export type BellVolume = 'quiet' | 'medium' | 'loud'
@@ -366,6 +387,8 @@ export interface OnAirPrefs {
   bellEveryMin?: number
   /** Vibration on phase changes, where the device supports it. Default off. */
   haptics?: boolean
+  /** Ambient background loop slug (AMBIENT_TRACKS), or null/absent for none. */
+  ambientTrack?: string | null
 }
 
 export const DEFAULT_PREFS: OnAirPrefs = {
@@ -414,6 +437,9 @@ export interface RevealPayload {
   }
   stats: {
     sessionSeconds: number
+    /** The label for the session row, named after the activity done ("This walk" /
+     *  "This sit"), so the stats never describe the wrong practice (ADR-443). */
+    sessionLabel: string
     todaySeconds: number
     totalSeconds: number
     lifetimeLogs: number
@@ -487,6 +513,29 @@ export function dispatchOpener(kind: DispatchKind | null | undefined): string {
       return 'Good moving.'
     default:
       return 'Nicely done.'
+  }
+}
+
+/** The stats-card label for THIS session, named after what was actually done so a walk
+ *  reads "This walk" and a meditation "This sit" (never crossed). Movement kinds name the
+ *  activity; quieter modes fall back to the plain "session". (ADR-443 mode-accuracy.) */
+export function statSessionLabel(kind: DispatchKind | null | undefined): string {
+  switch (kind) {
+    case 'timer':
+    case 'stillness':
+    case 'ritual':
+      return 'This sit'
+    case 'walk':
+      return 'This walk'
+    case 'run':
+      return 'This run'
+    case 'yoga':
+      return 'This yoga'
+    case 'stretch':
+      return 'This stretch'
+    // breath / journal / log / strength / play read most naturally as a plain session.
+    default:
+      return 'This session'
   }
 }
 

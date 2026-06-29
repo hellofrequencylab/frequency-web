@@ -49,6 +49,9 @@ export type GamificationEvent =
   | { type: 'streak_update';  profileId: string; streakType: StreakType; count: number }
   | { type: 'rank_change';    profileId: string; rank: string }
   | { type: 'qr_scan';        profileId: string; qrCodeId: string }
+  // A governed playbook finished for this member (Resonance Engine Phase 5 · ADR-386).
+  // Fires retroactive milestones for the advocate state (e.g. connector / facilitator).
+  | { type: 'playbook_complete'; profileId: string; playbookId?: string }
 
 export interface NewAchievement {
   id: string
@@ -236,6 +239,8 @@ function isRelevantEvent(criteria: AchievementCriteria, event: GamificationEvent
     case 'season_zaps':    return event.type === 'task_complete'
     case 'rank_reached':   return event.type === 'rank_change' || event.type === 'task_complete'
     case 'task_complete':  return event.type === 'task_complete'
+    // Playbook completions (ADR-386): the advocate-state recognition path.
+    case 'playbook_complete': return event.type === 'playbook_complete'
     // Amplitude moves on every zap-paying act — check it wherever zaps flow.
     case 'amplitude':
       return event.type === 'practice_log' || event.type === 'task_complete' ||
@@ -261,6 +266,8 @@ interface UserStats {
   practiceStreak: number
   /** Lifetime XP (profiles.amplitude — Rewards Economy v2). */
   amplitude: number
+  /** Governed playbooks finished for this member (playbook_runs status 'done', ADR-386). */
+  playbooksCompleted: number
 }
 
 async function getUserStats(admin: AdminClient, profileId: string): Promise<UserStats> {
@@ -306,6 +313,30 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     streakMap[s.streak_type] = s.current_count
   }
 
+  // Governed playbooks finished FOR this member (ADR-386). The playbook_runs table is not in
+  // the generated DB types yet, so reach it untyped (ADR-246), FAIL-SAFE to 0 on any error so
+  // a missing table (pre-migration) never breaks achievement evaluation.
+  let playbooksCompleted = 0
+  try {
+    const runs = admin as unknown as {
+      from: (t: string) => {
+        select: (c: string, o: { count: 'exact'; head: true }) => {
+          eq: (col: string, val: string) => {
+            eq: (col: string, val: string) => Promise<{ count: number | null }>
+          }
+        }
+      }
+    }
+    const { count } = await runs
+      .from('playbook_runs')
+      .select('id', { count: 'exact', head: true })
+      .eq('subject_id', profileId)
+      .eq('status', 'done')
+    playbooksCompleted = count ?? 0
+  } catch {
+    playbooksCompleted = 0
+  }
+
   type InviteLinkRow = { used_count: number | null }
   const totalReferrals = (inviteLinks.data ?? []).reduce(
     (sum, link) => sum + ((link as InviteLinkRow).used_count ?? 0), 0
@@ -330,6 +361,7 @@ async function getUserStats(admin: AdminClient, profileId: string): Promise<User
     streaks: streakMap,
     practiceStreak: p?.current_streak ?? 0,
     amplitude: Number(p?.amplitude ?? 0),
+    playbooksCompleted,
   }
 }
 
@@ -373,6 +405,8 @@ function isCriteriaMet(
       return stats.practiceStreak >= criteria.count
     case 'amplitude':
       return stats.amplitude >= criteria.count
+    case 'playbook_complete':
+      return stats.playbooksCompleted >= criteria.count
     default:
       return false
   }

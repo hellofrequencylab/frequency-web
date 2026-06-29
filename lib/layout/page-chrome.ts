@@ -49,7 +49,7 @@ const SCOPED_PREFIXES: string[] = [
   // of the app (operator request): a profile reads as a normal Detail page beside the site's Quest
   // rail, not a suppressed-rail island. Its context band lives in the interior content column (a
   // hero CARD, not a shell rail), so there is no double-rail trap to avoid. EVERY /spaces route now
-  // falls through to 'global' below — the directory (/spaces), the provisioning wizard (/spaces/new),
+  // falls through to 'global' below — the directory (/spaces/directory), the provisioning wizard (/spaces/new),
   // the invite landing, AND the owner settings sub-surfaces (/spaces/<slug>/settings*): the right
   // rail shows site-wide (owner directive, 2026-06-20). The settings sub-pages still compose
   // <FocusTemplate> for a centered body; they just keep the rail beside it. Re-add '/spaces/' here
@@ -89,6 +89,28 @@ export function isSafeRoute(pathname: string): boolean {
   return typeof pathname === 'string' && /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/.test(pathname)
 }
 
+// FULL-WIDTH DASHBOARD surfaces — member-side operator workspaces that compose <DashboardTemplate>
+// and want the full center width (a horizontally-scrolling CRM board would fight the community rail).
+// These keep the global LEFT menu but drop the member RIGHT rail, like /admin's own dashboard. Today
+// the only one is a Space's own CRM board (/spaces/<slug>/crm), a paid per-Space pipeline workspace
+// (CRM-STRATEGY P3) distinct from the Focus settings/crm notes surface. Pattern match (one slug deep).
+const DASHBOARD_NONE_PATTERNS: RegExp[] = [
+  /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated)
+  // The entity OWNER CONSOLE (ADR-441 EM1-2): /{entity}/[id]/manage is a full-width
+  // <DashboardTemplate> workspace (PAGE-FRAMEWORK §3 → 'none'), the owner's cockpit for
+  // managing their entity. It composes the admin kit edge to edge and reads best without
+  // the community rail beside it. Pass 1 ships the circle console; sibling entity consoles
+  // add their own pattern here as they land.
+  /^\/circles\/[^/]+\/manage$/, // a circle's owner console
+]
+
+// ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
+// Do NOT suppress the rail for /events/<slug> (a past change set it to 'none' to dodge a
+// "double right column" — that was wrong). The global rail is a fixed part of the member
+// chrome; the fix for any doubled-column feeling is to make the PAGE'S OWN interior content
+// templated/movable blocks, NEVER to remove the rail. The event detail page falls through to
+// the default 'global' rail like every other member surface.
+
 export function railFor(pathname: string): Rail {
   // The Leader surface (/lead/*) is a member-side CONSOLIDATED dashboard (not the
   // /admin operator workspace), so it rides the standard GLOBAL community right rail
@@ -96,10 +118,21 @@ export function railFor(pathname: string): Rail {
   // to 'global' at the end. Registered here so the decision is explicit (PAGE-FRAMEWORK
   // §3): a leader keeps the member chrome, unlike /admin which drops both rails.
 
+  // A Space's CRM board is a full-width Dashboard workspace: it keeps the left menu but drops the
+  // member right rail (the board scrolls horizontally and reads best edge to edge).
+  if (DASHBOARD_NONE_PATTERNS.some((re) => re.test(pathname))) return 'none'
+
   // The admin workspace keeps the global LEFT menu (the one site nav) but drops the
   // member community RIGHT rail: the admin layout (app/(main)/admin/layout.tsx) mounts
   // its own operator info rail on the right, so the member right rail is suppressed.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) return 'none'
+
+  // The Pages workspace (/pages and its sub-managers: /pages/home, /pages/splash, /pages/sequences)
+  // is a member-accessible operator MANAGER (a list of pages to open + edit), not the /admin
+  // workspace with its own info rail. So it keeps the GLOBAL community right rail like every other
+  // member surface (owner directive, 2026-06-20: the right rail shows on every page) — it falls
+  // through to 'global' below. The actual page editors open elsewhere (in place with edit mode, or
+  // the marketing/splash editors), so nothing full-width is affected here.
 
   // Full-viewport takeovers (the practice timer, the scanner, the auth gate, print) are
   // the ONLY other routes without the right rail — they read with zero app chrome.
@@ -167,7 +200,14 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/channels', label: 'Channels', area: 'Member' },
   { route: '/events', label: 'Events', area: 'Member' },
   { route: '/people', label: 'People', area: 'Member' },
-  { route: '/spaces', label: 'Spaces (directory)', area: 'Member' },
+  { route: '/spaces/directory', label: 'Spaces (directory)', area: 'Member' },
+  { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
+  // The owner "Features and access" sub-page (per-space-roles Phase 1): a centered Focus surface that
+  // composes <FocusTemplate>. Per the owner directive (2026-06-20) every /spaces/<slug>/settings* route
+  // keeps the GLOBAL community rail beside its centered body, so it falls through to 'global' in railFor
+  // like its sibling settings sub-pages (CRM notes, availability, memberships); this catalog entry makes
+  // the route an explicitly managed surface an operator can reframe.
+  { route: '/spaces/_/settings/features', label: 'Space features and access', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
@@ -194,6 +234,17 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/scan', label: 'QR scanner', area: 'Focus surfaces' },
   // ── Operator workspace (default NONE — full-width admin) ──
   { route: '/admin', label: 'Admin workspace', area: 'Operator' },
+  // The Resonance cockpit (Phase 2 · ADR-383): the platform CRM dashboard. It lives under
+  // /admin/*, so railFor already returns 'none' (the admin workspace mounts its OWN info rail;
+  // adding it to SCOPED_PREFIXES would be a no-op because the /admin/* branch wins first). This
+  // catalog entry makes the cockpit an explicitly managed operator surface; the rail decision
+  // stays the admin default, exactly like Phase 1's /admin/crm/today.
+  { route: '/admin/crm', label: 'Resonance cockpit', area: 'Operator' },
+  // The practice library curation workspace (Phase 1 "Scale it", ADR-438). Lives under /admin/*,
+  // so railFor already returns 'none' (the admin workspace mounts its own info rail); the in-page
+  // facet rail is a body column, NOT the shell rail. This catalog entry only makes it an explicitly
+  // managed operator surface — the rail decision stays the admin default.
+  { route: '/admin/content/practices', label: 'Practice library', area: 'Operator' },
 ] as const
 
 export type ChromeOverrides = Record<string, Rail>

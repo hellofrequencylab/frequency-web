@@ -26,6 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
@@ -54,7 +55,6 @@ export interface CheckinEntry {
 
 // A generous cap on a roster page so a hostile/huge Space can never pull an unbounded result set.
 const MAX_ROSTER = 500
-const DEFAULT_ROSTER = 200
 
 // ── PURE: input normalization (no IO, fully testable) ───────────────────────────────────────────
 
@@ -65,13 +65,6 @@ export function normalizeSince(raw: unknown): string | null {
   const ms = Date.parse(raw)
   if (!Number.isFinite(ms)) return null
   return new Date(ms).toISOString()
-}
-
-/** Clamp a roster limit to [1, MAX_ROSTER], defaulting a missing/garbage value. Pure. */
-export function normalizeLimit(raw: unknown): number {
-  const n = Math.round(Number(raw))
-  if (!Number.isFinite(n) || n <= 0) return DEFAULT_ROSTER
-  return Math.min(n, MAX_ROSTER)
 }
 
 // ── IO: the untyped admin-client seams (space_id/kind not in generated types yet, ADR-246) ──────
@@ -255,6 +248,10 @@ export async function ensureCheckinNode(spaceId: string): Promise<CheckinNode | 
 
   // No node yet: only an EDITOR may create one (a staff previewer reads, never writes).
   if (!canEdit) return null
+  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2, defense in depth). MINTING the node is a write, so
+  // it must also clear the per-Space check-in gate (default moderator). The page already gates its
+  // render on the same resolver; this keeps a per-Space role/disable override enforced on the write.
+  if (!spaceFunctionAccess(space, 'checkin', caps.role)) return null
   const label = `${space.brandName ?? space.name} check-in`
   const created = await insertCheckinNode(spaceId, label)
   return created ? { id: created.id, secret: created.secret } : null

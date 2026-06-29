@@ -1,5 +1,18 @@
 # Development Map: the single source of truth
 
+> **▶ Start at [BUILD-SEQUENCE.md](BUILD-SEQUENCE.md)** — the single front-door that orders every
+> track into one gated wave plan, overlays the Notion timeline, and carries the Idea Inbox. This map
+> stays canonical for the *what/why*; the build sequence holds *what to build next*.
+>
+> **2026-06-28 — active execution order:** the build is now sequenced **hardening-first,
+> mobile-primary, plan-as-if-entities-live** per owner decision ([ADR-439](DECISIONS.md)). The
+> phased work list lives in [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md). This map
+> stays canonical for the *what/why* of the verticals and the two-entity model; the hardening plan
+> holds the *order we execute in*. Companion build tracks:
+> [GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md) (funnel/flywheel/launch layer, ADR-440) and
+> [ENTITY-MANAGEMENT-OVERHAUL.md](ENTITY-MANAGEMENT-OVERHAUL.md) (the unified per-entity + role
+> management console, ADR-441; prerequisite for Growth OS G3).
+
 > **What we're building, in what order.** This is the one canonical plan. It **supersedes
 > and folds in** the two previous trackers, [`ROADMAP.md`](../ROADMAP.md) (product features)
 > and [`BUILD-PHASES.md`](BUILD-PHASES.md) (architecture phases), which are now thin
@@ -346,6 +359,25 @@
 > launcher-only Manage mega-menu (no persistent active-Space); and the broad standard that every page composes
 > a kit template AND renders its interior via `<PageModules>` (the long tail tracked in PAGE-FRAMEWORK §8.4).
 > The owed operator how-tos route to Notion per DOCS-PROTOCOL; the git side is complete.
+
+> **2026-06-23:** **My Contacts CRM (P1-P3) shipped** ([ADR-361](DECISIONS.md), strategy
+> [CRM-STRATEGY.md](CRM-STRATEGY.md), sibling [NETWORK-CRM.md](NETWORK-CRM.md)). The personal contact
+> book became a lightweight relationship CRM and now graduates into the paid Spaces CRM. P1 (keep-in-touch:
+> follow-up reminders + `last_contacted_at` + the "reach out today" list, migration
+> `20260723000000_network_contacts_crm_p1.sql`); P2 (in-person QR capture on a personal connect/referral
+> scan, `lib/connections/qr-capture.ts`, wired in `app/q/[slug]/route.ts`); P3 (the per-space CRM board at
+> `/spaces/<slug>/crm` + "bring your contacts in" import). Deferred follow-ups are catalogued in
+> [REMAINING-WORK.md](REMAINING-WORK.md).
+>
+> **2026-06-23:** **Pricing entitlements (P1-P3) shipped, OFF by default** ([ADR-362](DECISIONS.md) /
+> [ADR-363](DECISIONS.md) / [ADR-364](DECISIONS.md), sibling [PRICING.md](PRICING.md)). The whole layer
+> ships behind operator switches and is structurally safe while `billing_live` is OFF (today's free-beta
+> behavior is unchanged). P1 (three operator-managed entitlement flags + `featureAllowed`); P2 (Stripe
+> products/prices + subscription checkout + webhook entitlement reconciliation, `lib/billing/space-subscriptions.ts`);
+> P3 (member-facing surfaces rendered from the operator values: `/upgrade`, the Space plan picker + billing
+> route, the paid membership join, white-label as a high-touch lead). No new migration in P3. Deferred gates
+> (leaderboard "compete", `vera_unlimited`, the `space_*` gates, dunning/proration) are catalogued in
+> PRICING.md "Status & deferred" and [REMAINING-WORK.md](REMAINING-WORK.md).
 
 ---
 

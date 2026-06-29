@@ -1,63 +1,23 @@
 ---
-title: Movement, the timer for moving practices
-description: Time a walk, run, yoga flow, strength set, stretch or open play, with audio cues, then log it like any practice.
+title: Moving practices, now part of Mindless
+description: Walks, runs, yoga, strength, stretch and play moved into Mindless as the Get Moving mode. One timer, two modes.
 category: the-quest
 order: 4
-updated: 2026-06-21
+updated: 2026-06-22
 audience: member
 featureKeys: [practices, gamification]
 status: published
 ---
 
-**Movement** is the second timer, sitting right beside **Mindless**. Mindless is
-for sitting still. Movement is for the practices where you're actually moving: a
-walk, a yoga flow, a game of something, a workout. Same idea, same fullscreen
-quiet, same payout at the end. It just keeps time while you move instead of while
-you sit.
+There's no separate Movement timer anymore. Moving practices live inside
+**[Mindless](/help/the-quest/on-air)** now, as the **Get Moving** mode.
 
-## The six modes
+One timer, two modes. **Be Still** is for sitting: a meditation, a breath set, a
+quiet timer. **Get Moving** is for the practices where you're actually moving: a
+walk, a run, a yoga flow, a strength set, a stretch, or open play. Same fullscreen
+quiet, same payout at the end.
 
-Pick the one that fits what you're doing:
-
-- **Walk.** A timed block for a walk. Set the minutes and go. Turn on interval
-  reminders if you want a nudge every few minutes (a lap, a turnaround, a pace
-  check); leave them off for one quiet block.
-- **Run.** The same timed block, tuned for a run, with optional split cues.
-- **Yoga.** A hold-and-transition flow. You set how long each hold lasts, and a
-  cue tells you when to move to the next one, so you can keep your eyes closed and
-  follow the sound instead of the screen.
-- **Strength.** Interval rounds with work and rest. Set how long you work, how long
-  you rest, and how many rounds, and it counts you through each one out loud.
-  Three common shapes are built in so you don't have to do the math:
-  - **Tabata**: twenty seconds on, ten off, eight rounds.
-  - **EMOM**: one round at the top of every minute.
-  - **AMRAP**: one timed block, as many rounds as you can fit.
-- **Stretch.** An easy mobility timer with soft cues to switch sides.
-- **Play.** An open count-up. No target, no buzzer. Start it, do the thing, stop
-  when you're done. Good for anything that runs as long as it runs: a pickup game,
-  a dance, a kick-about in the yard.
-
-## Opening it
-
-Two doors, same timer:
-
-- **From the Zap button.** Open **Capture a moment** and tap the **Movement** tile
-  (it sits under **Mindless**). Pick a mode and start.
-- **From a Movement practice.** Some practices are tagged as Movement practices.
-  On one of those, the **Practice** button opens this timer already set up for it,
-  the right mode, the practice's own length, ready to start.
-
-## How it runs
-
-Movement opens fullscreen and takes over the screen, the same as Mindless. The
-screen stays awake while you move, and you get audio cues so you don't have to
-watch it: a sound to start, sounds at each interval or transition, and a sound at
-the end. Pause if life interrupts (paused time doesn't count), and finish to
-collect.
-
-A Movement session **logs like any practice**: it counts toward your day, keeps
-your streak alive, and pays your Zaps when you finish. Stop early and it still
-counts once you are at least **halfway**: the day is logged, your streak holds, and
-you bank **one Zap**, with the rest waiting under **Finish Practice** for when you
-pick it back up. Already logged that practice today? The extra session still banks
-the time and your streak holds. Nothing pays twice, and nothing is lost.
+Pick a moving practice and Mindless opens in Get Moving with the right mode and
+the practice's own length, ready to start. Or open Mindless and switch to Get
+Moving yourself. The full how-to, the modes, the cues, and how it logs are all on
+the **[Mindless page](/help/the-quest/on-air)**.

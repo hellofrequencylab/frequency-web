@@ -5,8 +5,8 @@
 // flat is the whole point: the owner editor renders a fixed set of fields, the /q resolver renders a
 // fixed layout, and there is no free-form HTML/markup to sanitize.
 //
-// This module is PURE: no Supabase/Next imports, so normalizeSplash / isValidSplash are fully
-// unit-testable (lib/qr/splash.test.ts) with no DB. The DB write seam (setCodeSplash) lives in
+// This module is PURE: no Supabase/Next imports, so normalizeSplash is fully unit-testable
+// (lib/qr/splash.test.ts) with no DB. The DB write seam (setCodeSplash) lives in
 // lib/qr/space-codes.ts and calls normalizeSplash before it stores the jsonb, so the stored blob is
 // always already clean. FAIL-CLOSED throughout: a malformed splash normalizes to a minimal valid
 // shape (or null where it cannot be made valid), never trusted as-is.
@@ -103,12 +103,6 @@ export function normalizeSplash(raw: unknown): Splash | null {
     imageUrl: normalizeImageUrl(r.imageUrl),
     links: normalizeLinks(r.links),
   }
-}
-
-/** Whether a raw value is a valid, renderable splash (it normalizes to a non-null Splash). The one
- *  predicate the resolver + the form gate on. Pure. */
-export function isValidSplash(raw: unknown): raw is Splash {
-  return normalizeSplash(raw) !== null
 }
 
 /** The PRIMARY CTA of a splash (links[0]) or null. The /q resolver reads this to decide whether a

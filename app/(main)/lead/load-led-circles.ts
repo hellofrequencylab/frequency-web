@@ -1,15 +1,20 @@
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { CommunityRole } from '@/lib/core/roles'
 
-// "Circles you lead" for the Leader dashboard. This MIRRORS the exact scoping of
-// the /admin/circles per-role query (app/(main)/admin/circles/page.tsx ~L42-82) so
-// a leader only ever sees the circles within THEIR reach — never platform-wide:
-//   • host   → circles where host_id = me
-//   • guide  → circles in the hubs I guide (hubs.guide_id = me)
-//   • mentor → circles in the hubs under the nexuses I mentor (nexuses.mentor_id = me)
-// There is no "all circles" branch here (that lived only in the staff/janitor arm of
-// the admin page, which /lead never reaches — /lead is a community-ladder surface).
-// Every query is keyed to `profileId`, so there is no unscoped read.
+// "Circles you lead" for the Leader dashboard. Scoped strictly to the caller's own
+// stewardship, ADDITIVELY across every way someone can lead a circle (a person can do
+// more than one, and ANYONE can host a circle regardless of their ladder rung):
+//   • circles I HOST    → circles.host_id = me
+//   • circles I GUIDE   → circles in the hubs I guide (hubs.guide_id = me)
+//   • circles I MENTOR  → circles in the hubs under the nexuses I mentor (nexuses.mentor_id = me)
+// The three sets are UNIONED + de-duped, so a mentor (or a staffer) who also directly hosts
+// a circle still sees it. There is no "all circles" branch — every query is keyed to
+// `profileId`, so there is no unscoped read.
+//
+// BUG FIX: the old version was role-EXCLUSIVE (only the host_id query ran when the caller's
+// COMMUNITY role was exactly 'host'), so a host whose rung was anything else (a guide/mentor,
+// or a staffer like a janitor) saw "Circles you host: 0" even while hosting one. Hosting is a
+// per-circle fact, not a rung, so the host_id query now ALWAYS runs.
 
 export type LedCircle = {
   id: string
@@ -25,49 +30,36 @@ export type LedCircle = {
 const SELECT = `id, name, slug, about, type, status, member_count, hub_id, host_id,
                 hub:hubs!hub_id ( id, name )`
 
-export async function getLedCircles(role: CommunityRole, profileId: string): Promise<LedCircle[]> {
+/** Every circle the caller leads (hosts, guides, or mentors), unioned + de-duped, ordered by
+ *  name. Cached per request so multiple dashboard blocks share the one read. */
+export const getLedCircles = cache(async (profileId: string): Promise<LedCircle[]> => {
   const admin = createAdminClient()
-
-  if (role === 'host') {
-    const { data } = await admin
-      .from('circles')
-      .select(SELECT)
-      .eq('host_id', profileId)
-      .order('name')
-    return (data ?? []) as unknown as LedCircle[]
+  const byId = new Map<string, LedCircle>()
+  const collect = (rows: unknown) => {
+    for (const c of (rows ?? []) as LedCircle[]) byId.set(c.id, c)
   }
 
-  if (role === 'guide') {
-    const { data: hubs } = await admin.from('hubs').select('id').eq('guide_id', profileId)
-    const hubIds = (hubs ?? []).map((h: { id: string }) => h.id)
-    if (hubIds.length === 0) return []
-    const { data } = await admin
-      .from('circles')
-      .select(SELECT)
-      .in('hub_id', hubIds)
-      .order('name')
-    return (data ?? []) as unknown as LedCircle[]
+  // Hubs I guide, and hubs under nexuses I mentor — resolved in parallel with my hosted circles.
+  const [{ data: hosted }, { data: guidedHubs }, { data: mentoredNexuses }] = await Promise.all([
+    admin.from('circles').select(SELECT).eq('host_id', profileId),
+    admin.from('hubs').select('id').eq('guide_id', profileId),
+    admin.from('nexuses').select('id').eq('mentor_id', profileId),
+  ])
+  collect(hosted)
+
+  const hubIds = new Set<string>((guidedHubs ?? []).map((h: { id: string }) => h.id))
+  const nexusIds = (mentoredNexuses ?? []).map((n: { id: string }) => n.id)
+  if (nexusIds.length > 0) {
+    const { data: nexusHubs } = await admin.from('hubs').select('id').in('nexus_id', nexusIds)
+    for (const h of (nexusHubs ?? []) as { id: string }[]) hubIds.add(h.id)
+  }
+  if (hubIds.size > 0) {
+    const { data: hubCircles } = await admin.from('circles').select(SELECT).in('hub_id', [...hubIds])
+    collect(hubCircles)
   }
 
-  if (role === 'mentor') {
-    const { data: nexuses } = await admin.from('nexuses').select('id').eq('mentor_id', profileId)
-    const nexusIds = (nexuses ?? []).map((n: { id: string }) => n.id)
-    if (nexusIds.length === 0) return []
-    const { data: hubs } = await admin.from('hubs').select('id').in('nexus_id', nexusIds)
-    const hubIds = (hubs ?? []).map((h: { id: string }) => h.id)
-    if (hubIds.length === 0) return []
-    const { data } = await admin
-      .from('circles')
-      .select(SELECT)
-      .in('hub_id', hubIds)
-      .order('name')
-    return (data ?? []) as unknown as LedCircle[]
-  }
-
-  // Any other rung (member/crew, or the deprecated admin/janitor enum values) leads
-  // nothing on the COMMUNITY ladder, so there is nothing scoped to return.
-  return []
-}
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name))
+})
 
 // ── The networks under a leader (the Leadership dashboard, ADR-266) ──────────────────
 // "Networks under them" = the hubs a GUIDE stewards and the nexuses a MENTOR stewards.

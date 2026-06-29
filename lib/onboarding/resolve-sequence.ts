@@ -1,5 +1,11 @@
 import { getSequence, listSequences, DEFAULT_SEQUENCE, type BetaSequence } from './beta-sequences'
-import { getSequenceOverride, listSequenceVersions, type SequenceOverride } from './sequence-overrides'
+import {
+  getSequenceOverride,
+  listSequenceVersions,
+  sequenceStatus,
+  type SequenceOverride,
+  type SequenceStatus,
+} from './sequence-overrides'
 import { getVeraConfig } from '@/lib/ai/vera/config'
 import type { VeraCopy } from './beta-script'
 
@@ -63,13 +69,23 @@ export async function resolveDefaultSequence(): Promise<BetaSequence> {
 
 /** A fully-merged sequence for a slug — the base VERA flow for null/blank/
  *  `beta-default`, a code sequence if one exists, or a blank clone for a DB-created
- *  version — with the slug's DB override applied on top. */
-export async function resolveSequence(slug: string | null | undefined): Promise<BetaSequence> {
+ *  version — with the slug's DB override applied on top.
+ *
+ *  PUBLISH GATE: a funnel saved as a draft is not served live. With `preview` off
+ *  (the default — the public /onboarding/beta route), a draft slug falls back to the
+ *  default flow so a paused funnel's link still lands somewhere sensible instead of
+ *  showing unfinished copy. The editor + preview pass `preview: true` to always load
+ *  the real draft content. */
+export async function resolveSequence(
+  slug: string | null | undefined,
+  opts?: { preview?: boolean },
+): Promise<BetaSequence> {
   const s = (slug ?? '').trim() || DEFAULT_SEQUENCE
   if (s === DEFAULT_SEQUENCE) return resolveDefaultSequence()
+  const o = await getSequenceOverride(s)
+  if (!opts?.preview && sequenceStatus(o) === 'draft') return resolveDefaultSequence()
   const codeExists = listSequences().some((x) => x.slug === s)
   const base = codeExists ? getSequence(s) : blankSequence(s)
-  const o = await getSequenceOverride(s)
   return o ? apply(base, o) : base
 }
 
@@ -77,17 +93,24 @@ export interface SequenceSummary {
   slug: string
   audience: string
   source: 'code' | 'custom'
+  status: SequenceStatus
 }
 
 /** Every sequence to list in the builder: code sequences (none today) plus
- *  DB-created versions. The reserved `beta-default` row is the default flow's
- *  override, not a version — it's managed at /pages/splash and excluded here. */
+ *  DB-created versions, each with its publish state. The reserved `beta-default` row
+ *  is the default flow's override, not a version — it's managed at /pages/splash and
+ *  excluded here. */
 export async function listAllSequences(): Promise<SequenceSummary[]> {
-  const code: SequenceSummary[] = listSequences().map((s) => ({ slug: s.slug, audience: s.audience, source: 'code' }))
+  const code: SequenceSummary[] = listSequences().map((s) => ({
+    slug: s.slug,
+    audience: s.audience,
+    source: 'code',
+    status: 'published',
+  }))
   const reserved = new Set([...code.map((c) => c.slug), DEFAULT_SEQUENCE])
   const versions = await listSequenceVersions()
   const custom: SequenceSummary[] = versions
     .filter((v) => !reserved.has(v.slug))
-    .map((v) => ({ slug: v.slug, audience: v.audience ?? v.slug, source: 'custom' }))
+    .map((v) => ({ slug: v.slug, audience: v.audience ?? v.slug, source: 'custom', status: v.status }))
   return [...code, ...custom]
 }

@@ -1,5 +1,6 @@
 import { BadgeCheck, Users } from 'lucide-react'
 import { listMembershipTiers, getMyMembership } from '@/lib/spaces/memberships'
+import { billingLive } from '@/lib/pricing/settings'
 import { EmptyState } from '@/components/ui/empty-state'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import { MembershipCancelButton } from '@/components/spaces/membership-cancel-button'
@@ -16,9 +17,12 @@ import { MembershipCancelButton } from '@/components/spaces/membership-cancel-bu
 // says so plainly, with no narrated feelings and no em/en dashes (CONTENT-VOICE §10).
 
 export async function MembershipJoin({ spaceId }: { spaceId: string }) {
-  const [tiers, mine] = await Promise.all([
+  const [tiers, mine, billingOn] = await Promise.all([
     listMembershipTiers(spaceId),
     getMyMembership(spaceId),
+    // When billing is live, a PAID tier joins through Stripe Checkout; while OFF this is false and
+    // the join card keeps the EXACT display-only behavior (joinTier records a membership, no charge).
+    billingLive(),
   ])
 
   // Already a member: show the current tier + a Cancel, never the join cards.
@@ -55,12 +59,13 @@ export async function MembershipJoin({ spaceId }: { spaceId: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Pick a tier to join. Joining registers you as a member. We do not take a payment yet, so paid
-        billing is coming later.
+        {billingOn
+          ? 'Pick a tier to join. A paid tier opens secure checkout; a free tier registers you right away.'
+          : 'Pick a tier to join. Joining registers you as a member. We do not take a payment yet, so paid billing is coming later.'}
       </p>
       <div className="grid gap-4 @lg:grid-cols-2">
         {tiers.map((tier) => (
-          <MembershipJoinCard key={tier.id} spaceId={spaceId} tier={tier} />
+          <MembershipJoinCard key={tier.id} spaceId={spaceId} tier={tier} billingOn={billingOn} />
         ))}
       </div>
     </div>

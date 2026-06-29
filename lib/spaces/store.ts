@@ -8,9 +8,18 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Space, SpaceStatus, SpaceType } from './types'
 
-// The columns the Space reads project, including the brand_* fields (20260626000000_space_brand.sql).
+// The columns the Space reads project, including the brand_* fields (20260626000000_space_brand.sql),
+// the plan ENTITLEMENTS (20260711000000_*), and the per-function role overrides
+// (20260725000000_spaces_feature_roles.sql). Projecting `entitlements` is the corrective fix for the
+// latent CRM gate: it was never selected onto the Space, so spaceHasEntitlement(space,'crm') always
+// read undefined and the per-Space CRM board was locked for everyone. `feature_roles` is not in the
+// generated DB types yet, so it rides the untyped select tail (the ADR-246 pattern, like `visibility`).
 const COLS =
-  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent'
+  'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent, entitlements, plan'
+
+// `feature_roles` is appended to every select via this tail so a single change covers all readers; it
+// is reached untyped (ADR-246) because the column is not in the generated types yet.
+const COLS_FULL = `${COLS}, feature_roles`
 
 type SpaceRow = {
   id: string
@@ -27,6 +36,9 @@ type SpaceRow = {
   brand_name: string | null
   brand_logo_url: string | null
   brand_accent: string | null
+  entitlements: unknown
+  feature_roles?: unknown
+  plan?: string | null
 }
 
 function mapSpace(r: SpaceRow): Space {
@@ -45,6 +57,14 @@ function mapSpace(r: SpaceRow): Space {
     brandName: r.brand_name,
     brandLogoUrl: r.brand_logo_url,
     brandAccent: r.brand_accent,
+    // Projected for the entitlement + per-function gates (lib/spaces/entitlements.ts + functions.ts).
+    // Both arrive as raw jsonb and are normalized in those pure readers, so the Space carries them
+    // loosely (`unknown`). `feature_roles` defaults to {} when the column is absent (pre-migration).
+    entitlements: r.entitlements ?? {},
+    featureRoles: r.feature_roles ?? {},
+    // The billing plan label feeds the live plan-ladder gate (lib/spaces/function-access.ts). Null
+    // pre-write reads as 'free' there; while billing is OFF it never gates anything.
+    plan: r.plan ?? null,
   }
 }
 
@@ -52,12 +72,13 @@ function mapSpace(r: SpaceRow): Space {
 export async function getSpaceByDomain(domain: string): Promise<Space | null> {
   const host = domain.trim().toLowerCase()
   if (!host) return null
-  const { data } = await createAdminClient()
+  // COLS_FULL carries `feature_roles` (not in the generated types yet, ADR-246) so the cast handles it.
+  const { data } = (await createAdminClient()
     .from('spaces')
-    .select(COLS)
+    .select(COLS_FULL)
     .eq('domain', host)
     .eq('status', 'active')
-    .maybeSingle()
+    .maybeSingle()) as { data: SpaceRow | null }
   return data ? mapSpace(data) : null
 }
 
@@ -67,11 +88,12 @@ export async function getSpaceByDomain(domain: string): Promise<Space | null> {
 export const getSpaceBySlug = cache(async (slug: string): Promise<Space | null> => {
   const norm = slug.trim().toLowerCase()
   if (!norm) return null
-  // `visibility` isn't in the generated DB types yet (ADR-246) — reach it via an untyped select so
-  // the profile can fail closed on Private spaces. brand_*/type ride the typed COLS.
+  // `visibility` + `feature_roles` aren't in the generated DB types yet (ADR-246) — reach them via an
+  // untyped select so the profile can fail closed on Private spaces and the function gates read the
+  // per-Space role overrides. brand_*/entitlements/type ride COLS_FULL.
   const { data } = (await createAdminClient()
     .from('spaces')
-    .select(`${COLS}, visibility`)
+    .select(`${COLS_FULL}, visibility`)
     .eq('slug', norm)
     .maybeSingle()) as { data: (SpaceRow & { visibility?: string | null }) | null }
   if (!data) return null
@@ -125,31 +147,33 @@ export async function getVisibleSpaceBySlug(
 /** A single Space by id, or null. Used by the operator admin surface (it reads through the
  *  admin client, which bypasses the active-only RLS, so suspended/archived spaces resolve). */
 export async function getSpaceById(id: string): Promise<Space | null> {
-  const { data } = await createAdminClient()
+  // COLS_FULL carries `feature_roles` (untyped, ADR-246) so the cast handles it.
+  const { data } = (await createAdminClient()
     .from('spaces')
-    .select(COLS)
+    .select(COLS_FULL)
     .eq('id', id)
-    .maybeSingle()
+    .maybeSingle()) as { data: SpaceRow | null }
   return data ? mapSpace(data) : null
 }
 
 /** Every Space, name-ordered — the operator admin list. Admin-client read (all statuses). */
 export async function listSpaces(): Promise<Space[]> {
-  const { data } = await createAdminClient()
+  const { data } = (await createAdminClient()
     .from('spaces')
-    .select(COLS)
-    .order('name', { ascending: true })
+    .select(COLS_FULL)
+    .order('name', { ascending: true })) as { data: SpaceRow[] | null }
   return (data ?? []).map(mapSpace)
 }
 
 /** The canonical root Space (the Frequency app itself). */
 export async function getRootSpace(): Promise<Space | null> {
-  const { data } = await createAdminClient()
+  // COLS_FULL carries `feature_roles` (untyped, ADR-246) so the cast handles it.
+  const { data } = (await createAdminClient()
     .from('spaces')
-    .select(COLS)
+    .select(COLS_FULL)
     .eq('type', 'root')
     .eq('status', 'active')
-    .maybeSingle()
+    .maybeSingle()) as { data: SpaceRow | null }
   return data ? mapSpace(data) : null
 }
 

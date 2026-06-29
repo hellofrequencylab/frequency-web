@@ -13,9 +13,16 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
   return (
     <>
       <SiteHeader variant="light" />
-      <main className="min-h-screen bg-surface pt-16">{children}</main>
+      {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
+          tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
+      <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
 
-      <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-10">
+      {/* pt base + the home-indicator inset on the bottom so the legal/contact links clear it
+          in a standalone PWA (env() = 0 off-device, so unchanged in a normal browser). */}
+      <footer
+        className="bg-marketing-canvas border-t border-border/60 px-6 pt-10 px-safe"
+        style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
+      >
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-5 w-auto opacity-40" />
@@ -26,6 +33,7 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
           <div className="flex items-center gap-8 text-xs text-muted">
             <Link href="/discover" className="hover:text-text transition-colors">Discover</Link>
             <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
             <a href="mailto:hello@frequencylocal.com" className="hover:text-text transition-colors">Contact</a>
           </div>
         </div>

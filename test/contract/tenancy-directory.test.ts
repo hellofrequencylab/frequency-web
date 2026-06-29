@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { makeSupabaseRecorder, recorded, makeTwoSpaceDb, SPACE_A, SPACE_B, type SupabaseRecorder } from './tenancy'
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════
-// SEC-02 - THE /spaces DIRECTORY leak contract. The directory (app/(main)/spaces/page.tsx) lists
+// SEC-02 - THE /spaces DIRECTORY leak contract. The directory (app/(main)/spaces/directory/page.tsx) lists
 // Spaces via lib/spaces/discovery.ts → listNetworkedSpaces. Unlike an entity module it is INTENTIONALLY
 // cross-space (it browses many Spaces), so its tenancy boundary is NOT a space_id filter but a
 // VISIBILITY filter: only `visibility = 'network'` + `status = 'active'`, never the root. A PRIVATE

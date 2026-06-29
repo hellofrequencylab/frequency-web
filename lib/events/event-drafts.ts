@@ -100,10 +100,11 @@ function mapDraft(r: Record<string, unknown>): EventDraft {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Resolve the scope_id for a posted town event: the poster's nexus region, or a
- *  stable fallback (the root region) so a region-less poster still surfaces in
- *  local discovery. Returns null only if there are no regions at all. */
-async function resolveRegionScopeId(profileId: string): Promise<string | null> {
+/** Resolve the scope_id for a town/public event: the member's nexus region, or a
+ *  stable fallback (the root region) so a region-less member still surfaces in
+ *  local discovery. Returns null only if there are no regions at all. Reused by
+ *  createEvent for circle-less public events (any Crew can create one). */
+export async function resolveRegionScopeId(profileId: string): Promise<string | null> {
   const admin = db()
   const { data: me } = await admin
     .from('profiles')
@@ -144,6 +145,106 @@ async function mintSlug(title: string, startsAt: string | null): Promise<string>
 /** A url-safe, hard-to-guess one-time claim secret. */
 function mintClaimToken(): string {
   return randomBytes(24).toString('base64url')
+}
+
+// ── Claim-link delivery to the organizer ──────────────────────────────────────
+// When a member publishes an event they posted ON BEHALF of an organizer, we
+// deliver the one-time claim link so the organizer can take it over. Email is the
+// only auto-channel: a raw phone/handle has no SMS consent (cold-texting a stranger
+// is not allowed), so those fall back to the manual copy-link card in the editor.
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
+
+/** A stable "Wed, Jul 10" style line for the claim email (UTC, matching how the
+ *  rest of the event mail renders times). Null when there is no start time. */
+function claimWhenLine(startsAt: string | null): string | null {
+  if (!startsAt) return null
+  const d = new Date(startsAt)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+  })
+}
+
+interface ClaimInviteInput {
+  eventId: string
+  title: string | null
+  slug: string | null
+  startsAt: string | null
+  location: string | null
+  organizerName: string | null
+  organizerContact: string | null
+  posterProfileId: string | null
+  claimToken: string
+}
+
+/** Best-effort: email the organizer their one-time claim link. Returns whether a
+ *  message was queued and where to (so a UI can confirm), or why it was skipped.
+ *  Never throws into the publish/claim flow. */
+async function deliverClaimInvite(
+  input: ClaimInviteInput,
+): Promise<{ ok: boolean; sentTo?: string; reason?: 'no_contact' | 'not_email' | 'error' }> {
+  const contact = (input.organizerContact ?? '').trim()
+  if (!contact) return { ok: false, reason: 'no_contact' }
+  if (!EMAIL_RE.test(contact)) return { ok: false, reason: 'not_email' }
+
+  try {
+    const admin = db()
+    const posterName = input.posterProfileId
+      ? ((await admin.from('profiles').select('display_name').eq('id', input.posterProfileId).maybeSingle())
+          .data as { display_name?: string } | null)?.display_name ?? null
+      : null
+    const claimUrl = `${APP_BASE_URL}/events/claim/${input.claimToken}`
+    const eventUrl = input.slug ? `${APP_BASE_URL}/events/${input.slug}` : APP_BASE_URL
+    const { sendEventClaimInviteEmail } = await import('@/lib/email')
+    await sendEventClaimInviteEmail({
+      to: contact,
+      organizerName: input.organizerName,
+      posterName,
+      eventTitle: (input.title ?? '').trim() || 'your event',
+      whenLine: claimWhenLine(input.startsAt),
+      location: input.location,
+      claimUrl,
+      eventUrl,
+    })
+    return { ok: true, sentTo: contact }
+  } catch (err) {
+    console.error('[poster-events] claim invite send failed', { eventId: input.eventId, err })
+    return { ok: false, reason: 'error' }
+  }
+}
+
+/** Re-send the claim link for a published, posted, unclaimed event to the organizer
+ *  contact ON FILE (never an arbitrary address — only whoever controls that inbox can
+ *  claim). Powers the public "Is this your event? Claim it" CTA. */
+export async function resendClaimInvite(
+  eventId: string,
+): Promise<{ ok: boolean; sentTo?: string; error?: string }> {
+  const { data } = await db()
+    .from('events')
+    .select('id, title, slug, starts_at, location, organizer_name, organizer_contact, posted_by_profile_id, claim_token, claimed_at, host_id, status')
+    .eq('id', eventId)
+    .maybeSingle()
+  const ev = data as Record<string, unknown> | null
+  if (!ev || ev.status !== 'published') return { ok: false, error: 'not_found' }
+  if (ev.host_id || ev.claimed_at) return { ok: false, error: 'already_claimed' }
+  if (!ev.claim_token) return { ok: false, error: 'not_claimable' }
+
+  const res = await deliverClaimInvite({
+    eventId: String(ev.id),
+    title: (ev.title as string) ?? null,
+    slug: (ev.slug as string) ?? null,
+    startsAt: (ev.starts_at as string) ?? null,
+    location: (ev.location as string) ?? null,
+    organizerName: (ev.organizer_name as string) ?? null,
+    organizerContact: (ev.organizer_contact as string) ?? null,
+    posterProfileId: (ev.posted_by_profile_id as string) ?? null,
+    claimToken: String(ev.claim_token),
+  })
+  if (res.ok) return { ok: true, sentTo: res.sentTo }
+  return { ok: false, error: res.reason === 'no_contact' || res.reason === 'not_email' ? 'no_email_on_file' : 'send_failed' }
 }
 
 // ── Create / read / update drafts (owner-scoped) ─────────────────────────────
@@ -277,6 +378,9 @@ export interface PublishResult {
   claimToken?: string
   /** The scaled event_posted Zaps actually awarded (0 when throttled or 'mine'). */
   zapsAwarded?: number
+  /** When the claim link was auto-emailed to the organizer, the address it went to.
+   *  Undefined when no email was on file (the editor then shows the manual copy card). */
+  claimSentTo?: string
 }
 
 /**
@@ -334,6 +438,21 @@ export async function publishEventDraft(
     .eq('status', 'draft')
   if (error) return null
 
+  // Auto-deliver the claim link to the organizer when we have their email. Best-effort:
+  // a send failure or a non-email contact never breaks publish (the editor falls back to
+  // the manual copy-link card). Awaited so the editor can confirm "we emailed them".
+  const invite = await deliverClaimInvite({
+    eventId: id,
+    title: draft.title,
+    slug: draft.slug,
+    startsAt: draft.startsAt,
+    location: draft.location,
+    organizerName: draft.organizerName,
+    organizerContact: draft.organizerContact,
+    posterProfileId,
+    claimToken,
+  })
+
   // Scaled event_posted reward, exactly-once on event_posted:<id>. Skip the award
   // when the honesty multiplier zeros it out (throttled posters earn nothing).
   let zapsAwarded = 0
@@ -356,7 +475,7 @@ export async function publishEventDraft(
     /* rewards are best-effort; a failed grant must not break publish */
   }
 
-  return { slug: draft.slug ?? '', claimToken, zapsAwarded }
+  return { slug: draft.slug ?? '', claimToken, zapsAwarded, claimSentTo: invite.sentTo }
 }
 
 // ── Poster notifications ─────────────────────────────────────────────────────
@@ -581,9 +700,12 @@ export async function reportRemoveEvent(eventId: string, reason: string): Promis
   if (!ev) return { removed: false, clawedBack: 0 }
 
   const alreadyRemoved = !!ev.removed_at
+  const removedAt = ev.removed_at ?? new Date().toISOString()
   const { error } = await admin
     .from('events')
-    .update({ removed_at: ev.removed_at ?? new Date().toISOString(), removed_reason: cleanReason, is_cancelled: true })
+    // Removal also flips is_cancelled; stamp the cancel audit trail (H1-3) reusing removedAt
+    // so the two timestamps stay consistent. No actor in this signature today → cancelled_by null.
+    .update({ removed_at: removedAt, removed_reason: cleanReason, is_cancelled: true, cancelled_at: removedAt, cancelled_by: null, cancellation_reason: cleanReason } as unknown as Database['public']['Tables']['events']['Update'])
     .eq('id', eventId)
   if (error) return { removed: false, clawedBack: 0 }
 

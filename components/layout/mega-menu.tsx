@@ -45,23 +45,23 @@ import { GhostLink } from '@/components/layout/ghost-link'
 //     the in-app member header and the admin sub-header. `rightRail` adds the right
 //     spacer (member shell, lg+); omit it where there is no right rail (admin).
 //
-// MOTION — opens with a slide-out-from-under (translateY reveal from behind the bar,
-// which sits opaque + above it). On DISENGAGE the panel LINGERS briefly then FADES out
-// (it is not yanked away): pointer-leave starts a grace timer, then the fade; re-entering
-// the bar OR the panel cancels it. Escape / outside-click also trigger the fade, not an
-// instant unmount. Honors prefers-reduced-motion.
+// MOTION — opens with a slide-out-from-under (translateY reveal from behind the bar, which
+// sits opaque + above it). Opens on CLICK only (owner directive: never on hover/rollover).
+// AUTO-CLOSES on disengage: once open, a pointer-leave starts the DWELL timer (from the Menu
+// Manager speed settings), then fades; re-entering the bar or panel cancels it. Escape,
+// outside-click, scroll, and navigation also fade it closed. Honors prefers-reduced-motion.
 //
-// Accessible: real button/link triggers, opens on hover AND keyboard focus, closes on
-// Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1). Tokens only; no
-// em or en dashes.
+// Accessible: real button/link triggers; the panel toggles on click (Enter/Space on the
+// button), closes on Escape / outside-click / focus-out / navigation (WCAG 1.4.13 + 2.1.1).
+// Tokens only; no em or en dashes.
 
 type Variant = 'light' | 'dark'
 
-// Default motion timings (ms). The global Menu Manager "open + dwell speed" settings
-// override these via the `timings` prop; the constants are the fallback when none is passed.
-//   - OPEN_DELAY: hover-intent grace before the panel opens (0 = open immediately).
-//   - DWELL: how long the panel LINGERS after the pointer leaves before the fade starts. A
-//     longer dwell reads as "it waits for you," so a brief overshoot never snaps it shut.
+// Default motion timings (ms). The global Menu Manager speed settings override these via the
+// `timings` prop; the constants are the fallback when none is passed.
+//   - OPEN_DELAY: grace after the trigger is clicked before the panel opens (0 = immediate).
+//   - DWELL: once open, how long the panel LINGERS after the pointer leaves before it fades
+//     (the auto-close delay); a longer dwell forgives a brief overshoot.
 //   - FADE: the fade-out duration; it matches the CSS transition so the panel unmounts the
 //     moment it finishes animating out.
 const DEFAULT_OPEN_DELAY_MS = 0
@@ -86,21 +86,25 @@ type Trigger = {
 
 function buildTriggers(menus: ResolvedMenu[], triggerLevel: 'menu' | 'category'): Trigger[] {
   if (triggerLevel === 'category') {
-    // Admin: the single menu's top-level categories are the triggers. A category's
-    // landing href is its first item's href (the section root link in the defaults).
+    // Admin: the single menu's top-level categories are the triggers. CLICK-TO-OPEN model:
+    // a category WITH a panel (child columns or more than one item) is a disclosure BUTTON
+    // (no trigger href), and ALL its items — including the section landing — ride inside the
+    // panel, so nothing is unreachable without a hover. A single-link section stays a plain
+    // nav link (its one item's href, no panel).
     const menu = menus[0]
     if (!menu) return []
-    return menu.categories.map((cat) => ({
-      key: cat.id,
-      label: cat.label ?? menu.label,
-      href: cat.items[0]?.href,
-      columns: menu.columns,
-      categories: cat.children,
-      // The section's own root link is its first item; the rest (if any) ride along as
-      // loose items beside the child columns.
-      rootItems: cat.items.slice(1),
-      railCards: menu.railCards,
-    }))
+    return menu.categories.map((cat) => {
+      const hasPanel = cat.children.length > 0 || cat.items.length > 1
+      return {
+        key: cat.id,
+        label: cat.label ?? menu.label,
+        href: hasPanel ? undefined : cat.items[0]?.href,
+        columns: menu.columns,
+        categories: cat.children,
+        rootItems: hasPanel ? cat.items : [],
+        railCards: menu.railCards,
+      }
+    })
   }
   // Public: each menu is one trigger; its categories are the panel columns.
   return menus.map((menu) => ({
@@ -168,7 +172,10 @@ export function MegaBar({
   className = '',
   panelAlign = 'viewport',
   rightRail = false,
+  cardGutters = false,
   timings,
+  panelHeader,
+  isAuth = false,
 }: {
   /** The DB-backed (or code-default) menus this bar renders, in trigger order. */
   menus: ResolvedMenu[]
@@ -194,6 +201,18 @@ export function MegaBar({
   /** Only meaningful with panelAlign='content': reserve the right rail width (lg+) so the
    *  card stops at the right rail, like the member shell. Omit where there is no right rail. */
   rightRail?: boolean
+  /** Frame the panel as a fixed `columns`-wide grid: dropdown content always begins at
+   *  COLUMN 2 (never flush-left), and columns 1 + last are reserved as gutters for the
+   *  optional left/right rail cards. The header uses this; skipped under explicit grid
+   *  placement (gridCol/gridRow), where the operator controls exact placement. */
+  cardGutters?: boolean
+  /** Optional node rendered at the TOP of the panel body (content align only), e.g. the admin
+   *  search bar, so the menu can be searched while it stays open. */
+  panelHeader?: React.ReactNode
+  /** Whether the viewer is signed in. Drives the Home⇄Feed toggle on the marketing header,
+   *  which renders with a fixed 'visitor' viewerRole (so viewerRole alone can't tell). The
+   *  in-app/site headers pass a real viewerRole, so they don't need this. */
+  isAuth?: boolean
 }) {
   const pathname = usePathname()
   const [active, setActive] = useState<string | null>(null)
@@ -241,21 +260,22 @@ export function MegaBar({
   )
 
   // Begin the FADE-OUT: drop `shown` (the panel animates back under the bar + to
-  // transparent), then unmount after the transition. Re-engaging before it lands cancels it.
+  // transparent), then unmount after the transition.
   const beginClose = useCallback(() => {
     clearTimers()
     setShown(false)
     fadeTimer.current = setTimeout(() => setActive(null), fadeMs)
   }, [clearTimers, fadeMs])
 
-  // Disengage: linger briefly, THEN fade. A re-enter (cancelClose) aborts before the fade.
+  // Disengage (pointer left the open bar + panel): linger for the DWELL, THEN fade. A re-enter
+  // (cancelClose) aborts before the fade. This is the auto-close; opening stays click-only.
   const scheduleClose = useCallback(() => {
     clearTimers()
     lingerTimer.current = setTimeout(beginClose, dwellMs)
   }, [clearTimers, beginClose, dwellMs])
 
-  // Re-engaged (pointer back over the bar or panel): cancel a pending linger/fade and, if a
-  // fade had already started, settle the panel open again so it never half-vanishes.
+  // Re-engaged (pointer back over the bar or panel): cancel a pending linger/fade and, if a fade
+  // had already started, settle the panel open again so it never half-vanishes.
   const cancelClose = useCallback(() => {
     clearTimers()
     setShown((s) => (active ? true : s))
@@ -428,20 +448,47 @@ export function MegaBar({
     const useGrid = hasGridPlacement(activeTrigger)
     const leftCards = activeTrigger.railCards.filter((c) => c.side === 'left')
     const rightCards = activeTrigger.railCards.filter((c) => c.side !== 'left')
-    const columns = activeTrigger.categories.map((c) => renderCategory(c, useGrid)).filter(Boolean)
+    const categoryColumns = activeTrigger.categories.map((c) => renderCategory(c, useGrid)).filter(Boolean)
     const looseItems = activeTrigger.rootItems.map(renderItem).filter(Boolean)
+    const colCount = activeTrigger.columns
 
-    const grid = (
-      <div
-        className={useGrid ? 'grid gap-x-10 gap-y-6' : 'flex flex-wrap gap-x-10 gap-y-6'}
-        style={useGrid ? { gridTemplateColumns: `repeat(${activeTrigger.columns}, minmax(0, 1fr))` } : undefined}
-      >
-        {columns}
+    const content = (
+      <>
+        {categoryColumns}
         {looseItems.length > 0 && (
           <div className="min-w-[10rem]">
             <div className="space-y-0.5">{looseItems}</div>
           </div>
         )}
+      </>
+    )
+
+    // Gutter layout (owner directive): a fixed colCount-wide grid where the dropdown
+    // content always begins at COLUMN 2 (never flush-left), and columns 1 + colCount are
+    // reserved as gutters for the optional left/right rail cards. Skipped under explicit
+    // grid placement (gridCol/gridRow), where the operator controls exact placement, and
+    // when colCount is too small to leave a center band.
+    if (cardGutters && !useGrid && colCount >= 3) {
+      return (
+        <div
+          className="grid w-full gap-x-10 gap-y-6"
+          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+        >
+          <div style={{ gridColumn: '1' }}>{leftCards.map(renderRailCard)}</div>
+          <div className="flex flex-wrap gap-x-10 gap-y-6" style={{ gridColumn: `2 / ${colCount}` }}>
+            {content}
+          </div>
+          <div style={{ gridColumn: `${colCount}` }}>{rightCards.map(renderRailCard)}</div>
+        </div>
+      )
+    }
+
+    const grid = (
+      <div
+        className={useGrid ? 'grid gap-x-10 gap-y-6' : 'flex flex-wrap gap-x-10 gap-y-6'}
+        style={useGrid ? { gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` } : undefined}
+      >
+        {content}
       </div>
     )
 
@@ -476,14 +523,25 @@ export function MegaBar({
                 t.rootItems.some((i) => routeActive(pathname, i.href)))
 
           if (!hasPanel) {
+            // The "Home" trigger (href '/') is a Home⇄Feed toggle for signed-in members
+            // (owner directive): on the feed it offers "Home", everywhere else it offers
+            // "Feed", so one button bounces between the brand home and the member's feed.
+            // A visitor (no feed) keeps a plain "Home".
+            let href = t.href ?? '#'
+            let label = t.label
+            if (t.href === '/' && (isAuth || viewerRole !== 'visitor')) {
+              const onFeed = pathname === '/feed' || pathname.startsWith('/feed/')
+              href = onFeed ? '/' : '/feed'
+              label = onFeed ? 'Home' : 'Feed'
+            }
             return (
               <Link
                 key={t.key}
-                href={t.href ?? '#'}
-                aria-current={t.href && routeActive(pathname, t.href) ? 'page' : undefined}
+                href={href}
+                aria-current={routeActive(pathname, href) ? 'page' : undefined}
                 className={triggerClass(variant, highlighted)}
               >
-                {t.label}
+                {label}
               </Link>
             )
           }
@@ -506,8 +564,11 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(t.key)}
-              onFocus={() => open(t.key)}
+              onClick={(e) => {
+                e.preventDefault()
+                if (active === t.key) beginClose()
+                else open(t.key)
+              }}
             >
               {inner}
             </Link>
@@ -519,8 +580,6 @@ export function MegaBar({
               aria-expanded={active === t.key}
               aria-controls={panelId}
               className={triggerClass(variant, highlighted)}
-              onMouseEnter={() => open(t.key)}
-              onFocus={() => open(t.key)}
               onClick={() => (active === t.key ? beginClose() : open(t.key))}
             >
               {inner}
@@ -547,7 +606,10 @@ export function MegaBar({
             // SPACERS) so the visible card lands exactly in the content column between rails.
             <div className="mx-auto flex max-w-[105rem] gap-8 px-4 sm:px-6 lg:px-8">
               <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-              <div className="min-w-0 flex-1 py-6">{panelBody}</div>
+              <div className="min-w-0 flex-1 py-6">
+                {panelHeader && <div className="mb-6">{panelHeader}</div>}
+                {panelBody}
+              </div>
               {rightRail && <div className="hidden w-72 shrink-0 lg:block" aria-hidden />}
             </div>
           ) : (

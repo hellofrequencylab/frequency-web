@@ -17,21 +17,37 @@ export function BroadcastCompose({
   hubs,
   nexuses,
   canGlobal = false,
+  defaultOpen = false,
+  initialScopeId,
 }: {
   circles: { id: string; name: string }[]
   hubs:    { id: string; name: string }[]
   nexuses: { id: string; name: string }[]
   /** Staff/janitor may broadcast to Everyone (Phase D). */
   canGlobal?: boolean
+  /** Open the composer on mount (the circle-host "New announcement" deep link, ?compose=true). */
+  defaultOpen?: boolean
+  /** Pre-select this audience id (?scope=<id>) — matched against circles/hubs/nexuses. */
+  initialScopeId?: string
 }) {
-  const [open, setOpen] = useState(false)
+  // Resolve the deep-link audience once: which list owns initialScopeId picks the scope tab;
+  // when it's absent or unmatched, fall back to the standard most-specific-first precedence.
+  const initialAudience = (() => {
+    if (initialScopeId) {
+      if (circles.some((c) => c.id === initialScopeId)) return { scope: 'circle' as Scope, audId: initialScopeId }
+      if (hubs.some((h) => h.id === initialScopeId)) return { scope: 'hub' as Scope, audId: initialScopeId }
+      if (nexuses.some((n) => n.id === initialScopeId)) return { scope: 'nexus' as Scope, audId: initialScopeId }
+    }
+    const scope: Scope = nexuses.length > 0 ? 'nexus' : hubs.length > 0 ? 'hub' : circles.length > 0 ? 'circle' : 'global'
+    return { scope, audId: '' }
+  })()
+
+  const [open, setOpen] = useState(defaultOpen)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [type, setType] = useState<DispatchType>('post')
-  const [scope, setScope] = useState<Scope>(
-    nexuses.length > 0 ? 'nexus' : hubs.length > 0 ? 'hub' : circles.length > 0 ? 'circle' : 'global'
-  )
-  const [audId, setAudId] = useState('')
+  const [scope, setScope] = useState<Scope>(initialAudience.scope)
+  const [audId, setAudId] = useState(initialAudience.audId)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 

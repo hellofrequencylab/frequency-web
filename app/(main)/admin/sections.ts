@@ -57,7 +57,6 @@ import {
   Rocket,
   Layers,
   Contact,
-  ContactRound,
   Briefcase,
   Menu,
   GraduationCap,
@@ -65,6 +64,7 @@ import {
   Share2,
   Palette,
   LayoutPanelLeft,
+  Workflow,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -203,11 +203,12 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // ── Structure ──
       { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
+      { href: '/admin/circle-templates', label: 'Circle Templates', desc: 'Starter Circle blueprints members remix into their own.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
       { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Structure' },
       { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Structure' },
       { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Structure' },
       // ── People & access ──
-      { href: '/admin/members', label: 'Members', desc: 'Roster, subscribers, and accounts.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
+      { href: '/admin/members', label: 'Member Roster', desc: 'The platform census: every member, subscriber, and beta account.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
       { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People & access' },
       { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People & access' },
       // ── Activity ──
@@ -222,7 +223,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
   {
     key: 'growth',
     label: 'Growth',
-    blurb: 'The growth engine at a glance. Jump into Acquisition, CRM, or Marketing.',
+    blurb: 'The growth engine at a glance. Jump into Acquisition or Marketing.',
     href: '/admin/growth',
     Icon: TrendingUp,
     min: 'host',
@@ -232,7 +233,6 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       // Roll-up: the three operational growth areas. The dashboard reads their KPIs;
       // these point into each one's own home (resolved to its own domain, not Growth).
       { href: '/admin/growth?tab=acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-      { href: '/admin/growth?tab=crm', label: 'CRM', desc: 'Contacts, relationships, and the deal pipeline.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
       { href: '/admin/growth?tab=marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
     ],
   },
@@ -260,21 +260,31 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     ],
   },
   {
+    // Promoted to a PRIMARY domain (was folded under Growth) so the Resonance Engine
+    // (ADR-382 to 387) has its own first-class admin home. Rooted at the cockpit; gated
+    // 'janitor' to match the pages (per-member predictions are sensitive). Marketing staff
+    // reach the deal board and contacts directly from this CRM domain (now a primary
+    // left-rail entry, ADR-382), so the old Growth > CRM roll-up is removed as a duplicate.
     key: 'crm',
-    label: 'CRM',
-    blurb: 'Relationships and the pipeline. Contacts, deals, and the audiences they form.',
-    href: '/admin/growth?tab=crm',
+    label: 'Resonance CRM',
+    blurb: 'The Vera-driven CRM. The cockpit, the daily action queue, member intelligence, contacts, and the pipeline.',
+    href: '/admin/crm',
     Icon: Contact,
-    min: 'host',
+    min: 'janitor',
     staffDomain: 'marketing',
-    primary: false,
-    related: ['acquisition', 'marketing'],
+    related: ['acquisition', 'marketing', 'vera-ai'],
     links: [
-      // ── Pipeline (the area home /admin/crm is the deal board) ──
+      // ── Resonance Engine: the cockpit, the daily loop, and member intelligence. ──
+      { href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', Icon: LayoutDashboard, min: 'janitor', section: 'Resonance', exact: true },
+      { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', Icon: Users, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/playbooks', label: 'Playbooks', desc: "The saved Vera plays: each prediction's governed, reversible action, the autonomy grade, and the run history.", Icon: Workflow, min: 'janitor', section: 'Resonance' },
+      { href: '/admin/crm/graph', label: 'Resonance Graph', desc: 'The consent-first relationship view: the strongest double opt-in connections and graph health.', Icon: Network, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Resonance' },
+      // ── Pipeline (the deal board) ──
+      { href: '/admin/crm/deals', label: 'Deals', desc: 'The pipeline board: every deal by stage, with quick add and one-tap stage moves.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
       // ── Contacts ──
-      { href: '/admin/crm/contacts', label: 'Contacts', desc: 'Leads, customers, and members as one record.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
-      { href: '/connections', label: 'Profiles & contacts', desc: 'People, contacts, and relationships.', Icon: ContactRound, min: 'host', staffDomain: 'profiles', section: 'Contacts' },
+      { href: '/admin/crm/contacts', label: 'Contacts', desc: 'The scoped roster: your people, the launch point for a message, profile, or deal.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
       // ── Audiences ──
       { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences' },
     ],
@@ -337,9 +347,14 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', Icon: Menu, min: 'janitor', section: 'Platform' },
       { href: '/pages', label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing pages + beta induction too.', Icon: FileText, min: 'admin', section: 'Platform' },
       { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
+      { href: '/admin/pricing', label: 'Pricing', desc: 'Plans, prices, feature gates, and the switches that govern billing. Ships off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
       { href: '/admin/appearance', label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', Icon: Palette, min: 'janitor', section: 'Platform' },
       { href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: set each Space its theme and brand, view its live profile, or open the owner settings.', Icon: Building2, min: 'janitor', section: 'Platform' },
       { href: '/admin/page-layout', label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", Icon: LayoutPanelLeft, min: 'janitor', section: 'Platform' },
+      // ── Commerce (the Marketplace: General market + Housing / Makers / Shop) ──
+      { href: '/admin/marketplace', label: 'Marketplace', desc: 'Listings, the shop catalog, and area visibility across General, Housing, Makers, and Shop.', Icon: ShoppingBag, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
+      { href: '/admin/marketplace/orders', label: 'Marketplace orders', desc: 'Every order across makers and the shop, with one-tap refunds.', Icon: CreditCard, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
+      { href: '/admin/marketplace/reports', label: 'Marketplace reports', desc: 'The moderation queue for reported listings and sellers.', Icon: ShieldAlert, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
       // ── System ──
       { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'System' },
       { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'System' },

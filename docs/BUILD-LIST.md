@@ -7,6 +7,231 @@
 > Legend: ✅ done · ⏳ partial / in flight · 📋 specced, not built · 🔴 blocked / gated.
 > Spec detail still lives in the per-topic docs; this is the **order of operations**.
 
+## 🧭 Practice library at scale — 2026-06-28 ([ADR-438](DECISIONS.md), full spec [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md), economy detail [REWARDS-ECONOMY §3a](REWARDS-ECONOMY.md))
+
+Re-architect the practice library from a ~200-item staff set into an **endlessly growing,
+member-remixable library** across the four Pillars (Mind / Body / Spirit / Expression), with
+**auto-valued, farm-proof points** and a **primary + secondary Pillar split**. The backend
+taxonomy is already strong (Pillars, 21 subcategories, hybrid tags, `vector(384)` embeddings +
+`match_practices()`, status workflow, slugs, `space_id`); the gap is the **admin surface** (hard
+200 cap, no server search/filter/pagination, client-only sort, bulk capped at 500, view-only
+review queue, no archive, no dedup, no remix lineage) plus two product variables locked in ADR-438.
+Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lineage column, no
+`tsvector`, `practice_tiers` already dropped. **Sequence: Scale → Clean → Grow → Autopilot.**
+
+### Two locked variables (ADR-438)
+- **Primary + secondary Pillar split.** Keep `domain_id` (primary); add `secondary_domain_id`
+  (`CHECK <> domain_id`) + `primary_pct smallint default 75 CHECK (between 50 and 100)` (secondary =
+  `100 - primary_pct`; null secondary = 100%). One slider, snaps 75/25, floor 50 keeps the primary
+  dominant. The split **attributes earned Zaps across Pillars** (per-Pillar progress) and **never
+  changes the wallet total** — no inflation lever. Columns ship Phase 1; attribution ledger Phase 4.
+- **Auto-valued, creator-proof points.** `computePracticeReward(practice)` derives **intensity** from
+  structure (`timer_kind`, required `duration_min`, modality → light/standard/heavy = 8/12/15 Zaps),
+  with **cadence as the frequency-normalizer** (ADR-303 balance preserved). Writes `weight_class` /
+  `reward_zaps`; log-time chokepoint unchanged. Free-form pick + manual override become a **staff-only
+  audited break-glass**. Anti-farm: value is bound to required engaged time and the timer gate forces
+  it to be spent (no 2-minute "heavy"), so Zaps-per-real-minute stays flat. Stacks on the existing
+  one-log/practice/day, 25-distinct/day cap, partial=1, Zaps-non-spendable, validated-creation gates.
+
+### Phase 1 — Scale it (the operator workspace)
+| # | Scope | Status |
+|---|---|---|
+| 1.1 | **Search foundation.** `search_vector tsvector` (from title/summary/body/tags) + GIN; **backfill `embedding` (0/21)** + generate on every write; hybrid retrieval RPC (full-text + pgvector fused with RRF). | ✅ ADR-445 (`search_vector` + GIN + `search_practices_hybrid()` RRF RPC; `embedPractice` on-write + `embed-practices` backfill cron) |
+| 1.2 | **Unbounded list.** Replace the 200-row cap (`rankedPractices`) with keyset (cursor) pagination + server-side sort. | ✅ `searchAdminPractices` — keyset on default score sort, offset on alternates, exact total |
+| 1.3 | **Faceted query layer.** Server facet counts: Pillar · Subcategory · Status · Weight · Public/Template/Featured · Creator · Tag · computed (no image · no body · never logged · no Pillar · possible duplicate). | ✅ `searchAdminFacets` + `practice_admin_facets` RPC (global counts by design; residual faceting → Phase 2). Possible-duplicate is the gated `findPracticeDuplicates` |
+| 1.4 | **Lifecycle.** Add `archived` status (deprecate without delete; hidden from members, history preserved) + archive bulk action. | ✅ `archived` status; archive/restore actions set `is_public=false` so member reads never surface it |
+| 1.5 | **Pillar split + lineage columns (schema).** `secondary_domain_id`, `primary_pct`; `remixed_from` + `root_practice_id` populated by `forkPractice`/`claimPractice` (no UI yet). | ✅ columns + constraints shipped (migration `20260827000000`); fork/claim populate them in Phase 3 |
+| 1.6 | **Bulk at scale.** Bulk ops act on the whole filtered set, not the visible 500. | ✅ `resolveAdminPracticeIds` + `bulkPracticesByFilterAction` (`ADMIN_BULK_MAX=5000`, reports `capped`) |
+| 1.7 | **Workspace UI.** Recompose on the Dashboard template + faceted Index body: `StatCard` row, search box, facet rail, saved views. Rail via `page-chrome.ts`. | ✅ `DashboardTemplate` + StatCard band + in-page facet rail (admin is rail='none') + URL-driven search/sort/filters + keyset "Load more"/offset paging + localStorage saved views |
+| 1.8 | **DataTable call.** Extend the shared `DataTable` (ADR-233) vs. formalize the bespoke table — decided in-build. | ✅ **decided: bespoke** — `DataTable` is presentational/server-sorted with no selection slot; the table needs row checkboxes + per-column master switch + per-row optimistic toggles. Filtering/sorting/paging are now server-owned; a thin client wrapper owns only selection + the bulk bar (rationale in `practices-table.tsx`). Adding a `selection` slot to `DataTable` is the documented follow-up |
+| — | **Phase-1 carry-overs** (deferred, not regressions): residual ("minus-self") facet counts → Phase 2; server-backed saved views (Phase 1 ships localStorage presets); `lib/database.types.ts` regen + drop the untyped admin-handle casts (integrator step). | 📋 |
+
+### Phase 2 — Keep it clean (quality + moderation)
+| # | Scope | Status |
+|---|---|---|
+| 2.1 | **Triage review queue.** Bulk approve/reject; prioritize by submitter trust + similarity; near-duplicate flag at submission via `match_practices()`. | ✅ server ([ADR-446](DECISIONS.md)) — `listReviewQueue` (near-dup + submitter-trust + recency order; trust join inert until Phase 3) + bulk approve/reject in `actions.ts` (`requireCurator`). ⏳ review-queue v2 UI in flight on the branch |
+| 2.2 | **Dedup + merge.** Pick canonical, redirect adoptions/logs, keep old slug as a redirect. | ✅ server ([ADR-446](DECISIONS.md)) — `merge_practices(from_id,to_id)` RPC (re-point never delete; drop-dup-then-repoint on the unique relations) + `mergePractices`/`mergePracticesAction`; `practice_slug_redirects` + `resolvePracticeSlugRedirect` 301 fallback on `/practices/[id]`. Migration `20260828000000` applied to prod. ⏳ merge UI in flight |
+| 2.3 | **Quality score** (completeness + engagement + freshness) → a real "Needs attention" panel (orphaned · imageless · never-logged · stale). | ✅ server ([ADR-446](DECISIONS.md)) — `computeQualityScore` + `isStale` (`lib/practices/quality.ts`) + `needsAttention`; `updated_at` + `trg_practices_touch_updated_at` is the freshness signal. ⏳ "Needs attention" panel UI in flight |
+| 2.4 | **Tag governance.** Promote member tag → canonical; merge synonyms. | ✅ server ([ADR-446](DECISIONS.md)) — `listAllTags`/`promoteTagToCanonical`/`mergeTags` + `promoteTagAction`/`mergeTagsAction` (`requireCurator`). ⏳ tag-governance UI in flight |
+| 2.5 | **Vera pre-screen.** Auto-check voice (CONTENT-VOICE), completeness, safety before public. | ✅ server ([ADR-446](DECISIONS.md)) — `lib/ai/practice-publish-screen.ts` (budget-gated voice/completeness/safety, deterministic fallback, advisory-only) + `screenPracticeAction`; `budget.ts` cap. ⏳ surfaced in the in-flight publish UI |
+| — | **Phase-2 in-flight UI** (on the branch, not merged): review-queue v2 · "Needs attention" panel · merge UI · tag governance; plus a table-overlap rework, the "System" → "Frequency" house-practices rename, and converting the page body into layout-editor block areas (`PageModules`, per [ADR-270](DECISIONS.md)/272). | ⏳ |
+
+### Phase 3 — Make it grow (remix engine) — ✅ shipped (#1214, [ADR-447](DECISIONS.md))
+| # | Scope | Status |
+|---|---|---|
+| 3.1 | **Surface lineage.** Remix trees, "most remixed," credit to originals (uses Phase 1 columns). | ✅ `lib/practices/lineage.ts` (`getPracticeLineage`/`mostRemixed`/`topRemixContributors`, one indexed scan via `root_practice_id`) + `practice-detail-lineage` |
+| 3.2 | **Remix prompts.** "Make it yours" / "Remix it" variation list. | ✅ `remix-practice-button` + `forkPractice` populating `remixed_from`/`root_practice_id` |
+| 3.3 | **Operator levers.** Mark remix seeds, view lineage depth, spotlight prolific remixers. | ✅ `components/widgets/practices/admin/remix-levers` |
+| 3.4 | **Contributor recognition** surfaces in admin. | ✅ `components/widgets/practices/admin/contributor-recognition` |
+
+### Phase 4 — Run it on autopilot (AI curation + analytics)
+| # | Scope | Status |
+|---|---|---|
+| 4.1 | **`computePracticeReward()`** wired as the valuation authority + **per-Pillar Zap attribution ledger** (the split's payoff). | 📋 |
+| 4.2 | **Vera curation.** Auto-suggest Pillar/subcategory from the embedding, auto-tag, auto-summary, voice-check, generate remix prompts. | 📋 |
+| 4.3 | **Library health dashboard.** Growth, **coverage gaps by Pillar/subcategory**, adoption funnel, top/bottom performers, review SLA, contributor leaderboard. | 📋 |
+
+**Cross-cutting (every phase):** naming + voice canon (no em dashes, "Make it yours") · page-framework kit (compose, don't author) · docs protocol (ADR in git, operator how-to in Notion) · audit log · RLS · `space_id` scoping · tuning via `zap_config`/`gem_config` (data, not code).
+
+## ✨ Spotlight — remaining MySpace / Discord socials — 2026-06-27
+
+The Spotlight editor shipped rounds 1–7 (blocks, images/GIF/bg, gallery/quote/stats, themes
++ gradients + fonts + per-block colours, Crew+ self-enable, the live split-screen builder,
+media embeds — Spotify/YouTube/SoundCloud/Vimeo). The iconic socials still to build, each a
+bigger lift (storage + moderation), captured here as the build queue:
+
+| Item | Scope | Status |
+|---|---|---|
+| **Top Friends** | The MySpace "Top 8": pick N friends to feature in a grid on your Spotlight. Reuses the existing friends/friendships data — no moderation needed. **Build first.** | 📋 specced, not built |
+| **Guestbook** | Visitors leave a note on your Spotlight. Needs a `spotlight_guestbook` table (RLS: owner reads all, anyone-signed-in writes), moderation (hide/report, owner delete), rate-limit + anti-spam, and the read-side render. | 📋 specced, not built |
+| **Stickers / decals** | A playful decorative layer — place emoji/earned stickers on the page (absolute-positioned, validated coordinates + an allowlisted sticker set). | 📋 specced, not built |
+
+Deferred embed providers: Bandcamp, Apple Music, Twitch (each needs a host-allowlist entry +
+`frame-src`). Earned cosmetics (frames/skins tied to gems/streaks) remain in the cosmetics lane.
+
+## 🌐 Resonance Feed + access model — 2026-06-26 ([ADR-414](DECISIONS.md), [spec](RESONANCE-FEED-ARCHITECTURE.md))
+
+The worldwide, density-adaptive ("ripple") resonance feed + the real-Crew create gate. One feed that
+is always full, gets more local the denser your area is, expands outward when sparse, and quietly
+introduces people on the same wavelength. Built ON the shipped resonance graph, embeddings, and geo
+RPCs (the composition layer was the gap, not the data). Full design: [`RESONANCE-FEED-ARCHITECTURE.md`](RESONANCE-FEED-ARCHITECTURE.md).
+
+| Phase | Scope | Status |
+|---|---|---|
+| **0. Foundations** | Real-Crew create gate across Events · Circles · Journeys · Practices (four `*.create` capabilities reading the real tier so the free-beta upgrade popup fires) + `CrewGateButton` everywhere. Additive schema: `suggestion_hidden` (hide/X a suggestion), `resonance_density_cells` (per-geocell activity rollup), `member_match_prefs` (reserved romance + astrology baselines, off/null). | ✅ this PR |
+| **1. Blended rank** | The five-signal score (proximity + graph + interest + recency + soft signals) + diversity rerank as one unified feed rank, composing the existing proximity RPCs, resonance edges, and embeddings. People-suggestions enter the feed. | ✅ shipped (ADR-415) |
+| **2. Adaptive radius + founder prompt** | The density-rollup job + the expanding-ring walk (neighborhood → city → region → world). Founder-vs-closest-activity branch. The "turn on location, we never share your exact spot" nudge. | ✅ shipped (ADR-416) |
+| **3. Radius slider + hide control** | Member radius slider (writes `feed_radius_m`); X-to-hide wired to `suggestion_hidden`; streak-as-a-quiet-signal in the rank. | ✅ shipped (ADR-417) |
+| **4. Safety + verification** | Safety guidance + verification. | ✅ shipped (ADR-418 + ADR-420: "showed up" verification, gates the romance lane) |
+| **5. Romance + astrology** | Opt-in astrology compatibility signal + a mutual-opt-in romance lane, on the Phase 0 scaffolding. Off by default, no swipe, meet-safely throughout. | ✅ shipped (ADR-419) |
+
+**Cardinal rule across every phase:** exact location never leaves the DB. All discovery reads use the
+fuzzed ~1.1km geocell or coarse band labels, never raw coordinates. Privacy controls already exist
+(`location_band`, `discoverable_by`, `discovery_radius_m`, `ghost_mode`).
+
+## 🔎 Audit-backlog clearance — 2026-06-25 (merged #1086)
+
+The full deferred backlog from [`AUDIT-2026-06-25.md`](AUDIT-2026-06-25.md) was designed as 10
+blueprints (parallel agent fan-out), applied in themed, individually-validated batches, and
+**merged (#1086, squash `500e67e`)**. Gate green per batch: `tsc` · `eslint` · `vitest` (2,286) ·
+`check:authz`. **Shipped:** commerce inventory enforcement (no oversell), campaign double-opt-in,
+bounded `qr_stats_summary` RPC, `/circles` + `/network` read parallelization, `/practices/<slug>`
+links + canonical, nightly resonance embeddings, and Batch 1 (CRM drill links · moderation N+1 →
+grouped fetch · event/circle share-card metadata · dead-export removal). **Two RPCs applied + verified
+on prod** (`azsqfeonabsbmemvddqd`): `decrement_commerce_stock_atomic`, `qr_stats_summary` — both
+`SECURITY DEFINER`, `service_role`-only, zero new security advisors.
+
+**Remaining follow-ups this pass surfaced (none blocking; ranked):**
+
+| Pri | Item | Why / where |
+|---|---|---|
+| **P-SEC** | **Caller-row double-fetch dedup** — collapse the duplicate caller read | Owner-gated: touches the shared `cache()`-wrapped auth boundary used app-wide for a single-row-SELECT upside. `lib/auth.ts` caller resolution. |
+| **P-DX** | **Re-run `supabase gen types`** + drop the two untyped RPC casts | `decrement_commerce_stock_atomic` / `qr_stats_summary` are reached via `as unknown as { rpc … }` until `lib/database.types.ts` is regenerated. Mechanical cleanup. `lib/commerce/checkout.ts`, `app/(main)/admin/qr/stats/page.tsx`. |
+| **P-PERF** | **QR Studio + per-Space QR settings still load `qr_scans` unbounded** | The stats page is fixed; the Studio (`app/(main)/admin/qr/page.tsx`) + per-Space QR settings have the same full-table smell. Reuse the `qr_stats_summary` group-by pattern. |
+| **P-COMMERCE** | **Variant-level stock not enforced** | `commerce_variants.stock` + `order_items.variant_id` are untouched — only `commerce_products.stock` decrements. Extend the RPC if/when variants sell. |
+| **P-UX** | **Fast-fail stock pre-check in `createCommerceCheckout`** | The atomic RPC is the oversell source of truth, but a pre-check avoids charging a buyer then failing soft at settle. `lib/commerce/checkout.ts`. |
+| **P-SCALE** | **Real pagination on `/network` + `/circles`** | Both render a capped slice with a "showing first N" notice; true pagination/infinite-scroll is the follow-up when the community outgrows the 500 fetch cap. |
+| **P-SEO** | **CSP `connect-src` GA4 regional collect endpoint** | Dormant until GA4 is configured; add the endpoint when analytics goes live. |
+| 🔵 opt | **Resonance: run embeddings BEFORE edges for same-night effect** | Embeddings currently run after edges (tonight's edges use last night's embeddings — converges over nights). A product call, not a bug. |
+
+## 🟢 CRM contacts import + go-live owner actions (2026-06-23)
+
+Two threads finished their **build** this session and now sit on **owner / external setup only (no more
+code for v1)**. Captured here so nothing lives only in chat.
+
+### A. Google Contacts import — shipped (#1003, [ADR-374](DECISIONS.md)); Google review pending
+
+The free "Import from Google" button on My Contacts is **built, merged, and live**. It works in
+production today behind the standard Google "unverified app" warning (Google caps that at **100 users**
+until the app is verified). Remaining steps are all in Google Cloud Console, owner-run:
+
+| # | Step | Status |
+|---|---|---|
+| 1 | `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` in Vercel | ✅ |
+| 2 | Redirect URIs on the shared "Frequency Web" OAuth client (`/api/integrations/google/callback`, prod + localhost) | ✅ |
+| 3 | Branding: app name "Frequency", logo, support email, home/privacy/terms, authorized domain | ✅ |
+| 4 | Domain ownership (frequencylocal.com, Search Console DNS TXT) | ✅ |
+| 5 | Homepage explains the app's purpose + links Privacy/Terms; `/privacy` carries the Google-data + Limited Use disclosure | ✅ (this PR) |
+| 6 | **Safe Browsing "deceptive pages" flag** → Request Review in Search Console | ⏳ requested 2026-06-23 (~72h). MUST clear before #7 |
+| 7 | **Submit OAuth verification** (Verification Center: branding + sensitive scope) | 📋 owner, after #6 clears |
+| 8 | **Demo video** (~90 sec) → upload to YouTube **Unlisted** → paste link in the scope verification form | 📋 owner, feature is already live |
+
+**Demo video shot list:** open frequencylocal.com → sign in → My Contacts → "Import from Google" →
+Google consent screen (shows "Frequency" + the contacts permission) → approve → "Imported N contacts"
+banner with the new contacts. Narrate one line: "This lets a member import their own Google contacts
+into their private contact book."
+
+**Scope justification** (paste into Data Access):
+> Frequency lets a signed-in member import their own Google contacts into their private personal address
+> book ("My Contacts"). We request contacts.readonly solely to read the user's own contacts and create
+> contact records owned by and visible only to that same user. We do not access email, calendar, or any
+> other data. We use one-time online access and store no Google access or refresh tokens. We never sell or
+> share this data and use it for no advertising. Read-only is the minimum scope, as we never modify Google data.
+
+Verification removes the warning + the 100-user cap and shows the logo on the consent screen (Google
+review typically 1–2 weeks). The feature needs no further code either way.
+
+### B. Stripe billing — built + inert; products never synced, switch never flipped
+
+The full pricing/billing layer (ADR-362 / 363 / 364 / [373](DECISIONS.md)) is **built but OFF**: nothing
+charges until BOTH the master `billing_live` flag is on AND Stripe keys are present (`billingLive()`).
+Products have not been synced, so the Stripe catalog is empty. To go live, **in order**:
+
+| # | Step | Status | Where |
+|---|---|---|---|
+| 1 | `STRIPE_SECRET_KEY` present | ✅ | Vercel (confirm it's the **live** key, not test, when you actually charge) |
+| 2 | `STRIPE_WEBHOOK_SECRET` set + a webhook endpoint added in Stripe pointing at `/api/stripe/webhook` | 📋 confirm | Stripe dashboard → Developers → Webhooks, then Vercel env |
+| 3 | **Sync products to Stripe** (creates the ~24 Products/Prices from the admin pricing values) | 📋 **0/24 synced** — SAFE, creates the catalog, charges nobody | `/admin/pricing` → "Sync products to Stripe" |
+| 4 | Review the created Products/Prices look right (amounts, monthly/annual) | 📋 | Stripe dashboard |
+| 5 | Turn ON the per-plan `*_enabled` flags for the plans you want to sell | 📋 | `/admin/pricing` |
+| 6 | **Flip the master switch `billing_live`** (the real go-live; this is when charging begins) | 📋 do last | `/admin/pricing` |
+
+**Deferred:** per-seat operator billing (the "+$9/seat" auto-charge, ADR-373). **Recommendation:** you can
+do step 3 (Sync) any time to populate and review the catalog with zero risk; keep step 6 (`billing_live`)
+OFF until you are truly ready to charge members.
+
+**Update 2026-06-23 ([ADR-375](DECISIONS.md)):** launch prices lowered — Practitioner **$19/$190**,
+Business **$49/$490**, Nonprofit **$29/$290** (Crew/Supporter/Org/White-label/Partner unchanged) — and a
+**14-day card-upfront trial** added on Space plans (members have none). The live `pricing_settings` rows
+were updated, so the **first product sync uses the new numbers** (re-sync after any later change; safe while
+billing is OFF). Also added a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`, `lib/ai/budget.ts`) that
+hard-caps total daily Anthropic spend across every feature — always-on cost protection for the solo launch.
+
+### C. Launch day — order of operations (2026-06-23)
+
+The exact sequence to take Frequency live, safest-first. Everything through Phase 1 is **free and OFF**;
+real charges only begin at Phase 3. Legend: ✅ done · 📋 owner action · ⏳ waiting.
+
+**Phase 0 — staged (mostly done, safe anytime)**
+- ✅ Stripe products synced (16/16) · prices live ($19/$49/$29) · 14-day Space trial · webhook + `STRIPE_WEBHOOK_SECRET` set
+- 📋 Confirm `STRIPE_SECRET_KEY` is the **live** key (`sk_live_…`) before you ever flip billing on (if it's `sk_test_…`, swap it and re-sync)
+- 📋 Move Supabase to **Pro** (capacity + backups) and back up every secret in a password manager
+
+**Phase 1 — soft launch (free, billing OFF) — do this first**
+- Keep the master switch **OFF**. Personal features are free; Spaces run on the free plan. Nothing charges.
+- Open the doors: onboard members and **Partners** (comped + rev share is the audience engine). Lean on the free tier.
+- Google contacts import works behind the one "unverified app" warning (≤100 users). The global AI cap protects spend.
+
+**Phase 2 — Google verification (when ready / nearing 100 import users)**
+- ⏳ Wait for the **Safe Browsing** review to clear (requested 2026-06-23, ~72h)
+- 📋 Submit **OAuth verification** (branding is done) + record the **90-sec demo video** → YouTube *Unlisted* → paste the link
+- Result: the warning and the 100-user cap disappear and your logo shows on the consent screen
+
+**Phase 3 — turn billing ON (only when Spaces are pulling for paid features)**
+1. 📋 Confirm the **live** Stripe key + that `STRIPE_WEBHOOK_SECRET` matches the live webhook endpoint; redeploy
+2. 📋 `/admin/pricing` → toggle ON the **per-plan enable** switches for the plans you'll sell
+3. 📋 `/admin/pricing` → flip the master switch **`billing_live` ON**
+4. 📋 Test one real checkout end to end (buy Practitioner, confirm the 14-day trial starts + the plan grants via the webhook, then cancel/refund)
+5. Watch the first subscriptions reconcile (`customer.subscription.*` → `setSpacePlan`)
+
+**Phase 4 — optional, later**
+- 📋 Supabase **vanity domain** (after verification — it changes the auth callback; update the Google redirect URI + `NEXT_PUBLIC_SUPABASE_URL` in lockstep)
+- 📋 **A2P / SMS** registration (when you want SMS; see [A2P-REGISTRATION.md](A2P-REGISTRATION.md))
+- 📋 **Per-seat billing** ("3 included, +$9/seat") when you need multi-operator Spaces
+- 📋 **CRM admin suite migrations** — the suite shipped this session (ADR-376/377/378/379/380/381: admin person timeline + notes + consent, edit safe fields + bulk consent, Space contact detail + tasks, email/Resend timeline adapters, Twilio SMS rail, funnel analytics, saved segments + email templates). Two new tables are **fail-closed until applied**: `20260730000000_space_segments` and `20260730010000_space_email_templates` (saved segments + email templates simply stay empty until then). The SMS consent table `20260626010000_sms_consent` is the gate for the Twilio rail. **Apply on a Supabase branch + regenerate `lib/database.types.ts` before relying on typed reads.** Everything else in the suite uses existing tables and is live now.
+
+**Rollback:** flipping `billing_live` **OFF** instantly stops all new charges (existing Stripe subscriptions keep running until you cancel them in the Stripe dashboard). The OFF invariant means the whole layer goes inert the moment the switch is off.
+
 ## 🔎 Full-site audit — 2026-06-09 (post events / journeys / circles)
 
 Four-agent sweep (incompleteness · security · journeys/events/circles completeness · UI/linkage).
@@ -73,9 +298,11 @@ private profile card (#516, migration `20260610060000`).
 Six-agent sweep (Journeys-v2 reconcile · dead-code/junk · migration-drift+advisors · code-level
 security · SEO/AIO · buildable-backlog) cross-checked against this list after the day's 58-commit
 restructure. **Verdict: clean and on track. Lint clean, 905 tests green, no broken routes, no
-critical security holes, DB perf debt dropped sharply. The one real risk is a deliberate
-half-migration: ADR-253 (retire the legacy season engine) was decided today but not yet executed —
-so v2 journey rewards run in parallel with the legacy season engine (a live double-earn surface).**
+critical security holes, DB perf debt dropped sharply. The one real risk flagged here — the
+ADR-253 half-migration (v2 rewards running in parallel with the legacy season engine, a live
+double-earn surface) — has since been **fully executed and verified on prod (2026-06-29):** the
+grant firing is gone, displays use the v2 reader, the orphaned engine is deleted, and the dead
+columns are dropped. No double-earn remains.**
 
 **Fixed this pass:** 🟢 **Security** — three crown-jewel role actions (`setAreaPermission` ·
 `setStaffRole` · `addStaffMember`) gated on the **deprecated `community_role`** axis; moved to
@@ -97,7 +324,7 @@ capability_permissions `20260614300000`, journeys_v2) is **LIVE in prod** — th
 
 | Pri | Item | Why | Where |
 |---|---|---|---|
-| 🔴 **P0** | **Execute ADR-253** — retire the legacy season reward/progress engine | v2 grants run in parallel with the season engine on every practice log (double-earn); retired widgets (completion-rule, depth tiers) still render to members. 5 sequenced steps; do NOT blind-delete (live currency + member-UI). | `lib/practices.ts`, `lib/journey-plans.ts`, `journeys/[slug]/page.tsx` |
+| ✅ ~~P0~~ | **Execute ADR-253** — retire the legacy season reward/progress engine | **DONE (verified prod 2026-06-29).** All 5 steps shipped: grant firing removed from `logPractice` (no double-earn — a practice log no longer grants journey rewards, `lib/practices.ts`); displays repointed to the v2 reader (`lib/journeys/progress.ts`); the orphaned engine files deleted (`journey-rewards`/`journey-coop-rewards`/`journey-grants`/`journey-quest-clock` gone, `CompletionRuleBlock` retired); the dead columns (`season_locked`/`min_practices_per_day`/`target_weeks`) **dropped in prod** (migration `20260624000000`, confirmed absent + zero code refs). Residual: a full `database.types.ts` regen to drop the last `as unknown as` casts (tracked as H0-3/H5-1). | done |
 | **P1** | Hardening tails | Add plan-ownership checks on journey insert/checkoff actions (low sev); "// caller must enforce host gate" contracts on untyped `lib/journeys/runs.ts`/`store.ts`. | journeys edit/learn actions |
 | **P1** | `lib/experiments/*` is orphaned | Zero importers, yet PI claims it's part of the owned spine — wire it (PI.4 needs it) or stop claiming it. | `lib/experiments/*` |
 | **P2** | Segment builder UI | Eval is pure+tested; admin page is read-only. Add a predicate-form + `createSegment`. | `lib/traits/segments.ts`, `/admin/segments` |
@@ -352,6 +579,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 | 2.6 | Freemium Vault + season cash-in | ⏳ | Accrual (zap/gem ledgers) ✅, season `zaps → gems` conversion ✅, persistent Vault + "how you earned" log ✅. **Lifetime rank** ✅ — locked monotonic peak (`profiles.lifetime_rank`, ADR-164/migration `20260608060000`): zap trigger ratchets it, `reset_season()` preserves it, surfaced on the Vault. **Cash-in eligibility** ✅ (ADR-226) — pure `canCashIn(tier) = isPaid(tier)`; `redeemItem` now enforces it **server-side** (free members get a clean `/upgrade` upsell; accrual stays free, only claim/spend is paid). *Remaining:* entitlement **sources** beyond `membership_tier` — host comp-grant / Lab rollup / staff grant (ADR-037 §6c/d; speculative beta infra); optional RLS cash-in floor on `store_redemptions`. |
 | 2.7 | Persona verification + Connect binding | ⏳ | **Verification half** ✅ (ADR-165, migration `20260608070000`): the `profile_personas` ladder is real — claim → *pending review* → staff **verify** → activate (suspend/reinstate), validated by `canStaffTransition`; surfaces light on verified/active only; audit trail (`verified_by/at`, `updated_at`); admin queue at `/admin/personas` (janitor / `profiles`-staff). *Remaining:* per-persona **Stripe Connect binding** (the money gate at `active`) — stubbed until Connect is configured. |
 | 2.8 | Module registry + inter-entity Lab bridge | 📋 | Verticals self-declare (ADR-033); audited for-profit↔Foundation transfers (ADR-038). |
+| 2.9 | Operator-managed pricing entitlements (P1-P3) | ✅ (ships OFF) | [ADR-362](DECISIONS.md) / [ADR-363](DECISIONS.md) / [ADR-364](DECISIONS.md), spec [PRICING.md](PRICING.md). Three operator-managed entitlement flags + `featureAllowed` (P1); Stripe products/prices + subscription checkout + webhook reconciliation, incl. Space plans + Space memberships (`lib/billing/space-subscriptions.ts`, P2); member-facing surfaces rendered from the operator values — `/upgrade`, Space plan picker + billing route, paid membership join, white-label as a high-touch lead (P3). Structurally safe while `billing_live` is OFF. Deferred gates tracked in [REMAINING-WORK.md](REMAINING-WORK.md). |
 
 ## P3 — Partners (personas + Hook federation)
 
@@ -386,7 +614,7 @@ site for everyone, function-gated per role* — and **(2) the money layer** (ent
 
 ## P5 — Member · Practice · Operator depth (the feature backlog)
 
-**Member & Community** (BACKLOG §G/§H, STUDIO-REVIEW): Network hub unification (`/people`+`/connections`+`/marketing/contacts`) · ✅ directory filters (topic/location/role — ADR-204, on `/network`) · ✅ friend suggestions ("People you may know", real signals only — ADR-204) · circle-discovery map layer · circle lineage + "nearly full → seed a new circle" flywheel · multi-topic circles · hub/nexus-scoped events · two-way message inbox · richer profile header + privacy-safe public profile schema · (later) Postgres sync-engine pilot.
+**Member & Community** (BACKLOG §G/§H, STUDIO-REVIEW): Network hub unification (`/people`+`/connections`+`/marketing/contacts`) · ✅ directory filters (topic/location/role — ADR-204, on `/network`) · ✅ friend suggestions ("People you may know", real signals only — ADR-204) · ✅ My Contacts CRM P1-P3 (the personal keep-in-touch CRM + in-person QR capture + graduation into the paid Spaces CRM — [ADR-361](DECISIONS.md), [CRM-STRATEGY.md](CRM-STRATEGY.md), [NETWORK-CRM.md](NETWORK-CRM.md); follow-ups in [REMAINING-WORK.md](REMAINING-WORK.md)) · circle-discovery map layer · circle lineage + "nearly full → seed a new circle" flywheel · multi-topic circles · hub/nexus-scoped events · two-way message inbox · richer profile header + privacy-safe public profile schema · (later) Postgres sync-engine pilot.
 
 **Practice / Quest / Gamification** (BACKLOG §F): ✅ daily-streak achievement badges (2026-06 — `practice_streak` criteria over `profiles.current_streak`, evaluated on each log, pays zaps; 3 badges seeded: Week of Devotion 7d · Moon Cycle 30d · 100 Days 100d) · stage-driven disclosure (apply `stageIndex` to dashboard/profile/rails) · `practice.verified` host/peer verification + device attestation/P2P mutual-confirm · realtime reward feedback via Broadcast · Programs content depth (>4 frameworks) + program-as-template "Add to Circle" · community-library moderation + promote-to-tracked Journey · seasonal-Journey authoring surface + content (link to season + Pillar).
 

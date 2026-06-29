@@ -14,10 +14,29 @@ import Link from 'next/link'
 import { Zap, Gem, Flame, Shield, Radio, ChevronLeft, ChevronRight } from 'lucide-react'
 import { RewardsArt, StreakArt, StatsArt, DispatchArt } from './reveal-art'
 import type { RevealPayload } from '@/lib/on-air'
+import { achievedTier, TIER_LABELS, TIER_ORDER, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 
 const fmtMin = (sec: number) => {
   const m = Math.round(sec / 60)
   return m < 1 ? '<1 min' : `${m.toLocaleString()} min`
+}
+
+// The depth nudge (ADR-443): from the real engaged time, name the tier the sit
+// EARNED and, if there's a deeper one, the minutes that would reach it next time.
+// Pure — same achievedTier the economy used server-side, so the line never
+// disagrees with the Zaps that paid. Returns null when there's nothing to nudge
+// (a partial sit, an instant log, or already at the deepest tier with no further
+// rung). Voice: plain, specific, no narrated feelings, no em dashes.
+function depthNudge(sessionSeconds: number): { reached: string; toNext: string | null } | null {
+  const tier = achievedTier(sessionSeconds)
+  if (tier === 'partial') return null
+  const reached = `You reached ${TIER_LABELS[tier]}.`
+  const rank = TIER_ORDER.indexOf(tier)
+  const next = TIER_ORDER[rank + 1]
+  if (!next) return { reached, toNext: null } // Heavy — top of the dial
+  const more = Math.max(1, Math.ceil(TIER_FLOOR_MIN[next] - sessionSeconds / 60))
+  const unit = more === 1 ? 'minute' : 'minutes'
+  return { reached, toNext: `${more} more ${unit} reaches ${TIER_LABELS[next]} next time.` }
 }
 
 // Read prefers-reduced-motion once, in a state initializer (SSR-guarded; the
@@ -404,14 +423,18 @@ function StreakPanel({ payload }: { payload: RevealPayload }) {
 // ③ Stats — airtime + depth + Amplitude.
 function StatsPanel({ payload }: { payload: RevealPayload }) {
   const { stats } = payload
+  // Only nudge a real, full timed sit: an "already counted" repeat or a partial
+  // sit gets its own message on the Rewards card, never a depth ladder here.
+  const nudge = payload.logged && !payload.partial ? depthNudge(stats.sessionSeconds) : null
   const rows: [string, string][] = [
-    ['This sit', fmtMin(stats.sessionSeconds)],
+    // Named after what was actually done (ADR-443): "This walk" / "This sit", never crossed.
+    [stats.sessionLabel, fmtMin(stats.sessionSeconds)],
     ['Airtime today', fmtMin(stats.todaySeconds)],
     ['Airtime, all time', fmtMin(stats.totalSeconds)],
     [
       payload.practiceTitle,
       stats.nextDepthMark
-        ? `${stats.lifetimeLogs} logs · ${stats.nextDepthMark - stats.lifetimeLogs} to ${stats.nextDepthMark} Deep`
+        ? `${stats.lifetimeLogs} logs · ${stats.nextDepthMark} next`
         : `${stats.lifetimeLogs} logs`,
     ],
     ['Amplitude', `Level ${stats.amplitudeLevel} · ${stats.amplitude.toLocaleString()}`],
@@ -431,6 +454,18 @@ function StatsPanel({ payload }: { payload: RevealPayload }) {
           </div>
         ))}
       </div>
+      {nudge && (
+        <div className="mt-4 rounded-xl border border-primary/40 bg-primary-bg/30 px-3 py-2.5 text-left">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-text">
+            <Zap className="h-3.5 w-3.5 text-primary" /> {nudge.reached}
+          </p>
+          {nudge.toNext ? (
+            <p className="mt-0.5 text-xs text-muted">{nudge.toNext}</p>
+          ) : (
+            <p className="mt-0.5 text-xs text-muted">Top of the dial. Hold it here.</p>
+          )}
+        </div>
+      )}
       <Link href="/crew/leaderboard" className="mt-4 inline-block text-xs font-semibold text-primary-strong hover:underline">
         Full stats →
       </Link>

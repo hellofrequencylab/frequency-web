@@ -19,6 +19,8 @@ import { VERA_TOOLS, requiresConfirmation, validateToolCall, type VeraToolDef } 
 import { executeReadTool } from './read-tools'
 import { getVeraConfig, type VeraConfig } from './config'
 import { withVoice } from '@/lib/ai/voice'
+import { veraDailyCapReached } from './usage-gate'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ProposedToolCall } from './concierge'
 
 const FEATURE = 'vera-chat'
@@ -164,6 +166,9 @@ export async function runVeraClaudeTurn(input: {
   supportSummary?: string
   /** For the usage ledger (ADR-041/067). */
   profileId?: string | null
+  /** The member's billing tier — feeds the vera_unlimited daily-cap gate (ADR-370). Defaults to free.
+   *  INERT while billing is OFF (the gate grants), so this never changes today's behavior. */
+  tier?: EntitlementTier | null
   /** Who's asking (ADR-208) — operators get operator-to-operator candor. */
   viewer?: VeraViewer | null
 }): Promise<VeraClaudeResult | null> {
@@ -172,6 +177,11 @@ export async function runVeraClaudeTurn(input: {
   try {
     // Operator kill switch + per-feature daily cap — degrade to deterministic.
     if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+
+    // The vera_unlimited gate (ADR-370): a free member over the operator daily cap degrades to the
+    // deterministic concierge, EXACTLY like the kill-switch / over-budget path above. INERT while
+    // billing is OFF (the gate grants, so this is always false today). FAIL-SAFE: never blocks on error.
+    if (await veraDailyCapReached(input.profileId ?? null, input.tier ?? null)) return null
 
     const cfg = await getVeraConfig()
     const system = buildSystemPrompt(input.memberContext, cfg, input.supportSummary, input.viewer)

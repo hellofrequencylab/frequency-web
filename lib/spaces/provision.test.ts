@@ -16,8 +16,11 @@ vi.mock('@/lib/auth', () => ({
 }))
 
 // ── Mock the membership seam (spy on the owner-seat write) ──────────────────────────────────
+// Keep the PURE membership helpers real (the type-defaults seed path imports isSpaceRole / SPACE_ROLES
+// via lib/spaces/functions, per-space-roles Phase 2); override only addSpaceMember to spy the owner-seat.
 const addSpaceMember = vi.fn(async (input: Record<string, unknown>) => ({ id: 'm1', input }))
-vi.mock('./membership', () => ({
+vi.mock('./membership', async (orig) => ({
+  ...(await orig<typeof import('./membership')>()),
   addSpaceMember: (input: Record<string, unknown>) => addSpaceMember(input),
 }))
 
@@ -173,7 +176,11 @@ describe('createSpace — happy path', () => {
       owner_profile_id: 'owner-0000-4000-a000-000000000own',
       brand_name: 'River Yoga', // defaults to name
     })
+    // The new Space seeds its tool config from the per-type defaults merged over the code defaults
+    // (per-space-roles Phase 2). With no operator defaults set, both blobs are empty = pure code
+    // defaults, so the Space stands up with exactly today's behavior.
     expect(row.entitlements).toEqual({})
+    expect(row.feature_roles).toEqual({})
     expect(typeof row.skin).toBe('string') // the blueprint default skin
 
     // The owner is seated as an active admin member.

@@ -89,15 +89,6 @@ export async function surfaceAccess(
   return accessTo(surface, await applyScope(hats, scope))
 }
 
-/** Convenience: does the live caller get FULL function on this surface (optionally
- *  within a scope they lead by edge)? */
-export async function canUseSurface(
-  surface: Surface,
-  scope?: SurfaceScope,
-): Promise<boolean> {
-  return (await surfaceAccess(surface, scope)) === 'full'
-}
-
 /** Additively elevate `hats.role` to a led scope's level. No scope, not logged in, or
  *  not an in-scope edge-leader ⇒ hats unchanged (today's global behavior). */
 async function applyScope(hats: Hats, scope?: SurfaceScope): Promise<Hats> {

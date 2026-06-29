@@ -74,7 +74,7 @@ export default async function AcceptInvitePage({
         </p>
       </div>
       <div className="mt-5">
-        <Link href="/spaces" className={buttonClasses('secondary')}>
+        <Link href="/spaces/directory" className={buttonClasses('secondary')}>
           Browse spaces
         </Link>
       </div>

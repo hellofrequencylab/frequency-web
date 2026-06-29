@@ -64,7 +64,6 @@ import {
   spaceRoleRank,
   atLeastSpaceRole,
   isSpaceRole,
-  isSpaceAdminRole,
   getSpaceMembership,
   listSpaceMembers,
 } from './membership'
@@ -97,13 +96,10 @@ describe('the space-role ladder (pure)', () => {
     expect(atLeastSpaceRole(undefined, 'admin')).toBe(false)
   })
 
-  it('isSpaceRole / isSpaceAdminRole', () => {
+  it('isSpaceRole', () => {
     expect(isSpaceRole('admin')).toBe(true)
     expect(isSpaceRole('overlord')).toBe(false)
     expect(isSpaceRole(42)).toBe(false)
-    expect(isSpaceAdminRole('admin')).toBe(true)
-    expect(isSpaceAdminRole('moderator')).toBe(false)
-    expect(isSpaceAdminRole(null)).toBe(false)
   })
 })
 

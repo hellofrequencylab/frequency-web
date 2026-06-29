@@ -23,6 +23,51 @@ describe('resolveCapabilities · global (admin.access rides the STAFF axis, ADR-
   })
 })
 
+describe('resolveCapabilities · global creation gates (ADR-414 — real Crew to create)', () => {
+  const CREATES = ['event.create', 'circle.create', 'journey.create', 'practice.create'] as const
+  const hasAllCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => caps.has(c))
+  const hasNoCreates = (caps: ReturnType<typeof resolveCapabilities>) => CREATES.every((c) => !caps.has(c))
+
+  it('grants all four create gates to a real paid Crew (or Supporter) member', () => {
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'crew' }, { kind: 'global' }))).toBe(true)
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', realTier: 'supporter' }, { kind: 'global' }))).toBe(true)
+  })
+
+  it('denies all four to a genuinely free member EVEN under the beta tier override', () => {
+    // The beta override sets the effective `tier` to crew while the REAL tier stays free.
+    // The gates read realTier, so the upgrade popup still fires (the whole point of ADR-414).
+    const betaFree = resolveCapabilities({ profileId: 'p', role: 'member', tier: 'crew', realTier: 'free' }, { kind: 'global' })
+    expect(hasNoCreates(betaFree)).toBe(true)
+  })
+
+  it('grants to community stewards (crew+ on the trust ladder) regardless of billing', () => {
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'crew', realTier: 'free' }, { kind: 'global' }))).toBe(true)
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'host', realTier: 'free' }, { kind: 'global' }))).toBe(true)
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'mentor', realTier: 'free' }, { kind: 'global' }))).toBe(true)
+  })
+
+  it('grants to platform staff (web_role) regardless of billing', () => {
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', webRole: 'admin', realTier: 'free' }, { kind: 'global' }))).toBe(true)
+  })
+
+  it('falls back to `tier` when realTier is omitted (no beta override in play)', () => {
+    expect(hasAllCreates(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'crew' }, { kind: 'global' }))).toBe(true)
+    expect(hasNoCreates(resolveCapabilities({ profileId: 'p', role: 'member', tier: 'free' }, { kind: 'global' }))).toBe(true)
+  })
+
+  it('an anonymous viewer gets no create gates', () => {
+    expect(hasNoCreates(resolveCapabilities({ profileId: null, role: 'member' }, { kind: 'global' }))).toBe(true)
+  })
+
+  it('a free member can reach the gates via the paid rung (capabilityGaps → needs-paid-tier)', () => {
+    const gaps = capabilityGaps({ profileId: 'p', role: 'member', tier: 'free', realTier: 'free' }, { kind: 'global' })
+    expect(gaps['event.create']).toBe('needs-paid-tier')
+    expect(gaps['circle.create']).toBe('needs-paid-tier')
+    expect(gaps['journey.create']).toBe('needs-paid-tier')
+    expect(gaps['practice.create']).toBe('needs-paid-tier')
+  })
+})
+
 describe('resolveCapabilities · profile', () => {
   it('owner or STAFF janitor (web_role) can edit, others cannot', () => {
     expect(can(resolveCapabilities({ profileId: 'p1', role: 'member' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
@@ -30,6 +75,46 @@ describe('resolveCapabilities · profile', () => {
     // A community 'janitor'-rung with no web_role does NOT get moderation edit now.
     expect(can(resolveCapabilities({ profileId: 'jc', role: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(false)
     expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
+    // Platform STAFF admin (web_role) also gets basic moderation edit now.
+    expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, { kind: 'profile', ownerId: 'p1' }), 'profile.edit')).toBe(true)
+  })
+
+  it('spotlight.manage requires the owner (or janitor) AND the owner having it enabled', () => {
+    const owner = { profileId: 'p1', role: 'member' as const }
+    // off by default → no manage even for the owner
+    expect(can(resolveCapabilities(owner, { kind: 'profile', ownerId: 'p1' }), 'spotlight.manage')).toBe(false)
+    // enabled → owner manages
+    expect(can(resolveCapabilities(owner, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(true)
+    // a different member never manages someone else's, even when enabled
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member' }, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(false)
+    // a janitor may manage (moderation) when enabled
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true }), 'spotlight.manage')).toBe(true)
+  })
+
+  it('spotlight.view is a Crew+ entitlement on the REAL tier (beta override cannot widen it)', () => {
+    const scope: Scope = { kind: 'profile', ownerId: 'p1', ownerSpotlightEnabled: true, ownerSpotlightPublished: true }
+    // free member (incl. a beta-granted effective Crew but realTier free) → no view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', tier: 'free' }, scope), 'spotlight.view')).toBe(false)
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', tier: 'crew', realTier: 'free' }, scope), 'spotlight.view')).toBe(false)
+    // real paid Crew → view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'member', realTier: 'crew' }, scope), 'spotlight.view')).toBe(true)
+    // crew on the trust ladder, or staff → view
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'crew' }, scope), 'spotlight.view')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'a', role: 'member', webRole: 'admin' }, scope), 'spotlight.view')).toBe(true)
+  })
+
+  it('spotlight.enable is a Crew+ self-serve switch — only the OWNER, only Crew+', () => {
+    const scope: Scope = { kind: 'profile', ownerId: 'p1' }
+    // a free owner cannot self-enable (the upgrade nudge lives elsewhere)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', tier: 'free' }, scope), 'spotlight.enable')).toBe(false)
+    // a real paid-Crew owner, or crew-on-the-ladder owner, or staff owner → can enable their own
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', realTier: 'crew' }, scope), 'spotlight.enable')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'crew' }, scope), 'spotlight.enable')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'p1', role: 'member', webRole: 'admin' }, scope), 'spotlight.enable')).toBe(true)
+    // a Crew+ NON-owner never gets enable on someone else's profile (it's self-serve only)
+    expect(can(resolveCapabilities({ profileId: 'p2', role: 'crew' }, scope), 'spotlight.enable')).toBe(false)
+    // even a janitor doesn't self-enable a member here — they use the admin toggle instead
+    expect(can(resolveCapabilities({ profileId: 'j', role: 'member', webRole: 'janitor' }, scope), 'spotlight.enable')).toBe(false)
   })
 })
 
@@ -169,6 +254,27 @@ describe('resolveCapabilities · event', () => {
 
   it('an unrelated member cannot edit', () => {
     expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'event.editSettings')).toBe(false)
+  })
+})
+
+describe('resolveCapabilities · practice', () => {
+  const base: Scope = { kind: 'practice', practiceId: 'pr1', ownerId: 'owner1' }
+
+  it('the practice owner can edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'owner1', role: 'member' }, base), 'practice.editSettings')).toBe(true)
+  })
+
+  it('platform staff (web_role admin + janitor) can edit any practice', () => {
+    expect(can(resolveCapabilities({ profileId: 'ax', role: 'member', webRole: 'admin' }, base), 'practice.editSettings')).toBe(true)
+    expect(can(resolveCapabilities({ profileId: 'jx', role: 'member', webRole: 'janitor' }, base), 'practice.editSettings')).toBe(true)
+  })
+
+  it('whoever manages the parent scope can edit (caller-computed)', () => {
+    expect(can(resolveCapabilities({ profileId: 'g', role: 'guide' }, { ...base, viewerManagesScope: true }), 'practice.editSettings')).toBe(true)
+  })
+
+  it('an unrelated member cannot edit', () => {
+    expect(can(resolveCapabilities({ profileId: 'x', role: 'member' }, base), 'practice.editSettings')).toBe(false)
   })
 })
 

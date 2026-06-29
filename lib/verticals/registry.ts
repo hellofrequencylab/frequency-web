@@ -13,6 +13,9 @@ import type { NavArea } from '@/lib/nav-areas'
 import type { AdminModule } from '@/lib/admin/modules/registry'
 import type { Viewer } from '@/lib/core/capabilities'
 import { market } from './market'
+import { housing } from './housing'
+import { maker } from './maker'
+import { shop } from './shop'
 
 /** A vertical's own scope (its kind + whatever ids/state its resolver needs). */
 export interface ModuleScope {
@@ -50,6 +53,13 @@ export interface Vertical {
   id: string
   /** Money partition for this vertical's commerce, if any (PLATFORM-VISION §1). */
   entity: 'foundation' | 'labs' | 'partner' | 'shared'
+  /** Mount switch. Omitted/true = LIVE (its nav, rail, and capabilities compose into the
+   *  shared shell). FALSE = registered but DORMANT: the descriptor still exists and the
+   *  contract test still covers it, but it contributes NOTHING to the shell, so a vertical
+   *  whose backing tables/migrations aren't in production yet cannot affect it. Flip to true
+   *  to go live once the schema is applied and an authenticated session is verified
+   *  (the guardrail added after the 2026-06-24 prod outage). */
+  enabled?: boolean
   /** Left-nav area(s) this vertical contributes, with placement. */
   nav?: readonly NavPlacement[]
   /** Admin-dock modules this vertical contributes (merged into the admin registry). */
@@ -63,7 +73,14 @@ export interface Vertical {
 }
 
 /** Every registered vertical. Add a vertical = import its descriptor and add it here. */
-export const VERTICALS: readonly Vertical[] = [market]
+export const VERTICALS: readonly Vertical[] = [market, housing, maker, shop]
+
+/** The verticals that actually MOUNT into the shared shell — the enabled ones only. A
+ *  dormant vertical (enabled: false) stays in VERTICALS (discoverable + covered by the
+ *  contract test) but contributes no nav / rail / capabilities, so it is invisible to the
+ *  app shell until flipped on. This is the guardrail that makes registering a not-yet-live
+ *  vertical incapable of touching the shell (incident 2026-06-24). */
+const ACTIVE_VERTICALS: readonly Vertical[] = VERTICALS.filter((v) => v.enabled !== false)
 
 export function verticalById(id: string): Vertical | undefined {
   return VERTICALS.find((v) => v.id === id)
@@ -72,7 +89,7 @@ export function verticalById(id: string): Vertical | undefined {
 /** All vertical-contributed nav placements (area + where it goes). nav-areas.ts composes
  *  these into NAV_AREAS, so the descriptor is the single source of a vertical's nav. */
 export function verticalNavPlacements(): NavPlacement[] {
-  return VERTICALS.flatMap((v) => (v.nav ? [...v.nav] : []))
+  return ACTIVE_VERTICALS.flatMap((v) => (v.nav ? [...v.nav] : []))
 }
 
 /** Just the nav areas (placement dropped) — for consumers that only need the areas. */
@@ -82,19 +99,19 @@ export function verticalNavAreas(): NavArea[] {
 
 /** All vertical-contributed admin modules (mergeable into the admin registry by scope). */
 export function verticalAdminModules(): AdminModule[] {
-  return VERTICALS.flatMap((v) => (v.adminModules ? [...v.adminModules] : []))
+  return ACTIVE_VERTICALS.flatMap((v) => (v.adminModules ? [...v.adminModules] : []))
 }
 
 /** All vertical-contributed right-rail rules, in registry order. lib/layout/rail-panels.ts
  *  consults these BEFORE its base rules, so a vertical owns its own routes' rail (ADR-278). */
 export function verticalRailRules(): RailRule[] {
-  return VERTICALS.flatMap((v) => (v.rail ? [...v.rail] : []))
+  return ACTIVE_VERTICALS.flatMap((v) => (v.rail ? [...v.rail] : []))
 }
 
 /** The viewer's namespaced capabilities within a vertical scope, unioned across verticals. */
 export function resolveVerticalCapabilities(viewer: Viewer, scope: ModuleScope): Set<string> {
   const out = new Set<string>()
-  for (const v of VERTICALS) {
+  for (const v of ACTIVE_VERTICALS) {
     for (const c of v.capabilities ?? []) {
       if (c.scopeKind !== scope.kind) continue
       for (const cap of c.resolve(viewer, scope)) out.add(cap)

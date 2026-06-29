@@ -20,9 +20,6 @@ import { rankBadgeStyle, type RankKey } from '@/lib/season-ranks'
 /** Expression's accent token on the DAWN rank spectrum (distinct from the climb ladder). */
 export const EXPRESSION_RANK_KEY: RankKey = 'plum'
 
-/** The canonical Pillar name (docs/NAMING.md — never "Channel", never "Domain"). */
-export const EXPRESSION_PILLAR_LABEL = 'Expression' as const
-
 /** The Expression face — the same Sparkles icon used for the capstone everywhere. */
 export const ExpressionIcon: LucideIcon = Sparkles
 

@@ -25,6 +25,8 @@ export const CONTENT_EDIT_ROUTES = [
   '/practices',
   '/library',
   '/broadcast',
+  // Admin Menu Manager: the page Settings is trimmed to Subtitle + Layout (ADR-359). The
+  // Subtitle editor edits only this route's description (the header subtitle); the page reads
+  // it via resolvePageContent('/admin/menu', fallback), with the coded line as the fallback.
+  '/admin/menu',
 ] as const
-
-export type ContentEditRoute = (typeof CONTENT_EDIT_ROUTES)[number]

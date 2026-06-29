@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'Privacy policy',
   description: 'How Frequency collects, uses, and protects your personal information.',
   alternates: { canonical: '/privacy' },
+  openGraph: {
+    title: 'Privacy policy',
+    description: 'How Frequency collects, uses, and protects your personal information.',
+    url: '/privacy',
+  },
   robots: { index: true, follow: true },
 }
 
@@ -14,7 +19,7 @@ export default function PrivacyPage() {
       <div className="px-6 py-16">
         <FocusTemplate
           title="Privacy Policy"
-          description="Last updated: May 27, 2026"
+          description="Last updated: June 23, 2026"
           width="default"
         >
           <div className="prose prose-sm prose-gray dark:prose-invert max-w-none space-y-8">
@@ -37,6 +42,12 @@ export default function PrivacyPage() {
               <strong className="text-text">Authentication data:</strong> If you sign in
               with Google, we receive your name, email, and profile photo from Google. We do not receive or store
               your Google password.
+            </p>
+            <p className="text-muted leading-relaxed">
+              <strong className="text-text">Google contacts (optional):</strong> If you choose to import
+              contacts, we read your Google contacts in read-only mode to copy them into your private
+              contact list on Frequency. We request one-time access and do not store your Google access or
+              refresh tokens.
             </p>
             <p className="text-muted leading-relaxed">
               <strong className="text-text">Content you create:</strong> Posts, comments,
@@ -75,7 +86,29 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">5. Data security</h2>
+            <h2 className="text-lg font-semibold text-text">5. Google user data</h2>
+            <p className="text-muted leading-relaxed">
+              When you connect Google to import contacts, Frequency uses the read-only Google Contacts
+              scope (contacts.readonly) for one purpose only: to copy the contacts you choose into your
+              own private contact list on Frequency, which is visible only to you. We do not access your
+              email, calendar, or any other Google data. We use one-time access and store no Google access
+              or refresh tokens, and we never sell or share this data or use it for advertising. You can
+              delete imported contacts at any time from your account.
+            </p>
+            <p className="text-muted leading-relaxed">
+              Frequency&apos;s use and transfer of information received from Google APIs adheres to the{' '}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                className="text-primary-strong hover:underline"
+              >
+                Google API Services User Data Policy
+              </a>
+              , including the Limited Use requirements.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-text">6. Data security</h2>
             <p className="text-muted leading-relaxed">
               We use industry-standard security measures including encrypted connections (HTTPS),
               secure authentication tokens, and row-level database security policies. Your data is
@@ -84,7 +117,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">6. Your rights</h2>
+            <h2 className="text-lg font-semibold text-text">7. Your rights</h2>
             <p className="text-muted leading-relaxed">
               You can update or delete your profile information at any time from your account settings.
               To request a full data export or account deletion, contact us at hello@frequencylocal.com.
@@ -92,7 +125,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">7. Cookies</h2>
+            <h2 className="text-lg font-semibold text-text">8. Cookies</h2>
             <p className="text-muted leading-relaxed">
               We use essential cookies to maintain your login session, and Google Analytics to
               understand aggregate, anonymized usage so we can improve the platform. We configure
@@ -102,7 +135,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">8. Changes to this policy</h2>
+            <h2 className="text-lg font-semibold text-text">9. Changes to this policy</h2>
             <p className="text-muted leading-relaxed">
               We may update this policy from time to time. We will notify members of material changes
               via email or an in-app announcement.
@@ -110,7 +143,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-text">9. Contact</h2>
+            <h2 className="text-lg font-semibold text-text">10. Contact</h2>
             <p className="text-muted leading-relaxed">
               Questions about this policy? Email us at{' '}
               <a href="mailto:hello@frequencylocal.com" className="text-primary-strong hover:underline">

@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X } from 'lucide-react'
+import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X, Timer, CircleDot } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   searchLibraryPractices,
@@ -166,10 +166,13 @@ export async function PracticesLibrary() {
         />
       ) : (
         <>
-          {/* Container-query sizing (the slot is an @container): the grid reflows to the COLUMN it
-              lands in, not the viewport — two-up by a medium column, three across full width, and
-              only a truly narrow rail slot drops to one. */}
-          <ul className="grid grid-cols-1 gap-4 @sm:grid-cols-2 @4xl:grid-cols-3">
+          {/* Image-led catalog that FLEXES to the slot it lands in (container-query sized to the
+              COLUMN, not the viewport), so the same grid reads right in any layout area: one card
+              wide in a narrow Sidebar slot or on a phone, two across a Main column, three across a
+              full-width column. The breakpoints sit between the real slot widths — @md (≈448px)
+              clears a sidebar but a main column meets it; @3xl (≈768px) only a full-width column
+              meets. Single column on mobile is the modern catalog default for image cards. */}
+          <ul className="grid grid-cols-1 gap-4 @md:grid-cols-2 @3xl:grid-cols-3">
             {result.rows.map((p) => {
               const pillarSlug = p.domain_id ? byId.get(p.domain_id)?.slug ?? null : null
               const pillarName = p.domain_id ? byId.get(p.domain_id)?.name ?? null : null
@@ -178,6 +181,8 @@ export async function PracticesLibrary() {
               const creator = p.created_by ? creators.get(p.created_by) ?? null : null
               const author = creator?.handle ? <PracticeAuthor creator={creator} /> : null
               const adopt = profileId ? <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} fullWidth /> : null
+              // Length + cadence read as one fact ("12 min · Daily"); show whichever is present.
+              const lengthCadence = [p.duration_min ? `${p.duration_min} min` : null, p.cadence].filter(Boolean).join(' · ')
               const footer =
                 author || adopt ? (
                   <div className="space-y-2">
@@ -188,14 +193,17 @@ export async function PracticesLibrary() {
               return (
                 <li key={p.id}>
                   <EntityCard
-                    href={`/practices/${p.id}`}
-                    anchor={
+                    href={`/practices/${p.slug ?? p.id}`}
+                    coverAspect="short"
+                    metaNoWrap
+                    cover={
                       p.header_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.header_image} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                        <img src={p.header_image} alt="" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-                          <PillarIcon className="h-5 w-5" />
+                        // Every card gets a header: a Pillar-tinted gradient + icon when no image.
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg to-surface-elevated text-primary-strong">
+                          <PillarIcon className="h-10 w-10" aria-hidden />
                         </div>
                       )
                     }
@@ -217,15 +225,29 @@ export async function PracticesLibrary() {
                     context={context || undefined}
                     description={p.summary ?? p.description ?? undefined}
                     meta={
+                      // ONE flexible row (metaNoWrap): the descriptive item (timer icon + length·
+                      // cadence) truncates to absorb overflow, while the reward + the social counts
+                      // stay fixed (shrink-0), so the stats never spill to a second line. The timer/
+                      // quick icon stands in for the old "Timed/Quick log" text label.
                       <>
                         {p.reward_note && (
-                          <span className="inline-flex items-center gap-1 font-medium text-warning">
+                          <span className="inline-flex shrink-0 items-center gap-1 font-medium text-warning" title="Reward per log">
                             <Zap className="h-3 w-3 fill-warning" aria-hidden /> {p.reward_note}
                           </span>
                         )}
-                        {p.cadence && <span>{p.cadence}</span>}
-                        <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {p.adopters}</span>
-                        <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {p.logs_total}</span>
+                        <span
+                          className="inline-flex min-w-0 items-center gap-1"
+                          title={`${p.uses_timer ? 'Timed practice' : 'Quick log'}${lengthCadence ? ` · ${lengthCadence}` : ''}`}
+                        >
+                          {p.uses_timer ? <Timer className="h-3 w-3 shrink-0" aria-hidden /> : <CircleDot className="h-3 w-3 shrink-0" aria-hidden />}
+                          <span className="truncate">{lengthCadence || (p.uses_timer ? 'Timed' : 'Quick log')}</span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1" title="Practitioners">
+                          <Users className="h-3 w-3" aria-hidden /> {p.adopters.toLocaleString()}
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1" title="Times practiced">
+                          <Flame className="h-3 w-3" aria-hidden /> {p.logs_total.toLocaleString()}
+                        </span>
                       </>
                     }
                     action={isAdmin ? <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} /> : undefined}

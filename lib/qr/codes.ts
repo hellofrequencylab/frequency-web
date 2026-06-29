@@ -54,7 +54,12 @@ export function isCodeLive(
 
 export function isValidTargetUrl(url: string): boolean {
   const u = url.trim()
-  if (u.startsWith('/')) return true
+  if (u.startsWith('/')) {
+    // Site-relative only. Reject protocol-relative ('//evil.com') and backslash-tricked
+    // ('/\evil.com') leading slashes: a browser treats both as off-site, so allowing them
+    // would turn splash links (space-owner editable) into an open redirect off /q/<slug>.
+    return !u.startsWith('//') && !u.startsWith('/\\')
+  }
   try {
     const parsed = new URL(u)
     return parsed.protocol === 'http:' || parsed.protocol === 'https:'

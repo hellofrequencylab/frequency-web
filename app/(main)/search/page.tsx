@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Search, MapPin } from 'lucide-react'
+import { Search, MapPin, Compass } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sanitizeOrTerm } from '@/lib/search-sanitize'
 import { createClient } from '@/lib/supabase/server'
@@ -9,6 +9,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { EntityCard } from '@/components/cards/entity-card'
 import { PersonCard } from '@/components/cards/person-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
+import { getViewerHats } from '@/lib/core/viewer-hats'
+import { accessTo } from '@/lib/core/access-matrix'
+import { matchDestinations } from '@/lib/search/destinations'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +147,19 @@ export default async function SearchPage({
     }
   }
 
+  // Navigable destinations matching the query — the "Go to" shortcut row, tab-independent
+  // (it sits above the People/Posts/Events tabs). Access-gated by the viewer's hats so a
+  // member never sees admin tools and a visitor never sees member-only pages, exactly like
+  // the ⌘K overlay's /api/search path.
+  let pages: { href: string; label: string; group: string }[] = []
+  if (query.length >= 2) {
+    const hats = await getViewerHats()
+    pages = matchDestinations(query)
+      .filter((d) => !d.surface || accessTo(d.surface, hats) !== 'none')
+      .slice(0, 8)
+      .map((d) => ({ href: d.href, label: d.label, group: d.group }))
+  }
+
   // Result counts for tab labels
   const resultCount = { people: people.length, posts: posts.length, events: events.length }
 
@@ -168,6 +184,28 @@ export default async function SearchPage({
         </form>
       }
     >
+      {/* ── Go to (destinations) — a tab-independent shortcut row above the tabs ── */}
+      {query.length >= 2 && pages.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-sm font-semibold text-text">Go to</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {pages.map((pg) => (
+              <EntityCard
+                key={pg.href}
+                href={pg.href}
+                anchor={
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-bg text-primary-strong">
+                    <Compass className="h-5 w-5" />
+                  </span>
+                }
+                title={pg.label}
+                context={pg.group}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Tabs ─────────────────────────────────────────────── */}
       <div className="mb-6">
         <UnderlineTabs

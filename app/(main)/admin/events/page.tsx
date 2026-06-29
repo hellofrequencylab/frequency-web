@@ -23,7 +23,7 @@ function SectionFallback() {
 
 export default async function AdminEventsPage() {
   const { profileId, webRole } = await requireAdmin('host', { staff: 'community' })
-  const { upcoming, past, myCircles } = await getEventsAdminData(profileId)
+  const { upcoming, past } = await getEventsAdminData(profileId)
   const canManage = isJanitor(webRole)
 
   return (
@@ -31,7 +31,7 @@ export default async function AdminEventsPage() {
       title="Events"
       eyebrow="Community"
       description="Manage events across your circles, plus the events members post from town posters: claim links, handovers, and poster quality."
-      actions={<EventCompose groups={myCircles} />}
+      actions={<EventCompose />}
       width="default"
     >
       <AdminSection title="Circle events" description="Gatherings across your circles. Cancel or reinstate from here.">

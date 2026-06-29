@@ -11,18 +11,62 @@ import { stripe, priceFor, membershipAmount, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction, ENTITY_ID } from '@/lib/finance/record'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { resolveStripePriceId } from './pricing-prices'
+import { asMemberTierKey, memberCheckoutPriceKey, offersPeriod, type BillingPeriod } from './pricing-keys'
 
 type PaidTier = Exclude<EntitlementTier, 'free'>
 
-/** Create a subscription Checkout session for a membership tier; returns the URL. */
+/** Resolve the Stripe price id for a member checkout, HONORING the founder lock (Pricing P2, ADR-363):
+ *  a founding member with an explicit profiles.locked_price_id is charged at that exact price; else a
+ *  founding member is charged at the synced FOUNDER variant; else the current PUBLIC synced price. Falls
+ *  back to the env price id (priceFor) only when nothing is synced (pre-P2 compatibility). Returns null
+ *  to signal "use the inline-price fallback" (no synced or env price at all). */
+export async function resolveMemberPriceId(opts: {
+  tier: PaidTier
+  period: BillingPeriod
+  isFoundingMember: boolean
+  lockedPriceId: string | null
+}): Promise<string | null> {
+  // An explicit locked price always wins for a founding member (their grandfathered price object).
+  if (opts.isFoundingMember && opts.lockedPriceId) return opts.lockedPriceId
+  const base = asMemberTierKey(opts.tier)
+  if (base && offersPeriod(base, opts.period)) {
+    const key = memberCheckoutPriceKey({ base, period: opts.period, isFoundingMember: opts.isFoundingMember })
+    const synced = await resolveStripePriceId(key)
+    // A founder with no founder-variant synced falls back to the public synced price.
+    const resolved = synced ?? (opts.isFoundingMember ? await resolveStripePriceId(`${base}_${opts.period}`) : null)
+    if (resolved) return resolved
+  }
+  // Pre-P2 compatibility: the env-configured price id (lib/billing/stripe.ts).
+  return priceFor(opts.tier)
+}
+
+/** Create a subscription Checkout session for a membership tier; returns the URL. Honors the founder
+ *  lock (Pricing P2): a founding member is charged at their locked / founder price. */
 export async function createMembershipCheckout(opts: {
   profileId: string
   email?: string | null
   tier: PaidTier
+  period?: BillingPeriod
 }): Promise<string | null> {
   if (!stripe) return null
 
-  const priceId = priceFor(opts.tier)
+  const period: BillingPeriod = opts.period ?? 'monthly'
+  const { data: profile } = await createAdminClient()
+    .from('profiles')
+    .select('stripe_customer_id, is_founding_member, locked_price_id')
+    .eq('id', opts.profileId)
+    .maybeSingle()
+  const profileRow = profile as
+    | { stripe_customer_id?: string | null; is_founding_member?: boolean | null; locked_price_id?: string | null }
+    | null
+
+  const priceId = await resolveMemberPriceId({
+    tier: opts.tier,
+    period,
+    isFoundingMember: profileRow?.is_founding_member === true,
+    lockedPriceId: profileRow?.locked_price_id ?? null,
+  })
   const lineItem: Stripe.Checkout.SessionCreateParams.LineItem = priceId
     ? { price: priceId, quantity: 1 }
     : {
@@ -31,24 +75,19 @@ export async function createMembershipCheckout(opts: {
           currency: 'usd',
           product_data: { name: opts.tier === 'supporter' ? 'Frequency Supporter' : 'Frequency Membership (Crew)' },
           unit_amount: membershipAmount(opts.tier),
-          recurring: { interval: 'month' },
+          recurring: { interval: period === 'annual' ? 'year' : 'month' },
         },
       }
 
-  const { data: profile } = await createAdminClient()
-    .from('profiles')
-    .select('stripe_customer_id')
-    .eq('id', opts.profileId)
-    .maybeSingle()
-  const customer = profile?.stripe_customer_id ?? undefined
+  const customer = profileRow?.stripe_customer_id ?? undefined
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [lineItem],
     ...(customer ? { customer } : { customer_email: opts.email ?? undefined }),
     client_reference_id: opts.profileId,
-    metadata: { profile_id: opts.profileId, tier: opts.tier },
-    subscription_data: { metadata: { profile_id: opts.profileId, tier: opts.tier } },
+    metadata: { profile_id: opts.profileId, tier: opts.tier, billing_period: period },
+    subscription_data: { metadata: { profile_id: opts.profileId, tier: opts.tier, billing_period: period } },
     success_url: `${appUrl()}/settings/billing?upgraded=1&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/upgrade`,
     allow_promotion_codes: true,

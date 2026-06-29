@@ -5,10 +5,14 @@ import { createClient } from '@/lib/supabase/server'
 import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
+import { LocalCornerCard } from '@/components/feed/local-corner-card'
+import { RomanceStrip } from '@/components/feed/romance-strip'
+import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
 import { SectionHeader } from '@/components/ui/section-header'
 import { PracticePrompt } from '@/components/practice/practice-prompt'
 import { FeedOnboardingGuide } from '@/components/feed/feed-onboarding-guide'
+import { AvatarNudge } from '@/components/feed/avatar-nudge'
 import { FeedWalkthrough } from '@/components/walkthroughs/feed-walkthrough'
 import { FeedRolePromotion } from '@/components/walkthroughs/feed-role-promotion'
 import { nextStepsEnabled } from '@/lib/onboarding/status'
@@ -31,10 +35,11 @@ export default async function FeedPage({
   searchParams: Promise<{ sort?: string; welcome?: string; v?: string }>
 }) {
   const { sort: sortParam, welcome, v } = await searchParams
-  const sort: 'recent' | 'relevant' | 'nearby' | 'story' =
+  const sort: 'recent' | 'relevant' | 'nearby' | 'story' | 'popular' =
     sortParam === 'recent' ? 'recent'
       : sortParam === 'nearby' ? 'nearby'
       : sortParam === 'story' ? 'story'
+      : sortParam === 'popular' ? 'popular'
       : 'relevant'
   const showVeraWelcome = welcome === 'vera'
   // "Ask Vera" opens straight in chat; the post-induction welcome plays the deck.
@@ -53,12 +58,14 @@ export default async function FeedPage({
   let homeLat: number | null = null
   let homeLng: number | null = null
   let feedRadiusM = 25000
+  // Default true so we never flash the "add a photo" nudge before we know (ADR-421).
+  let hasAvatar = true
   let veraWelcome: { slides: ReturnType<typeof buildWelcomeSlides>; opening: ReturnType<typeof buildVeraOpening> } | null = null
 
   if (user) {
     const { data: profile } = await admin
       .from('profiles')
-      .select('id, community_role, display_name, current_streak, meta')
+      .select('id, community_role, display_name, current_streak, meta, avatar_url')
       .eq('auth_user_id', user.id)
       .maybeSingle()
 
@@ -67,6 +74,7 @@ export default async function FeedPage({
       myRole = (profile.community_role ?? 'member') as CommunityRole
       firstName = (profile.display_name ?? '').trim().split(/\s+/)[0] || null
       streak = (profile.current_streak as number | null) ?? 0
+      hasAvatar = !!(profile as { avatar_url?: string | null }).avatar_url
 
       // Member geo (ADR-088) + primary circle — independent reads, fetched together rather
       // than back-to-back (site audit 2026-06-18). Geo goes through an untyped handle since the
@@ -127,14 +135,21 @@ export default async function FeedPage({
   // member-progress spine (one read folding activation, the daily practice streak, Journeys and
   // rank into a stage — it drives the hero and is read once for all of them, ADR-146); the
   // exactly-once Amplitude level-up banner (Rewards v2); and the two operator switches (default off).
-  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups] = await Promise.all([
+  // Local-activity state + adaptive radius (Resonance Feed Phase 2, ADR-416) joins the batch
+  // (site-audit PERF-7: it was awaited serially after this Promise.all, but it only needs the
+  // profile id, so it's independent). Drives the founder-vs-location-nudge card AND widens the
+  // 'nearby' radius when the area is sparse. Cached, fail-safe.
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups, localActivity] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     nextStepsEnabled(),
     autoPopupsEnabled(),
+    myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
   ])
+  const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
+
   const onboarding = progress?.onboarding ?? null
   const practiceStreak = progress?.streakState ?? null
   const stageIndex = progress?.stage.index ?? 0
@@ -241,10 +256,16 @@ export default async function FeedPage({
           />
         : <PracticePrompt
             practices={practicesToLog}
+            partials={partialPractices}
             streak={practiceStreak?.current ?? streak}
             atRisk={practiceStreak?.atRisk ?? false}
             loggedToday={practiceStreak?.loggedToday ?? false}
           />}
+
+      {/* "Add a photo" nudge (ADR-421): a safety net for anyone who landed without an
+          avatar (the localStorage-quota loss, a cross-browser magic-link, or any upload
+          hiccup). Dismissible; disappears once they add a photo. */}
+      {myProfileId && !hasAvatar && <AvatarNudge />}
 
       {/* Capture — the primary "log a moment" entry (ADR-155/156); posting is one
           mode inside it. Replaces the always-open inline composer. */}
@@ -262,7 +283,7 @@ export default async function FeedPage({
       {/* Sort toggle + feed */}
       <section className="mt-8">
         <SectionHeader
-          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'For you' : sort === 'story' ? 'The community’s story' : 'Recent'}
+          title={sort === 'nearby' ? 'Nearby' : sort === 'relevant' ? 'Resonance' : sort === 'popular' ? 'Most popular' : sort === 'story' ? 'The community’s story' : 'Most recent'}
           action={
             <div className="flex items-center gap-0.5 bg-surface-elevated rounded-lg p-0.5">
               {hasHome && (
@@ -285,7 +306,7 @@ export default async function FeedPage({
                     : 'text-muted hover:text-text'
                 }`}
               >
-                For you
+                Resonance
               </Link>
               <Link
                 href="?sort=recent"
@@ -295,7 +316,17 @@ export default async function FeedPage({
                     : 'text-muted hover:text-text'
                 }`}
               >
-                Recent
+                Most recent
+              </Link>
+              <Link
+                href="?sort=popular"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                  sort === 'popular'
+                    ? 'bg-surface text-text shadow-sm'
+                    : 'text-muted hover:text-text'
+                }`}
+              >
+                Most popular
               </Link>
               <Link
                 href="?sort=story"
@@ -317,6 +348,27 @@ export default async function FeedPage({
           </p>
         )}
 
+        {/* "Your corner" (Phase 2): a location nudge or a founder prompt when the area is
+            empty; nothing when it's already alive. Streamed so it never blocks the feed.
+            Shown on the home lenses (not the chronological Story record). */}
+        {myProfileId && sort !== 'story' && (
+          <div className="mb-4">
+            <Suspense fallback={null}>
+              <LocalCornerCard viewerProfileId={myProfileId} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* Romance lane (Phase 5, ADR-419): renders ONLY for members who opted into
+            romance mode and have mutual opt-ins to show; invisible to everyone else. */}
+        {myProfileId && sort === 'relevant' && (
+          <div className="mb-4">
+            <Suspense fallback={null}>
+              <RomanceStrip viewerProfileId={myProfileId} />
+            </Suspense>
+          </div>
+        )}
+
         {/* The feed query is the heaviest read on the page; stream it behind Suspense so the
             greeting, hero and composer paint immediately and posts fill in (PAGE-FRAMEWORK §5). */}
         <Suspense fallback={<FeedListSkeleton />}>
@@ -324,7 +376,7 @@ export default async function FeedPage({
             myProfileId={myProfileId}
             sort={sort}
             viewerRole={myRole}
-            nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: feedRadiusM } : null}
+            nearby={hasHome && homeLat != null && homeLng != null ? { lat: homeLat, lng: homeLng, radiusM: effectiveRadiusM } : null}
             emptyMessage={hasCircle
               ? 'Your circle’s quiet right now. Share what’s on your mind.'
               : 'Find your people to fill this up, or share something with the community.'}

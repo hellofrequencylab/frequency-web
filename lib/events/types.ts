@@ -130,3 +130,18 @@ export interface ExtractedEvent {
   /** The rich, flexible harvest of everything else on the poster (all optional). */
   details: EventDetails
 }
+
+/** The few questions Vera's event Spark asks (mirrors lib/ai/journey-spark.ts SparkAnswers
+ *  and the Practice spark). Framework-free so the wizard, the server action, and the AI
+ *  module share one shape. Vera turns these (plus an optional pasted flyer) into an
+ *  ExtractedEvent the draft editor already understands. */
+export interface EventSparkAnswers {
+  /** What the event is — its name and the gist. */
+  what: string
+  /** When it happens, in the author's own words (Vera parses it to a date). */
+  when: string
+  /** Where it happens (venue and city), or online. */
+  where: string
+  /** Who it is for, plus anything else worth knowing (price, host, what to bring). */
+  details: string
+}

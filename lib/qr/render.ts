@@ -9,8 +9,6 @@
 
 import QRCode from 'qrcode'
 
-export type QrFormat = 'svg' | 'png'
-
 // 'M' (~15% recovery) is the sweet spot for short URLs printed on signage: small
 // enough to stay legible, tolerant of a scuff or two. margin:1 keeps the quiet
 // zone tight for layout while still scanning reliably.

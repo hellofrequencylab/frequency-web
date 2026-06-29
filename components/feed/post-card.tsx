@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Megaphone, ArrowRight, Zap, NotebookPen } from 'lucide-react'
+import { Megaphone, ArrowRight, Zap, NotebookPen, CalendarDays } from 'lucide-react'
 import { PostReplies } from './post-replies'
-import { ReactionButton } from './reaction-button'
 import { ContextActions } from '@/components/context-actions'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { getInitials, relativeTime } from '@/lib/utils'
@@ -26,7 +25,7 @@ export type FeedPost = {
   comment_count?: number
   engagement_score?: number
   scopeContext?: {
-    type: 'wall' | 'circle' | 'channel'
+    type: 'wall' | 'circle' | 'channel' | 'event'
     name: string
     href: string
     avatar_url?: string | null
@@ -47,7 +46,9 @@ export type FeedPost = {
   }
   reactions: Array<{
     id: string
-    reaction_type: 'heart' | 'plus_one'
+    /** One of the curated emoji set (lib/feed/reactions.ts). Legacy 'heart' /
+     *  'plus_one' rows are remapped to '❤️' / '🙌' by the broadening migration. */
+    reaction_type: string
     profile_id: string
   }>
 }
@@ -108,18 +109,10 @@ export function PostCard({
     return <SystemLine body={post.body} />
   }
 
-  const heartCount = reactions.filter((r) => r.reaction_type === 'heart').length
-  const plusCount = reactions.filter((r) => r.reaction_type === 'plus_one').length
-  const myHeart = myProfileId != null && reactions.some(
-    (r) => r.reaction_type === 'heart' && r.profile_id === myProfileId
-  )
-  const myPlus = myProfileId != null && reactions.some(
-    (r) => r.reaction_type === 'plus_one' && r.profile_id === myProfileId
-  )
   const isOwn = author.id === myProfileId
   const isAnnouncement = post.post_type === 'announcement'
   const isNote = post.post_type === 'note'
-  const totalReactions = heartCount + plusCount
+  const totalReactions = reactions.length
   const replyCount = post.replyCount ?? 0
   // Zaps this post has earned: each reaction is worth 1, each reply 2. One clean
   // number replaces the old per-post stats ledger (date/scope/earn-rates column).
@@ -127,16 +120,16 @@ export function PostCard({
 
   return (
     <article
-      className={`bg-surface/80 rounded-2xl border shadow-sm hover:shadow-md transition-shadow ${
+      className={`rounded-2xl shadow-sm hover:shadow-md transition-shadow ${
         isAnnouncement
-          ? 'border-warning/70 bg-warning-bg/20 dark:bg-warning-bg/10'
+          ? 'bg-warning-bg/20 dark:bg-warning-bg/10 ring-1 ring-warning/40'
           : post.is_pinned
-          ? 'border-primary-bg/70 dark:border-primary/50'
-          : 'border-border'
+          ? 'bg-surface-elevated/70 ring-1 ring-primary-bg/60 dark:ring-primary/40'
+          : 'bg-surface-elevated/60'
       }`}
     >
       {/* ── Main content ──────────────────────────── */}
-      <div className="p-4">
+      <div className="p-3.5">
           {isAnnouncement && (
             <div className="flex items-center gap-1.5 mb-2.5">
               <Megaphone className="w-3 h-3 text-primary" />
@@ -160,7 +153,7 @@ export function PostCard({
           )}
 
           {/* Author row */}
-          <div className="flex items-start gap-3 mb-3">
+          <div className="flex items-start gap-2.5 mb-2.5">
             {/* Avatars. Stacked for wall posts, single for everything else */}
             <div className="shrink-0 relative">
               <Link href={`/people/${author.handle}`} className="block">
@@ -181,6 +174,17 @@ export function PostCard({
                       {getInitials(post.scopeContext.name)}
                     </div>
                   )}
+                </Link>
+              )}
+              {/* An event-scoped post stacks a small calendar badge (the event has no
+                  avatar), so its destination still reads at a glance like a wall post. */}
+              {post.scopeContext?.type === 'event' && (
+                <Link
+                  href={post.scopeContext.href}
+                  aria-label={post.scopeContext.name}
+                  className="absolute -bottom-1 -right-1.5 ring-2 ring-surface rounded-full w-5 h-5 bg-success-bg text-success flex items-center justify-center"
+                >
+                  <CalendarDays className="w-3 h-3" />
                 </Link>
               )}
             </div>
@@ -209,8 +213,19 @@ export function PostCard({
                   </>
                 )}
               </div>
-              <p className="text-xs text-subtle mt-0.5">
-                @{author.handle} · {relativeTime(post.created_at)}
+              <p className="text-xs text-subtle mt-0.5 flex items-center gap-1.5">
+                <span className="truncate">@{author.handle} · {relativeTime(post.created_at)}</span>
+                {/* Zaps this post has earned, by the author's identity (not down in
+                    the action row) — a small calm chip, shown only once it's earned. */}
+                {zapsEarned > 0 && (
+                  <span
+                    title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
+                    className="inline-flex items-center gap-0.5 text-2xs font-semibold text-primary-strong shrink-0"
+                  >
+                    <Zap className="w-3 h-3 fill-current" />
+                    {zapsEarned}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -222,12 +237,12 @@ export function PostCard({
 
           {/* Body */}
           {post.body && (
-            <PostBody body={post.body} className="mb-3 text-sm leading-relaxed text-text dark:text-subtle/60" />
+            <PostBody body={post.body} className="mb-2.5 text-sm leading-relaxed text-text dark:text-subtle/60" />
           )}
 
           {/* Post image */}
           {post.media_urls?.length > 0 && (
-            <div className="relative h-96 w-full rounded-xl overflow-hidden mb-3">
+            <div className="relative h-96 w-full rounded-xl overflow-hidden mb-2.5">
               <Image
                 src={post.media_urls[0]}
                 alt="Post attachment"
@@ -238,39 +253,14 @@ export function PostCard({
             </div>
           )}
 
-          {/* Reactions, the comment toggle, and the zaps earned all sit on ONE
-              right-aligned line directly under the content (PostReplies owns the row
-              so the toggle stays inline); the thread expands full-width below it. */}
+          {/* PostReplies owns the whole reaction + comment surface: the reaction
+              COUNTS sit beside the comment count on the action line, and the inline
+              emoji PICKER shares the comment composer row below. */}
           <PostReplies
             postId={post.id}
             initialCount={replyCount}
-            reactions={
-              <>
-                <ReactionButton
-                  postId={post.id}
-                  reactionType="heart"
-                  initialActive={myHeart}
-                  initialCount={heartCount}
-                />
-                <ReactionButton
-                  postId={post.id}
-                  reactionType="plus_one"
-                  initialActive={myPlus}
-                  initialCount={plusCount}
-                />
-              </>
-            }
-            reward={
-              zapsEarned > 0 ? (
-                <span
-                  title={`Earned ${zapsEarned} zap${zapsEarned !== 1 ? 's' : ''} from reactions and replies`}
-                  className="flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary-strong"
-                >
-                  <Zap className="w-3.5 h-3.5 fill-current" />
-                  {zapsEarned}
-                </span>
-              ) : null
-            }
+            myProfileId={myProfileId}
+            postReactions={reactions}
           />
       </div>
     </article>

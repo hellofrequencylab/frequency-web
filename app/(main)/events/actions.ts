@@ -11,15 +11,40 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
+import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { resolveRegionScopeId } from '@/lib/events/event-drafts'
+import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
+import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { sendEventRsvpConfirmationEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
+import { sendSms } from '@/lib/comms/sms'
+import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+
+// Gallery images ride as a JSON array of storage paths (the form has no native array
+// shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
+// member yields a clean string[] (bad members dropped), capped so a crafted payload
+// can't bloat the row. Empty array = clear the gallery.
+const MAX_GALLERY_IMAGES = 12
+function parseGalleryPaths(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+      .map((p) => p.trim())
+      .slice(0, MAX_GALLERY_IMAGES)
+  } catch {
+    return []
+  }
+}
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
@@ -50,6 +75,9 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
         region: str('region'),
         country: str('country'),
         postalCode: str('postalCode'),
+        // Free-text fallback: geocode the one-line `location` (what most create paths set, incl.
+        // Vera scans + the onboarding wizard) when no structured address was entered.
+        query: str('location'),
       },
       attendanceMode,
       onlineUrl: str('onlineUrl'),
@@ -66,7 +94,12 @@ export async function createEvent(formData: FormData) {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
-  const scopeId = formData.get('scopeId') as string | null
+  // Scope: a circle event belongs to one of the creator's circles; a PUBLIC event
+  // (any Crew member, with or without a circle) is a standalone local event placed in
+  // the creator's region (resolved below, like the poster-scan flow).
+  const scopeType = (formData.get('scopeType') as string | null) === 'public' ? 'public' : 'circle'
+  const isPublic = scopeType === 'public'
+  const formScopeId = formData.get('scopeId') as string | null
   const startsAt = formData.get('startsAt') as string | null
   const endsAt = (formData.get('endsAt') as string | null) || null
 
@@ -76,7 +109,7 @@ export async function createEvent(formData: FormData) {
     : 'none'
   const recurrenceUntilRaw = (formData.get('recurrenceUntil') as string | null) || null
   const recurrenceUntil = recurrenceType !== 'none' && recurrenceUntilRaw
-    ? new Date(recurrenceUntilRaw).toISOString()
+    ? dateToWallClockIso(recurrenceUntilRaw)
     : null
 
   // P0 fields (additive). Capacity is the only real scarcity signal; visibility
@@ -86,7 +119,10 @@ export async function createEvent(formData: FormData) {
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
 
   const visibilityRaw = (formData.get('visibility') as string | null) || 'circle_only'
-  const visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  let visibility = VALID_VISIBILITY.includes(visibilityRaw) ? visibilityRaw : 'circle_only'
+  // A public (circle-less) event can't be circle_only — there is no circle to scope it to —
+  // so fall it back to public.
+  if (isPublic && visibility === 'circle_only') visibility = 'public'
 
   const category = (formData.get('category') as string | null)?.trim() || 'gathering'
 
@@ -95,11 +131,28 @@ export async function createEvent(formData: FormData) {
 
   // Cover image (a storage path in the public event-media bucket, resolved to a URL at render).
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  // Additional gallery images (ordered storage paths in the same bucket).
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
-  if (!title || !scopeId || !startsAt) return
+  if (!title || !startsAt) return
+  // A circle event must name a circle; a public event resolves its scope below.
+  if (!isPublic && !formScopeId) return
+  // An end before the start is never valid — drop the bad write rather than store a
+  // negative-duration event (the form should also block it, this is the server guard).
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
+
+  // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
+  const startsIso = wallClockToIso(startsAt)
+  const endsIso = endsAt ? wallClockToIso(endsAt) : null
+  if (!startsIso) return
 
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+
+  // Resolve the scope: a circle event uses the chosen circle; a public event is placed in
+  // the creator's region (the same resolver the poster-scan flow uses).
+  const scopeId = isPublic ? await resolveRegionScopeId(myProfileId) : formScopeId
+  if (!scopeId) return
 
   const admin = createAdminClient()
 
@@ -128,9 +181,9 @@ export async function createEvent(formData: FormData) {
       description,
       location,
       scope_id: scopeId,
-      scope_type: 'circle',   // always circle-scoped now
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      scope_type: scopeType,   // 'circle' (a circle's event) or 'public' (a standalone local event)
+      starts_at: startsIso,
+      ends_at: endsIso,
       host_id: myProfileId,
       slug,
       recurrence_type: recurrenceType,
@@ -140,6 +193,7 @@ export async function createEvent(formData: FormData) {
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
@@ -207,6 +261,13 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
   const endsAt = (formData.get('endsAt') as string | null) || null
+  // Reject a negative-duration edit (the form blocks it too; this is the server guard).
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
+
+  // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
+  const startsIso = wallClockToIso(startsAt)
+  const endsIso = endsAt ? wallClockToIso(endsAt) : null
+  if (!startsIso) return
 
   const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
@@ -218,6 +279,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const energyRaw = (formData.get('energyTag') as string | null) || ''
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
+  const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
   const admin = createAdminClient()
   const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
@@ -230,13 +292,14 @@ export async function updateEvent(eventId: string, formData: FormData) {
       title,
       description,
       location,
-      starts_at: new Date(startsAt).toISOString(),
-      ends_at: endsAt ? new Date(endsAt).toISOString() : null,
+      starts_at: startsIso,
+      ends_at: endsIso,
       capacity,
       visibility,
       category,
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
+      gallery_image_paths: galleryImagePaths,
     })
     .eq('id', eventId)
   if (error) {
@@ -280,17 +343,21 @@ async function sendRsvpConfirmation(
   profileId: string,
   status: 'going' | 'waitlist',
 ): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: ev } = await admin
+    .from('events')
+    .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
+    .eq('id', eventId)
+    .maybeSingle()
+  if (!ev || ev.is_cancelled) return
+
+  // The SMS leg is independent of the email leg (a member may want one and not the
+  // other), so it runs in its own gated, self-contained try/catch below.
+  void sendRsvpConfirmationSms(eventId, profileId, status, ev.title, ev.starts_at)
+
   try {
     if (!(await shouldSend(profileId, 'email', 'events'))) return
-
-    const admin = createAdminClient()
-
-    const { data: ev } = await admin
-      .from('events')
-      .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
-      .eq('id', eventId)
-      .maybeSingle()
-    if (!ev || ev.is_cancelled) return
 
     const { data: profile } = await admin
       .from('profiles')
@@ -338,6 +405,53 @@ async function sendRsvpConfirmation(
   }
 }
 
+// Best-effort RSVP confirmation TEXT — the SMS sibling of the email leg above. Routes
+// through sendSms, which enforces the FULL per-member gate (provisioning -> consent ->
+// SMS prefs -> quiet hours), so it sends nothing until the A2P legal track is live AND
+// the member opted in. Records an outbound 'sms' touch on the timeline only when the
+// gate allowed the send. Never throws into the RSVP action. Carries sender identity +
+// a STOP line (carrier requirement + the registered A2P samples).
+async function sendRsvpConfirmationSms(
+  eventId: string,
+  profileId: string,
+  status: 'going' | 'waitlist',
+  eventTitle: string,
+  startsAt: string,
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    // home_timezone drives the quiet-hours check (cast: not in generated types yet).
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('home_timezone')
+      .eq('id', profileId)
+      .maybeSingle()
+    const timeZone = (profile as { home_timezone?: string | null } | null)?.home_timezone ?? null
+
+    const when = formatEventWhen(startsAt)
+    const body =
+      status === 'going'
+        ? `Frequency: You're going to ${eventTitle} on ${when}. Reply STOP to opt out.`
+        : `Frequency: You're on the waitlist for ${eventTitle} on ${when}. We'll text if a spot opens. Reply STOP to opt out.`
+
+    const decision = await sendSms({ profileId, category: 'events', body, timeZone })
+    if (decision.allowed) {
+      await recordContactInteraction({
+        ownerProfileId: profileId,
+        subjectKind: 'profile',
+        subjectId: profileId,
+        channel: 'sms',
+        direction: 'outbound',
+        summary: body,
+        source: 'engagement',
+        metadata: { kind: 'event_rsvp_confirmation', event_id: eventId, status },
+      })
+    }
+  } catch (e) {
+    console.error('[events rsvp confirmation sms]', e)
+  }
+}
+
 // Validated creation (Rewards Economy v3, ADR-305): an RSVP 'going' is the "use" that
 // validates an event. The event's HOST (the beneficiary) is paid off the RSVPer's (the
 // actor's) use when the RSVPer is an established member. Idempotent per event id + best-
@@ -356,9 +470,46 @@ async function fireEventValidation(eventId: string, rsvperId: string): Promise<v
   }
 }
 
+// Re-read the PERSISTED RSVP status for a row after a write. The DB capacity trigger
+// (enforce_event_rsvp_capacity, migration 20260610030000) silently coerces a 'going'
+// write to 'waitlist' when the event is full, so the app's intended status can diverge
+// from what actually landed. Side-effects (gems, host payout, confirmation + ICS) must
+// branch on THIS value, never the intent — otherwise a demoted guest is paid + emailed
+// as if confirmed. Best-effort: a read failure returns null so the caller falls back.
+async function readRsvpStatus(eventId: string, profileId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('event_rsvps')
+    .select('status')
+    .eq('event_id', eventId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  return (data as { status: string } | null)?.status ?? null
+}
+
+// The event's host. Used to deny attendance gamification credit to the host of
+// the event itself (anti-farming: no self-attendance rewards). Best-effort: a
+// read failure returns null, so the caller treats it as "not the host" and the
+// normal (other-attendee) reward path runs.
+async function readEventHostId(eventId: string): Promise<string | null> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('events').select('host_id').eq('id', eventId).maybeSingle()
+  return (data as { host_id: string | null } | null)?.host_id ?? null
+}
+
+// Guard: the event must exist and not be cancelled before we write an RSVP row
+// (mirrors checkInEvent's own check). Without it a stale/cancelled event id could
+// mint orphaned RSVP rows + fire the going side-effects. Returns false to no-op.
+async function eventOpenForRsvp(eventId: string): Promise<boolean> {
+  const admin = createAdminClient()
+  const { data } = await admin.from('events').select('id, is_cancelled').eq('id', eventId).maybeSingle()
+  return !!data && !(data as { is_cancelled: boolean | null }).is_cancelled
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+  if (!(await eventOpenForRsvp(eventId))) return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -374,11 +525,18 @@ export async function toggleRSVP(eventId: string) {
   // waitlist). Gems are the first-RSVP web reward; attendance zaps come at
   // check-in. We keep the streak/achievement tick that already lived here.
   const onGoing = (firstTime: boolean) => {
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
     if (firstTime) {
-      // One row per (event, profile); the gem fires once on the first RSVP.
-      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      // Attendance credit (achievement + streak + gem) is a FIRST-RSVP reward,
+      // and never for your own event (anti-farming: a host can't farm attendance
+      // by RSVPing to events they host, nor by un/re-RSVPing to repeat the tick).
+      void (async () => {
+        const isOwnEvent = (await readEventHostId(eventId)) === myProfileId
+        if (isOwnEvent) return
+        processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+        recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+        // One row per (event, profile); the gem fires once on the first RSVP.
+        awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      })()
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
@@ -397,10 +555,17 @@ export async function toggleRSVP(eventId: string) {
       const { isFull } = await getCapacityInfo(eventId)
       const next = isFull ? 'waitlist' : 'going'
       await supabase.from('event_rsvps').update({ status: next }).eq('id', existing.id)
-      if (next === 'going') onGoing(false)
+      // The capacity trigger has the final say (a concurrent fill demotes 'going' →
+      // 'waitlist'), so branch the side-effects on the PERSISTED status, not the
+      // app's intent — otherwise a waitlisted guest gets gems / a host payout / a
+      // "you're going" confirmation they shouldn't.
+      const stored = await readRsvpStatus(eventId, myProfileId)
+      // On a read failure (null) fall back to the intent; otherwise trust the row.
+      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      if (effective === 'going') onGoing(false)
       // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
       // self-contained try-catch + pref/suppression gating inside the helper).
-      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
     }
@@ -412,8 +577,11 @@ export async function toggleRSVP(eventId: string) {
       profile_id: myProfileId,
       status: next,
     })
-    if (next === 'going') onGoing(true)
-    sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+    // Branch on the PERSISTED status (the trigger may demote to waitlist), not intent.
+    const stored = await readRsvpStatus(eventId, myProfileId)
+    const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+    if (effective === 'going') onGoing(true)
+    sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
       console.error('[events rsvp confirmation email]', e)
     )
   }
@@ -438,6 +606,7 @@ export async function toggleRSVP(eventId: string) {
 export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' | 'not_going') {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
+  if (!(await eventOpenForRsvp(eventId))) return
 
   const admin = createAdminClient()
   const supabase = await createClient()
@@ -455,10 +624,17 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
 
   // Side-effects for a true intent-to-attend (mirrors toggleRSVP's onGoing).
   const onGoing = (firstTime: boolean) => {
-    processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
-    recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
     if (firstTime) {
-      awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      // Attendance credit (achievement + streak + gem) is a FIRST-RSVP reward,
+      // and never for your own event (anti-farming: a host can't farm attendance
+      // by RSVPing to events they host, nor by un/re-RSVPing to repeat the tick).
+      void (async () => {
+        const isOwnEvent = (await readEventHostId(eventId)) === myProfileId
+        if (isOwnEvent) return
+        processGamificationEvent({ type: 'event_attend', profileId: myProfileId }).catch((e) => console.error('[events gamification]', e))
+        recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+        awardGems(myProfileId, 'event_rsvp').catch((e) => console.error('[events gamification]', e))
+      })()
     }
     // Validated creation pays the host (idempotent per event, so any 'going' is safe).
     fireEventValidation(eventId, myProfileId).catch((e) => console.error('[events creation validation]', e))
@@ -478,8 +654,14 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
           status: next,
         })
       }
-      if (next === 'going') onGoing(!existing)
-      sendRsvpConfirmation(eventId, myProfileId, next).catch((e) =>
+      // Branch the side-effects on the PERSISTED status: the capacity trigger may have
+      // demoted this 'going' write to 'waitlist', and a waitlisted guest must not get
+      // the gems / host payout / "you're going" confirmation. Fall back to intent on a
+      // read failure.
+      const stored = await readRsvpStatus(eventId, myProfileId)
+      const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
+      if (effective === 'going') onGoing(!existing)
+      sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
     }
@@ -584,6 +766,11 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     .maybeSingle()
   if (rsvp?.status !== 'going') return { ok: false }
 
+  // "Showed up" verification (ADR-420): physically checking in at a real event is the
+  // baseline real-person signal. Idempotent (only sets verified_at once) + fail-safe.
+  // Runs for any valid check-in, so a member already counted as attending still verifies.
+  await markVerifiedByAttendance(myProfileId)
+
   const { recorded } = await recordEngagementEvent({
     idempotencyKey: `event_checkin:${eventId}:${myProfileId}`,
     source: 'web',
@@ -602,6 +789,9 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
     // never let a reward read break the check-in
   }
   await recordStreakActivity(myProfileId, 'attendance').catch((e) => console.error('[events gamification]', e))
+  // A first check-in changes the event's going/check-in counts the detail + manage
+  // pages render, so refresh them (the 'going' branches already revalidate; this path didn't).
+  revalidatePath('/events', 'layout')
   return { ok: true, zapsAwarded }
 }
 
@@ -612,7 +802,7 @@ export async function cancelEvent(eventId: string) {
   const supabase = await createClient()
   await supabase
     .from('events')
-    .update({ is_cancelled: true })
+    .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)
     .eq('host_id', myProfileId)
 

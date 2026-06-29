@@ -62,10 +62,15 @@ export async function PageModules({
 function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: string) => ReactNode }) {
   switch (template) {
     case 'main-side':
+      // The SIDE column stacks ABOVE main on small screens (order-first) but sits to the RIGHT on
+      // lg+: a phone sees the high-signal side blocks (e.g. an event's Join box + facts) before the
+      // long main flow, while desktop keeps the wide-main / narrow-side reading order.
+      // Split is 3:2 (60/40) — a wider side than a 2:1, so substantial side content (RSVP box,
+      // facts, map) gets comfortable room while main stays the dominant reading column.
       return (
-        <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
-          <div className="@container space-y-4 lg:col-span-2">{slot('main')}</div>
-          <div className="@container space-y-4">{slot('side')}</div>
+        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+          <div className="@container space-y-4 lg:col-span-3">{slot('main')}</div>
+          <div className="@container order-first space-y-4 lg:order-none lg:col-span-2">{slot('side')}</div>
         </div>
       )
     case 'two-col':
@@ -90,12 +95,13 @@ function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: str
         </div>
       )
     case 'header-side':
+      // Same 3:2 (60/40) main/side split as main-side, under a full-width header.
       return (
         <div className="space-y-6">
           <div className="@container space-y-4">{slot('header')}</div>
-          <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
-            <div className="@container space-y-4 lg:col-span-2">{slot('main')}</div>
-            <div className="@container space-y-4">{slot('side')}</div>
+          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <div className="@container space-y-4 lg:col-span-3">{slot('main')}</div>
+            <div className="@container space-y-4 lg:col-span-2">{slot('side')}</div>
           </div>
         </div>
       )
@@ -107,6 +113,19 @@ function TemplateGrid({ template, slot }: { template: TemplateId; slot: (id: str
             <div className="@container space-y-4">{slot('col-1')}</div>
             <div className="@container space-y-4">{slot('col-2')}</div>
           </div>
+        </div>
+      )
+    case 'header-main-side-footer':
+      // Full-width header, the same 3:2 main/side split as header-side, and a full-width footer
+      // under both. Each region is its own @container so a block sizes to where it lands.
+      return (
+        <div className="space-y-6">
+          <div className="@container space-y-4">{slot('header')}</div>
+          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <div className="@container space-y-4 lg:col-span-3">{slot('main')}</div>
+            <div className="@container space-y-4 lg:col-span-2">{slot('side')}</div>
+          </div>
+          <div className="@container space-y-4">{slot('footer')}</div>
         </div>
       )
     default:

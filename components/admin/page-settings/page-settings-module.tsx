@@ -7,6 +7,7 @@ import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from './layout-editor'
 import { SeoEditor } from './seo-editor'
 import { StatusEditor } from './status-editor'
+import { SubtitleEditor } from './subtitle-editor'
 
 // The staff-only "Page" group inside the on-page Settings panel (PageAdminBar). It tunes THE
 // INTERIOR of the page (not the app-shell chrome) and renders the page-settings spine in
@@ -17,6 +18,11 @@ import { StatusEditor } from './status-editor'
 // The LAYOUT editor only shows on module-driven routes (isModuleRoute) — a hand-built page
 // never offers a Layout panel whose modules don't match its real content; that section is
 // dropped here so each page exposes only the sections that apply to it.
+//
+// ADMIN ROUTES (ADR-359): on /admin/* the Page settings are trimmed to ONLY a Subtitle editor
+// (the page's header description) + the Layout editor. The admin workspaces own their own title,
+// chrome, and visibility (the /admin layout gates access), and they aren't search-indexed, so
+// Basics (title + header image), Status & visibility, and SEO/share-image would be noise there.
 
 const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   basics: Type,
@@ -25,11 +31,56 @@ const SECTION_ICON: Record<PageSettingSection['id'], LucideIcon> = {
   layout: LayoutGrid,
 }
 
-export function PageSettingsModule({ spaceId }: { spaceId?: string } = {}) {
+export function PageSettingsModule({
+  spaceId,
+  hideBasics = false,
+}: { spaceId?: string; hideBasics?: boolean } = {}) {
   const pathname = usePathname()
+
+  // Admin routes get the trimmed Page settings: Subtitle + Layout only.
+  if (pathname.startsWith('/admin')) {
+    return (
+      <div className="min-w-0">
+        <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Page</p>
+        <p className="mb-3 mt-0.5 text-xs text-muted">
+          Tune what shows inside this page. The app shell (the global rails and header) stays put.
+        </p>
+        <div className="space-y-4">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <Type className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+              <span className="text-sm font-semibold text-text">Subtitle</span>
+            </div>
+            <p className="mb-2 text-xs text-muted">Set the line shown under the page title.</p>
+            <SubtitleEditor />
+          </div>
+          {/* Layout only shows where the page renders <PageModules>. */}
+          {isModuleRoute(pathname) && (
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                <span className="text-sm font-semibold text-text">Layout</span>
+              </div>
+              <p className="mb-2 text-xs text-muted">
+                Choose which blocks show inside the page and their order. Tunes the page, never the app shell.
+              </p>
+              <LayoutEditor spaceId={spaceId} />
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   // Layout is only meaningful where the page renders <PageModules>; everywhere else,
   // drop it so Settings shows just the Basics + Status + SEO controls that actually apply.
-  const sections = PAGE_SETTING_SECTIONS.filter((s) => s.id !== 'layout' || isModuleRoute(pathname))
+  // `hideBasics` drops the Basics pane (title + header image) on pages that ALSO render the
+  // richer "Page content" editor (headline/description/hero/CTA) — the two overlap, so showing
+  // both is the redundancy this removes. Status / SEO / Layout stay (they don't overlap).
+  const sections = PAGE_SETTING_SECTIONS.filter(
+    (s) =>
+      (s.id !== 'layout' || isModuleRoute(pathname)) && !(hideBasics && s.id === 'basics'),
+  )
 
   return (
     <div className="min-w-0">

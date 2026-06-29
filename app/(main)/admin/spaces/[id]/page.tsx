@@ -6,6 +6,12 @@ import { AdminSection } from '@/components/templates'
 import { getSpaceById } from '@/lib/spaces/store'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import { SpaceBrandEditor, type SkinOption } from '@/components/admin/spaces/space-brand-editor'
+import {
+  functionsForType,
+  spaceFunctionEnabled,
+  spaceFunctionMinRole,
+} from '@/lib/spaces/functions'
+import { FunctionGrid, type FunctionRow } from '@/components/admin/spaces/function-grid'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,8 +78,29 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   // so the preview section only renders for tenant Spaces.
   const hasOwnerBackEnd = space.type !== 'root'
 
+  // The "Features and access" grid rows: every function this Space type offers, seeded with its current
+  // resolved on/off + min-role (override merged over the code default). Pure resolution off the Space's
+  // entitlements + feature_roles blobs (lib/spaces/functions.ts).
+  const functionRows: FunctionRow[] = functionsForType(space.type).map((fn) => ({
+    key: fn.key,
+    label: fn.label,
+    description: fn.description,
+    planGated: fn.entitlement !== null,
+    enabled: spaceFunctionEnabled(space, fn),
+    minRole: spaceFunctionMinRole(space, fn.key) ?? fn.defaultMinRole,
+    defaultMinRole: fn.defaultMinRole,
+  }))
+
   return (
     <SpaceBrandEditor space={space} skins={skins}>
+      {hasOwnerBackEnd && functionRows.length > 0 && (
+        <AdminSection
+          title="Features and access"
+          description="Turn the tools this space uses on or off, and set the lowest role that can use each one. An operator switch beats the plan."
+        >
+          <FunctionGrid spaceId={space.id} rows={functionRows} />
+        </AdminSection>
+      )}
       {hasOwnerBackEnd && (
         <AdminSection
           title="Preview owner back-end"

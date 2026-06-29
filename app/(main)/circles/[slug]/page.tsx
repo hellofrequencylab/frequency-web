@@ -1,87 +1,82 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Users, Activity, TrendingUp, Zap, Flame, MapPin, Settings } from 'lucide-react'
+import { Users, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle, joinCircle } from '../actions'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
-import { TeaserGate } from '@/components/teaser-gate'
-import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
-import { Composer } from '@/components/feed/composer'
-import { FeedList } from '@/components/feed/feed-list'
-import { UpcomingEventsWidget } from '@/components/events/upcoming-widget'
-import { HostInviteButton } from '@/components/circles/host-invite-button'
-import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
-import { CircleMembersList } from '@/components/circles/circle-members-list'
+import { EditCircleButton } from '@/components/circles/edit-circle-button'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
 import { getCircleActivePractice, listPublicPractices } from '@/lib/practices'
 import { listPublicPlans } from '@/lib/journey-plans'
-import { StartRunButton } from '@/components/journey/v2/start-run-button'
-import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { DetailTemplate } from '@/components/templates/detail-template'
-import { ModuleCard } from '@/components/modules/module-card'
 import { isoDaysAgo } from '@/lib/utils'
-import { type CommunityRole } from '@/lib/community-roles'
+import { getCircleEarnedZaps } from '@/lib/circles/earned'
+import { SITE_NAME } from '@/lib/site'
 import { ClaimCircle } from '@/components/circles/claim-circle'
 import { CircleCover } from '@/components/circles/circle-cover'
-import { GroupMapSection } from '@/components/connections/group-map-section'
-import { CircleMomentum } from '@/components/connections/circle-momentum'
+// The circle BODY (feed + info-rail) is now the page-settings module engine (ADR-270/294): the
+// page resolves all the per-viewer data once, stamps it into the request-scoped circle context,
+// and <PageModules> renders the arrangeable blocks (components/widgets/circles/*) — so operators
+// arrange the circle page from Settings → Layout, shared across every /circles/<slug> via the
+// '/circles/*' scope, exactly like the Practices detail page.
+import { PageModules } from '@/components/widgets/page-modules'
+import { setCircleContext } from '@/lib/circles/active-circle'
+import { circleTextOverride, resolveCircleText } from '@/lib/circles/circle-text'
+import type { CircleDetail, MemberRow } from '@/lib/circles/detail-types'
 
-type CircleDetail = {
-  id: string
-  name: string
-  slug: string
-  about: string | null
-  image_url: string | null
-  type: 'in-person' | 'online'
-  member_count: number
-  member_cap: number
-  status: string
-  is_demo: boolean
-  resonance_public: boolean
-  sidebar_order: string[] | null
-  latitude: number | null
-  longitude: number | null
-  neighborhood: string | null
-  city: string | null
-  host: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
-  hub: {
-    id: string
+// ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
+// for any future anon carve). Admin client only — no auth round-trip — reading just
+// the card fields, with the same archived filter the page body applies.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const admin = createAdminClient()
+  const { data: c } = await admin
+    .from('circles')
+    .select('name, about, city, image_url')
+    .eq('slug', slug)
+    .neq('status', 'archived')
+    .maybeSingle()
+  if (!c) return { title: 'Circle not found' }
+  const circle = c as {
     name: string
-    slug: string
-    nexus: {
-      id: string
-      name: string
-      slug: string
-      outpost: {
-        id: string
-        name: string
-        region: { name: string } | null
-      } | null
-    } | null
-  } | null
-}
+    about: string | null
+    city: string | null
+    image_url: string | null
+  }
 
-type MemberRow = {
-  id: string
-  volunteer_role: CommunityRole | null
-  joined_at: string
-  profile: {
-    id: string
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    community_role: CommunityRole
-    /** Entitlement tier — drives endorsement (PB.1i: flair keys off the tier, not the role). */
-    membership_tier: string | null
-    current_season_rank: string | null
-    current_streak: number
-    achievement_count: number
+  const where = circle.city ? ` in ${circle.city}` : ''
+  const full =
+    circle.about ??
+    `${circle.name} is a Frequency circle${where}. Join to meet your neighbors and show up in person.`
+  // Search snippets truncate around 155 chars — keep the meta description tight
+  // (matches the discover detail pages).
+  const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
+  const ogTitle = `${circle.name} · ${SITE_NAME}`
+  const coverUrl = circle.image_url
+
+  return {
+    title: circle.name,
+    description,
+    openGraph: {
+      title: ogTitle,
+      description,
+      ...(coverUrl ? { images: [{ url: coverUrl }] } : {}),
+    },
+    twitter: {
+      card: coverUrl ? 'summary_large_image' : 'summary',
+      title: ogTitle,
+      description,
+    },
   }
 }
 
@@ -97,8 +92,8 @@ export default async function CirclePage({
   const { data: rawCircle } = await admin
     .from('circles')
     .select(
-      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public, sidebar_order,
-       latitude, longitude, neighborhood, city,
+      `id, name, slug, about, image_url, type, member_count, member_cap, status, is_demo, resonance_public,
+       latitude, longitude, neighborhood, city, sidebar_order,
        host:profiles!host_id ( id, display_name, handle, avatar_url ),
        hub:hubs!hub_id (
          id, name, slug,
@@ -131,36 +126,9 @@ export default async function CirclePage({
 
   const members = (rawMembers ?? []) as unknown as MemberRow[]
 
-  // Circle health metrics
+  // Member ids — used below for the circle's engagement signals (only read for a viewer
+  // who can see the health panel).
   const memberProfileIds = members.map((m) => m.profile?.id).filter(Boolean)
-  let healthScore = { avgZaps: 0, totalZaps: 0, activeStreaks: 0, totalAchievements: 0, newThisWeek: 0 }
-
-  if (memberProfileIds.length > 0) {
-    const [{ data: memberProfiles }, { data: recentJoins }] = await Promise.all([
-      admin.from('profiles')
-        .select('current_season_zaps, current_streak, achievement_count')
-        .in('id', memberProfileIds),
-      admin.from('memberships')
-        .select('id')
-        .eq('circle_id', circle.id)
-        .eq('status', 'active')
-        .gte('joined_at', isoDaysAgo(7)),
-    ])
-
-    const profiles = (memberProfiles ?? []) as Array<{
-      current_season_zaps: number | null
-      current_streak: number | null
-      achievement_count: number | null
-    }>
-    const totalZaps = profiles.reduce((s, p) => s + (p.current_season_zaps ?? 0), 0)
-    healthScore = {
-      avgZaps: profiles.length > 0 ? Math.round(totalZaps / profiles.length) : 0,
-      totalZaps,
-      activeStreaks: profiles.filter(p => (p.current_streak ?? 0) > 0).length,
-      totalAchievements: profiles.reduce((s, p) => s + (p.achievement_count ?? 0), 0),
-      newThisWeek: recentJoins?.length ?? 0,
-    }
-  }
 
   // Current user
   const {
@@ -201,6 +169,33 @@ export default async function CirclePage({
   const insight = insightAffordance(insightAccess)
   const showsHealth = canManage || insight.visible
 
+  // Circle health — honest, circle-scoped signals only. "Zaps earned here" is what was
+  // earned THROUGH this circle (its practice logs + Expression-at-Circle), never members'
+  // personal season totals; streaks + new-this-week are the circle's own member activity.
+  // All gated behind showsHealth so non-managers never trigger the reads.
+  let circleEarnedZaps = 0
+  let activeStreaks = 0
+  let newThisWeek = 0
+  if (showsHealth) {
+    const [earned, { data: streakRows }, { data: recentJoins }] = await Promise.all([
+      getCircleEarnedZaps(circle.id),
+      memberProfileIds.length > 0
+        ? admin.from('profiles').select('current_streak').in('id', memberProfileIds)
+        : Promise.resolve({ data: [] as { current_streak: number | null }[] }),
+      admin
+        .from('memberships')
+        .select('id')
+        .eq('circle_id', circle.id)
+        .eq('status', 'active')
+        .gte('joined_at', isoDaysAgo(7)),
+    ])
+    circleEarnedZaps = earned
+    activeStreaks = ((streakRows ?? []) as { current_streak: number | null }[]).filter(
+      (p) => (p.current_streak ?? 0) > 0,
+    ).length
+    newThisWeek = recentJoins?.length ?? 0
+  }
+
   // This week's practice (host-assigned). Library only needed for the host picker.
   const [circlePractice, practiceLibrary] = await Promise.all([
     getCircleActivePractice(circle.id),
@@ -233,126 +228,42 @@ export default async function CirclePage({
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ')
 
-  // Right-rail blocks, keyed. Build only the blocks this viewer should see, then
-  // render them in circle.sidebar_order (host-chosen). Gating + content unchanged.
-  const railMap: Record<string, React.ReactNode> = {
-    members: (
-      <ModuleCard title="Members" badge={String(sorted.length)}>
-        <CircleMembersList
-          members={sorted}
-          hostId={circle.host?.id ?? null}
-          myProfileId={myProfileId}
-          isMember={isMember}
-        />
-      </ModuleCard>
-    ),
-  }
+  // Journeys the host can start a run of (ADR-252) — only loaded for a manager (the
+  // journey-run block self-gates to managers, so a visitor never triggers this read).
+  const runnableJourneys = canManage
+    ? (await listPublicPlans()).slice(0, 50).map((p) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        emoji: p.emoji ?? null,
+      }))
+    : []
 
-  if (showsHealth && healthScore.totalZaps > 0) {
-    railMap.health = (
-      <ModuleCard title={insight.visible ? insight.label : 'Circle health'}>
-        <div className="grid grid-cols-2 gap-2">
-          <HealthStat label="Avg zaps" value={healthScore.avgZaps.toLocaleString()} Icon={Zap} />
-          <HealthStat label="Total zaps" value={healthScore.totalZaps.toLocaleString()} Icon={TrendingUp} />
-          <HealthStat label="Active streaks" value={String(healthScore.activeStreaks)} Icon={Flame} />
-          <HealthStat label="Badges earned" value={String(healthScore.totalAchievements)} Icon={Activity} />
-          <HealthStat label="New this week" value={String(healthScore.newThisWeek)} Icon={Users} />
-        </div>
-      </ModuleCard>
-    )
-  }
+  // The movable Page-text block's copy: this circle's override, else the network default ('' when
+  // neither is set → the block renders nothing). One platform_settings read (request-memoized) only
+  // when there's no per-circle override.
+  const layoutText = await resolveCircleText(circleTextOverride(circle.sidebar_order))
 
-  if (circlePractice || canManage) {
-    railMap.practice = (
-      <ModuleCard title="This week's practice">
-        {circlePractice ? (
-          <>
-            <p className="font-medium text-text">{circlePractice.title}</p>
-            {circlePractice.description && (
-              <p className="mt-0.5 text-sm text-muted">{circlePractice.description}</p>
-            )}
-            {isMember && (
-              <div className="mt-3">
-                <LogPracticeButton practiceId={circlePractice.id} circleId={circle.id} />
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-muted">No practice set yet.</p>
-        )}
-      </ModuleCard>
-    )
-  }
-
-  railMap.events = (
-    <ModuleCard title="Upcoming events">
-      <UpcomingEventsWidget scopeIds={[circle.id]} />
-    </ModuleCard>
-  )
-
-  // Live venue map (ADR-186, Connection Layer P4). Self-gates on the admin maps
-  // toggle + a public circle location, and only plots PUBLIC venue coordinates —
-  // never a member's home. Suspense fallback={null} so it never blocks the page.
-  railMap.map = (
-    <Suspense fallback={null}>
-      <GroupMapSection
-        circle={{
-          id: circle.id,
-          name: circle.name,
-          latitude: circle.latitude,
-          longitude: circle.longitude,
-          neighborhood: circle.neighborhood,
-          city: circle.city,
-        }}
-      />
-    </Suspense>
-  )
-
-  // Circle vital signs — aggregate momentum counts (ADR-186, P6). Self-gates to
-  // nothing when there's no signal; Suspense fallback={null} so it never blocks.
-  railMap.momentum = (
-    <Suspense fallback={null}>
-      <CircleMomentum circleId={circle.id} />
-    </Suspense>
-  )
-
-  if (canManage) {
-    railMap.invite = (
-      <ModuleCard title="Invite a friend">
-        <p className="mb-3 text-xs leading-relaxed text-muted">
-          Bring someone into {circle.name}. (Edit the circle itself from
-          {' '}<span className="font-medium text-text">Settings</span> at the top.)
-        </p>
-        <HostInviteButton circleId={circle.id} />
-        <div className="mt-2">
-          <HostInviteEmail circleId={circle.id} />
-        </div>
-      </ModuleCard>
-    )
-
-    // Start a journey run for the circle (ADR-252) — the cohort moves through it together.
-    const runnableJourneys = (await listPublicPlans()).slice(0, 50).map((p) => ({
-      id: p.id,
-      title: p.title,
-      slug: p.slug,
-      emoji: p.emoji ?? null,
-    }))
-    railMap.journeyRun = (
-      <ModuleCard title="Start a journey run">
-        <StartRunButton circleId={circle.id} journeys={runnableJourneys} />
-      </ModuleCard>
-    )
-  }
-
-  const DEFAULT_RAIL_ORDER = ['members', 'health', 'momentum', 'field', 'practice', 'events', 'map', 'invite', 'journeyRun']
-  const savedOrder = circle.sidebar_order ?? DEFAULT_RAIL_ORDER
-  // Saved order first (only keys present in the map), then any new map keys the
-  // saved order doesn't mention — so a freshly-added block never goes missing.
-  const railKeys = [
-    ...savedOrder.filter((k) => k in railMap),
-    ...Object.keys(railMap).filter((k) => !savedOrder.includes(k)),
-  ]
-  const railBlocks = railKeys.map((k) => <div key={k}>{railMap[k]}</div>)
+  // Stamp the resolved per-viewer context into the request-scoped holder so the circle's body
+  // modules (components/widgets/circles/*) read it without prop-drilling — then <PageModules>
+  // renders them in the operator-arranged layout (default: feed in MAIN, info-rail in SIDE).
+  setCircleContext({
+    circle,
+    members: sorted,
+    myProfileId,
+    isMember,
+    isHost,
+    isCrew,
+    canManage,
+    showsHealth,
+    insightLabel: insight.visible ? insight.label : null,
+    circleEarnedZaps,
+    activeStreaks,
+    newThisWeek,
+    circlePractice,
+    runnableJourneys,
+    layoutText,
+  })
 
   return (
     <div>
@@ -432,14 +343,7 @@ export default async function CirclePage({
           <>
             {canManage && <CircleHostMenu circleId={circle.id} />}
 
-            {canManage && (
-              <Link
-                href={`/circles/${circle.slug}/settings`}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Settings className="h-4 w-4" /> Settings
-              </Link>
-            )}
+            {canManage && <EditCircleButton />}
 
             {isMember && !isHost && (
               <form action={leaveCircle.bind(null, circle.id)}>
@@ -477,77 +381,18 @@ export default async function CirclePage({
           </>
         }
       >
-        {/* ── About (boxless, collapsible) ───────────── */}
+        {/* ── About (boxless, collapsible) — part of the fixed identity, above the body. */}
         {circle.about && (
           <div className="mb-6">
             <CollapsibleAbout text={circle.about} />
           </div>
         )}
 
-        {/* ── Two-column body (event / social-profile layout): the circle's
-                conversation on the left (2/3), its info rail on the right (1/3). */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* LEFT — the circle's conversation + announcements. */}
-          <div className="lg:col-span-2">
-            <TeaserGate
-              allowed={teaserAllowed({ role: isCrew ? 'crew' : 'member', hasAccess: isMember })}
-              resourceKey={`circle:${circle.id}`}
-              previewSeconds={TEASER_PREVIEW_SECONDS}
-              title="Crew unlocks the full circle"
-              body="Take a look around. Crew members can post, join the conversation, and connect with everyone here."
-            >
-              <section>
-                <div className="mb-4">
-                  <h2 className="text-sm font-bold text-text">Circle feed</h2>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                    {canManage
-                      ? 'Post to your circle. Toggle Announce to broadcast to the wider hub.'
-                      : 'Conversation and event announcements for everyone in this circle.'}
-                  </p>
-                </div>
-                {isMember ? (
-                  <Composer
-                    scopeId={circle.id}
-                    visibility="group"
-                    placeholder={`Share something with ${circle.name}…`}
-                    canAnnounce={canManage}
-                  />
-                ) : (
-                  myProfileId && (
-                    <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
-                      <p className="text-xs leading-relaxed text-muted">
-                        Join this circle to post and follow it from your feed.
-                      </p>
-                    </div>
-                  )
-                )}
-                <FeedList
-                  circleIds={[circle.id]} showPublicLayer={false}
-                  myProfileId={myProfileId}
-                  viewerRole={canManage ? 'host' : isCrew ? 'crew' : 'member'}
-                  emptyMessage="No posts yet. Be the first to share something."
-                />
-              </section>
-            </TeaserGate>
-          </div>
-
-          {/* RIGHT — the circle's info rail. Each block is keyed; the host can
-                reorder them via Settings (circle.sidebar_order). We render in saved
-                order, filtered to the blocks this viewer actually sees, then append
-                any new block missing from the saved order so it never disappears. */}
-          <aside className="space-y-8">{railBlocks}</aside>
-        </div>
+        {/* ── The arrangeable body: feed + info-rail as layout modules, shared across every
+                /circles/<slug> via the '/circles/*' scope (default: feed MAIN, rail SIDE).
+                Operators rearrange it from Settings → Layout. */}
+        <PageModules route={`/circles/${circle.slug}`} />
       </DetailTemplate>
-    </div>
-  )
-}
-
-function HealthStat({ label, value, Icon }: { label: string; value: string; Icon: React.ElementType }) {
-  return (
-    <div className="rounded-2xl bg-surface-elevated/60 px-3 py-2.5 text-center">
-      <Icon className="w-3.5 h-3.5 text-subtle mx-auto mb-1" />
-      <div className="text-lg font-bold text-text leading-none tabular-nums">{value}</div>
-      <div className="text-xs text-subtle mt-1">{label}</div>
     </div>
   )
 }

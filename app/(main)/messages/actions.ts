@@ -76,22 +76,37 @@ export async function startConversation(otherProfileId: string) {
 
 // ── sendMessage ───────────────────────────────────────────────────────
 
+// Bounds (site-audit SEC-2): cap free-text written to the DB so a participant can't post
+// unbounded blobs. Generous limits, well above any real message / name.
+const MAX_MESSAGE_BODY = 4000
+const MAX_CONVO_NAME = 120
+
 export async function sendMessage(conversationId: string, formData: FormData) {
-  const body = (formData.get('body') as string | null)?.trim()
+  const body = (formData.get('body') as string | null)?.trim().slice(0, MAX_MESSAGE_BODY)
   if (!body) return
 
   const myProfileId = await getMyProfileId()
   const admin = createAdminClient()
 
-  // Verify I'm a participant before inserting
-  const { data: part } = await admin
+  // Load every participant in one read: it verifies I'm a participant AND gives us the
+  // other party for the block gate below (`conversations` is 1:1-only — group chats are
+  // rooms, see startGroupConversation).
+  const { data: participants } = await admin
     .from('conversation_participants')
     .select('profile_id')
     .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
-    .maybeSingle()
 
-  if (!part) return
+  const memberIds = (participants ?? []).map((p) => p.profile_id as string)
+  if (!memberIds.includes(myProfileId)) return
+
+  // Blocking gate (parity with startConversation): startConversation refuses to OPEN a
+  // thread when either party blocked the other, but a thread that pre-dates the block was
+  // never re-checked here, so a blocked member could keep posting into it. For a 1:1
+  // conversation, refuse the send if the two parties are blocked in either direction.
+  const others = memberIds.filter((id) => id !== myProfileId)
+  if (others.length === 1 && (await isBlockedBetween(myProfileId, others[0]))) {
+    throw new Error('You cannot message this member')
+  }
 
   await admin.from('messages').insert({
     conversation_id: conversationId,
@@ -107,21 +122,6 @@ export async function sendMessage(conversationId: string, formData: FormData) {
     .eq('profile_id', myProfileId)
 
   revalidatePath(`/messages/${conversationId}`)
-  revalidatePath('/messages')
-}
-
-// ── markConversationRead ──────────────────────────────────────────────
-
-export async function markConversationRead(conversationId: string) {
-  const myProfileId = await getMyProfileId()
-  const admin = createAdminClient()
-
-  await admin
-    .from('conversation_participants')
-    .update({ last_read_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
-
   revalidatePath('/messages')
 }
 
@@ -164,7 +164,7 @@ export async function startGroupConversation(
     throw new Error('You must be friends with every member of a group DM')
   }
 
-  const trimmedName = name?.trim() || 'Group chat'
+  const trimmedName = name?.trim().slice(0, MAX_CONVO_NAME) || 'Group chat'
 
   // Phase B (ADR-088): a group chat is now a PRIVATE ROOM, not a group
   // conversation. `conversations` is 1:1-only; this returns a room id and the
@@ -200,7 +200,7 @@ export async function renameConversation(conversationId: string, name: string) {
     .maybeSingle()
   if (!part) throw new Error('You must be a participant to rename this conversation')
 
-  const trimmed = name.trim() || null
+  const trimmed = name.trim().slice(0, MAX_CONVO_NAME) || null
 
   await admin
     .from('conversations')

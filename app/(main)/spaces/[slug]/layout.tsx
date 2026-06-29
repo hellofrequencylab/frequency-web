@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { Building2, QrCode, Pencil } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
@@ -22,6 +22,11 @@ import { AccentScope } from '@/components/spaces/accent-scope'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { SITE_NAME } from '@/lib/site'
+
+// React.cache the two reads that BOTH generateMetadata and the layout body make (site-audit
+// PERF-5), so a single request resolves each once instead of twice. readTagline is cached at its
+// own definition below.
+const spaceVisibility = cache(getSpaceVisibility)
 
 // ── THE NETWORKED ENTITY PROFILE (ENTITY-SPACES-BUILD §A.4 / §B.1) ──────────────────────────────
 // A profile is NOT a new layout: it is the DETAIL template (context band + tabs) composed from
@@ -68,7 +73,7 @@ export async function generateMetadata({
   const space = await getSpaceBySlug(slug)
   if (!space || space.status !== 'active') return { title: 'Space not found' }
 
-  const visibility = await getSpaceVisibility(slug)
+  const visibility = await spaceVisibility(slug)
   const isPrivate = visibility === 'private'
 
   const brandName = space.brandName?.trim() || space.name
@@ -137,28 +142,24 @@ export default async function SpaceProfileLayout({
   const segs = pathname.split('/').filter(Boolean) // ['spaces', '<slug>', '<tab>'?]
   const activeSegment = segs.length >= 3 ? segs[2] : undefined
 
-  // Owner-affordance gate (server-authoritative, §A.4 / Epic 1.7), now STAFF-AWARE: an owner / admin /
-  // editor of THIS Space gets `canManage` (the unchanged canEditProfile authority), and a platform
-  // janitor previewing a Space they do NOT manage gets `staffViewing` (read-only). The affordance shows
-  // for either; the settings surface it routes to renders a read-only staff preview for the janitor.
-  // No WRITE gate changes — every owner write still re-checks canEditProfile server-side independently.
-  const caller = await getCallerProfile()
+  // The hero's remaining inputs are independent of each other (only `manage` derives from `caller`),
+  // so resolve them in ONE round-trip instead of a serial chain (site-audit PERF-4). readTagline +
+  // spaceVisibility are React.cache'd (PERF-5), so this shares generateMetadata's fetch:
+  //  - caller → the owner-affordance gate below (§A.4 / Epic 1.7): owner/admin/editor → canManage,
+  //    a platform janitor previewing a Space they don't manage → staffViewing (read-only). No WRITE
+  //    gate changes — every owner write still re-checks canEditProfile server-side independently.
+  //  - tagline → the one-line under the name (untyped read by id, ADR-246; fail-safe null).
+  //  - visibility → only a networked Space emits JSON-LD (a private one is noindex; fail-safe private).
+  //  - viewerFollows → the Follow button's server-resolved state (fail-safe false for an anon viewer).
+  const [caller, tagline, visibility, viewerFollows] = await Promise.all([
+    getCallerProfile(),
+    readTagline(space.id),
+    spaceVisibility(slug),
+    viewerProfileId ? isFollowing(space.id, viewerProfileId) : Promise.resolve(false),
+  ])
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
-
-  // The one-line tagline shows under the name. It isn't on the mapped Space (not in the generated DB
-  // types yet, ADR-246), so read it through the untyped client by id. Fail-safe to null.
-  const tagline = await readTagline(space.id)
-
-  // Whether THIS Space is publicly networked. The per-type JSON-LD (Person / LocalBusiness /
-  // Organization + Breadcrumb) is emitted ONLY for a network Space. A private Space a member can
-  // see here must still never publish structured data (it is noindex; no schema leak). Fail-safe
-  // 'private' on a read error means a private Space defaults to no schema, the safe direction.
-  const isNetwork = (await getSpaceVisibility(slug)) !== 'private'
-
-  // Whether the signed-in viewer already follows this Space (resolved server-side so the Follow
-  // button paints in the right state with no mount flicker). Fail-safe to false for an anon viewer.
-  const viewerFollows = viewerProfileId ? await isFollowing(space.id, viewerProfileId) : false
+  const isNetwork = visibility !== 'private'
 
   const base = `/spaces/${space.slug}`
   const tabs: DetailTab[] = (blueprint?.tabs ?? [{ id: 'about', label: 'About', modules: [] }]).map((t) => ({
@@ -188,6 +189,8 @@ export default async function SpaceProfileLayout({
               logoUrl: space.brandLogoUrl,
             }),
             breadcrumbSchema([
+              // The crawlable breadcrumb parent is the PUBLIC /spaces page, not the in-app
+              // /spaces/directory (which the back link below uses for signed-in navigation).
               { name: 'Spaces', path: '/spaces' },
               { name: brandName, path: `/spaces/${space.slug}` },
             ]),
@@ -195,7 +198,9 @@ export default async function SpaceProfileLayout({
         />
       )}
       <DetailTemplate
-        back={{ href: '/spaces', label: 'Spaces' }}
+        // A signed-in member returns to the in-app directory; a logged-out visitor (the public
+        // crawlable view) returns to the public /spaces page, which they can actually reach.
+        back={{ href: viewerProfileId ? '/spaces/directory' : '/spaces', label: 'Spaces' }}
         title={brandName}
         band={
           <ProfileHeroCard
@@ -297,8 +302,9 @@ function ProfileHeroCard({
 }
 
 // Read the not-yet-typed `tagline` column for a Space id (ADR-246). Fail-safe to null so the band
-// renders without a subtitle line rather than throwing.
-async function readTagline(spaceId: string): Promise<string | null> {
+// renders without a subtitle line rather than throwing. React.cache'd (PERF-5) so generateMetadata
+// and the layout body share one fetch per request.
+const readTagline = cache(async (spaceId: string): Promise<string | null> => {
   try {
     const { data } = (await createAdminClient()
       .from('spaces')
@@ -310,7 +316,7 @@ async function readTagline(spaceId: string): Promise<string | null> {
   } catch {
     return null
   }
-}
+})
 
 // The brand anchor chip in the hero lockup: the operator's logo (a plain <img>, an arbitrary
 // operator URL like BrandMark), or a neutral icon chip. Decorative (alt=""): the <h1> carries the

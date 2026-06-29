@@ -1,25 +1,28 @@
+import Link from 'next/link'
 import { Zap } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
-import { getMemberPractices, getPracticesToLogToday, type Practice } from '@/lib/practices'
+import { getMemberPractices, getPracticesToLogToday, getPartialMapToday, type Practice, type PartialToday } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
 import { PracticeRowActions } from '@/components/practice/practice-row-actions'
 import { PillarBadge } from '@/components/practice/pillar-badge'
-import { RowCard } from '@/components/cards/row-card'
 import { SectionHeader } from '@/components/ui/section-header'
 
-// The Pillar / cadence / reward chips under a "Your practices" row title.
-function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; reward_note: string | null } }) {
-  if (!p.category && !p.cadence && !p.reward_note) return null
+// The Pillar / cadence / reward chips under a "Your practices" card title. Kept to ONE row
+// (nowrap + overflow clipped): the category chip + reward stay fixed, and the length·cadence
+// text truncates to absorb overflow, so the stats never spill to a second line.
+function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; duration_min: number | null; reward_note: string | null } }) {
+  const lengthCadence = [p.duration_min ? `${p.duration_min} min` : null, p.cadence].filter(Boolean).join(' · ')
+  if (!p.category && !lengthCadence && !p.reward_note) return null
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+    <div className="mt-1.5 flex flex-nowrap items-center gap-x-2 overflow-hidden text-xs">
       {p.category && (
-        <span className="rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
+        <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 font-medium capitalize text-subtle">
           {p.category.replace(/-/g, ' ')}
         </span>
       )}
-      {p.cadence && <span className="text-subtle">{p.cadence}</span>}
+      {lengthCadence && <span className="truncate text-subtle">{lengthCadence}</span>}
       {p.reward_note && (
-        <span className="inline-flex items-center gap-1 font-medium text-warning">
+        <span className="inline-flex shrink-0 items-center gap-1 font-medium text-warning">
           <Zap className="h-3 w-3 fill-warning" aria-hidden />
           {p.reward_note}
         </span>
@@ -28,40 +31,57 @@ function PracticeMeta({ p }: { p: { category: string | null; cadence: string | n
   )
 }
 
-// "Your practices" rows fold onto the kit's RowCard (actions mode: the title is the
-// link; the action row sits right and never nests inside an anchor). The row is kept
-// tight (one button + one link, B.3): a "Log practice" button and an explicit "View
-// practice" link, with Edit/Remove tucked into the row's overflow menu. After a
-// successful log the action row collapses (B.4), which lives in the client wrapper.
+// "Your practices" are compact VERTICAL cards (two-up in the main column): the title links to
+// the practice, a one-row meta sits under it, and the action row (Log / Continue, with Edit/
+// Remove in the overflow) docks at the bottom. The card title carries the link, so the action
+// row runs in `compact` mode (no redundant "View practice"). After a successful log the action
+// row collapses to "Logged today" (B.4), which lives in the client wrapper.
 function MineRow({
   p,
   byId,
   profileId,
   loggedToday,
+  partialToday,
 }: {
   p: Practice
   byId: Map<string, Pillar>
   profileId: string
   loggedToday: boolean
+  /** A banked-but-unfinished log today → the card offers "Continue Practice". */
+  partialToday: PartialToday | null
 }) {
+  const href = `/practices/${p.slug ?? p.id}`
   return (
     <li>
-      <RowCard
-        href={`/practices/${p.id}`}
-        title={p.title}
-        badge={p.domain_id && byId.has(p.domain_id) ? <PillarBadge name={byId.get(p.domain_id)!.name} /> : undefined}
-        description={p.summary ?? p.description ?? undefined}
-        meta={<PracticeMeta p={p} />}
-        actions={
+      <div className="flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-sm transition-colors hover:border-primary-bg hover:shadow-md motion-reduce:transition-none">
+        <div className="flex items-start justify-between gap-2">
+          <Link href={href} className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-bold leading-tight text-text transition-colors hover:text-primary-strong">
+              {p.title}
+            </h3>
+          </Link>
+          {p.domain_id && byId.has(p.domain_id) && (
+            <div className="shrink-0">
+              <PillarBadge name={byId.get(p.domain_id)!.name} />
+            </div>
+          )}
+        </div>
+        <PracticeMeta p={p} />
+        <div className="mt-auto pt-3">
           <PracticeRowActions
             practiceId={p.id}
             title={p.title}
-            href={`/practices/${p.id}`}
+            href={href}
             loggedToday={loggedToday}
+            timerKind={p.timer_kind}
+            mindlessMode={p.mindless_mode}
+            movementConfig={p.movement_config}
+            partialToday={partialToday}
             isOwner={p.created_by === profileId}
+            compact
           />
-        }
-      />
+        </div>
+      </div>
     </li>
   )
 }
@@ -81,10 +101,14 @@ export async function PracticesMine() {
   // until the member's OWN midnight (not UTC's). A member with no home_timezone falls
   // back to UTC for this first paint; the client row still collapses optimistically on
   // a fresh log, and a revalidate re-seeds it after.
-  const [mine, pillars, toLog] = await Promise.all([
+  // partialMap: practices started but not finished today (a banked partial). A partial reads as
+  // "logged" in toLog (it cleared the day), so we re-surface it as a "Continue Practice" row that
+  // resumes the right timer. One extra read, no per-row query.
+  const [mine, pillars, toLog, partialMap] = await Promise.all([
     getMemberPractices(profileId),
     getPillars(),
     getPracticesToLogToday(profileId),
+    getPartialMapToday(profileId),
   ])
   if (mine.length === 0) return null
   const byId = pillarsById(pillars)
@@ -93,9 +117,18 @@ export async function PracticesMine() {
   return (
     <section id="practices-mine" className="scroll-mt-20">
       <SectionHeader title="Your practices" count={mine.length} />
-      <ul className="space-y-3">
+      {/* Compact vertical cards, two-up in the main column (one-up on a phone). Container-query
+          sized so they read 2-wide wherever the block lands in a wide slot. */}
+      <ul className="grid grid-cols-1 gap-3 @md:grid-cols-2">
         {mine.map((p) => (
-          <MineRow key={p.id} p={p} byId={byId} profileId={profileId} loggedToday={!toLogIds.has(p.id)} />
+          <MineRow
+            key={p.id}
+            p={p}
+            byId={byId}
+            profileId={profileId}
+            loggedToday={!toLogIds.has(p.id)}
+            partialToday={partialMap.get(p.id) ?? null}
+          />
         ))}
       </ul>
     </section>

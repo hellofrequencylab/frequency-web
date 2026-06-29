@@ -94,6 +94,10 @@ a summary card, related links, a table of contents).
 - **Slots:** `sidebar` (+ `sidebarSide` left/right), the main `children`.
 - **Rail note:** a page with its own in-body sidebar should usually register as
   `'scoped'` in `page-chrome.ts` so the global rail is suppressed (no double-rail).
+  **Exception — the events DETAIL page (`/events/<slug>`) ALWAYS keeps the global
+  `'global'` rail.** Never set it to `'none'`/`'scoped'`. If the page's own interior
+  feels like a doubled column, the fix is to make that interior templated/movable
+  (PageModules blocks), NOT to remove the rail. (A past change dropped it; reverted.)
 
 ### Template E: **Header / 2 Column** (`TwoColumnTemplate`)
 Title band over **two equal columns** of comparable weight (e.g. "yours" vs "the
@@ -137,14 +141,15 @@ widgets that show up when assigned… without rebuilding every page."*
 > WizardShell / …; see §8) are the OUTER page archetype. The module engine's
 > [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) `TEMPLATES` are a DIFFERENT, smaller
 > thing: the **interior layouts/grids** (Single · Main + side · 2 columns · 3 columns · Header +
-> sidebar · Header + 2 columns) that arrange modules WITHIN a page's body. This doc calls the latter
+> sidebar · Header + 2 columns · Header / Main / Sidebar / Footer) that arrange modules WITHIN a
+> page's body. This doc calls the latter
 > **"interior layouts/grids"** in prose to avoid the collision; the code identifiers
 > (`templates.ts` / `TemplateId` / `TEMPLATES`) are unchanged.
 >
 > | Concern | Where | Note |
 > |---|---|---|
 > | **Module catalog** (metadata only) | [`lib/widgets/modules.ts`](../lib/widgets/modules.ts) | `LAYOUT_MODULES` / `moduleMeta` (union of every block) + **route scoping** (ADR-294): `ROUTE_MODULE_IDS` / `moduleIdsForScope` map a scope key → the ids that page offers, so a page only shows/renders ITS OWN blocks, no React, so the editor / actions / resolver never import RSCs |
-> | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 6 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx` |
+> | **Interior layouts/grids** (metadata only, ADR-272) | [`lib/widgets/templates.ts`](../lib/widgets/templates.ts) | `TEMPLATES` / `templateMeta` / `slotIds` / `defaultSlotId`: 7 interior layouts/grids (Single · Main + side · 2 columns · 3 columns · Header + sidebar · Header + 2 columns · Header / Main / Sidebar / Footer) naming their slots; no React, like the module catalog. Distinct from the OUTER page shells in `@/components/templates` (§8). Add an interior layout = one entry here + a grid case in `page-modules.tsx`. **Module card grids should flex to their slot** via container-query breakpoints (`@md`/`@3xl`), so the same grid reads 1-up in a Sidebar slot, 2-up in Main, 3-up full-width (e.g. the Practice library). `EntityCard` carries `coverAspect` (`'video'` 16:9 / `'short'` 16:7 for denser catalogs) and `metaNoWrap` (keep the stats on one row — fixed stats `shrink-0`, one descriptive span `truncate`). |
 > | **Component binding** | [`lib/widgets/registry.tsx`](../lib/widgets/registry.tsx) | `componentFor(id)` binds each id to its self-fetching RSC ([`components/widgets/`](../components/widgets)) |
 > | **Resolver** (pure, unit-tested) | [`lib/page-settings/layout.ts`](../lib/page-settings/layout.ts) | `resolveSlots` / `moduleAssignments`: maps each module to one slot of the chosen interior layout (unplaced → default slot), back-compat reader (`parseLayout`) reads a legacy flat config as the Single layout's `main` slot |
 > | **Renderer** | [`components/widgets/page-modules.tsx`](../components/widgets/page-modules.tsx) | `<PageModules route>`: lays out the interior layout's grid, each slot's modules each in its own `<Suspense>` (§5), `null` when empty |
@@ -162,7 +167,8 @@ widgets that show up when assigned… without rebuilding every page."*
 > (`@lg:`/`@2xl:`), not the viewport. Prefer those over `sm:`/`md:` for a block's internal grid
 > so it stays portable across main/side/column slots. **Assign per route:** open the page's on-page
 > **Layout** settings (pick an interior layout/grid, drop each module into a slot, set order +
-> visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`,
+> visibility, stored per route); or render `<PageModules route="…" />` on a page (live on `/lead`
+> — a 10-block leadership dashboard (ADR-403); `/pages` — the operator workspace (ADR-402);
 > `/crew` My Quest, `/journeys`, and `/admin/content/journeys`). This is the page's interior column,
 > **not** the app shell rail (that stays operator-managed in `/admin/page-layout` /
 > `page_chrome_overrides`, ADR-259/260). **`quest-tasks` is a PARKED module** (Phase 0.5.11): its
@@ -509,6 +515,69 @@ every section that is a self-contained, self-fetching block. For each one:
 **Gate:** `pnpm tsc --noEmit && pnpm lint && pnpm test`. `lib/widgets/modules.test.ts` locks
 that every id in every route set has metadata and that sets don't leak across routes, so a
 half-wired module fails there.
+
+---
+
+## 8.5 The standard page (header + admin settings)
+
+> **Update 2026-06-26 (ADR-411):** the standardized page header is now **first-class
+> template props**, not a per-page hand-roll (it had drifted into ~4 near-identical copies).
+> The canonical lockup, proven across Circles, Events, Practices, and Journeys, is
+> **breadcrumb -> cropped hero image -> title**, with an optional in-place admin **Settings**
+> surface. Compose the props; don't re-author the lockup.
+
+### The standard Index header: `trail` + `heroImage`
+
+[`IndexTemplate`](../components/templates/index-template.tsx) carries the whole lockup:
+
+| Prop | Type | Renders |
+|---|---|---|
+| `trail` | `Crumb[]` (`{ href, label }`, exported from the file) | a `<Breadcrumbs>` at the very top of the header |
+| `heroImage` | `string \| null` | the STANDARD cropped header banner (`h-44 ... object-cover sm:h-56`, rounded, bordered). Renders **only when set** |
+| `banner` | `React.ReactNode` | the **escape hatch** for a bespoke header node (rendered after `trail` + `heroImage`). Prefer `trail` + `heroImage`; reach for `banner` only for the rare custom header |
+
+A standard index is therefore `trail={[...]}` + `heroImage={url}` + `title`, no hand-built
+banner. Exemplars (all migrated): [`circles/page.tsx`](<../app/(main)/circles/page.tsx>),
+[`events/page.tsx`](<../app/(main)/events/page.tsx>),
+[`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>).
+
+> **Where the hero comes from:** the page resolves its hero URL from the Settings header
+> image (`getPageHeaderImage`, [`lib/page-settings/store.ts`](../lib/page-settings/store.ts))
+> and/or the page-content hero (`resolvePageContent` `heroImage`), then passes the resolved
+> string to `heroImage`.
+
+### The standard Detail cover: `coverImage`
+
+[`DetailTemplate`](../components/templates/detail-template.tsx) gains the symmetric twin:
+
+| Prop | Type | Renders |
+|---|---|---|
+| `coverImage` | `string` | the standard cropped **16:6** cover at the top of the header |
+| `coverImage` | `null` (explicit) | a neutral gradient placeholder (`from-primary-bg via-surface-elevated to-signal-bg` + an `ImageIcon`) |
+| `coverImage` | omitted | no cover (existing pages unchanged) |
+| `hero` | `React.ReactNode` | the **escape hatch**: a fully custom cover node. When set, `coverImage` is **ignored** (e.g. the event detail page's date-based fallback) |
+
+### The admin-settings scope kit (9 touch-points)
+
+The repeatable recipe to give a new entity an in-place **Settings** module with cover-image
+editing (run for Circles, Events, and Practices). Copy the exemplar pair:
+[`components/admin/modules/practice-settings-module.tsx`](../components/admin/modules/practice-settings-module.tsx)
++ [`app/(main)/practices/admin-actions.ts`](<../app/(main)/practices/admin-actions.ts>).
+Every server action **re-checks the capability server-side** (the dock's role gate is UX
+only; the action is the authority, since the admin client bypasses RLS).
+
+| # | File | Add |
+|---|---|---|
+| 1 | [`lib/core/capabilities.ts`](../lib/core/capabilities.ts) | `'<entity>.editSettings'` to the `Capability` union, a `{ kind: '<entity>'; ... ownerId/hostId; viewerManagesScope? }` `Scope` variant, and a `case '<entity>'` in `resolveCapabilities` (grant to owner/host, platform staff, or a parent-scope manager) |
+| 2 | [`lib/core/load-capabilities.ts`](../lib/core/load-capabilities.ts) | `get<Entity>Capabilities(id)` (fetch the owner column, call `resolveCapabilities`) |
+| 3 | [`lib/admin/modules/registry.ts`](../lib/admin/modules/registry.ts) | an `<entity>.settings` entry in `ADMIN_MODULES` (`scopes: ['<entity>']`, `requiredCapability`, `surface: 'sidebar'`) |
+| 4 | [`components/admin/modules/module-map.tsx`](../components/admin/modules/module-map.tsx) | bind `'<entity>.settings'` -> the new module component |
+| 5 | [`components/layout/settings-drawer.tsx`](../components/layout/settings-drawer.tsx) | `{ prefix: /^\/<entities>\/[^/]+/, kind: '<entity>' }` to `PATH_SCOPE_KINDS` (the existing registry render path then shows the module; no new branch) |
+| 6 | [`app/(main)/<entities>/admin-actions.ts`](<../app/(main)/practices/admin-actions.ts>) | `get<Entity>AdminData`, `update<Entity>Settings`, `upload<Entity>Cover`/`remove<Entity>Cover` (mirror `uploadCircleCover`: `site-media` bucket storing a URL, OR the event pattern: `event-media` bucket storing a PATH, match the entity's existing cover column), `update<Entity>Permalink` |
+| 7 | [`components/admin/modules/<entity>-settings-module.tsx`](../components/admin/modules/practice-settings-module.tsx) | the flush 2/3 + 1/3 grid with `InlineCover` + identity fields (mirror `practice-settings-module.tsx`) |
+| 8 | [`components/<entities>/edit-<entity>-button.tsx`](../components/practices/edit-practice-button.tsx) | dispatches the `'open-settings'` window event, placed in the `DetailTemplate` `actions` slot, capability-gated |
+| 9 | The index page | passes `trail` + `heroImage` (the standard header above) |
 
 ---
 

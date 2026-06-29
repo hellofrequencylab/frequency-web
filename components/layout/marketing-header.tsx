@@ -19,14 +19,22 @@ import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 // renders. The public header is always a logged-out 'visitor' for menu purposes.
 export function MarketingHeader({
   overHero = false,
-  discoverMenu,
-  exploreMenu,
+  headerMenu,
   menuTimings,
+  isAuth = false,
+  ctaLabel = BETA_CTA_LABEL,
 }: {
   overHero?: boolean
-  discoverMenu?: ResolvedMenu
-  exploreMenu?: ResolvedMenu
+  headerMenu?: ResolvedMenu
   menuTimings?: MenuSettings
+  /** When the viewer is signed in, the logo points into the app (/feed) instead of the splash. */
+  isAuth?: boolean
+  /**
+   * Overrides the header CTA label (still routes to BETA_CTA_HREF). The home splash
+   * passes "Join the beta" so the front door reads as a beta invite; everywhere else
+   * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
+   */
+  ctaLabel?: string
 }) {
   const [scrolled, setScrolled] = useState(false)
 
@@ -41,12 +49,15 @@ export function MarketingHeader({
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 z-50 h-16 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
+      // h-16 + top padding by env(safe-area-inset-top) so the fixed bar fills behind the
+      // iOS PWA status bar / notch (viewport-fit=cover) instead of rendering under it.
+      style={{ height: 'calc(4rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+      className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 px-5 sm:px-8 transition-colors duration-300 ${
         light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-transparent'
       }`}
     >
-      {/* Logo */}
-      <Link href="/" className="shrink-0">
+      {/* Logo — into the app when signed in, to the splash when not. */}
+      <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
         <Image
           src="/frequency-logo.png"
           alt="Frequency"
@@ -56,13 +67,13 @@ export function MarketingHeader({
         />
       </Link>
 
-      {/* Unified primary nav (Discover + About dropdowns) */}
+      {/* Header mega-menu (Discover + Explore dropdowns, from the `header` surface) */}
       <PrimaryNav
         variant={light ? 'light' : 'dark'}
         className="ml-3"
-        discoverMenu={discoverMenu}
-        exploreMenu={exploreMenu}
+        headerMenu={headerMenu}
         viewerRole="visitor"
+        isAuth={isAuth}
         timings={menuTimings}
       />
 
@@ -86,7 +97,7 @@ export function MarketingHeader({
             : 'bg-white text-ink hover:bg-white/90'
         }`}
       >
-        {BETA_CTA_LABEL}
+        {ctaLabel}
       </Link>
 
       {/* Mobile nav (the desktop PrimaryNav is hidden below md). */}

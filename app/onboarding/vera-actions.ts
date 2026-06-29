@@ -11,7 +11,13 @@ import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { joinCircle } from '@/app/(main)/circles/actions'
+import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
+
+// The tools a MEMBER may run from their own confirm path. Each self-scopes its write to the
+// caller (memory, own profile, an intro post in their voice). join_circle is handled separately
+// above. Everything else in executeConfirmedTool is an operator-scoped playbook tool.
+const MEMBER_CONFIRMABLE_TOOLS = new Set(['remember_fact', 'set_profile_field', 'draft_intro'])
 
 async function callerProfileId(): Promise<string | null> {
   const supabase = await createClient()
@@ -23,13 +29,13 @@ async function callerProfileId(): Promise<string | null> {
 
 /** The caller's id + both role axes (ADR-208), so Vera can answer to the depth their
  *  permissions allow — operator-to-operator for staff, companion scope for members. */
-async function callerIdentity(): Promise<{ id: string; communityRole: string; webRole: WebRole } | null> {
+async function callerIdentity(): Promise<{ id: string; communityRole: string; webRole: WebRole; tier: EntitlementTier } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
   const { data } = await supabase
     .from('profiles')
-    .select('id, community_role, web_role')
+    .select('id, community_role, web_role, membership_tier')
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!data?.id) return null
@@ -37,6 +43,8 @@ async function callerIdentity(): Promise<{ id: string; communityRole: string; we
     id: data.id,
     communityRole: (data.community_role as string) ?? 'member',
     webRole: ((data.web_role as WebRole | null) ?? 'none'),
+    // The billing tier feeds the vera_unlimited daily-cap gate (ADR-370). INERT while billing is OFF.
+    tier: ((data.membership_tier as EntitlementTier | null) ?? 'free'),
   }
 }
 
@@ -62,7 +70,7 @@ export async function conciergeTurn(stage: string, memberText: string, history: 
     const viewer = ident
       ? { isOperator: isStaff(ident.webRole), roleLabel: isStaff(ident.webRole) ? ident.webRole : ident.communityRole }
       : null
-    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId, viewer })
+    const live = await runVeraClaudeTurn({ history, memberText, memberContext, supportSummary, profileId, tier: ident?.tier ?? null, viewer })
     if (live) return { message: live.reply, stage: 'chat', proposals: live.proposals, suggestions: live.suggestions, done: false }
   }
 
@@ -85,6 +93,15 @@ export async function confirmProposal(tool: string, argsJson: string): Promise<{
   // join_circle is an app-level action (capacity checks + rewards + redirect), so it's
   // handled here rather than in the lib executor.
   if (tool === 'join_circle') return joinCircleForMember(String(args.circle ?? ''))
+
+  // The member-facing confirm path may run ONLY the small set of member-SAFE, self-scoped
+  // tools. executeConfirmedTool ALSO dispatches the operator-only Resonance Engine playbook
+  // tools (tag_contact, move_contact_stage, give_gem_gift, save_streak, send_playbook_email,
+  // send_intro_email) which treat `profileId` as an AUTHORIZED OPERATOR and act on arbitrary
+  // member/contact ids — those are reachable only from the janitor-gated operator path. Without
+  // this allow-list, any signed-in member could POST a crafted `tool` to mint themselves Gems or
+  // mutate any CRM contact. The member-safe writes all self-scope to `profileId`.
+  if (!MEMBER_CONFIRMABLE_TOOLS.has(tool)) return { ok: false, error: 'That action is not available here.' }
 
   const result = await executeConfirmedTool(profileId, tool, args)
   // A confirmed intro lands as a real feed post — show it on the next feed paint.

@@ -7,11 +7,11 @@ import Link from 'next/link'
 import { Check, Award, Users, MapPin, CalendarDays, Sparkles, Heart, MessageCircle, Compass, Flame, Star, Shield, Coffee, Music, Sun, Leaf, Handshake, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
+import { safeHref } from '@/lib/page-editor/richtext'
 
 import {
   Band,
   Eyebrow,
-  DisplayHeading,
   Kicker,
   blockFields,
   blockLayoutDefaults,
@@ -19,7 +19,22 @@ import {
   visClass,
   type LayoutValue,
 } from '@/components/page-editor/blocks/kit'
-import { imgField, isInk } from '@/lib/page-editor/fields'
+import {
+  imgField,
+  isInk,
+  emphasisField,
+  emphasisDefault,
+  emphasisClasses,
+  cardStyleField,
+  cardStyleDefault,
+  cardStyleClass,
+  densityField,
+  densityDefault,
+  densityClasses,
+  type EmphasisValue,
+  type CardStyleValue,
+  type DensityValue,
+} from '@/lib/page-editor/fields'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import { SiteImage } from '@/components/marketing/site-image'
 import { Stat, FaqList, Marquee } from '@/components/marketing/marketing-ui'
@@ -78,6 +93,9 @@ export function FeatureGridBlock({
   columns,
   items,
   ink,
+  emphasis,
+  cardStyle,
+  density,
 }: {
   eyebrow?: string
   title?: React.ReactNode
@@ -85,9 +103,17 @@ export function FeatureGridBlock({
   columns?: string
   items?: FeatureItem[]
   ink?: boolean
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
 }) {
   const cols = gridCols(columns)
-  const cardBase = `rounded-2xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'} overflow-hidden`
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  // Card surface (treatment + radius) comes from the shared card-style builder so
+  // editors can pick border / elevated / plain and the radius. overflow-hidden is
+  // kept for the image style so the media clips to the chosen corner radius.
+  const cardBase = `${cardStyleClass(cardStyle, ink)} overflow-hidden`
   const headingColor = ink ? 'text-on-ink' : 'text-text'
   const bodyColor = ink ? 'text-on-ink-muted' : 'text-muted'
 
@@ -96,10 +122,14 @@ export function FeatureGridBlock({
       {(eyebrow || title) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{title}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {title}
+            </h2>
+          )}
         </div>
       )}
-      <div className={`grid grid-cols-1 ${cols} gap-6`}>
+      <div className={`grid grid-cols-1 ${cols} ${gap}`}>
         {(items || []).map((item, i) => {
           const IconComp = item.icon ? ICON_MAP[item.icon] : null
 
@@ -114,11 +144,11 @@ export function FeatureGridBlock({
                     sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                   />
                 )}
-                <div className="p-6">
+                <div className={pad}>
                   {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                   {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                   {item.href && (
-                    <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                    <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                       Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                     </Link>
                   )}
@@ -130,12 +160,12 @@ export function FeatureGridBlock({
           if (style === 'number') {
             const num = String(i + 1).padStart(2, '0')
             return (
-              <article key={i} className={`${cardBase} p-7`}>
+              <article key={i} className={`${cardBase} ${pad}`}>
                 <p className={`font-display text-5xl mb-5 ${ink ? 'text-white/20' : 'text-text/10'}`}>{num}</p>
                 {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
                 {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
                 {item.href && (
-                  <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                  <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                     Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                   </Link>
                 )}
@@ -145,7 +175,7 @@ export function FeatureGridBlock({
 
           // Default: icon style
           return (
-            <article key={i} className={`${cardBase} p-7`}>
+            <article key={i} className={`${cardBase} ${pad}`}>
               {IconComp && (
                 <div className="w-11 h-11 rounded-2xl bg-primary-bg text-primary-strong flex items-center justify-center mb-5">
                   <IconComp className="w-5 h-5" aria-hidden />
@@ -154,7 +184,7 @@ export function FeatureGridBlock({
               {item.title && <h3 className={`text-xl font-bold mb-2 ${headingColor}`}>{item.title}</h3>}
               {item.body && <div className={`text-base leading-relaxed space-y-3 ${bodyColor}`}>{richParagraphs(item.body)}</div>}
               {item.href && (
-                <Link href={item.href} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
+                <Link href={safeHref(item.href) ?? '#'} className={`mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide ${ink ? 'text-primary' : 'text-primary-strong'} hover:underline`}>
                   Learn more <ArrowRight className="w-3.5 h-3.5" aria-hidden />
                 </Link>
               )}
@@ -178,23 +208,33 @@ export function StatRowBlock({
   columns,
   items,
   ink,
+  emphasis,
+  density,
 }: {
   eyebrow?: string
   title?: React.ReactNode
   columns?: string
   items?: StatItem[]
   ink?: boolean
+  emphasis?: EmphasisValue
+  density?: DensityValue
 }) {
   const cols = gridCols(columns)
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap } = densityClasses(density)
   return (
     <div>
       {(eyebrow || title) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{title}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {title}
+            </h2>
+          )}
         </div>
       )}
-      <div className={`grid grid-cols-1 ${cols} gap-8`}>
+      <div className={`grid grid-cols-1 ${cols} ${gap}`}>
         {(items || []).map((item, i) => (
           <Stat key={i} value={item.value ?? ''} label={item.label ?? ''} tone={ink ? 'ink' : 'light'} />
         ))}
@@ -214,12 +254,15 @@ export function AccordionBlock({
   title,
   items,
   ink,
+  emphasis,
 }: {
   eyebrow?: string
   title?: React.ReactNode
   items?: AccordionItem[]
   ink?: boolean
+  emphasis?: EmphasisValue
 }) {
+  const { scale, accent } = emphasisClasses(emphasis)
   const faqItems = (items || []).map((item) => ({
     q: item.q ?? '',
     a: richParagraphs(item.a),
@@ -230,7 +273,11 @@ export function AccordionBlock({
       {(eyebrow || title) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{title}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {title}
+            </h2>
+          )}
         </div>
       )}
       <FaqList items={faqItems} />
@@ -249,23 +296,31 @@ export function ChecklistBlock({
   columns,
   items,
   ink,
+  emphasis,
+  density,
 }: {
   title?: React.ReactNode
   columns?: string
   items?: CheckItem[]
   ink?: boolean
+  emphasis?: EmphasisValue
+  density?: DensityValue
 }) {
   const cols = columns === '2' ? 'sm:grid-cols-2' : 'grid-cols-1'
   const textColor = ink ? 'text-on-ink' : 'text-text'
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap } = densityClasses(density)
 
   return (
     <div>
       {title && (
         <div className="mb-8">
-          <DisplayHeading ink={ink}>{title}</DisplayHeading>
+          <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+            {title}
+          </h2>
         </div>
       )}
-      <ul className={`grid grid-cols-1 ${cols} gap-4`}>
+      <ul className={`grid grid-cols-1 ${cols} ${gap}`}>
         {(items || []).map((item, i) => (
           <li key={i} className="flex items-start gap-3">
             <span className="mt-0.5 shrink-0 w-6 h-6 rounded-lg bg-primary-bg text-primary-strong flex items-center justify-center">
@@ -322,13 +377,13 @@ export function ShowcaseBlock({
                 />
               </div>
               <div className={`relative z-10 flex flex-col justify-center max-w-md -mt-12 sm:mt-0 ${reverse ? 'sm:-mr-20' : 'sm:-ml-20'}`}>
-                <h3 className="font-display uppercase text-white text-4xl sm:text-5xl mb-5 px-2 text-center sm:text-left">
+                <h3 className="font-display uppercase text-white text-[clamp(1.875rem,5.5vw,3rem)] mb-5 px-2 text-center sm:text-left">
                   {p.title}
                 </h3>
                 <div className="bg-surface rounded-3xl p-8 shadow-pop">
                   <div className="text-base text-muted leading-relaxed space-y-3">{richParagraphs(p.body)}</div>
                   {p.href && (
-                    <Link href={p.href} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
+                    <Link href={safeHref(p.href) ?? '#'} className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong hover:underline">
                       Learn more <ArrowRight className="w-4 h-4" aria-hidden />
                     </Link>
                   )}
@@ -360,12 +415,14 @@ type TierItem = {
   tagline?: string
   /** Featured tier: lifts, rings, and shows a "Most popular" ribbon. */
   highlight?: 'featured' | 'normal'
-  /** Small badge by the name, e.g. a Founder marker. */
-  badge?: 'none' | 'founder'
+  /** Small badge by the name: a Founder marker, a "Coming Soon" marker for tiers that
+   *  are listed and detailed but not yet purchasable, or an "Invite only" marker. */
+  badge?: 'none' | 'founder' | 'comingSoon' | 'inviteOnly'
   features?: { text?: string }[]
   ctaLabel?: string
   ctaHref?: string
-  ctaStyle?: 'primary' | 'secondary'
+  /** "disabled" renders a non-clickable, muted button for not-yet-purchasable tiers. */
+  ctaStyle?: 'primary' | 'secondary' | 'disabled'
 }
 
 export function TiersBlock({
@@ -375,6 +432,9 @@ export function TiersBlock({
   items,
   footnote,
   ink,
+  emphasis,
+  cardStyle,
+  density,
 }: {
   eyebrow?: string
   title?: React.ReactNode
@@ -382,35 +442,60 @@ export function TiersBlock({
   items?: TierItem[]
   footnote?: string
   ink?: boolean
+  emphasis?: EmphasisValue
+  cardStyle?: CardStyleValue
+  density?: DensityValue
 }) {
+  const { scale, accent } = emphasisClasses(emphasis)
+  const { gap, pad } = densityClasses(density)
+  // Non-featured tiers take the shared card-style treatment (treatment + radius);
+  // the featured tier keeps its strong "Most popular" lift/ring so the editor's
+  // card-style choice never flattens the emphasis the layout depends on. Tier card
+  // internals (name, price, features) are authored light-on-light, so the card
+  // surface stays light even on a dark band to preserve contrast.
+  const baseCard = cardStyleClass(cardStyle, false)
   return (
     <div>
       {(eyebrow || title || kicker) && (
         <div className="text-center mb-12">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {title && <DisplayHeading ink={ink}>{title}</DisplayHeading>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {title}
+            </h2>
+          )}
           {kicker && <Kicker ink={ink}>{kicker}</Kicker>}
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-3 lg:gap-5 items-start">
+      <div className={`grid lg:grid-cols-3 items-start ${gap}`}>
         {(items || []).map((tier, i) => {
           const featured = tier.highlight === 'featured'
           const cardTone = featured
-            ? 'bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
-            : 'bg-surface border border-border shadow-sm'
+            ? 'rounded-2xl bg-surface-elevated border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02] shadow-pop'
+            : baseCard
           return (
-            <article key={i} className={`relative flex flex-col h-full rounded-2xl p-7 sm:p-8 ${cardTone}`}>
+            <article key={i} className={`relative flex flex-col h-full ${pad} ${cardTone}`}>
               {featured && (
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
                   <Star className="w-3.5 h-3.5 fill-current" aria-hidden /> Most popular
                 </span>
               )}
 
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
                 {tier.badge === 'founder' && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
                     <Award className="w-3 h-3" aria-hidden /> Founder
+                  </span>
+                )}
+                {tier.badge === 'comingSoon' && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                    <Sparkles className="w-3 h-3" aria-hidden /> Coming soon
+                  </span>
+                )}
+                {tier.badge === 'inviteOnly' && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-elevated border border-border px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-subtle">
+                    <Shield className="w-3 h-3" aria-hidden /> Invite only
                   </span>
                 )}
               </div>
@@ -445,20 +530,29 @@ export function TiersBlock({
                 ))}
               </ul>
 
-              {/* CTA */}
-              {tier.ctaLabel && (
-                <Link
-                  href={tier.ctaHref || '#'}
-                  className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
-                    tier.ctaStyle === 'primary'
-                      ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
-                      : 'border border-border-strong text-text hover:bg-surface-elevated'
-                  }`}
-                >
-                  {tier.ctaLabel}
-                  {tier.ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" aria-hidden />}
-                </Link>
-              )}
+              {/* CTA. A "disabled" tier (not yet purchasable) renders a non-clickable,
+                  muted button rather than a dead link, so the card stays honest. */}
+              {tier.ctaLabel &&
+                (tier.ctaStyle === 'disabled' ? (
+                  <span
+                    aria-disabled="true"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold border border-border bg-surface-elevated text-subtle cursor-default select-none"
+                  >
+                    {tier.ctaLabel}
+                  </span>
+                ) : (
+                  <Link
+                    href={safeHref(tier.ctaHref) ?? '#'}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-bold transition-colors ${
+                      tier.ctaStyle === 'primary'
+                        ? 'bg-primary text-on-primary hover:bg-primary-hover shadow-pop'
+                        : 'border border-border-strong text-text hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {tier.ctaLabel}
+                    {tier.ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" aria-hidden />}
+                  </Link>
+                ))}
             </article>
           )
         })}
@@ -482,8 +576,8 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
   FeatureGrid: {
     label: 'Feature grid',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       style: {
         type: 'select',
@@ -530,12 +624,15 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
             ],
           },
           image: imgField,
-          title: { type: 'text', label: 'Title' },
+          title: { type: 'textarea', label: 'Title' },
           body: { type: 'textarea', label: 'Body (**bold**, *italic*, [link](/path))' },
           href: { type: 'text', label: 'Link (optional)' },
         },
         getItemSummary: (item: FeatureItem) => item.title || 'Card',
       },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -549,9 +646,12 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         { icon: 'CalendarDays', image: '', title: 'Events', body: 'Something happening every week.', href: '' },
         { icon: 'Compass', image: '', title: 'Discover', body: 'Find your next circle.', href: '' },
       ],
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, style, columns, items, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, style, columns, items, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <FeatureGridBlock
           eyebrow={eyebrow || undefined}
@@ -560,6 +660,9 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           columns={columns}
           items={items}
           ink={isInk(tone)}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
         />
       </Band>
     ),
@@ -569,8 +672,8 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
   StatRow: {
     label: 'Stat row',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       columns: {
         type: 'select',
@@ -590,6 +693,8 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         },
         getItemSummary: (item: StatItem) => item.value ? `${item.value} · ${item.label ?? ''}` : 'Stat',
       },
+      emphasis: emphasisField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -602,9 +707,11 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         { value: '200+', label: 'Circles' },
         { value: '50+', label: 'Events monthly' },
       ],
+      emphasis: emphasisDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, columns, items, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, columns, items, emphasis, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <StatRowBlock
           eyebrow={eyebrow || undefined}
@@ -612,6 +719,8 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           columns={columns}
           items={items}
           ink={isInk(tone)}
+          emphasis={emphasis as EmphasisValue}
+          density={density as DensityValue}
         />
       </Band>
     ),
@@ -621,18 +730,19 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
   Accordion: {
     label: 'Accordion / FAQ',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       items: {
         type: 'array',
         label: 'Questions',
         arrayFields: {
-          q: { type: 'text', label: 'Question' },
+          q: { type: 'textarea', label: 'Question' },
           a: { type: 'textarea', label: 'Answer (**bold**, *italic*, [link](/path))' },
         },
         getItemSummary: (item: AccordionItem) => item.q || 'Question',
       },
+      emphasis: emphasisField,
       ...blockFields(),
     },
     defaultProps: {
@@ -643,15 +753,17 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         { q: 'What is Frequency?', a: 'Frequency is a platform for real-world community.' },
         { q: 'How do I join?', a: 'Sign up and request access to the beta.' },
       ],
+      emphasis: emphasisDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, items, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, items, emphasis, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <AccordionBlock
           eyebrow={eyebrow || undefined}
           title={accentize(title, titleAccent) || undefined}
           items={items}
           ink={isInk(tone)}
+          emphasis={emphasis as EmphasisValue}
         />
       </Band>
     ),
@@ -661,7 +773,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
   Checklist: {
     label: 'Checklist',
     fields: {
-      title: { type: 'text', label: 'Heading (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       columns: {
         type: 'select',
@@ -675,10 +787,12 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         type: 'array',
         label: 'Items',
         arrayFields: {
-          text: { type: 'text', label: 'Item text' },
+          text: { type: 'textarea', label: 'Item text' },
         },
         getItemSummary: (item: CheckItem) => item.text || 'Item',
       },
+      emphasis: emphasisField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -690,15 +804,19 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         { text: 'Weekly events in your city' },
         { text: 'Real connections, no algorithm' },
       ],
+      emphasis: emphasisDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ title, titleAccent, columns, items, tone, width, align, layout }) => (
+    render: ({ title, titleAccent, columns, items, emphasis, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <ChecklistBlock
           title={accentize(title, titleAccent) || undefined}
           columns={columns}
           items={items}
           ink={isInk(tone)}
+          emphasis={emphasis as EmphasisValue}
+          density={density as DensityValue}
         />
       </Band>
     ),
@@ -712,7 +830,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         type: 'array',
         label: 'Marquee strip (optional)',
         arrayFields: {
-          text: { type: 'text', label: 'Text' },
+          text: { type: 'textarea', label: 'Text' },
         },
         getItemSummary: (item: { text?: string }) => item.text || 'Item',
       },
@@ -721,7 +839,7 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         label: 'Rows',
         arrayFields: {
           image: imgField,
-          title: { type: 'text', label: 'Title' },
+          title: { type: 'textarea', label: 'Title' },
           body: { type: 'textarea', label: 'Body (**bold**, *italic*, [link](/path))' },
           href: { type: 'text', label: 'Link (optional)' },
           side: {
@@ -796,10 +914,10 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
   Tiers: {
     label: 'Tiers (pricing cards)',
     fields: {
-      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
-      title: { type: 'text', label: 'Heading (optional)' },
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
-      kicker: { type: 'text', label: 'Italic kicker (optional)' },
+      kicker: { type: 'textarea', label: 'Italic kicker (optional)' },
       items: {
         type: 'array',
         label: 'Tiers',
@@ -808,8 +926,8 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           price: { type: 'text', label: 'Price (e.g. Free, $10, $25+)' },
           strikePrice: { type: 'text', label: 'Struck price (optional, e.g. $10)' },
           cadence: { type: 'text', label: 'Cadence (e.g. /mo, forever, during beta)' },
-          priceNote: { type: 'text', label: 'Note under price (optional)' },
-          tagline: { type: 'text', label: 'Tagline' },
+          priceNote: { type: 'textarea', label: 'Note under price (optional)' },
+          tagline: { type: 'textarea', label: 'Tagline' },
           highlight: {
             type: 'radio',
             label: 'Highlight',
@@ -819,33 +937,39 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
             ],
           },
           badge: {
-            type: 'radio',
+            type: 'select',
             label: 'Badge',
             options: [
               { label: 'None', value: 'none' },
               { label: 'Founder', value: 'founder' },
+              { label: 'Coming soon', value: 'comingSoon' },
+              { label: 'Invite only', value: 'inviteOnly' },
             ],
           },
           features: {
             type: 'array',
             label: 'Features',
-            arrayFields: { text: { type: 'text', label: 'Feature' } },
+            arrayFields: { text: { type: 'textarea', label: 'Feature' } },
             getItemSummary: (item: { text?: string }) => item.text || 'Feature',
           },
           ctaLabel: { type: 'text', label: 'Button label' },
           ctaHref: { type: 'text', label: 'Button link' },
           ctaStyle: {
-            type: 'radio',
+            type: 'select',
             label: 'Button style',
             options: [
               { label: 'Primary', value: 'primary' },
               { label: 'Secondary', value: 'secondary' },
+              { label: 'Disabled (not yet purchasable)', value: 'disabled' },
             ],
           },
         },
         getItemSummary: (item: TierItem) => item.name || 'Tier',
       },
       footnote: { type: 'textarea', label: 'Footnote (optional)' },
+      emphasis: emphasisField,
+      cardStyle: cardStyleField,
+      density: densityField,
       ...blockFields(),
     },
     defaultProps: {
@@ -876,9 +1000,12 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
         },
       ],
       footnote: '',
+      emphasis: emphasisDefault,
+      cardStyle: cardStyleDefault,
+      density: densityDefault,
       ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, title, titleAccent, kicker, items, footnote, tone, width, align, layout }) => (
+    render: ({ eyebrow, title, titleAccent, kicker, items, footnote, emphasis, cardStyle, density, tone, width, align, layout }) => (
       <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
         <TiersBlock
           eyebrow={eyebrow || undefined}
@@ -887,6 +1014,9 @@ export const collectionsComponents: Record<string, ComponentConfig> = {
           items={items}
           footnote={footnote || undefined}
           ink={isInk(tone)}
+          emphasis={emphasis as EmphasisValue}
+          cardStyle={cardStyle as CardStyleValue}
+          density={density as DensityValue}
         />
       </Band>
     ),

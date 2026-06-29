@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { enqueue } from '@/lib/queue/outbox'
 import type { PushPayload } from '@/lib/push'
 import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
+import { sendSms, isSmsProvisioned } from '@/lib/comms/sms'
 
 // Event Dispatches data layer (ADR-255 / EVENTS-REWORK A2).
 //
@@ -10,8 +11,11 @@ import { resolveEventDispatchAudience } from '@/lib/events/dispatch-audience'
 //   • to_dispatch — also create a `dispatches` row (rides the existing rail with
 //                   an event badge) and enqueue in-app/push fan-out to the event
 //                   audience via the durable notification_queue (lib/queue).
-//   • to_sms      — recorded only; the SMS send is gated/unbuilt (ADR-256). This
-//                   composer no-ops it (logs intent, sends nothing).
+//   • to_sms      — "text the group" (ADR-255). When provisioned (the A2P legal track
+//                   is live), each consented audience member is texted through sendSms,
+//                   which enforces consent + SMS prefs + quiet hours per member. When
+//                   NOT provisioned this no-ops (logs intent, sends nothing) — fully
+//                   fail-closed (ADR-256).
 //
 // Reuses dispatches + notification_queue — NOT a new broadcaster. event_dispatches
 // is in lib/database.types.ts now, so the admin client is used directly and fully
@@ -39,8 +43,10 @@ export interface ComposeEventDispatchResult {
   dispatchId: string | null
   /** How many push jobs were enqueued for the fan-out. */
   enqueued: number
-  /** True when to_sms was requested; always unsent (gated — ADR-256). */
+  /** True when to_sms was requested. Unsent unless provisioned + per-member gates pass. */
   smsRequested: boolean
+  /** How many audience members were texted (allowed by sendSms). 0 while gated. */
+  smsSent: number
 }
 
 /**
@@ -63,6 +69,7 @@ export async function composeEventDispatch(
     dispatchId: null,
     enqueued: 0,
     smsRequested: toSms,
+    smsSent: 0,
   }
 
   if (!body) return result
@@ -125,14 +132,74 @@ export async function composeEventDispatch(
     })
   }
 
-  // 4. SMS is gated/unbuilt (ADR-256). Recorded on the row above; nothing sent.
+  // 4. "Text the group" (ADR-255). Recorded on the row above. When the legal track is
+  //    live (provisioned), text each consented audience member; sendSms enforces consent
+  //    + SMS prefs + quiet hours PER member, so this only resolves WHO. When NOT
+  //    provisioned this is a no-op log — fully fail-closed (ADR-256).
   if (toSms) {
-    console.info(
-      `[event-dispatch] to_sms requested for event ${args.eventId} — SMS is gated (ADR-256), not sent`,
-    )
+    if (!isSmsProvisioned()) {
+      // Fail-closed (ADR-256): SMS is not provisioned, so this is a no-op. Log a STATIC line with no
+      // user-provided value, which avoids the log-injection class entirely (CodeQL).
+      console.info('[event-dispatch] to_sms requested but SMS is gated (ADR-256); not sent')
+    } else {
+      result.smsSent = await fanOutEventSms(args.eventId, title ?? 'Event update', body)
+    }
   }
 
   return result
+}
+
+/**
+ * Text the consented event audience for a "text the group" Event Dispatch. Resolves the
+ * SAME audience as the push fan-out, then routes EACH member through sendSms, which runs
+ * the full per-member gate (consent ledger -> SMS prefs -> quiet hours) and only sends to
+ * those who pass. The member's home_timezone drives the quiet-hours check. Returns how
+ * many were actually allowed + texted. Best-effort: a single failure never aborts the
+ * batch. Carries sender identity + a STOP line, matching the A2P samples
+ * (docs/A2P-REGISTRATION.md §4a #3).
+ */
+export async function fanOutEventSms(
+  eventId: string,
+  title: string,
+  body: string,
+): Promise<number> {
+  const recipients = await resolveEventDispatchAudience(eventId)
+  if (recipients.length === 0) return 0
+
+  const admin = createAdminClient()
+  // Pull home_timezone for the batch so the quiet-hours check is per-member-accurate.
+  const tzByProfile = new Map<string, string | null>()
+  try {
+    const { data } = await admin
+      .from('profiles')
+      .select('id, home_timezone')
+      .in('id', recipients)
+    for (const p of (data ?? []) as { id: string; home_timezone: string | null }[]) {
+      tzByProfile.set(p.id, p.home_timezone)
+    }
+  } catch {
+    // tz lookup is best-effort; sendSms falls back to UTC when a tz is missing.
+  }
+
+  // "Frequency:" sender prefix + STOP opt-out in every text (carrier requirement + the
+  // registered A2P samples). Title leads, then the body.
+  const smsBody = `Frequency: ${title}. ${body} Reply STOP to opt out.`
+
+  let sent = 0
+  for (const profileId of recipients) {
+    try {
+      const decision = await sendSms({
+        profileId,
+        category: 'dispatches',
+        body: smsBody,
+        timeZone: tzByProfile.get(profileId) ?? null,
+      })
+      if (decision.allowed) sent++
+    } catch {
+      // skip a bad recipient; the rest of the fan-out still goes out
+    }
+  }
+  return sent
 }
 
 /**

@@ -62,8 +62,6 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/g/abc123',
       '/n/node-7',
       '/events/new',
-      '/events/sunrise-sit',
-      '/events/some-slug',
       '/practices/42/edit',
       '/connections/new',
       '/connections/c_123',
@@ -92,8 +90,8 @@ describe('railFor — the single source of truth for page chrome', () => {
   })
 
   it('frames every entity-space route — directory, profiles, wizard AND owner settings — with the GLOBAL rail', () => {
-    // The directory (/spaces) is an Index page — it keeps the global community rail.
-    expect(railFor('/spaces')).toBe('global')
+    // The member directory (/spaces/directory) is an Index page — it keeps the global community rail.
+    expect(railFor('/spaces/directory')).toBe('global')
     // A profile (/spaces/<slug>) and its tabs ride the GLOBAL community rail like the rest of the
     // app (operator request): the context band is an in-body hero card, not a shell rail, so there
     // is no double-rail trap. Nothing is 'scoped' anymore.
@@ -116,11 +114,29 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 
-  it('keeps the global rail on the events index and the slug ICS sub-route (only the bare Invite slug is no-rail)', () => {
-    // The Invite slug is no-rail, but the index keeps the global rail and the
-    // single-segment regex never swallows /events or a deeper /events/[slug]/* path.
+  it('ALWAYS keeps the global rail on the event detail page (and every events route)', () => {
+    // The global community rail is a fixed part of the member chrome. The event detail
+    // page keeps it like every other member surface — a doubled-column feeling is fixed
+    // by making the page's own interior templated, never by dropping the rail.
+    expect(railFor('/events/sunrise-sit')).toBe('global')
+    expect(railFor('/events/some-slug')).toBe('global')
     expect(railFor('/events')).toBe('global')
+    expect(railFor('/events/new')).toBe('global')
+    expect(railFor('/events/scan')).toBe('global')
+    expect(railFor('/events/drafts')).toBe('global')
     expect(railFor('/events/sunrise-sit/event.ics')).toBe('global')
+    expect(railFor('/events/sunrise-sit/manage')).toBe('global')
+  })
+
+  it('keeps the global rail on the Pages workspace and its sub-managers (owner directive: not the /admin workspace)', () => {
+    // /pages is a member-accessible operator MANAGER (a list of pages to open + edit), not the
+    // /admin workspace with its own info rail, so it keeps the GLOBAL community rail like every
+    // other member surface (owner directive, 2026-06-20). Only /admin/* and the takeovers drop it.
+    expect(railFor('/pages')).toBe('global')
+    expect(railFor('/pages/home')).toBe('global')
+    expect(railFor('/pages/splash')).toBe('global')
+    expect(railFor('/pages/sequences')).toBe('global')
+    expect(railFor('/pages/sequences/come-home')).toBe('global')
   })
 })
 

@@ -10,7 +10,8 @@ import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeoForPane, type SeoFields, type SeoPane } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
-import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
+import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, hasLayoutConfig, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
+import { defaultLayoutFor } from './default-layouts'
 import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
 import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
 
@@ -208,7 +209,10 @@ export async function getPageLayoutForEditor(key: string, spaceId?: string | nul
     }
   }
   const { data } = await q.select('layout').eq('space_id', ctx.spaceId).eq('route', key).maybeSingle()
-  return build(parseLayout(data?.layout ?? null))
+  // Nothing saved at this level → open the editor on the route's coded default (so it matches what
+  // the page renders), else the registry default. A saved config at this level always wins.
+  const saved = parseLayout(data?.layout ?? null)
+  return build(hasLayoutConfig(saved) ? saved : defaultLayoutFor(key) ?? saved)
 }
 
 /** Save the layout at a SCOPE KEY: the interior template, which modules sit in each slot, in
@@ -270,21 +274,3 @@ export async function savePageLayout(
   return ok()
 }
 
-/** Clear a route's SEO back to the code default (null the fields) for a space (default root). */
-export async function clearPageSeo(route: string, spaceId?: string | null): Promise<ActionResult> {
-  const ctx = await gateForSpace(spaceId)
-  if (!ctx) return fail('You can only edit your own space.')
-  if (!isSafeRoute(route)) return fail('That is not a valid app route.')
-  // The clear is scoped to (space_id, route) — space_id isn't in the generated types yet, so
-  // reach it with an untyped client (ADR-246) for the second filter.
-  const q = db().from('page_settings').update(
-    { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, updated_at: new Date().toISOString() } as unknown as Database['public']['Tables']['page_settings']['Update'],
-  ) as unknown as {
-    eq: (col: string, val: string) => { eq: (col: string, val: string) => Promise<{ error: unknown }> }
-  }
-  const { error } = await q.eq('space_id', ctx.spaceId).eq('route', route)
-  if (error) return fail('Could not clear SEO for that route.')
-
-  revalidatePath(route)
-  return ok()
-}

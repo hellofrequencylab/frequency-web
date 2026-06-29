@@ -43,12 +43,19 @@ vi.mock('@/lib/spaces/store', async (orig) => {
     getSpaceById: async (id: string) => ({ id, slug: 'a', ownerProfileId: 'owner-A' }),
   }
 })
-vi.mock('@/lib/spaces/entitlements', () => ({
-  getSpaceCapabilities: async (space: { ownerProfileId?: string | null } | null, profileId: string | null) => {
-    const isOwner = !!space?.ownerProfileId && space.ownerProfileId === profileId
-    return { isOwner, isAdmin: isOwner, role: isOwner ? 'admin' : null, canEditProfile: isOwner, canManageMembers: isOwner, canInvite: isOwner }
-  },
-}))
+vi.mock('@/lib/spaces/entitlements', async (orig) => {
+  // Keep the PURE entitlement readers real (spaceEntitlements / spaceHasEntitlement), so the per-Space
+  // function resolver the write actions now call for defense-in-depth (spaceFunctionAccess, per-space-
+  // roles Phase 2) resolves correctly; only getSpaceCapabilities is overridden to seat the owner.
+  const real = await orig<typeof import('@/lib/spaces/entitlements')>()
+  return {
+    ...real,
+    getSpaceCapabilities: async (space: { ownerProfileId?: string | null } | null, profileId: string | null) => {
+      const isOwner = !!space?.ownerProfileId && space.ownerProfileId === profileId
+      return { isOwner, isAdmin: isOwner, role: isOwner ? 'admin' : null, canEditProfile: isOwner, canManageMembers: isOwner, canInvite: isOwner }
+    },
+  }
+})
 vi.mock('@/lib/core/roles', () => ({ isJanitor: () => false }))
 // next/cache is pulled by the write modules (follows/campaigns); make it a no-op under vitest.
 vi.mock('next/cache', () => ({ revalidatePath: () => {}, revalidateTag: () => {} }))
@@ -115,12 +122,6 @@ describe('follows: every space_follows read/write binds space_id', () => {
     await isFollowing(SPACE_A, 'p1')
     expectSpaceScoped(rec(), SPACE_A)
     expect(recorded(rec(), 'eq', 'follower_profile_id', 'p1')).toBe(true)
-  })
-
-  it('followerCount binds space_id', async () => {
-    const { followerCount } = await import('@/lib/spaces/follows')
-    await followerCount(SPACE_A)
-    expectSpaceScoped(rec(), SPACE_A)
   })
 
   it('followSpace stamps space_id on the upsert', async () => {

@@ -27,6 +27,7 @@ import {
 } from './stewardship'
 import { getStewardships } from '@/lib/stewardships'
 import { countOpenCircleTasks } from '@/lib/crew/circle-tasks'
+import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 
 // The STAFF axis (web_role, ADR-208) rides on the caller profile alongside the
 // community role, so the SAME Viewer feeds every scope builder below — DB → auth →
@@ -48,6 +49,9 @@ const currentViewer = cache(async (): Promise<Viewer> => {
     role: (p?.community_role ?? 'member') as CommunityRole,
     webRole: p?.webRole ?? 'none',
     tier: deriveTier(p?.membershipTier),
+    // The real DB tier (pre beta-override) feeds the creation gates so the upgrade
+    // popup still fires for a genuinely free member during the beta (ADR-414).
+    realTier: deriveTier(p?.realMembershipTier),
     leadsScope: (scopeType, scopeId) => edgeLeadsScope(edges, scopeType, scopeId),
   }
 })
@@ -73,6 +77,23 @@ async function hasEdgeAtLeast(level: CommunityLevel): Promise<boolean> {
 /** App-level capabilities (e.g. admin.access for the Admin tab). */
 export async function getGlobalCapabilities(): Promise<Set<Capability>> {
   return resolveCapabilities(await currentViewer(), { kind: 'global' })
+}
+
+/** The four global creation gates (ADR-414) — who may author a new entity. */
+export type CreateCapability = 'event.create' | 'circle.create' | 'journey.create' | 'practice.create'
+
+/** Render-time check: may the caller author a new entity of this kind? Reads the
+ *  REAL Crew tier (pre beta-override) so a free member sees the upgrade affordance. */
+export async function canCreate(cap: CreateCapability): Promise<boolean> {
+  return (await getGlobalCapabilities()).has(cap)
+}
+
+/** Server enforcement: throw unless the caller may author this kind. Call at the
+ *  top of every create action/page — the capability popup is UX, this is law. */
+export async function assertCanCreate(cap: CreateCapability): Promise<void> {
+  if (!(await canCreate(cap))) {
+    throw new Error('Upgrade to Crew to create this. Crew is free during the beta, one tap, no card.')
+  }
 }
 
 /** What the caller can do on a specific Circle. */
@@ -254,7 +275,39 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
   })
 }
 
-/** What the caller can do on a profile (edit-in-place gating). */
+/** What the caller can do on a specific Practice. practice.editSettings goes to its
+ *  creator (owner), platform staff, or whoever manages its parent space. */
+export async function getPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+  const { data: p } = await admin
+    .from('practices')
+    .select('created_by')
+    .eq('id', practiceId)
+    .maybeSingle()
+  return resolveCapabilities(viewer, {
+    kind: 'practice',
+    practiceId,
+    ownerId: p?.created_by ?? null,
+  })
+}
+
+/** What the caller can do on a profile (edit-in-place gating + Spotlight). Reads the
+ *  OWNER's Spotlight flags from their meta so the resolver can grant spotlight.manage
+ *  only when the owner has it enabled (opt-in is owner state, not a viewer flag). */
 export async function getProfileCapabilities(ownerId: string): Promise<Set<Capability>> {
-  return resolveCapabilities(await currentViewer(), { kind: 'profile', ownerId })
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+  const { data: owner } = await admin
+    .from('profiles')
+    .select('meta')
+    .eq('id', ownerId)
+    .maybeSingle()
+  const meta = (owner as { meta?: unknown } | null)?.meta
+  return resolveCapabilities(viewer, {
+    kind: 'profile',
+    ownerId,
+    ownerSpotlightEnabled: readSpotlightEnabled(meta),
+    ownerSpotlightPublished: readSpotlightPublished(meta),
+  })
 }

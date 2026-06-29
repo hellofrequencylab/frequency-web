@@ -14,7 +14,7 @@
 // (`SpaceLike`) and reach it without a typed cast on the row (ADR-246). Keeping the entitlement
 // readers pure (a plain object in, a boolean out) makes them trivially unit-testable.
 
-import { isSpaceRole, atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membership'
+import { atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membership'
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 
 // ── Entitlements (pure: jsonb in, boolean out, default-deny) ─────────────────────────────
@@ -50,6 +50,163 @@ export function spaceEntitlements(space: SpaceLike | null | undefined): Entitlem
  *  malformed blob, or a null Space all read as `false`. The one entitlement gate primitive. */
 export function spaceHasEntitlement(space: SpaceLike | null | undefined, key: string): boolean {
   return spaceEntitlements(space)[key] === true
+}
+
+// ── Per-Space autonomy slider (Resonance Engine Phase 3 · ADR-384) ───────────────────────────
+// How much the playbook engine may DO on its own for a Space. The single source of truth the
+// execute + Today paths consult to decide whether an `auto`-tier playbook actually auto-runs, or is
+// downgraded to a Suggest a human approves. FAIL-CLOSED: the default everywhere (a missing/garbage
+// value, a null Space, the platform root) is `suggest_only` until an owner/operator explicitly
+// raises it, so nothing auto-executes by surprise. It is read off the same `spaces.entitlements`
+// jsonb (key `crm.autonomy`), so a new setting is one jsonb key, not a schema change (ADR-246).
+
+/** The autonomy levels, low to high. `suggest_only` = Vera drafts, a human approves everything (the
+ *  safe default). `safe_auto` = the in-product, reversible `auto` playbooks (e.g. the streak save)
+ *  may run on their own; member-facing sends still stay Suggest (outbound is never auto, ever). */
+export type AutonomyLevel = 'suggest_only' | 'safe_auto'
+
+/** The platform (root) default + the per-Space default: suggest only, until explicitly raised. */
+export const DEFAULT_AUTONOMY: AutonomyLevel = 'suggest_only'
+
+const AUTONOMY_LEVELS: readonly AutonomyLevel[] = ['suggest_only', 'safe_auto']
+
+/** Normalize an arbitrary value to an AutonomyLevel, FAIL-CLOSED to `suggest_only`. PURE. Only an
+ *  exact, known string raises it; anything else (a typo, a number, null) reads as suggest_only. */
+export function asAutonomyLevel(value: unknown): AutonomyLevel {
+  return typeof value === 'string' && (AUTONOMY_LEVELS as readonly string[]).includes(value)
+    ? (value as AutonomyLevel)
+    : DEFAULT_AUTONOMY
+}
+
+/**
+ * The autonomy level for a Space. PURE: reads the `crm.autonomy` key off the entitlements blob.
+ * FAIL-CLOSED: a null Space, a missing key, or a malformed value all read as `suggest_only`. This is
+ * the single gate the execute + Today paths consult; raising it is the only way an `auto` playbook
+ * actually auto-runs for that Space.
+ */
+export function spaceAutonomyLevel(space: SpaceLike | null | undefined): AutonomyLevel {
+  if (!space) return DEFAULT_AUTONOMY
+  const raw = space.entitlements
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return DEFAULT_AUTONOMY
+  return asAutonomyLevel((raw as Record<string, unknown>)['crm.autonomy'])
+}
+
+/**
+ * Whether a Space (or the platform root, when no Space is passed) may AUTO-EXECUTE an `auto`-tier
+ * playbook. PURE. True ONLY when the resolved autonomy level is `safe_auto`. Everything else (the
+ * default, a missing setting, a null Space, the platform root) is false, so the engine downgrades
+ * even `auto` playbooks to Suggest. Member-facing/outbound playbooks are never auto regardless; this
+ * gate only governs the in-product reversible ones.
+ */
+export function autoExecutionAllowed(space: SpaceLike | null | undefined): boolean {
+  return spaceAutonomyLevel(space) === 'safe_auto'
+}
+
+// ── AI-depth capability ladder (Resonance Engine Phase 6 · ADR-387) ──────────────────────────
+// What DEPTH of the Resonance Engine a Space's plan unlocks, surfaced contextually at the ceiling.
+// Three additive entitlement keys read off the SAME `spaces.entitlements` jsonb (no schema change,
+// ADR-246), each DEFAULT-DENY through the existing spaceHasEntitlement primitive:
+//   • crm.playbooks    — governed AUTO-EXECUTION of safe playbooks + larger action volume + the
+//                        advanced (resonance / engagement-depth) segment facets. Practitioner+.
+//   • crm.resonance    — read-only resonance scoring beyond the free wedge (the Resonance tab, the
+//                        match shortlist as suggestions). The mid rung.
+//   • crm.resonance_ai — predictive churn/advocacy ALERTS + the full Resonance Graph + managed
+//                        matching. The top rung.
+//
+// THE WEDGE IS NEVER PAYWALLED. A Space with NONE of these keys still gets the free wedge: Vera
+// Today in suggest-only, summaries, and read-only scoring. So a missing key NEVER locks a member
+// out of the loop. It only withholds the deeper, operator-facing automation. This is the
+// resonate-not-extract posture: the value that helps a member is free; the leverage that scales an
+// operator is the paid lever.
+//
+// FAIL-CLOSED: a null Space, a missing key, or a malformed blob all read as the free wedge (no
+// depth). `crm.autonomy` (Phase 3 · ADR-384) is INTACT and orthogonal: it is the per-Space dial for
+// HOW MUCH the engine acts on its own; these keys are WHAT DEPTH the plan unlocks. Auto-execution
+// requires BOTH (the depth key crm.playbooks AND the autonomy level safe_auto).
+
+/** The AI-depth ladder, low to high. `wedge` is the free, never-paywalled floor (Today suggest-only
+ *  + summaries + read-only scoring). `playbooks` adds governed auto-execution + advanced segments.
+ *  `resonance` adds the read-only resonance surface. `resonance_ai` adds predictive alerts + the full
+ *  Resonance Graph + managed matching. */
+export type AiDepthTier = 'wedge' | 'playbooks' | 'resonance' | 'resonance_ai'
+
+/** The free floor every Space gets, with or without an AI-depth entitlement. Never paywalled. */
+export const FREE_AI_DEPTH: AiDepthTier = 'wedge'
+
+/** The AI-depth entitlement keys, in ladder order (low to high). Each is one `spaces.entitlements`
+ *  jsonb key, read DEFAULT-DENY by spaceHasEntitlement. */
+export const AI_DEPTH_KEYS = {
+  /** Governed auto-execution of safe playbooks + larger volume + advanced segment facets. */
+  playbooks: 'crm.playbooks',
+  /** Read-only resonance scoring + the match shortlist beyond the free wedge. */
+  resonance: 'crm.resonance',
+  /** Predictive alerts + the full Resonance Graph + managed matching (the top rung). */
+  resonanceAi: 'crm.resonance_ai',
+} as const
+
+/** Every AI-depth capability key (the values), for iteration / validation. */
+export const AI_DEPTH_CAPABILITY_KEYS: readonly string[] = [
+  AI_DEPTH_KEYS.playbooks,
+  AI_DEPTH_KEYS.resonance,
+  AI_DEPTH_KEYS.resonanceAi,
+]
+
+/** The numeric rank of each AI-depth tier on the ladder (the free wedge is the floor at 0). */
+const AI_DEPTH_RANK: Record<AiDepthTier, number> = {
+  wedge: 0,
+  playbooks: 1,
+  resonance: 2,
+  resonance_ai: 3,
+}
+
+/**
+ * The AI-depth tier a Space's plan unlocks. PURE: reads the three depth keys off the entitlements
+ * blob through the existing DEFAULT-DENY primitive. FAIL-CLOSED: a null Space, no keys, or a
+ * malformed blob all read as the free `wedge` (never a lockout, never an over-grant). The TOP key
+ * present wins, so a Space with `crm.resonance_ai` reads `resonance_ai` even if the lower keys are
+ * absent (the plan map sets them cumulatively, but the reader does not depend on that).
+ */
+export function spaceAiDepth(space: SpaceLike | null | undefined): AiDepthTier {
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.resonanceAi)) return 'resonance_ai'
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.resonance)) return 'resonance'
+  if (spaceHasEntitlement(space, AI_DEPTH_KEYS.playbooks)) return 'playbooks'
+  return FREE_AI_DEPTH
+}
+
+/** Does a Space reach AT LEAST an AI-depth tier? PURE, fail-closed. The free `wedge` is always met
+ *  (it is the floor every Space gets), so `spaceMeetsAiDepth(space, 'wedge')` is always true. */
+export function spaceMeetsAiDepth(space: SpaceLike | null | undefined, min: AiDepthTier): boolean {
+  return AI_DEPTH_RANK[spaceAiDepth(space)] >= AI_DEPTH_RANK[min]
+}
+
+/** May a Space run GOVERNED AUTO-EXECUTION of safe playbooks (the Practitioner+ lever)? PURE,
+ *  fail-closed. This is the DEPTH half only: it requires the `crm.playbooks` entitlement. The
+ *  AUTONOMY half (Phase 3 · ADR-384, `autoExecutionAllowed`) still gates HOW MUCH actually runs;
+ *  auto-execution needs BOTH (this AND `safe_auto`). The free wedge never reaches this. */
+export function spaceCanRunPlaybooks(space: SpaceLike | null | undefined): boolean {
+  return spaceHasEntitlement(space, AI_DEPTH_KEYS.playbooks)
+}
+
+/** May a Space see the read-only RESONANCE surface (the Resonance tab + the match shortlist as
+ *  suggestions), beyond the free wedge's read-only scoring? PURE, fail-closed. The top rung
+ *  (`crm.resonance_ai`) implies it. */
+export function spaceCanSeeResonance(space: SpaceLike | null | undefined): boolean {
+  return spaceMeetsAiDepth(space, 'resonance')
+}
+
+/** May a Space use the FULL Resonance Graph + predictive alerts + managed matching (the top rung)?
+ *  PURE, fail-closed. Requires the `crm.resonance_ai` entitlement. */
+export function spaceCanUseResonanceAi(space: SpaceLike | null | undefined): boolean {
+  return spaceHasEntitlement(space, AI_DEPTH_KEYS.resonanceAi)
+}
+
+/** May a Space use the ADVANCED (resonance / engagement-depth) segment facets in its audience
+ *  builder, beyond the free tag/consent facets? PURE, fail-closed. Rides the `crm.playbooks` lever
+ *  (advanced segments are part of the Practitioner+ depth, per the tier ladder). The audience
+ *  grammar still ACCEPTS the facets for everyone (additive, never a throw); this gates whether the
+ *  builder SURFACES them as a paid capability. */
+export function spaceCanUseAdvancedSegments(space: SpaceLike | null | undefined): boolean {
+  return spaceCanRunPlaybooks(space)
 }
 
 // ── Capabilities (owner + member role -> a capability set) ───────────────────────────────
@@ -94,19 +251,6 @@ export function spaceCapabilitiesFor(isOwner: boolean, memberRole: SpaceRole | n
     canManageMembers: isAdmin,
     canInvite: isOwner || atLeastSpaceRole(role, 'moderator'),
   }
-}
-
-/** Is this person a Space ADMIN — the owner, OR an `admin` member? The combined (owner-or-admin)
- *  check the settings/member surfaces gate on. Pure: pass the Space (for ownership) and the
- *  effective member role; for the IO version use getSpaceCapabilities(...).isAdmin. */
-export function isSpaceAdmin(
-  space: SpaceLike | null | undefined,
-  profileId: string | null | undefined,
-  memberRole: SpaceRole | null = null,
-): boolean {
-  if (!profileId) return false
-  const isOwner = !!space?.ownerProfileId && space.ownerProfileId === profileId
-  return isOwner || (isSpaceRole(memberRole) && atLeastSpaceRole(memberRole, 'admin'))
 }
 
 /** The full capability set for a person on a Space — the IO entry point the profile agents call.

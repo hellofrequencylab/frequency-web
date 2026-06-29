@@ -4,7 +4,6 @@ import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
 import { ImagePlus, X, Trash2 } from 'lucide-react'
 import { uploadEventMedia, deleteEventMedia } from '@/app/(main)/events/[slug]/social-actions'
-import { createClient } from '@/lib/supabase/client'
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -64,33 +63,19 @@ export function RecapAlbum({
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  async function uploadImage(): Promise<string | null> {
-    if (!imageFile) return null
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Sign in to add a photo.')
-      return null
-    }
-    const safeName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const path = `${user.id}/${eventId}/${Date.now()}-${safeName}`
-    const { error: upErr } = await supabase.storage
-      .from('event-media')
-      .upload(path, imageFile, { contentType: imageFile.type })
-    if (upErr) {
-      setError(`Upload failed: ${upErr.message}`)
-      return null
-    }
-    const { data: { publicUrl } } = supabase.storage.from('event-media').getPublicUrl(path)
-    return publicUrl
-  }
-
   function submit() {
     if (!imageFile || pending) return
     startTransition(async () => {
-      const imageUrl = await uploadImage()
-      if (!imageUrl) return
-      await uploadEventMedia(eventId, slug, imageUrl, caption.trim() || null)
+      // Hand the file to the server action, which uploads it with the service-role
+      // client (the browser upload tripped the event-media storage RLS).
+      const fd = new FormData()
+      fd.set('image', imageFile)
+      if (caption.trim()) fd.set('caption', caption.trim())
+      const res = await uploadEventMedia(eventId, slug, fd)
+      if ('error' in res) {
+        setError(res.error)
+        return
+      }
       setCaption('')
       clearImage()
       setError('')

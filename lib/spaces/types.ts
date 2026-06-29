@@ -47,4 +47,17 @@ export interface Space {
   brandLogoUrl: string | null
   /** Optional brand accent color (hex/rgb/hsl); the active palette still comes from `skin`. */
   brandAccent: string | null
+  /** The capability map the Space's plan grants ({ "crm": true, … }). Carried loosely as `unknown`
+   *  (ADR-246): the entitlement readers (lib/spaces/entitlements.ts) normalize the raw jsonb, so the
+   *  Space type does not pin its shape. PROJECTING this fixes the latent CRM gate (it was never read
+   *  onto the Space before, so spaceHasEntitlement(space,'crm') always saw undefined -> locked). */
+  entitlements: unknown
+  /** Per-function min-role overrides ({ "crm": "moderator", … }). Carried loosely as `unknown` (ADR-246,
+   *  the column is not in the generated types yet); the function resolver (lib/spaces/functions.ts)
+   *  normalizes it. Default '{}' = every function uses its code-default min-role. */
+  featureRoles: unknown
+  /** The Space billing plan label (spaces.plan: free/practitioner/business/organization/whitelabel,
+   *  ADR-322). Projected for the live plan-ladder gate (lib/spaces/function-access.ts, ADR-370). Null
+   *  defaults to 'free'. While billing is OFF the plan never gates anything (featureAllowed grants all). */
+  plan?: string | null
 }

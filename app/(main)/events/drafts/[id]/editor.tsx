@@ -9,7 +9,7 @@
 // Publish asks the one ownership question and, for posted events, hands the
 // member the outreach prompt with the claim link.
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, X, Send, UserRound, ImageIcon } from 'lucide-react'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
@@ -18,6 +18,7 @@ import type {
 } from '@/lib/events/types'
 import type { DetailsMedia, EventDetailsWithMedia } from '@/lib/events/details-media'
 import { updateDraft, publishDraft } from '../../scan/actions'
+import { isoToWallClockInput, wallClockToIso } from '@/lib/events/datetime'
 import { OutreachCard } from './outreach-card'
 
 export interface DraftEditorData {
@@ -62,20 +63,6 @@ const SECTION_LABEL: Record<SectionKey, string> = {
   other: 'Other details',
 }
 
-// ISO → the `YYYY-MM-DDTHH:mm` a <input type="datetime-local"> expects, local time.
-function toLocalInput(iso: string | null): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
-
-function toIso(local: string): string | null {
-  if (!local) return null
-  const d = new Date(local)
-  return Number.isNaN(d.getTime()) ? null : d.toISOString()
-}
 
 /** Small amber "the model was unsure here" marker. */
 function CheckChip() {
@@ -100,8 +87,8 @@ export function DraftEditor({
   // ── Primary fields ───────────────────────────────────────────────────────────
   const [title, setTitle] = useState(draft.title)
   const [description, setDescription] = useState(draft.description)
-  const [startsAt, setStartsAt] = useState(toLocalInput(draft.startsAt))
-  const [endsAt, setEndsAt] = useState(toLocalInput(draft.endsAt))
+  const [startsAt, setStartsAt] = useState(isoToWallClockInput(draft.startsAt))
+  const [endsAt, setEndsAt] = useState(isoToWallClockInput(draft.endsAt))
   const [location, setLocation] = useState(draft.location)
   const [isFree, setIsFree] = useState(draft.priceCents === 0)
   const [price, setPrice] = useState(
@@ -132,7 +119,26 @@ export function DraftEditor({
 
   // ── Publish state ─────────────────────────────────────────────────────────────
   const [ownership, setOwnership] = useState<'mine' | 'posted' | null>(null)
-  const [published, setPublished] = useState<{ slug: string; claimToken?: string } | null>(null)
+  const [published, setPublished] = useState<{ slug: string; claimToken?: string; claimSentTo?: string } | null>(null)
+
+  // A missing or past start date means the event would never appear in the library
+  // (the Catalog only lists `starts_at >= now`), so we warn here and block publish.
+  // `nowMs` is read in an effect (never during render — react-hooks/purity) and kept
+  // fresh; the server publish guard is the real backstop regardless.
+  const [nowMs, setNowMs] = useState(0)
+  useEffect(() => {
+    // Set on the next tick (not synchronously in the effect) and refresh each minute.
+    const t0 = setTimeout(() => setNowMs(Date.now()), 0)
+    const iv = setInterval(() => setNowMs(Date.now()), 60_000)
+    return () => { clearTimeout(t0); clearInterval(iv) }
+  }, [])
+  const startIso = wallClockToIso(startsAt)
+  const startMs = startIso ? new Date(startIso).getTime() : NaN
+  const dateProblem: 'missing' | 'past' | null = !Number.isFinite(startMs)
+    ? 'missing'
+    : nowMs > 0 && startMs < nowMs
+      ? 'past'
+      : null
 
   const coverUrl =
     (media?.coverPath && signedUrls[media.coverPath]) ||
@@ -210,8 +216,8 @@ export function DraftEditor({
     return {
       title,
       description,
-      startsAt: toIso(startsAt),
-      endsAt: toIso(endsAt),
+      startsAt: wallClockToIso(startsAt),
+      endsAt: wallClockToIso(endsAt),
       location,
       isFree,
       priceCents: Number.isFinite(cents) && cents > 0 ? cents : null,
@@ -235,6 +241,16 @@ export function DraftEditor({
 
   function handlePublish() {
     if (pending || !ownership) return
+    // Block publishing an undated/past event before it ever hits the server — it would
+    // never list, and the scan often misreads the year.
+    if (dateProblem === 'missing') {
+      setMsg('Add a start date before publishing, so people can find this event.')
+      return
+    }
+    if (dateProblem === 'past') {
+      setMsg('That start date is in the past. Set a future date before publishing (the scan may have misread the year).')
+      return
+    }
     setMsg(null)
     startTransition(async () => {
       // Save first so the published event matches what is on screen.
@@ -246,7 +262,7 @@ export function DraftEditor({
         router.push(`/events/${res.slug}`)
         return
       }
-      setPublished({ slug: res.slug, claimToken: res.claimToken })
+      setPublished({ slug: res.slug, claimToken: res.claimToken, claimSentTo: res.claimSentTo })
     })
   }
 
@@ -254,8 +270,14 @@ export function DraftEditor({
   if (published) {
     return (
       <div className="space-y-4">
+        {published.claimSentTo && (
+          <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-sm text-success">
+            Published, and we emailed the organizer a claim link at{' '}
+            <span className="font-semibold">{published.claimSentTo}</span>. You can also share it yourself below.
+          </p>
+        )}
         {published.claimToken ? (
-          <OutreachCard claimToken={published.claimToken} slug={published.slug} />
+          <OutreachCard claimToken={published.claimToken} slug={published.slug} sentTo={published.claimSentTo} />
         ) : (
           <p className="rounded-lg border border-success/40 bg-success-bg px-3 py-2 text-sm text-success">
             Published. It is live on local events.
@@ -316,6 +338,13 @@ export function DraftEditor({
               disabled={pending}
               className="min-w-0"
             />
+            {dateProblem && (
+              <p className="text-2xs font-medium text-danger">
+                {dateProblem === 'missing'
+                  ? 'Add a start date, or this event won’t show in the library.'
+                  : 'This date is in the past (the scan may have misread the year). Fix it to publish.'}
+              </p>
+            )}
           </label>
           <label className="block min-w-0 space-y-1">
             <Label>Ends</Label>
@@ -676,7 +705,8 @@ export function DraftEditor({
           <button
             type="button"
             onClick={handlePublish}
-            disabled={pending || !ownership}
+            disabled={pending || !ownership || !!dateProblem}
+            title={dateProblem ? 'Set a valid future start date to publish' : undefined}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

@@ -17,9 +17,6 @@ export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   { key: 'subscribed_members', label: 'Subscribed members only' },
 ]
 
-/** Back-compat alias. */
-export const SEGMENTS = BUILTIN_SEGMENTS
-
 /** Pure: classify an audience key. Unit-tested. */
 export function parseSegmentKey(key: string): { kind: 'builtin' | 'trait'; slug: string } {
   return key.startsWith(TRAIT_SEGMENT_PREFIX)

@@ -9,8 +9,11 @@ import Link from 'next/link'
 const INLINE = /(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|\*[^*]+\*)/g
 
 // Only allow safe link targets (internal paths or http/https). Anything else
-// (javascript:, data:, …) renders as plain text.
-function safeHref(href: string): string | null {
+// (javascript:, data:, …) is rejected (callers render plain text or fall back to '#').
+// Exported so every data-authored link sink (CTA buttons, collection/media links)
+// applies the SAME allowlist, not just inline rich text (ADR-390 security follow-up).
+export function safeHref(href: string | null | undefined): string | null {
+  if (!href) return null
   const h = href.trim()
   if (h.startsWith('/') || h.startsWith('#')) return h
   if (/^https?:\/\//i.test(h)) return h
@@ -55,10 +58,4 @@ export function richParagraphs(body?: string): React.ReactNode {
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p, i) => <p key={i}>{inline(p)}</p>)
-}
-
-// Single run of inline formatting (no paragraph splitting).
-export function richInline(text?: string): React.ReactNode {
-  if (!text) return null
-  return inline(text)
 }

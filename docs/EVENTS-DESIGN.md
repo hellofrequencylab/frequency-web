@@ -115,7 +115,8 @@ not a new template. `DetailTemplate` already exposes `hero`, `title`, `subtitle`
 
 | Slot | Component | Status | Note |
 |---|---|---|---|
-| A1 cover | `DetailTemplate` `hero` slot + `next/image` | ⏳ | Slot exists; today it's unused. Pass a 16:9 `<Image fill>` cover (or a token placeholder `bg-surface-elevated` when none). The detail page currently sets no hero. This is the one-line win that delivers the Partiful/Luma "beautiful page." |
+| A1 cover | `DetailTemplate` `hero` slot + `next/image` | ✅ | The `cover_image_path` (poster) renders as a 16:9 `<Image fill>` hero (token placeholder `bg-surface-elevated` when none). The Partiful/Luma "beautiful page" win. |
+| A1b gallery | `EventGallery` (`components/events/event-gallery.tsx`) | ✅ | Multi-image gallery: the poster (cover) leads as the first clickable tile, followed by `gallery_image_paths`. Thumbnails open a full-screen lightbox (keyboard + prev/next). Renders only when there are 2+ images. Host uploads via `MultiImageUpload` on the create/edit form. |
 | A2 title/meta | `DetailTemplate` `title` + `subtitle` | ✅ | Already renders title + when/where/host/scope/posted-by. **Attendance mode** (in-person / online / hybrid) becomes a `badges` chip (see §2.4). |
 | A3 rewards | **`EventRewardStrip`** | ⚠️ new | Small presentational row. Composes existing pieces (see §2.3). Lives between the band and the two-column grid. |
 | B1 description | inline prose + `PosterDetails` | ✅ | Keep open prose (not boxed), `max-w-2xl` reading column. |

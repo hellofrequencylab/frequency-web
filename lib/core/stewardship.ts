@@ -38,14 +38,6 @@ export interface StewardshipEdge {
   state?: StewardState
 }
 
-export const STEWARD_ROLES: readonly StewardRole[] = [
-  'crew', 'host', 'guide', 'mentor', 'outpost_lead',
-] as const
-
-export const SCOPE_TYPES: readonly ScopeType[] = [
-  'circle', 'hub', 'nexus', 'outpost',
-] as const
-
 // Ascending trust: member < crew < host < guide < mentor. THE ladder the derivation
 // ranks on; kept in lock-step with the SQL CASE in recompute_community_level().
 export const COMMUNITY_LEVELS: readonly CommunityLevel[] = [

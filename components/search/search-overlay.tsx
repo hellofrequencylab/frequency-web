@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine } from 'lucide-react'
+import { Search, X, Users, FileText, CalendarDays, Loader2, ArrowRight, ScanLine, Compass } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 
 // Live, full-screen search overlay. Opens from the header search affordance (and
@@ -22,9 +22,11 @@ type Post = {
 type EventHit = { id: string; title: string; slug: string; starts_at: string; location: string | null; is_cancelled: boolean; is_demo: boolean }
 // A non-member person the viewer is entitled to find (someone they captured).
 type Lead = { id: string; displayName: string; email: string | null; city: string | null; ownerName: string | null; href: string | null }
-type Results = { people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[] }
+// A navigable destination (the "Go to" group) — access-gated server-side.
+type Page = { href: string; label: string; group: string }
+type Results = { pages: Page[]; people: Person[]; posts: Post[]; events: EventHit[]; leads: Lead[] }
 
-const EMPTY: Results = { people: [], posts: [], events: [], leads: [] }
+const EMPTY: Results = { pages: [], people: [], posts: [], events: [], leads: [] }
 
 export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [q, setQ] = useState('')
@@ -67,7 +69,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`)
         const json = (await res.json()) as Results
-        setResults({ people: json.people ?? [], posts: json.posts ?? [], events: json.events ?? [], leads: json.leads ?? [] })
+        setResults({ pages: json.pages ?? [], people: json.people ?? [], posts: json.posts ?? [], events: json.events ?? [], leads: json.leads ?? [] })
       } catch {
         setResults(EMPTY)
       } finally {
@@ -83,7 +85,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   }
 
   const trimmed = q.trim()
-  const total = results.people.length + results.posts.length + results.events.length + results.leads.length
+  const total = results.pages.length + results.people.length + results.posts.length + results.events.length + results.leads.length
   const hasQuery = trimmed.length >= 2
 
   return (
@@ -126,6 +128,26 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
             <p className="px-4 py-12 text-center text-sm text-subtle">No results for “{trimmed}”.</p>
           ) : (
             <div className="py-2">
+              <ResultGroup label="Go to" icon={Compass} count={results.pages.length}>
+                {results.pages.map((pg) => (
+                  <Link
+                    key={pg.href}
+                    href={pg.href}
+                    onClick={onClose}
+                    className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-elevated"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+                      <Compass className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-text">{pg.label}</span>
+                      <span className="mt-0.5 block truncate text-xs text-subtle">{pg.group}</span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                  </Link>
+                ))}
+              </ResultGroup>
+
               <ResultGroup label="People" icon={Users} count={results.people.length}>
                 {results.people.map((p) => (
                   <ResultRow key={p.id} href={`/people/${p.handle}`} onNavigate={onClose}

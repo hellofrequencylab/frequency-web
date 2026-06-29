@@ -2,11 +2,16 @@ import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
 
 // Stripe membership webhook (P2.2). Verifies the signature, then reconciles the
 // member's entitlement: a completed checkout / active subscription sets membership_tier
 // (crew/supporter); cancellation sets it back to free. Identity rides on
 // metadata.profile_id (set at checkout). Dormant until billing is configured.
+//
+// Pricing P2 (ADR-363): subscription events carrying metadata.kind = 'space_plan' /
+// 'space_membership' route to the Space reconcilers (lib/billing/space-subscriptions.ts) FIRST;
+// the member Crew/Supporter path below is untouched and only runs for non-Space subscriptions.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -51,31 +56,56 @@ export async function POST(req: Request) {
     await admin.from('profiles').update(patch).eq('id', profileId)
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const s = event.data.object as Stripe.Checkout.Session
-      const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
-      const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
-      const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
-      if (profileId) await setTier(profileId, tier, customerId)
-      break
-    }
-    case 'customer.subscription.updated': {
-      const sub = event.data.object as Stripe.Subscription
-      const profileId = sub.metadata?.profile_id
-      if (profileId) {
-        const active = sub.status === 'active' || sub.status === 'trialing'
-        const tier = active ? tierForPrice(sub.items.data[0]?.price?.id) : 'free'
-        await setTier(profileId, tier)
+  // Wrap the handler switch: a transient handler failure must NOT leave the claim row
+  // behind. If it did, the next Stripe retry would short-circuit on the duplicate check
+  // above and the event would never actually process. On failure we RELEASE the claim and
+  // return a non-2xx so Stripe redelivers; our writes set fixed values, so re-processing is
+  // safe. Mirrors the sibling app/api/webhooks/stripe/route.ts (503 + idempotent handlers).
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const s = event.data.object as Stripe.Checkout.Session
+        // Pricing P2: a Space plan/membership checkout completes — the subscription.created/updated
+        // event does the entitlement write (it carries the full subscription status), so skip the
+        // member tier path here for those kinds. The member Crew/Supporter checkout has no `kind`.
+        if (subscriptionKind(s.metadata)) break
+        const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
+        const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
+        const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
+        if (profileId) await setTier(profileId, tier, customerId)
+        break
       }
-      break
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const sub = event.data.object as Stripe.Subscription
+        // Pricing P2 (ADR-363): route Space subscriptions to their reconcilers first; if it was a
+        // Space sub, the member tier path is skipped.
+        if (await routeSpaceSubscription(sub)) break
+        const profileId = sub.metadata?.profile_id
+        if (profileId) {
+          const active = sub.status === 'active' || sub.status === 'trialing'
+          const tier = active ? tierForPrice(sub.items.data[0]?.price?.id) : 'free'
+          await setTier(profileId, tier)
+        }
+        break
+      }
+      case 'customer.subscription.deleted': {
+        const sub = event.data.object as Stripe.Subscription
+        // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
+        if (await routeSpaceSubscription(sub)) break
+        const profileId = sub.metadata?.profile_id
+        if (profileId) await setTier(profileId, 'free')
+        break
+      }
     }
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object as Stripe.Subscription
-      const profileId = sub.metadata?.profile_id
-      if (profileId) await setTier(profileId, 'free')
-      break
-    }
+  } catch (err) {
+    // Release the claim so the Stripe retry re-processes (instead of short-circuiting as a
+    // duplicate), then signal failure so Stripe redelivers. The DELETE is bounded to this
+    // event id; if the claim was never written (a transient claim error fell through above)
+    // the delete is simply a no-op.
+    console.error(`[stripe-webhook] handler failed (type=${event.type}, id=${event.id}):`, err)
+    await admin.from('stripe_webhook_events').delete().eq('event_id', event.id)
+    return NextResponse.json({ received: false, error: 'processing failed' }, { status: 500 })
   }
 
   return NextResponse.json({ received: true })

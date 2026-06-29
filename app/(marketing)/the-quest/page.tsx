@@ -29,6 +29,9 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
+import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
@@ -80,17 +83,19 @@ const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
 ]
 
 export default async function TheQuestPage() {
-  const data = await getPublishedData('the-quest')
+  // getPublishedData -> getTemplate -> legacy: prefer the operator-published doc,
+  // else the designed git template (so the designed page is live without a DB
+  // publish), with the hardcoded legacy component as a last resort.
+  const published = await getPublishedData('the-quest')
+  const template = getTemplate('the-quest')
+  const data = isRenderable(published) ? published : isRenderable(template) ? template : null
+  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
   return (
     <>
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }])}
       />
-      {data && Array.isArray(data.content) && data.content.length > 0 ? (
-        <Render config={config} data={data} />
-      ) : (
-        <LegacyTheQuest />
-      )}
+      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
     </>
   )
 }
@@ -348,7 +353,7 @@ function LegacyTheQuest() {
         <SectionHeading
           eyebrow="Where it starts"
           title="Your first season begins now."
-          kicker={`The founding cohort is climbing it together in ${FOUNDING_PLACE}.`}
+          kicker={`The founding members are climbing it together in ${FOUNDING_PLACE}.`}
         />
         <Body>
           Every player starts as a Ghost. Join the beta and you start your first

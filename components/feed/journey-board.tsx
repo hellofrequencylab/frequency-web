@@ -52,7 +52,7 @@ export function JourneyBoard({
 }: {
   practices: Practice[]
   /** Practices started but not finished today (a partial timed log). Each renders a
-   *  "Finish Practice" row that resumes the right timer where the member left off. */
+   *  "Continue Practice" row that resumes the right timer where the member left off. */
   partials?: PartialPracticeToday[]
   streak?: number
   /** Season zaps — the standing scoreboard count (gamified-stat law, §2). */
@@ -256,12 +256,12 @@ export function JourneyBoard({
       <div className="mx-4 mt-3 border-t border-primary-bg pt-3">
         {hasReminders ? (
           <ul className="space-y-2">
-            {/* Partials first — a started-but-unfinished sit reads "Finish Practice" and
+            {/* Partials first — a started-but-unfinished sit reads "Continue Practice" and
                 resumes the right timer where the member left off. */}
             {partials.map(({ practice, secondsDone, secondsTarget }) => (
               <li key={`partial-${practice.id}`} className="flex items-center justify-between gap-3">
                 <Link
-                  href={`/practices/${practice.id}`}
+                  href={`/practices/${practice.slug ?? practice.id}`}
                   className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}
@@ -282,7 +282,7 @@ export function JourneyBoard({
             {practices.map((practice) => (
               <li key={practice.id} className="flex items-center justify-between gap-3">
                 <Link
-                  href={`/practices/${practice.id}`}
+                  href={`/practices/${practice.slug ?? practice.id}`}
                   className="min-w-0 truncate text-sm text-text transition-colors hover:text-primary-strong"
                 >
                   {practice.title}

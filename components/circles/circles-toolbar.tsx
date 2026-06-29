@@ -1,11 +1,8 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { MapPin, Globe, Users } from 'lucide-react'
+import { MapPin, Globe, Users, ArrowUpDown } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
-import { FacetDropdown } from '@/components/ui/facet-dropdown'
-
-type Interest = { id: string; name: string }
 
 const SORTS = [
   { key: 'nearest', label: 'Nearest' },
@@ -14,12 +11,18 @@ const SORTS = [
   { key: 'open', label: 'Open spots' },
 ] as const
 
-// Faceted command bar for the Circles surface — the same standard the Directory
-// uses: a debounced free-text search (DirectorySearch), high-cardinality facets as
-// searchable dropdowns (FacetDropdown), low-cardinality as pills (type), and sort
-// as a native select. Everything URL-driven so a filtered view is shareable and
-// the page stays a server component.
-export function CirclesToolbar({ interests }: { interests: Interest[] }) {
+const TYPES = [
+  { key: '', label: 'All', Icon: Users },
+  { key: 'in-person', label: 'In person', Icon: MapPin },
+  { key: 'online', label: 'Online', Icon: Globe },
+] as const
+
+// Compact command bar for Circles: free-text search, a segmented format toggle (All /
+// In person / Online), and sort — all on ONE row. The Channel category lives in the
+// pillar pills above (CirclesChannelNav) and granular Channels in the Browse rail, so the
+// bar stays tight and unduplicated. URL-driven, so a filtered view is shareable and the
+// page stays a server component.
+export function CirclesToolbar() {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -37,50 +40,50 @@ export function CirclesToolbar({ interests }: { interests: Interest[] }) {
     router.push(s ? `${pathname}?${s}` : pathname)
   }
 
-  const pill = (active: boolean) =>
-    `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-      active ? 'bg-primary-bg text-primary-strong' : 'text-muted hover:bg-surface hover:text-text'
-    }`
-
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="flex-1">
-          <DirectorySearch placeholder="Search circles by name, place, or Channel…" />
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
+        <DirectorySearch placeholder="Search circles by name or place…" />
+      </div>
+
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {/* Format toggle — segmented, the active option lifts onto the surface. */}
+        <div className="flex items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
+          {TYPES.map(({ key, label, Icon }) => {
+            const active = type === key
+            return (
+              <button
+                key={key || 'all'}
+                type="button"
+                onClick={() => update({ type: key || null })}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                  active ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted hover:text-text'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            )
+          })}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <FacetDropdown
-            label="Channel"
-            paramKey="interest"
-            align="right"
-            options={interests.map((i) => ({ value: i.id, label: i.name }))}
-          />
-          {/* Sort is ordering, not a facet — a native select stays clearest. */}
+        {/* Sort — ordering, not a facet, so a labelled native select stays clearest. */}
+        <div className="flex items-center gap-1.5 rounded-lg border border-border bg-surface pl-2.5">
+          <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
           <select
             value={sort}
             onChange={(e) => update({ sort: e.target.value })}
-            className="rounded-lg border border-border bg-surface px-2.5 py-2 text-sm font-medium text-muted focus:border-border-strong focus:outline-none"
+            className="cursor-pointer rounded-r-lg bg-transparent py-2 pr-2 text-sm font-medium text-muted focus:outline-none"
             aria-label="Sort circles"
           >
             {SORTS.map((s) => (
-              <option key={s.key} value={s.key}>{s.label}</option>
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
             ))}
           </select>
         </div>
-      </div>
-
-      {/* Type pills */}
-      <div className="flex w-fit items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-        <button type="button" onClick={() => update({ type: null })} className={pill(!type)}>
-          <Users className="h-3.5 w-3.5" /> All
-        </button>
-        <button type="button" onClick={() => update({ type: 'in-person' })} className={pill(type === 'in-person')}>
-          <MapPin className="h-3.5 w-3.5" /> In person
-        </button>
-        <button type="button" onClick={() => update({ type: 'online' })} className={pill(type === 'online')}>
-          <Globe className="h-3.5 w-3.5" /> Online
-        </button>
       </div>
     </div>
   )

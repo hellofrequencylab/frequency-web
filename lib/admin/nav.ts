@@ -41,6 +41,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         heading: 'Spaces & groups',
         items: [
           { label: 'Circles', href: '/admin/circles' },
+          { label: 'Circle Templates', href: '/admin/circle-templates' },
           { label: 'Channels', href: '/admin/channels' },
           { label: 'Hubs', href: '/admin/hubs' },
           { label: 'Nexuses', href: '/admin/nexuses' },
@@ -49,8 +50,8 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
       {
         heading: 'People',
         items: [
-          { label: 'Members', href: '/admin/members' },
-          { label: 'Connections', href: '/admin/connections' },
+          { label: 'Member Roster', href: '/admin/members' },
+          { label: 'Connection Settings', href: '/admin/connections' },
           { label: 'Personas', href: '/admin/personas' },
           { label: 'Segments', href: '/admin/segments' },
         ],
@@ -59,6 +60,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         heading: 'Activity',
         items: [
           { label: 'Events', href: '/admin/events' },
+          { label: 'Import from chat', href: '/admin/import' },
           { label: 'Dispatches', href: '/admin/dispatches' },
           { label: 'Moderation', href: '/admin/moderation' },
         ],
@@ -108,14 +110,36 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Nurture', href: '/admin/marketing/nurture' },
           { label: 'Analytics', href: '/admin/marketing/analytics' },
           { label: 'Beta', href: '/admin/marketing/beta' },
+          { label: 'Referrals', href: '/admin/referrals' },
+        ],
+      },
+    ],
+  },
+  {
+    // Resonance CRM (ADR-382 to 387): the Vera-driven, prediction-powered CRM. The section root is
+    // the platform cockpit; the sub-pages are the loop (Today), the member drill-down, and the records.
+    // Gated 'janitor' to match the pages, which gate on requireAdmin('janitor') because the per-member
+    // predictions are sensitive (the cockpit / Today / Members all read member_traits + scores).
+    href: '/admin/crm',
+    label: 'Resonance CRM',
+    min: 'janitor',
+    groups: [
+      {
+        heading: 'Engine',
+        items: [
+          { label: 'Cockpit', href: '/admin/crm' },
+          { label: 'Today', href: '/admin/crm/today' },
+          { label: 'Member Intelligence', href: '/admin/crm/members' },
+          { label: 'Playbooks', href: '/admin/crm/playbooks' },
+          { label: 'Resonance Graph', href: '/admin/crm/graph' },
         ],
       },
       {
-        heading: 'Pipeline',
+        heading: 'Records',
         items: [
-          { label: 'Contacts', href: '/admin/marketing/contacts' },
-          { label: 'CRM', href: '/admin/crm/contacts' },
-          { label: 'Referrals', href: '/admin/referrals' },
+          { label: 'Contacts', href: '/admin/crm/contacts' },
+          { label: 'Deals', href: '/admin/crm/deals' },
+          { label: 'All Contacts', href: '/admin/marketing/contacts' },
         ],
       },
     ],
@@ -146,6 +170,7 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
         items: [
           { label: 'Audit', href: '/admin/audit' },
           { label: 'Payments', href: '/admin/payments' },
+          { label: 'Pricing', href: '/admin/pricing' },
           { label: 'Roles', href: '/admin/roles' },
           { label: 'Support', href: '/admin/support' },
         ],
@@ -159,6 +184,27 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Menu', href: '/admin/menu' },
           { label: 'Appearance', href: '/admin/appearance' },
           { label: 'Demo', href: '/admin/demo' },
+        ],
+      },
+    ],
+  },
+  {
+    href: '/admin/marketplace',
+    label: 'Marketplace',
+    min: 'admin',
+    staffDomain: 'platform',
+    groups: [
+      {
+        heading: 'Catalog',
+        items: [
+          { label: 'Shop catalog', href: '/admin/marketplace' },
+        ],
+      },
+      {
+        heading: 'Activity',
+        items: [
+          { label: 'Orders', href: '/admin/marketplace/orders' },
+          { label: 'Reports', href: '/admin/marketplace/reports' },
         ],
       },
     ],

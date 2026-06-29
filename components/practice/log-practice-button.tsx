@@ -27,7 +27,7 @@ import type { MovementConfig } from '@/lib/movement'
 //       - 'none'     → useMindless().open too; the session detects mindless_mode='log'
 //                      and opens the Just Log screen + optional note.
 //     Pass `resumeFromSec` + `secondsTarget` (from a partial log today) to resume:
-//     the row reads "Finish Practice" and the timer opens where the member left off.
+//     the row reads "Continue Practice" and the timer opens where the member left off.
 //
 // Seed `initialLogged` from the server (getPracticeMemberState().loggedToday /
 // getPracticesToLogToday) so a practice already logged today paints in the logged
@@ -61,7 +61,7 @@ export function LogPracticeButton({
   /** The Movement config, for a timer_kind = 'movement' practice; its `mode` opens the timer. */
   movementConfig?: MovementConfig | null
   /** Resume a PARTIAL log started today: open the timer where the member left off.
-   *  When set (with secondsTarget), the label becomes "Finish Practice". */
+   *  When set (with secondsTarget), the label becomes "Continue Practice". */
   resumeFromSec?: number
   /** The target length of the partial sit, in seconds (paired with resumeFromSec). */
   secondsTarget?: number
@@ -73,10 +73,13 @@ export function LogPracticeButton({
 
   const isTimer = timerKind != null
   const isResume = resumeFromSec != null && resumeFromSec > 0
-  // A timed practice's label leads with "Log practice"; a partial reads "Finish Practice".
-  const buttonLabel = label ?? (isResume ? 'Finish Practice' : 'Log practice')
+  // A timed practice's label leads with "Log practice"; a partial reads "Continue Practice".
+  const buttonLabel = label ?? (isResume ? 'Continue Practice' : 'Log practice')
 
-  if (done) {
+  // A partial today IS technically logged, but the affordance the member wants is "Continue
+  // Practice" (resume the timer for the rest), not the collapsed "Logged today" line. So a
+  // resume always wins over the logged-state collapse below.
+  if (done && !isResume) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-lg bg-success-bg text-success px-3 py-1.5 text-sm font-semibold">
         <Check className="w-4 h-4" /> Logged today
@@ -90,7 +93,8 @@ export function LogPracticeButton({
   if (isTimer) {
     const openTimer = () => {
       if (timerKind === 'movement') {
-        const opts: TimerResumeOptions = { practiceId, mode: movementConfig?.mode }
+        // autoStart: selecting a practice opens the timer and begins the countdown immediately.
+        const opts: TimerResumeOptions = { practiceId, mode: movementConfig?.mode, autoStart: true }
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
           opts.secondsTarget = secondsTarget
@@ -100,7 +104,7 @@ export function LogPracticeButton({
         // 'mindless' AND 'none' both go to the On Air sit; the session derives the
         // real flavour from the practice's mindless_mode (a 'none' practice carries
         // 'log' → the Just Log screen). mindlessMode rides along as an advisory hint.
-        const opts: TimerResumeOptions = { practiceId }
+        const opts: TimerResumeOptions = { practiceId, autoStart: true }
         if (mindlessMode) opts.mindlessMode = mindlessMode
         if (isResume) {
           opts.resumeFromSec = resumeFromSec
@@ -170,5 +174,6 @@ type TimerResumeOptions = {
   mindlessMode?: MindlessMode
   resumeFromSec?: number
   secondsTarget?: number
+  autoStart?: boolean
 }
 type TimerOpen = (opts: TimerResumeOptions) => void

@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import {
-  WORKOUT_PRESETS,
+  STRENGTH_PRESETS,
   YOGA_PRESETS,
   MOVEMENT_MODES,
   buildWalk,
   buildYoga,
   buildPlay,
-  buildWorkout,
+  buildStrength,
   buildPlan,
   phaseAt,
   totalSeconds,
-  workoutPresetByKind,
+  strengthPresetByKind,
   yogaPresetByKind,
   clampRounds,
   clampSeconds,
@@ -21,16 +21,16 @@ describe('modes + presets', () => {
     expect(MOVEMENT_MODES.map((m) => m.mode)).toEqual(['walk', 'run', 'yoga', 'strength', 'stretch', 'play'])
   })
 
-  it('ships Tabata 20/10x8, EMOM, AMRAP and Circuit workout presets', () => {
-    expect(WORKOUT_PRESETS.map((p) => p.kind)).toEqual(['tabata', 'emom', 'amrap', 'circuit'])
-    const tabata = workoutPresetByKind('tabata')
+  it('ships Tabata 20/10x8, EMOM, AMRAP and Circuit strength presets', () => {
+    expect(STRENGTH_PRESETS.map((p) => p.kind)).toEqual(['tabata', 'emom', 'amrap', 'circuit'])
+    const tabata = strengthPresetByKind('tabata')
     expect(tabata.workSec).toBe(20)
     expect(tabata.restSec).toBe(10)
     expect(tabata.rounds).toBe(8)
-    const emom = workoutPresetByKind('emom')
+    const emom = strengthPresetByKind('emom')
     expect(emom.workSec).toBe(60)
     expect(emom.restSec).toBe(0) // EMOM has no separate rest phase
-    const amrap = workoutPresetByKind('amrap')
+    const amrap = strengthPresetByKind('amrap')
     expect(amrap.rounds).toBe(1)
     expect(amrap.restSec).toBe(0)
   })
@@ -42,8 +42,8 @@ describe('modes + presets', () => {
   })
 
   it('falls back to the first preset for unknown kinds', () => {
-    expect(workoutPresetByKind('mystery').kind).toBe('tabata')
-    expect(workoutPresetByKind(null).kind).toBe('tabata')
+    expect(strengthPresetByKind('mystery').kind).toBe('tabata')
+    expect(strengthPresetByKind(null).kind).toBe('tabata')
     expect(yogaPresetByKind('mystery').kind).toBe('yin')
   })
 })
@@ -101,9 +101,9 @@ describe('buildPlay', () => {
   })
 })
 
-describe('buildStrength (aliased as buildWorkout for back-compat)', () => {
+describe('buildStrength', () => {
   it('is prepare then a repeating work+rest block over rounds', () => {
-    const plan = buildWorkout({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
+    const plan = buildStrength({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
     expect(plan.mode).toBe('strength')
     expect(plan.rounds).toBe(8)
     // The stored block is the one-shot prepare + the single work/rest pair.
@@ -113,7 +113,7 @@ describe('buildStrength (aliased as buildWorkout for back-compat)', () => {
   })
 
   it('drops the rest phase when restSec is 0 (EMOM)', () => {
-    const plan = buildWorkout({ kind: 'emom', label: 'EMOM', blurb: '', workSec: 60, restSec: 0, rounds: 10 })
+    const plan = buildStrength({ kind: 'emom', label: 'EMOM', blurb: '', workSec: 60, restSec: 0, rounds: 10 })
     expect(plan.phases.map((p) => p.kind)).toEqual(['prepare', 'work'])
     expect(totalSeconds(plan)).toBe(3 + 60 * 10)
   })
@@ -144,7 +144,7 @@ describe('buildPlan front door', () => {
 })
 
 describe('phaseAt', () => {
-  const tabata = buildWorkout({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
+  const tabata = buildStrength({ kind: 'tabata', label: 'Tabata', blurb: '', workSec: 20, restSec: 10, rounds: 8 })
 
   it('reports the lead-in at the very start', () => {
     const pos = phaseAt(tabata, 0)

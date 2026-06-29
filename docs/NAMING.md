@@ -70,6 +70,26 @@
   from member copy; "Connecting" was rejected (collides with the **Connect**
   tile). **Airtime** = timed practice minutes (`practice_sessions`): the stat
   keeps its name.
+- **Mindless = THE one timer; Be Still / Get Moving = its two modes (ADR-360).**
+  There is now **one** member-facing practice timer, **Mindless**, tagline
+  **"Get out of your head, and into your life."** It carries two modes the member
+  toggles between:
+  - **Be Still** = the quiet sit (the former Mindless sit). Sub-modes: Meditate /
+    Breathe / Stillness / Ritual / Journal / Just Log.
+  - **Get Moving** = the moving timer (the former Movement timer). Sub-modes: Walk
+    / Run / Yoga / Strength / Stretch / Play.
+
+  Mode labels are EXACTLY `Be Still` and `Get Moving`. The mode auto-selects from
+  the launching practice's `timer_kind` (`mindless` → Be Still · `movement` → Get
+  Moving · `none` → Be Still, defaulting to Just Log); a generic open lands on Be
+  Still and remembers the last mode used. The two former engines are reused under
+  one door. **"Movement" is RETIRED as a separate member-facing timer name** (it
+  is now the **Get Moving** mode; see Retired). Scoring stays INTERNAL: a practice
+  may develop more than one Pillar via the existing `focus_details` map (e.g.
+  breathwork = Body + Spirit, yoga = Body + Spirit), but this is never surfaced as
+  a visible rubric, and there is **ONE Zap reward per session** (the "On Air is a
+  stage, never a second economy" invariant holds). **"On Air" remains the internal
+  name**; routes, schema, and `timer_kind` are unchanged.
 - **The Zap button** (ADR-230) = the raised center action button (the engraved ⚡)
   and its menu of earning tools. Live row: share, Event, Contact, **Connect**
   (your personal code, /codes). Coming-soon row: Check In, Ghost Node, Partners.
@@ -222,6 +242,16 @@
   longer a member-facing economy construct. (See the Retired list and the cut
   circle-collaborative mechanics under Co-op / Run.)
 
+## Profile pages
+
+- **Spotlight** = a member's opt-in public mini-site (a linktree/personal page themed
+  by their profile). Member-facing copy: "Spotlight page", "your Spotlight" (sentence
+  case, one capital). Public URL `/spotlight/[handle]`. Internal: capabilities
+  `spotlight.manage` / `spotlight.view`, flags `meta.spotlight.{enabled,published}`,
+  audit action `spotlight.toggle`. OFF for everyone by default; turned on per member.
+  **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
+  and **not "Signal"** (a retired rank, below). Locked June 2026 (ADR-423).
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·
@@ -231,7 +261,13 @@ the Luminary double-gate · Expression as a fourth Journey (it is the Challenge 
 Seasonal Quest ·
 Static/Tuned/Locked/Live (status set) · The Drop · Arc/Arcs/quest_chains · Bolts ·
 Field Days / "the Field" / Circle Field · Chorus · Domains (game taxonomy) ·
-Depth/Range/Altitude · deshi/sempai/sensei · "points"
+Depth/Range/Altitude · deshi/sempai/sensei · "points" ·
+**"Movement" as a separate member-facing TIMER name** (ADR-360: it is now the
+**Get Moving** mode of the one Mindless timer). **Collision guard:** this retires
+only the *timer* name. "Movement" stays alive as the topical **Channel** (the
+seven topics), as the movement's word in CONTENT-VOICE §6d, and in code/schema
+(`timer_kind = 'movement'`, `lib/movement.ts`, `movement_config`), which are
+internal and unchanged.
 
 **Rewards Economy v3 cuts (ADR-305), retired reward constructs:**
 witnessed / peer awards · secret awards ("Quiet Ones") ·
@@ -285,3 +321,23 @@ Phase-6 zero-hits grep carves them out:
 - **"task"**: `crew_tasks` IS the canon Task entity: no new entity, no collision.
 - **"live"/"static"**: retired only as the old status set; alive in live-location,
   Next.js static rendering, etc.
+
+## Starter Circles (templates the community remixes)
+
+- **Starter Circle**: the member-facing name for one of the staff-authored Circle
+  blueprints (3 per Pillar) a leader adopts and runs. Operator surfaces call the
+  same records **Circle Templates**. One concept, two audiences.
+- **Remix** (the verb): adopting a Starter Circle, or claiming a sample Circle,
+  into your own. The button reads **Remix**; the subtitle/tooltip reads "Claim
+  this circle, or make it your own." Remixing creates a private DRAFT you own;
+  publishing makes a completely original live Circle (no template badge, no link
+  back). A template's **Remix it** field lists the variations, the ways to remix
+  it, so the verb and the field agree.
+- **Make it yours**: the friendly gloss for Remix (also the practice-template
+  phrase). The modal heading. Not a separate action.
+- **Claim**: kept only inside the Remix subtitle ("Claim this circle..."); no
+  longer a standalone button label. The legacy sample-Circle claim is one surface
+  of Remix.
+- **draft / published**: a Circle lifecycle. `status='draft'` is owner-only
+  (hidden from discovery); publishing flips it to `active`. Creating a Circle
+  makes you a **Host**, which opens the Leadership tab (`/lead`).

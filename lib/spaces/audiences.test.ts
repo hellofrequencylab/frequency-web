@@ -19,9 +19,35 @@ type TagRow = {
   network_contacts: { space_id: string; linked_contact_id: string | null }
 }
 
+// space_segments: a saved AudienceFilter-shaped definition, scoped to a space (ADR-380).
+type SegmentRow = { id: string; definition: unknown; space_id: string }
+
 const db = {
   contacts: [] as ContactRow[],
   tags: [] as TagRow[],
+  segments: [] as SegmentRow[],
+}
+
+// space_segments builder: .select('definition').eq('id', v).eq('space_id', v).maybeSingle().
+// PINNED to BOTH id AND space_id, so a cross-space id resolves to null (no leak).
+function segmentsBuilder() {
+  const filters: { id?: string; space_id?: string } = {}
+  const api = {
+    select() {
+      return api
+    },
+    eq(col: string, val: string) {
+      if (col === 'id') filters.id = val
+      if (col === 'space_id') filters.space_id = val
+      return api
+    },
+    async maybeSingle() {
+      const row =
+        db.segments.find((s) => s.id === filters.id && s.space_id === filters.space_id) ?? null
+      return { data: row ? { definition: row.definition } : null, error: null }
+    },
+  }
+  return api
 }
 
 // contacts builder: .select(cols).eq('space_id', v).limit(n) -> { data, error }
@@ -84,16 +110,27 @@ vi.mock('@/lib/supabase/admin', () => ({
     from(table: string) {
       if (table === 'contacts') return contactsBuilder()
       if (table === 'network_contact_tags') return tagsBuilder()
+      if (table === 'space_segments') return segmentsBuilder()
       throw new Error(`unexpected table ${table}`)
     },
   }),
 }))
 
-import { resolveAudience, audienceCount, listAudienceTags, normalizeTag } from './audiences'
+import {
+  resolveAudience,
+  audienceCount,
+  listAudienceTags,
+  normalizeTag,
+  definitionToFilter,
+  normalizeEngagementDepth,
+  normalizeResonanceTier,
+  normalizeChurnRisk,
+} from './audiences'
 
 beforeEach(() => {
   db.contacts = []
   db.tags = []
+  db.segments = []
 })
 
 function seedContact(id: string, email: string | null, spaceId = 'space-A') {
@@ -101,6 +138,9 @@ function seedContact(id: string, email: string | null, spaceId = 'space-A') {
 }
 function seedTag(tag: string, linkedContactId: string | null, spaceId = 'space-A') {
   db.tags.push({ tag, network_contacts: { space_id: spaceId, linked_contact_id: linkedContactId } })
+}
+function seedSegment(id: string, definition: unknown, spaceId = 'space-A') {
+  db.segments.push({ id, definition, space_id: spaceId })
 }
 
 describe('normalizeTag (pure)', () => {
@@ -110,6 +150,102 @@ describe('normalizeTag (pure)', () => {
     expect(normalizeTag('')).toBeNull()
     expect(normalizeTag(42)).toBeNull()
     expect(normalizeTag(undefined)).toBeNull()
+  })
+})
+
+describe('definitionToFilter (pure, ADR-380)', () => {
+  it('keeps known facets, drops a nested segmentId, fail-safe to {} for junk', () => {
+    expect(definitionToFilter({ tag: ' vip ', consent: 'subscribed' })).toEqual({
+      tag: 'vip',
+      consent: 'subscribed',
+    })
+    // A definition never nests another segment.
+    expect(definitionToFilter({ tag: 'vip', segmentId: 'x' })).toEqual({ tag: 'vip' })
+    expect(definitionToFilter({ tag: '   ' })).toEqual({})
+    expect(definitionToFilter(null)).toEqual({})
+    expect(definitionToFilter('nope')).toEqual({})
+  })
+})
+
+describe('advanced resonance / engagement-depth facets (Phase 6 · ADR-387)', () => {
+  it('the facet normalizers keep known bands and fail-safe to null for anything else', () => {
+    expect(normalizeEngagementDepth('deep')).toBe('deep')
+    expect(normalizeEngagementDepth('moderate')).toBe('moderate')
+    expect(normalizeEngagementDepth('nope')).toBeNull()
+    expect(normalizeEngagementDepth(3)).toBeNull()
+    expect(normalizeEngagementDepth(undefined)).toBeNull()
+
+    expect(normalizeResonanceTier('at_risk')).toBe('at_risk')
+    expect(normalizeResonanceTier('resonant')).toBe('resonant')
+    expect(normalizeResonanceTier('green')).toBeNull()
+
+    expect(normalizeChurnRisk('high')).toBe('high')
+    expect(normalizeChurnRisk('low')).toBe('low')
+    expect(normalizeChurnRisk('0.8')).toBeNull()
+  })
+
+  it('definitionToFilter reads the advanced facets from camelCase AND snake_case', () => {
+    expect(
+      definitionToFilter({ engagementDepth: 'deep', resonanceTier: 'cooling', churnRisk: 'high' }),
+    ).toEqual({ engagementDepth: 'deep', resonanceTier: 'cooling', churnRisk: 'high' })
+    // A stored snake_case definition resolves identically (forward-compat with the segment store).
+    expect(
+      definitionToFilter({ engagement_depth: 'shallow', resonance_tier: 'at_risk', churn_risk: 'medium' }),
+    ).toEqual({ engagementDepth: 'shallow', resonanceTier: 'at_risk', churnRisk: 'medium' })
+  })
+
+  it('drops a garbage advanced facet (fail-safe to no filter, never narrows to nobody)', () => {
+    expect(definitionToFilter({ engagementDepth: 'banana', tag: 'vip' })).toEqual({ tag: 'vip' })
+    expect(definitionToFilter({ resonanceTier: 9, churnRisk: null })).toEqual({})
+  })
+
+  it('ADDITIVE: an existing tag/consent-only definition is byte-for-byte unchanged', () => {
+    expect(definitionToFilter({ tag: 'vip', consent: 'all' })).toEqual({ tag: 'vip', consent: 'all' })
+  })
+
+  it('the advanced facets do NOT yet narrow resolveAudience (reserved for the trait join, like consent)', async () => {
+    // Mirrors the consent-facet precedent: the facet is accepted + stored but the v1 contacts read has
+    // no member_traits join yet, so the audience is unchanged. This keeps the grammar extension purely
+    // additive and never breaks an existing caller.
+    seedContact('c1', 'a@x.com')
+    seedContact('c2', 'b@x.com')
+    const out = await resolveAudience('space-A', { churnRisk: 'high', resonanceTier: 'at_risk' })
+    expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c2'])
+  })
+})
+
+describe('resolveAudience — saved segment (ADR-380)', () => {
+  beforeEach(() => {
+    seedContact('c1', 'a@x.com')
+    seedContact('c2', 'b@x.com')
+    seedContact('c3', 'c@x.com')
+  })
+
+  it('resolves from the segment\'s stored definition (tag) via the existing tag logic', async () => {
+    seedTag('vip', 'c1')
+    seedTag('vip', 'c3')
+    seedSegment('seg-1', { tag: 'vip' })
+    const out = await resolveAudience('space-A', { segmentId: 'seg-1' })
+    expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c3'])
+  })
+
+  it('an empty-definition segment resolves to everyone', async () => {
+    seedSegment('seg-all', {})
+    const out = await resolveAudience('space-A', { segmentId: 'seg-all' })
+    expect(out).toHaveLength(3)
+  })
+
+  it('a CROSS-SPACE segment id is a no-op: it resolves to "everyone" in THIS space, never B\'s definition', async () => {
+    // A segment that lives in Space B (a tag that would narrow there). Resolving it from Space A must
+    // not load B's definition (the single-row read is pinned to space_id) -> fail-safe to everyone in A.
+    seedSegment('seg-b', { tag: 'vip' }, 'space-B')
+    const out = await resolveAudience('space-A', { segmentId: 'seg-b' })
+    expect(out.map((r) => r.contactId).sort()).toEqual(['c1', 'c2', 'c3'])
+  })
+
+  it('a missing segment id fails safe to everyone', async () => {
+    const out = await resolveAudience('space-A', { segmentId: 'does-not-exist' })
+    expect(out).toHaveLength(3)
   })
 })
 

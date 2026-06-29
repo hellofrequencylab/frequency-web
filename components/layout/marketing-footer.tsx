@@ -24,15 +24,21 @@ function footerLinks(menu?: ResolvedMenu): { href: string; label: string }[] {
 export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
   const links = footerLinks(menu)
   return (
-    <footer className="bg-marketing-canvas border-t border-border/60 px-6 py-12">
+    <footer
+      className="bg-marketing-canvas border-t border-border/60 px-6 pt-12 px-safe"
+      // Keep the 3rem base, add the home-indicator inset on top so the legal row clears it
+      // in a standalone PWA (env() = 0 on a normal display, so no change off-device).
+      style={{ paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}
+    >
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-8">
           {/* Brand */}
           <div className="max-w-xs">
             <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto opacity-50 mb-3" />
             <p className="text-sm text-muted leading-relaxed">
-              A third space for a disconnected generation. Not home, not work.
-              A place to be human, together.
+              Frequency is the community app for real-world connection. Find local Circles and events
+              near you, keep a private contact book of the people you meet, and stay in touch. Not home,
+              not work. A place to be human, together.
             </p>
           </div>
 
@@ -56,6 +62,7 @@ export function MarketingFooter({ menu }: { menu?: ResolvedMenu }) {
           </span>
           <div className="flex items-center gap-8 text-xs text-muted">
             <Link href="/privacy" className="hover:text-text transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-text transition-colors">Terms</Link>
             <a href={`mailto:${CONTACT_EMAIL}`} className="hover:text-text transition-colors">Contact</a>
           </div>
         </div>

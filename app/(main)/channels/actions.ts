@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
+import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 
-type CommunityRole = 'member' | 'crew' | 'host' | 'guide' | 'mentor' | 'admin' | 'janitor'
 type ChannelScope = 'hub' | 'nexus' | 'outpost'
 
 async function getMyProfile(): Promise<{
@@ -48,16 +48,16 @@ export async function createChannel(formData: FormData) {
   const profile = await getMyProfile()
   if (!profile) return
 
-  const roleOrder: CommunityRole[] = ['member', 'crew', 'host', 'guide', 'mentor', 'janitor']
-  const roleIndex = roleOrder.indexOf(profile.community_role)
-
-  // Role → minimum scope allowed
-  // host → hub-scoped only
-  // guide → nexus-scoped or below
-  // mentor → any scope
-  if (scope === 'hub' && roleIndex < roleOrder.indexOf('host')) return
-  if (scope === 'nexus' && roleIndex < roleOrder.indexOf('guide')) return
-  if (scope === 'outpost' && roleIndex < roleOrder.indexOf('mentor')) return
+  // Role → minimum scope allowed. Use the canonical ladder (lib/core/roles) so a Site
+  // Admin / Executive Admin (above mentor on the hierarchy) clears every threshold; the
+  // old hand-rolled array dropped 'admin', so an admin's index was -1 and every gate
+  // silently failed (admins could not create channels at all).
+  //   hub    → host+
+  //   nexus  → guide+
+  //   outpost→ mentor+
+  if (scope === 'hub' && !atLeastRole(profile.community_role, 'host')) return
+  if (scope === 'nexus' && !atLeastRole(profile.community_role, 'guide')) return
+  if (scope === 'outpost' && !atLeastRole(profile.community_role, 'mentor')) return
 
   const supabase = await createClient()
   const { data: channel, error } = await supabase
@@ -89,36 +89,6 @@ export async function createChannel(formData: FormData) {
 
   revalidatePath('/channels')
   redirect(`/channels/${channel.id}`)
-}
-
-export async function joinChannel(channelId: string) {
-  const profile = await getMyProfile()
-  if (!profile) return
-
-  const supabase = await createClient()
-  await supabase.from('channel_memberships').upsert({
-    channel_id: channelId,
-    profile_id: profile.id,
-    status: 'active',
-  }, { onConflict: 'channel_id,profile_id' })
-
-  revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
-}
-
-export async function leaveChannel(channelId: string) {
-  const profile = await getMyProfile()
-  if (!profile) return
-
-  const supabase = await createClient()
-  await supabase
-    .from('channel_memberships')
-    .delete()
-    .eq('channel_id', channelId)
-    .eq('profile_id', profile.id)
-
-  revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
 }
 
 // ─── Topical Channels (Hierarchy v3, global topical layer) ───

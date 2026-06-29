@@ -7,6 +7,7 @@
 // render rich, cohesive detail. Server-only (rides the same admin handle as the reads it calls).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveMemberDay } from '@/lib/member-day'
 import { getPlan, normalizeJourneyMeeting, planPillarMap, type JourneyPlan, type JourneyMeeting, type JourneyPlanItem } from '@/lib/journey-plans'
 import { getRankedPractice, type RankedPractice } from '@/lib/practices'
 import { getPillars, pillarsById, type Pillar } from '@/lib/pillars'
@@ -154,7 +155,9 @@ export async function getLinkedEvent(eventId: string | null): Promise<LinkedEven
  *  step's "Mark complete & continue" until the practice is done (run the timer, or Log it). Reads
  *  practice_logs through the same admin handle the other learn reads use; de-duped. */
 export async function getLoggedTodayPracticeIds(profileId: string): Promise<string[]> {
-  const today = new Date().toISOString().slice(0, 10)
+  // The member's LOCAL day (home_timezone), matching the day logPractice writes logged_for under,
+  // so a journey step's "logged today" gate flips at the member's midnight, not UTC's (~5pm Pacific).
+  const today = await resolveMemberDay(profileId)
   const { data } = await createAdminClient()
     .from('practice_logs')
     .select('practice_id')

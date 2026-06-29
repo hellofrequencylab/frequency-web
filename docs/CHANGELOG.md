@@ -12,10 +12,87 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **A soft background for Mindless**: in a Be Still sit, pick an **Ambient** loop
+  (Forest, Ocean, or Drift). Tap one to hear it. It plays low under the whole
+  session, fades in when you start and out when you finish, and loops with no
+  seam. Off by default, and remembered once you choose.
+
+### Fixed
+
+- **Repeating events land on the right dates**: a monthly event set on the 29th, 30th, or
+  31st now falls on the last day of shorter months (so a "31st" series hits Feb 28 or 29,
+  then March 31, April 30) instead of skipping a month.
+- **RSVPs that roll to the waitlist are treated as waitlisted**: when an event fills up at
+  the moment you RSVP, you are now correctly placed on the waitlist, and the "you're going"
+  confirmation, calendar invite, and host credit only fire for a confirmed seat.
+- **Rewards always pay out**: if a Gem reward hit a hiccup while saving, it no longer gets
+  stuck as "claimed but unpaid". The claim is released so the next attempt pays it, exactly
+  once. A Welcome Back bonus also reverses the exact amount it paid if you undo that day's log.
+- **Spending Gems is safe under pressure**: gifting Gems and redeeming from the Vault now
+  check your balance the moment they charge, so two quick actions can never overspend. Joining
+  a circle is likewise capped at the circle's limit even if several people join at once.
+- **Payment and email events are handled reliably**: a Stripe event that hits a temporary
+  error is now retried instead of being skipped, and a signed email-status callback is rejected
+  if it is more than five minutes old, closing a replay gap.
+- **Blocking holds in older chats**: if you block someone, they can no longer send into a 1:1
+  conversation you already had open.
+- **Space emails send as the space**: outreach from a space now goes out from the space's own
+  sender and replies route back to the space, not the platform default.
+- **Site Admins can create channels again**: an admin-level account is no longer wrongly blocked
+  from creating a channel.
+
+### Security
+
+- **Internal spend functions are service-role only**: the new atomic gift/redeem database
+  functions are locked so only the server can call them, not the public API. (Caught by the
+  database security advisor before release; no member-facing change.)
+
+### Added
+
+- **Paid-plan groundwork, still switched off**: the last pieces of the pricing system are now wired
+  in, all behind the same master switch, so nothing changes for members yet. When paid plans are
+  eventually turned on, this is what unlocks: a "join to compete" path on the leaderboard, unlimited
+  Vera for paid members (with a generous free daily allowance for everyone else), a consistent way
+  spaces unlock their tools by plan, a Household bundle that covers several members on one plan, a
+  gentle reminder to upgrade before a season resets, and clear, calm handling if a payment fails or a
+  plan changes. Until billing is deliberately turned on, every one of these stays invisible and no one
+  is charged. Access stays exactly as it is today.
+
+- **Plans and pricing, behind the scenes**: operators now have a Pricing console to set up
+  member and space plans, prices, and what each plan includes, all in one place. Operators can now
+  also connect Stripe and sync those plans into Stripe products with one click from the console.
+  The Membership page, a new **Plan and billing** page for spaces, and the join-a-space flow now read
+  their prices from that console instead of fixed numbers, and a space can ask about white-label from
+  one place. Nothing is switched on for members yet, so prices and access stay exactly as they are
+  today, and no one is charged until billing is deliberately turned on. This is the groundwork for
+  paid plans arriving in a later update.
+
+- **A CRM for your space**: if you run a space with a CRM, open it from Manage to see your pipeline
+  and contacts in one place, with stages that fit what you do (a sales funnel for a business, a client
+  journey for a practitioner, a supporter lifecycle for an organization). **Bring your contacts into
+  your Space CRM** copies the people from My Contacts into the space, starts a deal for each one, and
+  skips anyone you have already brought in. Your private My Contacts list stays exactly as it is.
+- **Save someone by scanning their code**: scan another member's personal Frequency code in
+  person and they land in **My Contacts**, pre-filled from their public profile and stamped with
+  where and when you met. You go straight to their contact page to set a follow-up. It's private
+  to you, the other person isn't notified, and scanning the same person again just updates your
+  existing contact. Find these under the new **QR Scan** tab.
+- **Follow-ups in My Contacts**: set a reminder to reach out to anyone you've met, with
+  an optional note. Open reminders gather in a **Reach out** list at the top of My Contacts,
+  so the people worth a message are the first thing you see. Mark one **Done** and it clears.
+  Each contact now shows when you last reached out, and you can sort your list by recently
+  added, last contacted, follow-up due, or name. New **Card** and **QR Scan** tabs sort your
+  contacts by how you added them.
 - **Build a practice with Vera**: hit **Create a practice** and answer a few quick
   questions (who it's for, the act, what you want from it, how often, how long). Vera
   drafts the whole thing, a name, a hook, the steps, a cadence, and a Pillar, for you
   to review and tweak. Prefer to start from scratch? Skip and go straight to the editor.
+- **Features and access for your space**: if you run a space, open **Features and access**
+  from Manage to turn the tools your space uses on or off and set the lowest role that can
+  use each one. Hand the door check-in to a moderator without making them an admin, or turn
+  off a tool you do not use, and it stops showing for the team. Your space starts with sensible
+  settings and you change them whenever you like. Operators can set the starting tools for each
+  kind of space, and a paid tool turns on when your plan includes it.
 
 ### Changed
 
@@ -42,6 +119,18 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 - **Season 1 challenges, sharpened**: a focused set of **15 challenges** (easy through
   legendary). Finish the first fourteen and **The Completionist** completes itself, with
   the biggest bonus and a border you can't get any other way.
+- **One timer now: Mindless, with Be Still and Get Moving**: the separate Movement
+  timer is gone. Mindless is one timer with two modes you switch between. **Be Still**
+  is the quiet sit (meditate, breathe, journal). **Get Moving** is for a walk, run,
+  yoga, strength set, stretch or play. Pick a practice and it opens in the mode that
+  fits. Get out of your head, and into your life.
+- **Continue a practice you started**: stop a timed sit partway, once you're past
+  halfway, and the day still counts and you bank one Zap. The practice now reads
+  **Continue Practice** wherever you'd log it, and picking it back up resumes the
+  time you had left.
+- **Pick up a dropped sit**: if your phone closes the tab mid-sit, reopen Mindless
+  and it offers to resume right where you were, with the exact time you'd already
+  done. Nothing lost.
 
 ### Changed
 

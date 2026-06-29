@@ -53,6 +53,9 @@ const COLUMNS: FootColumn[] = [
       { href: '/channels', label: 'Channels', navKey: 'channels' },
       { href: '/events', label: 'Events', navKey: 'events' },
       { href: '/market', label: 'Marketplace', navKey: 'market' },
+      { href: '/marketplace/housing', label: 'Housing', navKey: 'housing' },
+      { href: '/marketplace/makers', label: 'Makers', navKey: 'maker' },
+      { href: '/shop', label: 'Shop', navKey: 'shop' },
       { href: '/network', label: 'Community', navKey: 'people' },
     ],
   },
@@ -100,8 +103,8 @@ const COLUMNS: FootColumn[] = [
   {
     title: 'Legal',
     links: [
-      // Only /privacy exists today; /terms is omitted until the page ships.
       { href: '/privacy', label: 'Privacy' },
+      { href: '/terms', label: 'Terms' },
     ],
   },
 ]
