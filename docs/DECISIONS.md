@@ -9266,3 +9266,30 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - **Migrations are applied to prod** (`20260828000000`, verified on `azsqfeonabsbmemvddqd`). The foundation + server layer are shipped and committed on the branch.
 - **UI is in flight, not merged.** The admin workspace surfaces (review queue v2, "Needs attention" panel, merge UI, tag governance), a table-overlap rework, the "System" then "Frequency" house-practices rename, and the conversion of the page body into layout-editor block areas (`PageModules`, per [ADR-270](DECISIONS.md)/[272](DECISIONS.md)) are still in flight. Treat them as ⏳, not ✅, until merged.
 - **Trust ordering is dormant.** The submitter-trust order is correct code over inert data until Phase 3 routes flows to emit trust signals; do not read the current queue order as evidence the trust signal works.
+
+## ADR-449: H1-1 — typed exclusive-arc for the polymorphic scope FKs (EXPAND phase)
+
+**Status:** Accepted (2026-06-29). Expand phase shipped + applied to prod (`azsqfeonabsbmemvddqd`, migration `20260829000000`). The contract phase is deferred and branch-first. This is **T0** of [PLATFORM-MASTER-PLAN.md](PLATFORM-MASTER-PLAN.md) (the serial tenancy/integrity gate) and **H1-1** of [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md) §5 ("the single riskiest data-model choice; highest priority in H1").
+
+**Context — grounded against prod, not the plan's assumptions.** `posts.scope_id` and `events.scope_id` were bare UUIDs with **no foreign key**: nothing prevents a future orphan (delete a circle → its posts/events dangle) and RLS keyed off an unconstrained column can mis-evaluate. The plan/recon assumed both pointed at "circles/hubs/regions"; the actual arcs (verified in prod + the read code) are different and had to be measured before touching anything:
+- **`posts.scope_id`** (nullable, *no* `scope_type` column) → **circle | event | profile(wall)**, a 3-way arc resolved by precedence in `lib/feed/post-origin.ts` (circle → event → wall → feed). Today: 54 → profiles, 5 → circles, 0 → events, **0 orphans**. Event-scoped posts are a live, supported write path with no rows yet — a 2-way arc would have silently broken it.
+- **`events.scope_id`** (NOT NULL, *has* `scope_type`) → **circle** (`scope_type='circle'`) **| nexus_region** (`scope_type='public'`, the member's region or the root-region sentinel `27dd8ec1…`). Today: 1 circle + 7 region, **0 orphans**. Public events scope to a region, not a circle/space — the recon had this wrong.
+
+So the orphan risk is **latent, not present** — the fix is to make it structurally impossible going forward.
+
+**Decision — typed exclusive-arc (owner call), shipped as expand/contract.** One nullable, real FK column per target type, so referential integrity is DB-enforced. EXPAND (migration `20260829000000`, non-breaking, zero app change):
+1. Add the typed FK columns — posts: `scope_circle_id`/`scope_event_id`/`scope_profile_id`; events: `scope_circle_id`/`scope_region_id` — all `ON DELETE SET NULL`.
+2. Backfill from the existing `scope_id` (EXISTS-guarded against each target table).
+3. A `BEFORE INSERT/UPDATE` trigger per table keeps the typed columns **derived from the `scope_id` the app already writes** (posts: precedence lookup; events: by `scope_type`), and reverse-derives `scope_id` from a typed column for the contract-phase future. `SECURITY DEFINER`, `search_path` pinned, `EXECUTE` revoked from the API roles (H2-3 hygiene; trigger-only functions).
+4. Partial indexes on each typed column.
+
+Verified with two `BEGIN…ROLLBACK` dry-runs against prod data before applying: backfill resolved **every** row (`posts[circle=5 event=0 profile=54 unresolved=0]`, `events[circle=1 region=7 unresolved=0]`) with zero FK violations, and the trigger re-derived correctly on a write.
+
+**Three load-bearing choices.**
+- **`ON DELETE SET NULL`, not cascade — expand preserves behavior.** With no FK today, a parent delete leaves the child alive with a dangling pointer. `SET NULL` reproduces that exactly (child survives, link nulls) rather than newly cascade-deleting posts when a circle is removed. The intended deletion graph (cascade vs set-null per arc) is a deliberate decision owned by **H1-5**, made in the contract phase with the app's delete flows in view — not smuggled into expand.
+- **The trigger only sets a typed column when the target row EXISTS.** This is the safety invariant: an unresolvable `scope_id` (legacy/unknown) leaves the typed column NULL and the insert still succeeds, so this migration can never turn a previously-valid write into an FK error. Unresolved rows are the orphan-repair job's domain (H1-7).
+- **No CHECK, no RLS change, no column drop in expand.** The exclusive-arc `CHECK` (exactly one non-null), re-pointing RLS at the typed columns, and dropping the bare `scope_id`/`scope_type` are all **contract phase**, gated on the app first writing the typed columns directly, and applied **branch-first** (high blast radius on the two hottest write paths).
+
+**Consequences.**
+- Posts/events now carry DB-enforced, indexed typed scope FKs; the bare `scope_id`/`scope_type` remain authoritative and unchanged, so all current reads/writes and RLS are untouched. New columns are reached via the untyped admin handle ([ADR-246](DECISIONS.md)) until `lib/database.types.ts` is regenerated.
+- **Contract phase is tracked** (the app writes typed columns → add CHECK → re-point RLS → decide deletion graph (H1-5) → drop `scope_id`). Until then, expand is a pure, reversible, additive safety net.

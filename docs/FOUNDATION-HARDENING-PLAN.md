@@ -109,7 +109,7 @@ tables are still small.
 
 | ID | Task | Detail | State |
 |---|---|---|---|
-| H1-1 | **Resolve polymorphic foreign keys** | `posts.scope_id` and `events.scope_id` are bare UUIDs with no FK, pointing at circles/hubs/regions. This is the single riskiest data-model choice: orphaned rows + RLS that can mis-evaluate. Fix via either typed columns + real FKs, a `scopes` union/registry table, or per-type columns. Add validation + a backfill/repair job. **Highest priority in H1.** | 🔴 |
+| H1-1 | **Resolve polymorphic foreign keys** | `posts.scope_id` (→ circle\|event\|profile) and `events.scope_id` (→ circle\|nexus_region) were bare UUIDs with no FK. **EXPAND shipped** ([ADR-449](DECISIONS.md), migration `20260829000000`): typed FK columns + backfill (0 orphans) + sync trigger + indexes, non-breaking. **CONTRACT pending** (branch-first): exclusive-arc CHECK, RLS re-point, deletion-graph (H1-5), drop bare `scope_id`. **Highest priority in H1.** | 🟡 |
 | H1-2 | **Ledger integrity audit** | Verify `zap_transactions`, `gem_transactions`, `engagement_events`, `reward_grants` are append-only and fully idempotent on every write path (including retries, un-log/reverse, season reset). Add a reconciliation job that proves `profiles.current_season_zaps/gems` == ledger sums. | 🔴 |
 | H1-3 | **Event lifecycle audit trail** | `events.is_cancelled` is a bare boolean. Add `cancelled_at`, `cancelled_by`, `cancellation_reason` (and the same pattern wherever a state lacks who/when/why). | 🔴 |
 | H1-4 | **Tag model reconciliation** | `member_tags` (governed) vs `network_contact_tags` (free-form) coexist with different schemas and no unified search. Decide one model or namespace them clearly; document in DATABASE.md. | 🔴 |
