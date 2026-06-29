@@ -52,15 +52,3 @@ export async function setTypeFunctionDefault(
   revalidatePath(PATH)
   return ok()
 }
-
-/** Reset a per-type function default back to the CODE default (delete the row). Janitor-gated. Returns
- *  ActionResult (a no-op delete of an absent row is success). */
-export async function resetTypeFunctionDefault(type: string, fn: string): Promise<ActionResult> {
-  await requireAdmin('janitor')
-  if (!isSpaceType(type)) return fail('Unknown space type.')
-  const def = spaceFunctionDef(fn)
-  if (!def) return fail('Unknown function.')
-  if (!(await deleteSpaceFunctionTypeDefault(type, def.key))) return fail('Could not reset that default.')
-  revalidatePath(PATH)
-  return ok()
-}

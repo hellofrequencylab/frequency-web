@@ -10,7 +10,6 @@
 import { revalidatePath } from 'next/cache'
 import {
   createSpaceEmailTemplate as createSpaceEmailTemplateImpl,
-  updateSpaceEmailTemplate as updateSpaceEmailTemplateImpl,
   deleteSpaceEmailTemplate as deleteSpaceEmailTemplateImpl,
 } from '@/lib/spaces/email-templates'
 import { type ActionResult } from '@/lib/action-result'
@@ -30,20 +29,6 @@ export async function createSpaceEmailTemplate(
   body: string,
 ): Promise<ActionResult<{ id: string }>> {
   const res = await createSpaceEmailTemplateImpl(spaceId, name, subject, body)
-  if (!('error' in res)) revalidateEmail(slug)
-  return res
-}
-
-/** Rename / re-save a template. Gated on canEditProfile (see the implementation). */
-export async function updateSpaceEmailTemplate(
-  spaceId: string,
-  slug: string,
-  id: string,
-  name: string,
-  subject: string,
-  body: string,
-): Promise<ActionResult> {
-  const res = await updateSpaceEmailTemplateImpl(spaceId, id, name, subject, body)
   if (!('error' in res)) revalidateEmail(slug)
   return res
 }

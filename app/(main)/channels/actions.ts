@@ -91,36 +91,6 @@ export async function createChannel(formData: FormData) {
   redirect(`/channels/${channel.id}`)
 }
 
-export async function joinChannel(channelId: string) {
-  const profile = await getMyProfile()
-  if (!profile) return
-
-  const supabase = await createClient()
-  await supabase.from('channel_memberships').upsert({
-    channel_id: channelId,
-    profile_id: profile.id,
-    status: 'active',
-  }, { onConflict: 'channel_id,profile_id' })
-
-  revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
-}
-
-export async function leaveChannel(channelId: string) {
-  const profile = await getMyProfile()
-  if (!profile) return
-
-  const supabase = await createClient()
-  await supabase
-    .from('channel_memberships')
-    .delete()
-    .eq('channel_id', channelId)
-    .eq('profile_id', profile.id)
-
-  revalidatePath('/channels')
-  revalidatePath(`/channels/${channelId}`)
-}
-
 // ─── Topical Channels (Hierarchy v3, global topical layer) ───
 
 // Tunes the viewer in and drops them straight into the channel. The user

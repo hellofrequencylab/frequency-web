@@ -125,21 +125,6 @@ export async function sendMessage(conversationId: string, formData: FormData) {
   revalidatePath('/messages')
 }
 
-// ── markConversationRead ──────────────────────────────────────────────
-
-export async function markConversationRead(conversationId: string) {
-  const myProfileId = await getMyProfileId()
-  const admin = createAdminClient()
-
-  await admin
-    .from('conversation_participants')
-    .update({ last_read_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
-
-  revalidatePath('/messages')
-}
-
 // ── Group DMs ─────────────────────────────────────────────────────────
 
 const GROUP_DM_CAP = 25 // max participants including yourself
