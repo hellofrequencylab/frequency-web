@@ -87,8 +87,8 @@ the future."
 
 | ID | Task | Detail | State |
 |---|---|---|---|
-| H0-1 | **Run the full Supabase advisor sweep** | `get_advisors` for security and performance on prod; capture every finding (missing RLS, unindexed FKs, security-definer search_path gaps) as the H1/H2/H3 backlog seed. | 🔴 |
-| H0-2 | **Reconcile migration drift** | Confirm repo `supabase/migrations/` == applied prod schema. List any prod-only changes applied via SQL editor; back-fill them as migrations so the repo is the source of truth. 360+ migrations exist; drift risk is real. | 🔴 |
+| H0-1 | **Run the full Supabase advisor sweep** | `get_advisors` for security and performance on prod; capture every finding (missing RLS, unindexed FKs, security-definer search_path gaps) as the H1/H2/H3 backlog seed. | ✅ swept 2026-06-29 (baseline below); the one safe mechanical fix (`practices_touch_updated_at` search_path) applied; rest triaged as H0 design backlog |
+| H0-2 | **Reconcile migration drift** | Confirm repo `supabase/migrations/` == applied prod schema. List any prod-only changes applied via SQL editor; back-fill them as migrations so the repo is the source of truth. 360+ migrations exist; drift risk is real. | ✅ reconciled 2026-06-29: functionally repo == prod (rest is cosmetic apply-time stamp drift); the one genuinely-undeployed migration (`20260816000000_circle_earned_zaps_indexes`) applied |
 | H0-3 | **Regenerate and pin database types** | `generate_typescript_types` → overwrite `lib/database.types.ts`; this unblocks removing the temporary `as unknown as` casts (H5-1). | 🔴 |
 | H0-4 | **Error monitoring** | Stand up Sentry (or equivalent) for the Next.js app: server actions, RSC, and client. Tag by route and by `entity`/`space_id`. Today there is no centralized error capture. | 🔴 |
 | H0-5 | **Cron observability** | Instrument all 17 `vercel.json` cron routes with success/failure heartbeats + alerting (e.g. a dead-man's-switch per job). A silently dead `process-queue`, `weekly-digest`, or `season-go-live` is exactly the future problem to prevent. | 🔴 |
@@ -98,6 +98,19 @@ the future."
 
 **Done when:** advisors are clean-listed into backlog, repo == prod schema, error + cron alerting
 page a human on failure, and a baseline dashboard exists for latency, cost, and SLOs.
+
+### H0 Baseline — Advisor + Drift Sweep (prod `azsqfeonabsbmemvddqd`, 2026-06-29)
+
+**Security advisors:** 1 ERROR, 174 WARN, 69 INFO.
+- 🔴 1 ERROR: `rls_disabled_in_public` on `spatial_ref_sys` (PostGIS system table) — resolve via PostGIS schema relocation, not a standalone RLS toggle.
+- ⚠️ Must-fix WARN: 1 `function_search_path_mutable` (`practices_touch_updated_at` — **fixed**, migration `20260831000000`); 2 `extension_in_public` (`vector`, `postgis` — needs relocation design); `auth_leaked_password_protection` (enable in Auth console — **owner action**).
+- ⚠️ 169 SECURITY DEFINER executable-by-role warns + 69 `rls_enabled_no_policy` (deny-by-default today, only `service_role` reaches them) require **per-object triage**, not blanket fixes — tracked as H0/H2 design backlog. 136 `auth_allow_anonymous_sign_ins` = RLS-references-`anon` noise (expected for the public surface).
+
+**Performance advisors (pre-launch debt, deferred):** 202 `unused_index`, 14 `multiple_permissive_policies`, 6 `auth_rls_initplan`, 1 `unindexed_foreign_keys`.
+
+**Migration drift:** functionally repo == prod. The applied ledger uses apply-time re-stamping (cosmetic). **One real gap fixed:** `20260816000000_circle_earned_zaps_indexes` was never applied → **applied 2026-06-29**.
+
+**H0 design backlog (NOT mechanical — do not auto-apply):** PostGIS/`vector` relocation out of `public` (carries the `spatial_ref_sys` ERROR); per-function `REVOKE EXECUTE FROM anon/authenticated` triage on SECURITY DEFINER RPCs (`adjust_ticket_sold`, `reset_season`, `recompute_community_level` are candidates); RLS policies for the 69 deny-by-default tables as features go live; the perf debt (unused-index prune, permissive-policy consolidation, initplan wrapping). Remaining H0 items: H0-4 Sentry, H0-5 cron heartbeats, H0-6 perf baseline, H0-7 cost baseline, H0-8 SLOs.
 
 ---
 
@@ -111,7 +124,7 @@ tables are still small.
 |---|---|---|---|
 | H1-1 | **Resolve polymorphic foreign keys** | `posts.scope_id` (→ circle\|event\|profile) and `events.scope_id` (→ circle\|nexus_region) were bare UUIDs with no FK. **EXPAND shipped** ([ADR-449](DECISIONS.md), migration `20260829000000`): typed FK columns + backfill (0 orphans) + sync trigger + indexes, non-breaking. **CONTRACT pending** (branch-first): exclusive-arc CHECK, RLS re-point, deletion-graph (H1-5), drop bare `scope_id`. **Highest priority in H1.** | 🟡 |
 | H1-2 | **Ledger integrity audit** | Verify `zap_transactions`, `gem_transactions`, `engagement_events`, `reward_grants` are append-only and fully idempotent on every write path (including retries, un-log/reverse, season reset). Add a reconciliation job that proves `profiles.current_season_zaps/gems` == ledger sums. | 🔴 |
-| H1-3 | **Event lifecycle audit trail** | `events.is_cancelled` is a bare boolean. Add `cancelled_at`, `cancelled_by`, `cancellation_reason` (and the same pattern wherever a state lacks who/when/why). | 🔴 |
+| H1-3 | **Event lifecycle audit trail** | `events.is_cancelled` is a bare boolean. Add `cancelled_at`, `cancelled_by`, `cancellation_reason` (and the same pattern wherever a state lacks who/when/why). | ✅ migration `20260830000000` (3 nullable cols + partial index, no fabricated backfill — `events` has no `updated_at`); all 6 cancel/reinstate paths wired via `lib/events/event-lifecycle.ts` (`cancelAudit`/`reinstateAudit`); reinstate clears the trail |
 | H1-4 | **Tag model reconciliation** | `member_tags` (governed) vs `network_contact_tags` (free-form) coexist with different schemas and no unified search. Decide one model or namespace them clearly; document in DATABASE.md. | 🔴 |
 | H1-5 | **Constraint & enum sweep** | Confirm every status/role/kind column is enum-or-check constrained; confirm cascade vs set-null is intentional on every FK (content survives author deletion; ephemera cascades). Document the deletion graph. | 🔴 |
 | H1-6 | **Idempotency key coverage** | Audit every member-triggered mutation that awards or charges for an idempotency guard against client retry (practice log already has one; verify check-ins, captures, RSVPs, redemptions, orders). | 🔴 |

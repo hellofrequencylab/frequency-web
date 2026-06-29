@@ -6,6 +6,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { atLeastRole } from '@/lib/core/roles'
+import { cancelAudit } from '@/lib/events/event-lifecycle'
 
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
@@ -315,7 +316,7 @@ export async function cancelEventFromReport(
 
   const { error } = await admin
     .from('events')
-    .update({ is_cancelled: true })
+    .update(cancelAudit(caller.id, null))
     .eq('id', eventId)
 
   if (error) {

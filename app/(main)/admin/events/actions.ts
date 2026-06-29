@@ -13,6 +13,7 @@ import { sendEventCancelledEmail } from '@/lib/email'
 import { shouldSend } from '@/lib/notification-preferences'
 import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
+import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 
 // Operator curation: stamp (or clear) an event's featured marker. Gated on the platform
 // `admin.access` capability so only operators hand-pick the events that surface first.
@@ -196,7 +197,7 @@ export async function updateEvent(id: string, fd: FormData) {
 export async function cancelEvent(id: string) {
   // AUTHORIZATION: host of this event / its circle manager / community admin+.
   // Re-verified here (never trusts the client); refund + notify run ONLY behind it.
-  await requireEventEditor(id)
+  const caller = await requireEventEditor(id)
   const admin = createAdminClient()
 
   // Flip the flag and learn whether THIS call is the one that transitioned the
@@ -206,7 +207,7 @@ export async function cancelEvent(id: string) {
   // (refundTicket is itself idempotent on the money side regardless.)
   const { data: flipped, error } = await admin
     .from('events')
-    .update({ is_cancelled: true })
+    .update(cancelAudit(caller.id, null))
     .eq('id', id)
     .eq('is_cancelled', false)
     .select('id')
@@ -381,7 +382,7 @@ async function refundAndNotifyForCancelledEvent(eventId: string): Promise<void> 
 export async function reinstateEvent(id: string) {
   await requireEventEditor(id)
   const admin = createAdminClient()
-  const { error } = await admin.from('events').update({ is_cancelled: false }).eq('id', id)
+  const { error } = await admin.from('events').update(reinstateAudit()).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/events')
   revalidatePath('/events')

@@ -14,6 +14,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
+import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -801,7 +802,7 @@ export async function cancelEvent(eventId: string) {
   const supabase = await createClient()
   await supabase
     .from('events')
-    .update({ is_cancelled: true })
+    .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)
     .eq('host_id', myProfileId)
 

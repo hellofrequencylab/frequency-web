@@ -700,9 +700,12 @@ export async function reportRemoveEvent(eventId: string, reason: string): Promis
   if (!ev) return { removed: false, clawedBack: 0 }
 
   const alreadyRemoved = !!ev.removed_at
+  const removedAt = ev.removed_at ?? new Date().toISOString()
   const { error } = await admin
     .from('events')
-    .update({ removed_at: ev.removed_at ?? new Date().toISOString(), removed_reason: cleanReason, is_cancelled: true })
+    // Removal also flips is_cancelled; stamp the cancel audit trail (H1-3) reusing removedAt
+    // so the two timestamps stay consistent. No actor in this signature today → cancelled_by null.
+    .update({ removed_at: removedAt, removed_reason: cleanReason, is_cancelled: true, cancelled_at: removedAt, cancelled_by: null, cancellation_reason: cleanReason } as unknown as Database['public']['Tables']['events']['Update'])
     .eq('id', eventId)
   if (error) return { removed: false, clawedBack: 0 }
 
