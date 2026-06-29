@@ -76,8 +76,13 @@ export async function startConversation(otherProfileId: string) {
 
 // ── sendMessage ───────────────────────────────────────────────────────
 
+// Bounds (site-audit SEC-2): cap free-text written to the DB so a participant can't post
+// unbounded blobs. Generous limits, well above any real message / name.
+const MAX_MESSAGE_BODY = 4000
+const MAX_CONVO_NAME = 120
+
 export async function sendMessage(conversationId: string, formData: FormData) {
-  const body = (formData.get('body') as string | null)?.trim()
+  const body = (formData.get('body') as string | null)?.trim().slice(0, MAX_MESSAGE_BODY)
   if (!body) return
 
   const myProfileId = await getMyProfileId()
@@ -174,7 +179,7 @@ export async function startGroupConversation(
     throw new Error('You must be friends with every member of a group DM')
   }
 
-  const trimmedName = name?.trim() || 'Group chat'
+  const trimmedName = name?.trim().slice(0, MAX_CONVO_NAME) || 'Group chat'
 
   // Phase B (ADR-088): a group chat is now a PRIVATE ROOM, not a group
   // conversation. `conversations` is 1:1-only; this returns a room id and the
@@ -210,7 +215,7 @@ export async function renameConversation(conversationId: string, name: string) {
     .maybeSingle()
   if (!part) throw new Error('You must be a participant to rename this conversation')
 
-  const trimmed = name.trim() || null
+  const trimmed = name.trim().slice(0, MAX_CONVO_NAME) || null
 
   await admin
     .from('conversations')

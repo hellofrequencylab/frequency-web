@@ -33,8 +33,8 @@ export async function createRoom(fd: FormData): Promise<ActionResult<{ id: strin
     return fail('Crew membership required to create rooms')
   }
 
-  const name = (fd.get('name') as string)?.trim()
-  const description = (fd.get('description') as string)?.trim() || null
+  const name = (fd.get('name') as string)?.trim().slice(0, 120)
+  const description = (fd.get('description') as string)?.trim().slice(0, 500) || null
   const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
   const scopeId = (fd.get('scope_id') as string)?.trim() || null
 
@@ -87,8 +87,8 @@ export async function updateRoom(roomId: string, fd: FormData): Promise<ActionRe
     .maybeSingle()
   if (!membership?.is_admin) return fail('You must be a room admin to edit this room')
 
-  const name = (fd.get('name') as string)?.trim()
-  const description = (fd.get('description') as string)?.trim() || null
+  const name = (fd.get('name') as string)?.trim().slice(0, 120)
+  const description = (fd.get('description') as string)?.trim().slice(0, 500) || null
   const visibility = ((fd.get('visibility') as string) || 'public') as RoomVisibility
   if (!name) return fail('Name is required')
   // Only public/private are user-editable; scope-derived visibilities are managed elsewhere.
@@ -278,10 +278,11 @@ export async function deleteRoom(roomId: string) {
 export async function inviteToRoom(roomId: string, profileId: string) {
   const caller = await getCallerProfile()
   if (!caller) redirect('/sign-in')
+  if (caller.id === profileId) throw new Error('You are already in this room')
 
   const admin = createAdminClient()
 
-  // Caller must be a member of the room to invite (admins can invite to private rooms)
+  // Caller must be a member of the room to invite.
   const { data: callerMembership } = await admin
     .from('room_members')
     .select('is_admin')
@@ -289,6 +290,31 @@ export async function inviteToRoom(roomId: string, profileId: string) {
     .eq('profile_id', caller.id)
     .maybeSingle()
   if (!callerMembership) throw new Error('You must be a member of the room to invite others')
+
+  // A PRIVATE room is invite-only and admin-controlled: only a room admin may add people
+  // (previously any member could, which let a member force-add a stranger into a private
+  // room via the admin client — ADR site-audit SEC-1).
+  const { data: room } = await admin
+    .from('rooms')
+    .select('visibility')
+    .eq('id', roomId)
+    .maybeSingle()
+  if (!room) throw new Error('Room not found')
+  if ((room as { visibility: string }).visibility === 'private' && !callerMembership.is_admin) {
+    throw new Error('Only a room admin can invite people to a private room')
+  }
+
+  // The invitee must be an accepted friend of the caller (same gate as starting a group
+  // DM, startGroupConversation): you can never add a user who has not connected with you.
+  const pair = caller.id < profileId
+    ? { user_a_id: caller.id, user_b_id: profileId }
+    : { user_a_id: profileId, user_b_id: caller.id }
+  const { data: friendship } = await admin
+    .from('friendships')
+    .select('id')
+    .match({ ...pair, status: 'accepted' })
+    .maybeSingle()
+  if (!friendship) throw new Error('You can only invite people you are friends with')
 
   await admin.from('room_members').upsert(
     { room_id: roomId, profile_id: profileId, is_admin: false },

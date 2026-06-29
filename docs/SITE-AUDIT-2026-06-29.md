@@ -27,14 +27,14 @@
 
 | ID | Finding | File | Sev | Status |
 |---|---|---|---|---|
-| SEC-1 | **IDOR** — any room member can force-add an arbitrary user into a private room via the admin client (no invitee consent/scope check). | `app/(main)/messages/rooms/actions.ts:278` (`inviteToRoom`) | 🔴 high | 🔧 |
-| SEC-2 | `sendMessage` body + group/rename names only `.trim()`ed, no max length → DB bloat/abuse. | `app/(main)/messages/actions.ts:79,177,213` | 🟠 med | 🔧 |
-| SEC-3 | `warnMember`/`suspendMember`/`cancelEventFromReport` don't bind the acted-on id to the report's actual target → a host can act on any id via any open report. | `app/(main)/feed/report-actions.ts:174,263,304` | 🟠 med | 🔧 |
-| SEC-4 | `reportContent` writes a moderation report for an arbitrary `(type,id)` with no existence/visibility check → queue abuse. | `app/(main)/feed/report-actions.ts:19` | 🟠 med | 🔧 |
-| SEC-5 | `joinRoom` self-joins a circle/hub/nexus/channel-scoped room without a scope-membership check. | `app/(main)/messages/rooms/actions.ts:108` | 🟡 low-med | 🔧 |
-| SEC-6 | `markOneRead` leans on RLS alone; add defensive `.eq('recipient_id', profileId)`. | `app/(main)/notifications/actions.ts:46` | 🟡 low | 🔧 |
-| SEC-7 | `buildContactPatch` caps no free-text field lengths. | `lib/crm/contact-fields.ts:40` | 🟡 low-med | 🔧 |
-| SEC-8 | `setFoundingMember` doesn't UUID-validate `profileId` (diverges from economy/spotlight). | `app/(main)/admin/pricing/actions.ts:134` | 🟡 low | 🔧 |
+| SEC-1 | **IDOR** — any room member can force-add an arbitrary user into a private room via the admin client (no invitee consent/scope check). | `app/(main)/messages/rooms/actions.ts:278` (`inviteToRoom`) | 🔴 high | ✅ admin-only for private rooms + accepted-friendship gate |
+| SEC-2 | `sendMessage` body + group/rename names only `.trim()`ed, no max length → DB bloat/abuse. | `app/(main)/messages/actions.ts:79,177,213` + rooms create/update | 🟠 med | ✅ length caps (4000 body / 120 name / 500 desc) |
+| SEC-3 | `warnMember`/`suspendMember`/`cancelEventFromReport` don't bind the acted-on id to the report's actual target → a host can act on any id via any open report. | `app/(main)/feed/report-actions.ts:174,263,304` | 🟠 med | ✅ `reportTargetMatches` guard |
+| SEC-4 | `reportContent` writes a moderation report for an arbitrary `(type,id)` with no validation. | `app/(main)/feed/report-actions.ts:19` | 🟠 med | ✅ runtime target/reason enum + details cap (existence check → 📋) |
+| SEC-5 | `joinRoom` self-joins a circle/hub/nexus/channel-scoped room without a scope-membership check. | `app/(main)/messages/rooms/actions.ts:108` | 🟡 low-med | 📋 (per-scope check; deferred — posting already re-gated) |
+| SEC-6 | `markOneRead` leans on RLS alone; add defensive `.eq('recipient_id', profileId)`. | `app/(main)/notifications/actions.ts:46` | 🟡 low | ✅ |
+| SEC-7 | `buildContactPatch` caps no free-text field lengths. | `lib/crm/contact-fields.ts:40` | 🟡 low-med | ✅ 200-char cap |
+| SEC-8 | `setFoundingMember` doesn't UUID-validate `profileId` (diverges from economy/spotlight). | `app/(main)/admin/pricing/actions.ts:134` | 🟡 low | ✅ |
 | SEC-9 | `event.ics` returns title/venue/description for hidden/cancelled events to anyone with the slug. | `app/events/[slug]/event.ics/route.ts:60` | 🟡 low | 📋 (decide intent) |
 | SEC-10 | `searchMembersToLink` builds a PostgREST `.or()` string from input; prefer parameterized `.ilike()`. | `app/(main)/connections/actions.ts:382` | 🟡 low | 📋 |
 | — | **Verified clean:** all `lib/spaces/*`, `/admin` role/economy/pricing/persona/marketing actions, view-as impersonation, event/circle/people-admin resolvers; no secret in client/NEXT_PUBLIC; no exploitable XSS/open redirect; crons secret-gated; webhooks signature-verified. | — | ✓ | ✓ |
