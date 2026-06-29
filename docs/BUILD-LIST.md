@@ -49,11 +49,12 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 ### Phase 2 — Keep it clean (quality + moderation)
 | # | Scope | Status |
 |---|---|---|
-| 2.1 | **Triage review queue.** Bulk approve/reject; prioritize by submitter trust + similarity; near-duplicate flag at submission via `match_practices()`. | 📋 |
-| 2.2 | **Dedup + merge.** Pick canonical, redirect adoptions/logs, keep old slug as a redirect. | 📋 |
-| 2.3 | **Quality score** (completeness + engagement + freshness) → a real "Needs attention" panel (orphaned · imageless · never-logged · stale). | 📋 |
-| 2.4 | **Tag governance.** Promote member tag → canonical; merge synonyms. | 📋 |
-| 2.5 | **Vera pre-screen.** Auto-check voice (CONTENT-VOICE), completeness, safety before public. | 📋 |
+| 2.1 | **Triage review queue.** Bulk approve/reject; prioritize by submitter trust + similarity; near-duplicate flag at submission via `match_practices()`. | ✅ server ([ADR-446](DECISIONS.md)) — `listReviewQueue` (near-dup + submitter-trust + recency order; trust join inert until Phase 3) + bulk approve/reject in `actions.ts` (`requireCurator`). ⏳ review-queue v2 UI in flight on the branch |
+| 2.2 | **Dedup + merge.** Pick canonical, redirect adoptions/logs, keep old slug as a redirect. | ✅ server ([ADR-446](DECISIONS.md)) — `merge_practices(from_id,to_id)` RPC (re-point never delete; drop-dup-then-repoint on the unique relations) + `mergePractices`/`mergePracticesAction`; `practice_slug_redirects` + `resolvePracticeSlugRedirect` 301 fallback on `/practices/[id]`. Migration `20260828000000` applied to prod. ⏳ merge UI in flight |
+| 2.3 | **Quality score** (completeness + engagement + freshness) → a real "Needs attention" panel (orphaned · imageless · never-logged · stale). | ✅ server ([ADR-446](DECISIONS.md)) — `computeQualityScore` + `isStale` (`lib/practices/quality.ts`) + `needsAttention`; `updated_at` + `trg_practices_touch_updated_at` is the freshness signal. ⏳ "Needs attention" panel UI in flight |
+| 2.4 | **Tag governance.** Promote member tag → canonical; merge synonyms. | ✅ server ([ADR-446](DECISIONS.md)) — `listAllTags`/`promoteTagToCanonical`/`mergeTags` + `promoteTagAction`/`mergeTagsAction` (`requireCurator`). ⏳ tag-governance UI in flight |
+| 2.5 | **Vera pre-screen.** Auto-check voice (CONTENT-VOICE), completeness, safety before public. | ✅ server ([ADR-446](DECISIONS.md)) — `lib/ai/practice-publish-screen.ts` (budget-gated voice/completeness/safety, deterministic fallback, advisory-only) + `screenPracticeAction`; `budget.ts` cap. ⏳ surfaced in the in-flight publish UI |
+| — | **Phase-2 in-flight UI** (on the branch, not merged): review-queue v2 · "Needs attention" panel · merge UI · tag governance; plus a table-overlap rework, the "System" → "Frequency" house-practices rename, and converting the page body into layout-editor block areas (`PageModules`, per [ADR-270](DECISIONS.md)/272). | ⏳ |
 
 ### Phase 3 — Make it grow (remix engine)
 | # | Scope | Status |
