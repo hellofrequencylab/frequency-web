@@ -77,19 +77,25 @@ export async function proposeWinbacks(limit = 20): Promise<number> {
     .neq('consent_state', 'unsubscribed')
     .limit(500)
 
+  // One pre-pass for every pending email_contact proposal, so we don't query per member
+  // (site-audit PERF-1: this was an N+1 dupe check inside the loop). Build a Set of the
+  // already-proposed profile ids and test membership in memory.
+  const { data: pending } = await client
+    .from('agent_actions')
+    .select('payload')
+    .eq('kind', 'email_contact')
+    .eq('status', 'proposed')
+  const alreadyProposed = new Set(
+    ((pending ?? [])
+      .map((r) => (r.payload as { profileId?: string } | null)?.profileId)
+      .filter(Boolean)) as string[],
+  )
+
   // Lapsed members with an email and no pending proposal → candidates.
   const candidates: WinbackCandidate[] = []
   for (const m of members ?? []) {
     if (!m.profile_id || !m.email || active.has(m.profile_id)) continue
-
-    const { data: dupe } = await client
-      .from('agent_actions')
-      .select('id')
-      .eq('kind', 'email_contact')
-      .eq('status', 'proposed')
-      .contains('payload', { profileId: m.profile_id })
-      .limit(1)
-    if (dupe && dupe.length > 0) continue
+    if (alreadyProposed.has(m.profile_id as string)) continue
 
     candidates.push({
       profileId: m.profile_id as string,

@@ -135,18 +135,19 @@ export default async function FeedPage({
   // member-progress spine (one read folding activation, the daily practice streak, Journeys and
   // rank into a stage — it drives the hero and is read once for all of them, ADR-146); the
   // exactly-once Amplitude level-up banner (Rewards v2); and the two operator switches (default off).
-  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups] = await Promise.all([
+  // Local-activity state + adaptive radius (Resonance Feed Phase 2, ADR-416) joins the batch
+  // (site-audit PERF-7: it was awaited serially after this Promise.all, but it only needs the
+  // profile id, so it's independent). Drives the founder-vs-location-nudge card AND widens the
+  // 'nearby' radius when the area is sparse. Cached, fail-safe.
+  const [practicesToLog, partialPractices, progress, amplitudeMoment, nextSteps, autoPopups, localActivity] = await Promise.all([
     myProfileId ? getPracticesToLogToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getPartialPracticesToday(myProfileId) : Promise.resolve([]),
     myProfileId ? getMemberProgress(myProfileId) : Promise.resolve(null),
     myProfileId ? getAmplitudeCelebration(myProfileId) : Promise.resolve(null),
     nextStepsEnabled(),
     autoPopupsEnabled(),
+    myProfileId ? getLocalActivity(myProfileId) : Promise.resolve(null),
   ])
-  // Local-activity state + adaptive radius (Resonance Feed Phase 2, ADR-416). Drives the
-  // founder-vs-location-nudge card AND widens the 'nearby' radius when the area is sparse
-  // (the ripple), so a member in a quiet corner still sees something. Cached, fail-safe.
-  const localActivity = myProfileId ? await getLocalActivity(myProfileId) : null
   const effectiveRadiusM = localActivity?.effectiveRadiusM ?? feedRadiusM
 
   const onboarding = progress?.onboarding ?? null
