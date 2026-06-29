@@ -1,10 +1,17 @@
 # Development Map: the single source of truth
 
+> **▶ Start at [BUILD-SEQUENCE.md](BUILD-SEQUENCE.md)** — the single front-door that orders every
+> track into one gated wave plan, overlays the Notion timeline, and carries the Idea Inbox. This map
+> stays canonical for the *what/why*; the build sequence holds *what to build next*.
+>
 > **2026-06-28 — active execution order:** the build is now sequenced **hardening-first,
 > mobile-primary, plan-as-if-entities-live** per owner decision ([ADR-439](DECISIONS.md)). The
 > phased work list lives in [FOUNDATION-HARDENING-PLAN.md](FOUNDATION-HARDENING-PLAN.md). This map
 > stays canonical for the *what/why* of the verticals and the two-entity model; the hardening plan
-> holds the *order we execute in*.
+> holds the *order we execute in*. Companion build tracks:
+> [GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md) (funnel/flywheel/launch layer, ADR-440) and
+> [ENTITY-MANAGEMENT-OVERHAUL.md](ENTITY-MANAGEMENT-OVERHAUL.md) (the unified per-entity + role
+> management console, ADR-441; prerequisite for Growth OS G3).
 
 > **What we're building, in what order.** This is the one canonical plan. It **supersedes
 > and folds in** the two previous trackers, [`ROADMAP.md`](../ROADMAP.md) (product features)

@@ -385,6 +385,9 @@ Circles open, Broadcast first rooms.
 Engine **10** across all personas (free wedge live + paid dormant) + operator oversight admin.
 *Capability: every operator persona has a working free toolset and a built (dormant) path to paid.*
 Covers Notion: Members to hosts, Second builder wave.
+> **Depends on:** the [Entity Management Overhaul](ENTITY-MANAGEMENT-OVERHAUL.md) ([ADR-441](DECISIONS.md))
+> — the unified per-entity owner console + platform oversight that this phase's operator/creator
+> suites compose. Build that track (gated by G0) before/with G3.
 
 ### Phase G4 — Funding & monetization (dormant → flip)  ·  *→ Notion P0–P2 build, P1/P4 go-live*
 Engines **7** + **6** (finish) + the season-reset upgrade + Collective + validated-creation

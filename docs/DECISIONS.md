@@ -9125,3 +9125,26 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - NAMING.md + CONTENT-VOICE.md and PAGE-FRAMEWORK.md are enforced by the engines (no em dashes, locked nouns, kit composition).
 - The recruiter reward *leaderboard* stays retired (ADR-305); affiliate is a commission ledger, not a points board.
 - Authority order unchanged: running code + migrations > docs > Notion.
+
+---
+
+## ADR-441: Entity Management Overhaul — one console framework for every entity and role
+
+**Status:** Accepted (2026-06-29). Owner decision after a four-part deep-dive (Spaces backend, Spaces frontend, the roles/capabilities model, platform-admin management). The full build plan lives in [ENTITY-MANAGEMENT-OVERHAUL.md](ENTITY-MANAGEMENT-OVERHAUL.md); this ADR records the architecture decision. Builds on the embedded-admin model ([ADR-153](DECISIONS.md)/133/137/138/149), the role model ([ADR-208](DECISIONS.md)/127/030/218/220/221/222), and the Spaces system (ADR-249/250/320-341). Gated by [ADR-439](DECISIONS.md) (harden first); prerequisite for the Growth OS G3 operator suites ([ADR-440](DECISIONS.md)).
+
+**Context.**
+- The deep-dive found the hard parts already built: the role model is a clean five-axis, capability-resolver-driven system; the Spaces tenancy spine + deep features (v1 display/join, money dormant) are solid; the 3-layer embedded admin (catalog spine → domain suites → per-page console + module registry) is mature.
+- The gap is **cohesion, not capability.** Per-entity *owners* (circle host, hub guide, nexus mentor) have no Layer-2 management console (only page edit mode + a light sidebar; Hub/Nexus edit mode is not even wired). Spaces have a **bespoke 7-tab cockpit** that does not use the embedded-admin pattern. No two entity types are managed the same way (~50% consistency). Platform-admin oversight is thin on lifecycle, ownership transfer, cross-entity views, and bulk ops.
+
+**Decision.**
+1. **One Entity Management framework** serves every entity (Circle · Hub · Nexus · Event · Practice · Space) and every role, composed from the existing design framework — never a parallel system. It uses the PAGE-FRAMEWORK templates (Detail for profiles, Dashboard for the owner console + admin oversight, Focus for compose/settings) and the EMBEDDED-ADMIN primitives (the 9-category spine, the `AdminModule` registry, the catalog spine), specified three layers deep: L1 catalog spine, L2 entity-scoped owner console (`/{entity}/[id]/manage`, capability-gated, **new for most entities**), L3 in-page PageAdminDock.
+2. **Spaces become a citizen of the framework** — the bespoke 7-tab cockpit is harmonized onto the shared spine + module registry (no feature loss), so spaces stop being a snowflake.
+3. **A uniform platform-admin oversight layer** above the consoles gives lifecycle (active/suspended/archived), ownership transfer, entitlement override, cross-entity views, roles/personas, and bulk ops for **every** entity type, not just spaces.
+4. **The role model stays as-is**; only its two edges are finished — the `/lead` network-scoped leader surface (for guides/mentors to manage their downline) and persona verification + per-persona Stripe Connect binding. A per-entity member-role ladder is unified so any entity can delegate.
+5. **Three passes:** Pass 1 overhaul (the unified spine + owner console + platform oversight + `/lead`), Pass 2 fill-out (the spine modules per entity, member management, Space completion, money dormant, persona/admin fill-out), Pass 3 polish (drill-down console, `@admin` server slot, relationship management, consistency, capability transparency, quality, docs).
+
+**Consequences.**
+- ~5 inconsistent management experiences converge to one; adding a managed surface becomes a registry row, not a new layout.
+- Money built in Pass 2 (EM2-4) is dormant behind `billing_live`, entity-tagged; go-live gated on legal entities (consistent with ADR-439/440).
+- This is a named track gated by the hardening spine (G0) and is the prerequisite for Growth OS G3. NAMING.md + CONTENT-VOICE.md + PAGE-FRAMEWORK.md are honored throughout; the contract layer stays mobile-ready.
+- Authority order unchanged: running code + migrations > docs > Notion.
