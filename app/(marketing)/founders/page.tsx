@@ -15,7 +15,7 @@ import {
 } from '@/components/marketing/marketing-ui'
 import { FounderCtaButton } from '@/components/marketing/founder-cta'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema, faqSchema } from '@/lib/jsonld'
 
 export const metadata: Metadata = {
   title: 'The Founders Round',
@@ -89,8 +89,21 @@ const FAQS = [
 export default function FoundersPage() {
   return (
     <>
-      <JsonLd data={breadcrumbSchema([{ name: 'The Founders Round', path: '/founders' }])} />
-      <JsonLd data={faqSchema(FAQS.map((f) => ({ q: f.q, a: f.a })))} />
+      <JsonLd
+        data={[
+          articleSchema({
+            title: 'The Founders Round',
+            description:
+              'Frequency is a city-by-city community built for showing up in person. We are seating the founding circle of 150 now. Reserve a founding spot, no card, no charge.',
+            path: '/founders',
+            published: '2026-06-29',
+            updated: '2026-06-29',
+            image: ['/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg'],
+          }),
+          breadcrumbSchema([{ name: 'The Founders Round', path: '/founders' }]),
+          faqSchema(FAQS.map((f) => ({ q: f.q, a: f.a }))),
+        ]}
+      />
 
       <PhotoHero
         image="/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg"
