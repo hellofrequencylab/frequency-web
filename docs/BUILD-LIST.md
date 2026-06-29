@@ -298,9 +298,11 @@ private profile card (#516, migration `20260610060000`).
 Six-agent sweep (Journeys-v2 reconcile · dead-code/junk · migration-drift+advisors · code-level
 security · SEO/AIO · buildable-backlog) cross-checked against this list after the day's 58-commit
 restructure. **Verdict: clean and on track. Lint clean, 905 tests green, no broken routes, no
-critical security holes, DB perf debt dropped sharply. The one real risk is a deliberate
-half-migration: ADR-253 (retire the legacy season engine) was decided today but not yet executed —
-so v2 journey rewards run in parallel with the legacy season engine (a live double-earn surface).**
+critical security holes, DB perf debt dropped sharply. The one real risk flagged here — the
+ADR-253 half-migration (v2 rewards running in parallel with the legacy season engine, a live
+double-earn surface) — has since been **fully executed and verified on prod (2026-06-29):** the
+grant firing is gone, displays use the v2 reader, the orphaned engine is deleted, and the dead
+columns are dropped. No double-earn remains.**
 
 **Fixed this pass:** 🟢 **Security** — three crown-jewel role actions (`setAreaPermission` ·
 `setStaffRole` · `addStaffMember`) gated on the **deprecated `community_role`** axis; moved to
@@ -322,7 +324,7 @@ capability_permissions `20260614300000`, journeys_v2) is **LIVE in prod** — th
 
 | Pri | Item | Why | Where |
 |---|---|---|---|
-| 🔴 **P0** | **Execute ADR-253** — retire the legacy season reward/progress engine | v2 grants run in parallel with the season engine on every practice log (double-earn); retired widgets (completion-rule, depth tiers) still render to members. 5 sequenced steps; do NOT blind-delete (live currency + member-UI). | `lib/practices.ts`, `lib/journey-plans.ts`, `journeys/[slug]/page.tsx` |
+| ✅ ~~P0~~ | **Execute ADR-253** — retire the legacy season reward/progress engine | **DONE (verified prod 2026-06-29).** All 5 steps shipped: grant firing removed from `logPractice` (no double-earn — a practice log no longer grants journey rewards, `lib/practices.ts`); displays repointed to the v2 reader (`lib/journeys/progress.ts`); the orphaned engine files deleted (`journey-rewards`/`journey-coop-rewards`/`journey-grants`/`journey-quest-clock` gone, `CompletionRuleBlock` retired); the dead columns (`season_locked`/`min_practices_per_day`/`target_weeks`) **dropped in prod** (migration `20260624000000`, confirmed absent + zero code refs). Residual: a full `database.types.ts` regen to drop the last `as unknown as` casts (tracked as H0-3/H5-1). | done |
 | **P1** | Hardening tails | Add plan-ownership checks on journey insert/checkoff actions (low sev); "// caller must enforce host gate" contracts on untyped `lib/journeys/runs.ts`/`store.ts`. | journeys edit/learn actions |
 | **P1** | `lib/experiments/*` is orphaned | Zero importers, yet PI claims it's part of the owned spine — wire it (PI.4 needs it) or stop claiming it. | `lib/experiments/*` |
 | **P2** | Segment builder UI | Eval is pure+tested; admin page is read-only. Add a predicate-form + `createSegment`. | `lib/traits/segments.ts`, `/admin/segments` |
