@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Geist_Mono, Anton, Playfair_Display, Caveat, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/jsonld";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
@@ -134,8 +134,10 @@ export default function RootLayout({
       <head>
         {/* Theme script must run synchronously before any paint */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        {/* Site-wide structured data for search/answer engines */}
-        <JsonLd data={[organizationSchema(), websiteSchema()]} />
+        {/* Site-wide structured data for search/answer engines. The Organization
+            node carries the founding location (city-level only) so engines can
+            resolve Frequency as a real, place-rooted entity. */}
+        <JsonLd data={[organizationSchema({ foundingLocation: FOUNDING_PLACE }), websiteSchema()]} />
         {/* GA4 — inert unless NEXT_PUBLIC_GA_MEASUREMENT_ID is set in production */}
         <GoogleAnalytics />
       </head>

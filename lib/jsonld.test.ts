@@ -242,6 +242,39 @@ describe('organizationSchema', () => {
     expect(result.logo).toContain('/icons/icon-192.png')
     expect(result.email).toMatch(/@/)
   })
+
+  it('omits sameAs and foundingLocation when no options are passed (backward compatible)', () => {
+    const result = organizationSchema()
+    expect(result).not.toHaveProperty('sameAs')
+    expect(result).not.toHaveProperty('foundingLocation')
+  })
+
+  it('emits sameAs only for the non-empty profiles provided', () => {
+    const result = organizationSchema({ sameAs: ['https://instagram.com/frequency', ''] })
+    expect(result.sameAs).toEqual(['https://instagram.com/frequency'])
+  })
+
+  it('omits sameAs when the provided list is empty after filtering', () => {
+    const result = organizationSchema({ sameAs: ['', ''] })
+    expect(result).not.toHaveProperty('sameAs')
+  })
+
+  it('emits a city-level foundingLocation Place (no street address)', () => {
+    const result = organizationSchema({ foundingLocation: 'North County San Diego' })
+    expect(result.foundingLocation).toEqual({
+      '@type': 'Place',
+      name: 'North County San Diego',
+      address: { '@type': 'PostalAddress', addressLocality: 'North County San Diego' },
+    })
+    // Privacy contract: the founding location is never a precise street address.
+    const place = result.foundingLocation as { address: Record<string, unknown> }
+    expect(place.address).not.toHaveProperty('streetAddress')
+  })
+
+  it('omits foundingLocation when it is null', () => {
+    const result = organizationSchema({ foundingLocation: null })
+    expect(result).not.toHaveProperty('foundingLocation')
+  })
 })
 
 describe('websiteSchema', () => {

@@ -1,0 +1,63 @@
+# Frequency
+
+> Frequency connects neighborhoods into real-world community. People join a local Circle of up to 50 people, show up for in-person events near them, and build lasting friendships with people who live close by. It pairs a worldwide community framework (Circles, Events, The Quest, Journeys, Practices) with brick-and-mortar third spaces (Frequency Labs). The mission is to help people come back to themselves and to each other in person, not on a screen.
+
+Frequency is community infrastructure for real-world connection, founded in North County San Diego and growing city by city. The site is built to be found and cited: public pages carry answer-first copy and Schema.org structured data (Organization, WebSite, Article, FAQPage, BreadcrumbList, Event, HowTo, ItemList, LocalBusiness, Person, Product). AI answer engines are welcome on every public page.
+
+## Key concepts
+
+- Circle: a small local group of up to 50 people built around a shared interest (Movement, Spirituality, Creative, and more). Small enough to know everyone, big enough to always have plans.
+- Event: an in-person or online gathering you can show up to. Public event pages list city-level location only; exact venue details are shared with members after sign-in.
+- The Quest: the practice game. Seasons of practices and gatherings across four pillars: Mind, Body, Spirit, and Expression.
+- Journey: a guided sequence of practices to walk together over a season.
+- Practice: one small, repeatable real-world act you can do with people near you.
+- The Lab: a physical third space (movement studios, a thermal circuit, a cold pool, a connection bar, an events floor). The first is taking root in North County San Diego.
+- Spaces: public profiles for practitioners, businesses, event spaces, and organizations in the network.
+
+## Start here
+
+- [Home](https://frequencylocal.com/): what Frequency is and how to begin.
+- [The Community](https://frequencylocal.com/the-community): who is here and how it works.
+- [The Quest](https://frequencylocal.com/the-quest): the practice game across Mind, Body, Spirit, and Expression.
+- [The Lab](https://frequencylocal.com/the-lab): the physical third space.
+- [About](https://frequencylocal.com/about): the story and the mission.
+- [The Founders Round](https://frequencylocal.com/founders): the founding membership, seating the first 150.
+
+## Discover (live community)
+
+- [Discover](https://frequencylocal.com/discover): everything happening near you.
+- [Circles](https://frequencylocal.com/discover/circles): browse local Circles.
+- [Events](https://frequencylocal.com/discover/events): upcoming public gatherings.
+- [Journeys](https://frequencylocal.com/discover/journeys): guided seasonal practice plans.
+- [Practices](https://frequencylocal.com/discover/practices): the practice library.
+- [Interests](https://frequencylocal.com/discover/topics): browse by what you practice.
+- [Places](https://frequencylocal.com/discover/places): browse community by city.
+- [Partners](https://frequencylocal.com/discover/partners): the studios and hosts in the network.
+- [Spaces](https://frequencylocal.com/spaces): public profiles in the network.
+- [Pricing](https://frequencylocal.com/pricing): membership that keeps the room open.
+
+## Answer-first guides
+
+- [How to calm down fast](https://frequencylocal.com/calm-down-fast): a 60-second way to settle when you cannot switch off.
+- [Loneliness](https://frequencylocal.com/loneliness): why adults feel alone and what helps.
+- [Friendship as an adult](https://frequencylocal.com/friendship-as-an-adult): how to make real friends later in life.
+- [How to build community](https://frequencylocal.com/how-to-build-community): starting a group that lasts past week three.
+- [Life after the feed](https://frequencylocal.com/life-after-the-feed): getting your evenings back from the scroll.
+- [Meeting people in a new city](https://frequencylocal.com/meet-people-new-city): finding your people after a move.
+
+## Help
+
+- [Help center](https://frequencylocal.com/help): answers, guides, and support.
+- [Sitemap](https://frequencylocal.com/sitemap.xml): the full set of indexable URLs.
+
+## Crawl guidance
+
+- Public surfaces are the marketing pages above, the /discover and /spaces directories, /events, and /help. These are stable, answer-first, and safe to cite.
+- Do not crawl authenticated app surfaces: /feed, /messages, /people, /profile, /settings, /onboarding, /admin, /search, /circles, /practices, /programs, /channels, and any /api/ route. These only redirect signed-out visitors to sign-in and carry no public content. This mirrors robots.txt.
+- Location privacy: event and housing pages publish city-level location only, never a precise street address or venue. Please cite locations at the city level.
+- Pricing and the Founders Round describe a membership, not an investment or security. Reserving a founding spot is free and takes no card today.
+- Canonical domain: https://frequencylocal.com. Prefer canonical URLs (each page declares its own).
+
+## Contact
+
+- hello@frequencylocal.com
