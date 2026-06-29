@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { slugify } from '@/lib/utils'
 
@@ -14,9 +15,10 @@ const IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 // In-place "Practice settings" admin module (EMBEDDED-ADMIN.md / ADR-133), mirroring
-// the Event + Circle settings modules. Read + write both re-resolve
-// practice.editSettings server-side (the dock's role gate is UX; THIS is the
-// authority — the admin client bypasses RLS). The cover is stored as a public URL in
+// the Event + Circle settings modules. The DB reads/writes run on the SESSION client
+// (RLS-enforced; T0 convergence), and re-check practice.editSettings in app code as
+// defense-in-depth. Only the cover-image storage upload still uses the admin client.
+// The cover is stored as a public URL in
 // practices.header_image (like circles.image_url, via the 'site-media' bucket), NOT a
 // storage path — so reads need no getPublicUrl resolution, unlike events.
 
@@ -29,8 +31,8 @@ export async function getPracticeAdminData(id: string) {
   // Postgres 22P02 against the uuid PK. Fail closed before querying — the module renders nothing.
   if (!UUID_RE.test(id)) return null
 
-  const admin = createAdminClient()
-  const { data: practice } = await admin
+  const db = await createClient()
+  const { data: practice } = await db
     .from('practices')
     .select('id, slug, title, summary, description, header_image, duration_min, category')
     .eq('id', id)
@@ -60,7 +62,7 @@ export async function updatePracticeSettings(id: string, slug: string | null, fd
   const caps = await getPracticeCapabilities(id)
   if (!caps.has('practice.editSettings')) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
+  const db = await createClient()
 
   const title = (fd.get('title') as string).trim()
   if (!title) throw new Error('Title is required')
@@ -71,7 +73,7 @@ export async function updatePracticeSettings(id: string, slug: string | null, fd
   const durationParsed = durationRaw ? parseInt(durationRaw, 10) : NaN
   const durationMin = Number.isFinite(durationParsed) && durationParsed > 0 ? durationParsed : null
 
-  const { error } = await admin
+  const { error } = await db
     .from('practices')
     .update({
       title,
@@ -132,8 +134,8 @@ export async function removePracticeCover(id: string, slug: string | null) {
   const caps = await getPracticeCapabilities(id)
   if (!caps.has('practice.editSettings')) throw new Error('Unauthorized')
 
-  const admin = createAdminClient()
-  const { error } = await admin.from('practices').update({ header_image: null }).eq('id', id)
+  const db = await createClient()
+  const { error } = await db.from('practices').update({ header_image: null }).eq('id', id)
   if (error) throw new Error(error.message)
 
   revalidatePath(`/practices/${id}`)
@@ -155,10 +157,10 @@ export async function updatePracticePermalink(
   const next = slugify(newSlug ?? '')
   if (!next) return { error: 'Permalink cannot be empty.' }
 
-  const admin = createAdminClient()
+  const db = await createClient()
 
   if (next !== slug) {
-    const { data: clash } = await admin
+    const { data: clash } = await db
       .from('practices')
       .select('id')
       .eq('slug', next)
@@ -167,7 +169,7 @@ export async function updatePracticePermalink(
     if (clash) return { error: 'That permalink is already taken.' }
   }
 
-  const { error } = await admin.from('practices').update({ slug: next }).eq('id', id)
+  const { error } = await db.from('practices').update({ slug: next }).eq('id', id)
   if (error) return { error: error.message }
 
   revalidatePath(`/practices/${id}`)
