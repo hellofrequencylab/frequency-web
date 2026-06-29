@@ -36,14 +36,15 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 ### Phase 1 — Scale it (the operator workspace)
 | # | Scope | Status |
 |---|---|---|
-| 1.1 | **Search foundation.** `search_vector tsvector` (from title/summary/body/tags) + GIN; **backfill `embedding` (0/21)** + generate on every write; hybrid retrieval RPC (full-text + pgvector fused with RRF). | 📋 |
-| 1.2 | **Unbounded list.** Replace the 200-row cap (`rankedPractices`) with keyset (cursor) pagination + server-side sort. | 📋 |
-| 1.3 | **Faceted query layer.** Server facet counts: Pillar · Subcategory · Status · Weight · Public/Template/Featured · Creator · Tag · computed (no image · no body · never logged · no Pillar · possible duplicate). | 📋 |
-| 1.4 | **Lifecycle.** Add `archived` status (deprecate without delete; hidden from members, history preserved) + archive bulk action. | 📋 |
-| 1.5 | **Pillar split + lineage columns (schema).** `secondary_domain_id`, `primary_pct`; `remixed_from` + `root_practice_id` populated by `forkPractice`/`claimPractice` (no UI yet). | 📋 |
-| 1.6 | **Bulk at scale.** Bulk ops act on the whole filtered set, not the visible 500. | 📋 |
-| 1.7 | **Workspace UI.** Recompose on the Dashboard template + faceted Index body: `StatCard` row, search box, facet rail, saved views. Rail via `page-chrome.ts`. | 📋 |
-| 1.8 | **DataTable call.** Extend the shared `DataTable` (ADR-233) vs. formalize the bespoke table — decided in-build. | 📋 |
+| 1.1 | **Search foundation.** `search_vector tsvector` (from title/summary/body/tags) + GIN; **backfill `embedding` (0/21)** + generate on every write; hybrid retrieval RPC (full-text + pgvector fused with RRF). | ✅ ADR-445 (`search_vector` + GIN + `search_practices_hybrid()` RRF RPC; `embedPractice` on-write + `embed-practices` backfill cron) |
+| 1.2 | **Unbounded list.** Replace the 200-row cap (`rankedPractices`) with keyset (cursor) pagination + server-side sort. | ✅ `searchAdminPractices` — keyset on default score sort, offset on alternates, exact total |
+| 1.3 | **Faceted query layer.** Server facet counts: Pillar · Subcategory · Status · Weight · Public/Template/Featured · Creator · Tag · computed (no image · no body · never logged · no Pillar · possible duplicate). | ✅ `searchAdminFacets` + `practice_admin_facets` RPC (global counts by design; residual faceting → Phase 2). Possible-duplicate is the gated `findPracticeDuplicates` |
+| 1.4 | **Lifecycle.** Add `archived` status (deprecate without delete; hidden from members, history preserved) + archive bulk action. | ✅ `archived` status; archive/restore actions set `is_public=false` so member reads never surface it |
+| 1.5 | **Pillar split + lineage columns (schema).** `secondary_domain_id`, `primary_pct`; `remixed_from` + `root_practice_id` populated by `forkPractice`/`claimPractice` (no UI yet). | ✅ columns + constraints shipped (migration `20260827000000`); fork/claim populate them in Phase 3 |
+| 1.6 | **Bulk at scale.** Bulk ops act on the whole filtered set, not the visible 500. | ✅ `resolveAdminPracticeIds` + `bulkPracticesByFilterAction` (`ADMIN_BULK_MAX=5000`, reports `capped`) |
+| 1.7 | **Workspace UI.** Recompose on the Dashboard template + faceted Index body: `StatCard` row, search box, facet rail, saved views. Rail via `page-chrome.ts`. | ✅ `DashboardTemplate` + StatCard band + in-page facet rail (admin is rail='none') + URL-driven search/sort/filters + keyset "Load more"/offset paging + localStorage saved views |
+| 1.8 | **DataTable call.** Extend the shared `DataTable` (ADR-233) vs. formalize the bespoke table — decided in-build. | ✅ **decided: bespoke** — `DataTable` is presentational/server-sorted with no selection slot; the table needs row checkboxes + per-column master switch + per-row optimistic toggles. Filtering/sorting/paging are now server-owned; a thin client wrapper owns only selection + the bulk bar (rationale in `practices-table.tsx`). Adding a `selection` slot to `DataTable` is the documented follow-up |
+| — | **Phase-1 carry-overs** (deferred, not regressions): residual ("minus-self") facet counts → Phase 2; server-backed saved views (Phase 1 ships localStorage presets); `lib/database.types.ts` regen + drop the untyped admin-handle casts (integrator step). | 📋 |
 
 ### Phase 2 — Keep it clean (quality + moderation)
 | # | Scope | Status |

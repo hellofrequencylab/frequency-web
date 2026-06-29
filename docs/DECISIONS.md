@@ -9215,3 +9215,28 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 **Consequences.**
 - Adding an interior layout stays "one meta entry + one grid case"; no migration (the `template` id is stored in the existing `page_settings.layout` jsonb).
 - The flex-to-slot breakpoint convention (`@md`/`@3xl`) is the pattern for any future image-card module so it reads right in every slot.
+
+---
+
+## ADR-445: Practice library at scale — Phase 1 "Scale it" implementation
+
+**Status:** Accepted (2026-06-29). Implements [ADR-438](DECISIONS.md) Phase 1. Spec: [PRACTICE-LIBRARY.md](PRACTICE-LIBRARY.md) §2.2/§4/§5/§7. Sequence is fixed: Scale → Clean → Grow → Autopilot; this is **Scale** only.
+
+**Context.**
+- The admin practice library capped at 200 rows (`rankedPractices(limit=200)`), filtered/sorted client-side, and had no archive, no server facets, and no schema for the primary/secondary Pillar split or remix lineage. The backend taxonomy (Pillars = `domains`, 21 subcategories, hybrid tags, `vector(384)` embeddings, status workflow, slugs, `space_id`) was already strong — the gap was the operator surface + a few additive columns.
+
+**Decision.**
+1. **Schema foundation** (migrations `20260827000000` + `20260827000100`, not yet applied): `secondary_domain_id` + `primary_pct` (50-100, default 75) for the Pillar split (columns only — the per-Pillar attribution **ledger** is Phase 4); `remixed_from` + `root_practice_id` lineage columns (populated by Phase 3 fork/claim); a generated `search_vector` tsvector (GIN); the `archived` lifecycle status; FK covering indexes; `practices_ranked` recreated to expose the new columns. The `search_practices_hybrid()` RPC fuses full-text (`search_vector`) + vector (`embedding`) ranks with **Reciprocal Rank Fusion** (Postgres-native, no external engine).
+2. **Server read/data layer** (`lib/practices.ts`): `searchAdminPractices` (keyset pagination on the default `score` sort, offset on alternate sorts, always-exact `total`) replaces the 200-cap; `searchAdminFacets` (+ the `practice_admin_facets` RPC) for the curation rail; `findPracticeDuplicates` (the gated expensive facet, over the existing `match_practices()`); `resolveAdminPracticeIds` + bulk-on-whole-filtered-set actions (`ADMIN_BULK_MAX=5000`); archive/restore.
+3. **Auto-valuation is NOT in Phase 1.** The log-time chokepoint (`logPractice` → `practice_logs.zaps_awarded` freeze) is untouched; `weight_class`/`reward_zaps` stay author/staff inputs. `computePracticeReward()` as the live valuation authority is Phase 4.
+
+**Three load-bearing design choices (each documented in code too).**
+- **Archive unpublishes.** Archiving sets `status='archived'` AND `is_public=false`, so the existing member reads (which gate on `is_public=true`) can never surface an archived practice; admin reads still filter `status='archived'`. Belt and suspenders, no member-read changes.
+- **Global facet counts, not residual.** The rail counts are global over the admin-visible universe, not "current-filter-minus-this-facet" — residual faceting means one grouped query per facet per render, wasteful for a single-operator workspace. `countAdminPractices` already gives the active-filter "N of M". Residual faceting is a Phase-2 refinement.
+- **Keyset only on the default sort.** Alternate sorts use bounded offset paging (operator paging, not infinite scroll). Possible-duplicate is exposed only as an explicit per-practice lookup (pairwise similarity is too costly for an always-on rail).
+
+**Consequences.**
+- **Bug fixed in build:** `applyAdminFilters` was `async` and returned the PostgREST builder; a builder is *thenable*, so `return builder` from an async fn makes the awaiting caller's promise **adopt** it — firing the query early and resolving to a row set instead of the chainable builder (a real production defect, caught by the new vitest specs). Now returns the builder in an inert `{ q }` wrapper.
+- **Migrations are not applied.** Apply on a Supabase branch, regenerate `lib/database.types.ts`, then merge (apply-on-merge gate). Until regenerated, the new columns/RPCs are reached through the untyped admin handle ([ADR-246](DECISIONS.md)).
+- `rankedPractices()` stays in `lib/admin/content-signals.ts` — still consumed by `lib/ai/creator-tips.ts` (a separate, score-capped tip-candidate use); only the admin page migrated off it.
+- Phase-1 carry-overs are tracked in BUILD-LIST (residual facet counts, duplicate-merge, the attribution ledger, server-backed saved views).

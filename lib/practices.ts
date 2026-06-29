@@ -346,6 +346,487 @@ export async function searchLibraryPractices(opts: LibrarySearchOpts = {}): Prom
   return { rows, total, page, pageSize, pageCount }
 }
 
+// --- Admin curation search (server filter · sort · keyset paginate · NO 200 cap) ---
+//
+// Phase 1 "Scale it" (ADR-438, PRACTICE-LIBRARY.md §5/§7). The admin workspace lists
+// the WHOLE library, past the old rankedPractices(limit=200) ceiling. It reads the
+// practices_ranked view (so the usage signal comes along), includes hidden + every
+// status (includeHidden defaults true), and pages two ways:
+//
+//   • Default sort (score desc, id) — KEYSET (cursor) pagination. We encode the last
+//     row's (score, id) into an opaque cursor and ask for "rows after it", so paging is
+//     O(1) regardless of depth (no growing OFFSET scan). This is the operator's main view.
+//   • Alternate sorts (new / az / top / az etc.) — OFFSET pagination with count:'exact'.
+//     Keyset on those needs a stable, exposed tiebreak column per sort; for the admin
+//     table (bounded operator paging, not infinite scroll) offset is acceptable and
+//     keeps the code small. Documented trade-off, not an oversight.
+
+/** Admin curation sort keys. 'score' is the default keyset sort; the rest are offset. */
+export type AdminPracticeSort = 'score' | 'new' | 'old' | 'az' | 'za' | 'logs' | 'adopters'
+
+/** The filter + paging spec for the admin curation table. Mirrors the facet rail:
+ *  every field is optional; an omitted field is "no filter on that axis". The SAME shape
+ *  is accepted by the bulk-on-filtered actions so "act on everything I'm looking at" runs
+ *  the identical query server-side. */
+export interface AdminPracticeSearchOpts {
+  /** Free-text needle (title / summary / description ilike). */
+  q?: string | null
+  /** Primary Pillar (domains.id). */
+  pillarId?: string | null
+  subId?: string | null
+  /** Library review status filter — INCLUDING 'archived' (admin can surface archived). */
+  status?: string | null
+  weightClass?: string | null
+  /** Tristate flag filters; omit/undefined = don't filter on that flag. */
+  isPublic?: boolean
+  isTemplate?: boolean
+  featured?: boolean
+  /** Author (profiles.id). */
+  creatorId?: string | null
+  /** Tag slug. */
+  tag?: string | null
+  /** Computed facets (PRACTICE-LIBRARY §5). Each is an independent boolean filter. */
+  noImage?: boolean
+  noBody?: boolean
+  neverLogged?: boolean
+  noPillar?: boolean
+  sort?: AdminPracticeSort
+  /** Default sort only: opaque keyset cursor (the last row of the previous page). */
+  cursor?: string | null
+  /** Alternate sorts only: 1-based page index for offset paging. */
+  page?: number
+  pageSize?: number
+  /** Include non-public (hidden) rows. Defaults TRUE for the admin workspace. */
+  includeHidden?: boolean
+  hideDemo?: boolean
+}
+
+/** One admin curation row: the practice's library fields + its usage signal + the
+ *  table-only enrichments (featured_at, creator) the view doesn't carry. */
+export interface AdminPracticeRow {
+  id: string
+  title: string
+  created_by: string | null
+  is_public: boolean
+  is_template: boolean
+  status: string | null
+  domain_id: string | null
+  weight_class: string | null
+  header_image: string | null
+  body: string | null
+  created_at: string
+  adopters: number
+  logs_30d: number
+  logs_total: number
+  score: number
+  featured_at: string | null
+  creator: { display_name: string | null; handle: string | null } | null
+}
+
+export interface AdminPracticeSearchResult {
+  rows: AdminPracticeRow[]
+  /** Total matching the filter (always exact; both paths run a head count). */
+  total: number
+  /** Default-sort path: the cursor to pass as `opts.cursor` for the next page, or null
+   *  when this was the last page. Null on the offset path (use `page`/`pageCount`). */
+  nextCursor: string | null
+  /** Offset path only. Default-sort path leaves these at their cursor-mode defaults. */
+  page: number
+  pageSize: number
+  pageCount: number
+}
+
+/** The columns the admin table reads from practices_ranked (the view exposes all of
+ *  these; slug + the timer columns it doesn't, which the table never needs). */
+const ADMIN_RANKED_COLS =
+  'id, title, created_by, is_public, is_template, status, domain_id, weight_class, ' +
+  'header_image, body, created_at, adopters, logs_30d, logs_total, score'
+
+type AdminRankedRow = Omit<AdminPracticeRow, 'featured_at' | 'creator'>
+
+/** Encode/decode the keyset cursor for the default (score desc, id) ordering. Opaque
+ *  base64 of `${score}:${id}` — the client treats it as a token. A malformed cursor
+ *  decodes to null (we then serve page 1), so a tampered token can never error the read. */
+function encodeAdminCursor(row: { score: number; id: string }): string {
+  return Buffer.from(`${row.score}:${row.id}`, 'utf8').toString('base64')
+}
+function decodeAdminCursor(cursor: string | null | undefined): { score: number; id: string } | null {
+  if (!cursor) return null
+  try {
+    const raw = Buffer.from(cursor, 'base64').toString('utf8')
+    const idx = raw.indexOf(':')
+    if (idx < 0) return null
+    const score = Number(raw.slice(0, idx))
+    const id = raw.slice(idx + 1)
+    if (!Number.isFinite(score) || !id) return null
+    return { score, id }
+  } catch {
+    return null
+  }
+}
+
+/** The chainable subset of the PostgREST builder the admin filters use. The methods
+ *  return the SAME builder, so a `const` holds through the whole chain (no reassignment). */
+interface AdminFilterBuilder {
+  eq: (c: string, v: unknown) => AdminFilterBuilder
+  in: (c: string, v: readonly string[]) => AdminFilterBuilder
+  is: (c: string, v: null) => AdminFilterBuilder
+  or: (f: string) => AdminFilterBuilder
+}
+
+/** Apply every AdminPracticeSearchOpts FILTER to a practices_ranked query builder. Shared
+ *  by the row read, the head count, and the bulk-on-filtered id resolver so all three see
+ *  exactly the same set. The sort/paging is applied by the caller, never here.
+ *
+ *  Returns the (possibly narrowed) builder WRAPPED in `{ q }`, or null when a filter
+ *  resolves to "no rows possible" (e.g. a tag that matches nothing). The wrapper is
+ *  deliberate: a PostgREST builder is itself a thenable, and `return`ing one bare from an
+ *  async function would make `await` EXECUTE the query (promise adoption) instead of handing
+ *  back the builder. Wrapping in a plain object defeats that adoption. */
+async function applyAdminFilters<Q extends {
+  eq: (c: string, v: unknown) => Q
+  in: (c: string, v: readonly string[]) => Q
+  is: (c: string, v: null) => Q
+  or: (f: string) => Q
+}>(q: Q, opts: AdminPracticeSearchOpts): Promise<{ q: Q } | null> {
+  const includeHidden = opts.includeHidden ?? true
+  if (!includeHidden) q = q.eq('is_public', true)
+  if (opts.hideDemo) q = q.eq('is_demo', false)
+  if (opts.isPublic !== undefined) q = q.eq('is_public', opts.isPublic)
+  if (opts.isTemplate !== undefined) q = q.eq('is_template', opts.isTemplate)
+  // NB: `featured` is NOT filtered here — featured_at is a timestamp the practices_ranked
+  // view does not expose, so it can't be a column predicate. searchAdminPractices applies
+  // it post-query against the enriched featured_at; countAdminPractices documents the gap.
+  if (opts.pillarId) q = q.eq('domain_id', opts.pillarId)
+  if (opts.subId) q = q.eq('subcategory_id', opts.subId)
+  if (opts.status) q = q.eq('status', opts.status)
+  if (opts.weightClass) q = q.eq('weight_class', opts.weightClass)
+  if (opts.creatorId) q = q.eq('created_by', opts.creatorId)
+  if (opts.noImage) q = q.is('header_image', null)
+  if (opts.noBody) q = q.is('body', null)
+  if (opts.noPillar) q = q.is('domain_id', null)
+  if (opts.neverLogged) q = q.eq('logs_total', 0)
+
+  // Tag filter → resolve the carrying practice ids (any source). No matches = empty.
+  if (opts.tag) {
+    const { data: def } = await db()
+      .from('practice_tag_defs')
+      .select('id')
+      .eq('slug', opts.tag)
+      .maybeSingle()
+    const defId = (def as { id: string } | null)?.id
+    if (!defId) return null
+    const { data: links } = await db().from('practice_tags').select('practice_id').eq('tag_id', defId)
+    const ids = ((links as { practice_id: string }[] | null) ?? []).map((r) => r.practice_id)
+    if (ids.length === 0) return null
+    q = q.in('id', ids)
+  }
+
+  if (opts.q && opts.q.trim()) {
+    const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
+    if (needle.trim()) {
+      q = q.or(`title.ilike.%${needle}%,summary.ilike.%${needle}%,description.ilike.%${needle}%`)
+    }
+  }
+  return { q }
+}
+
+/**
+ * The admin curation library — server filter + sort + paginate, NO 200-row cap. Replaces
+ * rankedPractices(limit=200). Default sort uses keyset pagination; alternate sorts use
+ * offset paging with an exact count (documented trade-off above). Enriches each page with
+ * featured_at + the creator profile (the view's columns are frozen and predate featured_at).
+ */
+export async function searchAdminPractices(
+  opts: AdminPracticeSearchOpts = {},
+): Promise<AdminPracticeSearchResult> {
+  const sort = opts.sort ?? 'score'
+  const pageSize = Math.min(100, Math.max(1, Math.floor(opts.pageSize ?? 50)))
+  const page = Math.max(1, Math.floor(opts.page ?? 1))
+  const empty: AdminPracticeSearchResult = {
+    rows: [], total: 0, nextCursor: null, page, pageSize, pageCount: 0,
+  }
+
+  // Build the filtered query for the page of rows.
+  let q = db()
+    .from('practices_ranked')
+    .select(ADMIN_RANKED_COLS) as unknown as {
+      eq: (c: string, v: unknown) => typeof q
+      in: (c: string, v: readonly string[]) => typeof q
+      is: (c: string, v: null) => typeof q
+      or: (f: string) => typeof q
+      gt: (c: string, v: unknown) => typeof q
+      lt: (c: string, v: unknown) => typeof q
+      order: (c: string, o: { ascending: boolean }) => typeof q
+      range: (a: number, b: number) => Promise<{ data: unknown }>
+      limit: (n: number) => Promise<{ data: unknown }>
+    }
+  const filtered = await applyAdminFilters(q, opts)
+  if (filtered === null) return empty
+  q = filtered.q
+
+  const total = await countAdminPractices(opts)
+
+  let base: AdminRankedRow[] = []
+  let nextCursor: string | null = null
+  let pageCount = 0
+
+  if (sort === 'score') {
+    // Keyset: rows strictly after the cursor in (score desc, id asc) order. Postgres has
+    // no native row-value compare over PostgREST, so we emulate the composite cursor with
+    // an .or(): score < cursorScore, OR (score = cursorScore AND id > cursorId).
+    const cur = decodeAdminCursor(opts.cursor)
+    if (cur) {
+      q = q.or(`score.lt.${cur.score},and(score.eq.${cur.score},id.gt.${cur.id})`)
+    }
+    q = q.order('score', { ascending: false }).order('id', { ascending: true })
+    const res = await q.limit(pageSize + 1)
+    const rows = ((res.data as AdminRankedRow[] | null) ?? [])
+    const hasMore = rows.length > pageSize
+    base = hasMore ? rows.slice(0, pageSize) : rows
+    const last = base[base.length - 1]
+    nextCursor = hasMore && last ? encodeAdminCursor(last) : null
+  } else {
+    // Offset paging for the alternate sorts (bounded operator paging — see header note).
+    if (sort === 'new') q = q.order('created_at', { ascending: false })
+    else if (sort === 'old') q = q.order('created_at', { ascending: true })
+    else if (sort === 'az') q = q.order('title', { ascending: true })
+    else if (sort === 'za') q = q.order('title', { ascending: false })
+    else if (sort === 'logs') q = q.order('logs_total', { ascending: false }).order('created_at', { ascending: false })
+    else if (sort === 'adopters') q = q.order('adopters', { ascending: false }).order('created_at', { ascending: false })
+    const from = (page - 1) * pageSize
+    const res = await q.range(from, from + pageSize - 1)
+    base = ((res.data as AdminRankedRow[] | null) ?? [])
+    pageCount = Math.max(1, Math.ceil(total / pageSize))
+  }
+
+  if (base.length === 0) return { ...empty, total, pageCount }
+
+  // Enrich: featured_at (view predates it) + creator profile, one round-trip each.
+  const ids = base.map((p) => p.id)
+  const creatorIds = [...new Set(base.map((p) => p.created_by).filter((c): c is string => !!c))]
+  const [{ data: featRows }, { data: creatorRows }] = await Promise.all([
+    db().from('practices').select('id, featured_at').in('id', ids),
+    creatorIds.length
+      ? db().from('profiles').select('id, display_name, handle').in('id', creatorIds)
+      : Promise.resolve({ data: [] as { id: string; display_name: string | null; handle: string | null }[] }),
+  ])
+  const featured = new Map(
+    ((featRows ?? []) as { id: string; featured_at: string | null }[]).map((r) => [r.id, r.featured_at]),
+  )
+  const creators = new Map(
+    ((creatorRows ?? []) as { id: string; display_name: string | null; handle: string | null }[]).map((r) => [
+      r.id,
+      { display_name: r.display_name, handle: r.handle },
+    ]),
+  )
+  const rows: AdminPracticeRow[] = base
+    // The `featured` filter can't be a column .eq (featured_at is a timestamp, not a bool),
+    // so apply it here against the enriched value when the operator asked for it.
+    .filter((p) => (opts.featured === undefined ? true : !!featured.get(p.id) === opts.featured))
+    .map((p) => ({
+      ...p,
+      featured_at: featured.get(p.id) ?? null,
+      creator: p.created_by ? creators.get(p.created_by) ?? null : null,
+    }))
+
+  return { rows, total, nextCursor, page, pageSize, pageCount }
+}
+
+/** Exact head count for an AdminPracticeSearchOpts filter set (no rows fetched). Shared by
+ *  the search result + the facet rail's "showing N of M". */
+export async function countAdminPractices(opts: AdminPracticeSearchOpts = {}): Promise<number> {
+  const q = db()
+    .from('practices_ranked')
+    .select('id', { count: 'exact', head: true }) as unknown as AdminFilterBuilder
+  const filtered = await applyAdminFilters(q, opts)
+  if (filtered === null) return 0
+  const { count } = (await (filtered.q as unknown as Promise<{ count: number | null }>)) ?? { count: 0 }
+  // The `featured` filter is enriched post-query (timestamp, not a column bool); when it is
+  // the ONLY thing narrowing the count we can't express it in SQL here, so the count is the
+  // pre-featured total. Callers that need an exact featured count read the facet rail's
+  // 'featured' flag count instead (practice_admin_facets), which counts featured_at directly.
+  return count ?? 0
+}
+
+// --- Admin facet counts (the curation rail) -------------------------------
+//
+// Phase 1 item 1.3 (PRACTICE-LIBRARY §5). The rail shows grouped counts across the
+// whole library so an operator can see, at a glance, how many practices sit under each
+// Pillar / status / weight / flag / computed-gap, and jump to them.
+//
+// CAVEAT (documented design choice): these are GLOBAL counts over the admin-visible
+// universe, NOT counts of "the current filter set minus this facet" (the textbook
+// faceted-search behavior). Computing per-facet residual counts means one grouped query
+// per facet on every rail render, which is wasteful for a single-operator workspace; the
+// global counts answer "what's in the library" — which is the curation question — and the
+// "showing N of M" line (countAdminPractices) already reflects the active filter. Residual
+// faceting is a Phase-2 refinement if operators ask for it. The RPC carries the same note.
+
+/** One facet bucket: a key within a facet group and how many practices fall in it. */
+export interface FacetCount {
+  key: string
+  count: number
+}
+
+/** The grouped facet counts for the curation rail. `flag`/`computed` are keyed maps
+ *  (e.g. flag.public, computed.no_image); the list facets are arrays of {key,count}. */
+export interface AdminPracticeFacets {
+  pillar: FacetCount[]
+  subcategory: FacetCount[]
+  status: FacetCount[]
+  weight: FacetCount[]
+  creator: FacetCount[]
+  tag: FacetCount[]
+  flag: { public: number; template: number; featured: number }
+  computed: { no_image: number; no_body: number; never_logged: number; no_pillar: number }
+}
+
+/**
+ * Read the curation rail's facet counts via the practice_admin_facets RPC (one round-trip
+ * for the whole rail). Global over the admin-visible universe (see CAVEAT above). The RPC
+ * is reached through the untyped admin handle (ADR-246) until the types are regenerated.
+ */
+export async function searchAdminFacets(
+  opts: { includeHidden?: boolean } = {},
+): Promise<AdminPracticeFacets> {
+  const out: AdminPracticeFacets = {
+    pillar: [], subcategory: [], status: [], weight: [], creator: [], tag: [],
+    flag: { public: 0, template: 0, featured: 0 },
+    computed: { no_image: 0, no_body: 0, never_logged: 0, no_pillar: 0 },
+  }
+  const { data, error } = await db().rpc('practice_admin_facets', {
+    include_hidden: opts.includeHidden ?? true,
+  })
+  if (error || !data) return out
+  for (const r of (data as { facet: string; key: string | null; cnt: number }[])) {
+    const count = Number(r.cnt) || 0
+    switch (r.facet) {
+      case 'pillar': out.pillar.push({ key: r.key ?? '__none__', count }); break
+      case 'subcategory': out.subcategory.push({ key: r.key ?? '__none__', count }); break
+      case 'status': if (r.key) out.status.push({ key: r.key, count }); break
+      case 'weight': if (r.key) out.weight.push({ key: r.key, count }); break
+      case 'creator': if (r.key) out.creator.push({ key: r.key, count }); break
+      case 'tag': if (r.key) out.tag.push({ key: r.key, count }); break
+      case 'flag':
+        if (r.key === 'public' || r.key === 'template' || r.key === 'featured') out.flag[r.key] = count
+        break
+      case 'computed':
+        if (r.key === 'no_image' || r.key === 'no_body' || r.key === 'never_logged' || r.key === 'no_pillar') {
+          out.computed[r.key] = count
+        }
+        break
+    }
+  }
+  return out
+}
+
+/** A possible-duplicate cluster: the seed practice and its nearest semantic neighbours. */
+export interface DuplicateCandidate {
+  id: string
+  title: string
+  /** Cosine similarity to the seed (0-1); higher = more alike. */
+  similarity: number
+}
+
+/**
+ * Find likely duplicates of ONE practice via the existing match_practices() vector RPC
+ * (embedding nearest-neighbours). EXPENSIVE-FACET GATE (PRACTICE-LIBRARY §5): duplicate
+ * detection is NOT part of the always-on facet rail — pairwise similarity over the whole
+ * library is costly — so it is exposed only as this explicit per-practice lookup the
+ * operator triggers ("find near-duplicates of this one"). Returns neighbours at or above
+ * `minSimilarity` (default 0.9 = near-identical). Empty when the seed has no embedding yet.
+ */
+export async function findPracticeDuplicates(
+  practiceId: string,
+  opts: { limit?: number; minSimilarity?: number } = {},
+): Promise<DuplicateCandidate[]> {
+  const limit = Math.min(30, Math.max(1, Math.floor(opts.limit ?? 8)))
+  const minSimilarity = opts.minSimilarity ?? 0.9
+  const { data: seedRow } = await db()
+    .from('practices')
+    .select('embedding')
+    .eq('id', practiceId)
+    .maybeSingle()
+  const embedding = (seedRow as { embedding: string | number[] | null } | null)?.embedding
+  if (!embedding) return []
+  const { data, error } = await db().rpc('match_practices', {
+    query_embedding: embedding,
+    match_count: limit,
+    exclude_id: practiceId,
+  })
+  if (error || !data) return []
+  return (data as { id: string; title: string; similarity: number }[])
+    .filter((r) => r.similarity >= minSimilarity)
+    .map((r) => ({ id: r.id, title: r.title, similarity: r.similarity }))
+}
+
+/** The hard ceiling on a bulk-on-filtered resolve (Phase 1 item 1.6). A single bulk
+ *  action can touch at most this many rows, so "act on the whole filtered set" can never
+ *  become an unbounded mutation. The action returns the resolved count so the operator
+ *  sees exactly how many were affected (and the cap is visible when the set is larger). */
+export const ADMIN_BULK_MAX = 5000
+
+/**
+ * Resolve the practice ids matching an AdminPracticeSearchOpts filter set — the
+ * "act on the whole filtered set" target list (Phase 1 item 1.6). Re-runs the SAME filters
+ * searchAdminPractices uses (no sort/paging — order is irrelevant for a set), capped at
+ * ADMIN_BULK_MAX so the bulk write stays bounded. Returns the ids + whether the cap was hit.
+ * Caller enforces authz (the bulk action re-checks the curator gate before calling this).
+ */
+export async function resolveAdminPracticeIds(
+  opts: AdminPracticeSearchOpts = {},
+): Promise<{ ids: string[]; capped: boolean }> {
+  const q = db()
+    .from('practices_ranked')
+    .select('id, featured_at') as unknown as AdminFilterBuilder
+  const filtered = await applyAdminFilters(q, opts)
+  if (filtered === null) return { ids: [], capped: false }
+  // Over-fetch by one so we can report whether the cap truncated the set. The `featured`
+  // filter is enriched (timestamp), so apply it here against featured_at like the search does.
+  const res = await (filtered.q as unknown as {
+    limit: (n: number) => Promise<{ data: unknown }>
+  }).limit(ADMIN_BULK_MAX + 1)
+  let rows = ((res.data as { id: string; featured_at: string | null }[] | null) ?? [])
+  if (opts.featured !== undefined) rows = rows.filter((r) => !!r.featured_at === opts.featured)
+  const capped = rows.length > ADMIN_BULK_MAX
+  const ids = rows.slice(0, ADMIN_BULK_MAX).map((r) => r.id)
+  return { ids, capped }
+}
+
+/** Bulk-archive practices (Phase 1 item 1.4): set status='archived' AND is_public=false in
+ *  one write, so the existing member reads (which gate on is_public=true) never surface an
+ *  archived practice — and admin reads can still filter status='archived' to find them. The
+ *  history (logs, adoptions) is preserved (no delete). Idempotent: re-archiving is a no-op
+ *  patch. Returns the affected count. authz-delegated: the curator gate lives at the action
+ *  call site (app/(main)/admin/content/actions.ts archivePracticesAction). */
+export async function archivePractices(ids: string[]): Promise<number> {
+  const clean = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))]
+  if (clean.length === 0) return 0
+  const { error } = await db()
+    .from('practices')
+    .update({ status: 'archived', is_public: false })
+    .in('id', clean)
+  if (error) throw new Error(error.message)
+  return clean.length
+}
+
+/** Restore archived practices to 'approved' (Phase 1 item 1.4). Does NOT auto-republish
+ *  (is_public stays whatever it is — left to the operator's Public switch), so a restore is
+ *  reversible without surprising the library. Returns the affected count. authz-delegated:
+ *  the curator gate lives at the action call site (restorePracticesAction). */
+export async function restorePractices(ids: string[]): Promise<number> {
+  const clean = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))]
+  if (clean.length === 0) return 0
+  const { error } = await db()
+    .from('practices')
+    .update({ status: 'approved' })
+    .in('id', clean)
+    .eq('status', 'archived') // only un-archive; never reset a draft/pending/rejected row
+  if (error) throw new Error(error.message)
+  return clean.length
+}
+
 /** A practice creator's display identity, for author attribution on cards + the
  *  detail page. handle is the /people/{handle} key; null = no human author. */
 export type PracticeCreator = { id: string; handle: string | null; display_name: string | null; avatar_url: string | null }
@@ -713,6 +1194,15 @@ export async function createPractice(input: {
   }
   const practice = (data as Practice | null) ?? null
 
+  // Search embedding (Phase 1 hybrid retrieval, ADR-438): generate the practice's
+  // 384-d vector from title + summary + body so it is findable by semantic search.
+  // Best-effort + inline — never blocks or breaks the create (the helper swallows its
+  // own errors); a miss is swept up by the embed-practices backfill cron.
+  if (practice) {
+    const { embedPractice } = await import('@/lib/practices/embeddings')
+    await embedPractice(practice.id)
+  }
+
   // Creation token (Rewards Economy v3, ADR-305): the small Gem token on FIRST publish.
   // A practice created PUBLIC is published at birth; a private draft pays its token later
   // when it first goes public (setPracticeFlags). Idempotent per asset id + best-effort:
@@ -932,7 +1422,20 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (Object.keys(update).length === 0) return getPractice(id)
 
   const { data } = await db().from('practices').update(update).eq('id', id).select(PRACTICE_COLS).maybeSingle()
-  return (data as Practice | null) ?? null
+  const updated = (data as Practice | null) ?? null
+
+  // Search embedding (Phase 1 hybrid retrieval, ADR-438): refresh the vector when the
+  // descriptive fields that feed it (title / summary / body) changed. Best-effort +
+  // inline — never blocks or breaks the update; a miss is swept up by the backfill cron.
+  if (
+    updated &&
+    (patch.title !== undefined || patch.summary !== undefined || patch.body !== undefined)
+  ) {
+    const { embedPractice } = await import('@/lib/practices/embeddings')
+    await embedPractice(updated.id)
+  }
+
+  return updated
 }
 
 const slugify = (s: string): string =>
