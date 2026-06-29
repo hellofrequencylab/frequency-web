@@ -48,10 +48,13 @@ export async function markOneRead(notificationId: string) {
   if (!profileId) return
 
   const supabase = await createClient()
+  // Defensive scope (SEC-6): RLS already limits this to the caller's rows, but bind
+  // recipient_id too so a single dropped/loosened policy can't turn this into an IDOR.
   await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
     .eq('id', notificationId)
+    .eq('recipient_id', profileId)
 }
 
 export async function getUnreadCount(): Promise<number> {

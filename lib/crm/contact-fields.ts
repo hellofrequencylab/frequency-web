@@ -36,11 +36,15 @@ export type ContactPatch = {
   city: string | null
 }
 
-/** Trim a value; an empty (or whitespace-only) string becomes `null` (clears the field). */
+/** Max length for any editable contact free-text field (SEC-7) — prevents unbounded writes. */
+const MAX_CONTACT_FIELD = 200
+
+/** Trim a value; an empty (or whitespace-only) string becomes `null` (clears the field). Caps
+ *  the length so a staff edit can never write an unbounded string to the row. */
 function normalize(value: string | null | undefined): string | null {
   if (value == null) return null
   const trimmed = value.trim()
-  return trimmed.length === 0 ? null : trimmed
+  return trimmed.length === 0 ? null : trimmed.slice(0, MAX_CONTACT_FIELD)
 }
 
 /**

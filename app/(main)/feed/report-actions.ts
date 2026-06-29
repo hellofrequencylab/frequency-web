@@ -11,8 +11,31 @@ type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
 type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misinformation' | 'other'
 type ReportStatus = 'pending' | 'reviewed' | 'actioned' | 'dismissed'
 
+// Runtime allowlists (site-audit SEC-4): the TS unions are compile-time only, so a forged
+// client could pass any string. Validate before any DB write.
+const VALID_TARGETS: readonly TargetType[] = ['post', 'dispatch', 'comment', 'member', 'event']
+const VALID_REASONS: readonly ReportReason[] = ['spam', 'harassment', 'inappropriate', 'misinformation', 'other']
+const MAX_REPORT_DETAILS = 2000
+
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
+
+// A moderation action must act on the SAME target the report names (site-audit SEC-3): a host
+// passing an unrelated id alongside an open report id must not be able to warn/suspend/cancel an
+// arbitrary target. Returns true only when the report exists and its target matches.
+async function reportTargetMatches(
+  admin: ReturnType<typeof createAdminClient>,
+  reportId: string,
+  type: TargetType,
+  id: string,
+): Promise<boolean> {
+  const { data } = await admin
+    .from('reports')
+    .select('target_type, target_id')
+    .eq('id', reportId)
+    .maybeSingle()
+  return !!data && (data as { target_type: string }).target_type === type && (data as { target_id: string }).target_id === id
+}
 
 // ── Report content ──────────────────────────────────────────────────────────
 
@@ -24,6 +47,11 @@ export async function reportContent(
 ): Promise<ActionResult> {
   const caller = await getCallerProfile()
   if (!caller) return fail('Not authenticated')
+
+  // Validate the target/reason at runtime (SEC-4) before any write.
+  if (!VALID_TARGETS.includes(targetType)) return fail('Invalid report target')
+  if (!VALID_REASONS.includes(reason)) return fail('Invalid report reason')
+  if (!targetId?.trim()) return fail('Missing report target')
 
   const admin = createAdminClient()
 
@@ -46,7 +74,7 @@ export async function reportContent(
     target_type: targetType,
     target_id: targetId,
     reason,
-    details: details?.trim() || null,
+    details: details?.trim().slice(0, MAX_REPORT_DETAILS) || null,
   })
 
   if (error) {
@@ -183,6 +211,11 @@ export async function warnMember(
 
   const admin = createAdminClient()
 
+  // The report must actually name this member (SEC-3).
+  if (!(await reportTargetMatches(admin, reportId, 'member', memberProfileId))) {
+    return fail('This report does not target that member')
+  }
+
   // Look up the system profile (Vera — formerly @moderation; one is_system row).
   // Matched by is_system, NOT the handle, so renaming the account never breaks this.
   const { data: system } = await admin
@@ -272,6 +305,11 @@ export async function suspendMember(
 
   const admin = createAdminClient()
 
+  // The report must actually name this member (SEC-3).
+  if (!(await reportTargetMatches(admin, reportId, 'member', memberProfileId))) {
+    return fail('This report does not target that member')
+  }
+
   const suspendedUntil = options.durationDays
     ? new Date(Date.now() + options.durationDays * 24 * 60 * 60 * 1000).toISOString()
     : null
@@ -311,6 +349,12 @@ export async function cancelEventFromReport(
   }
 
   const admin = createAdminClient()
+
+  // The report must actually name this event (SEC-3).
+  if (!(await reportTargetMatches(admin, reportId, 'event', eventId))) {
+    return fail('This report does not target that event')
+  }
+
   const { error } = await admin
     .from('events')
     .update({ is_cancelled: true })

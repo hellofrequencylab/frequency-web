@@ -135,6 +135,10 @@ export async function setFoundingMember(profileId: string, value: boolean): Prom
   await requireAdmin('janitor')
   const id = profileId.trim()
   if (!id) return fail('Enter a member id.')
+  // Validate the shape (SEC-8) — match the uuid checks economy/spotlight use.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return fail('Enter a valid member id.')
+  }
   try {
     const db = createAdminClient()
     const patch: Record<string, unknown> = { is_founding_member: value }
