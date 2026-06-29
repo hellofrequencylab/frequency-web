@@ -52,8 +52,8 @@
 | INF-1 | `pnpm lint` — 2 unused-var warnings (`lib/spaces/ai-usage.test.ts:27`). | `lib/spaces/ai-usage.test.ts` | 🟡 low | ✅ |
 | BUG-5 | **Missing connection** — `updateCircleField` (circle inline-edit) is built but never wired, unlike the parallel `updateEventField`. | `app/(main)/circles/admin-actions.ts:246` | 🟡 low-med | 📋 (wire the inline editor) |
 | BUG-6 | Unwired "Draft with Vera" for offering blurbs (`draftOfferingBlurbAction`), while sibling bio/tagline drafters are wired. | `app/(main)/spaces/copilot-actions.ts:62` | 🟡 low | 📋 |
-| BUG-7 | Stripe Connect activation is stubbed (activation succeeds without the payment binding). | `app/(main)/partners/join/actions.ts:12`, `lib/personas.ts:71` | 🟠 med | 📋 (dormant until `billing_live`) |
-| BUG-8 | Non-atomic season-capstone count (two concurrent completions can read stale `<3`); mitigated by re-read + idempotent lock. | `lib/quest/complete.ts:220` | 🟡 low | 📋 (SECURITY DEFINER RPC = migration) |
+| BUG-7 | Stripe Connect activation is stubbed (activation succeeds without the payment binding). | `lib/personas.ts`, `app/(main)/admin/personas/actions.ts` | 🟠 med | ✅ `CONNECT_WIRED` gate — `→active` blocked until Connect lands (verified already lights all surfaces) |
+| BUG-8 | Non-atomic season-capstone count (two concurrent completions can read stale `<3`); mitigated by re-read + idempotent lock. | `lib/quest/complete.ts:220` | 🟡 low | ✅ migration written (`claim_season_certificate` RPC) — **not applied/wired** per owner; apply + wire later |
 | BUG-9 | Member module pages lack a `loading.tsx` skeleton (degrade to blank sections, not skeletons). | `/lead`, `/friends`, `/journal`, `/people`, … | 🟡 low | 📋 (parity polish) |
 | — | **Verified clean:** module registry triad consistent (`modules.test.ts` passes, 97 meta = 97 bindings); **0 dead internal links**; no FormData/object signature mismatches; no broken imports. | — | ✓ | ✓ |
 

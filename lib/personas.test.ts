@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   canStaffTransition,
+  CONNECT_WIRED,
   LIVE_PERSONA_STATES,
   PARTNER_PERSONAS,
   PERSONA_STATE_META,
@@ -17,14 +18,20 @@ describe('persona verification state machine (P2.7)', () => {
     expect((LIVE_PERSONA_STATES as readonly string[]).includes('suspended')).toBe(false)
   })
 
-  it('allows the verify → activate ladder and suspends from any held state', () => {
+  it('allows the verify ladder and suspends from any held state', () => {
     expect(canStaffTransition('claimed', 'verified')).toBe(true)
-    expect(canStaffTransition('verified', 'active')).toBe(true)
     expect(canStaffTransition('claimed', 'suspended')).toBe(true)
     expect(canStaffTransition('verified', 'suspended')).toBe(true)
     expect(canStaffTransition('active', 'suspended')).toBe(true)
     // reinstate a suspended persona straight to verified (no forced re-claim)
     expect(canStaffTransition('suspended', 'verified')).toBe(true)
+  })
+
+  it('gates activation on the Connect money binding (BUG-7)', () => {
+    // verified → active is the money gate: allowed only once the Stripe Connect binding is wired.
+    // While CONNECT_WIRED is false, activation is blocked everywhere (UI button + the action).
+    expect(canStaffTransition('verified', 'active')).toBe(CONNECT_WIRED)
+    if (!CONNECT_WIRED) expect(canStaffTransition('verified', 'active')).toBe(false)
   })
 
   it('rejects skips and illegal moves', () => {
