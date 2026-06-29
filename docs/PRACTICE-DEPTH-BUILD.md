@@ -18,8 +18,11 @@
 
 - **Recommended time ships** with the practice (`practices.duration_min`); it seeds the default
   target.
-- **The member sets a personal target on the practice page**, adjustable any day; it pre-fills with
-  **what they actually did last time** (not just the recommendation).
+- **The member adjusts the length at the timer**, day to day (the setup presets + stepper), and the
+  chosen length is remembered for next time. *(Supersedes the original "pre-declared personal target
+  on the practice page": the owner pivoted to "based on how much they do that day", so the depth is
+  set by **actually practicing longer** — auto-continue + achieved tier — not by declaring a number
+  up front. The recommended time still ships and still seeds the timer.)*
 - **The tier is achieved, not declared:** for a timed practice, the Zaps come from the engaged
   minutes crossing thresholds — Light · Standard · Heavy = 8 · 12 · 15 (tunable in `zap_config`).
 - **Auto-continue past target:** when the target completes the timer keeps running with a gentle
@@ -75,6 +78,23 @@ For a **timed** practice, resolve the tier from server-verified engaged seconds 
   stays Heavy = 15).
 
 ---
+
+## 3a. Build status (what shipped)
+
+| Phase | Status | Notes |
+|---|---|---|
+| **PD0** Mode-accuracy + on-brand output | ✅ | `statSessionLabel` (mode-accurate "This sit" / "This walk"), "Deep" retired, `dispatchOpener` mode-accurate. Vera AI **fallback** activity pass-through remains a tracked follow-up (the primary dispatch is already mode-accurate). |
+| **PD1** Practice header on detail page | ✅ | `header_image` renders on `/practices/[id]`. |
+| **PD2** Achieved-tier resolution (server) | ✅ | `achievedTier` / `achievedTierFromMinutes` in `tiers.ts` (+ tests); `logPractice` awards `TIER_ZAPS[achievedTier]` for timed sits; partial = 1 Zap + streak + top-up. |
+| **PD3** Personal adjustable target + memory | ✅ *(re-scoped)* | Superseded by achieved-tier + auto-continue (see §1). Recommended time seeds the timer; member adjusts the length at the setup stepper/presets; the actual length is persisted in `profiles.meta.onAir` for next time. **No migration.** |
+| **PD4** Auto-continue + live "go deeper" cues | ✅ | Mindless sit (`session.tsx`): the clock keeps counting past target, the live screen counts up (`+M:SS`), and a live tier cue ("You're at Standard. 6 more minutes reaches Heavy.") shows the ladder. `finish()` banks the **actual** elapsed so deeper time earns the deeper tier. Movement `play` already counts up; structured movement plans keep their plan-bounded finish cap (the shared reveal nudge still applies). |
+| **PD5** Reveal: tier reached + nudge | ✅ | `reveal.tsx` Stats card shows "You reached {tier}." + the minutes to the next tier (or "Top of the dial." at Heavy), for any full timed sit (Mindless **and** Movement). |
+| **PD6** "Dig deeper" daily pull | ⏳ | The reveal nudge + live cue carry the daily pull. A dedicated depth-streak is still planned. |
+| **PD7** Tests + verification | ⏳ | `tiers.test.ts` covers the achieved-tier thresholds; tsc/eslint clean. Per-mode live-session walkthrough still to do in preview. |
+
+The economy + timer subsystem has unit tests only (no integration/e2e), so the behavior-changing
+timer work above was kept **additive** (a new `overtime` counter + display; `finish()` banks actual
+time floored at target) to avoid regressing the core countdown.
 
 ## 4. Phased build (work through top to bottom)
 
