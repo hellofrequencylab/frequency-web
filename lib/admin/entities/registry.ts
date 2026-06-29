@@ -62,11 +62,27 @@ const SPINE_ORDER: readonly AdminSlot[] = [
 ]
 
 /**
- * The declared surfaces, per entity. Pass 1: circle Basics + Danger only.
- * Both gate on `circle.editSettings` — the same gate the circle settings module and
- * `deleteCircle` already enforce server-side (lib/core/load-capabilities.ts).
+ * The declared surfaces, per entity. Pass 1 (EM1-1) shipped circle; this rollout
+ * (EM1-3) adds hub, nexus, event, and practice — the SAME registry-driven console,
+ * one row per surface. Each surface names the capability its server action re-checks:
+ *
+ *   circle   → circle.editSettings  (deleteCircle + circle settings module)
+ *   hub      → hub.manage           (hub settings module)
+ *   nexus    → nexus.manage         (nexus settings module)
+ *   event    → event.editSettings   (event settings + deleteEvent)
+ *   practice → practice.editSettings (practice settings module embeds DangerDelete)
+ *
+ * Every entity gets Basics + Danger, mirroring circle. The console binds each id to
+ * its component (see each `/manage` console.tsx); a Danger surface whose entity has no
+ * standalone destructive control yet (hub, nexus) renders header-only, exactly like
+ * circle's Danger today (its delete is embedded in the basics module). When those
+ * entities gain a delete action, the Danger binding gains its control with no registry
+ * change. NOTE: `space` is intentionally absent — it is NOT part of the unified
+ * Scope/Capability spine (it has its own lib/spaces/entitlements.ts world), so it
+ * cannot be registered here without a core Scope change. Flagged for the central lane.
  */
 export const ENTITY_SURFACES: readonly EntitySurface[] = [
+  // ── circle (EM1-1) ──────────────────────────────────────────────────────────
   {
     id: 'circle.basics',
     entity: 'circle',
@@ -82,6 +98,74 @@ export const ENTITY_SURFACES: readonly EntitySurface[] = [
     label: 'Danger zone',
     desc: 'Archive or delete this circle. These actions cannot be undone.',
     requiredCapability: 'circle.editSettings',
+  },
+  // ── hub (EM1-3) ─────────────────────────────────────────────────────────────
+  {
+    id: 'hub.basics',
+    entity: 'hub',
+    slot: 'basics',
+    label: 'Basics',
+    desc: 'Name and status for this hub.',
+    requiredCapability: 'hub.manage',
+  },
+  {
+    id: 'hub.danger',
+    entity: 'hub',
+    slot: 'danger',
+    label: 'Danger zone',
+    desc: 'Archive or delete this hub. These actions cannot be undone.',
+    requiredCapability: 'hub.manage',
+  },
+  // ── nexus (EM1-3) ───────────────────────────────────────────────────────────
+  {
+    id: 'nexus.basics',
+    entity: 'nexus',
+    slot: 'basics',
+    label: 'Basics',
+    desc: 'Name, member cap, and status for this nexus.',
+    requiredCapability: 'nexus.manage',
+  },
+  {
+    id: 'nexus.danger',
+    entity: 'nexus',
+    slot: 'danger',
+    label: 'Danger zone',
+    desc: 'Archive or delete this nexus. These actions cannot be undone.',
+    requiredCapability: 'nexus.manage',
+  },
+  // ── event (EM1-3) ───────────────────────────────────────────────────────────
+  {
+    id: 'event.basics',
+    entity: 'event',
+    slot: 'basics',
+    label: 'Basics',
+    desc: 'Title, description, cover, location, time, and permalink.',
+    requiredCapability: 'event.editSettings',
+  },
+  {
+    id: 'event.danger',
+    entity: 'event',
+    slot: 'danger',
+    label: 'Danger zone',
+    desc: 'Delete this event. This cannot be undone.',
+    requiredCapability: 'event.editSettings',
+  },
+  // ── practice (EM1-3) ────────────────────────────────────────────────────────
+  {
+    id: 'practice.basics',
+    entity: 'practice',
+    slot: 'basics',
+    label: 'Basics',
+    desc: 'Cover, title, summary, description, duration, category, and permalink.',
+    requiredCapability: 'practice.editSettings',
+  },
+  {
+    id: 'practice.danger',
+    entity: 'practice',
+    slot: 'danger',
+    label: 'Danger zone',
+    desc: 'Delete this practice. This cannot be undone.',
+    requiredCapability: 'practice.editSettings',
   },
 ] as const
 
