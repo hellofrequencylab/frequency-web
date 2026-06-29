@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // An ENFORCED Content-Security-Policy (P8 hardening, ADR-170). Graduated from
 // report-only after the report-only pass confirmed the real source set.
@@ -125,4 +126,19 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry's Next plugin (H0-4). This is SAFE WHEN UNCONFIGURED: with no
+// SENTRY_DSN the runtime SDK never initialises (see lib/observability/sentry.ts),
+// and with no SENTRY_AUTH_TOKEN / org / project the build-time source-map upload is
+// skipped — withSentryConfig becomes a near pass-through that doesn't break the build.
+// org/project/authToken come from env so nothing Sentry-specific is hardcoded.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Only chatter about source-map upload in CI.
+  silent: !process.env.CI,
+  // Upload a wider set of source maps for readable client stack traces.
+  widenClientFileUpload: true,
+  // Tree-shake Sentry logger statements from the production client bundle.
+  disableLogger: true,
+});

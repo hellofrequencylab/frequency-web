@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24))
 }
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -116,3 +117,5 @@ export async function GET(req: NextRequest) {
     sent: { day1: day1Count, day3: day3Count, day7: day7Count },
   })
 }
+
+export const GET = withCronHeartbeat('lifecycle-triggers', handler)

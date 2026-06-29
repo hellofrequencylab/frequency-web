@@ -97,11 +97,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     // SEO/AIO pillar pages (problem-aware entries: loneliness, adult friendship,
-    // building community, life after the feed). Answer-first; Article + FAQ schema.
+    // building community, life after the feed, always-wired stress, new-city
+    // connection). Answer-first; Article + FAQ schema. These complete the five
+    // Seeker pain clusters (CONTENT-VOICE §7a) with a pillar each.
     { url: `${SITE_URL}/loneliness`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/friendship-as-an-adult`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/how-to-build-community`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/life-after-the-feed`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/calm-down-fast`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${SITE_URL}/meet-people-new-city`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,

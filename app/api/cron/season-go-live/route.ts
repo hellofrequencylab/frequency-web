@@ -11,13 +11,14 @@
 
 import { NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { promoteDueScheduledSeasons } from '@/lib/seasons'
 import { log } from '@/lib/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = rejectUnauthorizedCron(request)
   if (denied) return denied
 
@@ -46,3 +47,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: message }, { status: 500 })
   }
 }
+
+export const GET = withCronHeartbeat('season-go-live', handler)
