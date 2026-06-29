@@ -18,6 +18,7 @@ import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/p
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
+import { clampTierToDuration } from '@/lib/practices/tiers'
 import type { MovementConfig } from '@/lib/movement'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
@@ -915,9 +916,19 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   }
   if (patch.subcategory_id !== undefined) update.subcategory_id = patch.subcategory_id || null
   // Weight class drives the per-log Zap payout (light 8 / standard 12 / heavy 15).
-  // Guard against an unexpected value so a bad client can't write a junk tier.
-  if (patch.weight_class !== undefined)
-    update.weight_class = WEIGHT_CLASSES.includes(patch.weight_class) ? patch.weight_class : 'standard'
+  // Time-vs-points (ADR-442): clamp the stored tier to the highest one the practice's
+  // required length earns, so a short practice can never bank Heavy. Lower tiers stay
+  // allowed (under-claim is fine). Re-runs whenever the tier OR the duration changes, and
+  // reads the unchanged half when only one side is in the patch. Guards a junk tier too.
+  if (patch.weight_class !== undefined || patch.duration_min !== undefined) {
+    const needCurrent = patch.weight_class === undefined || patch.duration_min === undefined
+    const current = needCurrent ? await getPractice(id) : null
+    const effDuration =
+      patch.duration_min !== undefined ? (update.duration_min as number | null) : current?.duration_min ?? null
+    const rawWeight = patch.weight_class !== undefined ? patch.weight_class : current?.weight_class ?? 'standard'
+    const reqWeight: WeightClass = WEIGHT_CLASSES.includes(rawWeight as WeightClass) ? (rawWeight as WeightClass) : 'standard'
+    update.weight_class = clampTierToDuration(reqWeight, effDuration)
+  }
   if (Object.keys(update).length === 0) return getPractice(id)
 
   const { data } = await db().from('practices').update(update).eq('id', id).select(PRACTICE_COLS).maybeSingle()

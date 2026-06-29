@@ -93,6 +93,8 @@ chat are filed here automatically (see the protocol below).
 | ID | Date | Idea | Raised by | Status | Lands in |
 |---|---|---|---|---|---|
 | IDEA-001 | 2026-06-29 | *(example)* Comparison "alternative-to" pages for SEO | — | Triaged | Wave 5 · Growth `GE11-1` |
+| IDEA-002 | 2026-06-29 | Roll the duration-gated Effort tier picker to crew tasks (replace the free 1-500 number) | owner | Triaged | Wave 3 · per [ADR-442](DECISIONS.md) |
+| IDEA-003 | 2026-06-29 | Apply the constrained Effort tier to remaining game-value setters (challenges, events, other metrics), role-gated | owner | Triaged | Wave 3 · per [ADR-442](DECISIONS.md) |
 
 > Add new ideas as `IDEA-###` rows above this line. Keep the description to one line; detail goes in
 > the track doc once scheduled.

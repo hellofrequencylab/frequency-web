@@ -9148,3 +9148,30 @@ Mode labels are EXACTLY `Be Still` and `Get Moving`; the tagline is EXACTLY "Get
 - Money built in Pass 2 (EM2-4) is dormant behind `billing_live`, entity-tagged; go-live gated on legal entities (consistent with ADR-439/440).
 - This is a named track gated by the hardening spine (G0) and is the prerequisite for Growth OS G3. NAMING.md + CONTENT-VOICE.md + PAGE-FRAMEWORK.md are honored throughout; the contract layer stays mobile-ready.
 - Authority order unchanged: running code + migrations > docs > Notion.
+
+---
+
+## ADR-442: Time-gated payout tiers — creators pick a duration-validated Effort tier (evolves ADR-438)
+
+**Status:** Accepted (2026-06-29). Owner decision. Evolves [ADR-438](DECISIONS.md)/[ADR-305](DECISIONS.md)/[ADR-303](DECISIONS.md): instead of the payout tier being fully auto-assigned and creator-locked, the **creator picks one of three tiers**, but the choice is **gated by the practice's required time** so points stay bound to effort. Pure rule + tests in `lib/practices/tiers.ts`.
+
+**Context.** The owner wants a simple, constrained way to set Zap value (no free numbers, no unlimited) that a creator controls, while preventing farming. The canon tier is the **weight class — Light / Standard / Heavy = 8 / 12 / 15 Zaps** (member-facing label **Effort**), already a 3-option picker on practices. The missing piece was binding the tier to time ("check the time versus the points").
+
+**Decision.**
+1. **Creators pick the Effort tier** (Light/Standard/Heavy), never a free number. The amounts stay tunable in `zap_config`; 8/12/15 are the canon defaults.
+2. **Time-vs-points gate.** Each tier carries a minimum required length (the ADR-438 intensity buckets): **Light any · Standard 5+ min · Heavy 15+ min** (`TIER_FLOOR_MIN = {light:0, standard:5, heavy:15}`). The builder only offers tiers the current length earns (lower tiers always allowed — under-claiming is fine); lowering the length auto-downgrades the tier. `setPractice` **clamps the stored tier down** to what the duration earns, so a bad client can't bypass it. At log time the existing timer-completion proof (ADR-345/438) enforces the time is actually spent.
+3. **Staff override unchanged.** The admin `reward_zaps` free-number override remains the staff-only audited break-glass (ADR-438); ordinary creators never see it.
+4. **Per-type gate strategy** (the same constrained-tier element, applied across game-value setting; rolled out per type):
+
+| Type | Who sets it | Gate |
+|---|---|---|
+| **Practice** | Creator | Effort tier, **duration-validated** (this ADR) + log-time timer proof |
+| **Crew task** | Host/crew (composer) | Effort tier (replaces the free 1-500 number); no duration → role-gated, verification flag |
+| **Challenge** | Operator | Effort tier; role-gated (no member free-set) |
+| **Event / other game metrics** | Host/operator | Effort tier where a value is set; role-gated; time-validated only where a measurable length exists |
+| **Admin override** | Staff (janitor/admin) | Free number, audited break-glass only |
+
+**Consequences.**
+- Practices implemented now (`lib/practices/tiers.ts`, the builder Effort gate, the `setPractice` clamp, unit tests). Other types (crew tasks first) follow as separate PRs against this rule — tracked in the [BUILD-SEQUENCE](BUILD-SEQUENCE.md) Idea Inbox.
+- "Time vs points" is enforced at BOTH authoring (tier needs the length) and logging (must complete the length), so Zaps-per-real-minute stays roughly flat (no arbitrage), consistent with the ADR-438 anti-farm guarantee.
+- Tier amounts remain data-tunable in `zap_config`; the floors are the structural gate and live in code.

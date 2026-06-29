@@ -17,6 +17,7 @@ import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind } from '@/lib/practices'
+import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { MOVEMENT_MODES, type MovementConfig, type MovementMode } from '@/lib/movement'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
@@ -127,6 +128,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [rewardNote, setRewardNote] = useState(props.rewardNote ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, startDelete] = useTransition()
+  // Time-vs-points (ADR-442): the current length gates which Effort tiers are earnable.
+  const durNum = durationMin.trim() === '' ? null : Number(durationMin)
 
   const remove = () =>
     startDelete(async () => {
@@ -342,7 +345,18 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             max={1440}
             value={durationMin}
             onChange={(e) => setDurationMin(e.target.value)}
-            onBlur={() => queueSave({ duration_min: durationMin.trim() === '' ? null : Number(durationMin) })}
+            onBlur={() => {
+              // Persist the length and, if it no longer earns the current tier, drop the
+              // tier to what it does earn (time-vs-points, ADR-442). One save carries both.
+              const d = durationMin.trim() === '' ? null : Number(durationMin)
+              const clamped = clampTierToDuration(weightClass, d)
+              if (clamped !== weightClass) {
+                setWeightClass(clamped)
+                queueSave({ duration_min: d, weight_class: clamped })
+              } else {
+                queueSave({ duration_min: d })
+              }
+            }}
             placeholder="e.g. 10"
             className={FIELD}
           />
@@ -366,32 +380,44 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         </StudioField>
       </div>
 
-      {/* Effort (weight class) — the per-log Zap payout tier */}
+      {/* Effort (weight class) — the per-log Zap payout tier, GATED by required time
+          (ADR-442): a tier is only earnable once the length meets its floor, so a short
+          practice can never bank Heavy. Lower tiers stay open (under-claim is fine). */}
       <fieldset className="mt-4">
         <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">Effort</legend>
         <div role="radiogroup" aria-label="Effort" className="mt-1 grid grid-cols-3 gap-2">
           {WEIGHT_OPTIONS.map((w) => {
             const active = weightClass === w.value
+            const allowed = isTierAllowed(w.value, durNum)
+            const floor = TIER_FLOOR_MIN[w.value]
             return (
               <button
                 key={w.value}
                 type="button"
                 role="radio"
                 aria-checked={active}
-                onClick={() => { setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
+                disabled={!allowed}
+                title={allowed ? undefined : `Needs a ${floor}+ min practice`}
+                onClick={() => { if (!allowed) return; setWeightClass(w.value); queueSave({ weight_class: w.value }) }}
                 className={`flex min-h-11 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                   active
                     ? 'border-primary/50 bg-primary-bg text-primary-strong'
+                    : !allowed
+                    ? 'cursor-not-allowed border-border bg-surface text-subtle opacity-50'
                     : 'border-border bg-surface text-muted hover:bg-surface-elevated'
                 }`}
               >
                 <span>{w.label}</span>
-                <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-subtle'}`}>{w.zaps} Zaps</span>
+                <span className={`text-2xs font-semibold ${active ? 'text-primary-strong' : 'text-subtle'}`}>
+                  {allowed ? `${w.zaps} Zaps` : `${floor}+ min`}
+                </span>
               </button>
             )
           })}
         </div>
-        <p className="mt-1 text-xs text-subtle">The fallback per-log payout when no Zap override is set. Light 8 · Standard 12 · Heavy 15 Zaps.</p>
+        <p className="mt-1 text-xs text-subtle">
+          The per-log payout, earned by the practice&apos;s length: Standard needs {TIER_FLOOR_MIN.standard}+ min, Heavy {TIER_FLOOR_MIN.heavy}+ min. Set the time above. Light 8 · Standard 12 · Heavy 15 Zaps.
+        </p>
       </fieldset>
 
       {/* How it's done — drives the single action a follower sees: Mindless opens the On Air
