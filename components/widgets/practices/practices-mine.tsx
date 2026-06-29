@@ -8,8 +8,9 @@ import { RowCard } from '@/components/cards/row-card'
 import { SectionHeader } from '@/components/ui/section-header'
 
 // The Pillar / cadence / reward chips under a "Your practices" row title.
-function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; reward_note: string | null } }) {
-  if (!p.category && !p.cadence && !p.reward_note) return null
+function PracticeMeta({ p }: { p: { category: string | null; cadence: string | null; duration_min: number | null; reward_note: string | null } }) {
+  const lengthCadence = [p.duration_min ? `${p.duration_min} min` : null, p.cadence].filter(Boolean).join(' · ')
+  if (!p.category && !lengthCadence && !p.reward_note) return null
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
       {p.category && (
@@ -17,7 +18,7 @@ function PracticeMeta({ p }: { p: { category: string | null; cadence: string | n
           {p.category.replace(/-/g, ' ')}
         </span>
       )}
-      {p.cadence && <span className="text-subtle">{p.cadence}</span>}
+      {lengthCadence && <span className="text-subtle">{lengthCadence}</span>}
       {p.reward_note && (
         <span className="inline-flex items-center gap-1 font-medium text-warning">
           <Zap className="h-3 w-3 fill-warning" aria-hidden />

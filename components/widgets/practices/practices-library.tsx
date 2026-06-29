@@ -1,6 +1,6 @@
 import { headers } from 'next/headers'
 import Link from 'next/link'
-import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X } from 'lucide-react'
+import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X, Clock, Timer, CircleDot } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import {
   searchLibraryPractices,
@@ -178,6 +178,8 @@ export async function PracticesLibrary() {
               const creator = p.created_by ? creators.get(p.created_by) ?? null : null
               const author = creator?.handle ? <PracticeAuthor creator={creator} /> : null
               const adopt = profileId ? <AdoptPracticeButton practiceId={p.id} adopted={mineIds.has(p.id)} fullWidth /> : null
+              // Length + cadence read as one fact ("12 min · Daily"); show whichever is present.
+              const lengthCadence = [p.duration_min ? `${p.duration_min} min` : null, p.cadence].filter(Boolean).join(' · ')
               const footer =
                 author || adopt ? (
                   <div className="space-y-2">
@@ -219,13 +221,25 @@ export async function PracticesLibrary() {
                     meta={
                       <>
                         {p.reward_note && (
-                          <span className="inline-flex items-center gap-1 font-medium text-warning">
+                          <span className="inline-flex items-center gap-1 font-medium text-warning" title="Reward per log">
                             <Zap className="h-3 w-3 fill-warning" aria-hidden /> {p.reward_note}
                           </span>
                         )}
-                        {p.cadence && <span>{p.cadence}</span>}
-                        <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {p.adopters}</span>
-                        <span className="inline-flex items-center gap-1"><Flame className="h-3 w-3" /> {p.logs_total}</span>
+                        <span className="inline-flex items-center gap-1" title={p.uses_timer ? 'Timed practice' : 'Quick log'}>
+                          {p.uses_timer ? <Timer className="h-3 w-3" aria-hidden /> : <CircleDot className="h-3 w-3" aria-hidden />}
+                          {p.uses_timer ? 'Timed' : 'Quick log'}
+                        </span>
+                        {lengthCadence && (
+                          <span className="inline-flex items-center gap-1" title="Typical length and cadence">
+                            <Clock className="h-3 w-3" aria-hidden /> {lengthCadence}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1" title="Practitioners">
+                          <Users className="h-3 w-3" aria-hidden /> {p.adopters.toLocaleString()}
+                        </span>
+                        <span className="inline-flex items-center gap-1" title="Times practiced">
+                          <Flame className="h-3 w-3" aria-hidden /> {p.logs_total.toLocaleString()}
+                        </span>
                       </>
                     }
                     action={isAdmin ? <PracticeAdminMenu practiceId={p.id} isTemplate={p.is_template} isPublic={p.is_public} /> : undefined}
