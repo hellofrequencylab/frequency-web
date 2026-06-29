@@ -25,8 +25,7 @@ export async function saveSpotlightLayout(rawLayout: unknown): Promise<{ error?:
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
+  const { data: me } = await supabase
     .from('profiles')
     .select('handle, meta')
     .eq('auth_user_id', user.id)
@@ -38,7 +37,7 @@ export async function saveSpotlightLayout(rawLayout: unknown): Promise<{ error?:
 
   const safe = validateSpotlightLayout(rawLayout, user.id)
   const nextMeta = withSpotlightLayout((me as { meta?: unknown }).meta, safe)
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ meta: nextMeta as never })
     .eq('auth_user_id', user.id)
@@ -117,8 +116,7 @@ export async function saveSpotlightBackground(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
+  const { data: me } = await supabase
     .from('profiles')
     .select('handle, meta')
     .eq('auth_user_id', user.id)
@@ -130,7 +128,7 @@ export async function saveSpotlightBackground(
 
   const safe = validateSpotlightBackground(rawBackground, user.id)
   const nextMeta = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ meta: nextMeta as never })
     .eq('auth_user_id', user.id)
@@ -151,8 +149,7 @@ export async function saveSpotlightTheme(rawTheme: unknown): Promise<{ error?: s
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const admin = createAdminClient()
-  const { data: me } = await admin
+  const { data: me } = await supabase
     .from('profiles')
     .select('handle, meta')
     .eq('auth_user_id', user.id)
@@ -164,7 +161,7 @@ export async function saveSpotlightTheme(rawTheme: unknown): Promise<{ error?: s
 
   const safe = validateSpotlightTheme(rawTheme)
   const nextMeta = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
-  const { error } = await admin
+  const { error } = await supabase
     .from('profiles')
     .update({ meta: nextMeta as never })
     .eq('auth_user_id', user.id)

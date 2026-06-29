@@ -130,7 +130,7 @@ compliance gaps before scale multiplies the blast radius.
 
 | ID | Task | Detail | State |
 |---|---|---|---|
-| H2-1 | **Finish RLS convergence (ADR-042/056)** | Migrate remaining high-traffic read/write paths from admin-client to RLS + `SECURITY DEFINER` RPCs, surface by surface, each with policy tests. Six surfaces done (notifications, friendships, feed, feed-detail, messages, rooms); enumerate and close the rest (CRM, commerce, resonance, spaces reads where appropriate). | ⏳ |
+| H2-1 | **Finish RLS convergence (ADR-042/056)** | Migrate remaining high-traffic read/write paths from admin-client to RLS + `SECURITY DEFINER` RPCs, surface by surface, each with policy tests. Done: notifications, friendships, feed, feed-detail, messages, rooms, **profile-meta self-writes (the 5 spotlight enable/publish/layout/background/theme actions → session client, T0)**. Enumerate and close the rest (CRM, commerce, resonance, spaces reads where appropriate). | ⏳ |
 | H2-2 | **authz CI guard coverage** | Audit every `'use server'` file that uses `createAdminClient()` for an explicit authz check or justified `// authz-ok`. Extend `scripts/check-authz-guards.mjs` coverage; treat any gap as a bug. | ⏳ |
 | H2-3 | **Security-definer hygiene** | Confirm every SECURITY DEFINER function pins `SET search_path = public` and returns safe-by-default for the unauthenticated (NULL) caller. Advisor-driven (H0-1). | 🔴 |
 | H2-4 | **Secrets & webhook verification audit** | Verify signature checks on every inbound webhook (Stripe, Resend) and HMAC on every signed token (unsubscribe, beta, cron, QR signed codes). Confirm no secret is ever client-exposed; rotate-ability documented. | 🔴 |
