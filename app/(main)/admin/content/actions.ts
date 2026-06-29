@@ -23,9 +23,11 @@ import {
   archivePractices,
   restorePractices,
   resolveAdminPracticeIds,
+  findPracticeDuplicates,
   ADMIN_BULK_MAX,
   type WeightClass,
   type AdminPracticeSearchOpts,
+  type DuplicateCandidate,
 } from '@/lib/practices'
 import {
   setJourneyFeatured,
@@ -362,6 +364,28 @@ export async function bulkPracticesByFilterAction(
     return ok({ count: ids.length, capped })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+}
+
+/**
+ * Find likely duplicates of ONE practice (the explicit per-practice "find near-duplicates"
+ * lookup, PRACTICE-LIBRARY §5 — NOT an always-on column). Curator-gated, re-checked here;
+ * delegates to the vector-similarity read. Returns the neighbour list (empty when the practice
+ * has no embedding yet) so the row affordance can render inline.
+ */
+export async function findPracticeDuplicatesAction(
+  id: string,
+): Promise<ActionResult<{ candidates: DuplicateCandidate[] }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const candidates = await findPracticeDuplicates(id)
+    return ok({ candidates })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not check for duplicates.')
   }
 }
 
