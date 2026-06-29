@@ -237,32 +237,6 @@ export async function updateCircleSettings(id: string, slug: string, fd: FormDat
   revalidatePath('/circles')
 }
 
-// Field-level patch for the inline tuning layer (ADR-138). Allowlisted to the
-// edit-in-place fields so an inline edit can never wipe the rest of the circle;
-// re-checks circle.editSettings, same as the full settings form.
-const INLINE_FIELDS = ['name', 'about'] as const
-type InlineField = (typeof INLINE_FIELDS)[number]
-
-export async function updateCircleField(id: string, slug: string, field: InlineField, value: string) {
-  if (!INLINE_FIELDS.includes(field)) throw new Error('Invalid field')
-
-  const caps = await getCircleCapabilities(id)
-  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
-
-  const trimmed = value.trim()
-  if (field === 'name' && !trimmed) throw new Error('Name is required')
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('circles')
-    .update(field === 'about' ? { about: trimmed || null } : { name: trimmed })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
-
-  revalidatePath(`/circles/${slug}`)
-  revalidatePath('/circles')
-}
-
 // Cover image: upload to the public `site-media` bucket and persist image_url, or
 // clear it. Both re-check circle.editSettings (capabilities are law). Mirrors the
 // Puck uploader (lib/page-editor/upload-action.ts) but gated per-circle, not staff.
