@@ -27,6 +27,7 @@ import { sendPushToProfile } from '@/lib/push'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
 
 export const dynamic = 'force-dynamic'
@@ -345,7 +346,7 @@ Unsubscribe from event reminders: ${unsubscribeUrl}
   })
 }
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -369,3 +370,5 @@ export async function GET(req: NextRequest) {
     '2h':  t2,
   })
 }
+
+export const GET = withCronHeartbeat('event-reminders', handler)

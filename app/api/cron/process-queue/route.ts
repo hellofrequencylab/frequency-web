@@ -3,12 +3,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { processQueue } from '@/lib/queue/outbox'
 import { queueHandlers } from '@/lib/queue/handlers'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: NextRequest) {
+async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
@@ -27,3 +28,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
   }
 }
+
+export const GET = withCronHeartbeat('process-queue', handler)

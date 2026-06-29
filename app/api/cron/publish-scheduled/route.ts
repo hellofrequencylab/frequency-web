@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { rejectUnauthorizedCron } from '@/lib/cron-auth'
+import { withCronHeartbeat } from '@/lib/observability/cron-heartbeat'
 import { log } from '@/lib/log'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request) {
+async function handler(request: Request) {
   const denied = rejectUnauthorizedCron(request)
   if (denied) return denied
 
@@ -47,3 +48,5 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ published: ids.length, ids })
 }
+
+export const GET = withCronHeartbeat('publish-scheduled', handler)
