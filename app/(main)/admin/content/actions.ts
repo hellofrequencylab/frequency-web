@@ -30,6 +30,14 @@ import {
   type DuplicateCandidate,
 } from '@/lib/practices'
 import {
+  mergePractices,
+  promoteTagToCanonical,
+  mergeTags,
+  type MergeResult,
+  type MergeTagsResult,
+} from '@/lib/practices/clean'
+import { screenPracticeForPublish, type PracticeScreenResult } from '@/lib/ai/practice-publish-screen'
+import {
   setJourneyFeatured,
   setPracticeFeatured,
   setPracticeStatus,
@@ -302,6 +310,8 @@ export type BulkFilteredOp =
   | { kind: 'setWeight'; weightClass: WeightClass }
   | { kind: 'archive' }
   | { kind: 'restore' }
+  | { kind: 'approve' }
+  | { kind: 'reject' }
 
 /**
  * Apply a bulk operation to the WHOLE filtered set. The filter is the same
@@ -314,8 +324,9 @@ export async function bulkPracticesByFilterAction(
   filter: AdminPracticeSearchOpts,
   op: BulkFilteredOp,
 ): Promise<ActionResult<{ count: number; capped: boolean }>> {
+  let caller: { id: string }
   try {
-    await requireCurator()
+    caller = await requireCurator()
   } catch {
     return fail('You need curation access for this.')
   }
@@ -346,6 +357,20 @@ export async function bulkPracticesByFilterAction(
     }
     if (op.kind === 'restore') {
       const count = await restorePractices(ids)
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    if (op.kind === 'approve' || op.kind === 'reject') {
+      // Triage queue bulk decision (item 2.1): approve publishes + stamps the reviewer,
+      // reject leaves the proposal hidden + stamps it. Each row goes through setPracticeStatus
+      // so the reviewer + publish side effects match the single-row review path exactly.
+      const status = op.kind === 'approve' ? 'approved' : 'rejected'
+      let count = 0
+      for (const id of ids) {
+        await setPracticeStatus(id, status, caller.id)
+        count += 1
+      }
       revalidateContent('practices')
       revalidatePath('/practices', 'layout')
       return ok({ count, capped })
@@ -386,6 +411,132 @@ export async function findPracticeDuplicatesAction(
     return ok({ candidates })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not check for duplicates.')
+  }
+}
+
+/**
+ * Bulk triage decision over the EXPLICIT ids the curator selected (the review queue's
+ * "approve/reject these N" — the checkbox path, alongside the filtered-set path in
+ * bulkPracticesByFilterAction). Curator-gated, re-checked server-side; each row goes through
+ * setPracticeStatus so the publish + reviewer stamp match the single-row review exactly.
+ * De-duped + bounded server-side (never trust the client's list length). Returns the count.
+ */
+export async function bulkReviewAction(
+  ids: string[],
+  decision: 'approved' | 'rejected',
+): Promise<ActionResult<{ count: number }>> {
+  let caller: { id: string }
+  try {
+    caller = await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (decision !== 'approved' && decision !== 'rejected') return fail('Unknown decision.')
+  const cleanIds = [...new Set(ids.filter((id) => typeof id === 'string' && id.length > 0))].slice(0, ADMIN_BULK_MAX)
+  if (cleanIds.length === 0) return fail('Select at least one practice.')
+  try {
+    for (const id of cleanIds) {
+      await setPracticeStatus(id, decision, caller.id)
+    }
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
+  revalidateContent('practices')
+  revalidatePath('/practices', 'layout')
+  return ok({ count: cleanIds.length })
+}
+
+/**
+ * Merge a duplicate practice INTO a canonical one (the dedup action, item 2.2). Curator-gated,
+ * re-checked server-side; delegates to the merge_practices RPC, which re-points every FK +
+ * lineage onto the canonical, drops the unique-conflict duplicates, records a slug redirect so
+ * the merged link 301s, and archives + unpublishes the source. Returns the RPC result.
+ */
+export async function mergePracticesAction(
+  fromId: string,
+  toId: string,
+): Promise<ActionResult<{ result: MergeResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!fromId || !toId) return fail('Pick both a duplicate and the practice to keep.')
+  if (fromId === toId) return fail('Pick two different practices to merge.')
+  try {
+    const result = await mergePractices(fromId, toId)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ result })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not merge the practices.')
+  }
+}
+
+/** Promote a member/Vera-proposed tag to canonical (item 2.4). Curator-gated. */
+export async function promoteTagAction(tagId: string): Promise<ActionResult> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!tagId) return fail('No tag to promote.')
+  try {
+    await promoteTagToCanonical(tagId)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not promote the tag.')
+  }
+  revalidateContent('practices')
+  revalidatePath('/practices', 'layout')
+  return ok()
+}
+
+/**
+ * Merge one tag INTO another (item 2.4): re-points every practice's link onto the canonical
+ * tag, drops the duplicates a practice would carry twice, and retires the source def. Curator-
+ * gated, re-checked server-side. Returns the re-pointed + dropped counts.
+ */
+export async function mergeTagsAction(
+  fromTagId: string,
+  intoTagId: string,
+): Promise<ActionResult<{ result: MergeTagsResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!fromTagId || !intoTagId) return fail('Pick both a tag to merge and the tag to keep.')
+  if (fromTagId === intoTagId) return fail('Pick two different tags to merge.')
+  try {
+    const result = await mergeTags(fromTagId, intoTagId)
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ result })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not merge the tags.')
+  }
+}
+
+/**
+ * Run Vera's advisory pre-publish screen on one practice (item 2.5) — the curator calls this
+ * before approving to see voice / completeness / safety notes. Curator-gated. ADVISORY ONLY:
+ * it never blocks publish (it just returns the notes). Budget-gated + deterministic-fallback
+ * inside screenPracticeForPublish, so it always returns a result (it does not throw on AI off).
+ */
+export async function screenPracticeAction(
+  id: string,
+): Promise<ActionResult<{ screen: PracticeScreenResult }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  if (!id) return fail('No practice to screen.')
+  try {
+    const screen = await screenPracticeForPublish(id)
+    return ok({ screen })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not screen the practice.')
   }
 }
 

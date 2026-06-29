@@ -47,6 +47,13 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'menu-layout', label: 'Layout & defaults', description: 'The column count for the active surface, plus the action to seed or reset that surface from the site defaults.' },
   { id: 'menu-rail-cards', label: 'Rail cards', description: 'The left and right featured cards beside the links, for the active surface.' },
 
+  // ── Admin Practices blocks (/admin/content/practices) — the curation workspace ──
+  { id: 'admin-practices-stats', label: 'Practice stats', description: 'Headline counts: library size, public, awaiting review, featured, and never-logged.' },
+  { id: 'admin-practices-review', label: 'Review queue', description: 'Member-submitted practices waiting for an approve or reject decision, ordered by trust and near-duplicate signal.' },
+  { id: 'admin-practices-attention', label: 'Needs attention', description: 'Public practices with a fixable gap (no Pillar, no image, never logged, going stale), worst quality first.' },
+  { id: 'admin-practices-library', label: 'Practice library', description: 'The full faceted curation table — filter by any signal, then tune what is public, a template, or featured. URL-driven, paginated.' },
+  { id: 'admin-practices-tags', label: 'Tag governance', description: 'Promote a member tag to canonical, or merge synonyms into a canonical tag.' },
+
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
   { id: 'admin-journeys-review', label: 'Review queue', description: 'Member-submitted Journeys waiting for an approve or reject decision.' },
@@ -224,6 +231,20 @@ const MENU_MODULE_IDS = [
   'menu-rail-cards',
 ] as const
 
+// The admin Practices curation workspace (/admin/content/practices), in default render order:
+// the stat band, the member-submission review queue, the quality "needs attention" panel, the
+// faceted library table, then tag governance. The stats and the library are BOTH modules now
+// (the recipe prefers stats AS a module); the library is URL-driven and reads the page's facets
+// from the x-search request header (proxy.ts) via the shared context, so it converts cleanly to a
+// module rather than staying hand-rendered. Each block self-fetches and returns null when empty.
+const ADMIN_PRACTICES_MODULE_IDS = [
+  'admin-practices-stats',
+  'admin-practices-review',
+  'admin-practices-attention',
+  'admin-practices-library',
+  'admin-practices-tags',
+] as const
+
 // The admin Journeys curation surface, in default render order.
 const ADMIN_JOURNEYS_MODULE_IDS = [
   'admin-journeys-stats',
@@ -382,6 +403,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/menu': MENU_MODULE_IDS,
   '/lead': LEAD_MODULE_IDS,
   '/crew': CREW_MODULE_IDS,
+  '/admin/content/practices': ADMIN_PRACTICES_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,

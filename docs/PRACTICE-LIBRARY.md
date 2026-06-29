@@ -102,7 +102,7 @@ ship Phase 1 so data is correct from day one.
 | Phase | Done when |
 |---|---|
 | **1 Scale** | Library lists/searches/filters/sorts/paginates server-side past 200 rows; bulk acts on the whole filtered set; `archived` works; split + lineage + `search_vector` columns live; embeddings backfilled + generated on write. |
-| **2 Clean** | Review queue triages in bulk with near-dup flagging; dedup/merge redirects adoptions+logs and keeps a slug redirect; quality score drives "Needs attention"; tag promote/merge works. |
+| **2 Clean** | **Server + foundation shipped ([ADR-446](DECISIONS.md), migration `20260828000000` applied to prod):** `merge_practices` RPC re-points adoptions+logs onto the canonical (re-point, never delete) and `practice_slug_redirects` + a 301 fallback keep the old slug working; `listReviewQueue` (bulk approve/reject, near-dup flag; trust order inert until Phase 3); `computeQualityScore`/`needsAttention` over the `updated_at` freshness signal; `listAllTags`/`promoteTagToCanonical`/`mergeTags`; advisory Vera pre-screen. **In flight on the branch (⏳):** the operator UI for all four (review queue v2, "Needs attention" panel, merge, tag governance) plus the page-body conversion to block areas. |
 | **3 Grow** | Remix trees + "most remixed" render from lineage; "Make it yours" prompts; operator remix levers; contributor recognition. |
 | **4 Autopilot** | `computePracticeReward()` is the valuation authority; per-Pillar attribution ledger live; Vera auto-tags/categorizes/voice-checks; library-health dashboard (coverage gaps by Pillar/subcategory). |
 
