@@ -14,6 +14,7 @@ import { slugify } from '@/lib/utils'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { processGamificationEvent } from '@/lib/achievements'
+import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
@@ -870,9 +871,11 @@ export async function deleteDispatch(id: string) {
 
 export async function toggleCancelEvent(id: string, cancel: boolean) {
   const caps = await getEventCapabilities(id)
-  await requireScopedManage(await getCallerProfile(), caps.has('event.editSettings'), 'community')
+  const caller = await getCallerProfile()
+  await requireScopedManage(caller, caps.has('event.editSettings'), 'community')
   const admin = createAdminClient()
-  const { error } = await admin.from('events').update({ is_cancelled: cancel }).eq('id', id)
+  const update = cancel ? cancelAudit(caller?.id ?? null, null) : reinstateAudit()
+  const { error } = await admin.from('events').update(update).eq('id', id)
   if (error) throw new Error(error.message)
   revalidatePath('/admin/events')
   revalidatePath('/events')

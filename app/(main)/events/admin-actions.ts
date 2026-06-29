@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { getMyProfileId } from '@/lib/auth'
+import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { logAdminAction } from '@/lib/admin/audit'
 import { slugify } from '@/lib/utils'
 import { saveEventLocation, type EventAddress } from '@/lib/events/geocode'
@@ -117,7 +118,8 @@ export async function setEventCancelled(id: string, slug: string, cancelled: boo
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
 
   const admin = createAdminClient()
-  const { error } = await admin.from('events').update({ is_cancelled: cancelled }).eq('id', id)
+  const update = cancelled ? cancelAudit(await getMyProfileId(), null) : reinstateAudit()
+  const { error } = await admin.from('events').update(update).eq('id', id)
   if (error) throw new Error(error.message)
 
   revalidatePath(`/events/${slug}`)
