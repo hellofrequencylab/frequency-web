@@ -66,28 +66,29 @@ export default async function HubPage({
   if (!rawHub) notFound()
   const hub = rawHub as unknown as HubDetail
 
-  const caps = await getHubCapabilities(hub.id)
+  // Caps, the scoped-Insight access check, and the circles list are all independent given the hub
+  // id — resolve them in ONE round-trip instead of a serial chain (site-audit PERF-6). The header
+  // counts derive from `circles`, so it can't stream behind Suspense; batching is the win here.
+  //
+  // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a Guide who
+  // leads THIS hub by stewardship edge — even a global member — gets the hub's Insight summary (a hub
+  // confers guide level ⇒ `full`). Additive: a non-leader resolves `none` and the section stays hidden.
+  const [caps, insightAccess, rawCirclesRes] = await Promise.all([
+    getHubCapabilities(hub.id),
+    surfaceAccess('insight', { type: 'hub', id: hub.id }),
+    admin
+      .from('circles')
+      .select(
+        `id, name, slug, type, member_count, member_cap, status,
+         host:profiles!host_id ( display_name, handle )`
+      )
+      .eq('hub_id', hub.id)
+      .neq('status', 'archived')
+      .order('name', { ascending: true }),
+  ])
   const canManage = caps.has('hub.manage')
-
-  // Scoped Insight surface (P1.6 adoption, ADR-225): the IN-SCOPE matrix question, so a
-  // Guide who leads THIS hub by stewardship edge — even a global member — gets the hub's
-  // Insight summary (a hub confers guide level ⇒ `full`). Additive: a non-leader resolves
-  // `none` and the section stays hidden, exactly today's behavior.
-  const showsInsight = showsScopedInsight(
-    await surfaceAccess('insight', { type: 'hub', id: hub.id }),
-  )
-
-  const { data: rawCircles } = await admin
-    .from('circles')
-    .select(
-      `id, name, slug, type, member_count, member_cap, status,
-       host:profiles!host_id ( display_name, handle )`
-    )
-    .eq('hub_id', hub.id)
-    .neq('status', 'archived')
-    .order('name', { ascending: true })
-
-  const circles = (rawCircles ?? []) as unknown as CircleRow[]
+  const showsInsight = showsScopedInsight(insightAccess)
+  const circles = (rawCirclesRes.data ?? []) as unknown as CircleRow[]
   const totalMembers = circles.reduce((sum, c) => sum + c.member_count, 0)
 
   const crumbs = [
