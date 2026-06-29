@@ -56,13 +56,13 @@ Verified on prod (`azsqfeonabsbmemvddqd`): embeddings unpopulated (0/21), no lin
 | 2.5 | **Vera pre-screen.** Auto-check voice (CONTENT-VOICE), completeness, safety before public. | ✅ server ([ADR-446](DECISIONS.md)) — `lib/ai/practice-publish-screen.ts` (budget-gated voice/completeness/safety, deterministic fallback, advisory-only) + `screenPracticeAction`; `budget.ts` cap. ⏳ surfaced in the in-flight publish UI |
 | — | **Phase-2 in-flight UI** (on the branch, not merged): review-queue v2 · "Needs attention" panel · merge UI · tag governance; plus a table-overlap rework, the "System" → "Frequency" house-practices rename, and converting the page body into layout-editor block areas (`PageModules`, per [ADR-270](DECISIONS.md)/272). | ⏳ |
 
-### Phase 3 — Make it grow (remix engine)
+### Phase 3 — Make it grow (remix engine) — ✅ shipped (#1214, [ADR-447](DECISIONS.md))
 | # | Scope | Status |
 |---|---|---|
-| 3.1 | **Surface lineage.** Remix trees, "most remixed," credit to originals (uses Phase 1 columns). | 📋 |
-| 3.2 | **Remix prompts.** "Make it yours" / "Remix it" variation list. | 📋 |
-| 3.3 | **Operator levers.** Mark remix seeds, view lineage depth, spotlight prolific remixers. | 📋 |
-| 3.4 | **Contributor recognition** surfaces in admin. | 📋 |
+| 3.1 | **Surface lineage.** Remix trees, "most remixed," credit to originals (uses Phase 1 columns). | ✅ `lib/practices/lineage.ts` (`getPracticeLineage`/`mostRemixed`/`topRemixContributors`, one indexed scan via `root_practice_id`) + `practice-detail-lineage` |
+| 3.2 | **Remix prompts.** "Make it yours" / "Remix it" variation list. | ✅ `remix-practice-button` + `forkPractice` populating `remixed_from`/`root_practice_id` |
+| 3.3 | **Operator levers.** Mark remix seeds, view lineage depth, spotlight prolific remixers. | ✅ `components/widgets/practices/admin/remix-levers` |
+| 3.4 | **Contributor recognition** surfaces in admin. | ✅ `components/widgets/practices/admin/contributor-recognition` |
 
 ### Phase 4 — Run it on autopilot (AI curation + analytics)
 | # | Scope | Status |
