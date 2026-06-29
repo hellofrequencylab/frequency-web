@@ -44,3 +44,26 @@ export function clampTierToDuration(tier: PracticeTier, durationMin: number | nu
   const max = maxTierForDuration(durationMin)
   return tierRank(tier) <= tierRank(max) ? tier : max
 }
+
+// --- Shared tier picker (ADR-442): the same Light/Standard/Heavy range that gates game value
+//     setting everywhere (practices, crew tasks, …). Member-facing label is "Effort".
+
+export const TIER_LABELS: Record<PracticeTier, string> = { light: 'Light', standard: 'Standard', heavy: 'Heavy' }
+
+/** The allowed tier Zap amounts, ascending (8 / 12 / 15). */
+export const TIER_ZAP_VALUES: readonly number[] = TIER_ORDER.map((t) => TIER_ZAPS[t])
+
+/** Snap any number to the nearest allowed tier amount (8 / 12 / 15); non-finite → standard.
+ *  The server uses this so a posted value can never be an arbitrary (or unlimited) number. */
+export function coerceTierZaps(value: number): number {
+  if (!Number.isFinite(value)) return TIER_ZAPS.standard
+  let best = TIER_ZAP_VALUES[0]
+  for (const v of TIER_ZAP_VALUES) if (Math.abs(v - value) < Math.abs(best - value)) best = v
+  return best
+}
+
+/** The tier whose amount matches this value (snapping if needed), for preselecting a picker. */
+export function tierForZaps(value: number): PracticeTier {
+  const snapped = coerceTierZaps(value)
+  return TIER_ORDER.find((t) => TIER_ZAPS[t] === snapped) ?? 'standard'
+}
