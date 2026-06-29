@@ -29,6 +29,7 @@ export function PracticeRowActions({
   movementConfig,
   partialToday,
   isOwner,
+  compact = false,
 }: {
   practiceId: string
   title: string
@@ -48,6 +49,9 @@ export function PracticeRowActions({
   partialToday?: PartialToday | null
   /** The viewer created this practice → can edit/remove it from the overflow. */
   isOwner: boolean
+  /** Compact host (a vertical card whose title already links to the practice): drop the
+   *  explicit "View practice" link so the row stays one button + overflow. */
+  compact?: boolean
 }) {
   const [logged, setLogged] = useState(loggedToday)
 
@@ -101,12 +105,14 @@ export function PracticeRowActions({
         movementConfig={movementConfig}
         onLogged={() => setLogged(true)}
       />
-      <Link
-        href={href}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
-      >
-        View practice <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-      </Link>
+      {!compact && (
+        <Link
+          href={href}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated motion-reduce:transition-none"
+        >
+          View practice <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
+      )}
       {isOwner && <OwnerMenu practiceId={practiceId} title={title} />}
     </div>
   )
