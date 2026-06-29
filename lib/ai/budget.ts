@@ -47,6 +47,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   // ── Practice builder (member-facing, low-volume authoring; mirrors the Journey builder) ───────
   'practice-spark': 2,         // draft a whole Practice from a few answers (Sonnet; structured, on-demand)
   'practice-edit': 4,          // apply plain-language edits to a built Practice (Opus; low-volume, fail-safe)
+  'practice-publish-screen': 1, // advisory pre-publish quality read on one practice (Haiku; operator-triggered, one-shot)
   // ── Events (poster scan is Sonnet vision — the costliest of this group) ───────────────────────
   'event-poster-scan': 4,      // vision OCR of an event poster, plus the text assist (Sonnet vision)
   'event-spark': 3,            // draft an event from a few wizard answers or a pasted flyer (Sonnet; structured, on-demand)

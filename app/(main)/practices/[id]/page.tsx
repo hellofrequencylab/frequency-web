@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Zap, Pencil, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
+import { resolvePracticeSlugRedirect } from '@/lib/practices/clean'
 import { getPillars, pillarsById } from '@/lib/pillars'
 import { DetailTemplate } from '@/components/templates'
 import { PageModules } from '@/components/widgets/page-modules'
@@ -70,7 +71,13 @@ export default async function PracticeDetailPage({ params }: Params) {
   const { id } = await params
   const profileId = await getMyProfileId()
   const practice = await getRankedPractice(id)
-  if (!practice) notFound()
+  if (!practice) {
+    // A slug that no longer matches a live practice may be a merged duplicate's old link
+    // (Phase 2 dedup): 301 to the canonical so the old URL + its SEO keep working.
+    const canonical = await resolvePracticeSlugRedirect(id)
+    if (canonical) permanentRedirect(`/practices/${canonical}`)
+    notFound()
+  }
 
   const isOwner = !!profileId && practice.created_by === profileId
   // Public practices are world-readable; a private one is only its owner's.
