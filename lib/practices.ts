@@ -18,7 +18,7 @@ import { recordPracticeStreak, recomputePracticeStreakAfterUnlog } from '@/lib/p
 import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
-import { clampTierToDuration } from '@/lib/practices/tiers'
+import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import type { MovementConfig } from '@/lib/movement'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
@@ -1290,7 +1290,7 @@ export interface LogPracticeResult {
  *  default), via the one source of truth lib/zaps.practiceZapValue. Used by the finish
  *  top-up to size the remaining delta, and mirrored by the first-log full path below.
  *  Reads the practice's reward fields through the untyped handle; 0 on any error. */
-async function practiceFullReward(practiceId: string): Promise<number> {
+async function practiceFullReward(practiceId: string, tier?: PracticeTier | null): Promise<number> {
   try {
     const { data } = await db()
       .from('practices')
@@ -1299,7 +1299,9 @@ async function practiceFullReward(practiceId: string): Promise<number> {
       .maybeSingle()
     const row = data as { weight_class: string | null; reward_zaps: number | null } | null
     const { practiceZapValue } = await import('@/lib/zaps')
-    return practiceZapValue({ reward_zaps: row?.reward_zaps ?? null, weight_class: row?.weight_class ?? null })
+    // ADR-443: a timed sit values by the tier its real time REACHED (`tier`), not the
+    // creator's weight class; reward_zaps (the staff/cadence override) still wins when set.
+    return practiceZapValue({ reward_zaps: row?.reward_zaps ?? null, weight_class: tier ?? row?.weight_class ?? null })
   } catch {
     return 0
   }
@@ -1374,16 +1376,20 @@ export async function logPractice(input: {
     }
   }
 
-  // Completion economy. A TIMED log carries a positive target; the ratio of done/target
-  // decides full vs partial. A one-tap log (no target) is always FULL — the unchanged
-  // default path. Thresholds: >= 95% counts as a full sit (absorbs the 5s pre-roll +
-  // rounding); 50%..95% is a partial (clears the day, 1 Zap, "Finish Practice" tops up).
-  // A ratio < 50% never reaches here (completeSession's timer-proof gate blocks it).
+  // Completion economy (ADR-443, achieved tier). A TIMED log earns the tier its REAL engaged
+  // time reaches (achievedTier below); under the Light floor it is a partial (clears the day,
+  // 1 Zap, "Finish Practice" tops up). A one-tap / quick-log (no target) is always FULL — the
+  // unchanged recommended path. The timer-completion proof in completeSession still guarantees
+  // the claimed seconds were actually spent before any of this runs.
   const tgt = Math.max(0, Math.round(secondsTarget ?? 0))
   const done = Math.max(0, Math.round(secondsDone ?? 0))
   const isTimed = tgt > 0
-  const ratio = isTimed ? done / tgt : 1
-  const isFullSit = !isTimed || ratio >= 0.95
+  // Achieved tier (ADR-443): a timed sit earns the tier its REAL engaged time reaches
+  // (Light 3+ min / Standard 5+ / Heavy 15+); under the Light floor is a partial (1 Zap +
+  // streak + "Finish Practice" top-up). The personal target only seeds the timer — it no
+  // longer gates the reward. A one-tap / quick-log (non-timed) stays a full recommended log.
+  const achieved = isTimed ? achievedTier(done) : null
+  const isFullSit = !isTimed || achieved !== 'partial'
   const PARTIAL_ZAPS = 1
 
   // The "finish a partial" top-up (and the "already logged today" no-op) must be decided
@@ -1413,9 +1419,12 @@ export async function logPractice(input: {
   // Existing PARTIAL log → the "Finish Practice" top-up. Handled entirely here: no new
   // engagement event, no streak re-tick, no re-paid bonuses (all ran on the first partial).
   if (existing && existing.completed === false) {
-    const fullReward = await practiceFullReward(practiceId)
     const newDone = Math.max(existing.seconds_done ?? 0, done)
     const newTarget = Math.max(existing.seconds_target ?? 0, tgt)
+    // The topped-up session earns the tier its (combined) engaged time reaches (ADR-443).
+    // (Inside isFullSit, so the outcome is a real tier, never 'partial'.)
+    const topTier = isTimed ? achievedTier(newDone) : null
+    const fullReward = await practiceFullReward(practiceId, topTier === 'partial' ? null : topTier)
     if (isFullSit) {
       // Top up to complete: flip completed=true, raise seconds_done, and pay the REST of
       // the reward (the delta the partial held back), so partial + finish totals the full.
@@ -1603,7 +1612,10 @@ export async function logPractice(input: {
       zapsAwarded = (await awardZaps(profileId, rewardZaps, { actionType: 'practice_logged' })).amount
     } else {
       const { practiceLogAction } = await import('@/lib/zaps')
-      zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(weightClass))).amount
+      // ADR-443: a timed sit pays the tier its real time REACHED; a quick-log pays the
+      // recommended weight class. Either way the live amount comes from zap_config.
+      const tier = isTimed ? achieved : weightClass
+      zapsAwarded = (await awardZapsForAction(profileId, practiceLogAction(tier))).amount
     }
   } catch {
     // never let a reward read break the log
