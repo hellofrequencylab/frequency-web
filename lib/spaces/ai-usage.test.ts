@@ -24,7 +24,7 @@ function runsBuilder() {
       if (col === 'status') filters.status = val
       return api
     },
-    async gte(_col: string, _val: string) {
+    async gte() {
       if (db.throwOnRead) throw new Error('boom')
       const data = db.runs.filter(
         (r) => r.space_id === filters.space_id && (!filters.status || r.status === filters.status),

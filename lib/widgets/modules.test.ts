@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
+import { COMPONENT_IDS } from './registry'
 
 // The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
 // removed in Phase 0.5a; '*' is the single source of the default.)
@@ -124,5 +125,21 @@ describe('moduleMeta', () => {
     for (const ids of Object.values(ROUTE_MODULE_IDS)) {
       for (const id of ids) expect(moduleMeta(id), `missing meta for ${id}`).toBeDefined()
     }
+  })
+})
+
+// Reachability (site-audit BUG-1/BUG-2): a component bound in the registry but absent from every
+// route set can never render or be added from the Layout editor — a silent dead feature. Each
+// bound id must be offered by some route set OR be on the explicit PARKED allowlist (modules kept
+// defined for a future surface, by owner decision). Adding a binding without wiring a route fails here.
+describe('module reachability', () => {
+  // Intentionally defined-but-unoffered, documented in modules.ts (Phase 0.5.11 + event defaults).
+  const PARKED = new Set(['quest-tasks', 'event-details', 'event-dispatch'])
+
+  it('every bound component is route-reachable or explicitly parked', () => {
+    const reachable = new Set<string>()
+    for (const ids of Object.values(ROUTE_MODULE_IDS)) for (const id of ids) reachable.add(id)
+    const stranded = COMPONENT_IDS.filter((id) => !reachable.has(id) && !PARKED.has(id))
+    expect(stranded, `bound but unreachable (wire a route set or add to PARKED): ${stranded.join(', ')}`).toEqual([])
   })
 })

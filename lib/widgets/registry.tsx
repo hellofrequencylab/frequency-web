@@ -225,3 +225,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
 export function componentFor(id: string): ModuleComponent | undefined {
   return COMPONENTS[id]
 }
+
+/** Every id with a bound component. The reachability test asserts each is either offered by some
+ *  route set or explicitly parked, so a bound-but-unreachable block (site-audit BUG-1) can't recur. */
+export const COMPONENT_IDS: readonly string[] = Object.keys(COMPONENTS)

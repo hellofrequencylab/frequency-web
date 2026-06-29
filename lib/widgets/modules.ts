@@ -368,6 +368,10 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-join',
   'event-facts',
   'event-location',
+  // Warm proof (social proof) fills the SIDE column. Its data is computed in active-event.ts and
+  // its metadata says it belongs here, but it was missing from this set + the default layout, so
+  // it could never render or be added from the Layout editor (site-audit BUG-1).
+  'event-warm-proof',
 ] as const
 
 /** Scope key → the module ids that page offers. A key is the global default ('*'), a section

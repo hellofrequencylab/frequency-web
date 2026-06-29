@@ -46,8 +46,6 @@ export type NavArea = {
    *  permission view (none/limited/full per the owner sheet). Documentation + the seam
    *  for matrix-driven nav gating; `defaultAccess` is the live visibility gate today. */
   surface?: string
-  /** Item is in the menu but its page isn't built yet — renders the Coming Soon stub. */
-  comingSoon?: boolean
 }
 
 // Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
@@ -67,7 +65,7 @@ export type NavArea = {
 // Order + sections + labels are the owner's Roles & Permissions sheet (2026-06-08): four
 // worlds — Community · The Quest · Studio · Platform. `surface` ties each item to the
 // access matrix (the function-level permission view); `defaultAccess` is the live nav
-// visibility gate. Items whose page isn't built yet carry `comingSoon`.
+// visibility gate.
 const BASE_NAV_AREAS: readonly NavArea[] = [
   // ── Home anchor (headerless, pinned at the very top above the worlds) ─────────
   // Feed leads the rail in its own label-less group; the shell drops the member's
