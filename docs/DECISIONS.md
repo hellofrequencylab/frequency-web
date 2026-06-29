@@ -9293,3 +9293,16 @@ Verified with two `BEGIN…ROLLBACK` dry-runs against prod data before applying:
 **Consequences.**
 - Posts/events now carry DB-enforced, indexed typed scope FKs; the bare `scope_id`/`scope_type` remain authoritative and unchanged, so all current reads/writes and RLS are untouched. New columns are reached via the untyped admin handle ([ADR-246](DECISIONS.md)) until `lib/database.types.ts` is regenerated.
 - **Contract phase is tracked** (the app writes typed columns → add CHECK → re-point RLS → decide deletion graph (H1-5) → drop `scope_id`). Until then, expand is a pure, reversible, additive safety net.
+
+## ADR-450: Unified editing system — "One Edit, two planes"
+
+**Status:** Accepted (2026-06-29) as the design; pilot (practice) in build. Full spec: [EDITING-SYSTEM.md](EDITING-SYSTEM.md). Owner decisions this turn: **inline-first**, **wizard becomes a guided mode inside Edit (not a separate place)**, **design now + build the practice surface first**.
+
+**Context.** A recon (2026-06-29) found 9+ distinct editing surfaces with no shared model — a practice page alone exposes three ways to edit the same thing (header "Edit practice" button, action-row link to a full studio, and a "Settings" slide-out). Every entity reinvents its editor; nothing feels integrated. But every primitive needed already exists: URL-driven Edit Mode ([ADR-138](DECISIONS.md)), inline editors, the scope-aware Settings drawer + module registry, the block Layout editor ([ADR-270/272](DECISIONS.md)), and a live-preview Theme Studio.
+
+**Decision.** Converge all editing onto **one model**: a single capability-gated `Edit` toggle (in `PageHeading`) turns any ownable scope into a **live in-place editor** (the inline canvas) with **one Inspector rail** beside it (Guided/Vera · Layout · Settings · Appearance · Danger). The Practice Spark wizard + Builder studio collapse into inline editing + an Inspector "Guided" flow that runs Vera over the live page; the only separate full screen is first creation. Brand/global-styles editing is the same model at Space scope (the white-label Brand Studio, T1/T4). The enabling abstraction is a **declarative per-scope field schema** rendered by one inline-editor kit + one settings-form component, so scopes are *declared*, not *coded*.
+
+**Consequences.**
+- Retires the per-surface bespoke edit buttons and the separate studio destination; the practice pilot proves the pattern, then profile/circle/event/page/space roll on as field schemas with no new editor code.
+- Directly feeds the white-label tracks (T1 console, T4 Brand Studio) since brand editing becomes a scope of the same system.
+- Each rollout step is independently shippable, inline writes re-gate server-side, and RLS enforces ownership (ties to the T0 RLS convergence).
