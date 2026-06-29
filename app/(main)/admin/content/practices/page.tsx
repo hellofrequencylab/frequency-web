@@ -4,22 +4,36 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { rankedPractices } from '@/lib/admin/content-signals'
+import { searchAdminPractices, searchAdminFacets } from '@/lib/practices'
 import { NewPracticeButton } from '@/components/studio/practice/new-practice-button'
 import { PracticeReviewButtons } from '../content-controls'
 import { PracticesTable } from './practices-table'
 
 // Library curation: the ranked practice library with visibility, template, and
-// feature controls, plus the review queue for member proposals.
+// feature controls, plus the review queue for member proposals. Phase 1 (ADR-438):
+// the data source is the server keyset/facet layer (searchAdminPractices), past the
+// old 200-row cap. The pending review queue is its own status-filtered query; the
+// library is the rest, default (score) sort, first page. Counts come from the facet rail.
+
+// The library table is a bounded operator page (the facet rail + keyset cursor drive
+// "load more" in the Phase-1 UI rebuild); a generous first page keeps the current
+// single-screen table working until that lands.
+const LIBRARY_PAGE_SIZE = 100
 
 export default async function AdminContentPracticesPage() {
   await requireAdmin('host', { staff: 'community' })
 
-  const practices = await rankedPractices()
-  const pending = practices.filter((p) => p.status === 'pending')
-  const library = practices.filter((p) => p.status !== 'pending')
-  const publicCount = practices.filter((p) => p.is_public).length
-  const featuredCount = practices.filter((p) => p.featured_at).length
+  const [pendingResult, libraryResult, facets] = await Promise.all([
+    searchAdminPractices({ status: 'pending', sort: 'new', pageSize: LIBRARY_PAGE_SIZE, includeHidden: true }),
+    searchAdminPractices({ sort: 'score', pageSize: LIBRARY_PAGE_SIZE, includeHidden: true }),
+    searchAdminFacets({ includeHidden: true }),
+  ])
+  const pending = pendingResult.rows
+  // The library view excludes the pending queue (shown separately above).
+  const library = libraryResult.rows.filter((p) => p.status !== 'pending')
+  const totalInLibrary = libraryResult.total
+  const publicCount = facets.flag.public
+  const featuredCount = facets.flag.featured
 
   return (
     <AdminTemplate
@@ -31,15 +45,15 @@ export default async function AdminContentPracticesPage() {
     >
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <StatCard label="In the library" value={practices.length} icon={BookOpen} href="/practices" />
+          <StatCard label="In the library" value={totalInLibrary} icon={BookOpen} href="/practices" />
           <StatCard label="Public" value={publicCount} icon={Globe} />
-          <StatCard label="Awaiting review" value={pending.length} icon={Inbox} />
+          <StatCard label="Awaiting review" value={pendingResult.total} icon={Inbox} />
           <StatCard label="Featured" value={featuredCount} icon={Star} />
         </div>
       </AdminSection>
 
       <AdminSection
-        title={`Review queue (${pending.length})`}
+        title={`Review queue (${pendingResult.total})`}
         description="Member-proposed practices waiting for a decision."
       >
         {pending.length === 0 ? (
@@ -71,7 +85,7 @@ export default async function AdminContentPracticesPage() {
       </AdminSection>
 
       <AdminSection
-        title={`Library (${library.length})`}
+        title={`Library (${totalInLibrary})`}
         description="Search, filter, and sort by any signal. The Public switch flips every row in view. Select rows for bulk weight, visibility, and template changes."
       >
         {library.length === 0 ? (

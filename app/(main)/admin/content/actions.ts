@@ -17,7 +17,16 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logAdminAction } from '@/lib/admin/audit'
 import { setPlanStatus, setPlanOfficial, deletePlan, type PlanStatus } from '@/lib/journey-plans'
-import { setPracticeFlags, WEIGHT_CLASSES, type WeightClass } from '@/lib/practices'
+import {
+  setPracticeFlags,
+  WEIGHT_CLASSES,
+  archivePractices,
+  restorePractices,
+  resolveAdminPracticeIds,
+  ADMIN_BULK_MAX,
+  type WeightClass,
+  type AdminPracticeSearchOpts,
+} from '@/lib/practices'
 import {
   setJourneyFeatured,
   setPracticeFeatured,
@@ -226,6 +235,134 @@ export async function bulkUpdatePracticesAction(
   }
   revalidateContent('practices')
   return ok({ count: cleanIds.length })
+}
+
+// --- Archive / restore (Phase 1 item 1.4) --------------------------------------
+
+/**
+ * Bulk-archive the chosen practices (the bulk bar's Archive action). Archiving sets
+ * status='archived' AND is_public=false in one write, so a deprecated practice drops out
+ * of every member-facing read (they gate on is_public=true) while its history is kept and
+ * admins can still filter status='archived' to find it. Curator-gated, re-checked
+ * server-side; scoped to the explicit ids the operator selected. Idempotent + race-safe
+ * (the patch is the same whatever the prior status). Returns the affected count.
+ */
+export async function archivePracticesAction(ids: string[]): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const count = await archivePractices(ids.slice(0, ADMIN_BULK_MAX))
+    if (count === 0) return fail('Select at least one practice.')
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ count })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not archive the practices.')
+  }
+}
+
+/** Restore archived practices to 'approved' (it does NOT auto-republish — the operator's
+ *  Public switch controls visibility, so a restore can't surprise the library). Curator-
+ *  gated, re-checked server-side; scoped to explicit ids. Returns the affected count. */
+export async function restorePracticesAction(ids: string[]): Promise<ActionResult<{ count: number }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+  try {
+    const count = await restorePractices(ids.slice(0, ADMIN_BULK_MAX))
+    if (count === 0) return fail('Select at least one archived practice.')
+    revalidateContent('practices')
+    revalidatePath('/practices', 'layout')
+    return ok({ count })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not restore the practices.')
+  }
+}
+
+// --- Bulk on the WHOLE filtered set (Phase 1 item 1.6) -------------------------
+//
+// The explicit-ids actions above act on checkbox selection. These act on EVERYTHING that
+// matches the current filter — the operator's "select all 1,240 results, not just this
+// page" path. The client never sends ids; it sends the filter spec, and the server re-runs
+// the SAME query (resolveAdminPracticeIds, capped at ADMIN_BULK_MAX) to resolve the target
+// set, then applies the mutation. Authz is re-checked on every path; the resolve is bounded
+// so "act on everything" can never become an unbounded write.
+
+/** What a filter-scoped bulk action may do. Discriminated so each value is validated
+ *  by branch (no computed key — remote-property-injection guard, mirrors the ids path). */
+export type BulkFilteredOp =
+  | { kind: 'setFlag'; flag: 'is_public' | 'is_template'; value: boolean }
+  | { kind: 'setWeight'; weightClass: WeightClass }
+  | { kind: 'archive' }
+  | { kind: 'restore' }
+
+/**
+ * Apply a bulk operation to the WHOLE filtered set. The filter is the same
+ * AdminPracticeSearchOpts shape searchAdminPractices takes, so "act on what I'm looking
+ * at" runs the identical query server-side. Curator-gated, re-checked here; the resolve is
+ * capped at ADMIN_BULK_MAX. Returns the affected count + whether the cap truncated the set
+ * (so the UI can warn "acted on the first N of M"). Idempotent per op.
+ */
+export async function bulkPracticesByFilterAction(
+  filter: AdminPracticeSearchOpts,
+  op: BulkFilteredOp,
+): Promise<ActionResult<{ count: number; capped: boolean }>> {
+  try {
+    await requireCurator()
+  } catch {
+    return fail('You need curation access for this.')
+  }
+
+  // Validate the op BEFORE resolving ids (cheap reject of a junk weight class).
+  if (op.kind === 'setWeight' && !WEIGHT_CLASSES.includes(op.weightClass)) {
+    return fail('Unknown weight class.')
+  }
+  if (op.kind === 'setFlag' && op.flag !== 'is_public' && op.flag !== 'is_template') {
+    return fail('Unknown flag.')
+  }
+
+  let ids: string[]
+  let capped: boolean
+  try {
+    ;({ ids, capped } = await resolveAdminPracticeIds(filter))
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not resolve the filtered set.')
+  }
+  if (ids.length === 0) return fail('No practices match the current filter.')
+
+  try {
+    if (op.kind === 'archive') {
+      const count = await archivePractices(ids)
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    if (op.kind === 'restore') {
+      const count = await restorePractices(ids)
+      revalidateContent('practices')
+      revalidatePath('/practices', 'layout')
+      return ok({ count, capped })
+    }
+    // Flag / weight: a literal patch built by branch (no computed key — CodeQL).
+    const admin = createAdminClient()
+    const update =
+      op.kind === 'setFlag'
+        ? op.flag === 'is_public'
+          ? { is_public: op.value }
+          : { is_template: op.value }
+        : { weight_class: op.weightClass }
+    const { error } = await admin.from('practices').update(update).in('id', ids)
+    if (error) return fail(error.message)
+    revalidateContent('practices')
+    return ok({ count: ids.length, capped })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the practices.')
+  }
 }
 
 /**
