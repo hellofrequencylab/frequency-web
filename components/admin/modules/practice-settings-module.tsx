@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Check } from 'lucide-react'
+import Link from 'next/link'
+import { Check, Wand2, ChevronRight } from 'lucide-react'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
@@ -115,6 +116,22 @@ export function PracticeSettingsModule() {
           </h3>
           {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
         </header>
+
+        {/* The deep/guided surface lives one tap from the single Edit entry (ADR-450): the full
+            guide, cadence, Pillar, tags, and Build-with-Vera. Quick edits stay inline below. */}
+        <Link
+          href={`/practices/${data.id}/edit`}
+          className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+        >
+          <Wand2 className="h-5 w-5 shrink-0 text-primary-strong" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-text">Open full editor</span>
+            <span className="block text-xs text-muted">
+              The full guide, cadence, Pillar, and tags. Build or rework it with Vera.
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
+        </Link>
 
         <form onSubmit={handleSubmit} className="space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
           {/* LEFT 2/3 — cover, title, summary, description. */}

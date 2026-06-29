@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Zap, Pencil, Wand2 } from 'lucide-react'
+import { Zap, Wand2 } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
@@ -14,7 +14,6 @@ import { PracticeTimerButton } from '@/components/practice/practice-timer-button
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
 import { ClaimPractice } from '@/components/practice/claim-practice'
-import { StaffEditButton } from '@/components/ui/staff-edit-button'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
 import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
@@ -180,12 +179,6 @@ export default async function PracticeDetailPage({ params }: Params) {
                     secondsTarget={state.partialToday?.targetSec}
                   />
                 )}
-            <Link
-              href={`/practices/${practice.id}/edit`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-            >
-              <Pencil className="h-3.5 w-3.5" /> Edit
-            </Link>
             <ProposeToLibraryButton
               type="practice"
               id={practice.id}
@@ -253,9 +246,6 @@ export default async function PracticeDetailPage({ params }: Params) {
             <RemixPracticeButton practiceId={practice.id} />
           </>
         )}
-
-        {/* Staff (admin/janitor) can edit any practice they don't own. */}
-        {!isOwner && <StaffEditButton href={`/practices/${practice.id}/edit`} label="Edit practice" />}
       </div>
 
       {/* The arrangeable body — stats · intro · guide · tags · used-in (Settings → Layout). */}
