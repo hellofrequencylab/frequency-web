@@ -46,13 +46,13 @@ as $function$
         and s.type = 'root'
         and public.get_my_web_role() in ('admin', 'janitor')
     )
-    -- the Space owner (was: owner_profile_id = auth.uid(), which never matched)
+    -- the Space owner (now resolved via get_my_profile_id(); see migration header)
     or exists (
       select 1 from public.spaces s
       where s.id = p_space_id
         and s.owner_profile_id = public.get_my_profile_id()
     )
-    -- an active editor/moderator/admin member (was: profile_id = auth.uid(), never matched)
+    -- an active editor/moderator/admin member (resolved via get_my_profile_id())
     or exists (
       select 1 from public.space_members m
       where m.space_id = p_space_id
