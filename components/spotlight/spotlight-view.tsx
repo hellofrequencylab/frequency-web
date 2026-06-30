@@ -2,8 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, Globe, MapPin } from 'lucide-react'
+import { ArrowRight, CalendarDays, Globe, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
+import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
 import { resolveProfileSkin } from '@/lib/theme/profile-skins'
 import { ROLE_LABEL, roleBadgeStyle, type RoleChipKey } from '@/lib/community-roles'
 import type { SpotlightData } from '@/lib/spotlight/data'
@@ -24,7 +25,17 @@ function normalizeUrl(raw: string): { href: string; label: string } {
   return { href, label }
 }
 
-export function SpotlightView({ data, contained = false }: { data: SpotlightData; contained?: boolean }) {
+export function SpotlightView({
+  data,
+  contained = false,
+  showJoinCta = false,
+}: {
+  data: SpotlightData
+  contained?: boolean
+  // Only the PUBLIC route opts in (showJoinCta). The in-editor preview + builder leave it
+  // off so the member sees their page exactly, with no marketing CTA bolted on.
+  showJoinCta?: boolean
+}) {
   const { profile, hostedEvents, layout, background, theme, totalZaps, topFriends } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   // The member's custom colours/gradient/fonts/card style (validated). Empty styles when
@@ -179,12 +190,33 @@ export function SpotlightView({ data, contained = false }: { data: SpotlightData
           </>
         )}
 
-        {/* Quiet attribution + a way in */}
-        <footer className="mt-12 text-center">
-          <Link href="/" className="text-xs text-subtle transition-colors hover:text-muted">
-            Made on Frequency
-          </Link>
-        </footer>
+        {/* The viral loop: a visitor on a member's shared page is warm — invite them to make
+            their own. Only on the PUBLIC route (showJoinCta); the editor preview keeps the
+            quiet attribution so the member sees their page clean. */}
+        {showJoinCta ? (
+          <footer className="mt-12">
+            <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-sm">
+              <p className="text-sm font-semibold text-text">Want a page like this?</p>
+              <p className="mx-auto mt-1 max-w-sm text-pretty text-sm leading-relaxed text-muted">
+                {name.replace(/^@/, '')} built this on Frequency — a place to gather your people
+                and bring real community back to where you live.
+              </p>
+              <Link
+                href={BETA_CTA_HREF}
+                className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
+              >
+                {BETA_CTA_LABEL}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+          </footer>
+        ) : (
+          <footer className="mt-12 text-center">
+            <Link href="/" className="text-xs text-subtle transition-colors hover:text-muted">
+              Made on Frequency
+            </Link>
+          </footer>
+        )}
       </main>
       </div>
     </div>

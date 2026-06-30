@@ -5,5 +5,6 @@ import { SpotlightView } from './spotlight-view'
 // SpotlightView (also used live in the editor preview, components/spotlight/builder.tsx),
 // so the public page and the in-editor preview can never visually drift.
 export function SpotlightPage({ data }: { data: SpotlightData }) {
-  return <SpotlightView data={data} />
+  // The public route opts into the join CTA (the viral loop); the editor preview does not.
+  return <SpotlightView data={data} showJoinCta />
 }
