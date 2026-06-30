@@ -364,10 +364,43 @@ authoring (loneliness, adult friendship, build-community, life-after-feed); Arti
 - **L2:** programmatic generator (template + data source + publish gate), pillar authoring queue,
   schema coverage report.
 - **L3:** per-page SEO/meta console.
-**Tasks:** GE11-1 comparison template + generator; GE11-2 city-page generator (density-gated);
-GE11-3 SEO pillar copy authoring; GE11-4 Article/HowTo JSON-LD; GE11-5 AI-crawler allowlist +
-`llms.txt` refresh. **Notion:** "Programmatic pages" (P3), "Cornerstone content pages" (P0),
-"Leader-track content" (P3).
+**Tasks:**
+- ✅ GE11-1 comparison template + generator — `lib/marketing/comparisons.ts` (a typed registry of
+  the named alternatives + a pure `comparisonCopy` generator) feeds one template at
+  `app/(marketing)/vs/[slug]/page.tsx` (+ the `/vs` hub). Each page is a static-param row with a real
+  canonical, OG/Twitter meta, and Article + FAQ + breadcrumb JSON-LD; `dynamicParams = false` so an
+  unknown competitor 404s. In the public marketing chrome; in the sitemap (static set). Set today:
+  Partiful, Linktree, Calendly, Eventbrite, Mighty Networks (build-plan §10 decision 4). Generator
+  unit-tested (`comparisons.test.ts`: unique slugs, answer-first copy, no em dashes).
+- ✅ GE11-2 city-page generator (density-gated) — `app/discover/cities/[citySlug]/page.tsx` (+ the
+  `/discover/cities` index), gated by `app/discover/cities/_data.ts`. The gate reads the existing
+  density read-model (`density_by_city` RPC → `scorePlace`): a city earns a programmatic landing page
+  and a sitemap URL ONLY at/above the `growing` stage (`CITY_PAGE_MIN_SCORE = GROWING_SCORE`); a
+  `seed` city 404s and stays out of crawl (honest thinness, no thin/empty pages). City-level content
+  only (the redaction-safe public circle/event readers; never a street/venue/geo). Real canonical +
+  CollectionPage/ItemList JSON-LD. The pure gate predicate `cityClearsGate` is unit-tested
+  (`density-gate.test.ts`).
+- ✅ GE11-4 Article/HowTo JSON-LD — audited the pillar/help/practice surfaces; the Seeker/Leader
+  pillar pages, help articles (Article), discover practices (HowTo via `practiceSchema`), and Journeys
+  (HowTo via `journeySchema`) were already covered. Closed the gap on the two brand explainers
+  `/the-community` and `/the-quest` (Article schema added beside their breadcrumb). Comparison + city
+  pages ship their schema by construction.
+- ✅ GE11-5 AI-crawler allowlist + `llms.txt` refresh — confirmed `app/robots.ts` already names the
+  current AI crawlers (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, Claude-Web, anthropic-ai,
+  PerplexityBot, Applebot, Applebot-Extended, Google-Extended, CCBot), each `allow: '/'`. Refreshed
+  `app/llms.txt` with the new surfaces: a "How Frequency compares" section (the five comparison pages
+  + the `/vs` hub), the `/discover/cities` discovery hub, and the missing `/how-to-start-a-circle`
+  pillar.
+- ⏳ GE11-3 SEO pillar copy authoring — the five Seeker pain clusters + the Leader-track pillar are
+  authored and live (loneliness, friendship-as-an-adult, how-to-build-community, life-after-the-feed,
+  calm-down-fast, meet-people-new-city, plus how-to-start-a-circle and more); ongoing as new clusters
+  open.
+
+**Admin note:** the L1/L2/L3 admin suite (`Growth › Acquisition › Programmatic Pages`, the generator
+workspace, the schema-coverage report) is the remaining build for this engine; the member surfaces +
+generators above are the data layer it will manage.
+
+**Notion:** "Programmatic pages" (P3), "Cornerstone content pages" (P0), "Leader-track content" (P3).
 
 ### Engine 12 — Attribution + Growth Analytics  ·  ✅ extend
 **Purpose:** the measurement spine: first-touch, per-funnel conversion, WAM, activation, retention

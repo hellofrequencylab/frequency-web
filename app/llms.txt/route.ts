@@ -31,7 +31,19 @@ const PAGES: { path: string; label: string; desc: string }[] = [
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
+  { path: '/discover/cities', label: 'Cities', desc: 'The cities where Frequency is taking root, each with the Circles meeting and events happening there.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
+]
+
+// Comparison pages: how Frequency differs from the tools people use to gather
+// others. Honest framing, so an engine can cite them for "alternative to X".
+const COMPARE: { path: string; label: string; desc: string }[] = [
+  { path: '/vs', label: 'Frequency compared', desc: 'How Frequency compares to the tools people use to gather others.' },
+  { path: '/vs/partiful', label: 'Frequency vs Partiful', desc: 'Partiful makes one party easy; Frequency is the standing Circle that keeps meeting after it.' },
+  { path: '/vs/linktree', label: 'Frequency vs Linktree', desc: 'A link page sends people out; a Spotlight page brings them into real Circles near you.' },
+  { path: '/vs/calendly', label: 'Frequency vs Calendly', desc: 'Calendly books one meeting; Frequency holds a standing group time that repeats.' },
+  { path: '/vs/eventbrite', label: 'Frequency vs Eventbrite', desc: 'Eventbrite sells tickets to a one-off; a Circle is a free room that keeps meeting.' },
+  { path: '/vs/mighty-networks', label: 'Frequency vs Mighty Networks', desc: 'Mighty Networks hosts an online community; Frequency points off the screen, into a room.' },
 ]
 
 // Problem-aware guides (the SEO pillar pages). Answer-first, so an engine can cite them.
@@ -47,6 +59,7 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/how-to-be-more-social', label: 'How to be more social', desc: 'How to be more social without a new personality: pick one recurring thing, put it on the calendar, and become a regular.' },
   { path: '/social-life-without-drinking', label: 'Social life without drinking', desc: 'How to have a real social life without the bar: gather around an activity, pick rooms that repeat, and let the shared thing carry the night.' },
   { path: '/how-to-reconnect-with-old-friends', label: 'Reconnect with old friends', desc: 'How to reach back to a friend you drifted from: send one short, warm message, keep it light, and offer one easy plan to meet.' },
+  { path: '/how-to-start-a-circle', label: 'How to start a Circle', desc: 'You do not have to build a community. Start one small Circle: one thing, a standing time, a few people, the same simple format each week.' },
 ]
 
 // ── Live first-party stats (AIO citation lever, CONTENT-VOICE §8c) ───────────
@@ -137,6 +150,9 @@ export async function GET() {
     '',
     '## Problem-aware guides',
     ...GUIDES.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    '',
+    '## How Frequency compares',
+    ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
     '',
     '## How it fits together',
     '- Community: Pillar > Channel > Circle. Circles group into Hubs, Hubs into a Nexus.',

@@ -37,7 +37,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { ProductTour } from './tour'
 
 export const revalidate = 3600
@@ -89,7 +89,18 @@ export default async function TheCommunityPage() {
   return (
     <>
       <JsonLd
-        data={breadcrumbSchema([{ name: 'The Community', path: '/the-community' }])}
+        data={[
+          // Article schema so answer engines treat the pillar explainer as a
+          // citable source for "how Frequency's community works" (GE11-4).
+          articleSchema({
+            title: 'The Community',
+            description:
+              'How Frequency organizes community: four Pillars to find your practice, Channels to find your people, and Circles, small standing local groups that meet in person and grow on their own.',
+            path: '/the-community',
+            image: '/images/site/22a51611-07f6-4c39-8a26-1c996295b6d3.jpg',
+          }),
+          breadcrumbSchema([{ name: 'The Community', path: '/the-community' }]),
+        ]}
       />
       {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
     </>

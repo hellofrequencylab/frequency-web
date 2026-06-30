@@ -34,7 +34,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getLiveData } from '@/lib/page-editor/live-data'
 import { BETA_CTA_LABEL, BETA_CTA_HREF, FOUNDING_PLACE } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { articleSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -93,7 +93,18 @@ export default async function TheQuestPage() {
   return (
     <>
       <JsonLd
-        data={breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }])}
+        data={[
+          // Article schema so answer engines can cite the explainer of how the
+          // game works (Zaps, Gems, season ranks, Journeys) (GE11-4).
+          articleSchema({
+            title: 'The Quest',
+            description:
+              'How The Quest works: a light, in-person game where you earn Zaps for showing up in real life and Gems online, climb the season ranks, and run Journeys of small daily Practices, solo or with your Circle.',
+            path: '/the-quest',
+            image: '/images/site/36d99363-e483-40a0-b173-7e7ee6c1b379.jpg',
+          }),
+          breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }]),
+        ]}
       />
       {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
     </>

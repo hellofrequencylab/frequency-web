@@ -14,6 +14,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
 import { getCityCategoryHubs } from "@/app/discover/events/_data";
 import { listDiscoverCities } from "@/app/discover/places/_data";
+import { listDensityCities } from "@/app/discover/cities/_data";
+import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
@@ -96,6 +98,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/practices`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     // Browse-by-place hub — the local-intent landing index (per-city pages are dynamic, below).
     { url: `${SITE_URL}/discover/places`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    // Density-gated city landing hub (GE11-2) — only cities above the density
+    // threshold get a per-city landing page (those are dynamic, below); this index
+    // lists them.
+    { url: `${SITE_URL}/discover/cities`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    // Comparison ("alternative to X") hub + one page per named alternative
+    // (GE11-1). The set is a static registry, so the per-page URLs are safe to
+    // advertise here directly.
+    { url: `${SITE_URL}/vs`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    ...COMPARISONS.map((c) => ({
+      url: `${SITE_URL}${comparisonPath(c.slug)}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    })),
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
     { url: `${SITE_URL}/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
@@ -192,6 +208,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // (empty places never get a URL, so low-value facets stay out of crawl).
       listDiscoverCities().catch(() => []),
     ]);
+
+    // Density-gated city landing pages (GE11-2) — ONLY cities above the density
+    // threshold (lib/analytics/density) get a per-city landing URL, so thin/empty
+    // city pages never enter the crawl. Fail-safe to [] on any error.
+    const densityCities = await listDensityCities().catch(() => []);
+    const densityCityRoutes: MetadataRoute.Sitemap = densityCities.map((c) => ({
+      url: `${SITE_URL}/discover/cities/${c.slug}`,
+      lastModified: now,
+      changeFrequency: "daily" as const,
+      priority: 0.6,
+    }));
     organizerRoutes = organizers;
     spotlightRoutes = spotlights;
 
@@ -275,6 +302,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...practiceRoutes,
       ...spaceRoutes,
       ...placeRoutes,
+      ...densityCityRoutes,
     ];
   } catch {
     // Fall back to static routes only.
