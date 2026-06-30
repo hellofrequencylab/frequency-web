@@ -29,6 +29,10 @@ const ACTION_LABEL: Record<string, string> = {
   'moderation.suspend': 'Suspended a member',
   'moderation.event_cancel': 'Cancelled a reported event',
   'demo.purge': 'Purged demo content',
+  'space.suspended': 'Suspended a space',
+  'space.archived': 'Archived a space',
+  'space.reactivated': 'Reactivated a space',
+  'space.ownership_transfer': 'Transferred space ownership',
 }
 const label = (a: string) => ACTION_LABEL[a] ?? a
 
@@ -39,6 +43,7 @@ const KIND_TONE: Record<string, StatusTone> = {
   persona: 'success',
   moderation: 'warning',
   demo: 'danger',
+  space: 'info',
 }
 const kind = (a: string) => a.split('.')[0]
 const kindTone = (a: string): StatusTone => KIND_TONE[kind(a)] ?? 'neutral'

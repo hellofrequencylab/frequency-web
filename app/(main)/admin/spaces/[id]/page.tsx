@@ -5,6 +5,8 @@ import { requireAdmin } from '@/lib/admin/guard'
 import { AdminSection } from '@/components/templates'
 import { getSpaceById } from '@/lib/spaces/store'
 import { listThemes } from '@/lib/theme/server/admin-themes'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { listSpaceMembers } from '@/lib/spaces/membership'
 import { SpaceBrandEditor, type SkinOption } from '@/components/admin/spaces/space-brand-editor'
 import {
   functionsForType,
@@ -12,6 +14,7 @@ import {
   spaceFunctionMinRole,
 } from '@/lib/spaces/functions'
 import { FunctionGrid, type FunctionRow } from '@/components/admin/spaces/function-grid'
+import { SpaceLifecyclePanel, type OwnerCandidate } from '@/components/admin/spaces/space-lifecycle-panel'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,6 +58,27 @@ function PreviewLink({
     </Link>
   )
 }
+/** Resolve display name + handle for a set of profile ids (best-effort, empty map on error). */
+async function resolveProfileNames(
+  ids: string[],
+): Promise<Map<string, { name: string; handle: string | null }>> {
+  const out = new Map<string, { name: string; handle: string | null }>()
+  const unique = [...new Set(ids.filter(Boolean))]
+  if (unique.length === 0) return out
+  try {
+    const { data } = await createAdminClient()
+      .from('profiles')
+      .select('id, display_name, handle')
+      .in('id', unique)
+    for (const r of (data ?? []) as { id: string; display_name: string | null; handle: string | null }[]) {
+      out.set(r.id, { name: r.display_name ?? 'Member', handle: r.handle })
+    }
+  } catch {
+    /* best-effort: the picker degrades to ids it could not resolve */
+  }
+  return out
+}
+
 export default async function SpaceBrandEditorPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin('janitor')
   const { id } = await params
@@ -78,6 +102,30 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
   // so the preview section only renders for tenant Spaces.
   const hasOwnerBackEnd = space.type !== 'root'
 
+  // Lifecycle + ownership oversight (EM1-6). The owner picker offers the Space's MEMBERS (ownership
+  // moves to one of them); the current owner is shown alongside. Resolve every relevant profile name
+  // in one query. The current owner is included in the lookup even when they have no member row.
+  const members = hasOwnerBackEnd ? await listSpaceMembers(space.id) : []
+  const nameIds = [
+    ...members.map((m) => m.profileId),
+    ...(space.ownerProfileId ? [space.ownerProfileId] : []),
+  ]
+  const names = hasOwnerBackEnd ? await resolveProfileNames(nameIds) : new Map()
+  const ownerName = space.ownerProfileId ? names.get(space.ownerProfileId)?.name ?? null : null
+  // Candidates: active/invited members, newest first (listSpaceMembers order), de-duped, excluding the
+  // current owner (no self-transfer). One row per member with their resolved name + space role.
+  const candidates: OwnerCandidate[] = members
+    .filter((m) => m.profileId !== space.ownerProfileId)
+    .map((m) => {
+      const n = names.get(m.profileId)
+      return {
+        profileId: m.profileId,
+        name: n?.name ?? 'Member',
+        handle: n?.handle ?? null,
+        role: m.role,
+      }
+    })
+
   // The "Features and access" grid rows: every function this Space type offers, seeded with its current
   // resolved on/off + min-role (override merged over the code default). Pure resolution off the Space's
   // entitlements + feature_roles blobs (lib/spaces/functions.ts).
@@ -93,6 +141,20 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
 
   return (
     <SpaceBrandEditor space={space} skins={skins}>
+      {hasOwnerBackEnd && (
+        <AdminSection
+          title="Lifecycle and ownership"
+          description="Suspend, archive, or reactivate this space, or hand it to a new owner. Every action here is recorded in the audit log."
+        >
+          <SpaceLifecyclePanel
+            spaceId={space.id}
+            spaceName={space.brandName || space.name}
+            status={space.status}
+            ownerName={ownerName}
+            candidates={candidates}
+          />
+        </AdminSection>
+      )}
       {hasOwnerBackEnd && functionRows.length > 0 && (
         <AdminSection
           title="Features and access"

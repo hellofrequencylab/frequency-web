@@ -9333,3 +9333,42 @@ shared `PageHeading` header-to-body gap — `structureFor`'s first production ca
 - The structure axis is intentionally conservative (one rhythm token, `'standard'` is a no-op) so it
   cannot regress existing layouts; denser/roomier compositions can grow from the same attribute later.
 - No schema change: the preference is a cookie, not a column.
+
+## ADR-452: Platform-admin Space lifecycle + ownership transfer (EM1-6)
+
+**Status:** Accepted · corroborated by `app/(main)/admin/spaces/[id]/lifecycle-actions.ts`,
+`components/admin/spaces/space-lifecycle-panel.tsx`, and `app/(main)/admin/spaces/[id]/page.tsx`.
+
+**Context.** The Entity Management Overhaul (ADR-441) calls for a uniform platform-admin oversight
+spine over every entity: lifecycle (active/suspended/archived) and ownership transfer, each audited
+(`docs/ENTITY-MANAGEMENT-OVERHAUL.md` §6, task EM1-6). Spaces already carried the `status` column and
+an `owner_profile_id` reference, but the existing `/admin/spaces/[id]` surface only edited branding +
+the feature grid; there was no staff path to suspend/archive/reactivate a tenant or hand it to a new
+owner, and no audit trail for either.
+
+**Decision.** Extend the existing admin surface (no parallel console) with two staff-gated server
+actions on `/admin/spaces/[id]`:
+- `setSpaceStatus(spaceId, to)` writes `spaces.status` along active/suspended/archived. Gated on the
+  `'janitor'` web_role OR an Operations `'structure'`-domain staffer (`authorizeAction`). The root
+  space is never lifecycle-managed.
+- `transferSpaceOwnership(spaceId, newOwnerProfileId)` is the crown-jewel mutation, so `'janitor'`
+  ONLY (no staff-domain widening). It validates the new owner is a real, distinct profile, then keeps
+  ownership consistent across BOTH axes: it updates `spaces.owner_profile_id` (the canonical owner
+  reference) AND seats the new owner as an `admin` `space_member` via `addSpaceMember` (upsert on
+  `(space_id, profile_id)`, so an existing member is promoted, not duplicated) — which is how
+  `getSpaceCapabilities` resolves authority. The root space owner is never transferable. The previous
+  owner keeps their membership row for history.
+
+Every action re-checks authorization server-side (never trusting the page gate) and writes an
+`admin_audit_log` entry (actor · `space.suspended|archived|reactivated|ownership_transfer` · target
+space · before/after) via the existing `logAdminAction`. The UI is a kit-composed `AdminSection` with
+the destructive/transfer actions behind an explicit confirmation `Dialog`.
+
+**Consequences.**
+- **No schema change.** `spaces.status` and `spaces.owner_profile_id` already exist; `admin_audit_log.action`
+  is free text, so the four new action kinds need no migration. A migration was deliberately NOT created.
+- The audit surface (`/admin/audit`) labels + tones the four new `space.*` kinds.
+- Ownership consistency is the locked invariant (unit-tested): owner reference + per-Space admin role
+  always move together, or the action fails before any write (fail-closed on a missing/unknown owner).
+- This is the Spaces slice of EM1-6; the same lifecycle/transfer pattern extends to the other entity
+  types (circle/hub/nexus/event/practice) as follow-on slices.
