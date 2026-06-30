@@ -28,6 +28,7 @@ const PAGES: { path: string; label: string; desc: string }[] = [
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
   { path: '/pricing', label: 'Pricing', desc: 'Membership that keeps the room open. Member is free; Crew and Supporter add more, with Space plans for practitioners and businesses.' },
+  { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
   { path: '/help', label: 'Help center', desc: 'Answers, guides, and support for members and visitors.' },
