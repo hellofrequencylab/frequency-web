@@ -108,7 +108,11 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
     label: "Spaces",
     items: [
       { label: "Spaces", href: "/spaces", desc: "Bring your people. They join free" },
-      { label: "Pricing", href: "/pricing", desc: "Membership that keeps the room open" },
+      { label: "Pricing", href: "/pricing", desc: "One Pro plan, four add-ons" },
+      { label: "For coaches", href: "/for/coaches", desc: "Packages, scheduling, and a client CRM" },
+      { label: "For service businesses", href: "/for/service-businesses", desc: "Bookings, quotes, and repeat clients" },
+      { label: "For product businesses", href: "/for/product-businesses", desc: "A catalog, a storefront, your own domain" },
+      { label: "For nonprofits", href: "/for/nonprofits", desc: "Donations, supporters, and programs" },
     ],
   },
   {
