@@ -7,6 +7,8 @@ import {
   meetsSlo,
   cronFreshnessMinutes,
   isCronFresh,
+  sloBudgetFraction,
+  errorBudget,
   type Slo,
 } from '@/lib/observability/slos'
 
@@ -61,6 +63,61 @@ describe('meetsSlo — direction-aware comparison', () => {
   it('a missing (non-finite) measurement never passes', () => {
     expect(meetsSlo(uptime, NaN)).toBe(false)
     expect(meetsSlo(latency, Infinity)).toBe(false)
+  })
+})
+
+describe('sloBudgetFraction — allowed-failure fraction from the target', () => {
+  it('derives the budget for a higher-is-better ratio SLO', () => {
+    // uptime 99.9% → 0.1% of the window may fail.
+    expect(sloBudgetFraction(getSlo('availability.uptime') as Slo)).toBeCloseTo(0.001, 6)
+  })
+
+  it('derives the budget for a lower-is-better ratio SLO', () => {
+    // error rate 0.5% → the target *is* the allowed failure fraction.
+    expect(sloBudgetFraction(getSlo('error-rate.requests') as Slo)).toBeCloseTo(0.005, 6)
+  })
+
+  it('returns null for a non-ratio (latency/lag) SLO', () => {
+    expect(sloBudgetFraction(getSlo('latency.read-hot-paths') as Slo)).toBeNull()
+    expect(sloBudgetFraction(getSlo('freshness.queue-lag') as Slo)).toBeNull()
+  })
+})
+
+describe('errorBudget — burn derived from the SLO contract', () => {
+  const uptime = getSlo('availability.uptime') as Slo // higher-is-better, 99.9%
+  const errors = getSlo('error-rate.requests') as Slo // lower-is-better, 0.5%
+
+  it('computes a half-spent budget for uptime above target', () => {
+    const eb = errorBudget(uptime, 99.95)
+    expect(eb).not.toBeNull()
+    expect(eb?.budget).toBeCloseTo(0.001, 6)
+    expect(eb?.used).toBeCloseTo(0.0005, 6)
+    expect(eb?.remaining).toBeCloseTo(0.0005, 6)
+    expect(eb?.consumedRatio).toBeCloseTo(0.5, 6)
+    expect(eb?.withinBudget).toBe(true)
+  })
+
+  it('flags an overspent (breached) budget below target', () => {
+    const eb = errorBudget(uptime, 99.5) // 0.5% failing vs 0.1% budget → 5x
+    expect(eb?.consumedRatio).toBeCloseTo(5, 6)
+    expect(eb?.remaining).toBe(0) // clamped, never negative
+    expect(eb?.withinBudget).toBe(false)
+  })
+
+  it('treats the value itself as failure for a lower-is-better SLO', () => {
+    const eb = errorBudget(errors, 0.25) // half the 0.5% budget
+    expect(eb?.consumedRatio).toBeCloseTo(0.5, 6)
+    expect(eb?.withinBudget).toBe(true)
+  })
+
+  it('reports zero consumption for a perfect measurement', () => {
+    expect(errorBudget(uptime, 100)?.consumedRatio).toBe(0)
+    expect(errorBudget(errors, 0)?.consumedRatio).toBe(0)
+  })
+
+  it('returns null for a non-ratio SLO or a non-finite measurement', () => {
+    expect(errorBudget(getSlo('latency.read-hot-paths') as Slo, 700)).toBeNull()
+    expect(errorBudget(uptime, NaN)).toBeNull()
   })
 })
 
