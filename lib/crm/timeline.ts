@@ -128,3 +128,41 @@ export function buildTimeline(input: BuildTimelineInput, limit = 100): TimelineE
   const capped = Math.min(Math.max(limit, 1), 500)
   return entries.slice(0, capped)
 }
+
+// ── DERIVED at READ time (pure, testable) — small shapers the owner-facing detail uses to surface the
+//    existing history more usefully, without any new IO. ──────────────────────────────────────────
+
+/** A short, human "how long ago" for a timeline timestamp, in plain voice (no em dashes). Returns ''
+ *  for a blank / unparseable / future `at`. Buckets: Today, Yesterday, N days ago, N weeks ago, then
+ *  the month/year. Pure: takes `now` so it is deterministic in tests. */
+export function relativeTime(at: string | null | undefined, now: number = Date.now()): string {
+  if (!at) return ''
+  const then = Date.parse(at)
+  if (Number.isNaN(then)) return ''
+  const diffMs = now - then
+  if (diffMs < 0) return '' // a future stamp: nothing sensible to say
+  const day = 86_400_000
+  const days = Math.floor(diffMs / day)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return `${days} days ago`
+  const weeks = Math.floor(days / 7)
+  if (weeks < 5) return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return months <= 1 ? '1 month ago' : `${months} months ago`
+  const years = Math.floor(days / 365)
+  return years === 1 ? '1 year ago' : `${years} years ago`
+}
+
+/** A one-line read of the whole timeline for the detail header: how many touches there are and when
+ *  the most recent one happened (the entries are newest-first out of buildTimeline, so the first is
+ *  the latest). Pure; an empty timeline yields a null `lastTouchAt`. */
+export interface TimelineSummary {
+  count: number
+  lastTouchAt: string | null
+}
+export function summarizeTimeline(entries: TimelineEntry[]): TimelineSummary {
+  const list = entries ?? []
+  const latest = list.find((e) => !!e.at && !Number.isNaN(Date.parse(e.at)))
+  return { count: list.length, lastTouchAt: latest?.at ?? null }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, interactionTitle, type TimelineEntry } from './timeline'
+import { buildTimeline, interactionTitle, relativeTime, summarizeTimeline, type TimelineEntry } from './timeline'
 import type { ContactInteraction } from './interactions'
 
 function interaction(over: Partial<ContactInteraction>): ContactInteraction {
@@ -83,5 +83,54 @@ describe('buildTimeline', () => {
     const out = buildTimeline({ interactions: [interaction({ id: 'a', body: '  full notes  ' })] })
     const entry = out[0] as TimelineEntry
     expect(entry.detail).toBe('full notes')
+  })
+})
+
+describe('relativeTime', () => {
+  const now = Date.parse('2026-06-29T12:00:00.000Z')
+  const day = 86_400_000
+
+  it('returns "" for blank, unparseable, or future stamps', () => {
+    expect(relativeTime(null, now)).toBe('')
+    expect(relativeTime('', now)).toBe('')
+    expect(relativeTime('not-a-date', now)).toBe('')
+    expect(relativeTime(new Date(now + day).toISOString(), now)).toBe('')
+  })
+
+  it('buckets days into a plain phrase', () => {
+    expect(relativeTime(new Date(now - 2 * 3_600_000).toISOString(), now)).toBe('Today')
+    expect(relativeTime(new Date(now - day).toISOString(), now)).toBe('Yesterday')
+    expect(relativeTime(new Date(now - 3 * day).toISOString(), now)).toBe('3 days ago')
+  })
+
+  it('buckets weeks, months, and years', () => {
+    expect(relativeTime(new Date(now - 7 * day).toISOString(), now)).toBe('1 week ago')
+    expect(relativeTime(new Date(now - 21 * day).toISOString(), now)).toBe('3 weeks ago')
+    expect(relativeTime(new Date(now - 60 * day).toISOString(), now)).toBe('2 months ago')
+    expect(relativeTime(new Date(now - 400 * day).toISOString(), now)).toBe('1 year ago')
+  })
+})
+
+describe('summarizeTimeline', () => {
+  it('reports zero touches and a null last-touch for an empty timeline', () => {
+    expect(summarizeTimeline([])).toEqual({ count: 0, lastTouchAt: null })
+  })
+
+  it('counts entries and takes the newest-first head as the last touch', () => {
+    const out = buildTimeline({
+      interactions: [
+        interaction({ id: 'old', occurredAt: '2026-01-01T00:00:00.000Z' }),
+        interaction({ id: 'new', occurredAt: '2026-06-01T00:00:00.000Z' }),
+      ],
+    })
+    expect(summarizeTimeline(out)).toEqual({ count: 2, lastTouchAt: '2026-06-01T00:00:00.000Z' })
+  })
+
+  it('skips a blank-stamped head when finding the last touch', () => {
+    const entries: TimelineEntry[] = [
+      { id: 'a', channel: 'note', direction: 'internal', title: 'Note', detail: 'x', at: '', origin: 'note' },
+      { id: 'b', channel: 'email', direction: 'outbound', title: 'Emailed', detail: null, at: '2026-05-01T00:00:00.000Z', origin: 'interaction' },
+    ]
+    expect(summarizeTimeline(entries)).toEqual({ count: 2, lastTouchAt: '2026-05-01T00:00:00.000Z' })
   })
 })
