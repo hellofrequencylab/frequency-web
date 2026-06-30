@@ -22,6 +22,18 @@ type TourLocal = { status: 'completed' | 'paused' | 'skipped'; atStop: number }
 
 const MIN_KEY = 'fq_onboarding_min'
 
+// A small, tasteful line of encouragement keyed to how far through activation the
+// member is — warmth, not confetti, and never a score. Mirrors the JourneyBoard's
+// `encouragement()` voice so the guide and its graduated successor feel of a piece.
+// Reads only the status counts (no extra data); the final "one step left" case is
+// handled by the header's "Almost there" cue, so this stays general.
+function activationNote(doneCount: number, total: number): string {
+  if (doneCount <= 0) return 'A few small steps and Frequency starts to feel like yours.'
+  if (doneCount === 1) return 'Nice — you’ve made a start. Each step opens a little more of this place.'
+  if (doneCount < total - 1) return 'You’re finding your footing. Keep going, you’re most of the way in.'
+  return 'So close. One more and you’re fully set up here.'
+}
+
 export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   const [minimized, setMinimized] = useState(false)
   const [tourOpen, setTourOpen] = useState(false)
@@ -132,8 +144,21 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         </button>
       </div>
 
+      {/* A warm, progress-keyed line — the guide's equivalent of the graduated
+          board's encouragement. Skipped on the last step, where the header already
+          says "Almost there" (so we don't double up). */}
+      {!lastStepLeft && (
+        <p className="mt-2 text-sm leading-snug text-broadcast-strong/90">
+          {activationNote(status.doneCount, status.total)}
+        </p>
+      )}
+
       {/* Segmented stepper — at-a-glance "where am I". */}
-      <div className="mt-3 flex gap-1.5">
+      <div
+        className="mt-3 flex gap-1.5"
+        role="img"
+        aria-label={`Setup progress: ${status.doneCount} of ${status.total} steps done`}
+      >
         {status.steps.map((s) => (
           <span
             key={s.key}
