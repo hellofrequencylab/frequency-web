@@ -33,6 +33,9 @@ import { HoverTip } from '@/components/ui/hover-tip'
 import { MessagesPopover } from '@/components/messages/messages-popover'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
 import { ViewAsControl } from '@/components/layout/view-as-control'
+import { ContextSwitcher } from '@/components/layout/context-switcher'
+import { ContextBadge } from '@/components/layout/context-badge'
+import type { AvailableContext, OperatorContext } from '@/lib/context/operator-context'
 import {
   type CommunityRole,
   ROLE_LABEL,
@@ -370,6 +373,8 @@ function ProfileCard({
   realRole,
   profileHref,
   previewVisitor = false,
+  operatorContext,
+  availableContexts = [],
 }: {
   profile: Profile
   role: CommunityRole
@@ -378,7 +383,14 @@ function ProfileCard({
   profileHref: string
   /** Janitor previewing as a logged-out visitor — show a "Visitor" chip. */
   previewVisitor?: boolean
+  /** The server-resolved operator-identity context (FRAMING ONLY — never a gate). Frames the chip
+   *  + powers the context switcher. Defaults to personal when omitted. */
+  operatorContext?: OperatorContext
+  /** The contexts the caller may switch into (server-derived from real authority). */
+  availableContexts?: AvailableContext[]
 }) {
+  // The effective context for the chip's framing — personal when none was resolved.
+  const context: OperatorContext = operatorContext ?? { kind: 'personal' }
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
   // long scroll. The quick-actions panel opens ONLY on tapping the chevron — it
   // never rises on scroll or hover (that was disorienting); it stays put until the
@@ -417,11 +429,16 @@ function ProfileCard({
               Visitor
             </span>
           ) : (
-            <span
-              className="rank-badge mt-1 inline-block text-3xs leading-tight"
-              style={roleBadgeStyle(role)}
-            >
-              {ROLE_LABEL[role]}
+            // The real role badge stays; the context badge sits beside it as an ADDITIONAL,
+            // clearly-labelled FRAMING signal (operator → the Space brand, admin → an Admin mark).
+            <span className="mt-1 flex flex-wrap items-center gap-1">
+              <span
+                className="rank-badge inline-block text-3xs leading-tight"
+                style={roleBadgeStyle(role)}
+              >
+                {ROLE_LABEL[role]}
+              </span>
+              <ContextBadge context={context} available={availableContexts} />
             </span>
           )}
         </div>
@@ -447,6 +464,9 @@ function ProfileCard({
           <div className="px-2 pb-3 space-y-0.5">
             {/* Janitor-only "view as role" — first item; opens upward via portal. */}
             <ViewAsControl realRole={realRole} currentRole={role} asVisitor={previewVisitor} />
+            {/* Operator-identity context switcher ("You're in") — renders only when the caller has
+                more than the personal context (server-derived). FRAMING ONLY: it grants no power. */}
+            <ContextSwitcher context={context} available={availableContexts} />
             <Link
               href={profileHref}
               className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
@@ -1282,6 +1302,8 @@ export default function AppShell({
   profile,
   realRole,
   previewVisitor = false,
+  operatorContext,
+  availableContexts = [],
   children,
   sidebar,
   statsPanel,
@@ -1318,6 +1340,13 @@ export default function AppShell({
   /** Janitor previewing the logged-out visitor experience — gates the nav as a
    *  visitor and flips the identity chrome to "Visitor". */
   previewVisitor?: boolean
+  /** The server-resolved operator-identity context — which hat the person is wearing (personal /
+   *  operator:<space> / admin). FRAMING ONLY (lib/context/operator-context.ts): it frames the chip +
+   *  powers the switcher; it is NEVER an authorization input. Defaults to personal. */
+  operatorContext?: OperatorContext
+  /** The contexts the caller may switch into (server-derived from real ownership/admin + staff axis).
+   *  The switcher only ever renders what the server allowed. */
+  availableContexts?: AvailableContext[]
   children: React.ReactNode
   sidebar?: React.ReactNode
   /** Member stats / streaks / gamification body — hosted by the mobile right-edge
@@ -1783,7 +1812,7 @@ export default function AppShell({
                     stats dock. Mirrors components/admin/admin-profile-card.tsx's wrapper. */}
                 <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
-                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} />
+                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} />
                 </div>
               </aside>
             )}
