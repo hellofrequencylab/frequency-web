@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { getPublicCircles } from '@/lib/discover'
+import { getPublicCircles, getPublicCounts, getPublicEvents } from '@/lib/discover'
 import { CircleCard } from '@/components/discover/cards'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { CommunityProof } from '@/components/discover/community-proof'
 import {
   ZigZag,
   Statement,
@@ -46,7 +47,11 @@ export default async function DiscoverCirclesPage() {
   } = await supabase.auth.getUser()
   const isAuthed = !!user
 
-  const circles = await getPublicCircles(200)
+  const [circles, counts, events] = await Promise.all([
+    getPublicCircles(200),
+    getPublicCounts(),
+    getPublicEvents(50),
+  ])
 
   return (
     <>
@@ -127,9 +132,14 @@ export default async function DiscoverCirclesPage() {
             </div>
           )}
 
-          {/* Inline capture: a visitor reading the rooms is a warm lead. Offer the
-              invite here, where intent is highest, instead of bouncing them to /beta. */}
-          <div className="mt-12 mx-auto max-w-2xl">
+          {/* Live proof, then the ask: show a warm visitor the room is real
+              before we offer the invite. Honest below SOCIAL_PROOF_FLOOR. */}
+          <div className="mt-12 mx-auto max-w-2xl space-y-4">
+            <CommunityProof
+              members={counts.members}
+              circles={counts.circles}
+              events={events.length}
+            />
             <InlineBetaCapture
               source="discover_circles"
               heading="See one you'd show up to?"

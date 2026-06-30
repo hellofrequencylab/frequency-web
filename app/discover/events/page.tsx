@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { getPublicEvents } from '@/lib/discover'
+import { getPublicEvents, getPublicCounts } from '@/lib/discover'
 import { EventRow } from '@/components/discover/cards'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { CommunityProof } from '@/components/discover/community-proof'
 import {
   ZigZag,
   Statement,
@@ -42,7 +43,10 @@ export default async function DiscoverEventsPage() {
   } = await supabase.auth.getUser()
   const isAuthed = !!user
 
-  const events = await getPublicEvents(50)
+  const [events, counts] = await Promise.all([
+    getPublicEvents(50),
+    getPublicCounts(),
+  ])
 
   return (
     <>
@@ -123,9 +127,14 @@ export default async function DiscoverEventsPage() {
                 ))}
               </div>
 
-              {/* Inline capture: someone scanning the calendar is ready to show up.
-                  Offer the invite here rather than bouncing them to /beta. */}
-              <div className="mt-12 mx-auto max-w-2xl">
+              {/* Live proof, then the ask: someone scanning the calendar is ready
+                  to show up — show the room is real before we offer the invite. */}
+              <div className="mt-12 mx-auto max-w-2xl space-y-4">
+                <CommunityProof
+                  members={counts.members}
+                  circles={counts.circles}
+                  events={events.length}
+                />
                 <InlineBetaCapture
                   source="discover_events"
                   heading="Want to be at one of these?"
