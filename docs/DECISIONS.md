@@ -10175,3 +10175,52 @@ DB-deriving `resolveOperatorContext` lives in the server-only sibling `lib/conte
 client chip can import the core without pulling `server-only` into the client bundle (the split that fixed the
 Vercel build). No schema/migration/`database.types` change; ownership is re-derived from `spaces.owner_profile_id`
 + `space_members`.
+
+## ADR-475: Four first-class Space tiers + AI as the sole metered add-on (ADR-472 foundation)
+
+**Status:** Accepted (2026-06-30), behind `billing_live` OFF. Implements the ADR-472 model in code (PR #1335).
+
+**Decision.** `SPACE_PLANS = ['free','pro','business','nonprofit','organization']` (Business promoted to first-class;
+the legacy `business -> pro` remap retired, `whitelabel -> business`, `practitioner/partner -> pro`). Depth sets
+(`lib/pricing/plans.ts`): Pro = `['crm','crm.playbooks']` (capped, unchanged, non-regressive); Business = Nonprofit
+= Organization = full depth `['crm','crm.playbooks','email','automation','multi_pipeline','reporting','team',
+'whitelabel']` (identical at the key level; Org's "expanded/custom" is delivered by Modes + white-glove, not
+fictional keys). **AI Engine is the sole metered add-on** (`AddonKey='ai'`, keys `crm.resonance`/`crm.resonance_ai`);
+Marketing/Team/Branding folded into tier depth; the AI keys are in NO tier base (nonprofit/org no longer bundle AI).
+`BILLING_MANAGED_KEYS` stays the full union (every depth key + the AI keys) so the migration/union reader still
+covers them. Every consumer updated (gates rank, set-to-target, Stripe catalog gains `business_base`, checkout,
+ai-usage); presentation surfaces kept compiling with `TODO(ADR-472 surfaces)`. **No migration** (only two prod
+Spaces exist, none use `business` or a legacy value, and `spaces.plan` has no DB check). 3053 tests.
+
+## ADR-476: Four public-page layout templates (Book / Schedule / Storefront / Hub)
+
+**Status:** Accepted (2026-06-30). The public-page layer of ADR-472 (PR #1336). Full spec:
+`docs/SPACE-MODE-TEMPLATES.md`.
+
+**Decision.** A Space's PUBLIC page renders through one of four **layout templates**, each a distinct hero / lead
+body / function arrangement: **Book** (booking calendar), **Schedule** (timetable + tickets/memberships),
+**Storefront** (catalog grid), **Hub** (mission + all functions). A pure, client-safe registry
+(`lib/spaces/templates.ts`, `SpaceTemplate`) holds each template's descriptor (primary CTA `{label,tab}`, ordered
+hero stats, emphasis hint, tab order, About module order). `templateForSpace` resolves most-specific-first:
+`preferences.template` override -> Nonprofit/Organization tier -> `hub` -> the `(type,variant)` map -> per-type
+fallback -> default-safe `book`. A pure `blueprintForSpace` bridge re-frames the per-type `RoleBlueprint` by the
+resolved template, **restricted to modules the blueprint already carries** (never adds or drops a module), so
+nothing is removed or locked. Template is FREE framing (never a gate), like Modes; the operator can switch it. The
+registry is kept pure so a client component can import it without the `server-only` build trap. NP + Org both
+default to Hub (all functions). Known v1 gaps (closed by the content-blocks layer): Hub's CTA targets `book` until
+`donate`/`enroll` are first-class tabs; Studio shares `business/service` so it defaults to Book and switches to
+Schedule via the override. No schema change (template derived; optional `preferences.template`).
+
+## ADR-477: The in-app left rail is DB-menu-driven; nav-area changes need a sync + a direct relabel
+
+**Status:** Accepted (2026-06-30). Documents a gotcha + the fix applied to the live menu.
+
+**Decision.** The in-app left rail renders from a **DB-stored menu** (`menus`/`menu_items`/`menu_categories`, the
+global `surface_key='left'` row), NOT directly from `lib/nav-areas.ts`. `nav-areas.ts` feeds the DB menu only
+through a janitor-triggered **sync** that ADDS new hrefs (tracked in `menus.synced_default_keys`) and **never
+rewrites a stored `menu_items.label`** (to preserve operator edits). So a new nav-area renders only after the sync
+runs, and a relabel never propagates. The "Spaces" (Community, `/spaces/operating`) + "All Spaces" (Admin,
+`/admin/spaces`) nav from the prior PR therefore did not appear; the fix was applied directly to the global DB
+menu (insert the Community item mirroring My Contacts' gating; relabel the admin item; mark `/spaces/operating`
+synced). Follow-up worth hardening: make a code nav-area change propagate to the live default menu (new items +
+default-label updates) without a manual data patch.
