@@ -5,8 +5,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { createSpacePlanCheckout } from '@/lib/billing/space-plan-checkout'
-import { asSpacePlanKey, type BillingPeriod } from '@/lib/billing/pricing-keys'
+import { createSpacePlanCheckout, createSpaceLoadoutCheckout } from '@/lib/billing/space-plan-checkout'
+import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
+import { asAddonKey } from '@/lib/pricing/plans'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE PLAN BILLING ACTIONS (Pricing P3, ADR-363/364). Two client-callable seams for the space
@@ -46,6 +47,29 @@ export async function startSpacePlanCheckout(
     return fail('That plan is not available to buy here.')
   }
   const url = await createSpacePlanCheckout(auth.spaceId, planKey, period)
+  if (!url) return fail('Plan checkout is not available yet.')
+  return ok({ url })
+}
+
+/** Begin a Stripe Checkout for a Pro LOADOUT (the base plus the active add-ons, ADR-463). DOUBLE-GATED:
+ *  authorizeOwner re-resolves the space + checks canManage server-side, then createSpaceLoadoutCheckout
+ *  itself gates on billingLive() AND the per-plan switch, so this returns a clean error (never a broken
+ *  URL) while billing is OFF. The charged price is the FOUNDING price, or the space's grandfathered
+ *  locked price when it holds one (the lock is honored inside createSpaceLoadoutCheckout). */
+export async function startSpaceLoadoutCheckout(
+  slug: string,
+  input: { addons?: string[]; interval?: BillingInterval; seatQuantity?: number },
+): Promise<ActionResult<{ url: string }>> {
+  const auth = await authorizeOwner(slug)
+  if (!auth) return fail('You do not have access to manage this space.')
+  const addons = (input.addons ?? []).map((a) => asAddonKey(a)).filter((a): a is NonNullable<typeof a> => a !== null)
+  const interval: BillingInterval = input.interval === 'year' ? 'year' : 'month'
+  const url = await createSpaceLoadoutCheckout(auth.spaceId, {
+    plan: 'pro',
+    addons,
+    interval,
+    seatQuantity: input.seatQuantity,
+  })
   if (!url) return fail('Plan checkout is not available yet.')
   return ok({ url })
 }

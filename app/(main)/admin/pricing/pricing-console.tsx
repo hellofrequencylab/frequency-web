@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button'
 import { isError } from '@/lib/action-result'
 import type { PricingConsoleData, FeatureGateRow } from './load'
 import type { TierPrice, PricingDefaults, PricingFlagKey } from '@/lib/pricing/settings'
+import type { CatalogConfig, ResolvedCatalogItem } from '@/lib/pricing/catalog-config'
+import type { AddonKey } from '@/lib/pricing/plans'
+import { addonKeyForCatalogItem } from '@/lib/billing/pricing-keys'
 import {
   setPricingFlag,
   savePrice,
@@ -18,12 +21,19 @@ import {
   saveFeatureGate,
   setFoundingMember,
   syncStripeProducts,
+  syncStripeCatalog,
+  saveCatalogItem,
+  saveSeatConfig,
+  savePwywConfig,
+  saveAddonEnabled,
 } from './actions'
 
-// The /admin/pricing operator console (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: the master
+// The /admin/pricing operator console (ADR-362/463, docs/PRICING.md). EVERYTHING SHIPS OFF: the master
 // switch defaults off, no tier/plan is enabled, and no value here charges anyone. Sections: the
-// switches (master prominent), plans & prices, the feature-gate matrix, the founder lock, and a
-// read-only Stripe status. Plain operator copy, no em dashes (docs/CONTENT-VOICE.md).
+// switches (master prominent), the clean catalog editor (Pro base + add-ons + seat + org, with the
+// list anchor and the founding price), the seat + Supporter PWYW config, the legacy plans & prices, the
+// feature-gate matrix, the founder lock, and the Stripe status + catalog sync. Plain operator copy, no
+// em dashes (docs/CONTENT-VOICE.md).
 
 const inputCls =
   'w-28 rounded-md border border-border bg-canvas px-2 py-1 text-sm text-text text-right tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30'
@@ -40,20 +50,287 @@ function dollarsToCents(v: string): number {
 export function PricingConsole({ data }: { data: PricingConsoleData }) {
   return (
     <>
-      {/* The OFF banner sets the whole page's frame: nothing is live. */}
+      {/* The OFF banner sets the whole page's frame: nothing is live. OFF = everything granted,
+          nothing charged. */}
       <Banner tone={data.stripe.live ? 'warning' : 'info'} title={data.stripe.live ? 'Billing is LIVE' : 'Billing is OFF'}>
         {data.stripe.live
           ? 'The master switch is on and Stripe is configured. Charges can happen. Turn the master switch off to stop all billing.'
-          : 'Nothing charges. The master switch is off, so members and spaces keep their current access exactly as today. Editing values here is safe.'}
+          : 'Off means everything granted, nothing charged. While the master switch is off, every member and space keeps full access exactly as today and no card is ever charged. Editing prices here is safe: nothing goes live until you flip the master switch.'}
       </Banner>
 
       <SwitchesSection flags={data.flags} />
+      <CatalogSection catalog={data.catalog} />
       <PlansSection values={data.values} />
       <FeatureGatesSection gates={data.gates} />
       <FounderSection />
       <StripeStatusSection stripe={data.stripe} />
     </>
   )
+}
+
+// ── The clean catalog editor (Pro base + add-ons + seat + org · ADR-463) ───────────────────────────
+// Each item shows the LIST anchor and the lower FOUNDING price the member is charged, with the monthly
+// amount the headline and the yearly derived two months free (overridable). Plus the per-add-on enable
+// toggles, the seat bundled floor, and the Supporter PWYW config.
+
+function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
+  const byKey = Object.fromEntries(catalog.items.map((i) => [i.key, i])) as Record<string, ResolvedCatalogItem>
+  const addonItems = catalog.items.filter((i) => addonKeyForCatalogItem(i.key) !== null)
+  return (
+    <AdminSection
+      title="Catalog"
+      description="The Pro base, the four add-ons, the nonprofit seat, and the organization plan. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
+    >
+      <FormSection
+        title="Pro base"
+        description="The Pro plan a space starts on. The four add-ons below layer on top of this."
+      >
+        <CatalogItemRow item={byKey.pro_base} />
+      </FormSection>
+
+      <FormSection
+        title="Add-ons"
+        description="Each add-on toggles on or off for a space. Turn one off here to hide it from the picker entirely. The Team add-on bills per seat."
+      >
+        <div className="space-y-4">
+          {addonItems.map((item) => (
+            <CatalogItemRow
+              key={item.key}
+              item={item}
+              addon={addonKeyForCatalogItem(item.key) ?? undefined}
+              addonEnabled={catalog.addonEnabled}
+            />
+          ))}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Nonprofit and organization"
+        description="The nonprofit licensed seat (per seat) and the organization plan (custom, anchored)."
+      >
+        <div className="space-y-4">
+          <CatalogItemRow item={byKey.nonprofit_seat} />
+          <CatalogItemRow item={byKey.organization} />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Seats"
+        description="The minimum licensed seats a seat plan bills. A nonprofit pays for at least this many seats even with fewer members."
+      >
+        <SeatConfigRow bundledFloor={catalog.seat.bundledFloor} seatItem={byKey.nonprofit_seat} />
+      </FormSection>
+
+      <FormSection
+        title="Supporter (pay what you want)"
+        description="A Crew member can add a Supporter contribution on top of membership. Set the minimum they can give and the amount you suggest."
+      >
+        <PwywConfigRow minCents={catalog.pwyw.minCents} suggestedCents={catalog.pwyw.suggestedCents} />
+      </FormSection>
+    </AdminSection>
+  )
+}
+
+function CatalogItemRow({
+  item,
+  addon,
+  addonEnabled,
+}: {
+  item: ResolvedCatalogItem
+  addon?: AddonKey
+  addonEnabled?: Record<AddonKey, boolean>
+}) {
+  const [monthlyList, setMonthlyList] = useState(centsToDollars(item.monthlyListCents))
+  const [monthlyFounding, setMonthlyFounding] = useState(centsToDollars(item.monthlyFoundingCents))
+  const [yearlyList, setYearlyList] = useState(item.yearlyListCents == null ? '' : centsToDollars(item.yearlyListCents))
+  const [yearlyFounding, setYearlyFounding] = useState(
+    item.yearlyFoundingCents == null ? '' : centsToDollars(item.yearlyFoundingCents),
+  )
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  // The yearly we would charge for display: the explicit override, else the derived two months free.
+  const derivedYearlyFounding =
+    yearlyFounding.trim() === '' ? Math.round(dollarsToCents(monthlyFounding) * 10) : dollarsToCents(yearlyFounding)
+
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveCatalogItem(item.key, {
+        monthlyListCents: dollarsToCents(monthlyList),
+        monthlyFoundingCents: dollarsToCents(monthlyFounding),
+        yearlyListCents: yearlyList.trim() === '' ? null : dollarsToCents(yearlyList),
+        yearlyFoundingCents: yearlyFounding.trim() === '' ? null : dollarsToCents(yearlyFounding),
+      })
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+
+  const enabled = addon && addonEnabled ? addonEnabled[addon] : true
+
+  return (
+    <div className="space-y-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-text">{item.label}</span>
+          {item.perSeat && (
+            <StatusChip tone="info" size="sm">
+              per seat
+            </StatusChip>
+          )}
+        </div>
+        {addon && addonEnabled && <AddonEnableToggle addon={addon} initial={addonEnabled[addon]} />}
+      </div>
+
+      <div className={`flex flex-wrap items-end gap-3 ${enabled ? '' : 'opacity-50'}`}>
+        <Field label="List $ / mo" value={monthlyList} onChange={setMonthlyList} />
+        <Field label="Founding $ / mo" value={monthlyFounding} onChange={setMonthlyFounding} />
+        <Field label="List $ / yr" value={yearlyList} onChange={setYearlyList} placeholder="2 mo free" />
+        <Field label="Founding $ / yr" value={yearlyFounding} onChange={setYearlyFounding} placeholder="2 mo free" />
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        Member is charged {centsToDollars(dollarsToCents(monthlyFounding)) && formatDollars(monthlyFounding)} a month
+        {' '}({formatDollars(monthlyList)} list), or {formatCentsLabel(derivedYearlyFounding)} a year.
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function AddonEnableToggle({ addon, initial }: { addon: AddonKey; initial: boolean }) {
+  const [on, setOn] = useState(initial)
+  const [pending, start] = useTransition()
+  const [saved, setSaved] = useState(false)
+  function toggle() {
+    const next = !on
+    setOn(next)
+    setSaved(false)
+    start(async () => {
+      const res = await saveAddonEnabled(addon, next)
+      if (isError(res)) setOn(!next)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+    })
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`text-2xs font-semibold uppercase tracking-wide ${on ? 'text-success' : 'text-subtle'}`}>
+        {on ? 'Offered' : 'Hidden'}
+      </span>
+      <Toggle
+        checked={on}
+        onChange={toggle}
+        ariaLabel={`${addon} add-on offered`}
+        disabled={pending}
+        saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
+      />
+    </div>
+  )
+}
+
+function SeatConfigRow({ bundledFloor, seatItem }: { bundledFloor: number; seatItem: ResolvedCatalogItem }) {
+  const [floor, setFloor] = useState(String(bundledFloor))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await saveSeatConfig({ bundledFloor: Math.max(1, Math.round(Number(floor) || 1)) })
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Bundled floor (seats)" value={floor} onChange={setFloor} />
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">
+        Each seat is {formatCentsLabel(seatItem.monthlyFoundingCents)} a month ({formatCentsLabel(seatItem.monthlyListCents)}{' '}
+        list). The floor bills at least {floor || '1'} seats.
+      </p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+function PwywConfigRow({ minCents, suggestedCents }: { minCents: number; suggestedCents: number }) {
+  const [min, setMin] = useState(centsToDollars(minCents))
+  const [suggested, setSuggested] = useState(centsToDollars(suggestedCents))
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+  function save() {
+    setError(null)
+    setSaved(false)
+    start(async () => {
+      const res = await savePwywConfig({
+        minCents: dollarsToCents(min),
+        suggestedCents: dollarsToCents(suggested),
+      })
+      if (isError(res)) setError(res.error)
+      else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
+    })
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Minimum $" value={min} onChange={setMin} />
+        <Field label="Suggested $" value={suggested} onChange={setSuggested} />
+        <div className="flex items-center gap-2">
+          <SaveCue pending={pending} saved={saved} />
+          <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
+            Save
+          </Button>
+        </div>
+      </div>
+      <p className="text-2xs text-subtle">The suggested amount is raised to the minimum if you set it lower.</p>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  )
+}
+
+/** A dollar string -> a clean "$X" / "$X.YY" label (for the helper lines). */
+function formatDollars(v: string): string {
+  return formatCentsLabel(dollarsToCents(v))
+}
+function formatCentsLabel(cents: number): string {
+  const dollars = cents / 100
+  const whole = Number.isInteger(dollars)
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(dollars)
 }
 
 // ── Switches: master billing_live (prominent) + per-tier/plan + per-role gamification ─────
@@ -187,9 +464,11 @@ function FlagRow({
 
 // ── Plans & prices ────────────────────────────────────────────────────────────────────
 
-const TIER_PRICE_ROWS: { key: string; label: string }[] = [
-  { key: 'tier.crew', label: 'Crew' },
-  { key: 'tier.supporter', label: 'Supporter' },
+// Crew shows a MONTHLY list anchor (the founding price sits under it, ADR-463). Supporter is retired as
+// a tier (now the PWYW badge) but its row stays editable so a legacy price-locked member still resolves.
+const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
+  { key: 'tier.crew', label: 'Crew', list: true },
+  { key: 'tier.supporter', label: 'Supporter (retired tier)' },
 ]
 const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
   { key: 'plan.practitioner', label: 'Practitioner' },
@@ -209,6 +488,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
               key={r.key}
               settingKey={r.key}
               label={r.label}
+              showList={r.list}
               price={values.tier[r.key.split('.')[1] as 'crew' | 'supporter']}
             />
           ))}
@@ -267,15 +547,19 @@ function PriceRow({
   label,
   price,
   showSetup,
+  showList,
 }: {
   settingKey: string
   label: string
   price: TierPrice
   showSetup?: boolean
+  /** Show a MONTHLY list-anchor field (the founding monthly sits under it, ADR-463). */
+  showList?: boolean
 }) {
   const [monthly, setMonthly] = useState(centsToDollars(price.monthly_cents))
   const [annual, setAnnual] = useState(centsToDollars(price.annual_cents))
   const [setup, setSetup] = useState(centsToDollars(price.setup_cents))
+  const [list, setList] = useState(centsToDollars(price.list_cents))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -289,6 +573,7 @@ function PriceRow({
         annual_cents: annual.trim() === '' ? null : dollarsToCents(annual),
       }
       if (showSetup) next.setup_cents = setup.trim() === '' ? 0 : dollarsToCents(setup)
+      if (showList) next.list_cents = list.trim() === '' ? 0 : dollarsToCents(list)
       const res = await savePrice(settingKey, next)
       if (isError(res)) setError(res.error)
       else {
@@ -302,7 +587,8 @@ function PriceRow({
     <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
       <div className="text-sm font-semibold text-text">{label}</div>
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Monthly $" value={monthly} onChange={setMonthly} />
+        {showList && <Field label="List $ / mo" value={list} onChange={setList} placeholder="no anchor" />}
+        <Field label={showList ? 'Founding $ / mo' : 'Monthly $'} value={monthly} onChange={setMonthly} />
         <Field label="Annual $" value={annual} onChange={setAnnual} placeholder="monthly only" />
         {showSetup && <Field label="Setup $" value={setup} onChange={setSetup} />}
         <div className="flex items-center gap-2">
@@ -606,29 +892,64 @@ function StripeStatusSection({ stripe }: { stripe: PricingConsoleData['stripe'] 
       </FormSection>
 
       <FormSection
-        title="Sync products to Stripe"
-        description="Create or update one Stripe product per plan and a price for each billing period from the values above. Run this after you change a price. It is idempotent, so running it again is safe."
+        title="Sync the catalog to Stripe"
+        description="Create or update one Stripe product per catalog item (Pro base, the four add-ons, the nonprofit seat, and organization), each with its list and founding prices for monthly and yearly. Run this after you change a catalog price. It is idempotent and safe while billing is off: it only creates products and prices, it never charges anyone."
       >
-        <SyncRow configured={stripe.configured} syncedCount={stripe.syncedCount} total={stripe.prices.length} />
+        <SyncRow
+          configured={stripe.configured}
+          syncedCount={stripe.catalogSyncedCount}
+          total={stripe.catalogPrices.length}
+          action="catalog"
+          label="Sync the catalog to Stripe"
+        />
       </FormSection>
 
-      <FormSection title="Resolved prices" description="The Stripe price each plan resolves to. Founder prices are kept for price-locked members and are not shown publicly.">
-        <PriceMapTable prices={stripe.prices} />
+      <FormSection title="Catalog prices" description="The Stripe price each catalog key resolves to. The founding price is what a member is charged; the list price is the anchor shown beneath it.">
+        <PriceMapTable prices={stripe.catalogPrices} foundingLabel />
+      </FormSection>
+
+      <FormSection
+        title="Legacy prices (kept resolvable)"
+        description="The pre-ladder per-plan prices. These are no longer sold but are kept so a price-locked member still resolves. Sync the legacy products only if you maintain a legacy price-locked member."
+      >
+        <SyncRow
+          configured={stripe.configured}
+          syncedCount={stripe.syncedCount}
+          total={stripe.prices.length}
+          action="legacy"
+          label="Sync legacy products"
+        />
+        <div className="mt-3">
+          <PriceMapTable prices={stripe.prices} />
+        </div>
       </FormSection>
     </AdminSection>
   )
 }
 
-function SyncRow({ configured, syncedCount, total }: { configured: boolean; syncedCount: number; total: number }) {
+function SyncRow({
+  configured,
+  syncedCount,
+  total,
+  action = 'legacy',
+  label,
+}: {
+  configured: boolean
+  syncedCount: number
+  total: number
+  action?: 'catalog' | 'legacy'
+  label?: string
+}) {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const btnLabel = label ?? (action === 'catalog' ? 'Sync the catalog to Stripe' : 'Sync legacy products')
 
   function sync() {
     setError(null)
     setDone(null)
     start(async () => {
-      const res = await syncStripeProducts()
+      const res = action === 'catalog' ? await syncStripeCatalog() : await syncStripeProducts()
       if (isError(res)) setError(res.error)
       else {
         const { synced, errors } = res.data
@@ -645,7 +966,7 @@ function SyncRow({ configured, syncedCount, total }: { configured: boolean; sync
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-3">
         <Button size="sm" variant="secondary" onClick={sync} disabled={pending || !configured}>
-          {pending ? 'Syncing…' : 'Sync products to Stripe'}
+          {pending ? 'Syncing…' : btnLabel}
         </Button>
         <StatusChip tone={syncedCount === total && total > 0 ? 'success' : 'neutral'}>
           {syncedCount} of {total} synced
@@ -660,7 +981,7 @@ function SyncRow({ configured, syncedCount, total }: { configured: boolean; sync
   )
 }
 
-function PriceMapTable({ prices }: { prices: PricingConsoleData['stripe']['prices'] }) {
+function PriceMapTable({ prices, foundingLabel }: { prices: PricingConsoleData['stripe']['prices']; foundingLabel?: boolean }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-border bg-surface-elevated px-4 py-2 text-2xs font-bold uppercase tracking-wide text-subtle">
@@ -675,7 +996,7 @@ function PriceMapTable({ prices }: { prices: PricingConsoleData['stripe']['price
               {p.key}
               {p.founder && (
                 <StatusChip tone="info" size="sm">
-                  founder
+                  {foundingLabel ? 'founding' : 'founder'}
                 </StatusChip>
               )}
             </span>

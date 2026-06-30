@@ -4,6 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/admin/guard'
 import { setPlatformFlag } from '@/lib/platform-flags'
 import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
+import {
+  catalogConfigKey,
+  SEAT_CONFIG_KEY,
+  PWYW_CONFIG_KEY,
+  ADDON_ENABLED_KEY,
+  type CatalogItemConfig,
+  type SeatConfig,
+  type PwywConfig,
+} from '@/lib/pricing/catalog-config'
+import { asCatalogItemKey } from '@/lib/billing/pricing-keys'
+import { ADDON_KEYS, asAddonKey } from '@/lib/pricing/plans'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
@@ -38,12 +49,95 @@ export async function savePrice(key: string, price: TierPrice): Promise<ActionRe
   const annual = price.annual_cents == null ? null : Math.max(0, Math.round(Number(price.annual_cents) || 0))
   const value: TierPrice = { monthly_cents: monthly, annual_cents: annual }
   if (price.setup_cents != null) value.setup_cents = Math.max(0, Math.round(Number(price.setup_cents) || 0))
+  // The optional MONTHLY list anchor (ADR-463): the crossed-out price the founding monthly sits under.
+  if (price.list_cents != null) value.list_cents = Math.max(0, Math.round(Number(price.list_cents) || 0))
   try {
     await setPricingSetting(key, value, ctx.profileId)
     revalidatePath(PATH)
     return ok()
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not save the price.')
+  }
+}
+
+// ── PHASE C: the CLEAN catalog editor (ADR-463) ───────────────────────────────────────────────────
+// Each catalog item (Pro base + the four add-ons + nonprofit seat + organization) carries a MONTHLY
+// list + founding amount, with the yearly derived two-months-free (or an explicit yearly override).
+// Persisted to pricing_settings under catalog.<item>; catalog-config.ts reads it fail-safe over the
+// Phase B code default. Plus the seat bundled floor, the Supporter PWYW config, and the per-add-on
+// enable map. Janitor-gated; nothing charges (config only, billing OFF).
+
+const nonNegCents = (v: unknown) => Math.max(0, Math.round(Number(v) || 0))
+
+/** Save one catalog item's amount config (monthly list + founding, optional yearly overrides). The key
+ *  is a CatalogItemKey (pro_base / addon_* / nonprofit_seat / organization). */
+export async function saveCatalogItem(item: string, config: CatalogItemConfig): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const key = asCatalogItemKey(item)
+  if (!key) return fail('Unknown catalog item.')
+  const value: CatalogItemConfig = {
+    monthlyListCents: nonNegCents(config.monthlyListCents),
+    monthlyFoundingCents: nonNegCents(config.monthlyFoundingCents),
+    yearlyListCents: config.yearlyListCents == null ? null : nonNegCents(config.yearlyListCents),
+    yearlyFoundingCents: config.yearlyFoundingCents == null ? null : nonNegCents(config.yearlyFoundingCents),
+  }
+  try {
+    await setPricingSetting(catalogConfigKey(key), value, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the catalog item.')
+  }
+}
+
+/** Save the seat bundled floor (the minimum licensed seats a seat plan bills). */
+export async function saveSeatConfig(seat: SeatConfig): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const value: SeatConfig = { bundledFloor: Math.max(1, Math.round(Number(seat.bundledFloor) || 1)) }
+  try {
+    await setPricingSetting(SEAT_CONFIG_KEY, value, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the seat config.')
+  }
+}
+
+/** Save the Supporter pay-what-you-want config (minimum + suggested). The suggested is clamped to at
+ *  least the minimum so the surface never suggests below the floor. */
+export async function savePwywConfig(pwyw: PwywConfig): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const min = nonNegCents(pwyw.minCents)
+  const value: PwywConfig = { minCents: min, suggestedCents: Math.max(min, nonNegCents(pwyw.suggestedCents)) }
+  try {
+    await setPricingSetting(PWYW_CONFIG_KEY, value, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the Supporter config.')
+  }
+}
+
+/** Toggle whether a Pro add-on is offered on the picker (the per-add-on enable map). Persisted as the
+ *  whole map so a partial write never drops the other add-ons. */
+export async function saveAddonEnabled(addon: string, enabled: boolean): Promise<ActionResult> {
+  const ctx = await requireAdmin('janitor')
+  const key = asAddonKey(addon)
+  if (!key) return fail('Unknown add-on.')
+  try {
+    // Read-modify-write the whole map (default-all-enabled), so we never drop an unmentioned add-on.
+    const { loadCatalogConfig } = await import('@/lib/pricing/catalog-config')
+    const current = (await loadCatalogConfig()).addonEnabled
+    // Write target is ALWAYS a trusted key from the ADDON_KEYS constant (never the user-supplied
+    // `key`, which is only compared) so a property name can never be injected from input. `key` is
+    // already validated by asAddonKey above; this keeps the write provably safe to static analysis.
+    const next: Record<string, boolean> = {}
+    for (const k of ADDON_KEYS) next[k] = k === key ? enabled : current[k]
+    await setPricingSetting(ADDON_ENABLED_KEY, next, ctx.profileId)
+    revalidatePath(PATH)
+    return ok()
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not save the add-on switch.')
   }
 }
 

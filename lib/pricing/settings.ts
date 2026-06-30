@@ -28,6 +28,9 @@ export interface TierPrice {
   annual_cents: number | null
   /** White-label only: one-time setup fee in cents. */
   setup_cents?: number
+  /** Optional MONTHLY list anchor in cents (ADR-463): the crossed-out price the founding `monthly_cents`
+   *  sits under (e.g. Crew list $12, founding $9). Absent = no anchor (the monthly is shown plainly). */
+  list_cents?: number
 }
 
 export interface PricingDefaults {
@@ -49,8 +52,8 @@ export interface PricingDefaults {
 
 export const PRICING_DEFAULTS: PricingDefaults = {
   tier: {
-    crew: { monthly_cents: 900, annual_cents: 9000 }, // $9 / $90
-    supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240
+    crew: { monthly_cents: 900, annual_cents: 9000, list_cents: 1200 }, // $9 founding under a $12 list (ADR-463)
+    supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240 (retired tier; kept for legacy resolve)
   },
   plan: {
     practitioner: { monthly_cents: 1900, annual_cents: 19000 }, // $19 / $190
@@ -65,7 +68,10 @@ export const PRICING_DEFAULTS: PricingDefaults = {
   annual_discount: { months_free: 2 },
 }
 
-// The key -> default-value map for the pricing_settings rows (matches the migration seed).
+// The key -> default-value map for the pricing_settings rows (matches the migration seed). The
+// Phase C catalog-config keys (catalog.<item>, catalog.seat, catalog.pwyw, catalog.addon_enabled,
+// ADR-463) are NOT seeded here: catalog-config.ts owns their code-default fallback per item, so an
+// absent row reads the Phase B CATALOG amount. Seeding them would duplicate that source of truth.
 const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.crew': PRICING_DEFAULTS.tier.crew,
   'tier.supporter': PRICING_DEFAULTS.tier.supporter,

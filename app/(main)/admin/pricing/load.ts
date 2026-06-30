@@ -4,10 +4,11 @@
 // renders correct launch values even before the migration is applied / with billing OFF.
 
 import { getPricingValues, loadPricingFlags, type PricingDefaults, type PricingFlagKey } from '@/lib/pricing/settings'
+import { loadCatalogConfig, type CatalogConfig } from '@/lib/pricing/catalog-config'
 import { FEATURE_GATES, loadFeatureGateOverrides, mergeGate, type FeatureGate } from '@/lib/pricing/gates'
 import { billingEnabled } from '@/lib/billing/stripe'
 import { loadStripePriceMap, type StripePriceRow } from '@/lib/billing/pricing-prices'
-import { allPublicPriceKeys, allFounderPriceKeys } from '@/lib/billing/pricing-keys'
+import { allPublicPriceKeys, allFounderPriceKeys, allCatalogPriceKeys } from '@/lib/billing/pricing-keys'
 
 export interface FeatureGateRow {
   feature: string
@@ -29,6 +30,8 @@ export interface StripePriceRowView {
 
 export interface PricingConsoleData {
   values: PricingDefaults
+  /** The Phase C clean catalog config (operator overrides over the code catalog, ADR-463). */
+  catalog: CatalogConfig
   flags: Record<PricingFlagKey, boolean>
   gates: FeatureGateRow[]
   stripe: {
@@ -40,14 +43,19 @@ export interface PricingConsoleData {
     live: boolean
     /** The resolved Stripe Product/Price map (Pricing P2): every expected key + its synced state. */
     prices: StripePriceRowView[]
-    /** How many of the expected keys are synced. */
+    /** How many of the legacy expected keys are synced. */
     syncedCount: number
+    /** The clean Phase B catalog keys + their synced state (ADR-460/463). */
+    catalogPrices: StripePriceRowView[]
+    /** How many of the catalog keys are synced. */
+    catalogSyncedCount: number
   }
 }
 
 export async function getPricingConsoleData(): Promise<PricingConsoleData> {
-  const [values, flags, overrides, priceMap] = await Promise.all([
+  const [values, catalog, flags, overrides, priceMap] = await Promise.all([
     getPricingValues(),
+    loadCatalogConfig(),
     loadPricingFlags(),
     loadFeatureGateOverrides(),
     loadStripePriceMap(),
@@ -84,12 +92,34 @@ export async function getPricingConsoleData(): Promise<PricingConsoleData> {
   })
   const syncedCount = prices.filter((p) => p.synced).length
 
+  // The clean Phase B catalog keys (ADR-460): the founding (charged) + list (anchor) variants per item.
+  const catalogPrices: StripePriceRowView[] = allCatalogPriceKeys().map((key) => {
+    const row: StripePriceRow | undefined = priceMap[key]
+    return {
+      key,
+      founder: !key.endsWith('_list'), // the founding (charged) price is the non-_list variant
+      productId: row?.stripe_product_id ?? null,
+      priceId: row?.stripe_price_id ?? null,
+      synced: !!row?.stripe_price_id,
+    }
+  })
+  const catalogSyncedCount = catalogPrices.filter((p) => p.synced).length
+
   const configured = billingEnabled()
   const masterLive = flags.billing_live
   return {
     values,
+    catalog,
     flags,
     gates,
-    stripe: { configured, masterLive, live: configured && masterLive, prices, syncedCount },
+    stripe: {
+      configured,
+      masterLive,
+      live: configured && masterLive,
+      prices,
+      syncedCount,
+      catalogPrices,
+      catalogSyncedCount,
+    },
   }
 }

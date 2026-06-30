@@ -7961,6 +7961,7 @@ export type Database = {
           is_crew_lead: boolean | null
           is_demo: boolean
           is_founding_member: boolean
+          is_supporter: boolean
           is_system: boolean
           last_seen_at: string | null
           lifetime_gems: number
@@ -8038,6 +8039,7 @@ export type Database = {
           is_crew_lead?: boolean | null
           is_demo?: boolean
           is_founding_member?: boolean
+          is_supporter?: boolean
           is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
@@ -8115,6 +8117,7 @@ export type Database = {
           is_crew_lead?: boolean | null
           is_demo?: boolean
           is_founding_member?: boolean
+          is_supporter?: boolean
           is_system?: boolean
           last_seen_at?: string | null
           lifetime_gems?: number
@@ -9825,6 +9828,56 @@ export type Database = {
           },
         ]
       }
+      space_subscription_items: {
+        Row: {
+          created_at: string
+          id: string
+          interval: string
+          item_key: string
+          locked_price_id: string | null
+          quantity: number
+          space_id: string
+          status: string
+          stripe_subscription_item_id: string | null
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interval?: string
+          item_key: string
+          locked_price_id?: string | null
+          quantity?: number
+          space_id: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interval?: string
+          item_key?: string
+          locked_price_id?: string | null
+          quantity?: number
+          space_id?: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_subscription_items_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_ticket_rsvps: {
         Row: {
           created_at: string
@@ -9936,10 +9989,12 @@ export type Database = {
           feature_roles: Json
           generation: string | null
           id: string
+          is_comped: boolean
           name: string
           network_connected: boolean
           owner_profile_id: string | null
           plan: string | null
+          seat_quantity: number
           skin: string
           slug: string
           status: string
@@ -9964,10 +10019,12 @@ export type Database = {
           feature_roles?: Json
           generation?: string | null
           id?: string
+          is_comped?: boolean
           name: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          seat_quantity?: number
           skin?: string
           slug: string
           status?: string
@@ -9992,10 +10049,12 @@ export type Database = {
           feature_roles?: Json
           generation?: string | null
           id?: string
+          is_comped?: boolean
           name?: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          seat_quantity?: number
           skin?: string
           slug?: string
           status?: string
