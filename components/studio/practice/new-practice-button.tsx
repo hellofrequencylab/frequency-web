@@ -1,5 +1,6 @@
-'use client'
-
+// No 'use client' needed: this wrapper only composes <Link> and <CrewGateButton>
+// (which carries its own client directive), so it stays in the server tree and is not
+// pulled into the client bundle of the server pages that mount it.
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
