@@ -10137,3 +10137,41 @@ the Space **CRM board** (`/spaces/<slug>/crm`), whose body is a genuine horizont
 fight a rail. Rule going forward: a surface belongs in `DASHBOARD_NONE_PATTERNS` only if its body truly
 scrolls sideways. Pure data + test change; no schema, RLS, or entitlement impact; the `[slug]` profile-shell
 escape (ADR-468/469) is unaffected because the rail is decided by the outer app-shell, not the child layout.
+
+## ADR-473: Admin Spaces health dashboard (grouped by status)
+
+**Status:** Accepted (2026-06-30). Platform-admin surface; no entitlement/`billing_live` involvement.
+
+**Decision.** The janitor-gated `/admin/spaces` surface moves from a flat branding/tenancy list to a **health
+dashboard grouped by status**. A **pure, framework-free** classifier (`lib/spaces/health.ts`)
+`spaceHealth(signals) -> { bucket, reasons }` buckets each Space `healthy | needs_attention | at_risk |
+dormant` from only cheaply-sourced signals (`status`, active/total member counts, a recency timestamp = newest
+member join, falling back to the Space's own `updated_at`/`created_at`); any missing signal is **unknown**,
+never zero. Thresholds live in one named `HEALTH_THRESHOLDS` (dormant at 0 active or 90d idle; at_risk at <=1
+active or suspended; needs_attention at <=3 active or 45d idle; archived->dormant), pinned by 23 unit tests.
+Signals are gathered with **no N+1** (`lib/spaces/health-signals.ts`: two batched admin-client reads folded in
+memory), fail-safe to unknown on an unmigrated/erroring source. The page groups `AdminSection`s most-urgent
+first (At risk -> Needs attention -> Dormant -> Healthy) with a health-summary StatCard row, each row showing
+the Mode tag, plan, member count, and reasons, streamed behind `<Suspense>`. Every prior tenancy affordance
+(branding edit, View profile, Edit profile, `ViewAsSpaceButton`, Space defaults, root special-casing) is kept.
+No schema/migration/RLS/`database.types` change.
+
+## ADR-474: Operator-identity context switcher + "Spaces you run" hub (framing only)
+
+**Status:** Accepted (2026-06-30). Evolves the reusable identity model; decides the business-vs-personal
+distinction (the owner is one person wearing three hats).
+
+**Decision.** A lightweight **context switcher** in the account chip lets one person frame which hat they are
+wearing: **Personal** (member identity), **Operator** (a specific Space they own/admin), or **Admin** (platform
+staff). The context is **FRAMING ONLY and never an authorization input**: it lives in its own cookie
+(`freq-context`, separate from `freq-view-as`), is never trusted (the resolver re-derives the available set from
+real authority on every read and fails an out-of-set value safe to `personal`), and every real gate
+(`resolveSpaceManageAccess`, `requireAdmin`/`isStaff`) is untouched and still decides. It only sets a context
+badge on the chip face, swaps the chip's identity (Space brand vs the person), and picks the default landing.
+A **"Spaces you run"** hub (`/spaces/operating`) lists the Spaces the caller owns/admins (one batched
+derivation, no N+1), each opening its `/manage` console. **Server/client boundary:** the pure
+parse/validate/serialize core stays client-safe in `lib/context/operator-context.ts`; the cookie-reading,
+DB-deriving `resolveOperatorContext` lives in the server-only sibling `lib/context/resolve-context.ts`, so the
+client chip can import the core without pulling `server-only` into the client bundle (the split that fixed the
+Vercel build). No schema/migration/`database.types` change; ownership is re-derived from `spaces.owner_profile_id`
++ `space_members`.
