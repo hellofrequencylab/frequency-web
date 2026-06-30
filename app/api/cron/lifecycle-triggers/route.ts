@@ -46,6 +46,10 @@ async function handler(req: NextRequest) {
   let day3Count = 0
   let day7Count = 0
 
+  // Timed: the per-membership notification loop is the cron's real work and grows
+  // with active membership count, so wrap it in log.time to emit one structured
+  // line with duration_ms + ok, queryable/alertable by `cron.lifecycle_triggers`.
+  await log.time('cron.lifecycle_triggers', async () => {
   for (const m of memberships ?? []) {
     if (!m.joined_at) continue
     const days = daysSince(m.joined_at)
@@ -108,8 +112,9 @@ async function handler(req: NextRequest) {
       day7Count++
     }
   }
+  })
 
-  log.info('cron.lifecycle_triggers', { day1: day1Count, day3: day3Count, day7: day7Count })
+  log.info('cron.lifecycle_triggers.counts', { day1: day1Count, day3: day3Count, day7: day7Count })
 
   return NextResponse.json({
     ok: true,

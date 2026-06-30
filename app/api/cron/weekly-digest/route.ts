@@ -25,31 +25,36 @@ async function handler(req: NextRequest) {
   let skipped = 0
   let optOut  = 0
 
-  for (const profileId of profileIds) {
-    const payload = await assembleDigestForProfile(profileId)
-    if (!payload) {
-      skipped++
-      continue
+  // Timed: assembling + sending every per-person digest is the cron's whole cost
+  // and scales with member count, so wrap it in log.time to emit one structured
+  // line carrying duration_ms + ok, queryable/alertable by `cron.weekly_digest`.
+  await log.time('cron.weekly_digest', async () => {
+    for (const profileId of profileIds) {
+      const payload = await assembleDigestForProfile(profileId)
+      if (!payload) {
+        skipped++
+        continue
+      }
+
+      if (!(await shouldSend(profileId, 'email', 'lifecycle'))) {
+        optOut++
+        continue
+      }
+
+      await sendWeeklyDigestEmail({
+        to:                 payload.email,
+        recipientName:      payload.displayName,
+        recipientProfileId: payload.profileId,
+        dispatches:         payload.dispatches,
+        upcomingEvents:     payload.upcomingEvents,
+        topStreak:          payload.topStreak,
+        rank:               payload.rank,
+      })
+      sent++
     }
+  })
 
-    if (!(await shouldSend(profileId, 'email', 'lifecycle'))) {
-      optOut++
-      continue
-    }
-
-    await sendWeeklyDigestEmail({
-      to:                 payload.email,
-      recipientName:      payload.displayName,
-      recipientProfileId: payload.profileId,
-      dispatches:         payload.dispatches,
-      upcomingEvents:     payload.upcomingEvents,
-      topStreak:          payload.topStreak,
-      rank:               payload.rank,
-    })
-    sent++
-  }
-
-  log.info('cron.weekly_digest', {
+  log.info('cron.weekly_digest.counts', {
     candidates: profileIds.length,
     sent,
     skipped,

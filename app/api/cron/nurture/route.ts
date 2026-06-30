@@ -17,11 +17,13 @@ async function handler(req: NextRequest) {
   if (denied) return denied
 
   try {
-    const result = await runDueNurture()
-    log.info('cron.nurture', { ...result })
+    // Timed: log.time wraps the due-enrollment advance and emits one structured
+    // line carrying duration_ms + ok, queryable by `cron.nurture`. On failure it
+    // emits the error line (ok:false) and re-throws, so the catch still returns 500.
+    const result = await log.time('cron.nurture', () => runDueNurture())
+    log.info('cron.nurture.counts', { ...result })
     return NextResponse.json({ ok: true, ...result })
-  } catch (err) {
-    log.error('cron.nurture.failed', { error: err instanceof Error ? err.message : String(err) })
+  } catch {
     return NextResponse.json({ error: 'nurture run failed' }, { status: 500 })
   }
 }
