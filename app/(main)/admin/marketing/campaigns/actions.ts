@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getStaffMember, staffCan } from '@/lib/staff'
 import { resolveSegment, campaignEmail, type SegmentKey } from '@/lib/studio/campaigns'
 import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
-import { shouldSend } from '@/lib/notification-preferences'
+import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
 import { SITE_URL } from '@/lib/site'
 
@@ -13,6 +13,30 @@ export interface SendCampaignResult {
   ok: boolean
   recipientCount?: number
   error?: string
+}
+
+export interface PreviewBroadcastResult {
+  ok: boolean
+  /** Contacts in the segment before per-recipient consent/suppression at send. */
+  audienceSize?: number
+  error?: string
+}
+
+// Audience-size preview for a saved-segment broadcast (GE6-3). Lets an operator see how
+// many contacts a segment resolves to before composing. This is the pre-send count
+// (segment membership minus unsubscribed); the actual queued count can be lower once
+// each recipient passes the consent + suppression gate at send. Re-gated server-side.
+export async function previewBroadcast(segment: SegmentKey): Promise<PreviewBroadcastResult> {
+  const staff = await getStaffMember()
+  if (!staff || !staffCan(staff.role, 'marketing')) {
+    return { ok: false, error: 'Marketer access required.' }
+  }
+  try {
+    const recipients = await resolveSegment(segment)
+    return { ok: true, audienceSize: recipients.length }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Could not resolve the segment.' }
+  }
 }
 
 // Send a campaign to a segment through the spine: queued, consent-checked
@@ -42,8 +66,11 @@ export async function sendCampaign(input: {
 
   let count = 0
   for (const r of recipients) {
-    // Respect the member's lifecycle (marketing) preference.
-    if (!(await shouldSend(r.profileId, 'email', 'lifecycle'))) continue
+    // Route every recipient through the ONE unified send-gate (the ADR-028 harness):
+    // suppression + consent + preference in a single decision, the same seam an
+    // autonomous agent cannot route around. Marketing email rides the lifecycle category.
+    const gate = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
+    if (!gate.allowed) continue
     const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
     const { html, text } = campaignEmail(body, unsubscribeUrl)
     await enqueueEmail({ to: r.email, subject, html, text, headers: listUnsubscribeHeaders(unsubscribeUrl) })

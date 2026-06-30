@@ -13,7 +13,7 @@ export default async function AutomationsPage() {
     <AdminTemplate
       eyebrow="Marketing"
       title="Automations"
-      description="Rules that watch the event backbone and act. When a member triggers an event (a verified practice, a check-in, a join), the rule runs through the spine (queued, consent-checked). This is what the AI operator will later drive."
+      description="Rules that watch the event backbone and act. When a member triggers an event (a verified practice, a check-in, a join), the rule checks its conditions, then runs through the spine (queued, consent-checked). This is what the AI operator will later drive."
       width="wide"
     >
       <AdminSection title="New rule">
@@ -28,7 +28,7 @@ export default async function AutomationsPage() {
             description="Add a rule above to react to events on the backbone."
           />
         ) : (
-          <AutomationsTable rules={rules} />
+          <AutomationsTable rules={rules} triggers={AUTOMATION_TRIGGERS} />
         )}
       </AdminSection>
     </AdminTemplate>

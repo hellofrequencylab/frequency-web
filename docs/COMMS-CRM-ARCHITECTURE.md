@@ -42,7 +42,13 @@ via `idempotency_key`, source-tagged. Phase 6 makes it multi-subscriber and adds
 **Built:** durable outbox — `notification_queue` + `lib/queue/outbox.ts`
 (`enqueue`/`processQueue`, retries + exponential backoff, terminal dead-letter
 state with `requeueDeadLettered()`/`countDeadLettered()` recovery + visibility,
-ADR-043) + `/api/cron/process-queue` (push handler only today). The Resend webhook
+ADR-043) + `/api/cron/process-queue` (push + email + sms handlers). The **dead-letter
+queue now has an operator surface** (GE6-1): `/admin/marketing/deliverability` shows the
+live pending backlog (`countPending`), the dead-letters grouped by kind
+(`summarizeDeadLettered`/`listDeadLettered`), and one-tap recovery (the `requeueDeadLetters`
+server action, re-gated to marketing staff, calls `requeueDeadLettered`). This closes the
+DLQ gap: exhausted side-effects are visible and recoverable without inspecting the table by
+hand. The Resend webhook
 (`app/api/webhooks/resend/route.ts`) has an explicit error path: it suppresses
 independently of analytics logging and returns 503-to-retry (logged) vs 200-ack so
 delivery-integrity signals are never silently dropped. `shouldSend(profileId,
@@ -141,10 +147,32 @@ staff. It acts **only** through the spine and a bounded tool surface (`query_con
 
 **Built:** community/hierarchy schema, gamification, events (recurrence + reminders),
 dispatches, DMs, friendships, moderation, presence, web push, weekly digest,
-notification preferences + unsubscribe, **the durable outbox (push only)**, 5
-transactional emails, **and (this build) the `engagement_events` backbone +
-verifier + capture + partners**. `sendInviteEmail` is defined but never called
-(circle invites make a link but don't email it — a quick win).
+notification preferences + unsubscribe, **the durable outbox (push + email + sms)**, 5
+transactional emails, **the `engagement_events` backbone + verifier + capture +
+partners**, and **(Engine 6 core) the automations rules engine with a condition layer,
+saved-segment broadcasts, and the dead-letter operator surface** (see below).
+`sendInviteEmail` is defined but never called (circle invites make a link but don't email
+it — a quick win).
+
+**Engine 6 core (GE6-1/2/3, shipped):**
+- **Automations rules engine** (`lib/automations.ts`): a subscriber on the event backbone.
+  Each rule is `trigger_event → conditions → action`. The **condition layer** (`eq`/`neq`/
+  `exists`/`absent`/`gt`/`lt` over the event's `context` jsonb, dot-paths supported) lives
+  inside `action_config.conditions` (migration-free) and is a pure, exhaustively-tested
+  gate (`evaluateConditions`); no conditions = always fire (back-compatible). Actions
+  `email_actor` (through `resolveSendGate`) and `push_actor` (through the outbox) both enqueue,
+  never send inline. Admin editor at `/admin/marketing/automations` (create / edit / delete /
+  toggle), each mutation re-gated to marketing staff server-side.
+- **Segment broadcasts** (`/admin/marketing/campaigns`): compose to a saved `segments`
+  audience (`seg:<slug>`) or a built-in audience, with a pre-send **audience-size preview**
+  (`previewBroadcast`). Each recipient routes through the **unified `resolveSendGate`**
+  (suppression + consent + preference), then the outbox.
+- **DLQ hardening** (`/admin/marketing/deliverability`): pending backlog + dead-letters by
+  kind + one-tap requeue.
+
+**Deferred (Engine 6, follow-on):** GE6-4 Vera agent autonomy graduation + circuit breaker
+(rules still operator-authored; the autonomy grade/approval-flag gate is unbuilt), and GE6-5
+React-Email component templates + the marketing/transactional sending-subdomain split.
 
 **Design-only (this doc):** `practice.verified` + WAM instrumentation, the
 notification router/registry, email-on-the-queue, Resend webhooks + `email_events` +

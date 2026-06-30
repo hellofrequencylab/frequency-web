@@ -13,7 +13,7 @@ export default async function CampaignsPage() {
     <AdminTemplate
       eyebrow="Marketing"
       title="Campaigns"
-      description="Broadcast emails to a contact segment. Every send goes through the queue, skips unsubscribed and suppressed addresses, and includes a one-click unsubscribe."
+      description="Broadcast an email to a saved segment or a built-in audience. Preview the audience size first. Every send goes through the queue and the unified send-gate (consent, preference, and suppression), and carries a one-click unsubscribe."
       width="wide"
     >
       <AdminSection title="Compose">

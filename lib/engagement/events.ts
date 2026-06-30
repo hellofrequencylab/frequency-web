@@ -78,7 +78,9 @@ export async function recordEngagementEvent(
   // failure never breaks event recording.
   if (recorded) {
     try {
-      await runAutomationsForEvent(eventType, actorProfileId)
+      // Pass the event's context so a rule's conditions can match on it (and the
+      // source, so a rule can gate on where the event came from).
+      await runAutomationsForEvent(eventType, actorProfileId, { source, ...(context ?? {}) })
     } catch (err) {
       console.error('[automations] evaluation failed:', err)
     }

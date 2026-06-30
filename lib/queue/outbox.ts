@@ -144,6 +144,80 @@ export async function processQueue(
   return { processed: list.length, done, failed, retried }
 }
 
+/** A dead-lettered job, as the operator DLQ surface shows it. */
+export interface DeadLetteredJob {
+  id: string
+  kind: string
+  attempts: number
+  maxAttempts: number
+  lastError: string | null
+  updatedAt: string
+}
+
+/** Group of dead-letters per kind — the at-a-glance health summary. */
+export interface DeadLetterSummary {
+  kind: string
+  count: number
+}
+
+/**
+ * The most recent dead-lettered jobs (newest first), for the operator recovery view.
+ * Read-only; recovery happens through requeueDeadLettered (gated in the server action).
+ */
+export async function listDeadLettered(limit = 100): Promise<DeadLetteredJob[]> {
+  const { data, error } = await db()
+    .from('notification_queue')
+    .select('id, kind, attempts, max_attempts, last_error, updated_at')
+    .eq('status', DEAD_LETTER_STATUS)
+    .order('updated_at', { ascending: false })
+    .limit(limit)
+  if (error) {
+    console.error(`[outbox] listDeadLettered failed: ${error.message}`)
+    return []
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    kind: r.kind as string,
+    attempts: (r.attempts as number) ?? 0,
+    maxAttempts: (r.max_attempts as number) ?? 0,
+    lastError: (r.last_error as string | null) ?? null,
+    updatedAt: r.updated_at as string,
+  }))
+}
+
+/** Dead-letter counts grouped by job kind — the summary row on the health surface. */
+export async function summarizeDeadLettered(): Promise<DeadLetterSummary[]> {
+  const { data, error } = await db()
+    .from('notification_queue')
+    .select('kind')
+    .eq('status', DEAD_LETTER_STATUS)
+  if (error) {
+    console.error(`[outbox] summarizeDeadLettered failed: ${error.message}`)
+    return []
+  }
+  const counts = new Map<string, number>()
+  for (const r of data ?? []) {
+    const k = r.kind as string
+    counts.set(k, (counts.get(k) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .map(([kind, count]) => ({ kind, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+/** Count pending (not-yet-drained) jobs — the live backlog signal beside the DLQ. */
+export async function countPending(): Promise<number> {
+  const { count, error } = await db()
+    .from('notification_queue')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
+  if (error) {
+    console.error(`[outbox] countPending failed: ${error.message}`)
+    return 0
+  }
+  return count ?? 0
+}
+
 /** Count dead-lettered jobs (optionally for one kind) — a health/alerting signal. */
 export async function countDeadLettered(kind?: string): Promise<number> {
   let query = db()

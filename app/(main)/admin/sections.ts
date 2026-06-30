@@ -310,6 +310,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/admin/marketing/beta', label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Audience' },
       // ── Analytics ──
       { href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', Icon: PieChart, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
+      { href: '/admin/marketing/deliverability', label: 'Deliverability', desc: 'Outbox health and the dead-letter queue, with one-tap recovery.', Icon: Activity, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
       { href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', Icon: Telescope, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
       // ── AI operator ──
       { href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', Icon: Bot, min: 'host', staffDomain: 'marketing', section: 'AI operator' },
