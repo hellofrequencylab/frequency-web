@@ -274,6 +274,69 @@ export type Database = {
           },
         ]
       }
+      applications: {
+        Row: {
+          answers: Json
+          applicant_email: string | null
+          applicant_name: string | null
+          applicant_profile_id: string | null
+          created_at: string
+          decided_at: string | null
+          decision_reason: string | null
+          handoff: Json | null
+          id: string
+          reviewed_by: string | null
+          status: string
+          track: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          applicant_email?: string | null
+          applicant_name?: string | null
+          applicant_profile_id?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          handoff?: Json | null
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          track: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          applicant_email?: string | null
+          applicant_name?: string | null
+          applicant_profile_id?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decision_reason?: string | null
+          handoff?: Json | null
+          id?: string
+          reviewed_by?: string | null
+          status?: string
+          track?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_applicant_profile_id_fkey"
+            columns: ["applicant_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       area_permissions: {
         Row: {
           area_key: string
@@ -1004,7 +1067,6 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           featured_at?: string | null
-          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -1033,7 +1095,6 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           featured_at?: string | null
-          gallery_image_paths?: string[]
           geog?: unknown
           host_id?: string | null
           hub_id?: string | null
@@ -3290,6 +3351,9 @@ export type Database = {
       events: {
         Row: {
           attendance_mode: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           capacity: number | null
           category: string
           city: string | null
@@ -3328,7 +3392,9 @@ export type Database = {
           region: string | null
           removed_at: string | null
           removed_reason: string | null
+          scope_circle_id: string | null
           scope_id: string
+          scope_region_id: string | null
           scope_type: string
           slug: string
           source: string
@@ -3343,6 +3409,9 @@ export type Database = {
         }
         Insert: {
           attendance_mode?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           capacity?: number | null
           category?: string
           city?: string | null
@@ -3381,7 +3450,9 @@ export type Database = {
           region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          scope_circle_id?: string | null
           scope_id: string
+          scope_region_id?: string | null
           scope_type: string
           slug: string
           source?: string
@@ -3396,6 +3467,9 @@ export type Database = {
         }
         Update: {
           attendance_mode?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           capacity?: number | null
           category?: string
           city?: string | null
@@ -3434,7 +3508,9 @@ export type Database = {
           region?: string | null
           removed_at?: string | null
           removed_reason?: string | null
+          scope_circle_id?: string | null
           scope_id?: string
+          scope_region_id?: string | null
           scope_type?: string
           slug?: string
           source?: string
@@ -3448,6 +3524,13 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_domain_id_fkey"
             columns: ["domain_id"]
@@ -3474,6 +3557,20 @@ export type Database = {
             columns: ["posted_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_scope_circle_id_fkey"
+            columns: ["scope_circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_scope_region_id_fkey"
+            columns: ["scope_region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_regions"
             referencedColumns: ["id"]
           },
           {
@@ -3636,6 +3733,142 @@ export type Database = {
           {
             foreignKeyName: "friendships_user_b_id_fkey"
             columns: ["user_b_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnel_stage_links: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json
+          ref_id: string | null
+          ref_key: string | null
+          ref_type: string
+          stage_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          ref_id?: string | null
+          ref_key?: string | null
+          ref_type: string
+          stage_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json
+          ref_id?: string | null
+          ref_key?: string | null
+          ref_type?: string
+          stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_stage_links_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "funnel_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnel_stages: {
+        Row: {
+          created_at: string
+          funnel_id: string
+          id: string
+          kind: string
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          funnel_id: string
+          id?: string
+          kind: string
+          label: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          kind?: string
+          label?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_stages_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          goal_event: string
+          id: string
+          name: string
+          owner_profile_id: string | null
+          persona: string | null
+          slug: string
+          status: string
+          template_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          goal_event?: string
+          id?: string
+          name: string
+          owner_profile_id?: string | null
+          persona?: string | null
+          slug: string
+          status?: string
+          template_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          goal_event?: string
+          id?: string
+          name?: string
+          owner_profile_id?: string | null
+          persona?: string | null
+          slug?: string
+          status?: string
+          template_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funnels_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -4878,6 +5111,41 @@ export type Database = {
             foreignKeyName: "marketplace_reports_reporter_id_fkey"
             columns: ["reporter_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_match_prefs: {
+        Row: {
+          astrology_opt_in: boolean
+          birth_data: Json | null
+          connect_intent: string[]
+          profile_id: string
+          romance_mode: boolean
+          updated_at: string
+        }
+        Insert: {
+          astrology_opt_in?: boolean
+          birth_data?: Json | null
+          connect_intent?: string[]
+          profile_id: string
+          romance_mode?: boolean
+          updated_at?: string
+        }
+        Update: {
+          astrology_opt_in?: boolean
+          birth_data?: Json | null
+          connect_intent?: string[]
+          profile_id?: string
+          romance_mode?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_match_prefs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6878,7 +7146,10 @@ export type Database = {
           post_type: Database["public"]["Enums"]["post_type"] | null
           reaction_count: number
           reply_count: number
+          scope_circle_id: string | null
+          scope_event_id: string | null
           scope_id: string | null
+          scope_profile_id: string | null
           updated_at: string | null
           visibility: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -6899,7 +7170,10 @@ export type Database = {
           post_type?: Database["public"]["Enums"]["post_type"] | null
           reaction_count?: number
           reply_count?: number
+          scope_circle_id?: string | null
+          scope_event_id?: string | null
           scope_id?: string | null
+          scope_profile_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -6920,7 +7194,10 @@ export type Database = {
           post_type?: Database["public"]["Enums"]["post_type"] | null
           reaction_count?: number
           reply_count?: number
+          scope_circle_id?: string | null
+          scope_event_id?: string | null
           scope_id?: string | null
+          scope_profile_id?: string | null
           updated_at?: string | null
           visibility?: Database["public"]["Enums"]["post_visibility"] | null
         }
@@ -6944,6 +7221,27 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_circle_id_fkey"
+            columns: ["scope_circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_event_id_fkey"
+            columns: ["scope_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_scope_profile_id_fkey"
+            columns: ["scope_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -7067,6 +7365,39 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_slug_redirects: {
+        Row: {
+          created_at: string
+          old_slug: string
+          practice_id: string
+        }
+        Insert: {
+          created_at?: string
+          old_slug: string
+          practice_id: string
+        }
+        Update: {
+          created_at?: string
+          old_slug?: string
+          practice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_slug_redirects_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_slug_redirects_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
             referencedColumns: ["id"]
           },
         ]
@@ -7230,14 +7561,20 @@ export type Database = {
           is_demo: boolean
           is_public: boolean
           is_template: boolean
+          merged_into: string | null
           mindless_mode:
             | Database["public"]["Enums"]["practice_mindless_mode"]
             | null
           movement_config: Json | null
+          primary_pct: number
+          remixed_from: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           reward_note: string | null
           reward_zaps: number | null
+          root_practice_id: string | null
+          search_vector: unknown
+          secondary_domain_id: string | null
           slug: string | null
           space_id: string | null
           status: string
@@ -7245,6 +7582,7 @@ export type Database = {
           summary: string | null
           timer_kind: Database["public"]["Enums"]["practice_timer_kind"]
           title: string
+          updated_at: string
           uses_timer: boolean | null
           weight_class: string
         }
@@ -7267,14 +7605,20 @@ export type Database = {
           is_demo?: boolean
           is_public?: boolean
           is_template?: boolean
+          merged_into?: string | null
           mindless_mode?:
             | Database["public"]["Enums"]["practice_mindless_mode"]
             | null
           movement_config?: Json | null
+          primary_pct?: number
+          remixed_from?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          root_practice_id?: string | null
+          search_vector?: unknown
+          secondary_domain_id?: string | null
           slug?: string | null
           space_id?: string | null
           status?: string
@@ -7282,6 +7626,7 @@ export type Database = {
           summary?: string | null
           timer_kind?: Database["public"]["Enums"]["practice_timer_kind"]
           title: string
+          updated_at?: string
           uses_timer?: boolean | null
           weight_class?: string
         }
@@ -7304,14 +7649,20 @@ export type Database = {
           is_demo?: boolean
           is_public?: boolean
           is_template?: boolean
+          merged_into?: string | null
           mindless_mode?:
             | Database["public"]["Enums"]["practice_mindless_mode"]
             | null
           movement_config?: Json | null
+          primary_pct?: number
+          remixed_from?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           reward_note?: string | null
           reward_zaps?: number | null
+          root_practice_id?: string | null
+          search_vector?: unknown
+          secondary_domain_id?: string | null
           slug?: string | null
           space_id?: string | null
           status?: string
@@ -7319,6 +7670,7 @@ export type Database = {
           summary?: string | null
           timer_kind?: Database["public"]["Enums"]["practice_timer_kind"]
           title?: string
+          updated_at?: string
           uses_timer?: boolean | null
           weight_class?: string
         }
@@ -7338,10 +7690,59 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "practices_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_merged_into_fkey"
+            columns: ["merged_into"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_remixed_from_fkey"
+            columns: ["remixed_from"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_remixed_from_fkey"
+            columns: ["remixed_from"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "practices_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_root_practice_id_fkey"
+            columns: ["root_practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_root_practice_id_fkey"
+            columns: ["root_practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_secondary_domain_id_fkey"
+            columns: ["secondary_domain_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -7572,6 +7973,7 @@ export type Database = {
           location_mode: string
           locked_price_id: string | null
           longest_streak: number
+          meetup_safety_ack_at: string | null
           membership_payment_status: string | null
           membership_tier: string
           meta: Json | null
@@ -7592,6 +7994,8 @@ export type Database = {
           suspended_until: string | null
           updated_at: string | null
           vcard: Json
+          verification_method: string | null
+          verified_at: string | null
           web_role: string
           website: string | null
         }
@@ -7646,6 +8050,7 @@ export type Database = {
           location_mode?: string
           locked_price_id?: string | null
           longest_streak?: number
+          meetup_safety_ack_at?: string | null
           membership_payment_status?: string | null
           membership_tier?: string
           meta?: Json | null
@@ -7666,6 +8071,8 @@ export type Database = {
           suspended_until?: string | null
           updated_at?: string | null
           vcard?: Json
+          verification_method?: string | null
+          verified_at?: string | null
           web_role?: string
           website?: string | null
         }
@@ -7720,6 +8127,7 @@ export type Database = {
           location_mode?: string
           locked_price_id?: string | null
           longest_streak?: number
+          meetup_safety_ack_at?: string | null
           membership_payment_status?: string | null
           membership_tier?: string
           meta?: Json | null
@@ -7740,6 +8148,8 @@ export type Database = {
           suspended_until?: string | null
           updated_at?: string | null
           vcard?: Json
+          verification_method?: string | null
+          verified_at?: string | null
           web_role?: string
           website?: string | null
         }
@@ -8261,6 +8671,50 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resonance_density_cells: {
+        Row: {
+          active_members: number
+          computed_at: string
+          density_score: number
+          geocell_lat: number
+          geocell_lng: number
+          nexus_region_id: string | null
+          recent_circles: number
+          recent_events: number
+          recent_posts: number
+        }
+        Insert: {
+          active_members?: number
+          computed_at?: string
+          density_score?: number
+          geocell_lat: number
+          geocell_lng: number
+          nexus_region_id?: string | null
+          recent_circles?: number
+          recent_events?: number
+          recent_posts?: number
+        }
+        Update: {
+          active_members?: number
+          computed_at?: string
+          density_score?: number
+          geocell_lat?: number
+          geocell_lng?: number
+          nexus_region_id?: string | null
+          recent_circles?: number
+          recent_events?: number
+          recent_posts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resonance_density_cells_nexus_region_id_fkey"
+            columns: ["nexus_region_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_regions"
             referencedColumns: ["id"]
           },
         ]
@@ -9593,6 +10047,45 @@ export type Database = {
         }
         Relationships: []
       }
+      spotlight_top_friends: {
+        Row: {
+          created_at: string
+          friend_profile_id: string
+          id: string
+          owner_profile_id: string
+          position: number
+        }
+        Insert: {
+          created_at?: string
+          friend_profile_id: string
+          id?: string
+          owner_profile_id: string
+          position?: number
+        }
+        Update: {
+          created_at?: string
+          friend_profile_id?: string
+          id?: string
+          owner_profile_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spotlight_top_friends_friend_profile_id_fkey"
+            columns: ["friend_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spotlight_top_friends_owner_profile_id_fkey"
+            columns: ["owner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stewardships: {
         Row: {
           created_at: string
@@ -9824,6 +10317,42 @@ export type Database = {
           {
             foreignKeyName: "studio_site_changes_actor_id_fkey"
             columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suggestion_hidden: {
+        Row: {
+          created_at: string
+          hidden_profile_id: string
+          profile_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          hidden_profile_id: string
+          profile_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          hidden_profile_id?: string
+          profile_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_hidden_hidden_profile_id_fkey"
+            columns: ["hidden_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suggestion_hidden_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -10389,6 +10918,72 @@ export type Database = {
           },
         ]
       }
+      waitlist_entries: {
+        Row: {
+          cohort: string | null
+          converted_at: string | null
+          created_at: string
+          email: string | null
+          id: string
+          invited_at: string | null
+          locality: string | null
+          name: string | null
+          position: number | null
+          profile_id: string | null
+          referred_by_profile_id: string | null
+          status: string
+          track: string
+          updated_at: string
+        }
+        Insert: {
+          cohort?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_at?: string | null
+          locality?: string | null
+          name?: string | null
+          position?: number | null
+          profile_id?: string | null
+          referred_by_profile_id?: string | null
+          status?: string
+          track?: string
+          updated_at?: string
+        }
+        Update: {
+          cohort?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_at?: string | null
+          locality?: string | null
+          name?: string | null
+          position?: number | null
+          profile_id?: string | null
+          referred_by_profile_id?: string | null
+          status?: string
+          track?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_entries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_entries_referred_by_profile_id_fkey"
+            columns: ["referred_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       walkthrough: {
         Row: {
           active: boolean
@@ -10643,11 +11238,15 @@ export type Database = {
           is_template: boolean | null
           logs_30d: number | null
           logs_total: number | null
+          primary_pct: number | null
+          remixed_from: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           reward_note: string | null
           reward_zaps: number | null
+          root_practice_id: string | null
           score: number | null
+          secondary_domain_id: string | null
           status: string | null
           subcategory_id: string | null
           summary: string | null
@@ -10671,10 +11270,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "practices_remixed_from_fkey"
+            columns: ["remixed_from"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_remixed_from_fkey"
+            columns: ["remixed_from"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "practices_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_root_practice_id_fkey"
+            columns: ["root_practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_root_practice_id_fkey"
+            columns: ["root_practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practices_secondary_domain_id_fkey"
+            columns: ["secondary_domain_id"]
+            isOneToOne: false
+            referencedRelation: "pillars"
             referencedColumns: ["id"]
           },
           {
@@ -10866,6 +11500,10 @@ export type Database = {
           type: string
         }[]
       }
+      claim_season_certificate: {
+        Args: { p_profile_id: string; p_season: number }
+        Returns: boolean
+      }
       community_library: {
         Args: { _limit?: number; _pillar?: string; _type?: string }
         Returns: {
@@ -11024,6 +11662,10 @@ export type Database = {
           match_on: string
           profile_id: string
         }[]
+      }
+      funnel_rollup: {
+        Args: { p_days?: number; p_funnel_id: string }
+        Returns: Json
       }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
@@ -11273,6 +11915,11 @@ export type Database = {
           profile_id: string
         }[]
       }
+      merge_practices: {
+        Args: { from_id: string; to_id: string }
+        Returns: Json
+      }
+      merge_tags: { Args: { from_id: string; into_id: string }; Returns: Json }
       message_peer_profiles: {
         Args: never
         Returns: {
@@ -11469,6 +12116,14 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      practice_admin_facets: {
+        Args: { include_hidden?: boolean }
+        Returns: {
+          cnt: number
+          facet: string
+          key: string
+        }[]
+      }
       profile_zap_total: { Args: { _profile: string }; Returns: number }
       public_active_circle_count: { Args: never; Returns: number }
       public_circle_by_id: {
@@ -11619,6 +12274,7 @@ export type Database = {
         Returns: string
       }
       refresh_member_engagement_scores: { Args: never; Returns: undefined }
+      refresh_resonance_density_cells: { Args: never; Returns: number }
       relationship_timeline: {
         Args: { _limit?: number; _other: string }
         Returns: {
@@ -11661,6 +12317,21 @@ export type Database = {
           display_name: string
           handle: string
           id: string
+        }[]
+      }
+      search_practices_hybrid: {
+        Args: {
+          include_hidden?: boolean
+          match_limit?: number
+          query_embedding?: string
+          query_text?: string
+          rrf_k?: number
+        }
+        Returns: {
+          fts_rank: number
+          id: string
+          rrf_score: number
+          vec_rank: number
         }[]
       }
       set_event_geog: {

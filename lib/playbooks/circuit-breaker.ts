@@ -99,7 +99,7 @@ const RECENT_WINDOW_DAYS = 14
 /** How many days BEFORE the recent window make up the learned-baseline window. */
 const BASELINE_WINDOW_DAYS = 60
 
-type RunRow = { playbook_id: string; status: string; created_at: string }
+type RunRow = { playbook_id: string; status: string; started_at: string }
 
 /** Tally the recent + baseline windows per playbook from raw run rows + compute the paused set. PURE
  *  (no IO): the read side feeds it rows, so the windowing + threshold logic is unit-testable. */
@@ -116,7 +116,7 @@ export function pausedFromRuns(rows: RunRow[], now: number): Set<string> {
   }
   for (const r of rows) {
     if (!r.playbook_id) continue
-    if (r.created_at >= recentSince) bump(recent, r.playbook_id, r.status)
+    if (r.started_at >= recentSince) bump(recent, r.playbook_id, r.status)
     else bump(baseline, r.playbook_id, r.status)
   }
   const paused = new Set<string>()
@@ -144,7 +144,7 @@ async function getPausedPlaybooksOrThrow(opts: { spaceId?: string | null; now?: 
     }
   }
   // One read over the whole baseline window (it contains the recent window); split client-side.
-  const base = admin.from('playbook_runs').select('playbook_id, status, created_at').gte('created_at', baselineSince)
+  const base = admin.from('playbook_runs').select('playbook_id, status, started_at').gte('started_at', baselineSince)
   const { data, error } = opts.spaceId
     ? await base.eq('space_id', opts.spaceId)
     : await (base as unknown as Promise<{ data: RunRow[] | null; error: unknown }>)
