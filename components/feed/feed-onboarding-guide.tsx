@@ -81,6 +81,9 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   ) : null
 
   // ── Minimized: a slim, un-removable blue bar ──────────────────────────────
+  // It still carries the one thing a minimized member needs — what to do next — so
+  // collapsing the guide never costs them the thread. The next step's label tucks in
+  // after the count and hides on narrow viewports (where the bar is tightest).
   if (minimized) {
     return (
       <>
@@ -88,13 +91,16 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         <button
           type="button"
           onClick={toggle}
-          aria-label="Expand getting-started"
+          aria-label={`Expand getting-started — next: ${current.label}`}
           className="mb-6 flex w-full items-center gap-3 rounded-xl border border-broadcast-bg bg-broadcast-bg/50 px-4 py-2.5 text-left transition-colors hover:bg-broadcast-bg/70 dark:bg-broadcast-bg/30"
         >
           <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
-          <span className="text-sm font-semibold text-text">Getting set up</span>
-          <span className="text-xs font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
-          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
+          <span className="shrink-0 text-sm font-semibold text-text">Getting set up</span>
+          <span className="shrink-0 text-xs font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
+          <span className="hidden min-w-0 flex-1 truncate text-xs font-medium text-broadcast-strong/90 sm:block">
+            Next: {current.label}
+          </span>
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg sm:hidden">
             <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
           </span>
           <ChevronDown className="h-4 w-4 shrink-0 -rotate-90 text-broadcast-strong" />
