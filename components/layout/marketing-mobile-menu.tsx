@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
 import { SITE_NAV, DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
@@ -11,6 +11,9 @@ import { SITE_NAV, DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/sit
 // full-width sheet with the full splash nav + Discover links + sign-in/join.
 export function MarketingMobileMenu({ light }: { light: boolean }) {
   const [open, setOpen] = useState(false)
+  const titleId = useId()
+  const openButtonRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -19,18 +22,26 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
     }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
+    // Move focus into the sheet so keyboard/screen-reader users land on the
+    // dialog rather than being left behind on the (now-hidden) page.
+    closeButtonRef.current?.focus()
+    const trigger = openButtonRef.current
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
+      // Return focus to the trigger when the sheet closes.
+      trigger?.focus()
     }
   }, [open])
 
   return (
     <div className="md:hidden">
       <button
+        ref={openButtonRef}
         type="button"
         aria-label="Open menu"
         aria-expanded={open}
+        aria-haspopup="dialog"
         onClick={() => setOpen(true)}
         className={`rounded-lg p-2 transition-colors ${
           light ? 'text-text hover:bg-surface-elevated' : 'text-white hover:bg-white/10'
@@ -51,12 +62,21 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
               base) or the "Menu" label + Close button get clipped. Cap height + scroll so a
               long nav never runs off the bottom past the home indicator. */}
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             className="absolute inset-x-0 top-0 max-h-[100dvh] overflow-y-auto rounded-b-2xl bg-surface px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-pop px-safe"
             style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-2xs font-bold uppercase tracking-wider text-subtle">Menu</span>
+              <span
+                id={titleId}
+                className="text-2xs font-bold uppercase tracking-wider text-subtle"
+              >
+                Menu
+              </span>
               <button
+                ref={closeButtonRef}
                 type="button"
                 aria-label="Close menu"
                 onClick={() => setOpen(false)}
