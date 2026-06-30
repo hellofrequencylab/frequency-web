@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
@@ -76,11 +77,12 @@ export default async function SpaceCheckinPage({
         eyebrow={brandName}
         title="Check in"
         description="The door check-in for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Check in"
           reason={spaceFunctionAccess(space, 'checkin', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -104,7 +106,7 @@ export default async function SpaceCheckinPage({
       eyebrow={brandName}
       title="Check in"
       description="Print this code at your door. Each scan records a check-in, and everyone who checks in shows on the roster below."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

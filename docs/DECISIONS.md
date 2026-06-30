@@ -9372,3 +9372,39 @@ PersonCard grid.
   slice; this owns the Space People module only (practitioner + organization priority).
 - Stays clear of the parallel admin-lifecycle PR: this owns `lib/spaces/membership.ts` roster/role
   helpers and does not touch `app/(main)/admin/spaces`.
+
+## ADR-453: Spaces harmonization (EM1-3) — retire the 7-tab as a destination via a gated redirect, keep its sub-pages
+
+**Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/settings/page.tsx` (the redirect),
+`lib/spaces/types.ts` (`spaceManageHref`), and `app/(main)/spaces/[slug]/manage/page.tsx` (the console).
+
+**Context.** EM1-3 (ADR-441, the Entity Management Overhaul track) and its carried open decision #2
+asked: now that the unified `/spaces/<slug>/manage` console exists (#1293), do we fully retire the
+bespoke 7-tab `/spaces/<slug>/settings` hub, or keep it as a thin compatibility wrapper? The console
+serves only `practitioner` + `organization` today; for every other Space type it `notFound()`s, so a
+blanket retirement would strand `business` / `event_space` / `lab` / `partner` owners with no hub. The
+settings SUB-pages (availability, members, donations, qr, email, billing, features, crm, …) are the
+console's own section targets, so they cannot be deleted either.
+
+**Decision.** A SPLIT, gated by Space type, not a single answer:
+- For the CONSOLE types (`practitioner` + `organization`), the legacy `/settings` INDEX becomes a thin
+  REDIRECT to `/manage`. The redirect runs AFTER the same `resolveSpaceManageAccess` gate the page
+  already ran, so a non-manager still `notFound()`s before it and the redirect never reveals the route.
+  The now-unreachable practitioner (availability) and organization (donations) hub-card branches were
+  removed from the legacy index.
+- For every OTHER type, `/settings` stays the working hub unchanged (the console is not offered for
+  them yet, so there is nothing to redirect to).
+- Every settings sub-page is KEPT and untouched as the console's section targets (no feature loss).
+- The one management-entry rule lives in `spaceManageHref(type, slug)` (`lib/spaces/types.ts`): console
+  types route to `/manage`, all others to `/settings`. Every "Manage" affordance routes through it: the
+  space profile header button, the `listManagedSpaces` launcher deep link, the entity getting-started /
+  empty CTAs, the CRM back link + locked-state CTA, the `FeatureLockedNotice` back link, the admin Spaces
+  list "Edit profile" + the admin per-Space "Manage hub" preview, and the janitor view-as-Space preview.
+
+**Consequences.**
+- No schema or migration change; this is routing + navigation only.
+- The legacy `/settings` route file is retired as a DESTINATION for the console types but kept on disk
+  (it still serves the other types and hosts the sub-pages). When the console grows to cover the rest,
+  flip `CONSOLE_SPACE_TYPES` in `lib/spaces/types.ts` (kept in lockstep with the `manage/page.tsx` gate).
+- `spaceManageHref` is unit-tested (`lib/spaces/types.test.ts`); `managed.test.ts` covers both a console
+  type and a non-console type.

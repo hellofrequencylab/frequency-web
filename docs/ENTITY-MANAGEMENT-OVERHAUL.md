@@ -167,7 +167,7 @@ is specified three layers deep (L1 catalog · L2 owner console · L3 in-page).
 |---|---|---|
 | **EM1-1** | **Entity registry** — each entity declares its manageable surfaces against the 9-category spine + capability gate per surface; one source of truth feeding L1/L2/L3. **✅ shipped** (`lib/admin/entities/registry.ts` — `surfacesFor(entity, viewerCaps)`, spine-ordered; circle Basics + Danger declared). | L1 |
 | **EM1-2** | **Entity-scoped owner console** — the shared `/{entity}/[id]/manage` Dashboard-template suite, gated by `resolveCapabilities`, identical pattern for host/guide/mentor/owner. | L2 — **🟡 first slice shipped:** `/circles/[slug]/manage` (RSC, gated on `circle.editSettings`, DashboardTemplate + registry-driven sections, rail `none`). Remaining entities (hub/nexus/event/practice/space) + People role-ladder land as follow-on slices. |
-| **EM1-3** | **Harmonize Spaces** onto the framework — wrap/retire the bespoke 7-tab so spaces use the same spine + module registry; no feature loss. | L2 + L3 |
+| **EM1-3** | **Harmonize Spaces** onto the framework — wrap/retire the bespoke 7-tab so spaces use the same spine + module registry; no feature loss. **✅ shipped:** the unified `/spaces/<slug>/manage` console (#1293) serves `practitioner` + `organization`, and the legacy `/spaces/<slug>/settings` index now REDIRECTS those two types to it (after the same `resolveSpaceManageAccess` gate, so a non-manager still 404s and the route never leaks). Every settings sub-page stays in place as the console's section targets; the other types (business / event_space / lab / partner) have no console yet so they keep the legacy hub unchanged. One management-entry rule lives in `spaceManageHref()` (ADR-453). | L2 + L3 |
 | **EM1-4** | **Wire Hub/Nexus edit mode** into the PageAdminDock (currently unwired); bring them to circle/event parity. | L3 |
 | **EM1-5** | **Per-entity member-role ladder** — give every entity a role ladder + assignment (today circles are binary host/non-host; spaces have 4 rungs); unify the model. | L2 (People) |
 | **EM1-6** | **Platform oversight spine** — uniform lifecycle (active/suspended/archived) + ownership transfer + entitlement override for every entity type. | L1 + L2 |
@@ -235,7 +235,11 @@ owner and admin alike.
 1. **Owner console route shape** — `/{entity}/[id]/manage` (recommended) vs. an expanded dock-only
    model. Decide at EM1-2.
 2. **Spaces harmonization depth** — fully retire the 7-tab vs. keep it as a thin compatibility
-   wrapper over the shared spine. Decide at EM1-3.
+   wrapper over the shared spine. **Resolved (ADR-453):** a SPLIT, not a single answer. For the types
+   the console serves (`practitioner` + `organization`) the legacy `/settings` index becomes a thin
+   REDIRECT to `/manage` (retired as a destination, not as a route file); for the types the console
+   does not serve yet it stays the working hub. The settings SUB-pages are kept everywhere as the
+   console's section targets, so no feature is lost.
 3. **Per-entity role vocabulary** — confirm the member-role ladder names per entity (NAMING.md must
    bless any member-facing terms). Decide at EM1-5.
 4. **`/lead` vs `/admin` boundary** — exactly which downline actions live in `/lead` for

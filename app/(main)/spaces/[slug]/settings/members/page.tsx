@@ -3,6 +3,7 @@ import { Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceMembers, type SpaceRole, type SpaceMemberStatus } from '@/lib/spaces/membership'
@@ -86,11 +87,12 @@ export default async function SpaceMembersPage({
         eyebrow={brandName}
         title="Members"
         description="The team for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Members"
           reason={spaceFunctionAccess(space, 'members', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -162,7 +164,7 @@ export default async function SpaceMembersPage({
       eyebrow={brandName}
       title="Members"
       description="Who is on your team, and the role each one holds. Invite a teammate by email below, then share their link until email delivery ships."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
