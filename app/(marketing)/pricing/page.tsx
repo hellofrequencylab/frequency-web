@@ -1,514 +1,392 @@
 import type { Metadata } from 'next'
-import {
-  ArrowRight,
-  Check,
-  MessageSquare,
-  CalendarDays,
-  Users,
-  Star,
-  Radio,
-  BarChart3,
-  Sparkles,
-  HeartHandshake,
-  Award,
-  ShieldCheck,
-} from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { ArrowRight, Check } from 'lucide-react'
 import {
   PhotoHero,
   Section,
   SectionHeading,
-  ZigZag,
   Statement,
   BetaCTA,
   FaqList,
   Button,
-  Card,
 } from '@/components/marketing/marketing-ui'
-import { config } from '@/lib/page-editor/config'
-import { getPublishedData } from '@/lib/page-editor/data'
-import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { getLiveData } from '@/lib/page-editor/live-data'
-import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema, faqSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, faqSchema, productSchema } from '@/lib/jsonld'
+import { PricingBillingToggle } from '@/components/marketing/pricing-billing-toggle'
+import {
+  pricingTiers,
+  tierHeadline,
+  tierListAnchor,
+  loadoutStrip,
+  PRICING_ADDONS,
+  MISSION_FRAMING,
+  CREW_NOTE,
+  type PricingTier,
+} from '@/lib/pricing/pricing-page'
+import type { BillingInterval } from '@/lib/billing/pricing-keys'
 
+// FAST: the commercial pricing page is STATIC (revalidate is a courtesy for the rare catalog-config
+// edit; the page itself reads only the CODE catalog defaults via lib/pricing/pricing-page, so there are
+// ZERO per-request DB billing reads). The monthly/yearly toggle is the only client island; both
+// intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: 'Pricing',
+  title: 'Pricing for Spaces',
   description:
-    'Being a Frequency Member is free, forever: browse Circles and Events, attend gatherings, earn Zaps, and meet Vera. Paid Crew and Supporter plans, plus Space plans for practitioners and businesses, add more. No card today, leave anytime.',
+    'Frequency Spaces run on one Pro plan with four add-ons you turn on as you need them. Pro is $19 a month at the founding price, with Nonprofit and Organization tiers. List anchor over a founding price, monthly or yearly.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: free to be a Member, forever',
+    title: 'Frequency pricing: one Pro plan, four add-ons',
     description:
-      'Member is free, forever. Crew and Supporter add the full community and the full game. Space plans for practitioners, businesses, and organizations. No card today, leave anytime.',
+      'One Pro plan plus four add-ons (Marketing, AI Engine, Team, Branding). Founding price under a list anchor, monthly or yearly, with Nonprofit and Organization tiers.',
     url: '/pricing',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Frequency pricing: one Pro plan, four add-ons',
+    description:
+      'One Pro plan plus four add-ons. Founding price under a list anchor, monthly or yearly, with Nonprofit and Organization tiers.',
   },
 }
 
-export default async function PricingPage() {
-  // Prefer the operator-published document; otherwise render the git template so the new
-  // normal-pricing content is LIVE without a DB publish. The hardcoded LegacyPricing is a
-  // last-resort fallback only (kept, no longer the default renderer).
-  const published = await getPublishedData('pricing')
-  const template = getTemplate('pricing')
-  const data = isRenderable(published)
-    ? published
-    : isRenderable(template)
-      ? template
-      : null
-  const live = data ? await getLiveData(createAdminClient()).catch(() => null) : null
+// The answer-first FAQ, mirrored into the FAQPage schema so the structured data matches the page.
+const PRICING_FAQ: { q: string; a: string }[] = [
+  {
+    q: 'How does Frequency pricing work?',
+    a: 'Every Space runs on one Pro plan at $19 a month, the founding price, under a $29 list anchor. On top of the Pro core you turn on four add-ons as you need them: Marketing for $20, AI Engine for $20, Team for $9 a seat, and Branding for $30. Nonprofit and Organization are separate tiers that include all four add-ons.',
+  },
+  {
+    q: 'What is the founding price?',
+    a: 'The founding price is the real price today. The list price sits above it as an anchor, so you can see where the price is headed. If you subscribe at the founding price, you keep it for as long as the subscription stays active, even after the list price rises.',
+  },
+  {
+    q: 'What does yearly billing save?',
+    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to lock your founding price for a full year.',
+  },
+  {
+    q: 'What is the take-rate?',
+    a: 'Pro is 5% on what you sell, Nonprofit is 3% on what you raise, and Organization is custom. The take-rate is the only fee on transactions; there is no separate per-transaction charge from Frequency on top of it.',
+  },
+  {
+    q: 'Is there a personal plan?',
+    a: 'Yes. Crew is the personal tier for individuals, at $9 a month under a $12 list price. It lives on the personal upgrade page, not on this commercial page.',
+  },
+  {
+    q: 'Where does the money go?',
+    a: MISSION_FRAMING,
+  },
+]
+
+export default function PricingPage() {
+  const tiers = pricingTiers()
+  const strip = loadoutStrip()
+
   return (
     <>
       <JsonLd
         data={[
           breadcrumbSchema([{ name: 'Pricing', path: '/pricing' }]),
-          // FAQPage built from the same Q&A the live page renders, so the schema matches
-          // what visitors read. Mirrors the FAQ in lib/page-editor/templates/pricing.ts.
           faqSchema(PRICING_FAQ),
+          // One Product/Offer per commercial tier, priced at the monthly founding amount (the real
+          // price today). Built from the same catalog the table renders, so the schema never drifts.
+          ...tiers.map((t) =>
+            productSchema({
+              title: `Frequency ${t.name}`,
+              description: t.forWho,
+              priceCents: t.price.month.foundingCents,
+              currency: 'usd',
+              path: '/pricing',
+              sellerName: 'Frequency',
+            }),
+          ),
         ]}
       />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyPricing />}
-    </>
-  )
-}
 
-// Mirrors the Accordion FAQ in lib/page-editor/templates/pricing.ts so the FAQPage
-// structured data matches the live page. Keep the two in sync.
-const PRICING_FAQ: { q: string; a: string }[] = [
-  {
-    q: 'Is being a Member really free?',
-    a: 'Yes. The Member tier is free, forever. You can browse Circles and Events, attend gatherings in person, earn Zaps, and message Vera up to 10 times a day, all without paying.',
-  },
-  {
-    q: 'What does "Coming soon" mean?',
-    a: 'It means we have built the plan and set its price, but you cannot buy it yet. We show the real numbers so you know what to expect. Nothing charges until we turn billing on and you choose a paid plan.',
-  },
-  {
-    q: 'What is the difference between Member, Crew, and Supporter?',
-    a: 'Member is the free tier. Crew adds the full community and the full game, with Gems, Vault cash-in, unlimited Vera, and the leaderboard, for $9 a month or $90 a year. Supporter adds everything in Crew plus funding a member who cannot pay yet, for $24 a month or $240 a year.',
-  },
-  {
-    q: 'What about refunds?',
-    a: 'There is nothing to refund today, since nothing is charged. When paid plans go live, we will publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.',
-  },
-  {
-    q: 'Can I buy my way into a Host or Guide role?',
-    a: 'No, and that is on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Those roles come from the community, never from a checkout page.',
-  },
-  {
-    q: 'Where does the money go?',
-    a: 'Into keeping the room open. A membership sustains the physical spaces, the lights, the insurance, the thermal circuit, and the community that gathers in them. People who pay more cover neighbors who cannot pay yet.',
-  },
-]
+      {/* The CSS that drives the monthly/yearly toggle island: hide the interval the wrapper is not on.
+          The wrapper carries data-interval; each price span carries data-interval-show. No client JS in
+          the page itself; the toggle (a client island) only flips the wrapper attribute. */}
+      <style>{`
+        [data-interval='month'] [data-interval-show='year'] { display: none; }
+        [data-interval='year'] [data-interval-show='month'] { display: none; }
+      `}</style>
 
-function LegacyPricing() {
-  return (
-    <>
       <PhotoHero
         image="/images/site/lab-lounge.jpg"
         alt="The connection bar inside The Lab, warm and low-lit"
         focal="object-center"
-        eyebrow="Membership"
+        eyebrow="Pricing for Spaces"
         title={
           <>
-            Membership that keeps
-            <br className="hidden sm:block" /> the room open.
+            One Pro plan.
+            <br className="hidden sm:block" /> Four add-ons.
           </>
         }
-        subtitle="Frequency runs on circulation, not exclusion. Your membership sustains the spaces and the people in them, so connection stays within reach for the next person who walks in."
-      />
+        subtitle="Run your business on Frequency with one plan and four add-ons you turn on as you need them. Founding price under a list anchor, monthly or yearly."
+      >
+        <Button href="/spaces">
+          Start a Space <ArrowRight className="h-5 w-5" />
+        </Button>
+      </PhotoHero>
 
-      <BetaBanner />
+      {/* Mission framing, stated plainly. */}
+      <Section tone="canvas" pad="pt-14 pb-10 sm:pt-16 sm:pb-12">
+        <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
+      </Section>
 
-      {/* The three tiers */}
-      <Section tone="surface" pad="pt-4 pb-20 sm:pb-24">
-        <div className="text-center mb-12">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-            Choose how you belong
+      {/* The pricing table: Pro / Nonprofit / Organization, with the monthly/yearly toggle island. */}
+      <Section tone="surface" pad="pt-6 pb-20 sm:pb-24">
+        <div className="mb-10 text-center">
+          <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
+            Three tiers
           </p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
-            One community. Three ways in.
+            Pick the tier that fits.
           </h2>
-          <p className="mt-4 text-xl italic text-muted max-w-2xl mx-auto">
-            Start free. Upgrade when you&apos;re ready. Give more when you can.
-          </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3 lg:gap-5 items-start max-w-none">
-          <TierCard
-            name="Member"
-            price="Free"
-            cadence="forever"
-            tagline="For the curious. Come see what's here."
-            features={[
-              'Browse circles, events, and topics near you',
-              'Discover the people and practices around you',
-              'Attend open gatherings and community events',
-              'A profile in the founding community',
-            ]}
-            cta={{ label: 'Start free', href: '/sign-in' }}
-            ctaStyle="secondary"
-          />
+        <PricingBillingToggle>
+          <PricingTable tiers={tiers} />
+        </PricingBillingToggle>
 
-          <TierCard
-            name="Crew"
-            price="$10"
-            cadence="/mo"
-            betaFree
-            founder
-            featured
-            tagline="Full access. The whole room is yours."
-            features={CREW_BENEFITS}
-            cta={{ label: BETA_CTA_LABEL, href: BETA_CTA_HREF }}
-            ctaStyle="primary"
-          />
-
-          <TierCard
-            name="Pay it forward"
-            price="$25+"
-            cadence="/mo"
-            future
-            tagline="The heart of the model. Hold the door for a neighbor."
-            features={[
-              'Everything in Crew, full access',
-              'Fund a membership for someone who can’t pay yet',
-              'Help sustain the physical spaces directly',
-              'Keep the room open for the next person',
-            ]}
-            cta={{ label: BETA_CTA_LABEL, href: BETA_CTA_HREF }}
-            ctaStyle="secondary"
-          />
-        </div>
-
-        <p className="mt-8 text-center text-sm text-subtle leading-relaxed max-w-xl mx-auto">
-          Prices show what membership will cost when paid memberships launch.
-          Right now, during beta, every feature is unlocked for everyone and no
-          card is required.
+        <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
+          The list price is the anchor; the founding price beneath it is what you pay today. Subscribe at
+          the founding price and you keep it for as long as the subscription stays active.
         </p>
       </Section>
 
-      {/* Earned, not bought */}
+      {/* "By who you are": each Mode -> its recommended loadout + monthly total, linking to its page. */}
       <Section tone="canvas">
+        <SectionHeading
+          eyebrow="By who you are"
+          title="A loadout for how you work."
+          kicker="Same Pro plan underneath. The add-ons that fit your operating model, with the monthly total."
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {strip.map((row) => (
+            <a
+              key={row.id}
+              href={row.href}
+              className="group flex flex-col rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-primary"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-display uppercase text-text text-2xl">{row.label}</h3>
+                <span className="font-display text-2xl text-primary-strong">{row.totalLabel}</span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{row.note}</p>
+              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-primary-strong">
+                See the details
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </span>
+            </a>
+          ))}
+        </div>
+      </Section>
+
+      {/* Crew, the personal tier, noted plainly with a link to the upgrade page. */}
+      <Section tone="surface" pad="py-12 sm:py-16">
+        <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-border bg-surface-elevated/60 px-6 py-8 text-center">
+          <h3 className="font-display uppercase text-text text-2xl">{CREW_NOTE.name}</h3>
+          <p className="text-base leading-relaxed text-muted">{CREW_NOTE.line}</p>
+          <Button href={CREW_NOTE.href} variant="secondary">
+            See Crew
+          </Button>
+        </div>
+      </Section>
+
+      <Statement tone="canvas">
+        You pay for the parts of the business{' '}
+        <span className="text-primary">you actually run.</span>
+      </Statement>
+
+      {/* Earned, not bought: roles never come from a checkout. */}
+      <Section tone="surface">
         <SectionHeading
           eyebrow="A note on status"
           title="Host, Guide, and Mentor are earned, not bought."
-          kicker="You can't buy your way to the front of the room."
+          kicker="You cannot buy your way to the front of the room."
         />
-        <div className="grid sm:grid-cols-3 gap-5">
-          <RoleNote
-            role="Host"
-            text="Open your home or a space and gather people. Hosts hold the room."
-          />
-          <RoleNote
-            role="Guide"
-            text="Steady a circle over time. Guides rise from showing up, again and again."
-          />
-          <RoleNote
-            role="Mentor"
-            text="Grow other leaders. Mentors are recognized by the community, never appointed by a checkout page."
-          />
-        </div>
-        <p className="mt-8 text-lg text-muted leading-relaxed">
-          Membership is how you fund and access the community. Leadership is
-          something you grow into. Frequency is leaderful by design: those
-          roles come from the people, not from a price tag.
+        <p className="text-lg leading-relaxed text-muted">
+          A plan is how you run a Space. Leadership in the community is something you grow into. Host,
+          Guide, and Mentor come from showing up and looking after the people around you, never from a
+          checkout page.
         </p>
       </Section>
 
-      <Statement tone="surface">
-        Connection should{' '}
-        <span className="text-primary">circulate</span>, not be locked behind a
-        velvet rope.
-      </Statement>
-
-      {/* Where your membership goes — trust beat */}
-      <ZigZag
-        img="/images/site/lab-lounge.jpg"
-        alt="The connection bar inside The Lab"
-        eyebrow="Where it goes"
-        title="Your membership keeps the lights on."
-        imgAspect="landscape"
-        tone="canvas"
-      >
-        <p>
-          Frequency is more than an app. It&apos;s a physical home: movement
-          studios, a thermal circuit, a connection bar, a floor for gatherings.
-          Real rooms cost real money to keep open.
-        </p>
-        <p>
-          Membership goes straight into sustaining those spaces and the
-          community that fills them. When you can pay a little more, you cover a
-          neighbor who can&apos;t pay yet. That&apos;s the whole idea:{' '}
-          <strong className="text-text">circulation, not exclusion.</strong>
-        </p>
-      </ZigZag>
-
-      {/* Risk reversal strip */}
-      <Section tone="surface">
-        <div className="grid sm:grid-cols-3 gap-5">
-          <Assurance
-            icon={ShieldCheck}
-            title="No card required"
-            text="Join the beta with two words. Billing isn't even wired up yet."
-          />
-          <Assurance
-            icon={Award}
-            title="Founder pricing, locked"
-            text="Early members keep their founder rate when paid memberships launch."
-          />
-          <Assurance
-            icon={HeartHandshake}
-            title="Leave anytime"
-            text="No contracts, no lock-in. Switch tiers or step away whenever you like."
-          />
-        </div>
-      </Section>
-
-      {/* FAQ — native details/summary, no client JS */}
       <Section tone="canvas">
-        <SectionHeading
-          eyebrow="Straight answers"
-          title="Questions, answered plainly."
-        />
-        <FaqList items={FAQS} />
+        <SectionHeading eyebrow="Straight answers" title="Questions, answered plainly." />
+        <FaqList items={PRICING_FAQ} />
       </Section>
 
       <BetaCTA
-        heading="Pull up a chair."
-        body="It's free during beta, no card needed. Lock in Founder pricing, find your people, and help keep the room open."
+        heading="Run your Space on Frequency."
+        body="Start on the Pro base and turn on the add-ons you need. Founding price locked for as long as you stay subscribed."
       />
     </>
   )
 }
 
-// ── Local sub-components ──────────────────────────────────────────────────────
+// ── The pricing table ─────────────────────────────────────────────────────────
+// One header row of tier columns, then a labelled row per dimension (price, billing, for, core, the
+// four add-ons, take-rate, CTA). Each price cell renders BOTH intervals (month + year), each wrapped in
+// a span the toggle CSS shows/hides. Semantic DAWN tokens only.
 
-// Real Crew benefit list, lifted from the in-app upgrade page.
-const CREW_BENEFITS = [
-  'Full community feed access',
-  'Join and participate in circles',
-  'Create and RSVP to events',
-  'Access all channels',
-  'Earn Zaps and climb the leaderboard',
-  'Track your crew progress',
-] as const
-
-const CREW_BENEFIT_ICONS = [
-  MessageSquare,
-  Users,
-  CalendarDays,
-  Radio,
-  Star,
-  BarChart3,
-]
-
-function BetaBanner() {
+function PricingTable({ tiers }: { tiers: PricingTier[] }) {
   return (
-    <section className="px-6 -mt-2 mb-2">
-      <div className="max-w-3xl mx-auto rounded-2xl border border-primary-bg bg-primary-bg/40 px-6 py-5 sm:px-8 sm:py-6">
-        <div className="flex flex-wrap items-center gap-2.5 mb-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-primary-strong">
-            <Sparkles className="w-4 h-4" /> Free during beta
-          </span>
-          <span className="text-3xs font-bold uppercase tracking-wider text-on-primary bg-primary px-2 py-0.5 rounded-md">
-            Active now
-          </span>
-        </div>
-        <p className="text-base text-text/80 leading-relaxed">
-          Every feature is unlocked for everyone, free, while we&apos;re in
-          beta. <strong className="text-text">No card required.</strong> Join
-          now and your Founder pricing stays locked in when paid memberships
-          launch.
-        </p>
+    <>
+      {/* Mobile: stacked cards (a table is unreadable narrow). */}
+      <div className="grid gap-6 lg:hidden">
+        {tiers.map((t) => (
+          <TierCard key={t.id} tier={t} />
+        ))}
       </div>
-    </section>
+
+      {/* Desktop: the real table. */}
+      <div className="hidden overflow-hidden rounded-2xl border border-border lg:block">
+        <table className="w-full text-left">
+          <caption className="sr-only">Frequency Space pricing by tier</caption>
+          <thead>
+            <tr className="border-b border-border bg-surface-elevated">
+              <th scope="col" className="px-5 py-4" />
+              {tiers.map((t) => (
+                <th
+                  key={t.id}
+                  scope="col"
+                  className={`px-5 py-4 align-bottom ${t.featured ? 'bg-primary-bg/30' : ''}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-display uppercase text-text text-2xl">{t.name}</span>
+                    {t.featured && (
+                      <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
+                        Most chosen
+                      </span>
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="text-sm">
+            <Row label="Price" tiers={tiers}>{(t) => <PriceCell tier={t} />}</Row>
+            <Row label="Billing" tiers={tiers}>{(t) => <span className="text-muted">{t.billing}</span>}</Row>
+            <Row label="For" tiers={tiers}>{(t) => <span className="text-muted">{t.forWho}</span>}</Row>
+            <Row label="Core included" tiers={tiers}>
+              {(t) => <span className="text-muted">{t.coreIncluded}</span>}
+            </Row>
+            {PRICING_ADDONS.map((a) => (
+              <Row key={a.key} label={`${a.glyph} ${a.label}`} tiers={tiers}>
+                {(t) => <AddonCell tier={t} addon={a.key} />}
+              </Row>
+            ))}
+            <Row label="Take-rate" tiers={tiers}>
+              {(t) => <span className="font-semibold text-text">{t.takeRate}</span>}
+            </Row>
+            <Row label="" tiers={tiers}>
+              {(t) => (
+                <Button href={t.cta.href} variant={t.featured ? 'primary' : 'secondary'} size="sm">
+                  {t.cta.label}
+                </Button>
+              )}
+            </Row>
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
-function TierCard({
-  name,
-  price,
-  cadence,
-  tagline,
-  features,
-  cta,
-  ctaStyle,
-  featured = false,
-  betaFree = false,
-  founder = false,
-  future = false,
+function Row({
+  label,
+  tiers,
+  children,
 }: {
-  name: string
-  price: string
-  cadence: string
-  tagline: string
-  features: readonly string[]
-  cta: { label: string; href: string }
-  ctaStyle: 'primary' | 'secondary'
-  featured?: boolean
-  betaFree?: boolean
-  founder?: boolean
-  future?: boolean
+  label: string
+  tiers: PricingTier[]
+  children: (tier: PricingTier) => React.ReactNode
 }) {
   return (
-    <Card
-      tone={featured ? 'elevated' : 'feature'}
-      className={`relative flex flex-col h-full p-7 sm:p-8 ${
-        featured
-          ? 'border-2 border-primary ring-4 ring-primary-bg lg:-translate-y-3 lg:scale-[1.02]'
-          : ''
+    <tr className="border-b border-border last:border-0">
+      <th scope="row" className="px-5 py-4 align-top font-semibold text-text">
+        {label}
+      </th>
+      {tiers.map((t) => (
+        <td key={t.id} className={`px-5 py-4 align-top ${t.featured ? 'bg-primary-bg/15' : ''}`}>
+          {children(t)}
+        </td>
+      ))}
+    </tr>
+  )
+}
+
+function PriceCell({ tier }: { tier: PricingTier }) {
+  return (
+    <div>
+      {(['month', 'year'] as BillingInterval[]).map((interval) => {
+        const anchor = tierListAnchor(tier, interval)
+        return (
+          <span key={interval} data-interval-show={interval} className="flex items-baseline gap-2">
+            {anchor && <span className="text-base text-subtle line-through">{anchor}</span>}
+            <span className="font-display text-text text-2xl leading-none">
+              {tierHeadline(tier, interval)}
+            </span>
+          </span>
+        )
+      })}
+      {tier.priceKind === 'flat' && (
+        <span className="mt-1 block text-xs text-primary-strong">Founding price</span>
+      )}
+    </div>
+  )
+}
+
+function AddonCell({ tier, addon }: { tier: PricingTier; addon: string }) {
+  const cell = tier.addons.find((a) => a.addon === addon)
+  if (!cell) return null
+  const included = cell.value === 'Included'
+  return (
+    <span className={`inline-flex items-center gap-1.5 ${included ? 'text-success' : 'text-text'}`}>
+      {included && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+      {cell.value}
+    </span>
+  )
+}
+
+// The mobile stacked card for one tier (the table is desktop-only).
+function TierCard({ tier }: { tier: PricingTier }) {
+  return (
+    <div
+      className={`rounded-2xl border bg-surface p-6 ${
+        tier.featured ? 'border-2 border-primary ring-4 ring-primary-bg' : 'border-border'
       }`}
     >
-      {featured && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary text-on-primary px-4 py-1 text-xs font-black uppercase tracking-widest shadow-md">
-          <Star className="w-3.5 h-3.5 fill-current" /> Most popular
-        </span>
-      )}
-
-      <div className="flex items-center gap-2 mb-1">
-        <h3 className="font-display uppercase text-text text-2xl">{name}</h3>
-        {founder && (
-          <span className="inline-flex items-center gap-1 rounded-md bg-signal-bg px-2 py-0.5 text-3xs font-bold uppercase tracking-wider text-signal-strong">
-            <Award className="w-3 h-3" /> Founder
+      <div className="mb-3 flex items-center gap-2">
+        <h3 className="font-display uppercase text-text text-2xl">{tier.name}</h3>
+        {tier.featured && (
+          <span className="rounded-md bg-primary px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-on-primary">
+            Most chosen
           </span>
         )}
       </div>
-
-      <p className="text-sm text-muted leading-relaxed mb-5 min-h-[2.5rem]">
-        {tagline}
-      </p>
-
-      {/* Price block */}
-      <div className="mb-6">
-        {betaFree ? (
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-2xl font-black text-subtle line-through">
-              {price}
-            </span>
-            <span className="font-display uppercase text-text text-4xl leading-none">
-              Free
-            </span>
-            <span className="text-sm font-semibold text-primary-strong">
-              during beta
-            </span>
-          </div>
-        ) : (
-          <div className="flex items-baseline gap-1">
-            <span className="font-display uppercase text-text text-4xl leading-none">
-              {price}
-            </span>
-            <span className="text-base text-muted">{cadence}</span>
-          </div>
-        )}
-        <p className="mt-1.5 text-xs text-subtle">
-          {betaFree
-            ? `$10/mo when paid memberships launch`
-            : future
-              ? 'When paid memberships launch'
-              : ' '}
-        </p>
+      <div className="mb-4">
+        <PriceCell tier={tier} />
+        <p className="mt-1 text-sm text-muted">{tier.billing}</p>
       </div>
-
-      {/* Features */}
-      <ul className="space-y-3 mb-8 flex-1">
-        {features.map((label, i) => {
-          const Icon = featured ? CREW_BENEFIT_ICONS[i] ?? Check : Check
-          return (
-            <li key={label} className="flex items-start gap-3">
-              <span
-                className={`shrink-0 w-6 h-6 mt-0.5 rounded-lg flex items-center justify-center ${
-                  featured ? 'bg-primary-bg/60' : 'bg-success-bg/30'
-                }`}
-              >
-                <Icon
-                  className={`w-3.5 h-3.5 ${
-                    featured ? 'text-primary-strong' : 'text-success'
-                  }`}
-                />
-              </span>
-              <span className="text-sm text-text leading-snug">{label}</span>
-            </li>
-          )
-        })}
+      <p className="mb-2 text-sm text-muted">{tier.forWho}</p>
+      <p className="mb-4 text-sm text-muted">{tier.coreIncluded}</p>
+      <ul className="mb-4 space-y-2 text-sm">
+        {PRICING_ADDONS.map((a) => (
+          <li key={a.key} className="flex items-center justify-between gap-3">
+            <span className="text-text">
+              {a.glyph} {a.label}
+            </span>
+            <AddonCell tier={tier} addon={a.key} />
+          </li>
+        ))}
       </ul>
-
-      {/* CTA */}
-      <Button
-        href={cta.href}
-        variant={ctaStyle === 'primary' ? 'primary' : 'secondary'}
-        className="w-full"
-      >
-        {cta.label}
-        {ctaStyle === 'primary' && <ArrowRight className="w-4 h-4" />}
+      <p className="mb-4 text-sm font-semibold text-text">Take-rate: {tier.takeRate}</p>
+      <Button href={tier.cta.href} variant={tier.featured ? 'primary' : 'secondary'} className="w-full">
+        {tier.cta.label}
       </Button>
-    </Card>
-  )
-}
-
-function RoleNote({ role, text }: { role: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-5">
-      <div className="flex items-center gap-2 mb-2">
-        <Award className="w-4 h-4 text-primary-strong" />
-        <h3 className="font-display uppercase text-text text-xl">{role}</h3>
-      </div>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
     </div>
   )
 }
-
-function Assurance({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  title: string
-  text: string
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-6">
-      <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-primary-bg/50 mb-4">
-        <Icon className="w-5 h-5 text-primary-strong" />
-      </div>
-      <h3 className="font-bold text-text text-lg mb-1.5">{title}</h3>
-      <p className="text-sm text-muted leading-relaxed">{text}</p>
-    </div>
-  )
-}
-
-const FAQS: { q: string; a: React.ReactNode }[] = [
-  {
-    q: 'Is it really free right now?',
-    a: 'Yes. Frequency is in free beta: every feature is unlocked for everyone, and we don’t ask for a card to join. The prices on this page are what membership will cost later, so you know what you’re locking in.',
-  },
-  {
-    q: 'What happens after beta?',
-    a: 'When paid memberships launch, Crew will be $10/mo. Everyone who joins during the beta keeps Founder pricing, locked in for you, as a thank-you for being early. We’ll give you plenty of notice before anything changes, and you’ll never be charged without choosing to.',
-  },
-  {
-    q: 'Do I have to pay to attend anything?',
-    a: 'No. Members can browse and attend open gatherings for free, forever. Crew unlocks the full community: feed, circles, events you create, channels, Zaps, and crew progress. But showing up and meeting people never costs you anything during beta.',
-  },
-  {
-    q: 'Can I leave anytime?',
-    a: 'Always. There are no contracts and no lock-in. You can switch between Member and Crew freely during beta, and step away whenever you like.',
-  },
-  {
-    q: 'Where does the money go?',
-    a: 'Into keeping the room open. Membership sustains the physical spaces, the studios, the thermal circuit, the connection bar, and the community that gathers in them. People who pay more cover neighbors who can’t pay yet. Circulation, not exclusion.',
-  },
-  {
-    q: 'What about refunds?',
-    a: 'Nothing to refund during beta, since nothing is charged. When paid memberships launch, we’ll publish clear billing and refund terms before you ever enter a card, and you can cancel at any time.',
-  },
-  {
-    q: 'Can I buy my way into a Host or Guide role?',
-    a: 'No, and that’s on purpose. Host, Guide, and Mentor are earned by showing up and looking after the people around you. Frequency is leaderful by design: those roles come from the community, never from a checkout page.',
-  },
-]
-

@@ -6,6 +6,8 @@ import {
   FOUNDING_PLACE,
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { PERSONAS, personaCopy } from '@/lib/marketing/personas'
+import { personaPath, pricingLadderSummary } from '@/lib/pricing/pricing-page'
 
 // /llms.txt — the curated, short brand summary for language models (AIO,
 // docs/CONTENT-VOICE §8). This is the hand-written companion to /llms-full.txt
@@ -27,7 +29,7 @@ const PAGES: { path: string; label: string; desc: string }[] = [
   { path: '/the-community', label: 'The Community', desc: 'How you find your people, through Pillars, Channels, and Circles. For builders: host one Circle and we hand you the format and the first-night script.' },
   { path: '/the-quest', label: 'The Quest', desc: 'The light, in-person game: Zaps, Gems, season ranks, and Journeys.' },
   { path: '/the-lab', label: 'The Lab', desc: 'The physical third space, and why a community needs a room.' },
-  { path: '/pricing', label: 'Pricing', desc: 'Membership that keeps the room open. Member is free; Crew and Supporter add more, with Space plans for practitioners and businesses.' },
+  { path: '/pricing', label: 'Pricing', desc: 'Pricing for Spaces: one Pro plan ($19/mo founding, list $29) plus four add-ons (Marketing, AI Engine, Team, Branding), with Nonprofit and Organization tiers. Crew ($9/mo) is the personal tier.' },
   { path: '/what-is-frequency', label: 'What is Frequency', desc: `The answer-first explainer of the movement: what ${SITE_NAME} is, how it works (Circles, Events, The Lab), and why it exists.` },
   { path: '/about', label: 'About', desc: 'The mission and the people building it.' },
   { path: '/discover', label: 'Discover', desc: 'Live Circles and Events near you, sorted by Channel.' },
@@ -153,6 +155,14 @@ export async function GET() {
     '',
     '## How Frequency compares',
     ...COMPARE.map((p) => `- [${p.label}](${abs(p.path)}): ${p.desc}`),
+    '',
+    '## Pricing for Spaces (the ladder)',
+    'Every Space runs on one Pro plan plus four add-ons you turn on as you need them. Each price ships as a list anchor with a lower founding price; the founding price is what you pay today and is held for the life of the subscription. Yearly is two months free.',
+    ...pricingLadderSummary(),
+    'Take-rate is the only transaction fee: Pro 5%, Nonprofit 3%, Organization custom.',
+    '',
+    '## Frequency by who you are (per-Mode landing pages)',
+    ...PERSONAS.map((p) => `- [${personaCopy(p).h1}](${abs(personaPath(p.slug))}): ${p.focus}`),
     '',
     '## How it fits together',
     '- Community: Pillar > Channel > Circle. Circles group into Hubs, Hubs into a Nexus.',
