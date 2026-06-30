@@ -13,6 +13,7 @@ import { TrendArea, WeekBars, RingGauge, weeklyBuckets, cumulative } from '@/com
 import { AttentionList, type AttentionItem } from '@/components/admin/attention-list'
 import { FreshnessNote } from '@/components/admin/freshness-note'
 import { RelatedAreas } from '@/components/admin/related-areas'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeMetrics } from '@/lib/analytics/practice'
 import { getEngagementDashboard } from '@/lib/analytics/dashboard'
@@ -28,6 +29,13 @@ import { getDensitySignal } from '@/lib/analytics/density'
 // Gate: a staff web_role OR a marketing team capability at READ — the loosest union so no
 // operator loses access. Each tool sub-route (/admin/crm/*, /admin/marketing/*) re-gates.
 export const dynamic = 'force-dynamic'
+
+// Untyped admin handle for the funnels table (not in the generated types until
+// regen; the repo-wide service-role convention, ADR-246). The SupabaseClient return
+// annotation widens off the typed-table union without a client cast.
+function funnelsDb(): SupabaseClient {
+  return createAdminClient()
+}
 
 const WEEK = 7 * 24 * 60 * 60 * 1000
 const GROWTH_WEEKS = 12
@@ -279,13 +287,17 @@ async function ManageSections() {
   // Only the cheap, verified counts read live (the same tables the KPIs above use);
   // every other surface owns its own aggregate, so its card stays "Manage" rather than
   // invent a data source.
-  const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC] = await Promise.all([
+  const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC, funnelsC] = await Promise.all([
     admin.from('contacts').select('id', { count: 'exact', head: true }),
     admin.from('segments').select('id', { count: 'exact', head: true }),
     admin.from('campaigns').select('id', { count: 'exact', head: true }),
     admin.from('nurture_sequences').select('id', { count: 'exact', head: true }),
     admin.from('qr_codes').select('id', { count: 'exact', head: true }),
     admin.from('automation_rules').select('id', { count: 'exact', head: true }),
+    // Funnels-as-object (Growth OS Engine 2). Not in the generated DB types until
+    // regen, so read through the untyped admin handle below (ADR-246); a query error
+    // (e.g. an un-migrated DB) falls back to a zero count so the card never breaks.
+    funnelsDb().from('funnels').select('id', { count: 'exact', head: true }),
   ])
 
   const acquisition: ManageCard[] = [
@@ -303,7 +315,8 @@ async function ManageSections() {
 
   const marketing: ManageCard[] = [
     { label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', stat: `${campaignsC.count ?? 0}`, statLabel: 'campaigns', href: '/admin/marketing/campaigns', Icon: Megaphone },
-    { label: 'Funnels', desc: 'Create, test, and compare conversion funnels.', stat: '', statLabel: 'Manage', href: '/admin/marketing/funnels', Icon: Activity },
+    { label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', stat: `${funnelsC.count ?? 0}`, statLabel: 'funnels', href: '/admin/growth/funnels', Icon: Activity },
+    { label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', stat: '', statLabel: 'Manage', href: '/admin/marketing/funnels', Icon: QrCode },
     { label: 'Automations', desc: 'Event-triggered rules and follow-ups.', stat: `${automationsC.count ?? 0}`, statLabel: 'rules', href: '/admin/marketing/automations', Icon: SlidersHorizontal },
     { label: 'Nurture', desc: 'Sequenced nurture flows.', stat: `${sequencesC.count ?? 0}`, statLabel: 'sequences', href: '/admin/marketing/nurture', Icon: Layers },
     { label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', stat: '', statLabel: 'Manage', href: '/admin/marketing/beta', Icon: Rocket },

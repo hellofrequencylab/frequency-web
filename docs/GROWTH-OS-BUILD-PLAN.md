@@ -141,7 +141,7 @@ live data), primary action, optional founder video; versioned, A/B-able, SEO-con
 `public_*` RPCs; GE1-3 founder-video block; GE1-4 A/B at the page level (reuse variant infra);
 GE1-5 SEO/meta + OG per landing. **Canon:** builder rejects em dashes, enforces sentence case.
 
-### Engine 2 — Funnel Engine  ·  🟡 extend
+### Engine 2 — Funnel Engine  ·  🟡 extend  ·  **core ✅ shipped (ADR-455)**
 **Purpose:** a funnel as a first-class object — entry point(s) → wedge → capture → conversion goal
 — with attribution + variants + per-stage analytics, so every persona funnel is one configured row.
 **Rides on:** `entry_points`/`qr_codes`, `entry_campaigns`, `entry_point_variants`,
@@ -151,14 +151,27 @@ GE1-5 SEO/meta + OG per landing. **Canon:** builder rejects em dashes, enforces 
 analytics rollup (entry→wedge→capture→convert with drop-off).
 **Member surface:** the assembled entry → `/start/<flow>` → wedge → capture.
 **Admin (3 layers):**
-- **L1:** `Growth › Marketing › Funnels` exists (`/admin/growth?tab=marketing`); promote to a
-  funnel-object builder.
+- **L1:** `Growth › Marketing › Funnels` now points at the funnel-object builder
+  (`/admin/growth/funnels`); the old campaign grouper is renamed `Campaign builder`
+  (`/admin/marketing/funnels`) and kept beside it.
 - **L2:** Funnel builder + per-funnel dashboard (stage conversion, variant rates, attribution by
   channel/code), funnel list, clone/template.
 - **L3:** per-entity "Reach" inline module already generates QR; link it to a funnel.
-**Tasks:** GE2-1 `funnels` schema (stages + links + goal event); GE2-2 funnel analytics rollup RPC;
-GE2-3 funnel builder UI; GE2-4 funnel templates per persona (seed); GE2-5 wire existing entry
-points/campaigns/variants/nurture as funnel components.
+**Tasks:**
+- ✅ GE2-1 `funnels` schema (stages + links + goal event) — `supabase/migrations/20260913000000_funnels.sql`
+  (three tables: `funnels` / `funnel_stages` / `funnel_stage_links`, RLS staff-read, server-mediated
+  writes). **NOT applied; ships for hand-review.** ADR-455.
+- ✅ GE2-2 funnel analytics rollup RPC — `funnel_rollup(funnel_id, days)` reads `engagement_events`
+  (per stage: distinct actors + drop-off; convert matches the funnel `goal_event`). SECURITY DEFINER,
+  staff-only. Read via `lib/funnels/store.ts` `getFunnelRollup`.
+- ✅ GE2-3 funnel builder UI — `app/(main)/admin/growth/funnels/*` (index + template gallery, per-funnel
+  dashboard with the rollup behind Suspense, the stage/link builder). Composed from the kit.
+- ✅ GE2-4 funnel templates per persona (seed) — `lib/funnels/templates.ts` (code-first, cloned by the
+  builder into a real row).
+- ⏳ GE2-5 wire existing entry points/campaigns/variants/nurture as funnel components — the stage-link
+  model + builder accept all six families today; the remaining follow-on is auto-stamping
+  `context.funnel_id` / `context.funnel_stage` onto the engagement events those components emit so the
+  rollup populates without manual context.
 
 ### Engine 3 — Waitlist + Application/Intake System  ·  🆕 (beta funnel ✅ as base)
 **Purpose:** the dual-track top of funnel: **builders apply** (review queue → accept → host
