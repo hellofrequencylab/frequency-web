@@ -10048,3 +10048,63 @@ absent member rail is the INTENDED state for owner consoles, consistent with `/a
 via `page-chrome.ts`, not a bug.) Separately, the console's Basics link pointed at the `/settings` index, which
 redirects console types back to `/manage` (a loop); a non-redirecting `/settings/basics` editor was added and
 `hrefForSurface` (now exported + unit-tested) points there, so no section href can loop.
+
+## ADR-469: Manage console rework — grouped operator Dashboard IA + the CRM-escape navigation fix
+
+**Status:** Accepted (2026-06-30). Supersedes the ADR-468 hotfix on `/spaces/[slug]/manage`; resolves the
+owner-reported P0 ("clicking a section breaks", "sections missing/buried").
+
+**Decision.** The flat section list became a **grouped operator Dashboard**: seven titled clusters (Identity
+and basics · Bookings and offerings · People and CRM · Reach and comms · Money and billing · Insights ·
+Danger zone), each a responsive grid of icon cards (icon + label + one-line description + open affordance).
+**Basics is pinned first and can never be demoted** below Mode modules: the page now passes surfaces in stable
+spine order (no Mode pre-reorder), and Mode became a quiet "Suggested for your mode" tag that only orders
+*within* a group, fixing the "buried sections" complaint. The remaining broken click was the **CRM section**,
+which opens `/spaces/[slug]/crm` — a segment the ADR-468 profile-shell escape did NOT cover, so the CRM board
+rendered double-wrapped in the public profile chrome (two `h1`s, a back-link to the public profile, profile
+telemetry firing on an operator surface). Fix: `crm` is added to the owner-surface escape in the `[slug]`
+layout (the route was already rail `'none'` in `page-chrome.ts`, so its self-contained Dashboard now renders
+standalone). No migration, RLS, or entitlement change; the server gate, Danger delete, and full-width rail are
+preserved; `hrefForSurface` stays pure + exported with the CRM target, group-mapping, and a Basics-never-demoted
+assertion under unit test.
+
+## ADR-470: Member viewer v2 — sort/search hero, viewer-first cockpit, fully-featured Members detail
+
+**Status:** Accepted (2026-06-30). Evolves the reusable member-view block (ADR-459); decides its
+operator-facing surface (ADR-459 left it admin-only).
+
+**Decision.** The droppable, presentation-neutral block (ADR-017/018/459) gets **search + sort as its
+headline**: a `sortOptions` prop renders a segmented control beside live search (Recent / Active / Needs help /
+Name), each `{key,label,spec}` driving the pure `applyQuery` sort; `MemberSummary.sortValues` lets a host sort
+on a signal it does not render (a joined epoch). Default `pageSize` is **10** (10..20 clamp kept), "most
+recent" first, "Show more" pages the rest. The block is **self-contained on screen** (left list and right
+detail scroll independently; mobile detail stays an overlay), depending on nothing beyond `min-w-0`. `full`-mode
+`MemberDetail` grew optional `roles` / `funnels` / `pipeline` / `interactions` (truncated to ~5 + "view all") +
+`viewAllHref` and a first-class **View member** action; `quick-stats` mode is unchanged. The **cockpit**
+(`/admin/crm`) is now viewer-first (block at the top, the existing stat readers restored BELOW it — verdict,
+LIVE StatCard row, Needs-attention worklist, lifecycle funnel, score backtest), retiring the Members/Cockpit
+tab split. The **Members area** (`/admin/crm/members`) renders the block in `full` mode; `loadMemberDetail`
+assembles roles (`community_role` + `web_role`), active funnels (verified `profile_personas` matched to ACTIVE
+`funnels` by persona, since there is no per-member funnel-membership table — the persona rides as context, stage
+left unset), pipeline (the member's open `crm_deal` → `crm_stages.name`), and the truncated
+`contact_interactions` timeline, all from EXISTING readers, fail-safe and **no N+1** (one list query; the detail
+batches a fixed handful of isolated reads for the selected member only). No schema, migration, or
+`database.types` change.
+
+## ADR-471: The entity owner consoles keep the global right rail (manage is a card grid, not a board)
+
+**Status:** Accepted (2026-06-30). Overrides the `'none'` rail ADR-441/469 gave `/{entity}/[id]/manage`;
+honors the standing owner directive (2026-06-20) that "the right rail shows on every page."
+
+**Decision.** `/spaces/<slug>/manage` (and its sibling `/circles/<slug>/manage`) were mapped to rail
+`'none'` in `lib/layout/page-chrome.ts`, inherited from the EM1-2 premise that an owner console "composes the
+admin kit edge to edge." In practice the console is a **vertical grid of section cards** with a
+`width="default"` body, so dropping the rail left a large empty right gutter (the owner reported the manage
+page "still doesn't have a right rail" three times). The console does not scroll horizontally, so it has no
+reason to suppress the rail. Fix: both entity owner-console patterns are removed from
+`DASHBOARD_NONE_PATTERNS`, so they fall through to `'global'` and the community rail fills the former gutter,
+exactly like every other member surface. The **only** member-side route that still drops the rail for width is
+the Space **CRM board** (`/spaces/<slug>/crm`), whose body is a genuine horizontal stage board that would
+fight a rail. Rule going forward: a surface belongs in `DASHBOARD_NONE_PATTERNS` only if its body truly
+scrolls sideways. Pure data + test change; no schema, RLS, or entitlement impact; the `[slug]` profile-shell
+escape (ADR-468/469) is unaffected because the rail is decided by the outer app-shell, not the child layout.

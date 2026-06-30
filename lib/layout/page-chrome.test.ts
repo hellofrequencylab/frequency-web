@@ -192,17 +192,19 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     expect(railFor('/administrators')).toBe('global')
   })
 
-  it('drops the right rail on the full-width owner consoles + the Space CRM board (DashboardTemplate)', () => {
-    // The entity OWNER CONSOLE (/{entity}/[id]/manage, ADR-441) and a Space's paid CRM board are
-    // full-width <DashboardTemplate> workspaces (PAGE-FRAMEWORK §3 → 'none'); they keep the left menu
-    // but drop the member right rail. EM1-3 adds the Space owner console pattern beside the circle one.
-    expect(railFor('/circles/sunrise-sit/manage')).toBe('none')
-    expect(railFor('/spaces/demo-practitioner/manage')).toBe('none')
-    expect(railFor('/spaces/demo-org/manage')).toBe('none')
+  it('keeps the global rail on the entity owner consoles, drops it only on the horizontal CRM board', () => {
+    // ADR-471 (owner directive: "the right rail shows on every page"): the entity OWNER CONSOLES
+    // (/{entity}/[id]/manage, ADR-441/469) are a vertical GRID of section cards, not a horizontal
+    // board, so they read correctly beside the community rail and now ride the global rail like every
+    // other member surface (the rail fills what was an empty right gutter). Only the Space CRM board
+    // (a horizontal stage board) still drops the rail.
+    expect(railFor('/circles/sunrise-sit/manage')).toBe('global')
+    expect(railFor('/spaces/demo-practitioner/manage')).toBe('global')
+    expect(railFor('/spaces/demo-org/manage')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/crm')).toBe('none')
     // The left menu stays on these member-side dashboards.
     expect(leftRailFor('/spaces/demo-practitioner/manage')).toBe('global')
-    // The Space SETTINGS cockpit (the legacy 7-tab) still rides the global rail — only /manage is none.
+    // The Space SETTINGS cockpit (the legacy 7-tab) keeps the global rail too.
     expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
   })
 })

@@ -96,19 +96,19 @@ export function isSafeRoute(pathname: string): boolean {
 }
 
 // FULL-WIDTH DASHBOARD surfaces — member-side operator workspaces that compose <DashboardTemplate>
-// and want the full center width (a horizontally-scrolling CRM board would fight the community rail).
-// These keep the global LEFT menu but drop the member RIGHT rail, like /admin's own dashboard. Today
-// the only one is a Space's own CRM board (/spaces/<slug>/crm), a paid per-Space pipeline workspace
-// (CRM-STRATEGY P3) distinct from the Focus settings/crm notes surface. Pattern match (one slug deep).
+// and genuinely need the full center width because their body SCROLLS HORIZONTALLY and would fight a
+// right rail. These keep the global LEFT menu but drop the member RIGHT rail, like /admin's own
+// dashboard. Today the ONLY one is a Space's own CRM board (/spaces/<slug>/crm), a paid per-Space
+// pipeline workspace (CRM-STRATEGY P3) with a horizontal stage board, distinct from the Focus
+// settings/crm notes surface. Pattern match (one slug deep).
+//
+// NOTE (ADR-471, owner directive: "the right rail shows on every page"): the entity OWNER CONSOLES
+// (/{entity}/[id]/manage, ADR-441/469) are NO LONGER here. They are a vertical GRID of section cards,
+// not a horizontal board, so they read correctly beside the community rail (the rail fills what was an
+// empty right gutter). They fall through to 'global' below like every other member surface. Only a
+// surface whose body truly scrolls sideways belongs in this list.
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
-  /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated)
-  // The entity OWNER CONSOLE (ADR-441 EM1-2): /{entity}/[id]/manage is a full-width
-  // <DashboardTemplate> workspace (PAGE-FRAMEWORK §3 → 'none'), the owner's cockpit for
-  // managing their entity. It composes the admin kit edge to edge and reads best without
-  // the community rail beside it. Pass 1 ships the circle console; sibling entity consoles
-  // add their own pattern here as they land.
-  /^\/circles\/[^/]+\/manage$/, // a circle's owner console
-  /^\/spaces\/[^/]+\/manage$/, // a Space's owner console (EM1-3)
+  /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated) — horizontal stage board
 ]
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
