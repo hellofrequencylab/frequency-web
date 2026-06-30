@@ -3,10 +3,13 @@ import {
   ArrowLeft,
   Briefcase,
   Building2,
+  CalendarDays,
   Clock,
   Mail,
   MapPin,
+  MessageSquare,
   Phone,
+  PhoneCall,
   StickyNote,
   User,
 } from 'lucide-react'
@@ -15,7 +18,31 @@ import { formatMoney } from '@/lib/crm/pipeline'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ClientNotesPanel } from './client-notes-panel'
-import type { TimelineEntry } from '@/lib/crm/timeline'
+import { relativeTime, summarizeTimeline, type TimelineEntry } from '@/lib/crm/timeline'
+
+// Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
+// instead of a row of identical clocks. Notes and QR scans keep their origin icon; everything else
+// maps by channel. Returns a rendered element (not a component reference) to stay clear of the
+// static-components rule.
+function timelineIcon(entry: TimelineEntry) {
+  const cls = 'h-3.5 w-3.5'
+  if (entry.origin === 'note') return <StickyNote className={cls} aria-hidden />
+  if (entry.origin === 'scan') return <MapPin className={cls} aria-hidden />
+  switch (entry.channel) {
+    case 'email':
+      return <Mail className={cls} aria-hidden />
+    case 'sms':
+      return <MessageSquare className={cls} aria-hidden />
+    case 'call':
+      return <PhoneCall className={cls} aria-hidden />
+    case 'in_person':
+      return <User className={cls} aria-hidden />
+    case 'event':
+      return <CalendarDays className={cls} aria-hidden />
+    default:
+      return <Clock className={cls} aria-hidden />
+  }
+}
 
 // PER-SPACE CONTACT DETAIL (server, CRM-STRATEGY §6). The real detail surface for one selected contact
 // on the Space CRM board: identity + fields, the contact's timeline (interactions + the Space's private
@@ -68,6 +95,11 @@ export async function SpaceContactDetail({
   const { identity, timeline, deals, notes } = detail
   const name = identity.name || identity.email || 'Unnamed contact'
 
+  // Derive an at-a-glance recency line from the existing timeline (newest-first out of buildTimeline):
+  // how many touches there are and when the last one was, in plain relative voice.
+  const { count: touchCount, lastTouchAt } = summarizeTimeline(timeline)
+  const lastTouchAgo = relativeTime(lastTouchAt)
+
   return (
     <section className="space-y-6">
       <Link
@@ -85,9 +117,17 @@ export async function SpaceContactDetail({
           </span>
           <div className="min-w-0">
             <h2 className="truncate text-lg font-bold text-text">{name}</h2>
-            {identity.createdAt && (
-              <p className="mt-0.5 text-xs text-subtle">Added {whenFmt.format(new Date(identity.createdAt))}</p>
-            )}
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-subtle">
+              {identity.createdAt && <span>Added {whenFmt.format(new Date(identity.createdAt))}</span>}
+              {/* At-a-glance recency from the existing timeline: when you last reached this person. */}
+              {lastTouchAgo ? (
+                <span className="inline-flex items-center gap-1 text-muted">
+                  <Clock className="h-3 w-3" aria-hidden /> Last touch {lastTouchAgo.toLowerCase()}
+                </span>
+              ) : (
+                touchCount === 0 && <span className="text-subtle">No touches yet</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -180,18 +220,24 @@ function Field({
 }
 
 function TimelineRow({ entry }: { entry: TimelineEntry }) {
-  const Icon = entry.origin === 'note' ? StickyNote : entry.origin === 'scan' ? MapPin : Clock
   const when = entry.at ? sinceFmt.format(new Date(entry.at)) : ''
+  const ago = relativeTime(entry.at)
   return (
     <li className="flex gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-muted">
-        <Icon className="h-3.5 w-3.5" aria-hidden />
+        {timelineIcon(entry)}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <p className="truncate text-sm font-semibold text-text">{entry.title}</p>
-          {when && <p className="shrink-0 text-xs text-subtle">{when}</p>}
+          {/* Relative recency up front, with the exact date on hover, so the stream reads at a glance. */}
+          {ago && (
+            <p className="shrink-0 text-xs font-medium text-subtle" title={when}>
+              {ago}
+            </p>
+          )}
         </div>
+        {when && <p className="mt-0.5 text-xs text-subtle">{when}</p>}
         {entry.detail && <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{entry.detail}</p>}
       </div>
     </li>
