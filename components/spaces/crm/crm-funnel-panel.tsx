@@ -1,5 +1,5 @@
 import { GitCompareArrows, MailCheck, Target, Users } from 'lucide-react'
-import { getSpaceCrmFunnel, type FunnelStage } from '@/lib/spaces/crm-funnel'
+import { getSpaceCrmFunnel, type ContactReach, type FunnelStage } from '@/lib/spaces/crm-funnel'
 import { formatMoney } from '@/lib/crm/pipeline'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
@@ -18,6 +18,57 @@ function stageBarClass(kind: FunnelStage['kind']): string {
 /** A whole-percent label for a fraction in [0, 1] (e.g. 0.123 -> "12%"). */
 function pct(fraction: number): string {
   return `${Math.round((fraction || 0) * 100)}%`
+}
+
+/** The contact-consent split as a single stacked bar + a small legend. `reach.total` counts every
+ *  contact; `subscribed` + `unsubscribed` are the two decided states, and the remainder is the
+ *  added-but-not-yet-opted-in ("unknown") group, derived here so the three segments always sum to the
+ *  whole list. PURE/presentational; the caller only renders it when there is at least one contact. */
+function ContactConsentBar({ reach }: { reach: ContactReach }) {
+  // Clamp to avoid a negative remainder if a stray bucket ever overcounts (the read is fail-safe, but
+  // the bar should never go below zero or past the total).
+  const decided = Math.min(reach.subscribed + reach.unsubscribed, reach.total)
+  const notYet = reach.total - decided
+  const segments = [
+    { key: 'subscribed', label: 'Subscribed', count: reach.subscribed, bar: 'bg-success', dot: 'bg-success' },
+    { key: 'notYet', label: 'Not yet opted in', count: notYet, bar: 'bg-surface-elevated', dot: 'bg-subtle' },
+    { key: 'unsubscribed', label: 'Unsubscribed', count: reach.unsubscribed, bar: 'bg-danger', dot: 'bg-danger' },
+  ] as const
+
+  return (
+    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <p className="text-sm font-medium text-text">Who you can reach</p>
+        <span className="text-xs tabular-nums text-subtle">
+          {reach.subscribed} of {reach.total} mailable
+        </span>
+      </div>
+      <div
+        className="flex h-2 overflow-hidden rounded-full bg-surface-elevated"
+        role="img"
+        aria-label={`${reach.subscribed} subscribed, ${notYet} not yet opted in, ${reach.unsubscribed} unsubscribed, of ${reach.total} contacts`}
+      >
+        {segments.map((s) =>
+          s.count > 0 ? (
+            <div
+              key={s.key}
+              className={`h-full ${s.bar}`}
+              style={{ width: `${(s.count / reach.total) * 100}%` }}
+            />
+          ) : null,
+        )}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map((s) => (
+          <li key={s.key} className="inline-flex items-center gap-1.5 text-xs text-muted">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} aria-hidden />
+            <span>{s.label}</span>
+            <span className="font-medium tabular-nums text-text">{s.count}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export async function CrmFunnelPanel({ spaceId }: { spaceId: string }) {
@@ -78,6 +129,15 @@ export async function CrmFunnelPanel({ spaceId }: { spaceId: string }) {
           icon={MailCheck}
         />
       </div>
+
+      {/* Contact-consent split: who you can actually reach. The reach the StatCard above headlines is
+          `subscribed`; this band shows the whole list broken into the three consent states the funnel
+          read already computes, so an owner sees at a glance how many are mailable (subscribed), how
+          many are added-but-not-yet-opted-in (the gap they can invite), and how many have opted out.
+          Hidden when the Space has no contacts, so an empty CRM never shows an empty bar. */}
+      {funnel.reach.total > 0 && (
+        <ContactConsentBar reach={funnel.reach} />
+      )}
 
       {/* The stage-by-stage funnel: a labeled bar per stage, scaled to the widest stage. */}
       <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
