@@ -5,7 +5,7 @@
 -- 20260628010000_quest_completion_model.sql, but several EARLIER migrations already
 -- reference it:
 --   * 20260616010000_one_expression_per_journey.sql  -- unique index on (season, journey_id)
---   * 20260617000002_seed_shine_season.sql           -- INSERT ... (..., journey_id)
+--   * 20260629000100_seed_shine_season.sql           -- INSERT ... (..., journey_id)
 -- On a fresh apply (db-tests) the column did not yet exist, so those failed with
 -- "column journey_id does not exist" (42703).
 --
