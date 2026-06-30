@@ -9511,3 +9511,66 @@ RLS, so the action is the authority, not the page gate.
   delivered: the stage-link model + builder accept all six component families today; auto-stamping the
   funnel/stage ids onto the engagement events those components emit (so the rollup populates without
   manual context) is the remaining follow-on.
+
+## ADR-456: The applications + waitlist data model (Growth OS Engine 3, GE3-1..4)
+
+**Status:** Accepted · migration `supabase/migrations/20260914000000_applications.sql` (NOT applied;
+ships for hand-review + the db-tests fresh-apply path), tracks in `lib/applications/tracks.ts`, reads in
+`lib/applications/store.ts`, the apply + accept handoff in `lib/applications/handoff.ts`, member surfaces
+at `app/(main)/apply/*` + `app/(main)/waitlist/*`, the review queue under
+`app/(main)/admin/growth/applications/*`.
+
+**Context.** `docs/GROWTH-OS-BUILD-PLAN.md` Engine 3 calls for the dual-track top of funnel: builders
+apply to host (review queue -> accept -> host onboarding), seekers join a waitlist manifesto-first, and
+operators apply per persona (coach/practitioner/business/nonprofit/collective). The beta funnel exists as
+a base but rides the `contacts` CRM table with a `meta.beta_status` field; that models a single beta
+list, not a typed application with answers, a decision trail, and an accept-side handoff, nor a
+positioned waitlist. What was missing is the typed objects that record an application (its track, its
+answers, its review state, what an accept granted) and a waitlist entry (its track, position, referral
+credit, cohort), so the review queue and the apply/waitlist surfaces are data, not hand-built flows.
+
+**Decision.** Two tables, both `public`, both RLS-enabled, server-mediated writes:
+- **`applications`** — one submitted application: `track` (host + the operator personas, free text +
+  CHECK so the canon extends with one ALTER), `applicant_profile_id` (+ denormalized email/name for an
+  anon or queue-without-join read), `answers` (jsonb, the flow's questions), `status`
+  (pending/in_review/accepted/declined/withdrawn), `reviewed_by`/`decided_at`/`decision_reason` (the
+  decision trail), and `handoff` (jsonb: what an accept granted, e.g. `{ circleId, circleSlug, role,
+  starterTemplateId }`, so the accept is auditable AND re-running it is a no-op). A partial unique index
+  enforces ONE OPEN application per applicant per track (a fresh apply after a decline is allowed).
+- **`waitlist_entries`** — one person on a waitlist track: `track` (seeker/builder/city), `profile_id`
+  (+ email/name/`locality` for anon joins + city gating), `position` (app-assigned today; the
+  referral-position engine GE3-5 will tune it), `referred_by_profile_id` (referral credit, GE3-5),
+  `cohort` (bulk-invite grouping, GE3-6), `status` (waiting/invited/converted/removed). Partial unique
+  indexes dedupe one entry per profile per track and one per email per track for anon joins.
+
+**The apply-to-host handoff (GE3-2).** On ACCEPT of the `host` track, the decision REUSES the existing
+Starter Circle remix lifecycle rather than forking a parallel promotion path: `decideApplication` calls
+`remixTemplate({ templateId, profileId })` (lib/circles/remix.ts), which clones a Starter Circle into a
+private draft the applicant owns AND calls `ensureHostOnOwnership` (the upward-only, host-capped role
+grant that also assigns the Host training Journey). The reviewer picks which Starter Circle, else the
+first active one is used; if none is active the role is still granted so the Leadership tab opens. The
+result is written to `applications.handoff`, so a re-run reads it and never double-creates a circle. The
+handoff is best-effort: a failure falls back to the role grant alone and the accept still records.
+
+**Per-persona operator flows (GE3-3).** Tracks are code-first in `lib/applications/tracks.ts` (the
+personas/lead-flows/funnel-templates pattern): each names its audience, its plain questions, and whether
+an accept grants host. Only `host` grants host; the operator tracks record the accept and defer Space
+provisioning to GE10 (the `handoff` notes `operator_pending`), so the review queue is the gate today.
+
+**Authz + RLS.** Staff (`web_role in (admin,janitor)`) get a READ policy on both tables (the review
+queue); a member additionally reads THEIR OWN rows (the apply/waitlist surfaces show "your application" /
+"your position" with the typed client). There is intentionally NO insert/update/delete policy, so writes
+go only through the service role: the member-facing apply/waitlist actions re-check the caller acts on
+their own behalf, and the review-queue actions re-check the **`members`** capability (deciding who gets in
+is a member-management act). The admin client bypasses RLS, so the action is the authority, not the page
+gate.
+
+**Consequences.**
+- The migration is **not applied** in this PR (owner directive); it ships as a file for hand-review and
+  the fresh-apply test path. App code reads the tables untyped until `lib/database.types.ts` regenerates.
+- The beta funnel (`contacts.meta.beta_status`, `/admin/marketing/beta`) is untouched and does not
+  collide: that is the single beta list; the new `waitlist_entries` is the typed, positioned, per-track
+  seeker waitlist Engine 3 specifies.
+- **Deferred:** GE3-5 (referral-position + share mechanics) and GE3-6 (cohort gating + bulk invite). The
+  schema carries `position`, `referred_by_profile_id`, and `cohort` so those land without a migration;
+  position is a plain append today.

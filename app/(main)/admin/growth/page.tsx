@@ -3,7 +3,7 @@ import Link from 'next/link'
 import {
   TrendingUp, ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight,
   Contact, PieChart, Megaphone, Activity, SlidersHorizontal, Layers,
-  Rocket, Telescope, Bot, Link2,
+  Rocket, Telescope, Bot, Link2, ClipboardList,
   type LucideIcon,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -287,7 +287,7 @@ async function ManageSections() {
   // Only the cheap, verified counts read live (the same tables the KPIs above use);
   // every other surface owns its own aggregate, so its card stays "Manage" rather than
   // invent a data source.
-  const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC, funnelsC] = await Promise.all([
+  const [contactsC, segmentsC, campaignsC, sequencesC, qrC, automationsC, funnelsC, applicationsC] = await Promise.all([
     admin.from('contacts').select('id', { count: 'exact', head: true }),
     admin.from('segments').select('id', { count: 'exact', head: true }),
     admin.from('campaigns').select('id', { count: 'exact', head: true }),
@@ -298,9 +298,13 @@ async function ManageSections() {
     // regen, so read through the untyped admin handle below (ADR-246); a query error
     // (e.g. an un-migrated DB) falls back to a zero count so the card never breaks.
     funnelsDb().from('funnels').select('id', { count: 'exact', head: true }),
+    // Open applications (Growth OS Engine 3, GE3-4). Untyped handle (same convention),
+    // open queue only; a query error (un-migrated DB) falls back to zero.
+    funnelsDb().from('applications').select('id', { count: 'exact', head: true }).in('status', ['pending', 'in_review']),
   ])
 
   const acquisition: ManageCard[] = [
+    { label: 'Applications', desc: 'The dual-track review queue: builders apply to host, operators bring an offering, and seekers wait for a Circle near them.', stat: `${applicationsC.count ?? 0}`, statLabel: 'open', href: '/admin/growth/applications', Icon: ClipboardList },
     { label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', stat: '', statLabel: 'Open', href: '/admin/growth/links', Icon: Link2 },
     { label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', stat: `${qrC.count ?? 0}`, statLabel: 'codes', href: '/admin/qr', Icon: QrCode },
     { label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', stat: '', statLabel: 'Manage', href: '/admin/referrals', Icon: Share2 },
