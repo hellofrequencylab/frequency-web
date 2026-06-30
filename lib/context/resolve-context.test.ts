@@ -18,7 +18,7 @@ vi.mock('next/headers', () => ({
   cookies: async () => ({ get: (name: string) => cookiesGet(name) }),
 }))
 
-import { resolveOperatorContext } from './operator-context'
+import { resolveOperatorContext } from './resolve-context'
 
 /** One operated Space as listOperatedSpaces returns it. */
 function space(id: string, name = id) {

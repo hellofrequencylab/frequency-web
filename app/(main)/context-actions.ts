@@ -7,12 +7,12 @@ import {
   CONTEXT_COOKIE,
   parseContextCookie,
   serializeContext,
-  resolveOperatorContext,
   isContextAvailable,
   landingHrefFor,
   PERSONAL_HOME,
   type OperatorContext,
 } from '@/lib/context/operator-context'
+import { resolveOperatorContext } from '@/lib/context/resolve-context'
 
 // "Switch which hat I'm wearing" — the set-context server action, mirroring the set-cookie-then-
 // reload shape of setViewAsRole (app/(main)/view-as-actions.ts).

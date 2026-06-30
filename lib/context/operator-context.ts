@@ -20,11 +20,14 @@
 // ║  context badge, the default-landing redirect, and the "Spaces you run" hub. If you find  ║
 // ║  yourself importing this into a gate, STOP — you have a bug.                              ║
 // ╚══════════════════════════════════════════════════════════════════════════════════════╝
+//
+// CLIENT-SAFE by design: this module is the PURE parse/validate/serialize core + the shared types
+// and constants, so the account chip + context switcher (client components) can import it. It holds
+// NO `server-only` import, NO `next/headers`, and NO DB read. The server resolver that reads the
+// cookie + re-derives authority lives in the sibling server-only module `lib/context/resolve-context.ts`
+// (Next refuses a client import of a server-only module, so the split keeps the chip compilable).
 
-import 'server-only'
-import { cookies } from 'next/headers'
-import { listOperatedSpaces, type OperatedSpace } from '@/lib/spaces/operated'
-import { isStaff, type WebRole } from '@/lib/core/roles'
+import { type WebRole } from '@/lib/core/roles'
 
 /** The cookie that carries the operator-identity context. SEPARATE from `freq-view-as` (the
  *  downgrade-only role preview) on purpose — this axis never touches roles or capabilities. */
@@ -130,29 +133,10 @@ export const ADMIN_HOME = '/admin'
 /** The "Spaces you run" hub — the operator's front door, linked from the switcher's Operator section. */
 export const OPERATING_HUB = '/spaces/operating'
 
-/** The personal option (always present — every signed-in member has the member identity). */
-function personalOption(): AvailableContext {
-  return { kind: 'personal', label: 'Personal', href: PERSONAL_HOME }
-}
-
-/** An operator option for one Space the caller runs. */
-function operatorOption(space: OperatedSpace): AvailableContext {
-  return {
-    kind: 'operator',
-    spaceId: space.id,
-    label: space.name,
-    href: space.manageHref,
-    logoUrl: space.logoUrl,
-  }
-}
-
-/** The admin option (only when the caller is real platform staff). */
-function adminOption(): AvailableContext {
-  return { kind: 'admin', label: 'Admin', href: ADMIN_HOME }
-}
-
 /** The resolved result the shell consumes: the EFFECTIVE (re-validated) context + the full set of
- *  contexts available to this caller (so the chip only ever offers real ones). */
+ *  contexts available to this caller (so the chip only ever offers real ones). Produced by the
+ *  server resolver in `lib/context/resolve-context.ts`; the shape lives here so both halves + the
+ *  client chip share one type. */
 export interface ResolvedContext {
   /** The effective context AFTER re-validating the cookie against real authority. Fails safe to
    *  `personal` whenever the cookie names a Space the caller no longer runs, or `admin` for a
@@ -161,43 +145,6 @@ export interface ResolvedContext {
   /** Every context the caller may switch into (Personal always; one Operator per owned/admin Space;
    *  Admin only when staff). The validated catalog the switcher + the set-context action read. */
   available: AvailableContext[]
-}
-
-/**
- * Resolve the caller's EFFECTIVE operator context + the AVAILABLE set, re-derived from real authority.
- *
- * FRAMING ONLY (see the file header): this drives the chip, the badge, and the default-landing
- * redirect — never a gate. The cookie is NEVER trusted: the available set is rebuilt from the DB
- * (the Spaces the caller owns/admins + the staff axis), and the cookie's value is honoured ONLY when
- * it is still in that set. An `operator:<id>` the caller no longer admins, or `admin` for a non-staff
- * caller, fails SAFE to `personal`. Batched (one `listOperatedSpaces` read) and fail-safe: any error
- * collapses to just the personal context.
- */
-export async function resolveOperatorContext(
-  caller: ContextCaller | null | undefined,
-): Promise<ResolvedContext> {
-  // Signed-out / no profile: only the personal context, no cookie honoured.
-  if (!caller) return { context: PERSONAL_CONTEXT, available: [personalOption()] }
-
-  try {
-    // Re-derive the real authority (never the cookie): the Spaces the caller owns/admins + staff axis.
-    const operated = await listOperatedSpaces(caller.id)
-    const staff = isStaff(caller.webRole)
-
-    const available: AvailableContext[] = [
-      personalOption(),
-      ...operated.map(operatorOption),
-      ...(staff ? [adminOption()] : []),
-    ]
-
-    // Read the requested context from the cookie, then HONOUR it only if it is still in the real set.
-    const requested = parseContextCookie((await cookies()).get(CONTEXT_COOKIE)?.value)
-    const context = requested && isContextAvailable(requested, available) ? requested : PERSONAL_CONTEXT
-    return { context, available }
-  } catch {
-    // Any failure collapses to the safe default — the context can never error a render or over-grant.
-    return { context: PERSONAL_CONTEXT, available: [personalOption()] }
-  }
 }
 
 /**
