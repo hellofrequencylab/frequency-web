@@ -39,6 +39,7 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/friendship-as-an-adult', label: 'Friendship as an adult', desc: 'Why it gets hard to make friends after 30, and how to start.' },
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to start a community group that lasts, step by step.' },
   { path: '/life-after-the-feed', label: 'Life after the feed', desc: 'How to quit doomscrolling and replace it with something real.' },
+  { path: '/find-like-minded-people', label: 'Find like-minded people', desc: 'How to find your people by leading with what you care about and becoming a regular where it happens.' },
 ]
 
 // ── Live first-party stats (AIO citation lever, CONTENT-VOICE §8c) ───────────
