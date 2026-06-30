@@ -163,6 +163,14 @@ negotiated away the first time it is inconvenient.
 The **window** for every SLO below is a rolling 28 days unless stated. The **signal**
 column names where the number is read from (all already wired or read from the vendor).
 
+> **SLOs as code (H0-8).** The table below is now also codified as typed,
+> machine-readable data in [`lib/observability/slos.ts`](../lib/observability/slos.ts),
+> with [`SLOs.md`](SLOs.md) as the prose companion and `slos.test.ts` keeping the two in
+> lockstep (it asserts all 18 cron jobs have a freshness window). A status endpoint,
+> the heartbeat monitor, or a CI gate can import the targets instead of re-typing them.
+> When this table and the module disagree, the module (being executable) wins; keep
+> this table in step with it.
+
 | SLO | Target | Window | Signal | Rationale |
 |---|---|---|---|---|
 | **Uptime** (app reachable, 2xx/3xx on health path) | **99.9%** | 28d | Vercel + uptime monitor | ~43 min/month budget. Honest for single-region serverless; not five-nines we cannot yet back. |
