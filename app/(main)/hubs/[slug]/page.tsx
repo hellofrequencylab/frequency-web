@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users } from 'lucide-react'
+import { Users, LayoutDashboard } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
+import { EditHubButton } from '@/components/hubs/edit-hub-button'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
@@ -123,6 +124,22 @@ export default async function HubPage({
           )
         }
         badges={<StatusBadge status={hub.status} />}
+        // Owner/operator entries, stacked: Edit (Settings drawer) then Manage (console).
+        // Gated on hub.manage — the same capability every settings action re-checks server-side.
+        actions={
+          canManage ? (
+            <div className="flex flex-col items-stretch gap-2 sm:items-end">
+              <EditHubButton />
+              <Link
+                href={`/hubs/${hub.slug}/manage`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+              >
+                <LayoutDashboard className="h-4 w-4 text-subtle" />
+                Manage hub
+              </Link>
+            </div>
+          ) : undefined
+        }
         subtitle={
           <>
             {hub.guide && (

@@ -91,6 +91,10 @@ describe('admin module registry', () => {
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings', 'circle.text'])
+    // Hub/Nexus reach circle/event parity for in-page edit mode (EM1-4): the SettingsDrawer
+    // selects their sidebar Basics module by scope kind, exactly as circle/event do.
+    expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual(['hub.settings'])
+    expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual(['nexus.settings'])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
     expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual(['practice.settings'])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
