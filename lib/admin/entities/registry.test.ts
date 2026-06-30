@@ -7,43 +7,70 @@ import {
 } from './registry'
 import type { Capability } from '@/lib/core/capabilities'
 
-// EM1-1: the entity registry's selection is pure — which surfaces a viewer sees is
-// (entity × the capabilities they hold for that scope), filtered + spine-ordered.
-// These lock that contract for the Pass-1 circle surfaces.
+// EM1-1 / EM1-3: the entity registry's selection is pure — which surfaces a viewer sees
+// is (entity × the capabilities they hold for that scope), filtered + spine-ordered.
+// These lock that contract for the Pass-1 surfaces (circle, plus the EM1-3 rollout onto
+// hub, nexus, event, practice).
+
+// Each Pass-1 entity, the capability that gates it, and the surface ids it should yield.
+const ENTITY_CASES: ReadonlyArray<{
+  entity: ManagedEntity
+  cap: Capability
+  ids: string[]
+}> = [
+  { entity: 'circle', cap: 'circle.editSettings', ids: ['circle.basics', 'circle.danger'] },
+  { entity: 'hub', cap: 'hub.manage', ids: ['hub.basics', 'hub.danger'] },
+  { entity: 'nexus', cap: 'nexus.manage', ids: ['nexus.basics', 'nexus.danger'] },
+  { entity: 'event', cap: 'event.editSettings', ids: ['event.basics', 'event.danger'] },
+  { entity: 'practice', cap: 'practice.editSettings', ids: ['practice.basics', 'practice.danger'] },
+]
 
 describe('entity registry · surfacesFor', () => {
-  it('surfaces circle Basics + Danger to a viewer holding circle.editSettings', () => {
-    const caps = new Set<Capability>(['circle.view', 'circle.editSettings'])
-    expect(surfacesFor('circle', caps).map((s) => s.id)).toEqual([
-      'circle.basics',
-      'circle.danger',
-    ])
-    expect(managesEntity('circle', caps)).toBe(true)
-  })
+  for (const { entity, cap, ids } of ENTITY_CASES) {
+    it(`surfaces ${entity} Basics + Danger to a viewer holding ${cap}`, () => {
+      const caps = new Set<Capability>([cap])
+      expect(surfacesFor(entity, caps).map((s) => s.id)).toEqual(ids)
+      expect(managesEntity(entity, caps)).toBe(true)
+    })
 
-  it('hides every circle surface from a viewer without the capability', () => {
-    const caps = new Set<Capability>(['circle.view'])
-    expect(surfacesFor('circle', caps)).toHaveLength(0)
-    expect(managesEntity('circle', caps)).toBe(false)
-  })
+    it(`hides every ${entity} surface from a viewer without ${cap}`, () => {
+      const caps = new Set<Capability>(['circle.view'])
+      expect(surfacesFor(entity, caps)).toHaveLength(0)
+      expect(managesEntity(entity, caps)).toBe(false)
+    })
+
+    it(`returns ${entity} surfaces ordered by the spine (basics before danger)`, () => {
+      const slots = surfacesFor(entity, new Set<Capability>([cap])).map((s) => s.slot)
+      expect(slots.indexOf('basics')).toBeLessThan(slots.indexOf('danger'))
+    })
+  }
 
   it('treats an empty capability set as "does not manage"', () => {
     expect(surfacesFor('circle', new Set<Capability>())).toHaveLength(0)
     expect(managesEntity('circle', new Set<Capability>())).toBe(false)
   })
 
-  it('does not surface circle modules for a different entity type', () => {
-    const caps = new Set<Capability>(['circle.editSettings'])
-    // Pass 1 only declares circle surfaces, so any other entity is empty — and the
-    // circle gate must never leak onto another entity.
-    expect(surfacesFor('hub', caps)).toHaveLength(0)
-    expect(surfacesFor('event', caps)).toHaveLength(0)
+  it('does not leak one entity’s gate onto another entity', () => {
+    // Holding the circle gate must surface ONLY circle's rows — never hub/nexus/event/
+    // practice, each of which is gated by its own capability.
+    const circleOnly = new Set<Capability>(['circle.editSettings'])
+    expect(surfacesFor('hub', circleOnly)).toHaveLength(0)
+    expect(surfacesFor('nexus', circleOnly)).toHaveLength(0)
+    expect(surfacesFor('event', circleOnly)).toHaveLength(0)
+    expect(surfacesFor('practice', circleOnly)).toHaveLength(0)
+
+    // And the hub gate must not surface circle's rows.
+    const hubOnly = new Set<Capability>(['hub.manage'])
+    expect(surfacesFor('circle', hubOnly)).toHaveLength(0)
+    expect(surfacesFor('hub', hubOnly).map((s) => s.id)).toEqual(['hub.basics', 'hub.danger'])
   })
 
-  it('returns surfaces ordered by the spine (basics before danger)', () => {
-    const caps = new Set<Capability>(['circle.editSettings'])
-    const slots = surfacesFor('circle', caps).map((s) => s.slot)
-    expect(slots.indexOf('basics')).toBeLessThan(slots.indexOf('danger'))
+  it('does not surface anything for an entity that has no declared surfaces', () => {
+    // `channel` and `profile` are valid Scope kinds but carry no entity-console surfaces
+    // in Pass 1 — they must come back empty regardless of caps.
+    const caps = new Set<Capability>(['channel.manage', 'profile.edit', 'circle.editSettings'])
+    expect(surfacesFor('channel', caps)).toHaveLength(0)
+    expect(surfacesFor('profile', caps)).toHaveLength(0)
   })
 
   it('has unique surface ids, each gated by a real capability', () => {
@@ -51,8 +78,17 @@ describe('entity registry · surfacesFor', () => {
     expect(new Set(ids).size).toBe(ids.length)
     // Every declared surface names a capability (no ungated surface can exist).
     expect(ENTITY_SURFACES.every((s) => typeof s.requiredCapability === 'string')).toBe(true)
-    // The entity discriminant is a real Scope kind.
-    const entities: ManagedEntity[] = ENTITY_SURFACES.map((s) => s.entity)
-    expect(entities.every((e) => e === 'circle')).toBe(true)
+    // Every declared entity is one of the Pass-1 managed entities (a real Scope kind).
+    const allowed = new Set<ManagedEntity>(['circle', 'hub', 'nexus', 'event', 'practice'])
+    expect(ENTITY_SURFACES.every((s) => allowed.has(s.entity))).toBe(true)
+  })
+
+  it('declares exactly Basics + Danger for each Pass-1 entity', () => {
+    for (const { entity } of ENTITY_CASES) {
+      const slots = ENTITY_SURFACES.filter((s) => s.entity === entity)
+        .map((s) => s.slot)
+        .sort()
+      expect(slots).toEqual(['basics', 'danger'])
+    }
   })
 })

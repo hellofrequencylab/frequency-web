@@ -3,7 +3,7 @@ import Link from 'next/link'
 import {
   TrendingUp, ArrowUpRight, QrCode, Share2, GraduationCap, ToggleRight,
   Contact, PieChart, Megaphone, Activity, SlidersHorizontal, Layers,
-  Rocket, Telescope, Bot,
+  Rocket, Telescope, Bot, Link2,
   type LucideIcon,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
@@ -289,6 +289,7 @@ async function ManageSections() {
   ])
 
   const acquisition: ManageCard[] = [
+    { label: 'Link Generator', desc: 'Compose a trackable link with campaign tags, then generate a short link and QR to share.', stat: '', statLabel: 'Open', href: '/admin/growth/links', Icon: Link2 },
     { label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', stat: `${qrC.count ?? 0}`, statLabel: 'codes', href: '/admin/qr', Icon: QrCode },
     { label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', stat: '', statLabel: 'Manage', href: '/admin/referrals', Icon: Share2 },
     { label: 'Walkthroughs', desc: 'Instructional walkthroughs by role and trigger.', stat: '', statLabel: 'Manage', href: '/admin/walkthroughs', Icon: GraduationCap },

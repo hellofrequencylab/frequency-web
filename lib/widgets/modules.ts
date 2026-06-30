@@ -50,6 +50,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Admin Practices blocks (/admin/content/practices) — the curation workspace ──
   { id: 'admin-practices-stats', label: 'Practice stats', description: 'Headline counts: library size, public, awaiting review, featured, and never-logged.' },
   { id: 'admin-practices-review', label: 'Review queue', description: 'Member-submitted practices waiting for an approve or reject decision, ordered by trust and near-duplicate signal.' },
+  { id: 'admin-practices-merge', label: 'Merge duplicates', description: 'Practice pairs the library flagged as near-identical. Pick the one to keep, then fold the copy in, re-pointing every log and tag onto it.' },
   { id: 'admin-practices-attention', label: 'Needs attention', description: 'Public practices with a fixable gap (no Pillar, no image, never logged, going stale), worst quality first.' },
   { id: 'admin-practices-library', label: 'Practice library', description: 'The full faceted curation table — filter by any signal, then tune what is public, a template, or featured. URL-driven, paginated.' },
   { id: 'admin-practices-tags', label: 'Tag governance', description: 'Promote a member tag to canonical, or merge synonyms into a canonical tag.' },
@@ -243,6 +244,10 @@ const MENU_MODULE_IDS = [
 const ADMIN_PRACTICES_MODULE_IDS = [
   'admin-practices-stats',
   'admin-practices-review',
+  // Phase 2 "Clean" (ADR-438) merge worklist: surfaces the review queue's near-duplicate signal as
+  // actionable merge pairs, placed right after the review queue (decide, then dedupe) and before
+  // the quality "needs attention" panel.
+  'admin-practices-merge',
   'admin-practices-attention',
   'admin-practices-library',
   'admin-practices-tags',

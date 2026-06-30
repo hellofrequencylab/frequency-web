@@ -12,7 +12,20 @@ const abs = (path: string) => `${SITE_URL}${path.startsWith('/') ? path : `/${pa
 
 // ── Site-wide ─────────────────────────────────────────────────────────────────
 
-export function organizationSchema() {
+// The site-wide Organization node (emitted once in the root layout). Optional
+// enrichment is ADDITIVE and backward-compatible: existing callers keep the lean
+// node, while passing `sameAs` (canonical social/entity profiles) and/or
+// `foundingLocation` (the city the community is rooted in) gives answer engines
+// the extra identity edges they use to resolve "Frequency" as a real entity in
+// the knowledge graph, a primary AIO lever (CONTENT-VOICE §8). No precise
+// address is ever emitted: foundingLocation is a city-level Place only.
+export function organizationSchema(opts?: {
+  /** Canonical profiles for entity disambiguation (e.g. social URLs). */
+  sameAs?: string[]
+  /** City the community is rooted in (city-level Place, never a street). */
+  foundingLocation?: string | null
+}) {
+  const sameAs = opts?.sameAs?.filter(Boolean) ?? []
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -21,6 +34,16 @@ export function organizationSchema() {
     logo: abs('/icons/icon-192.png'),
     description: SITE_DESCRIPTION,
     email: 'hello@frequencylocal.com',
+    ...(sameAs.length ? { sameAs } : {}),
+    ...(opts?.foundingLocation
+      ? {
+          foundingLocation: {
+            '@type': 'Place',
+            name: opts.foundingLocation,
+            address: { '@type': 'PostalAddress', addressLocality: opts.foundingLocation },
+          },
+        }
+      : {}),
   }
 }
 
