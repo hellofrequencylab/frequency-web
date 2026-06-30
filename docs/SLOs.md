@@ -95,6 +95,16 @@ const fresh = isCronFresh('process-queue', lastSuccessEpochMs) // false if > 4 m
 never a pass. `isCronFresh` returns `false` for an unknown job or one that has never
 succeeded, so a gap surfaces rather than reads as healthy.
 
+### 4a. Discovery endpoint
+
+The same contract is published read-only at **`GET /api/status/slos`**
+([`app/api/status/slos/route.ts`](../app/api/status/slos/route.ts)) as JSON
+(`{ generatedAt, slos, cronFreshness }`), so a dashboard, an external check, or an
+on-call engineer can read the *current* targets from the running app rather than a doc
+that may lag the code. It serves only the static contract (no live measurement), takes
+no auth-scoped data, and is edge-cached for an hour since the contract changes only on a
+deploy.
+
 ---
 
 ## 5. When an SLO is breached (§4b)
