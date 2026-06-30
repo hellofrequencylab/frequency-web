@@ -34,10 +34,13 @@ comment on column public.spaces.is_comped is
   'Pricing ladder Phase A (ADR-458): this Space runs on a comped plan (no charge, full plan features). Set true for former Partner spaces on the collapse. Read untyped until lib/database.types.ts regenerates.';
 
 -- ── 2. Move CURRENT grants into the billing-managed namespace (behavior-preserving) ──────────────
--- For every space, write entitlements.billing = the { key: true } map of the space's CURRENT
--- (pre-collapse) plan's OLD entitlement keys, and REMOVE those same billing-managed keys from the top
--- level so they live ONLY in the billing namespace. Keys that are NOT in any plan map (genuine manual
--- grants, plus the crm.autonomy DIAL) stay at the top level untouched. The union read is identical.
+-- For every space, write entitlements.billing = the UNION of (a) the { key: true } map of the space's
+-- CURRENT (pre-collapse) plan's OLD entitlement keys and (b) any billing-managed key already present
+-- (and true) at the top level (an operator MANUAL grant beyond the plan). Then REMOVE every
+-- billing-managed key from the top level so each lives ONLY in the billing namespace. Keys that are NOT
+-- billing-managed (genuine non-plan manual grants, plus the crm.autonomy DIAL) stay at the top level
+-- untouched. The union read (spaceHasEntitlement) is identical before and after, including for a
+-- hand-grant the plan map does not cover.
 --
 -- The OLD plan -> keys map is embedded here as a CASE (the code map is changing in this same PR, so the
 -- SQL cannot read it). It mirrors the pre-collapse PLAN_ENTITLEMENT_KEYS exactly:
@@ -70,11 +73,41 @@ with old_plan_keys as (
         '{}'::jsonb
     end as billing_map
   from public.spaces s
+),
+present_billing as (
+  -- The billing-managed keys ALREADY present (and true) at the TOP level of each space, as a
+  -- { key: true } map. These include any operator MANUAL grant of a billing-managed key beyond the
+  -- plan map (e.g. a free space hand-granted crm, or a practitioner hand-granted email). Unioning them
+  -- into the billing namespace is what keeps the migration behavior-preserving: without it, stripping
+  -- the top level would DROP a hand-grant the plan map does not cover and the union read would change.
+  select
+    s.id as space_id,
+    coalesce(
+      (
+        select jsonb_object_agg(e.key, 'true'::jsonb)
+        from jsonb_each(
+          case
+            when jsonb_typeof(coalesce(s.entitlements, '{}'::jsonb)) = 'object'
+              then coalesce(s.entitlements, '{}'::jsonb)
+            else '{}'::jsonb
+          end
+        ) e
+        where e.key in (
+          'crm', 'crm.playbooks', 'email', 'automation', 'team',
+          'multi_pipeline', 'reporting', 'crm.resonance', 'crm.resonance_ai', 'whitelabel'
+        )
+          and e.value = 'true'::jsonb
+      ),
+      '{}'::jsonb
+    ) as present_map
+  from public.spaces s
 )
 update public.spaces s
 set entitlements =
   -- Start from the existing blob (default to {} if it is somehow not an object), STRIP every
-  -- billing-managed key from the top level, then SET the reserved `billing` object to the plan map.
+  -- billing-managed key from the top level, then SET the reserved `billing` object to the UNION of the
+  -- plan map AND any billing-managed key that was already present at the top level (the hand-grant
+  -- preservation). The union read (spaceHasEntitlement) is therefore identical before and after.
   (
     (
       case
@@ -93,9 +126,10 @@ set entitlements =
       - 'crm.resonance_ai'
       - 'whitelabel'
     )
-    || jsonb_build_object('billing', opk.billing_map)
+    || jsonb_build_object('billing', opk.billing_map || pb.present_map)
   )
 from old_plan_keys opk
+join present_billing pb on pb.space_id = opk.space_id
 where opk.space_id = s.id;
 
 -- ── 3. Remap spaces.plan to the collapsed ladder + flag comped Partner spaces ────────────────────
