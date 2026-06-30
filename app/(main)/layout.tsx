@@ -20,6 +20,8 @@ import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
 import { getMenuConfig, orderedVisibleAreas } from '@/lib/menu-config'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
+import { PERSONAL_CONTEXT } from '@/lib/context/operator-context'
+import { resolveOperatorContext } from '@/lib/context/resolve-context'
 import { getStaffMember } from '@/lib/staff'
 import { getViewerHats } from '@/lib/core/viewer-hats'
 import { accessTo, type AccessLevel, type Hats, type Surface } from '@/lib/core/access-matrix'
@@ -289,6 +291,17 @@ export default async function MainLayout({
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
   const pageWebRole = previewingDown ? 'none' : asWebRole(profile.web_role)
 
+  // The operator-identity context (FRAMING ONLY — lib/context/operator-context.ts). Re-derived from
+  // REAL authority (owned/admin Spaces + the staff axis) and re-validates the cookie, so the chip +
+  // switcher only ever offer contexts the caller genuinely has. It is purely presentational: the
+  // value never feeds a gate (the manage / admin surfaces re-check real authority independently).
+  // Suppressed to personal-only while previewing DOWN, so a steward's "view as" faithfully drops the
+  // operator/admin framing too, exactly like staffRole + pageWebRole above. realWebRole is the TRUE
+  // staff axis so the Admin context is offered to actual staff regardless of the view-as preview.
+  const { context: operatorContext, available: availableContexts } = previewingDown
+    ? { context: PERSONAL_CONTEXT, available: [] }
+    : await resolveOperatorContext({ id: profile.id, webRole: asWebRole(profile.web_role) })
+
   // The viewer collapsed to a single MenuAccess token for the DB-backed header / admin
   // megas (components/layout/menu-role). View-as aware: a visitor preview reads as
   // 'visitor', and a downgraded preview rides the effective community role (staff is
@@ -519,6 +532,8 @@ export default async function MainLayout({
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       previewVisitor={previewVisitor}
+      operatorContext={operatorContext}
+      availableContexts={availableContexts}
       sidebar={sidebar}
       statsPanel={statsPanel}
       ticker={ticker}

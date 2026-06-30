@@ -214,6 +214,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/events', label: 'Events', area: 'Member' },
   { route: '/people', label: 'People', area: 'Member' },
   { route: '/spaces/directory', label: 'Spaces (directory)', area: 'Member' },
+  // The "Spaces you run" hub (operator-context switcher): the personal list of every Space the
+  // caller owns/admins, each linking to its /manage console. It keeps the GLOBAL community rail
+  // like every other member browse surface (it falls through to 'global' in railFor); this catalog
+  // entry registers it as an explicitly managed surface an operator can reframe.
+  { route: '/spaces/operating', label: 'Spaces you run', area: 'Member' },
   { route: '/spaces/_/crm', label: 'Space CRM board', area: 'Focus surfaces' },
   // The owner "Features and access" sub-page (per-space-roles Phase 1): a centered Focus surface that
   // composes <FocusTemplate>. Per the owner directive (2026-06-20) every /spaces/<slug>/settings* route
