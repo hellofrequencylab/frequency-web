@@ -17,7 +17,10 @@ ALTER FUNCTION public.is_blocked_between(a uuid, b uuid) SET search_path = publi
 ALTER FUNCTION public.maintain_engagement_on_reaction() SET search_path = public;
 ALTER FUNCTION public.maintain_engagement_on_reply() SET search_path = public;
 ALTER FUNCTION public.member_engagement_stats() SET search_path = public;
-ALTER FUNCTION public.quest_outcomes() SET search_path = public;
+-- REPLAY FIX: quest_outcomes() was retired (dropped) in
+-- 20260609104000_retire_quest_chains_engine.sql, which runs before this
+-- migration on a fresh apply. ALTERing it errored with "function does not
+-- exist" (42883). Line removed; nothing recreates the function afterward.
 ALTER FUNCTION public.rooms_maintain_member_count() SET search_path = public;
 ALTER FUNCTION public.rooms_touch_last_message() SET search_path = public;
 ALTER FUNCTION public.set_updated_at() SET search_path = public;
