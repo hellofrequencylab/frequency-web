@@ -2,36 +2,12 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { SITE_NAME } from "@/lib/site";
+import { loadNunito } from "@/lib/og/load-nunito";
 
 export const runtime = "nodejs";
 export const alt = `${SITE_NAME} Help Center`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-
-// Pull a single-weight TTF subset from Google Fonts for Satori. Best-effort:
-// if the network fetch fails at build time, ImageResponse falls back to its
-// built-in font rather than failing the build.
-async function loadNunito(weight: number, text: string) {
-  try {
-    const url = `https://fonts.googleapis.com/css2?family=Nunito:wght@${weight}&text=${encodeURIComponent(
-      text,
-    )}`;
-    const css = await (
-      await fetch(url, {
-        headers: {
-          // Ask for a TTF (Satori can't parse woff2).
-          "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        },
-      })
-    ).text();
-    const src = css.match(/src: url\((.+?)\) format\(/)?.[1];
-    if (!src) return null;
-    return await (await fetch(src)).arrayBuffer();
-  } catch {
-    return null;
-  }
-}
 
 export default async function Image() {
   const wordmark = SITE_NAME.toUpperCase();
