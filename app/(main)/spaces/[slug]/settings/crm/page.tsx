@@ -4,6 +4,7 @@ import { Briefcase, CircleDollarSign, ListChecks, Trophy } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
@@ -68,7 +69,7 @@ export default async function SpaceCrmPage({
       eyebrow={brandName}
       title="CRM"
       description="Your pipeline, contacts, and private notes for this space. Only your team sees these."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CreditCard, Lock, SlidersHorizontal } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
+import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
 
 // FEATURE LOCKED notice (per-space-roles Phase 2). The calm state a Space settings surface renders when
 // the per-Space function gate (spaceFunctionAccess) says the viewer cannot use the tool. It is a tasteful
@@ -16,6 +17,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 export function FeatureLockedNotice({
   brandName,
   slug,
+  type,
   label,
   reason,
   canManageMembers,
@@ -23,6 +25,8 @@ export function FeatureLockedNotice({
   brandName: string
   /** The Space slug, for the Features-and-access / billing link. */
   slug: string
+  /** The Space type, so the "Back to manage" link routes to the right owner surface (ADR-441 EM1-3). */
+  type: SpaceType
   /** The tool's member-facing label (e.g. "Email", "Members"). */
   label: string
   /** Why the gate closed: a universal tool is OFF, a plan tool is not granted, or the role is too low. */
@@ -52,7 +56,7 @@ export function FeatureLockedNotice({
   // at Features and access. A non-manager always lands back on the hub (they cannot change either).
   const action = !canManageMembers ? (
     <Link
-      href={`/spaces/${slug}/settings`}
+      href={spaceManageHref(type, slug)}
       className="inline-flex items-center gap-1.5 rounded-xl bg-surface-elevated px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-elevated/70"
     >
       Back to manage {brandName}

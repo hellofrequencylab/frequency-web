@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { LucideIcon } from 'lucide-react'
 import { Plus } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { spaceProfileIsEmpty, viewerCanEditActiveSpace } from '@/lib/spaces/profile-presence'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
@@ -39,7 +40,9 @@ export async function EntitySectionEmpty({
   if (await spaceProfileIsEmpty()) return null
 
   const canEdit = await viewerCanEditActiveSpace()
-  const settingsHref = `/spaces/${space.slug}/settings`
+  // The management entry (ADR-441 EM1-3): the unified /manage console for the console types, the
+  // legacy /settings hub otherwise. One rule, one helper.
+  const settingsHref = spaceManageHref(space.type, space.slug)
 
   if (canEdit && ownerActionLabel) {
     return (

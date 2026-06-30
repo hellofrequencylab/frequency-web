@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getOwnerDonationAsk } from '@/lib/spaces/donations'
@@ -63,11 +64,12 @@ export default async function SpaceDonationsPage({
         eyebrow={brandName}
         title="Donations"
         description="The donation fund for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Donations"
           reason={spaceFunctionAccess(space, 'donations', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -83,7 +85,7 @@ export default async function SpaceDonationsPage({
       eyebrow={brandName}
       title="Donations"
       description="Set up your fund and the amounts members can pick. We do not take a payment yet, so giving is not wired and no money changes hands. Paid giving and tax receipts come later."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

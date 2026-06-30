@@ -212,6 +212,27 @@ export async function updateSpaceMemberRole(
   }
 }
 
+/** Change an existing member's lifecycle status (active / suspended / invited). Service-role write,
+ *  server-mediated. A SUSPEND retains the row for history but strips authority (only an ACTIVE
+ *  membership confers a role, see getSpaceCapabilities); REACTIVATE flips it back to 'active'.
+ *  Returns true on success. An unknown status is rejected (fail-closed) before any write. */
+export async function setSpaceMemberStatus(
+  spaceId: string,
+  profileId: string,
+  status: SpaceMemberStatus,
+): Promise<boolean> {
+  if (!isSpaceMemberStatus(status)) return false
+  try {
+    const { error } = await membersTable()
+      .update({ status })
+      .eq('space_id', spaceId)
+      .eq('profile_id', profileId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
 /** Remove a member from a Space (a hard delete of the membership row). Service-role write,
  *  server-mediated. Returns true on success. The Space owner is not a member row, so this can
  *  never remove ownership. */

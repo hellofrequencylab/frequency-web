@@ -11,6 +11,7 @@ import {
 } from '@/lib/view-as'
 import { ROLE_HIERARCHY, isJanitor, roleRank, type CommunityRole } from '@/lib/core/roles'
 import { getSpaceById } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 
 // "View as a role under you" — Host and above. Sets (or clears) the view-as cookie.
 // The effective-role resolution in lib/view-as.ts only honours a target ranked BELOW
@@ -98,10 +99,11 @@ export async function previewAsSpace(spaceId: string): Promise<SpacePreviewResul
   // The preview sets the staff-strip cookie + (potentially) chrome, so refresh the shell.
   revalidatePath('/', 'layout')
 
-  // Route into THIS Space's owner experience. The settings hub renders for a janitor as a read-only
+  // Route into THIS Space's owner experience. The owner surface renders for a janitor as a read-only
   // staff preview (resolveSpaceManageAccess.staffViewing), so the staffer lands exactly where the
-  // owner works and sees precisely what that Space sees.
-  return { href: `/spaces/${space.slug}/settings` }
+  // owner works and sees precisely what that Space sees. The console types land in /manage (which
+  // honours the same staff preview), every other type in the legacy /settings hub (ADR-441 EM1-3).
+  return { href: spaceManageHref(space.type, space.slug) }
 }
 
 /** Clear any Space preview (back to the staffer's own view). Mirrors selecting your real role on

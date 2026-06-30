@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllTicketTiers } from '@/lib/spaces/tickets'
@@ -73,11 +74,12 @@ export default async function SpaceTicketsPage({
         eyebrow={brandName}
         title="Tickets"
         description="The ticket tiers for this space's events."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Tickets"
           reason={spaceFunctionAccess(space, 'tickets', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -93,7 +95,7 @@ export default async function SpaceTicketsPage({
       eyebrow={brandName}
       title="Tickets"
       description="Define the ticket tiers for your events. Tickets are free or RSVP only for now, so no payment is taken. Reserving a spot registers an RSVP, and paid ticketing comes later."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

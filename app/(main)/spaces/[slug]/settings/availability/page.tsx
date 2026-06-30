@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
@@ -69,11 +70,12 @@ export default async function SpaceAvailabilityPage({
         eyebrow={brandName}
         title="Availability"
         description="The weekly booking windows for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Availability and bookings"
           reason={spaceFunctionAccess(space, 'availability', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -91,7 +93,7 @@ export default async function SpaceAvailabilityPage({
       eyebrow={brandName}
       title="Availability"
       description="Set the weekly windows members can book. Times are in the timezone you choose, and members see them in that zone."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

@@ -4,6 +4,7 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
@@ -80,11 +81,12 @@ export default async function SpaceEmailPage({
         eyebrow={brandName}
         title="Email"
         description="Campaigns for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Email"
           // Plan-gated: no entitlement -> a plan nudge; entitlement present but role too low -> a team note.
           reason={spaceHasEntitlement(space, 'email') ? 'role' : 'plan'}
@@ -109,7 +111,7 @@ export default async function SpaceEmailPage({
       eyebrow={brandName}
       title="Email"
       description="Write a campaign, pick who gets it from your own contacts, and send or schedule it."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

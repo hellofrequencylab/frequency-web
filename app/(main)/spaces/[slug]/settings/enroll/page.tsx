@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { getSpaceProgramForOwner } from '@/lib/spaces/enroll'
@@ -67,11 +68,12 @@ export default async function SpaceEnrollPage({
         eyebrow={brandName}
         title="Enrollment"
         description="The program members enroll in for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Enrollment"
           reason={spaceFunctionAccess(space, 'enroll', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -87,7 +89,7 @@ export default async function SpaceEnrollPage({
       eyebrow={brandName}
       title="Enrollment"
       description="Define the program members can enroll in, then see who has enrolled. Enrolling reserves a seat, and paid enrollment comes later."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

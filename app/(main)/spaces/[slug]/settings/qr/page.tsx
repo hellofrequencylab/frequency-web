@@ -4,6 +4,7 @@ import { ScanLine, Users, Nfc } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceCodes, listSpaceScanRows, codeCapForPlan } from '@/lib/qr/space-codes'
@@ -70,11 +71,12 @@ export default async function SpaceQrPage({
         eyebrow={brandName}
         title="QR codes"
         description="The codes for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="QR codes"
           reason={spaceFunctionAccess(space, 'qr', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -94,7 +96,7 @@ export default async function SpaceQrPage({
       eyebrow={brandName}
       title="QR codes"
       description="Make a code that points anywhere, and change where it goes any time without a reprint. Add a splash landing when you want a scan to see a page first."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

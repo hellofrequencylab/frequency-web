@@ -4,6 +4,7 @@ import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, DoorOpen, Eye, Grad
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminSection } from '@/components/templates'
 import { getSpaceById } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { listThemes } from '@/lib/theme/server/admin-themes'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listSpaceMembers } from '@/lib/spaces/membership'
@@ -173,7 +174,7 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
               universal owner tools every type shares. Keep these in lockstep so the two never drift. */}
           <div className="space-y-3">
             <PreviewLink
-              href={`/spaces/${space.slug}/settings`}
+              href={spaceManageHref(space.type, space.slug)}
               icon={Settings}
               title="Manage hub"
               description="The owner's settings hub: profile, brand, and visibility."

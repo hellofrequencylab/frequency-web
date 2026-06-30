@@ -5,6 +5,7 @@ import { Briefcase, CircleDollarSign, ListChecks, Lock, Trophy } from 'lucide-re
 import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
 import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel, spaceAiDepth } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
@@ -76,6 +77,7 @@ export default async function SpaceCrmBoardPage({
       <LockedCrm
         brandName={brandName}
         slug={space.slug}
+        type={space.type}
         // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a viewer whose role
         // is too low sees a "this is for the team" note. Both are calm next steps, never a dead end. The
         // entitlement (hasCrm) decides which: no entitlement -> upgrade; entitlement present but role
@@ -120,7 +122,7 @@ export default async function SpaceCrmBoardPage({
       eyebrow={brandName}
       title="CRM"
       description="Your space's pipeline, tasks, and contacts. Bring people in from My Contacts and track each one through your stages."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
           <CrmStats spaceId={space.id} />
@@ -207,10 +209,12 @@ export default async function SpaceCrmBoardPage({
 function LockedCrm({
   brandName,
   slug,
+  type,
   reason,
 }: {
   brandName: string
   slug: string
+  type: SpaceType
   reason: 'not-admin' | 'no-entitlement'
 }) {
   const description =
@@ -241,7 +245,7 @@ function LockedCrm({
             </Link>
           ) : (
             <Link
-              href={`/spaces/${slug}/settings`}
+              href={spaceManageHref(type, slug)}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               <Briefcase className="h-4 w-4" aria-hidden /> Manage {brandName}

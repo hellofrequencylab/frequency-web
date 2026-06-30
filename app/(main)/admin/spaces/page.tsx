@@ -10,7 +10,7 @@ import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
 import { listSpaces } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
-import type { Space, SpaceStatus } from '@/lib/spaces/types'
+import { spaceManageHref, type Space, type SpaceStatus } from '@/lib/spaces/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,7 +133,7 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
               </Link>
             </Button>
             <Button asChild variant="secondary" size="sm">
-              <Link href={`/spaces/${s.slug}/settings`}>
+              <Link href={spaceManageHref(s.type, s.slug)}>
                 <Settings className="h-3.5 w-3.5" aria-hidden /> Edit profile
               </Link>
             </Button>
