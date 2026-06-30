@@ -52,6 +52,19 @@ export function groupSlotsByDay(slots: OpenSlot[], timezone: string): SlotDay[] 
   return [...groups.values()]
 }
 
+/** A plain-language session-length label for the header, derived from the open slots' durations (no
+ *  IO). One length reads "30 minute sessions"; mixed lengths read "30 or 60 minute sessions" so a
+ *  member knows what to expect before they pick. Returns null when there are no slots to describe. */
+export function sessionLengthLabel(slots: OpenSlot[]): string | null {
+  const lengths = [...new Set(slots.map((s) => s.slotMinutes))].sort((a, b) => a - b)
+  if (lengths.length === 0) return null
+  const list =
+    lengths.length === 1
+      ? String(lengths[0])
+      : `${lengths.slice(0, -1).join(', ')} or ${lengths[lengths.length - 1]}`
+  return `${list} minute sessions`
+}
+
 /** A short, friendly timezone label for the header, e.g. "EDT" or the IANA name if no short form. */
 function timezoneLabel(timezone: string): string {
   try {
@@ -83,6 +96,15 @@ export async function BookingMember({ spaceId }: { spaceId: string }) {
   const timezone = await getSpaceBookingTimezone(spaceId)
   const days = groupSlotsByDay(slots, timezone)
   const tzLabel = timezoneLabel(timezone)
+  const sessionLabel = sessionLengthLabel(slots)
 
-  return <BookingPicker spaceId={spaceId} days={days} timezone={timezone} tzLabel={tzLabel} />
+  return (
+    <BookingPicker
+      spaceId={spaceId}
+      days={days}
+      timezone={timezone}
+      tzLabel={tzLabel}
+      sessionLabel={sessionLabel}
+    />
+  )
 }
