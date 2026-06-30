@@ -10,9 +10,20 @@
 import { stripe, appUrl } from './stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingLive, getPricingValues, loadPricingFlags } from '@/lib/pricing/settings'
-import { type SpacePlan } from '@/lib/pricing/plans'
+import { asAddonKey, type AddonKey, type SpacePlan } from '@/lib/pricing/plans'
 import { resolveStripePriceId } from './pricing-prices'
-import { asSpacePlanKey, offersPeriod, priceKey, type BillingPeriod, type SpacePlanKey } from './pricing-keys'
+import {
+  asCatalogItemKey,
+  asSpacePlanKey,
+  catalogPriceKey,
+  offersPeriod,
+  priceKey,
+  type BillingInterval,
+  type BillingPeriod,
+  type CatalogItemKey,
+  type SpacePlanKey,
+} from './pricing-keys'
+import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
 const PLAN_FLAG: Record<SpacePlanKey, 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled' | 'plan_whitelabel_enabled'> = {
@@ -30,6 +41,28 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
   if (!(await billingLive())) return false
   const flags = await loadPricingFlags()
   return flags[PLAN_FLAG[key]] === true
+}
+
+// PHASE B (ADR-460): the collapsed-ladder labels (pro/nonprofit/organization) map onto the existing
+// per-plan switches until Phase C adds a dedicated `plan_pro_enabled`. Pro reuses the practitioner
+// switch (Pro replaces practitioner as the entry paid plan); nonprofit/organization map 1:1. Always
+// GATED on billingLive(), so this is FALSE while billing is OFF (no live loadout checkout in Phase B).
+const LOADOUT_FLAG: Record<'pro' | 'nonprofit' | 'organization', 'plan_practitioner_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled'> = {
+  pro: 'plan_practitioner_enabled',
+  nonprofit: 'plan_nonprofit_enabled',
+  organization: 'plan_organization_enabled',
+}
+
+/** Is a collapsed-ladder plan (pro/nonprofit/organization) sellable right now? billingLive() AND its
+ *  mapped per-plan switch. GATED, FAIL-SAFE FALSE. The Phase B loadout checkout gates on this. */
+export async function spaceLoadoutSellable(plan: 'pro' | 'nonprofit' | 'organization'): Promise<boolean> {
+  try {
+    if (!(await billingLive())) return false
+    const flags = await loadPricingFlags()
+    return flags[LOADOUT_FLAG[plan]] === true
+  } catch {
+    return false
+  }
 }
 
 /** Create a subscription Checkout session for a Space owner to buy a plan; returns the URL, or null
@@ -86,6 +119,143 @@ export async function createSpacePlanCheckout(
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
+    ...(customer ? { customer } : { customer_email: ownerEmail }),
+    client_reference_id: spaceId,
+    metadata,
+    subscription_data: subscriptionData,
+    success_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing?plan=upgraded&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl()}/spaces/${space.slug ?? spaceId}/settings/billing`,
+    allow_promotion_codes: true,
+  })
+  return session.url
+}
+
+// ── PHASE B: the MULTI-ITEM loadout checkout (ADR-460, docs/PRICING-LADDER-PLAN.md §4/§5) ──────────
+// A Space owner buys Pro as ONE subscription with MULTIPLE items: the Pro base plus one price item per
+// active add-on, with quantity items for Team + Nonprofit seats. Monthly or yearly is chosen by the
+// caller. The FOUNDING price is charged (the grandfathered rate); if the Space already holds a locked
+// price id for an item (a prior founding subscribe that has not lapsed), THAT id is re-billed instead,
+// so a founding subscriber keeps their rate on a change. A 14-day per-item trial applies.
+//
+// GATED on billingLive() (the master switch). Returns null (a clean no-op) while OFF, so nothing
+// charges and no Stripe session is created. Server-only.
+
+/** The loadout the caller selects: the base plan, the active add-ons, and the seat counts. Monthly or
+ *  yearly via `interval`. */
+export interface SpaceLoadout {
+  /** The base plan the loadout is for. 'pro' = base + chosen add-ons; 'nonprofit' = the seat item;
+   *  'organization' = the org item. 'free' is not a checkout. */
+  plan: 'pro' | 'nonprofit' | 'organization'
+  /** The active Pro add-ons (ignored for nonprofit/organization, which are all-inclusive). */
+  addons?: readonly (AddonKey | string)[]
+  /** Licensed seat count for seat items (Team add-on quantity / Nonprofit seat quantity). Min 1. */
+  seatQuantity?: number
+  interval: BillingInterval
+}
+
+/** Resolve the Stripe price id to CHARGE for a catalog item: the Space's locked (grandfathered)
+ *  founding price if it holds one for this item, else the synced FOUNDING price for the interval. Null
+ *  when not synced (the item is skipped rather than charged at the wrong price). */
+async function resolveLoadoutPriceId(
+  spaceId: string,
+  catalogKey: CatalogItemKey,
+  interval: BillingInterval,
+): Promise<string | null> {
+  const itemKey = itemKeyForCatalogKey(catalogKey)
+  if (itemKey) {
+    const locked = await readLockedPriceId(spaceId, itemKey)
+    if (locked) return locked // re-bill the grandfathered founding price (the lock)
+  }
+  // The founding price is the plain catalog key (the one charged); the list anchor is the _list variant.
+  return resolveStripePriceId(catalogPriceKey(catalogKey, interval, false))
+}
+
+/** The catalog item keys + their seat-ness a loadout maps to. PURE. Pro -> base + the active add-on
+ *  items; Nonprofit -> the seat item; Organization -> the org item. */
+function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
+  if (loadout.plan === 'organization') return [{ key: 'organization', perSeat: false }]
+  if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: true }]
+  // Pro: the base plus one item per active add-on. Team is the per-seat add-on.
+  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'pro_base', perSeat: false }]
+  const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
+  for (const addon of addons) {
+    const catalogKey = asCatalogItemKey(`addon_${addon}`)
+    if (!catalogKey) continue
+    out.push({ key: catalogKey, perSeat: addon === 'team' })
+  }
+  return out
+}
+
+/** Create a single multi-item subscription Checkout for a Space owner's loadout (Pro base + add-ons,
+ *  or the nonprofit seat / organization item), monthly or yearly. Charges the FOUNDING price (or the
+ *  Space's grandfathered locked price when it holds one), with a 14-day per-item trial and proration.
+ *  Returns the session URL, or null when the loadout is not sellable / not synced / the space has no
+ *  owner. GATED on spacePlanSellable for the base plan.
+ *  authz-delegated: caller-trusted operator/owner action authorizes the space; this binds the customer
+ *  to the resolved space OWNER and stamps the space_id + plan in metadata so the webhook reconciles. */
+export async function createSpaceLoadoutCheckout(
+  spaceId: string,
+  loadout: SpaceLoadout,
+): Promise<string | null> {
+  if (!stripe) return null
+  const interval: BillingInterval = loadout.interval === 'year' ? 'year' : 'month'
+  // The base plan must be sellable (billingLive + the mapped per-plan switch). GATED, FALSE while OFF.
+  if (!(await spaceLoadoutSellable(loadout.plan))) return null
+
+  // The customer is the Space owner; reuse their Stripe customer id if the space already has one.
+  const db = createAdminClient()
+  const { data: space } = (await db
+    .from('spaces')
+    .select('id, owner_profile_id, slug, stripe_customer_id')
+    .eq('id', spaceId)
+    .maybeSingle()) as {
+    data: { id?: string; owner_profile_id?: string | null; slug?: string | null; stripe_customer_id?: string | null } | null
+  }
+  if (!space?.id || !space.owner_profile_id) return null
+
+  let customer = space.stripe_customer_id ?? undefined
+  let ownerEmail: string | undefined
+  if (!customer) {
+    const { data: owner } = await db
+      .from('profiles')
+      .select('email, stripe_customer_id')
+      .eq('id', space.owner_profile_id)
+      .maybeSingle()
+    const ownerRow = owner as { email?: string | null; stripe_customer_id?: string | null } | null
+    customer = ownerRow?.stripe_customer_id ?? undefined
+    ownerEmail = ownerRow?.email ?? undefined
+  }
+
+  const seatQuantity = Math.max(1, Math.floor(loadout.seatQuantity ?? 1))
+  // Build one line item per catalog item, charging the founding (or locked) price. Seat items carry the
+  // chosen quantity. An item with no synced price is skipped (never charged at the wrong price).
+  const lineItems: { price: string; quantity: number }[] = []
+  for (const { key, perSeat } of catalogKeysForLoadout(loadout)) {
+    const priceId = await resolveLoadoutPriceId(spaceId, key, interval)
+    if (!priceId) {
+      // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
+      // that add-on from the loadout rather than blocking the whole checkout.
+      if (key === 'pro_base' || key === 'nonprofit_seat' || key === 'organization') return null
+      continue
+    }
+    lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })
+  }
+  if (lineItems.length === 0) return null
+
+  const plan = loadout.plan
+  const metadata = { kind: 'space_plan', space_id: spaceId, plan, billing_interval: interval }
+  // 14-day per-item trial (operator-editable via pricing settings, default 14). Stripe starts the
+  // subscription in `trialing`, which the reconciler treats as active, so the plan is granted during the
+  // trial and auto-converts when it ends. Proration is Stripe's default for a multi-item subscription.
+  const trialDays = (await getPricingValues()).trial.days
+  const subscriptionData: { metadata: typeof metadata; trial_period_days?: number; proration_behavior?: 'create_prorations' } =
+    trialDays > 0
+      ? { metadata, trial_period_days: trialDays, proration_behavior: 'create_prorations' }
+      : { metadata, proration_behavior: 'create_prorations' }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: lineItems,
     ...(customer ? { customer } : { customer_email: ownerEmail }),
     client_reference_id: spaceId,
     metadata,

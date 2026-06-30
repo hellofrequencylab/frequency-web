@@ -9750,6 +9750,62 @@ page. No schema/migration change. The pure core is locked by `lib/people/member-
 
 ---
 
+## ADR-460: Phase B Stripe structure (multi-item subscription, list+founding+monthly+yearly catalog, generalized locked-price grandfather, set-to-target webhook)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel (Vision Steward). Builds on ADR-458 (the value ladder +
+the Phase A entitlement partition). Full build: [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) §1a/§4/§5.
+Ships behind `billing_live` OFF; the Phase B migration is a FILE, NOT applied.
+
+**Context.** ADR-458 collapsed the 7 space plans to four (free / pro / nonprofit / organization) and made
+the resolver set-to-target. Phase B is the clean Stripe structure the owner asked for: one Product per
+catalog item, a list anchor + founding price per item, a monthly + yearly price per item, Pro as a
+multi-item subscription, and the founding price grandfathered for the life of a subscription.
+
+**Decision.**
+- **Typed catalog, one Product per item.** The catalog is code source of truth in
+  `lib/billing/pricing-keys.ts` (`CATALOG`): `pro_base`, `addon_marketing`, `addon_ai`, `addon_team`,
+  `addon_branding`, `nonprofit_seat`, `organization`. Each item carries **`{ list, founding } x { month,
+  year }`** amounts. The **list** amount is the visible anchor; the **founding** amount is the price
+  charged today. **Yearly = two months free = 10x monthly** (`yearlyFromMonthly`, one source of the math).
+- **Price-key naming.** The founding (charged) price-row key is **`<item>_<interval>`** (e.g.
+  `pro_base_month`, `addon_marketing_year`, `nonprofit_seat_month`, `organization_year`); the **list
+  anchor** is the same key + **`_list`** (`pro_base_month_list`), synced `archived=true` (read only, never
+  sold). This keeps founding vs list resolvable from one map without a second source of truth. Retired
+  legacy keys (practitioner/business/whitelabel/supporter variants, `RETIRED_CATALOG_KEYS`) are **archived,
+  never deleted**, so a grandfathered locked price id keeps resolving.
+- **Idempotent, env-gated catalog sync.** `syncPricingCatalogToStripe()` creates/reuses one Product per
+  item (looked up by `frequency_pricing_key` metadata) + its four Prices (founding active, list archived),
+  then archives the retired keys. Admin-triggered (the `syncStripeCatalog` action), never on import/boot/
+  test, a clean no-op when Stripe is unconfigured.
+- **Multi-item subscription.** Pro = ONE subscription with MULTIPLE items: the base plus one price item per
+  active add-on; Team + Nonprofit are quantity (per-seat) items. `createSpaceLoadoutCheckout` builds the
+  line items for a loadout, monthly or yearly, with a 14-day per-item trial + proration. Gated on
+  `spaceLoadoutSellable` (billingLive + the per-plan switch).
+- **Generalized locked-price grandfather.** Checkout charges the **founding** price and records the charged
+  Stripe price id as the per-item **`locked_price_id`** in `space_subscription_items` (generalizing
+  `profiles.locked_price_id`/ADR-363 to space items). A renewal / add-on toggle re-bills the **locked**
+  price, not the current list price; a subscription lapse ends the lock; a fresh subscribe pays the
+  then-current price.
+- **Set-to-target webhook.** `reconcileSpacePlanSubscription` reads ALL subscription items, maps each
+  item_key to the base plan + active add-on set (`planForItemKeys` / `addonsForItemKeys`), and calls
+  **`setSpaceAddons`** to set-to-target the billing namespace. It persists each item row (incl.
+  `locked_price_id`, `interval`, `quantity`) and cancels rows for toggled-off items. A canceled sub targets
+  the empty set (revert to free). A legacy single-price sub (no recognized catalog items) falls back to the
+  `metadata.plan` path. Connect destination charge + application fee (5/3/custom) + the founder lock are
+  unchanged.
+- **Schema (migration `20260916000000_pricing_addons_seats.sql`, NOT applied).**
+  `space_subscription_items` (one row per Stripe item: `space_id`, `item_key`,
+  `stripe_subscription_item_id`, `status`, `trial_ends_at`, `quantity`, `interval`, `locked_price_id`; RLS:
+  staff read all, a Space owner/admin reads their own, writes service-role only) + `spaces.seat_quantity`
+  (licensed seats, v1). Reached untyped (ADR-246).
+
+**Consequences.** The clean Stripe structure (multi-item, list+founding, monthly+yearly) is the code source
+of truth an operator syncs. The grandfather lock now spans space subscriptions. The webhook write stays a
+single set-to-target jsonb write. Everything stays dormant behind `billing_live` OFF; the migration awaits
+owner hand-review. Phase C wires the surfaces (picker, /admin/pricing buttons) onto these hooks.
+
+---
+
 ## ADR-461: Space Modes (type as operating mode, under the unified Pro plan)
 
 **Status:** Accepted (2026-06-30). Owner: Daniel. Full plan:

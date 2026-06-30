@@ -216,6 +216,66 @@ Idempotency is the existing `stripe_webhook_events` claim plus fixed-value write
 `billingEnabled()`/`billingLive()` and is invoked only at runtime; the pure logic is unit-tested with
 the client never touched (`lib/billing/pricing-keys.test.ts`, `space-subscriptions.test.ts`).
 
+## Phase B — the clean Stripe structure (ADR-460, supersedes the P2 per-plan Stripe model)
+
+> **Status:** ⏳ built behind `billing_live` OFF (the master switch), migrations NOT applied. The P2
+> per-plan Stripe catalog above is the legacy axis; Phase B is the structure the live system uses once
+> the switch flips. See [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) and ADR-458/460. Migration
+> file: `supabase/migrations/20260916000000_pricing_addons_seats.sql`.
+
+The collapsed ladder (free / pro / nonprofit / organization) is sold as a typed **catalog of items**,
+one Stripe **Product per item**, replacing the per-plan Product set above. The catalog is the code
+source of truth in `lib/billing/pricing-keys.ts` (`CATALOG`, `catalogItems()`).
+
+**The catalog (each item = one Product).** `pro_base`, `addon_marketing`, `addon_ai`, `addon_team`,
+`addon_branding`, `nonprofit_seat`, `organization`. **Every item carries four prices: `{ list,
+founding } x { month, year }`.** The **list** amount is the visible anchor (Pro $29); the **founding**
+amount is the real price charged today (Pro $19). **Yearly = two months free = 10x monthly**
+(`yearlyFromMonthly`, the single source of the annual math). Amounts today: Pro $29/$19, Marketing/AI
++$20, Team +$9/seat, Branding +$30, Nonprofit $15/$12 per licensed seat, Organization $249/$199.
+
+**Price-row keys.** The founding (charged) price is `<item>_<interval>` (e.g. `pro_base_month`,
+`addon_marketing_year`, `nonprofit_seat_month`, `organization_year`); the **list anchor** is the same
+key plus `_list` (`pro_base_month_list`), synced `archived=true` (read only for the anchor amount, never
+sold). Retired legacy keys (`practitioner_*`, `business_*`, `whitelabel_*`, `supporter_*`) are **kept
+resolvable but archived, never deleted** (`RETIRED_CATALOG_KEYS`), so a grandfathered locked price id
+still resolves.
+
+**Catalog sync.** `lib/billing/pricing-products.ts` `syncPricingCatalogToStripe()` walks the catalog:
+one Product per item (looked up by the same `frequency_pricing_key` metadata, idempotent) with its four
+Prices (founding active, list archived-anchor), then archives the retired keys. Same gates as the P2
+sync: env-gated (`billingEnabled()`), admin-triggered (the `syncStripeCatalog` action), never a live
+call on import/boot/test, a clean no-op when Stripe is unconfigured.
+
+**Multi-item subscription.** A Space buys Pro as **one subscription with multiple items**: the Pro base
+plus **one price item per active add-on**, with **quantity items** for Team + Nonprofit seats.
+`createSpaceLoadoutCheckout(spaceId, loadout)` (`lib/billing/space-plan-checkout.ts`) builds the line
+items for a chosen loadout (base + add-ons / nonprofit seat / organization), monthly or yearly, with a
+14-day per-item trial + proration. Gated on `spaceLoadoutSellable` (`billingLive()` + the per-plan
+switch); returns `null` while OFF.
+
+**Founding-price grandfather (locked price id).** Generalizing `profiles.locked_price_id` (ADR-363) to
+space items: checkout charges the **founding** price and records the charged Stripe price id as the
+per-item **`locked_price_id`** in `space_subscription_items`. On a renewal / add-on toggle, the checkout
+**re-bills the locked price**, not the current list price (`readLockedPriceId`), so a founding
+subscriber keeps their rate. A subscription **lapse ends the lock** (the item row is canceled); a fresh
+subscribe pays the then-current founding price. Annual is the strongest lock (a full year held).
+
+**Webhook set-to-target.** `lib/billing/space-subscriptions.ts` `reconcileSpacePlanSubscription` now
+reads **all** of a subscription's items, maps each item's catalog key to its entitlement set, computes
+the base plan + active add-on set (`planForItemKeys` / `addonsForItemKeys`,
+`lib/billing/space-subscription-items.ts`), and calls **`setSpaceAddons`** (set-to-target the
+billing-managed namespace, ADR-458). It persists each item row (incl. `locked_price_id`, `interval`,
+`quantity`) and cancels rows for toggled-off items. A canceled subscription targets the **empty set**
+(revert to free). A legacy single-price subscription (no recognized catalog items) falls back to the
+`metadata.plan` path, so a grandfathered Phase A subscription still reconciles. Connect destination
+charge + application fee (5/3/custom) + the founder lock are unchanged.
+
+**Schema (Phase B migration, NOT applied).** `space_subscription_items` (one row per Stripe item on a
+Space: `space_id`, `item_key`, `stripe_subscription_item_id`, `status`, `trial_ends_at`, `quantity`,
+`interval`, `locked_price_id`; RLS: staff read all, a Space owner/admin reads their own, writes
+service-role only) + `spaces.seat_quantity` (licensed seats, v1). Reached untyped (ADR-246).
+
 ## The /admin/pricing console
 
 A janitor-gated operator surface (`app/(main)/admin/pricing/`, registered in

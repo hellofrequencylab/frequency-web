@@ -16,7 +16,7 @@
 
 import { stripe, billingEnabled } from './stripe'
 import { getPricingValues, type TierPrice } from '@/lib/pricing/settings'
-import { upsertStripePrice } from './pricing-prices'
+import { loadStripePriceMap, upsertStripePrice } from './pricing-prices'
 import {
   MEMBER_TIER_KEYS,
   SPACE_PLAN_KEYS,
@@ -25,6 +25,13 @@ import {
   type BillingPeriod,
   type MemberTierKey,
   type SpacePlanKey,
+  BILLING_INTERVALS,
+  catalogItems,
+  catalogAmounts,
+  catalogPriceKey,
+  RETIRED_CATALOG_KEYS,
+  type BillingInterval,
+  type CatalogItem,
 } from './pricing-keys'
 
 // The metadata key on every managed Product, so a re-sync finds it instead of creating a duplicate.
@@ -175,6 +182,147 @@ export async function syncPricingProductsToStripe(changedBy?: string | null): Pr
         }
       }
     }
+  }
+
+  return result
+}
+
+// ── PHASE B: the CLEAN catalog sync (ADR-460, docs/PRICING-LADDER-PLAN.md §4/§5) ──────────────────
+// syncPricingCatalogToStripe walks the typed catalog (lib/billing/pricing-keys.ts CATALOG): the Pro
+// base, the four add-ons, the nonprofit licensed seat, and the organization plan. For EACH item it
+// ensures one Stripe Product (looked up by the same frequency_pricing_key metadata, idempotent) and
+// FOUR Prices: { founding, list } x { month, year }. The FOUNDING prices are active (the one charged);
+// the LIST prices are the visible anchors, synced archived (not sold, read only for the anchor amount).
+// Retired legacy keys (practitioner/business/whitelabel/supporter variants) are ARCHIVED in the price
+// map, never deleted, so a grandfathered locked price id still resolves.
+//
+// Same gates as syncPricingProductsToStripe: a clean no-op (ok:false, reason:'env') when Stripe is not
+// configured, never a live call on import/boot/test. Idempotent: re-running reuses Products + matching
+// Prices and only creates a new Price when an amount changed (Stripe Prices are immutable).
+
+/** Find/create the managed Product for a catalog item by its metadata key (idempotent). */
+async function ensureCatalogProduct(item: CatalogItem): Promise<string> {
+  if (!stripe) throw new Error('Stripe is not configured.')
+  const found = await stripe.products.search({
+    query: `metadata['${PRODUCT_META_KEY}']:'${item.key}'`,
+    limit: 1,
+  })
+  const existing = found.data[0]
+  if (existing) {
+    if (existing.name !== item.label) {
+      await stripe.products.update(existing.id, { name: item.label })
+    }
+    return existing.id
+  }
+  const created = await stripe.products.create({
+    name: item.label,
+    metadata: { [PRODUCT_META_KEY]: item.key, perSeat: item.perSeat ? 'true' : 'false' },
+  })
+  return created.id
+}
+
+/** Find an active recurring Price on a Product matching amount + interval + the catalog price key, else
+ *  create one (Stripe Prices are immutable, so a changed amount yields a new Price). `list` tags it as
+ *  the anchor variant. Returns the resolved price id. */
+async function ensureCatalogPrice(opts: {
+  productId: string
+  priceKey: string
+  interval: BillingInterval
+  amountCents: number
+  list: boolean
+}): Promise<string> {
+  if (!stripe) throw new Error('Stripe is not configured.')
+  const prices = await stripe.prices.list({ product: opts.productId, active: true, limit: 100 })
+  const match = prices.data.find(
+    (p) =>
+      p.unit_amount === opts.amountCents &&
+      p.recurring?.interval === opts.interval &&
+      p.currency === 'usd' &&
+      p.metadata?.[PRODUCT_META_KEY] === opts.priceKey,
+  )
+  if (match) return match.id
+  const created = await stripe.prices.create({
+    product: opts.productId,
+    currency: 'usd',
+    unit_amount: opts.amountCents,
+    recurring: { interval: opts.interval },
+    // list = the anchor (not sold, archived in the map); founding = the charged price.
+    metadata: { [PRODUCT_META_KEY]: opts.priceKey, variant: opts.list ? 'list' : 'founding' },
+  })
+  return created.id
+}
+
+/** Sync the CLEAN Phase B catalog (Pro base + add-ons + nonprofit seat + organization) to Stripe and
+ *  write the resolved ids into pricing_stripe_prices. For each item: a Product + the four
+ *  {founding,list} x {month,year} Prices (founding active, list archived-anchor). Then ARCHIVE every
+ *  retired legacy key still in the map (never delete). ONLY runs when billingEnabled() (env keys
+ *  present); otherwise a clean no-op. Idempotent. Invoked exclusively from the env-gated /admin/pricing
+ *  sync action. `changedBy` is the operator's profile id (audited on the map rows). */
+export async function syncPricingCatalogToStripe(changedBy?: string | null): Promise<SyncResult> {
+  if (!billingEnabled() || !stripe) {
+    return { ok: false, reason: 'env', synced: [], errors: [] }
+  }
+
+  const result: SyncResult = { ok: true, synced: [], errors: [] }
+
+  for (const item of catalogItems()) {
+    let productId: string
+    try {
+      productId = await ensureCatalogProduct(item)
+    } catch (e) {
+      result.errors.push({ key: item.key, message: e instanceof Error ? e.message : 'Could not sync the product.' })
+      result.ok = false
+      continue
+    }
+
+    for (const interval of BILLING_INTERVALS) {
+      const amounts = catalogAmounts(item.key, interval)
+      // Two variants per interval: founding (the charged price, active) and list (the anchor, archived).
+      const variants: { list: boolean; amountCents: number }[] = [
+        { list: false, amountCents: amounts.foundingCents },
+        { list: true, amountCents: amounts.listCents },
+      ]
+      for (const { list, amountCents } of variants) {
+        if (amountCents == null || amountCents <= 0) continue
+        const key = catalogPriceKey(item.key, interval, list)
+        try {
+          const priceId = await ensureCatalogPrice({ productId, priceKey: key, interval, amountCents, list })
+          await upsertStripePrice({
+            key,
+            stripe_product_id: productId,
+            stripe_price_id: priceId,
+            // The list anchor is recorded archived (read-only for display); the founding price is active.
+            archived: list,
+            changedBy,
+          })
+          result.synced.push({ key, productId, priceId, founder: !list })
+        } catch (e) {
+          result.errors.push({ key, message: e instanceof Error ? e.message : 'Could not sync the price.' })
+          result.ok = false
+        }
+      }
+    }
+  }
+
+  // Archive (never delete) every retired legacy key still present in the map, so a grandfathered locked
+  // price id keeps resolving while the key drops out of the sold catalog.
+  try {
+    const map = await loadStripePriceMap()
+    for (const key of RETIRED_CATALOG_KEYS) {
+      const row = map[key]
+      if (row && !row.archived) {
+        await upsertStripePrice({
+          key,
+          stripe_product_id: row.stripe_product_id,
+          stripe_price_id: row.stripe_price_id,
+          archived: true,
+          changedBy,
+        })
+      }
+    }
+  } catch (e) {
+    result.errors.push({ key: 'retired', message: e instanceof Error ? e.message : 'Could not archive retired keys.' })
+    result.ok = false
   }
 
   return result
