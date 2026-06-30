@@ -167,7 +167,8 @@ create trigger waitlist_entries_set_updated_at
 --   * A signed-in member reads THEIR OWN rows (the apply / waitlist surfaces show
 --     "your application" / "your position" with the typed, non-service client).
 -- get_my_web_role() is the existing SECURITY DEFINER helper (web_role axis,
--- 20260613000050). auth.uid() is the member's profile id (profiles.id = auth.users.id).
+-- 20260613000050). get_my_profile_id() resolves the caller's profiles.id (profiles
+-- carry their own id; profiles.auth_user_id = auth.uid()), the canonical own-row check.
 alter table public.applications enable row level security;
 alter table public.waitlist_entries enable row level security;
 
@@ -179,7 +180,7 @@ create policy "applications: staff read"
 drop policy if exists "applications: own read" on public.applications;
 create policy "applications: own read"
   on public.applications for select
-  using (applicant_profile_id = auth.uid());
+  using (applicant_profile_id = public.get_my_profile_id());
 
 drop policy if exists "waitlist_entries: staff read" on public.waitlist_entries;
 create policy "waitlist_entries: staff read"
@@ -189,7 +190,7 @@ create policy "waitlist_entries: staff read"
 drop policy if exists "waitlist_entries: own read" on public.waitlist_entries;
 create policy "waitlist_entries: own read"
   on public.waitlist_entries for select
-  using (profile_id = auth.uid());
+  using (profile_id = public.get_my_profile_id());
 
 -- ── Rollback (hand-review aid) ─────────────────────────────────────────────────
 --   drop table if exists public.waitlist_entries;
