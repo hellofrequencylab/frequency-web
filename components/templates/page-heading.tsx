@@ -45,7 +45,14 @@ export function PageHeading({
 }) {
   return (
     <>
-    <div className="mb-4 sm:mb-5">
+    {/* The header-to-body gap reads the STRUCTURE axis token (--structure-rhythm, set per
+        [data-structure] on the shell root, lib/theme/structure.ts): the calm + kids ends flow
+        roomier, the bold preset tighter, from the same header. The 1.25rem base equals the old
+        sm:mb-5; the multiplier defaults to 1 so non-app surfaces (no [data-structure]) are
+        unchanged. */}
+    <div
+      className="mb-4 sm:mb-[calc(1.25rem*var(--structure-rhythm,1))]"
+    >
       {back && (
         <Link
           href={back.href}

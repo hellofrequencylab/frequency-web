@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin } from 'lucide-react'
+import { Moon, Sun, Monitor, Check, User, Shield, Bell, CreditCard, MapPin, Palette } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 
@@ -102,6 +102,17 @@ export default function SettingsPage() {
               </button>
             )
           })}
+        </div>
+
+        {/* Theme — the palette, feel, and seasonal accent (the server-resolved fxtheme axes),
+            on their own surface so the Mode card stays the quick light/dark switch. */}
+        <div className="mt-3">
+          <SettingLink
+            href="/settings/appearance"
+            Icon={Palette}
+            title="Theme"
+            description="Palette, feel, and seasonal accent"
+          />
         </div>
       </section>
     </FocusTemplate>

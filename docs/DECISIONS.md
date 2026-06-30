@@ -9306,3 +9306,30 @@ Verified with two `BEGIN…ROLLBACK` dry-runs against prod data before applying:
 - Retires the per-surface bespoke edit buttons and the separate studio destination; the practice pilot proves the pattern, then profile/circle/event/page/space roll on as field schemas with no new editor code.
 - Directly feeds the white-label tracks (T1 console, T4 Brand Studio) since brand editing becomes a scope of the same system.
 - Each rollout step is independently shippable, inline writes re-gate server-side, and RLS enforces ownership (ties to the T0 RLS convergence).
+
+## ADR-451: Member theme switcher wired + the structure axis given a real caller
+
+**Context.** The four-axis theming system (ADR-257) shipped its serializer, registries, and server
+resolver, but the member-facing half was a disconnected seam (BUILD-CATALOG §A.13 #1): nothing wrote
+the `fxtheme` cookie, so `serializeThemeCookie` / `THEME_COOKIE_ATTRS` had zero non-test callers, and
+`structureFor` (the generation → layout-variant map) had none either.
+
+**Decision.** Add a member theme switcher at Settings → Appearance (`FocusTemplate`) that writes the
+three server-resolved axes (palette / feel / seasonal accent) through three server actions. Each merges
+the chosen axis into the `fxtheme` cookie via `serializeThemeCookie`, mirrors `THEME_COOKIE_ATTRS`
+(one-year, path `/`, lax, non-httpOnly UI preference), validates every value through the registry
+guards, and `revalidatePath('/', 'layout')` so the choice applies flash-free on the next server render.
+Picking a system default clears that axis. An explicit occasion pin (including "Off" = `'none'`) now
+wins over the DB auto-schedule in the `(main)` shell, honoring the documented precedence (a member pin
+first). Separately, the shell now maps the resolved generation through `structureFor` and sets
+`data-structure` on the shell root; `[data-structure]` retunes `--structure-rhythm`, consumed by the
+shared `PageHeading` header-to-body gap — `structureFor`'s first production caller.
+
+**Consequences.**
+- Light/dark **mode** stays the separate localStorage toggle (the §6 cookie split is unchanged); the
+  new surface owns only the cookie-resolved axes.
+- The View-Transitions animated cross-fade remains a follow-up (THEME §7); the switcher works today as
+  a plain server repaint.
+- The structure axis is intentionally conservative (one rhythm token, `'standard'` is a no-op) so it
+  cannot regress existing layouts; denser/roomier compositions can grow from the same attribute later.
+- No schema change: the preference is a cookie, not a column.

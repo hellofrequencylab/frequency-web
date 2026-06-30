@@ -31,7 +31,7 @@ value for that subtree, so the axes never need to know about each other.
 | **Mode** | `class="dark"` on `<html>` | light vs dark | member toggle (a pre-paint inline script reads `localStorage` `freq-theme`) | ✅ built |
 | **Skin** | `data-skin` on shell root | white-label palette + base feel | the active Space (server-resolved); a `freq-skin` preview override exists for design | ✅ built (`default` \| `midnight`) |
 | **Occasion** | `data-occasion` on shell root | a light, time-boxed seasonal accent overlay | the calendar window, or a member pin via cookie | ✅ built end-to-end (DB-scheduled; a pin wins) |
-| **Generation** | `data-generation` on shell root | the "feel": type scale, density, radius, motion, ornament, contrast floor, tap floor | the member's chosen preference, with a Space default | ⏳ axis + resolver built; client switch + Space-default column pending |
+| **Generation** | `data-generation` on shell root | the "feel": type scale, density, radius, motion, ornament, contrast floor, tap floor | the member's chosen preference, with a Space default | ✅ axis + resolver + member switcher (Settings → Appearance, §7) live; Space-default column shipped |
 
 **Why three of them carry a registry.** Skin, occasion, and generation each have a typed
 registry in [`lib/theme/`](../lib/theme/) that is the single place an id is declared, plus a
@@ -243,17 +243,27 @@ output, there is **no flash**: the first paint already carries the correct skin/
 
 ---
 
-## 7. The switch animation (View Transitions)
+## 7. The member switcher (and the switch animation follow-up)
 
-When a member changes an axis, the switch is animated with the **View Transitions API** so the
-re-theme reads as one smooth cross-fade rather than a hard repaint. The switch is
-**reduced-motion guarded**: when `prefers-reduced-motion` is set, the transition is skipped and the
-new look applies instantly. ⏳ The client `ThemeProvider` / `useResolvedTheme` hook and the
-View-Transitions switch are the remaining client pieces; the server resolution and the CSS axes are
-already in place, so the system works (just without the animated switch) today. Note: per-request
-theme injection now lives in the `(main)` shell ([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)),
-not the root layout, and `ThemeProvider` has no consumers after that move, so it is not currently
-mounted; mounting it pairs with building this client switch.
+✅ **The member theme switcher is live** (ADR-261, BUILD-CATALOG §A.13 #1). Settings →
+**Appearance** ([`app/(main)/settings/appearance/page.tsx`](<../app/(main)/settings/appearance/page.tsx>),
+a `FocusTemplate`) lets a member pick the three server-resolved axes (palette / feel / seasonal
+accent). The client switcher ([`theme-switcher.tsx`](<../app/(main)/settings/appearance/theme-switcher.tsx>))
+reads its option copy straight from the typed registries and writes the choice through three server
+actions ([`actions.ts`](<../app/(main)/settings/appearance/actions.ts>)) that **merge the chosen
+axis into the `fxtheme` cookie via `serializeThemeCookie`** (one-year, path `/`, lax; mirroring
+`THEME_COOKIE_ATTRS`) and `revalidatePath('/', 'layout')` so the new look renders flash-free on the
+next request. Picking a system default clears that axis (the cookie is deleted when no axis remains).
+An explicit occasion pin (incl. "Off" = `'none'`) now wins over the DB auto-schedule in the `(main)`
+shell, honoring the §6 precedence (a member pin first). Light/dark **mode** stays the separate
+localStorage toggle on the Settings home (§6 cookie split); this surface owns only the three axes.
+
+⏳ **Still a follow-up — the animated switch.** When a member changes an axis the re-theme is a plain
+server repaint today; the **View Transitions API** cross-fade (reduced-motion guarded: skipped when
+`prefers-reduced-motion` is set) is the remaining client polish. The client `ThemeProvider` /
+`useResolvedTheme` hook has no consumers after the per-request injection moved into the `(main)` shell
+([`app/(main)/layout.tsx`](<../app/(main)/layout.tsx>)), so it is not currently mounted; mounting it
+pairs with building this animated switch.
 
 ---
 
@@ -526,11 +536,13 @@ and the operator layer is a fail-safe **merge over** them, never a replacement. 
 | The three migrations (`20260625000000_themes`, `20260626000000_space_brand`, `20260626100000_page_chrome_overrides`) | ✅ applied to Frequency Community (2026-06-14). Fail-safe before apply in any fresh environment (code skins, branding columns absent, chrome overrides `{}`) |
 | Per-Space **header brand visual** (logo / name in the chrome) | ✅ shipped: `BrandMark` renders the Space logo / name in the header, fail-safe to the default mark (§12) |
 | Page-layout **live shell adoption** (shell merges the override into its rail) | ✅ shipped: `app-shell.tsx` uses `mergeChrome(railFor, chromeOverrides, pathname)` (§13) |
+| **Member theme switcher** (Settings → Appearance writes the `fxtheme` cookie) | ✅ shipped: the three server-resolved axes are member-pickable; an explicit pin (incl. occasion "Off") wins per §6/§7 (ADR-261) |
 | The **generation / demographic** axis as editable data | 🅿️ deferred (the code axis stands; Theme Studio does not yet manage it) |
 | Per-Space theme assignment | ✅ shipped (it is the existing `spaces.skin`, now set from `/admin/spaces`, §12) |
 | Occasion auto-resolution from the DB `MM-DD` windows | ✅ shipped (`resolveActiveOccasionSlug`, wired in the in-app shell, §§1, 6) |
 | Template-per-page (a theme scoped to a page template) | 🔴 not built |
-| Client `ThemeProvider` / View-Transitions switch (`ThemeProvider` has no consumers after the injection moved to the `(main)` shell, so it is not currently mounted) | ⏳ tracked in §7 |
+| Client `ThemeProvider` / View-Transitions switch (`ThemeProvider` has no consumers after the injection moved to the `(main)` shell, so it is not currently mounted) | ⏳ tracked in §7 (the switcher itself is shipped; only the animated cross-fade remains) |
+| **Structure axis wired** (`structureFor` → `data-structure` on the shell root) | ✅ shipped: the `(main)` shell maps the resolved generation through `structureFor` and sets `data-structure`; `[data-structure]` retunes `--structure-rhythm`, consumed by the shared `PageHeading` header-to-body gap (the helper's first non-test caller) |
 
 ---
 
