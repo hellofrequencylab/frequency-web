@@ -18,12 +18,19 @@ import type { SpaceSurface } from '@/lib/admin/entities/registry'
 // server action, exactly as the legacy cockpit binds it.
 
 /** Map a surface id to the sub-page it opens, given the Space slug. Danger has no href (it renders
- *  its delete control inline); an unmapped id is skipped (defensive, should not happen). */
-function hrefForSurface(id: string, slug: string): string | null {
+ *  its delete control inline); an unmapped id is skipped (defensive, should not happen).
+ *
+ *  EVERY href here must target a NON-redirecting sub-page. The /settings INDEX redirects every console
+ *  type back to /manage (isConsoleSpaceType), so a section pointed at the bare index would loop
+ *  /settings → /manage → the console. Basics therefore opens its own /settings/basics editor (the
+ *  profile form), not the index. Exported PURE so the no-loop guarantee is unit-tested (console.test.ts). */
+export function hrefForSurface(id: string, slug: string): string | null {
   const base = `/spaces/${slug}`
   switch (id) {
     case 'space.basics':
-      return `${base}/settings`
+      // The dedicated basics editor, NOT the /settings index (which redirects console types to /manage,
+      // looping "Open basics" straight back to this console).
+      return `${base}/settings/basics`
     case 'space.mode':
       return `${base}/manage/mode`
     case 'space.place':
