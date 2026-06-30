@@ -21,6 +21,7 @@ import { MenuLayoutBlock } from '@/components/widgets/menu/menu-layout-block'
 import { MenuRailCardsBlock } from '@/components/widgets/menu/menu-rail-cards-block'
 import { PracticeAdminStats } from '@/components/widgets/practices/admin/stats'
 import { PracticeReviewQueue } from '@/components/widgets/practices/admin/review-queue'
+import { PracticeMergeSuggestions } from '@/components/widgets/practices/admin/merge'
 import { PracticeNeedsAttention } from '@/components/widgets/practices/admin/needs-attention'
 import { PracticeAdminLibrary } from '@/components/widgets/practices/admin/library'
 import { PracticeTagGovernance } from '@/components/widgets/practices/admin/tag-governance'
@@ -138,6 +139,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // Admin Practices blocks (/admin/content/practices) — the curation workspace.
   'admin-practices-stats': PracticeAdminStats,
   'admin-practices-review': PracticeReviewQueue,
+  'admin-practices-merge': PracticeMergeSuggestions,
   'admin-practices-attention': PracticeNeedsAttention,
   'admin-practices-library': PracticeAdminLibrary,
   'admin-practices-tags': PracticeTagGovernance,
