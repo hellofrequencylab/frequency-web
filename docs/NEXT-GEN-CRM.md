@@ -120,6 +120,8 @@ Two safety rails: a **per-Space autonomy slider** (dial Vera from "suggest only"
 
 **Answer first:** three altitudes, one `DashboardTemplate`, progressive disclosure: **Platform cockpit -> click a Space -> Space cockpit -> click a person -> Person view**. Each altitude opens with **one computed verdict line**, then a `StatCard` row, then a ranked **"who needs attention"** worklist (people, not a chart), then drillable funnel and retention charts. Every chart point drills to a member list; every member drills to the `contact_interactions` timeline. Never a wall of equal-weight tiles. It passes the 5-second test: an owner who looks for five seconds knows the one thing to do next.
 
+**Design principle: list-first (owner requirement, locked).** The **member list is the CRM's default view and is always one tap away.** Entering a Space CRM (`/spaces/[slug]/crm`) lands on the familiar People roster, not the cockpit. The cockpit (health summary + lifecycle funnel + worklist) and the pipeline are **secondary** views, reached from a persistent, always-visible tab bar (`components/spaces/crm/crm-view-tabs.tsx`, the `?view=people|pipeline|cockpit` switch, People is the default). That same tab bar renders on a person detail and on a funnel drill, so an owner returns to the roster in one tap from anywhere. The cockpit is the smart layer the operator opts into; the list is the front door they live in.
+
 **Shared rules across all three:**
 - Built from the real kit only. `DashboardTemplate` (`components/templates/dashboard-template.tsx`) provides the eyebrow + title + description + stat row + sections; the verdict line is `PageHeading` (`@/components/templates`); KPIs are `StatCard` (`components/ui/stat-card.tsx`); section breaks are `SectionHeader` (`components/ui/section-header.tsx`); empties are `EmptyState` (`components/ui/empty-state.tsx`). The worklist is composed of `SidebarCard` rows (`components/ui/sidebar-card.tsx`) until a shared `PersonCard` is extracted (tracked, not assumed). Rail is registered once in `lib/layout/page-chrome.ts` (`'scoped'` for admin), never toggled in a page.
 - Source of truth is `engagement_events` (first-party, semantic), never GA4. Health, cohorts, and retention read the nightly `member_traits` refresh through SECURITY DEFINER RPCs and materialized views, never raw table scans.
@@ -143,19 +145,22 @@ Drill-down: any chart point -> member list -> `contact_interactions` timeline. A
 
 ### Altitude 2 - Space cockpit (`app/(main)/spaces/[slug]/crm/page.tsx`, extend)
 
-Same template scoped to `space_id`, gated on `spaceHasEntitlement(space, 'crm')` (`lib/spaces/entitlements.ts`). The existing funnel panel (`lib/spaces/crm-funnel.ts`, ADR-381) is the seed.
+✅ **Shipped (Space surface, list-first).** Same template scoped to `space_id`, gated on `spaceHasEntitlement(space, 'crm')` (`lib/spaces/entitlements.ts`). The board is **list-first** (see the design principle above): it lands on the **People** roster (`components/spaces/crm/space-contacts.tsx` over `getContacts`, the familiar list) by default, with a persistent `CrmViewTabs` bar (People / Pipeline / Cockpit) at the top of every view. The **Cockpit** is a secondary `?view=cockpit` tab. The cockpit band (`app/(main)/spaces/[slug]/crm/space-cockpit-band.tsx`) renders the verdict line, the four `StatCard`s, the who-needs-attention `Worklist`, AND the **space-scoped lifecycle funnel** (`LifecycleFunnelPanel` over `getSpaceFunnel(spaceId)` in `lib/dashboard/scores.ts`). The funnel computes the `lifecycle_stage` split for the Space's reachable members off the `member_engagement_scores` matview (no dedicated RPC, no migration), fail-safe to zeros. Each funnel step drills to the Space's members at that stage on the board's own `?stage=` list (`components/spaces/crm/space-stage-list.tsx` over `listMembersByFilter(filter, { spaceId })`), each member opening their on-board detail; the persistent tab bar returns the owner to People in one tap. The existing reach funnel panel (`lib/spaces/crm-funnel.ts`, ADR-381) sits in the Pipeline view as the "Reachable contacts" seed.
 
 | Slot | Widget (real kit) | The metric, and why it earns its pixels |
 |---|---|---|
 | Verdict | hero `StatCard` | "Your Circle resonated 34 times this week, up 8%. 3 practitioners are going dormant." The owner's whole week in one line. |
 | Stat row | 4 `StatCard`s | **Space Resonance Health** · **Reachable contacts** (total / subscribed, from `lib/spaces/crm-funnel.ts`) · **At risk in this Space** · **Intros accepted** (double-opt-in completions) |
 | Hero worklist | `SidebarCard` rows | This Space's at-risk members, each with a one-tap action gated by the Space's AI-depth tier. |
+| Lifecycle funnel | `LifecycleFunnelPanel` | ✅ The `new -> activated -> engaged` climb + the `at_risk` / `dormant` leak for this Space's members, each step drilling to the people stuck there (`getSpaceFunnel`, no migration). |
 | Pipeline | existing pipeline | `lib/crm/pipeline.ts` deals + stages, plus the `next_best_action` recommended playbook per contact. |
 | Resonance tab | match suggestions | "People close by with your vibe", the Space-scoped Resonance Graph. |
 
-Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-contact-detail.ts`) -> timeline. Alerting is scoped to the Space; the autonomy slider lives here, on the owner's desk.
+Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-contact-detail.ts`) -> timeline; funnel step -> `?stage=` Space member list -> on-board detail. Alerting is scoped to the Space; the autonomy slider lives here, on the owner's desk.
 
 ### Altitude 3 - Person view (Detail template over the timeline)
+
+✅ **Shipped (Space surface).** The Space CRM contact detail (`components/spaces/crm/space-contact-detail.tsx` over `getSpaceContactDetail`) now carries the full Altitude 3 stack, not just identity + timeline: the **"where this person is" context band** + the **shared score row** (Resonance Health + churn + activation, each with the plain top-signals + confidence so a bare score is never shown), an **About panel** of the member's confirmed facts, and the **Resonance matches** section. All are member-only and fail-safe: a pure lead (no stitched profile) reads the calm "not scored yet" line, no score row, no About, and the "not a member yet" resonance state. The detail read resolves the contact's `profile_id` and folds `getMemberScores` + `draftContextLine` + `explainMemberScores` (`lib/dashboard/person-band.ts`) + `getMemberContext` (`lib/ai/memory.ts`) + `getResonanceMatchesForPerson` (`lib/resonance/surface.ts`). The platform-staff twin lives at `app/(main)/admin/marketing/contacts/[id]/page.tsx`.
 
 | Slot | Widget | Source |
 |---|---|---|
@@ -165,6 +170,8 @@ Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-cont
 | Tab: About | confirmed facts (interests, goals, neighborhood) | `lib/ai/memory.ts` |
 | Tab: Resonance | top matches in this Space with affinity breakdown | Resonance Graph |
 | Action | next-best-action playbook picker (one tap) | Playbook Registry |
+
+> **Deferred on the Space person detail (this slice):** the **one-tap next-best-action playbook picker** is not on the Space contact detail yet (the platform Today surface owns playbook execution today); the worklist's per-member action is the current path. The **affinity breakdown** on each match is the plain WHY line only (the coarse strength label + shared-belonging reasons), not a numeric vector, by the privacy rule in "The Resonance Graph" section. Both are intentional, not gaps in the data.
 
 This is the drill-down floor. Every aggregate above eventually lands here, on the canonical timeline, preserving the one-front-door rule.
 

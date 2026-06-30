@@ -25,6 +25,9 @@ import { getContact, getDeals, type CrmDeal } from '@/lib/crm/pipeline'
 import { listClientNotes, type ClientNote } from '@/lib/crm/client-notes'
 import { listContactInteractions } from '@/lib/crm/interactions'
 import { buildTimeline, type TimelineEntry } from '@/lib/crm/timeline'
+import { getMemberScores, type MemberScores } from '@/lib/dashboard/scores'
+import { draftContextLine, explainMemberScores, type ScoreReadout } from '@/lib/dashboard/person-band'
+import { getMemberContext, type MemberFacts } from '@/lib/ai/memory'
 
 /** The identity + enriched fields the detail header shows. name/email come from the Space contact row;
  *  phone/company/city are best-effort enrichment from a linked capture (null when none is known). */
@@ -39,12 +42,32 @@ export interface SpaceContactIdentity {
   createdAt: string | null
 }
 
+/** The Altitude 3 "where this person is" band + shared scores for the detail header. All fail-safe:
+ *  a contact with no stitched member profile (a pure lead) carries no scores, so `hasScores` is false
+ *  and the band reads the calm "not scored yet" line. */
+export interface SpaceContactInsight {
+  /** The member profile behind this contact (the score / matches / facts key), or null for a lead. */
+  profileId: string | null
+  /** The shared scores (Resonance Health + churn + activation + lifecycle), null fields when unscored. */
+  scores: MemberScores
+  /** True when the matview has scored this member (drives whether the score row renders). */
+  hasScores: boolean
+  /** The one-line "where this person is" brief, in voice (deterministic fallback, never throws). */
+  contextLine: string
+  /** The plain "top signals" + confidence band behind the scores (a bare score is never shown). */
+  readout: ScoreReadout
+  /** The member's confirmed facts (interests, goals, neighborhood) for the About panel, when any. */
+  facts: MemberFacts | null
+}
+
 /** Everything the per-space contact detail surface renders for one contact. */
 export interface SpaceContactDetail {
   identity: SpaceContactIdentity
   timeline: TimelineEntry[]
   deals: CrmDeal[]
   notes: ClientNote[]
+  /** Altitude 3: the resonance/health insight band + About facts (fail-safe, member-only). */
+  insight: SpaceContactInsight
 }
 
 /** Resolve the caller and confirm they may edit this Space (owner / admin / editor). Returns the
@@ -74,12 +97,14 @@ export async function getSpaceContactDetail(
   const contact = await getContact(contactId, spaceId)
   if (!contact) return null
 
-  // Fold the three sources in parallel; each is independently fail-safe.
-  const [enrichment, interactions, notes, dealsAll] = await Promise.all([
+  // Fold the sources in parallel; each is independently fail-safe. The contact's member profile id
+  // (the score / matches / facts key) is resolved off the contact row, null for a pure lead.
+  const [enrichment, interactions, notes, dealsAll, profileId] = await Promise.all([
     enrichFromCapture(contact.email),
     listContactInteractions({ subjectKind: 'contact', subjectId: contactId, spaceId, limit: 100 }),
     listClientNotes(spaceId, contactId),
     getDeals(spaceId),
+    resolveContactProfileId(contactId),
   ])
 
   // The Space's private notes fold into the timeline as legacy notes (buildTimeline shapes + sorts).
@@ -102,7 +127,61 @@ export async function getSpaceContactDetail(
     createdAt: contact.created_at,
   }
 
-  return { identity, timeline, deals, notes }
+  const insight = await buildInsight(
+    profileId,
+    contact.display_name || contact.email.split('@')[0] || 'This person',
+  )
+
+  return { identity, timeline, deals, notes, insight }
+}
+
+/** The member profile id behind a Space contact (the score / matches / facts key), or null for a
+ *  pure lead with no stitched profile. FAIL-SAFE: null on any error. */
+async function resolveContactProfileId(contactId: string): Promise<string | null> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { profile_id: string | null } | null; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await db.from('contacts').select('profile_id').eq('id', contactId).maybeSingle()
+    if (error || !data) return null
+    return data.profile_id ?? null
+  } catch {
+    return null
+  }
+}
+
+/** Assemble the Altitude 3 insight band: the shared scores, the "where this person is" line, the
+ *  plain "why" readout, and the member's confirmed facts. FAIL-SAFE end to end: a lead (no profile)
+ *  or any read error yields a calm "not scored yet" band with no facts. */
+async function buildInsight(profileId: string | null, name: string): Promise<SpaceContactInsight> {
+  // A pure lead has no member profile, so no scores / matches / facts to read.
+  const scores = await getMemberScores(profileId)
+  const hasScores = scores.resonanceTier != null || scores.lifecycleStage != null
+  const readout = explainMemberScores(scores)
+  // The context line drafts from the standing (deterministic fallback, never throws). Facts come from
+  // Vera's per-member memory, member-only and best-effort.
+  const [contextLine, context] = await Promise.all([
+    draftContextLine(name.trim(), scores),
+    profileId ? getMemberContext(profileId) : Promise.resolve(null),
+  ])
+  const facts = context?.facts && hasAnyFact(context.facts) ? context.facts : null
+  return { profileId, scores, hasScores, contextLine, readout, facts }
+}
+
+/** True when a facts record carries at least one usable value (so an empty {} hides the About panel). */
+function hasAnyFact(f: MemberFacts): boolean {
+  return Boolean(
+    (f.interests && f.interests.length > 0) ||
+      (f.goals && f.goals.length > 0) ||
+      (f.constraints && f.constraints.length > 0) ||
+      (f.neighborhood && f.neighborhood.trim()),
+  )
 }
 
 /** Best-effort phone/company/city for a contact from any `network_contacts` capture that shares its

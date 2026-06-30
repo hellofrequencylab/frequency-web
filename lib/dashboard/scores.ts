@@ -152,6 +152,83 @@ export async function getSpaceHealth(spaceId: string): Promise<HealthSummary> {
   }
 }
 
+/**
+ * The per-Space lifecycle funnel (the stage counts the Space cockpit's funnel panel renders),
+ * scoped to the members reachable from this Space's CRM. The platform funnel rides one RPC
+ * (getPlatformHealth); the per-Space split has no dedicated RPC, so we read the lifecycle_stage
+ * off the matview for the Space's reachable profiles and tally it here (no migration). FAIL-SAFE:
+ * any error, a missing matview, or a Space with no reachable members resolves to ZERO_FUNNEL, so
+ * the panel shows zeros rather than crashing. The caller MUST have verified the Space's CRM
+ * entitlement + owner/admin BEFORE calling; the space_id is the binding scope.
+ */
+export async function getSpaceFunnel(spaceId: string): Promise<LifecycleFunnel> {
+  if (!spaceId) return ZERO_FUNNEL
+  try {
+    const admin = createAdminClient()
+
+    // The profiles reachable from this Space's CRM (the profile behind a contact whose touches sit
+    // in this space_id). Mirrors listMembersByFilter / lib/resonance/surface scoping.
+    const { data: spaceRows } = await admin
+      .from('contact_interactions')
+      .select('subject_id')
+      .eq('space_id', spaceId)
+      .eq('subject_kind', 'contact')
+    const subjectIds = ((spaceRows ?? []) as { subject_id: string }[]).map((r) => r.subject_id)
+    if (subjectIds.length === 0) return ZERO_FUNNEL
+
+    const { data: spaceContacts } = await admin
+      .from('contacts')
+      .select('profile_id')
+      .in('id', subjectIds)
+    const profileIds = [
+      ...new Set(
+        ((spaceContacts ?? []) as { profile_id: string | null }[])
+          .map((c) => c.profile_id)
+          .filter((p): p is string => !!p),
+      ),
+    ]
+    if (profileIds.length === 0) return ZERO_FUNNEL
+
+    // Read the lifecycle_stage for exactly those profiles off the matview, then tally locally.
+    const { data: scoreRows, error } = await (admin as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          in: (col: string, vals: string[]) => Promise<{ data: { lifecycle_stage: string | null }[] | null; error: unknown }>
+        }
+      }
+    })
+      .from('member_engagement_scores')
+      .select('lifecycle_stage')
+      .in('profile_id', profileIds)
+    if (error || !scoreRows) return ZERO_FUNNEL
+
+    const funnel: LifecycleFunnel = { ...ZERO_FUNNEL }
+    for (const r of scoreRows) {
+      switch (r.lifecycle_stage) {
+        case 'new':
+          funnel.new += 1
+          break
+        case 'activated':
+          funnel.activated += 1
+          break
+        case 'engaged':
+          funnel.engaged += 1
+          break
+        case 'at_risk':
+          funnel.atRisk += 1
+          break
+        case 'dormant':
+          funnel.dormant += 1
+          break
+        // reactivated / unknown stages do not sit on the climb panel; ignore.
+      }
+    }
+    return funnel
+  } catch {
+    return ZERO_FUNNEL
+  }
+}
+
 // ── The who-needs-attention worklist (reuses the Phase 1 Today ranker) ────────
 
 /** One worklist row: a member sliding now, carrying their next move as a one-tap route into Today.

@@ -16,6 +16,8 @@ import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
 import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
+import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
+import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { SpaceCockpitBand } from './space-cockpit-band'
@@ -46,11 +48,16 @@ export default async function SpaceCrmBoardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ contact?: string | string[] }>
+  searchParams: Promise<{ contact?: string | string[]; stage?: string | string[]; view?: string | string[] }>
 }) {
   const { slug } = await params
-  const { contact } = await searchParams
+  const { contact, stage, view } = await searchParams
   const selectedContactId = Array.isArray(contact) ? (contact[0] ?? null) : (contact ?? null)
+  const selectedStage = Array.isArray(stage) ? (stage[0] ?? null) : (stage ?? null)
+  // LIST-FIRST: the People roster is the default front door. The cockpit + pipeline are secondary
+  // views behind ?view=, never the landing. An unknown value falls back to People.
+  const rawView = Array.isArray(view) ? (view[0] ?? null) : (view ?? null)
+  const activeView: CrmView = rawView === 'pipeline' ? 'pipeline' : rawView === 'cockpit' ? 'cockpit' : 'people'
 
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -103,9 +110,12 @@ export default async function SpaceCrmBoardPage({
         eyebrow={brandName}
         title="Contact"
         description="One person in your space CRM: their details, history, deals, and your private notes."
-        back={{ href: boardHref, label: 'CRM board' }}
+        back={{ href: boardHref, label: 'All people' }}
         width="default"
       >
+        {/* The persistent view tabs keep the familiar People list one tap away from a person detail. */}
+        <CrmViewTabs boardHref={boardHref} active="people" />
+
         <Suspense fallback={<ListSkeleton />}>
           <SpaceContactDetail
             spaceId={space.id}
@@ -117,11 +127,51 @@ export default async function SpaceCrmBoardPage({
     )
   }
 
+  // LIFECYCLE-STAGE DRILL MODE: when a funnel step on the cockpit is tapped (?stage=<stage>) the board
+  // lists this Space's members at that stage, lowest health first, each linking back to ?contact=<id>.
+  // The read is space-scoped inside listMembersByFilter; an unknown stage yields an empty list.
+  if (selectedStage) {
+    return (
+      <DashboardTemplate
+        eyebrow={brandName}
+        title="Members by stage"
+        description="The people at this point on the climb in your space, lowest health first. Tap anyone to open their detail."
+        back={{ href: boardHref, label: 'All people' }}
+        width="default"
+      >
+        {/* The persistent view tabs keep the familiar People list one tap away from a funnel drill. */}
+        <CrmViewTabs boardHref={boardHref} active="people" />
+
+        <Suspense fallback={<ListSkeleton />}>
+          <SpaceStageList spaceId={space.id} stage={selectedStage} boardHref={boardHref} />
+        </Suspense>
+      </DashboardTemplate>
+    )
+  }
+
+  // Per-view header copy. People is the default front door (the familiar roster); Pipeline and Cockpit
+  // are the secondary views, reached from the persistent tabs.
+  const viewCopy: Record<CrmView, { title: string; description: string }> = {
+    people: {
+      title: 'People',
+      description:
+        'Everyone in your space CRM. Bring people in from My Contacts and tap anyone to see their history, deals, and notes.',
+    },
+    pipeline: {
+      title: 'Pipeline',
+      description: 'Your deals and stages, plus the tasks you owe. Move each person through your pipeline.',
+    },
+    cockpit: {
+      title: 'Cockpit',
+      description: 'The health read for your space: who needs you, where members stall, and the matches worth making.',
+    },
+  }
+
   return (
     <DashboardTemplate
       eyebrow={brandName}
-      title="CRM"
-      description="Your space's pipeline, tasks, and contacts. Bring people in from My Contacts and track each one through your stages."
+      title={viewCopy[activeView].title}
+      description={viewCopy[activeView].description}
       back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
@@ -130,76 +180,81 @@ export default async function SpaceCrmBoardPage({
       }
       width="wide"
     >
-      {/* RESONANCE COCKPIT BAND (Phase 2 · ADR-383): the verdict line + four Space-scoped health
-          StatCards + the Space who-needs-attention worklist, ABOVE the existing pipeline / funnel /
-          tasks (which stay intact). Its own Suspense so the cockpit reads never block the board, and
-          every read is fail-safe (zeros / empty). Gated by the same canUseCrm check that gates the
-          whole board (entitlement + owner/admin). */}
-      <Suspense fallback={<CockpitSkeleton />}>
-        <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
-      </Suspense>
+      {/* LIST-FIRST (docs/NEXT-GEN-CRM.md): the persistent view tabs sit at the top of every board
+          view, so the familiar People list is always one tap away from Pipeline or Cockpit. */}
+      <CrmViewTabs boardHref={boardHref} active={activeView} />
 
-      {/* AUTONOMY SLIDER (Phase 3 · ADR-384): the owner's dial for how much Vera does on its own.
-          Owner/admin only (caps.canManageMembers); the setter re-gates server-side. Fail-closed to
-          suggest_only by default, so nothing auto-executes until the owner explicitly raises it. */}
-      {caps.canManageMembers && (
-        <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
+      {/* ── PEOPLE (default front door): the familiar member roster + the import path ─────────────── */}
+      {activeView === 'people' && (
+        <>
+          <ImportContactsForm spaceId={space.id} />
+
+          <Suspense fallback={<ListSkeleton />}>
+            {/* Each contact row opens the on-board detail (?contact=<id> on this board). */}
+            <SpaceContacts
+              spaceId={space.id}
+              slug={space.slug}
+              selectedContactId={null}
+              linkBase={boardHref}
+            />
+          </Suspense>
+        </>
       )}
 
-      {/* ── AI-DEPTH UPSELL (Phase 6 · ADR-387) — self-contained, safe to add/remove ──────────────
-          A tasteful, in-context nudge shown ONLY when a free / lower Space reaches its soft AI-depth
-          ceiling (it is actually using the engine and is ready for the deeper, governed automation).
-          DISPLAY-ONLY: it links to the Space's own billing surface and never charges or changes a
-          plan. Owner/admin only (caps.canManageMembers); fail-safe to rendering nothing on any read
-          error or when already at the top rung. Its own Suspense so the usage read never blocks the
-          board. Kept a self-contained block so a sibling Phase 4 section can sit beside it cleanly.
-          ──────────────────────────────────────────────────────────────────────────────────────── */}
-      {caps.canManageMembers && (
-        <Suspense fallback={null}>
-          <AiDepthUpsell
-            slug={space.slug}
-            spaceId={space.id}
-            tier={spaceAiDepth(space)}
-            plan={space.plan}
-          />
-        </Suspense>
+      {/* ── PIPELINE: deals + stages + the reach funnel + the tasks you owe ───────────────────────── */}
+      {activeView === 'pipeline' && (
+        <>
+          <Suspense fallback={<BoardSkeleton />}>
+            <SpacePipeline spaceId={space.id} />
+          </Suspense>
+
+          {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. */}
+          <Suspense fallback={<FunnelSkeleton />}>
+            <CrmFunnelPanel spaceId={space.id} />
+          </Suspense>
+
+          <Suspense fallback={<ListSkeleton />}>
+            <SpaceTasks spaceId={space.id} slug={space.slug} />
+          </Suspense>
+        </>
       )}
-      {/* ── END AI-DEPTH UPSELL (Phase 6 · ADR-387) ─────────────────────────────────────────────── */}
 
-      <ImportContactsForm spaceId={space.id} />
+      {/* ── COCKPIT (secondary): the health summary + lifecycle funnel + worklist + resonance ──────── */}
+      {activeView === 'cockpit' && (
+        <>
+          {/* RESONANCE COCKPIT BAND (Phase 2 · ADR-383): the verdict line + four Space-scoped health
+              StatCards + the Space who-needs-attention worklist + the lifecycle funnel. Its own
+              Suspense so the cockpit reads never block; every read is fail-safe (zeros / empty). */}
+          <Suspense fallback={<CockpitSkeleton />}>
+            <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
+          </Suspense>
 
-      <Suspense fallback={<BoardSkeleton />}>
-        <SpacePipeline spaceId={space.id} />
-      </Suspense>
+          {/* AUTONOMY SLIDER (Phase 3 · ADR-384): the owner's dial for how much Vera does on its own.
+              Owner/admin only (caps.canManageMembers); the setter re-gates server-side. */}
+          {caps.canManageMembers && (
+            <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
+          )}
 
-      {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. Behind its own Suspense
-          so the funnel read never blocks the pipeline / tasks / contacts above and below it. */}
-      <Suspense fallback={<FunnelSkeleton />}>
-        <CrmFunnelPanel spaceId={space.id} />
-      </Suspense>
+          {/* AI-DEPTH UPSELL (Phase 6 · ADR-387): a display-only nudge shown only at the soft ceiling.
+              Owner/admin only; fail-safe to rendering nothing. */}
+          {caps.canManageMembers && (
+            <Suspense fallback={null}>
+              <AiDepthUpsell
+                slug={space.slug}
+                spaceId={space.id}
+                tier={spaceAiDepth(space)}
+                plan={space.plan}
+              />
+            </Suspense>
+          )}
 
-      {/* Resonance Graph (Phase 4 · ADR-385): "people close by with your vibe", the Space-scoped
-          reciprocal match suggestions. ADDED as a section (the page above is unchanged); its own
-          Suspense so the edge reads never block the board, and every read is fail-safe (empty). */}
-      <Suspense fallback={<ListSkeleton />}>
-        <SpaceResonanceSection spaceId={space.id} />
-      </Suspense>
-
-      <div className="grid gap-6 @3xl:grid-cols-2">
-        <Suspense fallback={<ListSkeleton />}>
-          <SpaceTasks spaceId={space.id} slug={space.slug} />
-        </Suspense>
-
-        <Suspense fallback={<ListSkeleton />}>
-          {/* Each contact row opens the on-board detail (?contact=<id> on this board). */}
-          <SpaceContacts
-            spaceId={space.id}
-            slug={space.slug}
-            selectedContactId={null}
-            linkBase={boardHref}
-          />
-        </Suspense>
-      </div>
+          {/* Resonance Graph (Phase 4 · ADR-385): "people close by with your vibe", the Space-scoped
+              reciprocal match suggestions. Its own Suspense; fail-safe to empty. */}
+          <Suspense fallback={<ListSkeleton />}>
+            <SpaceResonanceSection spaceId={space.id} />
+          </Suspense>
+        </>
+      )}
     </DashboardTemplate>
   )
 }
