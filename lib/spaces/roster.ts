@@ -29,11 +29,13 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import {
   isSpaceRole,
+  getSpaceMembership,
   updateSpaceMemberRole,
   setSpaceMemberStatus,
   removeSpaceMember,
   type SpaceRole,
 } from '@/lib/spaces/membership'
+import { checkSeatForOperatorInvite, operatorRoleConsumesSeat } from '@/lib/spaces/seats'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // A hard cap on a bulk operation so a malformed / hostile selection can never fan out an unbounded
@@ -109,6 +111,22 @@ export async function setMemberRole(
   if (!isSpaceRole(role)) return fail('Pick a role from the list.')
   if (!isManageableTarget(profileId, gate.ownerProfileId))
     return fail('You cannot change the role of the space owner.')
+
+  // SEAT-LIMIT ENFORCEMENT (Phase D, ADR-465). PROMOTING a member into an operator role (editor /
+  // moderator / admin) consumes a seat, exactly like inviting one, so it is gated the same way. Only a
+  // change that NEWLY consumes a seat is checked: a member already counted as an active operator is
+  // already in usedSeats, so a lateral operator-to-operator change (e.g. editor -> admin) is free and
+  // must not falsely trip the wall. GATED on billingLive() (grant-all while OFF); demotions and
+  // viewer changes consume no seat, so they always pass.
+  if (operatorRoleConsumesSeat(role)) {
+    const current = await getSpaceMembership(spaceId, profileId)
+    const alreadyCountedOperator = current?.status === 'active' && operatorRoleConsumesSeat(current.role)
+    if (!alreadyCountedOperator) {
+      const seatCheck = await checkSeatForOperatorInvite(spaceId, role)
+      if (!seatCheck.allowed)
+        return fail(seatCheck.reason ?? 'This space has no operator seats left. Add a seat to promote this member.')
+    }
+  }
 
   const okWrite = await updateSpaceMemberRole(spaceId, profileId, role)
   return okWrite ? ok() : fail('Could not change the role. Try again.')

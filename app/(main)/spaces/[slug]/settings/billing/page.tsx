@@ -9,13 +9,15 @@ import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } f
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { getPricingValues } from '@/lib/pricing/settings'
+import { getPricingValues, billingLive } from '@/lib/pricing/settings'
 import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
 import { spacePlanSellable, spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
 import { readLockedPriceId } from '@/lib/billing/space-subscription-items'
 import { addonKeyForCatalogItem } from '@/lib/billing/pricing-keys'
 import { spacePlanRows } from '@/lib/pricing/display'
 import { asSpacePlan, planEntitlementKeys, addonsHeldBy, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { getSeatUsage } from '@/lib/spaces/seats'
+import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SpacePlanPicker } from './plan-picker'
 import { SpaceLoadoutPicker } from './loadout-picker'
 import { WhitelabelRequest } from './whitelabel-request'
@@ -109,10 +111,12 @@ export default async function SpaceBillingPage({
   // the loadout-sellable gate (billingLive AND the per-plan switch, FALSE while OFF -> a disabled
   // preview), the trial length, the add-ons the space already holds (pre-selected), and whether the
   // space holds a grandfathered locked base price (its founding rate is held).
-  const [catalog, loadoutSellable, lockedBase] = await Promise.all([
+  const [catalog, loadoutSellable, lockedBase, seatUsage, billingIsLive] = await Promise.all([
     loadCatalogConfig(),
     spaceLoadoutSellable('pro'),
     readLockedPriceId(space.id, 'base'),
+    getSeatUsage(space.id),
+    billingLive(),
   ])
   // The Pro base + the four add-on items, with their operator-set amounts (the picker computes the live
   // total from these client-side).
@@ -137,9 +141,20 @@ export default async function SpaceBillingPage({
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
 
+        {/* The seat counter (Phase D, ADR-465): X of Y operator seats used. A preview while billing is
+            OFF; reflects the real allowance + enforcement when live. The "add a seat" control is the
+            Team add-on in the loadout right below, so this counter is informational here (no link). */}
+        <SeatCounter
+          usage={seatUsage}
+          billingHref={`/spaces/${space.slug}/settings/members`}
+          enforced={billingIsLive}
+          canManage={false}
+        />
+
         {/* The Pro loadout picker: the base plus the four add-ons, with a live total (ADR-463). A
             disabled preview while billing is OFF; the buy CTA is dormant until live. Staff preview is
-            read-only (the fieldset disables it). */}
+            read-only (the fieldset disables it). The Team add-on starts at the seats the space already
+            licenses (or the bundled floor), so the picker reflects the current seat count (Phase D). */}
         <fieldset disabled={staffViewing} className="contents">
           <SpaceLoadoutPicker
             slug={space.slug}
@@ -149,7 +164,7 @@ export default async function SpaceBillingPage({
             sellable={loadoutSellable}
             trialDays={values.trial.days}
             lockedHeld={lockedBase !== null}
-            seatFloor={catalog.seat.bundledFloor}
+            seatFloor={Math.max(catalog.seat.bundledFloor, seatUsage.seatQuantity)}
           />
         </fieldset>
 
