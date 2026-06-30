@@ -302,7 +302,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // ── Campaigns ──
       { href: '/admin/marketing/campaigns', label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      { href: '/admin/marketing/funnels', label: 'Funnels', desc: 'Create, test, and compare conversion funnels.', Icon: Activity, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
+      { href: '/admin/growth/funnels', label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', Icon: Activity, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
+      { href: '/admin/marketing/funnels', label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
       { href: '/admin/marketing/automations', label: 'Automations', desc: 'Event-triggered rules and follow-ups.', Icon: SlidersHorizontal, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
       { href: '/admin/marketing/nurture', label: 'Nurture', desc: 'Sequenced nurture flows.', Icon: Layers, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
       // ── Audience ──

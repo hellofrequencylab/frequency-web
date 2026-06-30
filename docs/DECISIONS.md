@@ -9447,3 +9447,67 @@ the destructive/transfer actions behind an explicit confirmation `Dialog`.
   always move together, or the action fails before any write (fail-closed on a missing/unknown owner).
 - This is the Spaces slice of EM1-6; the same lifecycle/transfer pattern extends to the other entity
   types (circle/hub/nexus/event/practice) as follow-on slices.
+
+## ADR-455: The funnels data model (Growth OS Engine 2, GE2-1/2)
+
+**Status:** Accepted · migration `supabase/migrations/20260913000000_funnels.sql` (NOT applied; ships
+for hand-review + the db-tests fresh-apply path), reads in `lib/funnels/store.ts`, templates in
+`lib/funnels/templates.ts`, builder under `app/(main)/admin/growth/funnels/*`.
+
+**Context.** `docs/GROWTH-OS-BUILD-PLAN.md` Engine 2 calls for a funnel to become a first-class
+object: a named path a persona travels (entry point -> wedge/landing -> capture -> a conversion goal),
+with attribution and per-stage analytics, so every persona funnel is one configured row instead of a
+hand-built flow. The pieces already exist scattered across systems: entry points / QR (`qr_codes`),
+campaigns (`entry_campaigns`), pages (`pages`), lead flows (`lib/onboarding/lead-flows.ts`), and
+nurture (`nurture_sequences`). What was missing is the *object* that names the stages, links those
+pieces, and records the goal event so conversion can be measured end to end. The existing
+`/admin/marketing/funnels` surface is really a campaign/entry-point grouper, not a funnel object; it
+stays (renamed "Campaign builder" in the nav) and the new funnel object lives beside it.
+
+**Decision.** Three tables, all `public`, all RLS-enabled, server-mediated writes:
+- **`funnels`** — the object: `slug` (unique), `name`, `description`, `persona` (a
+  `lib/onboarding/personas.ts` PersonaId, validated in app code, nullable = persona-agnostic),
+  `template_key` (the GE2-4 seed it was cloned from), `goal_event` (the `engagement_events.event_type`
+  a conversion is counted against, free text, default `signup`), `status`
+  (draft/active/archived), owner/creator refs, timestamps.
+- **`funnel_stages`** — the ordered stages of one funnel: `kind` in (entry, wedge, capture, convert),
+  `label`, `position` (0-based, unique per funnel so ordering is stable). `kind` is intentionally NOT
+  unique per funnel (a funnel may fan out to two entry stages).
+- **`funnel_stage_links`** — a TYPED SOFT reference from a stage to an existing component: `ref_type`
+  in (entry_point, campaign, page, lead_flow, nurture, custom), with exactly one of `ref_id` (uuid:
+  entry_point/campaign/nurture) or `ref_key` (slug/url: page/lead_flow/custom) set (a CHECK enforces
+  the xor). Soft, not a hard FK per family, so a stage can point at any system without this migration
+  depending on every one of their tables, and so key-addressed components (a lead-flow slug, a page
+  slug) fit the same model. The app layer resolves + validates the pointer.
+
+**Why a soft reference, not per-family FKs.** A hard FK per component family would couple this
+migration to six other tables (some of which, like lead flows, are code-first and have no table at
+all) and would not model a slug-addressed target. The `(ref_type, ref_id|ref_key)` pair is the same
+shape the entry-points system already uses for typed destinations, keeps the funnel object decoupled,
+and lets new component families join by adding a `ref_type` value, no schema change.
+
+**The rollup RPC (GE2-2).** `funnel_rollup(p_funnel_id, p_days)` returns a jsonb array, one element
+per stage ordered by position: `{ stage_id, kind, label, position, actors, drop_pct }`. It reads the
+append-only `engagement_events` ledger (the source of truth): non-convert stages match events whose
+`context->>'funnel_stage'` tags the stage id; the convert stage matches the funnel's `goal_event`
+attributed to this funnel via `context->>'funnel_id'`, counted distinct by actor in the window.
+`drop_pct` is the percent lost from the prior stage (null for the first). SECURITY DEFINER with a
+pinned `search_path`, staff-only (fail-closed via `get_my_web_role()`), granted to `authenticated`.
+This means the surfaces that participate in a funnel must STAMP `context.funnel_id` + `context.funnel_stage`
+on the engagement events they emit (the wiring of that stamp is GE2-5 follow-on; the rollup reads it).
+
+**Authz + RLS.** Staff (`web_role in (admin,janitor)`) get a READ policy on all three tables so the
+typed client can hydrate the builder; there is intentionally NO insert/update/delete policy, so writes
+go only through the service role, and every server action re-checks the marketing capability
+(`isStaff(webRole) || staffCan(role, 'marketing', 'write')`) before mutating. The admin client bypasses
+RLS, so the action is the authority, not the page gate.
+
+**Consequences.**
+- The migration is **not applied** in this PR (owner directive); it ships as a file for hand-review and
+  the fresh-apply test path. App code reads the tables untyped until `lib/database.types.ts` regenerates.
+- Per-persona templates (GE2-4) are code-first in `lib/funnels/templates.ts` (the entry-points/lead-flows
+  pattern), cloned into a real row by the builder; a DB-override layer can come later without changing callers.
+- GE2-5 (wiring existing entry points/campaigns/variants/nurture as funnel components) is partially
+  delivered: the stage-link model + builder accept all six component families today; auto-stamping the
+  funnel/stage ids onto the engagement events those components emit (so the rollup populates without
+  manual context) is the remaining follow-on.
