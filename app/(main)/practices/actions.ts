@@ -34,6 +34,7 @@ import { pillarIdsBySlug } from '@/lib/journeys/compose'
 import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { log } from '@/lib/log'
 
 // Log that you did a practice → practice.verified (WAM) + zaps + streak.
 //
@@ -59,14 +60,21 @@ export async function logPracticeAction(
   if (!(await rateLimitOk('practice_log', profileId, 10, '1 m'))) {
     return fail('Slow down a moment, then log again.')
   }
-  const res = await logPractice({
-    profileId,
-    practiceId,
-    circleId: circleId ?? null,
-    clientTimezone: clientTimezone ?? null,
-    secondsDone: timed?.secondsDone ?? null,
-    secondsTarget: timed?.secondsTarget ?? null,
-  })
+  // Timed (action.practice.log): the practice-log write is a documented hot path
+  // (perf-baseline.mjs · practice-log-write) — insert + idempotent ledger award +
+  // streak re-derive. Wrap it in log.time so duration_ms + ok are queryable by the
+  // same `action.practice.log` event vocabulary as the crons, without changing the
+  // result or control flow (log.time re-throws on error).
+  const res = await log.time('action.practice.log', () =>
+    logPractice({
+      profileId,
+      practiceId,
+      circleId: circleId ?? null,
+      clientTimezone: clientTimezone ?? null,
+      secondsDone: timed?.secondsDone ?? null,
+      secondsTarget: timed?.secondsTarget ?? null,
+    }),
+  )
   // Timer gate: a practice with a set timer can only be logged from inside its session (which
   // carries a target). A one-tap attempt is refused server-side; surface that as a clear fail so
   // the UI sends the member to the timer instead of silently doing nothing.
@@ -95,7 +103,12 @@ export async function unlogPracticeAction(
   }
   // Same fallback tz as logging, so the un-log resolves the SAME local day the log
   // was written under (home_timezone still wins; the client tz is a fallback only).
-  const res = await unlogPractice({ profileId, practiceId, clientTimezone: clientTimezone ?? null })
+  // Timed (action.practice.unlog): the inverse of the hot log write — reverses the
+  // log row, idempotency row, exact Zap grant, and re-derives the streak. Wrap it in
+  // log.time so the un-log's duration_ms + ok are queryable alongside the log path.
+  const res = await log.time('action.practice.unlog', () =>
+    unlogPractice({ profileId, practiceId, clientTimezone: clientTimezone ?? null }),
+  )
   revalidatePath('/practices')
   return ok(res)
 }

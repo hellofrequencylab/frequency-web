@@ -10,6 +10,7 @@ import { processGamificationEvent, recordStreakActivity } from '@/lib/achievemen
 import { awardGems } from '@/lib/gems'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { log } from '@/lib/log'
 import {
   assembleThread,
   aggregateReactionState,
@@ -250,7 +251,15 @@ const NESTED_LIMIT = 300
  * Returns top-level comments (each with a `replies` array) plus the subtree
  * `total` — the count the comment badge should show.
  */
+// Timed (action.feed.fetch_replies): comment-thread expansion is a frequent read
+// (two batched post queries + one reaction read). Wrap the body in log.time so its
+// duration_ms + ok are queryable by the same event vocabulary as the rest of the
+// observability surface; log.time re-throws so behavior is unchanged.
 export async function fetchReplies(parentId: string): Promise<CommentThread> {
+  return log.time('action.feed.fetch_replies', () => fetchRepliesUncounted(parentId))
+}
+
+async function fetchRepliesUncounted(parentId: string): Promise<CommentThread> {
   const empty: CommentThread = { comments: [], total: 0 }
 
   const profileId = await getMyProfileId()
