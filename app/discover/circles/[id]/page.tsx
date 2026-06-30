@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Users, MapPin, ChevronLeft } from 'lucide-react'
 import { getPublicCircleById } from '@/lib/discover'
-import { SignInCta } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -143,10 +143,14 @@ export default async function CirclePage({
           </section>
         )}
 
-        <SignInCta
-          title="Sign in to join this circle"
-          body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Sign up free to request to join, see the standing times, and start showing up for the people who will keep a seat warm for you."
-          action="Sign in to join"
+        {/* Inline capture: someone reading a single Circle is the warmest lead
+            on the site. Offer the invite here, where intent peaks, instead of
+            bouncing them to /sign-in. Falls back to the same double-opt-in funnel
+            as the list pages, tagged for attribution. */}
+        <InlineBetaCapture
+          source="discover_circle_detail"
+          heading={`Want in on ${circle.name}?`}
+          body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Join the beta to request a spot, see the standing times, and start showing up for people who'll keep a seat warm for you."
         />
       </DetailTemplate>
     </div>
