@@ -3,8 +3,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Library,
-  TrendingUp,
-  Users,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { DashboardTemplate } from '@/components/templates'
