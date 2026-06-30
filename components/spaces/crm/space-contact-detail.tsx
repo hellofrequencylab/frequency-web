@@ -1,23 +1,32 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import {
+  Activity,
   ArrowLeft,
   Briefcase,
   Building2,
   CalendarDays,
   Clock,
+  HeartPulse,
   Mail,
   MapPin,
   MessageSquare,
   Phone,
   PhoneCall,
+  Sparkles,
   StickyNote,
+  Target,
+  TrendingUp,
   User,
 } from 'lucide-react'
-import { getSpaceContactDetail } from '@/lib/crm/space-contact-detail'
+import { getSpaceContactDetail, type SpaceContactInsight } from '@/lib/crm/space-contact-detail'
 import { formatMoney } from '@/lib/crm/pipeline'
+import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { tierLabel, healthTone } from '@/lib/dashboard/verdict'
 import { ClientNotesPanel } from './client-notes-panel'
+import { SpaceContactResonance } from './space-contact-resonance'
 import { relativeTime, summarizeTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 
 // Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
@@ -92,7 +101,7 @@ export async function SpaceContactDetail({
     )
   }
 
-  const { identity, timeline, deals, notes } = detail
+  const { identity, timeline, deals, notes, insight } = detail
   const name = identity.name || identity.email || 'Unnamed contact'
 
   // Derive an at-a-glance recency line from the existing timeline (newest-first out of buildTimeline):
@@ -139,6 +148,15 @@ export async function SpaceContactDetail({
         </dl>
       </div>
 
+      {/* Where this person is (Altitude 3): the one-line standing + the shared scores, with the plain
+          "why" so a bare score is never shown. Fail-safe: a lead with no member profile reads the
+          calm "not scored yet" line and no score row. */}
+      <InsightBand insight={insight} />
+
+      {/* About: the member's confirmed facts (interests, goals, neighborhood). Renders only when any
+          are known, so a contact with no memory shows nothing rather than an empty shell. */}
+      <AboutPanel insight={insight} />
+
       {/* Deals in this Space */}
       <div>
         <SectionHeader title="Deals" count={deals.length} />
@@ -183,6 +201,13 @@ export async function SpaceContactDetail({
         )}
       </div>
 
+      {/* Resonance matches (Altitude 3 · ADR-385): the people this member would gain from meeting,
+          consent-first and reciprocal. Member-only; a lead shows the calm "not a member yet" state.
+          Its own Suspense so the edge read never blocks the rest of the detail. */}
+      <Suspense fallback={null}>
+        <SpaceContactResonance profileId={insight.profileId} />
+      </Suspense>
+
       {/* Note composer (reuses the owner-gated notes path) */}
       <div>
         <SectionHeader title="Notes" count={notes.length} />
@@ -214,6 +239,120 @@ function Field({
       <div className="min-w-0">
         <dt className="text-xs font-medium text-muted">{label}</dt>
         <dd className="truncate text-sm text-text">{value || <span className="text-subtle">Not set</span>}</dd>
+      </div>
+    </div>
+  )
+}
+
+// The "where this person is" band + the shared score row (Altitude 3). The score row renders only
+// when the matview has scored this member; otherwise the context line carries the calm "not scored
+// yet" message. A bare score is never shown: every score row ships its top-signals + confidence.
+function InsightBand({ insight }: { insight: SpaceContactInsight }) {
+  const { scores, hasScores, contextLine, readout } = insight
+  const confidenceLabel =
+    readout.confidence === 'high' ? 'High confidence' : readout.confidence === 'medium' ? 'Worth a look' : 'Early read'
+  const confidenceClass =
+    readout.confidence === 'high'
+      ? 'bg-success/10 text-success'
+      : readout.confidence === 'medium'
+        ? 'bg-primary/10 text-primary-strong'
+        : 'bg-surface-elevated text-subtle'
+
+  return (
+    <section>
+      <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-subtle">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden /> Where this person is
+        </p>
+        <p className="mt-1.5 text-sm text-text">{contextLine}</p>
+        {hasScores && (
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-subtle">
+            <span className={`rounded-full px-2 py-0.5 text-2xs font-medium ${confidenceClass}`}>{confidenceLabel}</span>
+            <span>
+              <span className="font-medium">Top signals:</span> {readout.signals.join(' · ')}
+            </span>
+          </p>
+        )}
+      </div>
+
+      {hasScores && (
+        <div className="mt-3 grid grid-cols-2 gap-3 @md:grid-cols-3">
+          <StatCard
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className={`h-2 w-2 shrink-0 rounded-full ${
+                    scores.resonanceHealth == null
+                      ? 'bg-subtle'
+                      : healthTone(scores.resonanceHealth) === 'success'
+                        ? 'bg-success'
+                        : healthTone(scores.resonanceHealth) === 'warning'
+                          ? 'bg-warning'
+                          : 'bg-danger'
+                  }`}
+                  aria-hidden
+                />
+                Resonance Health
+              </span>
+            }
+            value={scores.resonanceHealth == null ? '–' : Math.round(scores.resonanceHealth)}
+            icon={HeartPulse}
+            detail={scores.resonanceTier ? tierLabel(scores.resonanceTier) : undefined}
+          />
+          <StatCard
+            label="Churn risk"
+            value={scores.churnRisk ? scores.churnRisk[0].toUpperCase() + scores.churnRisk.slice(1) : '–'}
+            icon={Activity}
+          />
+          <StatCard
+            label="Activation propensity"
+            value={scores.activationPropensity == null ? '–' : Math.round(scores.activationPropensity)}
+            icon={TrendingUp}
+          />
+        </div>
+      )}
+    </section>
+  )
+}
+
+// The About panel (Altitude 3): the member's confirmed facts from Vera's memory. Renders nothing when
+// no facts are known, so a contact with no memory shows no empty shell.
+function AboutPanel({ insight }: { insight: SpaceContactInsight }) {
+  const facts = insight.facts
+  if (!facts) return null
+  const interests = facts.interests ?? []
+  const goals = facts.goals ?? []
+  const neighborhood = facts.neighborhood?.trim() || null
+
+  return (
+    <section>
+      <SectionHeader title="About" />
+      <div className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        {neighborhood && (
+          <p className="flex items-center gap-2 text-sm text-text">
+            <MapPin className="h-4 w-4 shrink-0 text-subtle" aria-hidden /> {neighborhood}
+          </p>
+        )}
+        {interests.length > 0 && <FactRow icon={Sparkles} label="Interests" items={interests} />}
+        {goals.length > 0 && <FactRow icon={Target} label="Goals" items={goals} />}
+      </div>
+      <p className="mt-2 text-xs text-subtle">What this member has told us, kept by Vera. They can see and clear it.</p>
+    </section>
+  )
+}
+
+function FactRow({ icon: Icon, label, items }: { icon: typeof Mail; label: string; items: string[] }) {
+  return (
+    <div>
+      <p className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden /> {label}
+      </p>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <span key={item} className="rounded-md bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
+            {item}
+          </span>
+        ))}
       </div>
     </div>
   )

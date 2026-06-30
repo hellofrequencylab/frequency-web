@@ -143,19 +143,22 @@ Drill-down: any chart point -> member list -> `contact_interactions` timeline. A
 
 ### Altitude 2 - Space cockpit (`app/(main)/spaces/[slug]/crm/page.tsx`, extend)
 
-Same template scoped to `space_id`, gated on `spaceHasEntitlement(space, 'crm')` (`lib/spaces/entitlements.ts`). The existing funnel panel (`lib/spaces/crm-funnel.ts`, ADR-381) is the seed.
+✅ **Shipped (Space surface).** Same template scoped to `space_id`, gated on `spaceHasEntitlement(space, 'crm')` (`lib/spaces/entitlements.ts`). The cockpit band (`app/(main)/spaces/[slug]/crm/space-cockpit-band.tsx`) renders the verdict line, the four `StatCard`s, the who-needs-attention `Worklist`, AND the **space-scoped lifecycle funnel** (`LifecycleFunnelPanel` over `getSpaceFunnel(spaceId)` in `lib/dashboard/scores.ts`). The funnel computes the `lifecycle_stage` split for the Space's reachable members off the `member_engagement_scores` matview (no dedicated RPC, no migration), fail-safe to zeros. Each funnel step drills to the Space's members at that stage on the board's own `?stage=` list (`components/spaces/crm/space-stage-list.tsx` over `listMembersByFilter(filter, { spaceId })`), each member opening their on-board detail, so the owner never leaves their Space. The existing reach funnel panel (`lib/spaces/crm-funnel.ts`, ADR-381) stays as the "Reachable contacts" seed.
 
 | Slot | Widget (real kit) | The metric, and why it earns its pixels |
 |---|---|---|
 | Verdict | hero `StatCard` | "Your Circle resonated 34 times this week, up 8%. 3 practitioners are going dormant." The owner's whole week in one line. |
 | Stat row | 4 `StatCard`s | **Space Resonance Health** · **Reachable contacts** (total / subscribed, from `lib/spaces/crm-funnel.ts`) · **At risk in this Space** · **Intros accepted** (double-opt-in completions) |
 | Hero worklist | `SidebarCard` rows | This Space's at-risk members, each with a one-tap action gated by the Space's AI-depth tier. |
+| Lifecycle funnel | `LifecycleFunnelPanel` | ✅ The `new -> activated -> engaged` climb + the `at_risk` / `dormant` leak for this Space's members, each step drilling to the people stuck there (`getSpaceFunnel`, no migration). |
 | Pipeline | existing pipeline | `lib/crm/pipeline.ts` deals + stages, plus the `next_best_action` recommended playbook per contact. |
 | Resonance tab | match suggestions | "People close by with your vibe", the Space-scoped Resonance Graph. |
 
-Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-contact-detail.ts`) -> timeline. Alerting is scoped to the Space; the autonomy slider lives here, on the owner's desk.
+Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-contact-detail.ts`) -> timeline; funnel step -> `?stage=` Space member list -> on-board detail. Alerting is scoped to the Space; the autonomy slider lives here, on the owner's desk.
 
 ### Altitude 3 - Person view (Detail template over the timeline)
+
+✅ **Shipped (Space surface).** The Space CRM contact detail (`components/spaces/crm/space-contact-detail.tsx` over `getSpaceContactDetail`) now carries the full Altitude 3 stack, not just identity + timeline: the **"where this person is" context band** + the **shared score row** (Resonance Health + churn + activation, each with the plain top-signals + confidence so a bare score is never shown), an **About panel** of the member's confirmed facts, and the **Resonance matches** section. All are member-only and fail-safe: a pure lead (no stitched profile) reads the calm "not scored yet" line, no score row, no About, and the "not a member yet" resonance state. The detail read resolves the contact's `profile_id` and folds `getMemberScores` + `draftContextLine` + `explainMemberScores` (`lib/dashboard/person-band.ts`) + `getMemberContext` (`lib/ai/memory.ts`) + `getResonanceMatchesForPerson` (`lib/resonance/surface.ts`). The platform-staff twin lives at `app/(main)/admin/marketing/contacts/[id]/page.tsx`.
 
 | Slot | Widget | Source |
 |---|---|---|
@@ -165,6 +168,8 @@ Drill-down: contact row -> on-board contact detail (ADR-376, `lib/crm/space-cont
 | Tab: About | confirmed facts (interests, goals, neighborhood) | `lib/ai/memory.ts` |
 | Tab: Resonance | top matches in this Space with affinity breakdown | Resonance Graph |
 | Action | next-best-action playbook picker (one tap) | Playbook Registry |
+
+> **Deferred on the Space person detail (this slice):** the **one-tap next-best-action playbook picker** is not on the Space contact detail yet (the platform Today surface owns playbook execution today); the worklist's per-member action is the current path. The **affinity breakdown** on each match is the plain WHY line only (the coarse strength label + shared-belonging reasons), not a numeric vector, by the privacy rule in "The Resonance Graph" section. Both are intentional, not gaps in the data.
 
 This is the drill-down floor. Every aggregate above eventually lands here, on the canonical timeline, preserving the one-front-door rule.
 

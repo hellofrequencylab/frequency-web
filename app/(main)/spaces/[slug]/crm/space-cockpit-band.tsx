@@ -1,7 +1,9 @@
 import { Activity, HeartPulse, Mail, Users } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { Worklist } from '@/components/dashboard/worklist'
-import { getSpaceHealth, getWorklist } from '@/lib/dashboard/scores'
+import { LifecycleFunnelPanel } from '@/components/dashboard/lifecycle-funnel'
+import { SectionHeader } from '@/components/ui/section-header'
+import { getSpaceHealth, getSpaceFunnel, getWorklist } from '@/lib/dashboard/scores'
 import { getSpaceCrmFunnel } from '@/lib/spaces/crm-funnel'
 import { getSpaceAcceptedIntros } from '@/lib/resonance/surface'
 import { spaceVerdictLine, healthTone } from '@/lib/dashboard/verdict'
@@ -31,10 +33,11 @@ function toneLabel(label: string, tone: keyof typeof DOT) {
 export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slug: string }) {
   // The reads, all fail-safe + scoped to this Space. Parallel so the band paints in one tick. The
   // intros count (ADR-385) reads accepted double-opt-in matches touching the Space; 0 pre-migration.
-  const [health, worklist, funnel, introsAccepted] = await Promise.all([
+  const [health, worklist, reachFunnel, lifecycleFunnel, introsAccepted] = await Promise.all([
     getSpaceHealth(spaceId),
     getWorklist({ spaceId }),
     getSpaceCrmFunnel(spaceId),
+    getSpaceFunnel(spaceId),
     getSpaceAcceptedIntros(spaceId),
   ])
 
@@ -56,9 +59,9 @@ export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slu
         />
         <StatCard
           label="Reachable contacts"
-          value={funnel.reach.total}
+          value={reachFunnel.reach.total}
           icon={Mail}
-          detail={`${funnel.reach.subscribed} subscribed`}
+          detail={`${reachFunnel.reach.subscribed} subscribed`}
         />
         <StatCard
           label={toneLabel('At risk in this Space', health.atRisk > 0 ? 'danger' : 'success')}
@@ -83,6 +86,15 @@ export async function SpaceCockpitBand({ spaceId, slug }: { spaceId: string; slu
         hrefFor={(row) => `${boardHref}?contact=${row.contactId}`}
         laterHref={boardHref}
       />
+
+      {/* The Space lifecycle funnel (Altitude 2): where this Space's members stall on the climb
+          from new to engaged, plus the at-risk / dormant leak. Each step drills to the Space's
+          members at that stage (the board's own ?stage= list), each of whom opens their on-board
+          detail, keeping the owner inside their Space. */}
+      <div>
+        <SectionHeader title="Lifecycle" />
+        <LifecycleFunnelPanel funnel={lifecycleFunnel} drillBase={boardHref} />
+      </div>
     </section>
   )
 }

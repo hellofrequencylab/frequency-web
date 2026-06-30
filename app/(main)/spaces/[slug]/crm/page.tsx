@@ -16,6 +16,7 @@ import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
 import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
 import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
+import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { SpaceCockpitBand } from './space-cockpit-band'
@@ -46,11 +47,12 @@ export default async function SpaceCrmBoardPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ contact?: string | string[] }>
+  searchParams: Promise<{ contact?: string | string[]; stage?: string | string[] }>
 }) {
   const { slug } = await params
-  const { contact } = await searchParams
+  const { contact, stage } = await searchParams
   const selectedContactId = Array.isArray(contact) ? (contact[0] ?? null) : (contact ?? null)
+  const selectedStage = Array.isArray(stage) ? (stage[0] ?? null) : (stage ?? null)
 
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -112,6 +114,25 @@ export default async function SpaceCrmBoardPage({
             contactId={selectedContactId}
             backHref={boardHref}
           />
+        </Suspense>
+      </DashboardTemplate>
+    )
+  }
+
+  // LIFECYCLE-STAGE DRILL MODE: when a funnel step on the cockpit is tapped (?stage=<stage>) the board
+  // lists this Space's members at that stage, lowest health first, each linking back to ?contact=<id>.
+  // The read is space-scoped inside listMembersByFilter; an unknown stage yields an empty list.
+  if (selectedStage) {
+    return (
+      <DashboardTemplate
+        eyebrow={brandName}
+        title="Members by stage"
+        description="The people at this point on the climb in your space, lowest health first. Tap anyone to open their detail."
+        back={{ href: boardHref, label: 'CRM board' }}
+        width="default"
+      >
+        <Suspense fallback={<ListSkeleton />}>
+          <SpaceStageList spaceId={space.id} stage={selectedStage} boardHref={boardHref} />
         </Suspense>
       </DashboardTemplate>
     )
