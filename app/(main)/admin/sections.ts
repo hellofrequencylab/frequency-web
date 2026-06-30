@@ -258,7 +258,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Onboarding' },
       { href: '/admin/walkthroughs', label: 'Walkthroughs', desc: 'Instructional walkthroughs by role + trigger', Icon: GraduationCap, min: 'host', staffDomain: 'marketing', section: 'Onboarding' },
       { href: '/admin/onboarding-controls', label: 'Onboarding & referral controls', desc: 'Turn Next Steps prompts, popups, and referrals on or off.', Icon: ToggleRight, min: 'janitor', section: 'Onboarding' },
-      // ── Expansion ──
+      // ── Expansion (Keystone: the cold-start solver) ──
+      { href: '/admin/keystone/density', label: 'Density by city', desc: 'The cold-start read: where the community has a real pulse, and where a corner is still cold enough to want a founder seeded.', Icon: Telescope, min: 'admin', staffDomain: 'insights', staffLevel: 'read', section: 'Expansion' },
     ],
   },
   {

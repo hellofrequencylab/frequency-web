@@ -9574,3 +9574,128 @@ gate.
 - **Deferred:** GE3-5 (referral-position + share mechanics) and GE3-6 (cohort gating + bulk invite). The
   schema carries `position`, `referred_by_profile_id`, and `cohort` so those land without a migration;
   position is a plain append today.
+
+---
+
+## ADR-457: The keystone density read model (Growth OS Engine 8, GE8-1/4/6)
+
+**Status:** Accepted · **no migration** (the `resonance_density_cells` table already exists in prod,
+ADR-414/416). Pure rollup in `lib/keystone/density-rollup.ts` (+ tests), server seam in
+`lib/keystone/store.ts`, global-to-local instrumentation in `lib/keystone/instrumentation.ts`, the
+founder-bootstrap surface in `components/feed/local-corner-card.tsx` (+ `components/feed/founder-action.tsx`,
+`app/(main)/feed/keystone-actions.ts`), the admin density-by-city read at
+`app/(main)/admin/keystone/density/page.tsx` (one nav link in `app/(main)/admin/sections.ts`).
+
+**Context.** `docs/GROWTH-OS-BUILD-PLAN.md` Engine 8 is the cold-start solver: nobody lands in an empty
+room. Phase 2 of the Resonance Feed (ADR-416) already fills `resonance_density_cells` (a per fuzzed
+~1.1km geocell activity rollup) and reads it for the adaptive-radius feed + a binary founder/active
+branch (`lib/feed/ripple.ts`, `lib/feed/density.ts`). GE8 needs three things ON TOP of that, without
+re-founding the table: (1) a per-LOCALITY "warm enough to seed?" signal richer than the feed's binary,
+(2) a density-by-CITY read for an operator, and (3) instrumentation that verifies a global signup
+converts into local activity. The cells carry no city name and no region mapping
+(`nexus_region_id` is reserved-nullable), so "city" had to be derived, and it had to stay as private as
+the cells it comes from.
+
+**Decision.**
+1. **City = a coarsened fuzzed geocell, not a place name.** `rollupByCity` clusters the ~1.1km cells
+   (2dp) into ~11km buckets (1dp, `CITY_GRID_DECIMALS`) and ranks them busiest-first. A bucket is
+   strictly COARSER than the cell it came from, so it is even less reversible into "who is home"; it is
+   never a raw coordinate. This avoids both a geocoding dependency and a `nexus_regions` point-in-polygon
+   mapping (still deferred) while giving an operator a usable per-city read today. **k-anonymity:** a
+   bucket below `MIN_CITY_MEMBERS` (5) is still ranked (operators must SEE thin localities to seed them)
+   but carries `belowAnonymityFloor`, and the admin surface shows "few" instead of a precise head count.
+2. **A four-rung seed-readiness ladder, not the feed's binary.** `seedReadiness(cells)` rolls a
+   locality's cells into `empty | seeding | warm | live`: an ANCHOR (a standing circle or upcoming event)
+   is the hinge between "warm" (one real thing to join) and "seeding" (a spark of people/chatter but
+   nothing to join yet); `live` (>= 2 anchors or >= 8 members) needs no founder. This is a superset of
+   `ripple.ts`'s founder/active call (the feed still uses ripple for the radius math), used to TUNE the
+   founder-bootstrap copy by how cold the corner is, and to colour the admin read.
+3. **The founder-bootstrap prompt reads the ladder + is instrumented.** The existing `<LocalCornerCard>`
+   founder branch now reads `getLocalitySeedSignal` and varies its headline/lead by readiness (empty ->
+   "be a founder", seeding -> "plant the first circle", warm -> "add to what is starting"), and each CTA
+   is wrapped so a tap records (`recordFounderTap`, self-authorized). The copy passes CONTENT-VOICE
+   (plain, concrete, never narrating the reader's feelings, no em dashes).
+4. **Global-to-local instrumentation is a typed wrapper over the engagement ledger.** Four event types
+   (`keystone_locality_resolved` / `_founder_prompt_shown` / `_founder_prompt_acted` /
+   `_local_activity_seeded`) emit through `recordEngagementEvent` (exactly-once), tagged with the FUZZED
+   city bucket + the seed readiness (counts + a coarse bucket key, never a coordinate or identity).
+   Impression events dedupe per member per UTC day; the conversion goal (`_local_activity_seeded`)
+   dedupes per seeded entity and fires from the canonical "founder seeded a room" point
+   (`lib/circles/remix.ts` circle-start). The funnel rollup (ADR-455) reads these to verify the
+   global -> local shift the keystone exists to produce.
+
+**Why no migration.** Every signal GE8-1 needs is already a column on `resonance_density_cells`
+(active_members / recent_* / density_score) keyed to the fuzzed geocell; the new value is pure
+composition over those rows (clustering + a readiness function), so it is a read model, not new storage.
+The instrumentation is rows on the existing append-only `engagement_events` ledger. Nothing here adds a
+column, a table, or a matview, which is why this ADR ships migration-free, unlike the funnels (ADR-455)
+and applications (ADR-456) data-model ADRs in this engine series.
+
+**Consequences.**
+- The density table stays service-role only; both reads go through the admin client behind a gate
+  (`getDensityByCity` via the `insights` read capability on the admin page; `getLocalitySeedSignal` via
+  the member's own feed). All reads are fail-safe (an empty world / `empty` signal on any error), so the
+  feed and the admin page always render.
+- This is GE8-1 (the read model + admin read), GE8-4 (the founder-bootstrap surface), and GE8-6 (the
+  instrumentation). **Out of scope, deferred:** GE8-2 (hosted-Journey scheduling), GE8-3 (the
+  ripple/localization weight-shift in `lib/feed-rank.ts`), and GE8-5 (the full Keystone admin SUITE: the
+  density read here is a single Acquisition > Expansion link, not the three-layer suite). The
+  `nexus_region_id` ring mapping is still deferred; the coarsened-bucket "city" is the interim, and a
+  later precise region mapping can replace the bucket key without changing the read-model shape.
+
+---
+
+## ADR-458: The pricing + value ladder overhaul (Crew · Pro · Nonprofit · Organization)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel (Vision Steward). Full build:
+[PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md). Supersedes the 7-plan model in
+[PRICING.md](PRICING.md) as phases land.
+
+**Context.** The owner-approved value ladder (Notion: "Pricing & Value Ladder, Draft for Review")
+collapses the published offer to three commercial tiers and reframes Pro as a low base plus four
+toggle add-ons. The current system already ships the entitlement engine (ADR-362/363/364/370/373),
+so this is ~80% a repackaging, not a rebuild.
+
+**Decision.**
+- **Value ladder.** Access is the union of independent axes (Membership · Stewardship · Space plan ·
+  Space role · Platform staff). Commercial page shows **Pro** (from $19/mo + four add-ons: Marketing
+  +$20, AI Engine +$20, Team +$9/seat, Branding +$30), **Nonprofit** ($12/licensed-seat, 3% take,
+  3-seat floor), **Organization** (from $199/mo, sales-assist). **Crew** ($9) lives on the personal
+  upgrade page. Stewardship stays earned-never-paid (ADR-207, unchanged).
+- **Consolidations.** 7 space plans → 3 (pro/nonprofit/organization). `spaces.type` (practitioner/
+  coaching/business/event_space/lab/partner) stays as identity/skin, decoupled from plan; all business
+  types run on Pro. **Partner** → comped Pro (`spaces.is_comped`), never public. **White-label** →
+  the Branding add-on, not a plan. **Supporter** → retired tier → optional PWYW "Supporter" badge on Crew.
+- **Keystone change — entitlement partition.** `spaces.entitlements` is partitioned into a
+  **billing-managed namespace** (written only by the webhook/plan resolver, service-role only) and the
+  existing top-level **manual grants**. `setSpacePlan`/`setSpaceAddons` become **set-to-target** (compute
+  the exact billing key set from base plan + active add-on items, then replace the billing namespace),
+  so an add-on toggling **off** removes only its billing keys and never nukes a hand-grant. A client can
+  never forge a billing key.
+- **Stripe.** Pro = one subscription with multiple items (base + one price item per active add-on,
+  proration + 14-day per-item trial). Team + Nonprofit = quantity (licensed-seat) items. Connect
+  destination charge + application fee (5/3/custom) and founder lock unchanged.
+- **Anchor + founding price + grandfather (owner strategy, 2026-06-30).** Every published price ships as a
+  **list anchor** (Pro $29) with a lower **founding price** (Pro $19) beneath it. Subscribing at the founding
+  price **grandfathers it for the life of the subscription**: the charged Stripe price id is recorded as a
+  per-subscription **locked price id** (generalize `profiles.locked_price_id`/ADR-363 to space items), and
+  renewals + add-on toggles re-bill the locked price, not the current list price. A lapse that cancels ends
+  the lock; re-subscribing pays the then-current price. Same Pro/Nonprofit/Org item at a locked price id, not
+  a separate plan.
+- **Annual option.** Each plan + add-on has a **monthly** and a **yearly** Stripe price (interval `year`, two
+  months free), framed as the "back the build" path; monthly stays the low-friction default.
+- **Mission framing.** Pricing + upgrade copy states plainly that a paid plan keeps Frequency independent and
+  funds the team + infrastructure that run it (membership funds the mission + operations, not buying
+  software). Voice binds (CONTENT-VOICE §10): plain + concrete, no guilt, never narrate the reader's feelings,
+  skeptic-test, no em dashes.
+- **Owner-locked answers.** Supporter → PWYW badge; Partner → comped Pro; multi-pipeline + reporting
+  live inside Marketing; Nonprofit = $12 licensed-seat (active-seat true-up is v2); Organization keeps
+  the published $199 floor anchor.
+- **Everything ships behind `billing_live` OFF.** Grant-all-while-OFF preserves current behavior; the
+  flip is one switch after all phases (A keystone → B Stripe → C surfaces → D seats → E threads →
+  F pages/SEO) merge, advisors are clean, and Stripe products are synced.
+
+**Consequences.** Add-on toggle-off semantics become correct (partition prevents grant loss). Creation/
+hosting/authoring move to a server-side Crew gate (capability resolver) on each create action. Commercial
+pricing page is fully static (ISR) with `Product`/`Offer`/`FAQPage` JSON-LD + per-loadout persona landing
+pages for SEO/AIO. PRICING.md is updated per phase; this ADR + PRICING-LADDER-PLAN.md are the source of truth.
