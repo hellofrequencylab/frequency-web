@@ -33,9 +33,14 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
   practitioner: 'Practitioner',
   business: 'Business',
-  nonprofit: 'Nonprofit',
+  // The verified-501c3 plan is the plan FOR a Space of type `organization` (a nonprofit), so its
+  // label names both: the operator picks the right plan for an Organization space without guessing,
+  // and the plan label + the Space type label read as the same thing.
+  nonprofit: 'Nonprofit (Organization)',
   partner: 'Partner',
-  organization: 'Organization',
+  // The high-end CUSTOM plan for a large organization (built, not publicly sold) — distinct from the
+  // verified-nonprofit plan above. 'Enterprise' so it never reads as the same row as Nonprofit.
+  organization: 'Organization (Enterprise)',
   whitelabel: 'White-label',
 }
 

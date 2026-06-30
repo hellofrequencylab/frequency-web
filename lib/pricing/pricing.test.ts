@@ -295,10 +295,14 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
 
   it('spacePlanRows lists the paid ladder practitioner -> whitelabel (not free)', () => {
     const rows = spacePlanRows(PRICING_DEFAULTS)
-    expect(rows.map((r) => r.key)).toEqual(['practitioner', 'business', 'organization', 'whitelabel'])
+    // Nonprofit (verified 501c3) rides between business and organization so an organization-type
+    // Space can find its own plan on the ladder (the $199 organization plan is the enterprise tier).
+    expect(rows.map((r) => r.key)).toEqual(['practitioner', 'business', 'nonprofit', 'organization', 'whitelabel'])
     expect(rows[0].label).toBe('Practitioner')
     // organization is monthly-only
     expect(rows.find((r) => r.key === 'organization')?.annual).toBeNull()
+    // nonprofit has an annual line ($290)
+    expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$290')
     // practitioner/business have an annual line
     expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$190')
   })
