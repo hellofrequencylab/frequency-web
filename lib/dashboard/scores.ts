@@ -408,9 +408,11 @@ export async function getMemberScores(profileId: string | null): Promise<MemberS
 
 // ── Member-list drill-down (every chart point lands on a real member list) ────
 
-/** The drill-down filters the cockpit charts route to. A tier (the StatCard band) or a lifecycle
- *  stage (a funnel step). Validated against the matview's columns before use. */
+/** The member-list filters. `all` is the full scored roster: the familiar front door the list-first
+ *  principle puts first (docs/NEXT-GEN-CRM.md). `tier` is a StatCard band; `lifecycle` is a funnel
+ *  step (the drill-downs). Tier/lifecycle are validated against the matview's columns before use. */
 export type MemberFilter =
+  | { kind: 'all' }
   | { kind: 'tier'; value: ResonanceTier }
   | { kind: 'lifecycle'; value: string }
 
@@ -442,10 +444,11 @@ function asTier(v: string | null): ResonanceTier {
 }
 
 /**
- * List the members behind a chart point (a tier band or a lifecycle stage), newest-risk first,
- * each carrying its shared score + a contact id for the timeline drill. FAIL-SAFE: any error, an
- * absent matview, or an invalid filter resolves to an empty list. Pass a `spaceId` to scope to a
- * Space's reachable members; omit it for the platform. The caller MUST gate the scope first.
+ * List members, lowest health first, each carrying its shared score + a contact id for the timeline
+ * drill. Pass `{ kind: 'all' }` for the full scored roster (the list-first front door), or a tier
+ * band / lifecycle stage for a drill-down. FAIL-SAFE: any error, an absent matview, or an invalid
+ * filter resolves to an empty list. Pass a `spaceId` to scope to a Space's reachable members; omit
+ * it for the platform. The caller MUST gate the scope first.
  */
 export async function listMembersByFilter(
   filter: MemberFilter,
@@ -458,22 +461,28 @@ export async function listMembersByFilter(
 
   try {
     const admin = createAdminClient()
-    const q = (admin as unknown as {
+    // The same query shape every list reuses: the matview select, ordered lowest-health first. The
+    // `all` roster (list-first front door) skips the column filter; a tier / lifecycle drill adds an
+    // .eq() on the validated column. The RPC/matview isn't in the generated types yet (ADR-246).
+    type OrderLimit = {
+      order: (col: string, o: { ascending: boolean }) => {
+        limit: (n: number) => Promise<{ data: ScoreRow[] | null; error: unknown }>
+      }
+    }
+    const base = (admin as unknown as {
       from: (t: string) => {
-        select: (c: string) => {
-          eq: (col: string, val: string) => {
-            order: (col: string, o: { ascending: boolean }) => {
-              limit: (n: number) => Promise<{ data: ScoreRow[] | null; error: unknown }>
-            }
-          }
-        }
+        select: (c: string) => OrderLimit & { eq: (col: string, val: string) => OrderLimit }
       }
     })
       .from('member_engagement_scores')
       .select('profile_id, resonance_health, resonance_tier, lifecycle_stage')
 
-    const col = filter.kind === 'tier' ? 'resonance_tier' : 'lifecycle_stage'
-    const { data: scoreData, error } = await q.eq(col, filter.value).order('resonance_health', { ascending: true }).limit(limit)
+    // `all` returns every scored member (lowest-health first); a drill filters by its validated column.
+    const filtered: OrderLimit =
+      filter.kind === 'all'
+        ? base
+        : base.eq(filter.kind === 'tier' ? 'resonance_tier' : 'lifecycle_stage', filter.value)
+    const { data: scoreData, error } = await filtered.order('resonance_health', { ascending: true }).limit(limit)
     if (error || !scoreData || scoreData.length === 0) return []
 
     let rows = scoreData
@@ -527,4 +536,16 @@ export async function listMembersByFilter(
   } catch {
     return []
   }
+}
+
+/**
+ * The full scored member roster, lowest health first: the list-first front door of the Resonance
+ * CRM (docs/NEXT-GEN-CRM.md). A thin wrapper over listMembersByFilter({ kind: 'all' }) so the
+ * default member list and every drill share one query shape. FAIL-SAFE to an empty list. Pass a
+ * `spaceId` to scope to a Space's reachable members; omit it for the platform. The caller gates.
+ */
+export async function listAllScoredMembers(
+  opts: { spaceId?: string | null; limit?: number } = {},
+): Promise<MemberListRow[]> {
+  return listMembersByFilter({ kind: 'all' }, opts)
 }
