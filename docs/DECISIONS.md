@@ -9702,6 +9702,54 @@ pages for SEO/AIO. PRICING.md is updated per phase; this ADR + PRICING-LADDER-PL
 
 ---
 
+## ADR-459: The reusable member-viewer block (master-detail member browser)
+
+**Status.** Accepted, shipped. **Context.** Several surfaces browse members and want the same shape:
+a list on the left, a member viewer on the right. Hand-rolling that per surface drifts (each grows
+its own search, paging, selection, and detail card). We want ONE composable block, reused and
+reconfigured, not a one-off page, and presentation-neutral (ADR-017/018: data + intent in, no IO).
+
+**Decision.** Ship a `MemberViewer` block in `components/people/member-viewer/` (client island:
+`MemberViewer` + `MemberDetailCard`, exported via `index.ts`) over a PURE, unit-tested core in
+[`lib/people/member-viewer.ts`](../lib/people/member-viewer.ts) (`applyQuery` = text + facet filter,
+sort, paginate/cap; no React, no IO). The block composes the existing kit (`PersonCard`,
+`EmptyState`, `Skeleton`, `Button`), uses semantic DAWN tokens only, and keeps copy plain (no em
+dashes, NAMING nouns).
+
+**The contract (presentation-neutral).**
+
+| Type | What it is |
+|---|---|
+| `MemberSummary` | one left-list row: `id`, `handle`, `displayName`, `avatarUrl?`, `online?`, `badges?` (facet-matchable), `headline?`, `stats?`, embedded `detail?` |
+| `MemberDetail` | the right pane: `displayName`, `handle`, `avatarUrl?`, `contact?`, `latestActivity?`, `engagementStats?`, `profileHref` (default `/people/${handle}`), `actions?` — every rich field OPTIONAL, so a host omits what it cannot source cleanly and never invents data |
+| `MemberAction` | `{ key, label, icon?, href?, onSelect?, variant? }`; the viewer offers Connect + Message (full) and Open Profile (always) by default, merged ahead of the host's own |
+| `Facet` | a chip/select filter; the client filter matches a row's `badges` by default |
+
+**Reuse model.** Props tune the same block: `loadDetail?(id)` (lazy right pane with a dimension-matched
+skeleton, FAIL-SAFE to a calm error pane on reject; an embedded `detail` skips the fetch);
+`detailMode` `'full'` (contact + activity + stats + actions) or `'quick-stats'` (a compact stat grid
+under a prominent Open Profile); `defaultView` `'list'` | `'card'` with a visible toggle (card =
+`PersonCard` tiles whose click is repurposed for SELECTION, not navigation); `pageSize` (default 15,
+clamped 10..20) with Show more; `search` (text over name + handle + headline, plus facets);
+controlled `selectedId`/`onSelectedChange` (uncontrolled default, first row derived-preselected on
+desktop); `onQueryChange` for a server-driven host; `emptyState` override. Responsive: desktop two
+panes (left ~2/5, right ~3/5, both `min-w-0`, right scrolls independently); mobile = list primary, a
+selection opens a detail overlay with Back. Keyboard: up/down move selection, Enter opens, visible
+focus ring, `motion-reduce` honored. The page-reset and preselect are DERIVED (no cascading effects).
+
+**First reuse.** The Resonance CRM platform members surface (`app/(main)/admin/crm/members`) renders
+`<MemberViewer>` (full mode, list default, tier + lifecycle facets), KEEPING the list-first front
+door + the fail-safe empty state: a server component maps the shared `listMembersByFilter` rows to
+`MemberSummary[]` (handle/avatar BATCHED via `getProfileSummaries`, no N+1), and a staff-gated
+`loadMemberDetail` server action assembles `MemberDetail` from EXISTING readers only (profile
+summary, `getMemberScores`, the `contact_interactions` timeline). The cockpit's compact roster
+(`member-roster.tsx`) is unchanged.
+
+**Consequences.** New member-browsing surfaces compose the block + a row mapper instead of a bespoke
+page. No schema/migration change. The pure core is locked by `lib/people/member-viewer.test.ts`.
+
+---
+
 ## ADR-460: Phase B Stripe structure (multi-item subscription, list+founding+monthly+yearly catalog, generalized locked-price grandfather, set-to-target webhook)
 
 **Status:** Accepted (2026-06-30). Owner: Daniel (Vision Steward). Builds on ADR-458 (the value ladder +
