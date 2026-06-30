@@ -29,6 +29,7 @@ import { ZapToastContainer } from '@/components/zap-toast'
 import { PresenceHeartbeat } from '@/components/presence/heartbeat'
 import { PushRegistration } from '@/components/push/registration'
 import { VeraLauncher } from '@/components/vera/vera-launcher'
+import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
 import { PageViewTracker } from '@/components/analytics/track-provider'
 import { ObserveProvider } from '@/components/analytics/observe-provider'
 import { GaConsentGate } from '@/components/analytics/ga-consent-gate'
@@ -336,6 +337,11 @@ export default async function MainLayout({
   // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1) was loaded
   // in the parallel wave above (helpIndex). Small + read from local Markdown.
 
+  // Phase E upsell tease gate (ADR-466) for Vera depth: at a Vera turn (a depth moment), tease the
+  // Crew unlock past the free daily cap — ONLY when billing is live AND the caller is below Crew
+  // (resolvePersonalTeaseGate is HIDDEN while OFF). Dormant until billing_live ON.
+  const veraTease = await resolvePersonalTeaseGate('vera_unlimited')
+
   // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1).
   const tourMeta = (profile.meta as { tour?: Partial<TourState> } | null)?.tour
   const tourState: TourState = {
@@ -541,7 +547,7 @@ export default async function MainLayout({
       {/* One-time browser→home_timezone sync so the practice "day" resolves in the
           member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
       <TimezoneSync />
-      <VeraLauncher index={helpIndex} />
+      <VeraLauncher index={helpIndex} veraTease={veraTease} />
       {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
           member's wall; reachable from any page in the shell. */}
       <CaptureLauncher scopeId={profile.id} />

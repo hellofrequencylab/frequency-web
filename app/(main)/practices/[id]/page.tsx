@@ -18,6 +18,8 @@ import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
 import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
 import { EditPracticeButton } from '@/components/practices/edit-practice-button'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,6 +107,10 @@ export default async function PracticeDetailPage({ params }: Params) {
 
   const summary = practice.summary ?? practice.description ?? null
   const authorLine = creator?.handle ? <PracticeAuthor creator={creator} prefix="Created by" /> : null
+
+  // Phase E upsell tease gate (ADR-466): when a practice was logged today (the habit just paid off),
+  // tease building a Program — ONLY when billing is live AND the caller is below Crew. Dormant while OFF.
+  const programsTease = state.loggedToday ? await resolveTierTeaseGate('crew') : null
 
   return (
     <DetailTemplate
@@ -247,6 +253,21 @@ export default async function PracticeDetailPage({ params }: Params) {
           </>
         )}
       </div>
+
+      {/* Phase E upsell tease (ADR-466): logged today — tease turning practices into a Program (a
+          guided path others can follow). Shown only at the logged-today success moment, and only when
+          billing is live AND the caller is below Crew. DORMANT until billing_live ON. */}
+      {programsTease && (
+        <UpsellTease
+          target="practice-programs"
+          live={programsTease.live}
+          locked={programsTease.locked}
+          href="/upgrade"
+          title="Turn your practices into a Program"
+          body="Crew lets you build a Program: line up practices into a path others can follow day by day."
+          cta="See what Crew adds"
+        />
+      )}
 
       {/* The arrangeable body — stats · intro · guide · tags · used-in (Settings → Layout). */}
       <PageModules route={`/practices/${practice.id}`} />

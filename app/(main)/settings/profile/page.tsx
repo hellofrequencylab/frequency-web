@@ -11,6 +11,7 @@ import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { ProfileActivationWelcome } from '@/components/settings/profile-activation-welcome'
 
@@ -55,6 +56,10 @@ export default async function ProfileSettingsPage() {
   // guide reads) and point at the next thing. Returns null once activation is complete.
   const onboarding = await getOnboardingStatus(profile.id as string)
 
+  // Phase E upsell tease gate (ADR-466): at the share-your-QR success moment, tease QR Studio (more
+  // styled codes, tracking) — ONLY when billing is live AND the caller is below Crew. Dormant while OFF.
+  const studioTease = await resolveTierTeaseGate('crew')
+
   return (
     <FocusTemplate
       title="Edit Profile"
@@ -93,7 +98,7 @@ export default async function ProfileSettingsPage() {
           profileTheme: (profile as { profile_theme?: string | null }).profile_theme ?? null,
         }}
       />
-      {connect && qrSvg && <ProfileQrCard svg={qrSvg} link={qrLink} codeId={connect.id} />}
+      {connect && qrSvg && <ProfileQrCard svg={qrSvg} link={qrLink} codeId={connect.id} studioTease={studioTease} />}
     </FocusTemplate>
   )
 }
