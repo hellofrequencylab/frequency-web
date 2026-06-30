@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Users, MapPin, ChevronLeft } from 'lucide-react'
 import { getPublicCircleById } from '@/lib/discover'
 import { SignInCta } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -148,6 +149,22 @@ export default async function CirclePage({
           body="Circles are small on purpose: up to 50 neighbors, no audition, two words to belong. Sign up free to request to join, see the standing times, and start showing up for the people who will keep a seat warm for you."
           action="Sign in to join"
         />
+
+        {/* Inline capture: someone reading one specific Circle is the warmest lead
+            on the site. Offer the invite right here, with the live member count as
+            honest social proof, instead of bouncing them to /beta. Same
+            double-opt-in funnel + source attribution as the discover list pages. */}
+        <div className="mt-8">
+          <InlineBetaCapture
+            source="discover_circle_detail"
+            heading="Not ready for an account yet?"
+            body={
+              circle.member_count > 1
+                ? `${circle.member_count} neighbors are already in ${circle.name}. Join the beta and we'll send an invite when a spot opens near you. No spam, just the nudge to show up.`
+                : `${circle.name} is forming now. Join the beta and we'll send an invite when a spot opens near you. No spam, just the nudge to show up.`
+            }
+          />
+        </div>
       </DetailTemplate>
     </div>
   )

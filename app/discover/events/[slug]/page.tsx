@@ -5,6 +5,7 @@ import { CalendarDays, MapPin, Lock, ChevronLeft } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
 import { SignInCta } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
@@ -161,6 +162,21 @@ export default async function EventPage({
           }
           action={hasEnded ? 'Get started' : 'Sign in to RSVP'}
         />
+
+        {/* Inline capture: someone reading one specific event is ready to show up.
+            Offer the invite right here instead of bouncing them to /beta. Same
+            double-opt-in funnel + source attribution as the discover list pages. */}
+        <div className="mt-8">
+          <InlineBetaCapture
+            source="discover_event_detail"
+            heading="Not ready for an account yet?"
+            body={
+              hasEnded
+                ? "This one has passed, but more are already on the calendar near you. Join the beta and we'll send an invite when a spot opens. No spam, just the nudge to show up."
+                : `Want to be at ${event.title}? Join the beta and we'll send an invite when a spot opens near you, with the exact venue and a seat the host saves for you. No spam.`
+            }
+          />
+        </div>
       </DetailTemplate>
     </div>
   )
