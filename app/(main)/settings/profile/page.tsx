@@ -11,6 +11,8 @@ import { ProfileForm } from './profile-form'
 import { ProfileQrCard } from '@/components/settings/profile-qr-card'
 import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
+import { getOnboardingStatus } from '@/lib/onboarding/status'
+import { ProfileActivationWelcome } from '@/components/settings/profile-activation-welcome'
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
@@ -48,6 +50,11 @@ export default async function ProfileSettingsPage() {
     .maybeSingle()
   const headerImageUrl = (hdr as { header_image_url?: string | null } | null)?.header_image_url ?? ''
 
+  // First-visit orientation: members often land here straight from the "Add a photo"
+  // activation step, so surface where they are in getting set up (same status the feed
+  // guide reads) and point at the next thing. Returns null once activation is complete.
+  const onboarding = await getOnboardingStatus(profile.id as string)
+
   return (
     <FocusTemplate
       title="Edit Profile"
@@ -64,6 +71,10 @@ export default async function ProfileSettingsPage() {
         ) : undefined
       }
     >
+      <ProfileActivationWelcome
+        status={onboarding}
+        name={profile.display_name ?? undefined}
+      />
       <ProfileForm
         userId={user.id}
         initial={{
