@@ -113,6 +113,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Seeker-track pillar (CONTENT-VOICE §7a): finding your people by shared
     // wavelength — answer-first, Article + FAQ schema.
     { url: `${SITE_URL}/find-like-minded-people`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    // Seeker-track pillar (CONTENT-VOICE §7a): closing the gap between wanting
+    // connection and the daily default of staying in — answer-first, Article + FAQ schema.
+    { url: `${SITE_URL}/how-to-be-more-social`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,
