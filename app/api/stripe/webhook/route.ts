@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import { stripe, STRIPE_WEBHOOK_SECRET, tierForPrice } from '@/lib/billing/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { routeSpaceSubscription, subscriptionKind } from '@/lib/billing/space-subscriptions'
+import { grantFounderFromSession } from '@/lib/billing/founders'
 
 // Stripe membership webhook (P2.2). Verifies the signature, then reconciles the
 // member's entitlement: a completed checkout / active subscription sets membership_tier
@@ -65,6 +66,14 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const s = event.data.object as Stripe.Checkout.Session
+        // Founders Round (ONE-TIME, mode:'payment'): grant the founding membership
+        // (is_founding_member + tier + locked price). Idempotent and shared with the
+        // success-page confirm action; routed by metadata.kind === 'founders' and exits
+        // before the subscription-tier path (a founders purchase is not a membership tier).
+        if (s.metadata?.kind === 'founders') {
+          await grantFounderFromSession(s)
+          break
+        }
         // Pricing P2: a Space plan/membership checkout completes — the subscription.created/updated
         // event does the entitlement write (it carries the full subscription status), so skip the
         // member tier path here for those kinds. The member Crew/Supporter checkout has no `kind`.
