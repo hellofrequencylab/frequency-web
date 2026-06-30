@@ -4,7 +4,17 @@
 -- it, so this silently emptied the practice library AND broke the Vera Journey composer
 -- (searchLibraryPractices threw / returned no rows). Recreate the view exposing focus_details
 -- (appended last to satisfy CREATE OR REPLACE's same-order + append-only column rule).
-create or replace view public.practices_ranked as
+--
+-- REPLAY FIX: the live view was last built in 20260614200000_rewards_economy_v2.sql as
+-- `select p.*, ...`, whose column ORDER follows the physical practices columns
+-- (domain_id before category). This migration lists columns explicitly (category before
+-- domain_id), so CREATE OR REPLACE VIEW failed on a fresh apply with "cannot change name
+-- of view column domain_id to category" (42P16) — CREATE OR REPLACE may only append
+-- columns, not reorder. DROP then CREATE to establish the explicit column order. No DB
+-- object depends on practices_ranked, and later view rebuilds use the same explicit order.
+drop view if exists public.practices_ranked;
+create view public.practices_ranked
+  with (security_invoker = true) as
  select p.id,
     p.title,
     p.description,
@@ -45,3 +55,7 @@ create or replace view public.practices_ranked as
             count(*) AS logs_total
            FROM practice_logs
           GROUP BY practice_logs.practice_id) l ON l.practice_id = p.id;
+
+-- Preserve the access grants the dropped view carried (from 20260614200000_rewards_economy_v2).
+REVOKE ALL ON public.practices_ranked FROM anon, authenticated;
+GRANT SELECT ON public.practices_ranked TO service_role;
