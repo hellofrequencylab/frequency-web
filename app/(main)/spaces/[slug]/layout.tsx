@@ -121,10 +121,30 @@ export default async function SpaceProfileLayout({
   // Stamp the active Space so every entity module (a parameterless RSC) reads this tenant's rows.
   setActiveSpace(space)
 
+  // The current path, off the proxy-stamped x-pathname (the same seam PageModules uses). No third
+  // segment = the profile index. We read it FIRST so an owner surface can escape the profile chrome
+  // before any profile-only work runs below.
+  const pathname = (await headers()).get('x-pathname') ?? `/spaces/${space.slug}`
+  const segs = pathname.split('/').filter(Boolean) // ['spaces', '<slug>', '<segment>'?]
+  const activeSegment = segs.length >= 3 ? segs[2] : undefined
+
+  // OWNER SURFACES ESCAPE THE PROFILE CHROME. The /manage console and the legacy /settings cockpit
+  // are operator workspaces, NOT the public profile: each owns its own header (DashboardTemplate /
+  // FocusTemplate) and must not be wrapped in the profile hero + tab row. This layout sits above both
+  // (they are segments under [slug]), and a child layout cannot un-wrap its parent, so the ONLY place
+  // to drop the profile chrome for them is here: when the current path is an owner surface, return the
+  // children directly with no profile band/tabs. The rail is handled separately in
+  // lib/layout/page-chrome.ts (/manage is a full-width 'none' Dashboard like the other owner consoles;
+  // /settings keeps the global rail beside its centered Focus body).
+  if (activeSegment === 'manage' || activeSegment === 'settings') {
+    return children
+  }
+
   // Profile telemetry (the first signal on /spaces profiles): record a profile-VIEW into the
   // existing engagement ledger, tagged with space_id, so operators can later see how a profile
   // performs. Non-blocking side effect — `void`-ed (never awaited, never throws) and deduped per
   // request via React.cache so tab navigation within one profile doesn't double-count (analytics.ts).
+  // Owner surfaces returned above, so a manage / settings visit is never miscounted as a profile view.
   void trackSpaceProfileViewOnce(space.id, viewerProfileId)
 
   const blueprint = blueprintForType(space.type)
@@ -135,12 +155,6 @@ export default async function SpaceProfileLayout({
   // else the blueprint's per-role default, else null (the host amber). Only validated allowlisted
   // tokens build the override — never a hex (lib/spaces/accent.ts, D4/D6).
   const accentVars = resolveAccentVars(space.brandAccent, blueprint?.defaultAccent)
-
-  // The active tab: the last path segment when it's a known tab id, else the index (About). The
-  // shell reads the current path from the proxy header (x-pathname), the same seam PageModules uses.
-  const pathname = (await headers()).get('x-pathname') ?? `/spaces/${space.slug}`
-  const segs = pathname.split('/').filter(Boolean) // ['spaces', '<slug>', '<tab>'?]
-  const activeSegment = segs.length >= 3 ? segs[2] : undefined
 
   // The hero's remaining inputs are independent of each other (only `manage` derives from `caller`),
   // so resolve them in ONE round-trip instead of a serial chain (site-audit PERF-4). readTagline +
