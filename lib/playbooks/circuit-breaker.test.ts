@@ -96,10 +96,11 @@ describe('pausedFromRuns (the windowing over playbook_runs)', () => {
   const NOW = Date.parse('2026-06-24T12:00:00Z')
   const DAY = 86_400_000
   const at = (daysAgo: number) => new Date(NOW - daysAgo * DAY).toISOString()
+  // playbook_runs stamps `started_at` (NOT `created_at`); the breaker windows on that real column.
   const run = (playbookId: string, status: string, daysAgo: number) => ({
     playbook_id: playbookId,
     status,
-    created_at: at(daysAgo),
+    started_at: at(daysAgo),
   })
 
   it('cold start (no runs) pauses nothing', () => {
@@ -130,6 +131,27 @@ describe('pausedFromRuns (the windowing over playbook_runs)', () => {
   it('ignores rows with no playbook id', () => {
     const rows = [run('', 'dismissed', 3), run('', 'dismissed', 3)]
     expect(pausedFromRuns(rows, NOW).size).toBe(0)
+  })
+
+  // Regression for the column bug: the breaker windows on `started_at` (the real playbook_runs
+  // column), so the recent/baseline split is time-sensitive. The SAME dismiss-heavy spike trips
+  // only when those runs land INSIDE the recent window; pushed past it (all in baseline) it must
+  // not. If the reader pointed at a missing/wrong column, every row would window identically and
+  // this pair could not both hold.
+  it('a dismiss spike trips only when it lands INSIDE the recent window (time window matters)', () => {
+    const spike = (daysAgo: number) => [
+      // Older calm baseline so a genuine recent regression has something to spike over.
+      ...Array.from({ length: 18 }, () => run('reengage_winback', 'done', 45)),
+      ...Array.from({ length: 2 }, () => run('reengage_winback', 'dismissed', 45)),
+      // 12 mostly-dismissed runs, placed `daysAgo`.
+      ...Array.from({ length: 2 }, () => run('reengage_winback', 'done', daysAgo)),
+      ...Array.from({ length: 10 }, () => run('reengage_winback', 'dismissed', daysAgo)),
+    ]
+    // Inside the 14d recent window -> a measured spike -> trips.
+    expect(pausedFromRuns(spike(3), NOW).has('reengage_winback')).toBe(true)
+    // The exact same 12 runs pushed to 30d ago (baseline window, not recent) -> nothing recent to
+    // measure -> does NOT trip. Only the `started_at` comparison separates these two.
+    expect(pausedFromRuns(spike(30), NOW).has('reengage_winback')).toBe(false)
   })
 })
 
