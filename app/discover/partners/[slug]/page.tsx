@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { MapPin, Globe, Ticket, ChevronLeft } from 'lucide-react'
 import { getPartnerView, listActivePartners } from '@/lib/partners/read'
 import { SignInCta } from '@/components/discover/cards'
+import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -72,6 +73,14 @@ export default async function PublicPartnerPage({
 
       <DetailTemplate
         title={partner.name}
+        actions={
+          <ShareButton
+            path={`/discover/partners/${partner.slug}`}
+            title={`${partner.name} · ${SITE_NAME}`}
+            text={partner.description ?? `A community partner on ${SITE_NAME}.`}
+            label="Share"
+          />
+        }
         badges={
           partner.category ? (
             <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium capitalize text-muted">

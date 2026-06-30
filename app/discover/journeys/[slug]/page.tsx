@@ -18,6 +18,7 @@ import {
 } from '@/components/journey/discovery-widgets'
 import { getPlanAuthor } from '@/lib/journey-plans'
 import { DetailTemplate } from '@/components/templates'
+import { ShareButton } from '@/components/discover/share-button'
 import { buttonClasses } from '@/components/ui/button'
 import { accentColor, accentTint } from '@/lib/studio/accents'
 import { JOURNEY_ICON_MAP, DefaultJourneyIcon } from '@/lib/studio/journey-icons'
@@ -149,9 +150,17 @@ export default async function DiscoverJourneyPage({
           </span>
         }
         actions={
-          <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
-            Create a free account
-          </Link>
+          <>
+            <ShareButton
+              path={`/discover/journeys/${plan.slug}`}
+              title={`${plan.title} · ${SITE_NAME}`}
+              text={plan.summary ?? `A guided Journey on ${SITE_NAME}.`}
+              label="Share"
+            />
+            <Link href="/sign-in" className={buttonClasses('primary', 'md')}>
+              Create a free account
+            </Link>
+          </>
         }
       >
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-8">
