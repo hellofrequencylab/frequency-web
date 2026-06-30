@@ -1,15 +1,31 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Send, Check, AlertCircle } from 'lucide-react'
-import { sendCampaign, type SendCampaignResult } from './actions'
+import { Send, Check, AlertCircle, Users } from 'lucide-react'
+import { sendCampaign, previewBroadcast, type SendCampaignResult } from './actions'
 
 export function CampaignComposer({ options }: { options: { key: string; label: string }[] }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [segment, setSegment] = useState<string>(options[0]?.key ?? 'members')
+  const [audience, setAudience] = useState<number | null>(null)
   const [result, setResult] = useState<SendCampaignResult | null>(null)
   const [pending, start] = useTransition()
+  const [previewing, startPreview] = useTransition()
+
+  function onSegmentChange(value: string) {
+    setSegment(value)
+    setAudience(null)
+    setResult(null)
+  }
+
+  function preview() {
+    setAudience(null)
+    startPreview(async () => {
+      const res = await previewBroadcast(segment)
+      if (res.ok) setAudience(res.audienceSize ?? 0)
+    })
+  }
 
   function submit() {
     if (!subject.trim() || !body.trim()) return
@@ -20,23 +36,42 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
       if (res.ok) {
         setSubject('')
         setBody('')
+        setAudience(null)
       }
     })
   }
 
   return (
     <div className="rounded-2xl border border-border bg-surface shadow-sm p-4 max-w-2xl space-y-3">
-      <h2 className="text-sm font-semibold text-text">New campaign</h2>
+      <h2 className="text-sm font-semibold text-text">New broadcast</h2>
 
-      <select
-        value={segment}
-        onChange={(e) => setSegment(e.target.value)}
-        className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
-      >
-        {options.map((s) => (
-          <option key={s.key} value={s.key}>{s.label}</option>
-        ))}
-      </select>
+      <div className="flex items-center gap-2">
+        <select
+          value={segment}
+          onChange={(e) => onSegmentChange(e.target.value)}
+          className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-border-strong focus:outline-none"
+        >
+          {options.map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={preview}
+          disabled={previewing}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-text hover:bg-surface-elevated transition-colors disabled:opacity-60"
+        >
+          <Users className="h-4 w-4" />
+          {previewing ? 'Counting…' : 'Preview audience'}
+        </button>
+      </div>
+
+      {audience !== null && (
+        <p className="text-xs text-muted">
+          {audience.toLocaleString()} contact{audience === 1 ? '' : 's'} in this segment. The queued count can be
+          lower once each recipient passes the consent and suppression gate.
+        </p>
+      )}
 
       <input
         type="text"
@@ -61,7 +96,7 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
           className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-4 py-2 shadow-sm transition-colors disabled:opacity-60"
         >
           <Send className="w-4 h-4" />
-          {pending ? 'Sending…' : 'Send campaign'}
+          {pending ? 'Sending…' : 'Send broadcast'}
         </button>
 
         {result?.ok && (

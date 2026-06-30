@@ -33,6 +33,95 @@ export function isAutomationActionType(value: unknown): value is AutomationActio
   return typeof value === 'string' && (AUTOMATION_ACTION_TYPES as readonly string[]).includes(value)
 }
 
+// ── The condition layer (trigger → CONDITION → action, GE6-2) ──────────────────
+// A rule may carry zero or more conditions that gate whether its action fires. They
+// match against the event's `context` jsonb (the per-source detail recordEngagementEvent
+// stores on the ledger row). Conditions live INSIDE action_config (`action_config.conditions`)
+// so the engine stays migration-free: action_config is a free-form jsonb column. An empty
+// or absent condition set means "always fire" (back-compatible with every existing rule).
+
+export const AUTOMATION_CONDITION_OPS = ['eq', 'neq', 'exists', 'absent', 'gt', 'lt'] as const
+export type AutomationConditionOp = (typeof AUTOMATION_CONDITION_OPS)[number]
+
+export function isAutomationConditionOp(value: unknown): value is AutomationConditionOp {
+  return typeof value === 'string' && (AUTOMATION_CONDITION_OPS as readonly string[]).includes(value)
+}
+
+/** One predicate over an event-context field. `value` is unused for exists/absent. */
+export interface AutomationCondition {
+  /** Dot-path into the event context, e.g. 'source' or 'space.slug'. */
+  field: string
+  op: AutomationConditionOp
+  value?: string | number
+}
+
+/** Read a dot-path out of an arbitrary object, returning undefined for any miss. */
+function readPath(obj: Record<string, unknown>, path: string): unknown {
+  let cur: unknown = obj
+  for (const key of path.split('.')) {
+    if (cur == null || typeof cur !== 'object') return undefined
+    cur = (cur as Record<string, unknown>)[key]
+  }
+  return cur
+}
+
+/** Parse + validate a raw conditions blob into typed predicates (drops malformed entries). */
+export function parseConditions(raw: unknown): AutomationCondition[] {
+  if (!Array.isArray(raw)) return []
+  const out: AutomationCondition[] = []
+  for (const c of raw) {
+    if (!c || typeof c !== 'object') continue
+    const { field, op, value } = c as Record<string, unknown>
+    if (typeof field !== 'string' || !field.trim() || !isAutomationConditionOp(op)) continue
+    const entry: AutomationCondition = { field: field.trim(), op }
+    if (typeof value === 'string' || typeof value === 'number') entry.value = value
+    out.push(entry)
+  }
+  return out
+}
+
+/**
+ * Pure: do ALL of a rule's conditions hold for an event context? No conditions = true.
+ * Numeric ops (gt/lt) coerce both sides to Number and fail closed on NaN. Equality is
+ * compared as strings so '5' and 5 match (context is loosely typed jsonb). Exhaustively
+ * unit-tested: this is the gate an automation cannot route around.
+ */
+export function evaluateConditions(
+  conditions: AutomationCondition[],
+  context: Record<string, unknown>,
+): boolean {
+  for (const c of conditions) {
+    const actual = readPath(context, c.field)
+    switch (c.op) {
+      case 'exists':
+        if (actual === undefined || actual === null) return false
+        break
+      case 'absent':
+        if (actual !== undefined && actual !== null) return false
+        break
+      case 'eq':
+        if (String(actual) !== String(c.value)) return false
+        break
+      case 'neq':
+        if (String(actual) === String(c.value)) return false
+        break
+      case 'gt': {
+        const a = Number(actual)
+        const b = Number(c.value)
+        if (Number.isNaN(a) || Number.isNaN(b) || !(a > b)) return false
+        break
+      }
+      case 'lt': {
+        const a = Number(actual)
+        const b = Number(c.value)
+        if (Number.isNaN(a) || Number.isNaN(b) || !(a < b)) return false
+        break
+      }
+    }
+  }
+  return true
+}
+
 /** Shape of action_config for the push_actor action. `url` is an optional deep-link path. */
 export interface PushActionConfig {
   title: string
@@ -46,6 +135,8 @@ export interface AutomationRule {
   triggerEvent: string
   actionType: string
   actionConfig: Record<string, unknown>
+  /** Parsed condition predicates (from action_config.conditions). Empty = always fire. */
+  conditions: AutomationCondition[]
   enabled: boolean
   createdAt: string | null
 }
@@ -59,15 +150,40 @@ export async function listRules(): Promise<AutomationRule[]> {
     .from('automation_rules')
     .select('id, name, trigger_event, action_type, action_config, enabled, created_at')
     .order('created_at', { ascending: false })
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    triggerEvent: r.trigger_event,
-    actionType: r.action_type,
-    actionConfig: (r.action_config ?? {}) as Record<string, unknown>,
-    enabled: r.enabled,
-    createdAt: r.created_at ?? null,
-  }))
+  return (data ?? []).map((r) => {
+    const cfg = (r.action_config ?? {}) as Record<string, unknown>
+    return {
+      id: r.id,
+      name: r.name,
+      triggerEvent: r.trigger_event,
+      actionType: r.action_type,
+      actionConfig: cfg,
+      conditions: parseConditions(cfg.conditions),
+      enabled: r.enabled,
+      createdAt: r.created_at ?? null,
+    }
+  })
+}
+
+/** One rule by id (for the editor's prefill). */
+export async function getRule(id: string): Promise<AutomationRule | null> {
+  const { data } = await db()
+    .from('automation_rules')
+    .select('id, name, trigger_event, action_type, action_config, enabled, created_at')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return null
+  const cfg = (data.action_config ?? {}) as Record<string, unknown>
+  return {
+    id: data.id,
+    name: data.name,
+    triggerEvent: data.trigger_event,
+    actionType: data.action_type,
+    actionConfig: cfg,
+    conditions: parseConditions(cfg.conditions),
+    enabled: data.enabled,
+    createdAt: data.created_at ?? null,
+  }
 }
 
 function actorEmailHtml(body: string, unsubscribeUrl: string): string {
@@ -77,11 +193,14 @@ function actorEmailHtml(body: string, unsubscribeUrl: string): string {
 
 /**
  * Run enabled rules for an event. Called fire-safe from recordEngagementEvent;
- * wraps nothing that can throw out. `actorProfileId` is the event's actor.
+ * wraps nothing that can throw out. `actorProfileId` is the event's actor;
+ * `context` is the event's ledger context, matched against each rule's conditions
+ * (trigger → CONDITION → action). A rule with no conditions always fires.
  */
 export async function runAutomationsForEvent(
   eventType: string,
   actorProfileId: string | null,
+  context: Record<string, unknown> = {},
 ): Promise<void> {
   if (!actorProfileId) return
   const client = db()
@@ -93,6 +212,13 @@ export async function runAutomationsForEvent(
     .eq('enabled', true)
   if (!rules || rules.length === 0) return
 
+  // The action only fires when every condition holds for this event's context.
+  const matched = rules.filter((r) => {
+    const cfg = (r.action_config ?? {}) as Record<string, unknown>
+    return evaluateConditions(parseConditions(cfg.conditions), context)
+  })
+  if (matched.length === 0) return
+
   // Resolve the actor's email once (from the CRM contact).
   const { data: contact } = await client
     .from('contacts')
@@ -101,7 +227,7 @@ export async function runAutomationsForEvent(
     .maybeSingle()
   const actorEmail: string | null = contact?.email ?? null
 
-  for (const rule of rules) {
+  for (const rule of matched) {
     if (rule.action_type === 'email_actor' && actorEmail) {
       const gate = await resolveSendGate(actorProfileId, 'email', 'lifecycle')
       if (!gate.allowed) continue
