@@ -116,6 +116,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Seeker-track pillar (CONTENT-VOICE §7a): a social life without drinking —
     // gather around an activity, not a bar. Answer-first, Article + FAQ schema.
     { url: `${SITE_URL}/social-life-without-drinking`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    // Seeker-track pillar (CONTENT-VOICE §7a): reaching back to a friend you
+    // drifted from — one warm message, one easy plan. Answer-first, HowTo + FAQ schema.
+    { url: `${SITE_URL}/how-to-reconnect-with-old-friends`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,

@@ -44,6 +44,7 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/feel-less-awkward-in-groups', label: 'Feeling less awkward in groups', desc: 'How to feel less awkward around new people: return to one small room and let the activity carry you.' },
   { path: '/find-like-minded-people', label: 'Find like-minded people', desc: 'How to find your people by leading with what you care about and becoming a regular where it happens.' },
   { path: '/social-life-without-drinking', label: 'Social life without drinking', desc: 'How to have a real social life without the bar: gather around an activity, pick rooms that repeat, and let the shared thing carry the night.' },
+  { path: '/how-to-reconnect-with-old-friends', label: 'Reconnect with old friends', desc: 'How to reach back to a friend you drifted from: send one short, warm message, keep it light, and offer one easy plan to meet.' },
 ]
 
 // ── Live first-party stats (AIO citation lever, CONTENT-VOICE §8c) ───────────
