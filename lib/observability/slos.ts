@@ -220,6 +220,92 @@ export function meetsSlo(slo: Slo, value: number): boolean {
   return slo.direction === 'lower-is-better' ? value <= slo.target : value >= slo.target
 }
 
+// ── Error-budget calculator (OBSERVABILITY-BASELINES.md §4 · docs/SLOs.md) ──────
+//
+// An SLO target of 99.9% does not mean "never fail"; it allocates an *error budget*
+// — the small fraction of failure the target tolerates over its window. SRE practice
+// (Google SRE Workbook, ch. 5) spends that budget deliberately: while budget remains
+// you ship; once it's exhausted you freeze risky changes until the window rolls off.
+//
+// This is the same idea made executable from the contract above, so the burn number
+// on a dashboard or in CI is derived from the SLO config — not a figure re-typed (and
+// then rotted) somewhere else. PURE FUNCTIONS, no I/O: the caller supplies the live
+// measurement; we only do the arithmetic the target implies.
+//
+// Only RATIO SLOs (`unit: '%'`) have a meaningful error budget — a percentage target
+// defines an allowed-failure fraction. Latency/lag targets (ms, min) are thresholds,
+// not budgets, so `errorBudget` returns null for them rather than inventing a number.
+
+/** A computed error-budget snapshot for one ratio SLO at one measured value. */
+export type ErrorBudget = {
+  /** The SLO this budget is derived from. */
+  sloId: string
+  /**
+   * Allowed failure fraction the target tolerates, as a ratio in [0, 1]
+   * (e.g. a 99.9% target → 0.001; a 0.5% error-rate target → 0.005).
+   */
+  budget: number
+  /**
+   * Observed failure fraction implied by `value`, in [0, 1]. For a
+   * higher-is-better target (uptime 99.9%) a value of 99.95 → 0.0005 failing;
+   * for a lower-is-better target (error rate) the value *is* the failure ratio.
+   */
+  used: number
+  /** Remaining budget fraction (`budget - used`), clamped at 0 when overspent. */
+  remaining: number
+  /**
+   * Fraction of the budget consumed, in [0, ∞). 1 means exactly spent; >1 means
+   * the SLO is breached (more failure than the budget allows). 0 means none used.
+   */
+  consumedRatio: number
+  /** Convenience: is any budget left? (`consumedRatio < 1`). Mirrors meetsSlo. */
+  withinBudget: boolean
+}
+
+/**
+ * The allowed-failure fraction a ratio SLO's target implies, in [0, 1], or null
+ * for a non-ratio (latency/lag) SLO. For higher-is-better (uptime 99.9%) the budget
+ * is `1 - target/100`; for lower-is-better (error rate 0.5%) the target *is* the
+ * allowed failure, so the budget is `target/100`.
+ */
+export function sloBudgetFraction(slo: Slo): number | null {
+  if (slo.unit !== '%') return null
+  return slo.direction === 'higher-is-better' ? 1 - slo.target / 100 : slo.target / 100
+}
+
+/**
+ * Compute the error-budget snapshot for a ratio SLO given a live measurement (the
+ * same units as `target`, i.e. a percentage). Returns null for a non-ratio SLO (no
+ * budget concept) or a non-finite measurement (a missing signal is not "0% used" —
+ * the caller must distinguish unknown from healthy). Never throws.
+ *
+ *   const eb = errorBudget(getSlo('availability.uptime')!, 99.95)
+ *   // → { budget: 0.001, used: 0.0005, remaining: 0.0005, consumedRatio: 0.5, withinBudget: true }
+ */
+export function errorBudget(slo: Slo, value: number): ErrorBudget | null {
+  const budget = sloBudgetFraction(slo)
+  if (budget == null || !Number.isFinite(value)) return null
+
+  // Observed failure fraction. higher-is-better: the gap below 100%. lower-is-better:
+  // the value itself is the failure ratio. Clamp negatives (e.g. value > 100) to 0.
+  const usedRaw = slo.direction === 'higher-is-better' ? (100 - value) / 100 : value / 100
+  const used = Math.max(0, usedRaw)
+
+  // Guard the divide: a zero-budget target (100% with no slack) treats any failure as
+  // fully consumed, and exactly-zero failure as none consumed — never NaN/Infinity.
+  const consumedRatio = budget > 0 ? used / budget : used > 0 ? Infinity : 0
+  const remaining = Math.max(0, budget - used)
+
+  return {
+    sloId: slo.id,
+    budget,
+    used,
+    remaining,
+    consumedRatio,
+    withinBudget: consumedRatio < 1,
+  }
+}
+
 /**
  * Resolve the freshness window (in minutes) for a cron job by its route segment.
  * Returns null for an unknown job so the caller can decide how to treat it (an

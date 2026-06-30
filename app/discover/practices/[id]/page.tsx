@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { getPublicPractice, listPublicPractices } from '@/lib/practices'
 import { SignInCta } from '@/components/discover/cards'
+import { ShareButton } from '@/components/discover/share-button'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
@@ -69,6 +70,14 @@ export default async function PublicPracticePage({
 
       <DetailTemplate
         title={practice.title}
+        actions={
+          <ShareButton
+            path={`/discover/practices/${practice.slug ?? practice.id}`}
+            title={`${practice.title} · ${SITE_NAME}`}
+            text={practice.summary ?? practice.description ?? `A practice on ${SITE_NAME}.`}
+            label="Share"
+          />
+        }
         badges={
           practice.subcategory ? (
             <span className="rounded-md bg-surface-elevated px-1.5 py-0.5 text-xs font-medium text-muted">

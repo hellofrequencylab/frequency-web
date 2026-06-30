@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
-import { getChannelsWithTopics } from '@/lib/discover'
+import { getChannelsWithTopics, getPublicCounts, getPublicEvents } from '@/lib/discover'
 import { ChannelCard } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
+import { CommunityProof } from '@/components/discover/community-proof'
 import {
   ZigZag,
   Statement,
@@ -40,7 +42,11 @@ export default async function DiscoverTopicsPage() {
   // list. Only Pillars that actually have Channels render a section.
   // (Canon: Pillar > Channel > Circle, docs/NAMING.md. Variable names and the
   // `.topics` accessor are persisted data shape, kept as-is.)
-  const channelGroups = await getChannelsWithTopics()
+  const [channelGroups, counts, events] = await Promise.all([
+    getChannelsWithTopics(),
+    getPublicCounts(),
+    getPublicEvents(50),
+  ])
   const sections = channelGroups.filter((d) => d.topics.length > 0)
 
   // Flat list of every Channel (for the ItemList schema, unchanged shape).
@@ -117,6 +123,23 @@ export default async function DiscoverTopicsPage() {
               ))}
             </div>
           )}
+
+          {/* Live proof, then the ask: someone who's picked a Channel knows what
+              they practice and is warm — show the room is real before the invite.
+              Mirrors the proof+capture block on the Circles and Events pages.
+              Honest below SOCIAL_PROOF_FLOOR (founding-stage copy). */}
+          <div className="mt-12 mx-auto max-w-2xl space-y-4">
+            <CommunityProof
+              members={counts.members}
+              circles={counts.circles}
+              events={events.length}
+            />
+            <InlineBetaCapture
+              source="discover_topics"
+              heading="Found the one you'd show up for?"
+              body="Join the beta to step into a Circle practicing it near you, RSVP to its standing time, and meet the regulars. No spam, just an invite when a spot opens."
+            />
+          </div>
         </div>
       </section>
 
