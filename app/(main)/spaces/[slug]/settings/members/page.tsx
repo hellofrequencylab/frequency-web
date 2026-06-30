@@ -8,6 +8,8 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceMembers, type SpaceRole, type SpaceMemberStatus } from '@/lib/spaces/membership'
 import { listInvites } from '@/lib/spaces/invites'
+import { getSeatUsage } from '@/lib/spaces/seats'
+import { billingLive } from '@/lib/pricing/settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -16,6 +18,7 @@ import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { InviteForm } from '@/components/spaces/invite-form'
 import { RosterManager, type RosterRow } from '@/components/spaces/roster-manager'
+import { SeatCounter } from '@/components/spaces/seat-counter'
 
 // MEMBERS — the owner back-end's TEAM surface (entity-spaces owner hub). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/members in page-chrome.ts, alongside the
@@ -107,6 +110,14 @@ export default async function SpaceMembersPage({
   // decides whether to mount the section.
   const pendingInvites = caps.canManageMembers ? await listInvites(space.id) : []
 
+  // SEAT USAGE (Phase D, ADR-465). A manager (owner / admin) sees a "X of Y operator seats used"
+  // counter + an "add a seat" link to the plan and billing page. While billing is OFF this is a
+  // PREVIEW (the limit is not enforced yet); when billing goes live the same counter reflects the real
+  // licensed allowance + enforcement. Read once here (two cheap queries) for managers only.
+  const [seatUsage, billingIsLive] = caps.canManageMembers
+    ? await Promise.all([getSeatUsage(space.id), billingLive()])
+    : [null, false]
+
   // The team: the OWNER first (always seated as Owner), then members (active + suspended; an invited
   // row has no accepted seat yet, so it is excluded — it lives in the pending-invite list above). The
   // owner's effective role + status are fixed (admin / active). De-duped by profile id: an owner who
@@ -168,6 +179,17 @@ export default async function SpaceMembersPage({
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+
+      {caps.canManageMembers && seatUsage && (
+        <section className="mb-8">
+          <SeatCounter
+            usage={seatUsage}
+            billingHref={`/spaces/${space.slug}/settings/billing`}
+            enforced={billingIsLive}
+            canManage={caps.canManageMembers}
+          />
+        </section>
+      )}
 
       {caps.canManageMembers && (
         <section className="mb-10">

@@ -206,10 +206,16 @@ export async function createSpaceLoadoutCheckout(
   const db = createAdminClient()
   const { data: space } = (await db
     .from('spaces')
-    .select('id, owner_profile_id, slug, stripe_customer_id')
+    .select('id, owner_profile_id, slug, stripe_customer_id, seat_quantity')
     .eq('id', spaceId)
     .maybeSingle()) as {
-    data: { id?: string; owner_profile_id?: string | null; slug?: string | null; stripe_customer_id?: string | null } | null
+    data: {
+      id?: string
+      owner_profile_id?: string | null
+      slug?: string | null
+      stripe_customer_id?: string | null
+      seat_quantity?: number | null
+    } | null
   }
   if (!space?.id || !space.owner_profile_id) return null
 
@@ -226,7 +232,15 @@ export async function createSpaceLoadoutCheckout(
     ownerEmail = ownerRow?.email ?? undefined
   }
 
-  const seatQuantity = Math.max(1, Math.floor(loadout.seatQuantity ?? 1))
+  // PHASE D: the seat-quantity items (Team add-on / Nonprofit seat) bill the LICENSED seat count. The
+  // caller may pass an explicit count (the picker's chosen seats); when it does not, fall back to the
+  // Space's stored licensed count (spaces.seat_quantity), so a renewal / change bills the count the
+  // Space holds. Floors to 1 (a seat item always bills at least one seat).
+  const storedSeats =
+    typeof space.seat_quantity === 'number' && Number.isFinite(space.seat_quantity)
+      ? Math.max(0, Math.floor(space.seat_quantity))
+      : 0
+  const seatQuantity = Math.max(1, Math.floor(loadout.seatQuantity ?? storedSeats ?? 1))
   // Build one line item per catalog item, charging the founding (or locked) price. Seat items carry the
   // chosen quantity. An item with no synced price is skipped (never charged at the wrong price).
   const lineItems: { price: string; quantity: number }[] = []

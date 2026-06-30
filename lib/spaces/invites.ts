@@ -24,7 +24,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { addSpaceMember, isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
+import { addSpaceMember, getSpaceMembership, isSpaceRole, type SpaceRole } from '@/lib/spaces/membership'
+import { checkSeatForOperatorInvite, operatorRoleConsumesSeat } from '@/lib/spaces/seats'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   inviteAcceptUrl,
@@ -181,6 +182,15 @@ export async function createInvite(
   if (!caps.canManageMembers)
     return fail('You do not have permission to invite teammates to this space.')
 
+  // SEAT-LIMIT ENFORCEMENT (Phase D, ADR-465). Inviting an operator-role member (editor / moderator /
+  // admin) beyond the licensed allowance is blocked with a clean "add a seat" failure. GATED on
+  // billingLive() inside checkSeatForOperatorInvite, so while billing is OFF this never blocks
+  // (grant-all preserved); a viewer ("Member") invite never consumes a seat, so it always passes.
+  // Re-checked again at acceptInvite (the moment the seat is actually taken), since invites can sit
+  // pending and a seat could fill in the meantime. Never trust the client; this is the server gate.
+  const seatCheck = await checkSeatForOperatorInvite(spaceId, cleanRole)
+  if (!seatCheck.allowed) return fail(seatCheck.reason ?? 'This space has no operator seats left. Add a seat to invite another teammate.')
+
   const token = generateInviteToken()
   // Refresh the 14-day window on every (re-)invite so a refreshed link is freshly live.
   const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
@@ -331,6 +341,21 @@ export async function acceptInvite(
 
   const space = await getSpaceById(invite.spaceId)
   if (!space) return fail('That space is no longer available.')
+
+  // SEAT-LIMIT ENFORCEMENT at the moment the seat is actually taken (Phase D, ADR-465). An invite can
+  // sit pending while other operators fill the licensed seats, so re-check here, not only at create.
+  // GATED on billingLive() (grant-all while OFF). SKIP the check when the invitee is ALREADY an active
+  // operator member at THIS Space (re-accepting an idempotent invite, or accepting a fresh invite that
+  // does not raise their seat-consuming status), so a no-op re-accept never falsely trips the wall: in
+  // that case accepting consumes no NEW seat. Only a person who is NOT yet a counted operator is gated.
+  const existingMembership = await getSpaceMembership(invite.spaceId, profileId)
+  const alreadyCountedOperator =
+    existingMembership?.status === 'active' && operatorRoleConsumesSeat(existingMembership.role)
+  if (!alreadyCountedOperator) {
+    const seatCheck = await checkSeatForOperatorInvite(invite.spaceId, invite.role)
+    if (!seatCheck.allowed)
+      return fail(seatCheck.reason ?? 'This space has no operator seats left. Ask the owner to add a seat.')
+  }
 
   // Seat the invitee. addSpaceMember upserts on (space_id, profile_id), so accepting is idempotent
   // (a person who already has a row has it set to the invite's role + active).

@@ -4,10 +4,11 @@ import type { Json } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { createSpacePlanCheckout, createSpaceLoadoutCheckout } from '@/lib/billing/space-plan-checkout'
 import { asSpacePlanKey, type BillingInterval, type BillingPeriod } from '@/lib/billing/pricing-keys'
 import { asAddonKey } from '@/lib/pricing/plans'
+import { setSpaceSeatQuantity } from '@/lib/spaces/seats'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE PLAN BILLING ACTIONS (Pricing P3, ADR-363/364). Two client-callable seams for the space
@@ -72,6 +73,25 @@ export async function startSpaceLoadoutCheckout(
   })
   if (!url) return fail('Plan checkout is not available yet.')
   return ok({ url })
+}
+
+/** Set a Space's LICENSED seat count (spaces.seat_quantity), the figure the Team add-on / Nonprofit
+ *  seat item bills (Phase D, ADR-465). DOUBLE-GATED server-side: it re-resolves the Space and requires
+ *  the caller be a space ADMIN (canManageMembers, owner / admin) — seats are money config, so editors
+ *  who can edit content cannot change the bill. The raw setter (setSpaceSeatQuantity) clamps to >= 0;
+ *  the base allowance (the owner's seat) is added on read. Returns the saved licensed count. */
+export async function setSeatQuantity(slug: string, seatQuantity: number): Promise<ActionResult<{ seatQuantity: number }>> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return fail('You do not have access to manage this space.')
+  // Space-admin gate (owner / admin), not merely canManage (editor+): seats are billing config.
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canManageMembers) return fail('Only a space admin can change the seat count.')
+
+  const n = typeof seatQuantity === 'number' && Number.isFinite(seatQuantity) ? Math.max(0, Math.floor(seatQuantity)) : 0
+  const okWrite = await setSpaceSeatQuantity(space.id, n)
+  if (!okWrite) return fail('Could not save the seat count. Try again.')
+  return ok({ seatQuantity: n })
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
