@@ -23,6 +23,8 @@ export interface CircleDetailContext {
   isMember: boolean
   isHost: boolean
   isCrew: boolean
+  /** True when the viewer is a member who joined within the last week — drives the first-visit welcome. */
+  justJoined: boolean
   /** Holds circle.editSettings — host, scope leader, or admin of THIS circle. */
   canManage: boolean
   /** The health rail lights for managers OR in-scope Insight viewers. */

@@ -164,6 +164,14 @@ export default async function CirclePage({
     isHost = circle.host?.id === myProfileId
     isCrew = isCrewResolved
   }
+  // First-visit signal: the viewer is a member whose own membership is brand-new (joined within the
+  // last week). Read straight off the member rows the page already loaded — no extra round trip — so
+  // a just-joined member gets a warm "welcome" nudge in the feed instead of an empty room.
+  const weekAgo = isoDaysAgo(7)
+  const justJoined =
+    isMember &&
+    members.some((m) => m.profile.id === myProfileId && m.joined_at >= weekAgo)
+
   const canManage = caps.has('circle.editSettings')
   // The health rail below lights for managers (capability) OR in-scope Insight.
   const insight = insightAffordance(insightAccess)
@@ -254,6 +262,7 @@ export default async function CirclePage({
     isMember,
     isHost,
     isCrew,
+    justJoined,
     canManage,
     showsHealth,
     insightLabel: insight.visible ? insight.label : null,

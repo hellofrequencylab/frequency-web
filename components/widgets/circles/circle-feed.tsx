@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { Sparkles } from 'lucide-react'
 import { TeaserGate } from '@/components/teaser-gate'
 import { teaserAllowed, TEASER_PREVIEW_SECONDS } from '@/lib/teaser'
 import { Composer } from '@/components/feed/composer'
@@ -8,7 +9,7 @@ import { getCircleContext } from '@/lib/circles/active-circle'
 export const CircleFeed = async () => {
   const ctx = getCircleContext()
   if (!ctx) return null
-  const { circle, isMember, isCrew, canManage, myProfileId } = ctx
+  const { circle, isMember, isCrew, canManage, myProfileId, justJoined } = ctx
 
   return (
     <TeaserGate
@@ -27,8 +28,20 @@ export const CircleFeed = async () => {
               : 'Conversation and event announcements for everyone in this circle.'}
           </p>
         </div>
+        {isMember && justJoined && !canManage && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="text-sm font-semibold text-text">Welcome to {circle.name}</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted">
+                You&rsquo;re in. Say hello below so the circle knows who just arrived — a quick intro is
+                the easiest way to start showing up here.
+              </p>
+            </div>
+          </div>
+        )}
         {isMember ? (
-          <Composer scopeId={circle.id} visibility="group" placeholder={`Share something with ${circle.name}…`} canAnnounce={canManage} />
+          <Composer scopeId={circle.id} visibility="group" placeholder={justJoined ? `Introduce yourself to ${circle.name}…` : `Share something with ${circle.name}…`} canAnnounce={canManage} />
         ) : (
           myProfileId && (
             <div className="mb-4 rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-3">
