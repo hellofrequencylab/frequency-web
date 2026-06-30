@@ -56,6 +56,16 @@ export function MarketingHeader({
         light ? 'bg-surface/90 backdrop-blur-md border-b border-border' : 'bg-transparent'
       }`}
     >
+      {/* Skip link — first focusable element, visually hidden until a keyboard user
+          tabs to it, so they can jump past the nav to the page's <main id="main">
+          (WCAG 2.4.1 Bypass Blocks). Pointer users never see it. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+      >
+        Skip to content
+      </a>
+
       {/* Logo — into the app when signed in, to the splash when not. */}
       <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
         <Image
