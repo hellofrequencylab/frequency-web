@@ -82,6 +82,8 @@ parallel when their files are disjoint. Status legend: ✅ done · 🔨 building
 | **P3** | Pricing **Phase E** — the 5 wire-first in-context upsell teases | PRICING-LADDER-PLAN §4 · ADR-466 | none | ✅ merged |
 | **P4** | Pricing **Phase F** + **Space Modes M5-M6** — commercial pricing page **+ pricing table**, per-Mode persona/package landing pages, JSON-LD, llms.txt | PRICING-LADDER-PLAN §5 · SPACE-MODES-PLAN §4 · ADR-467 | none | ✅ merged |
 | **P4.5** | **Console hotfix** — `/manage` escapes the profile shell + non-looping section links | ADR-468 | none | ✅ merged |
+| **P4.6** | **Console rework** — grouped operator Dashboard IA (7 clusters), Basics pinned, Mode demoted to a tag, CRM-escape navigation fix | ADR-469 | none | ✅ merged |
+| **P4.7** | **Member viewer v2** — sort/search hero + 10-row default, viewer-first cockpit (stats restored below), fully-featured Members detail (roles/funnels/pipeline/interactions/View member) | ADR-459 · ADR-470 | none | ✅ merged |
 | **P5** | **Loose ends sweep** — types regen ✅ (Phase C); migration version-prefix reconciliation (MCP-apply stamps differ from repo filenames, db-push hazard); IDEA-013 audit backlog (SEC-4/5, PERF-3/8/9/10, SEO-6/9) | [SITE-AUDIT](SITE-AUDIT-2026-06-29.md) · ADR-246 | none | ⏳ rolling |
 | **P6** | **Flip gate** — advisors clean + Stripe products synced, then operator sets keys + flips `billing_live` + per-tier/add-on switches | PRICING-LADDER-PLAN §5 | none | 🔒 owner (needs live Stripe/EIN) |
 
