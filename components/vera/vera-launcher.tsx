@@ -10,6 +10,7 @@ import { CONTACT_EMAIL } from '@/lib/site'
 import { VeraChat, COMPANION_OPENING } from '@/components/vera/vera-chat'
 import { openSupport } from '@/components/support/support-launcher'
 import { EdgePill } from '@/components/layout/edge-pill'
+import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 
 // The persistent companion launcher (AI-VERA §4.0, ADR-086). ONE floating bubble
 // on every member page that opens Vera's panel — unifying what used to be two
@@ -23,7 +24,7 @@ import { EdgePill } from '@/components/layout/edge-pill'
 
 type Tab = 'chat' | 'help'
 
-export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
+export function VeraLauncher({ index, veraTease }: { index: HelpSearchEntry[]; veraTease?: TeaseGate }) {
   // Admin pages drop the edge tab (the page-admin dock owns that corner); the panel
   // still opens there via the command bar's open-vera event.
   const onAdmin = usePathname().startsWith('/admin')
@@ -147,7 +148,7 @@ export function VeraLauncher({ index }: { index: HelpSearchEntry[] }) {
             </div>
 
             {tab === 'chat' ? (
-              <VeraChat opening={COMPANION_OPENING} />
+              <VeraChat opening={COMPANION_OPENING} veraTease={veraTease} />
             ) : (
               /* ── Help tab — the deterministic tiers (no AI needed) ───────────── */
               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
