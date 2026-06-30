@@ -26,16 +26,21 @@ import { blueprintForType } from '@/lib/spaces/blueprints'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { isSpaceType, seedSpaceConfigFromDefaults } from '@/lib/spaces/functions'
 import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
+import { resolveMode, isModeVariant } from '@/lib/spaces/modes'
+import { ensureSpaceStages } from '@/lib/crm/pipeline'
 import { isSafeSlug } from '@/lib/theme/validate'
 import { type ActionResult, fail } from '@/lib/action-result'
 
-/** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). */
+/** The fields the create wizard collects. `visibility` defaults to 'network' (discoverable). The
+ *  `modeVariant` (the Focus, Space Modes M3) is optional: null resolves to the type's default Focus. */
 export interface CreateSpaceInput {
   type: string
   name: string
   slug: string
   brandName?: string | null
   visibility?: 'network' | 'private'
+  /** The Focus sub-mode chosen in the "what do you run?" step. Null = the type's default Focus. */
+  modeVariant?: string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped `from`
@@ -108,6 +113,16 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const brandName = (input.brandName ?? '').trim() || name
   const visibility = input.visibility === 'private' ? 'private' : 'network'
 
+  // Focus (Space Modes M3): the sub-mode chosen in "what do you run?". Validate against the registry +
+  // confirm it belongs to THIS type (resolveMode falls back to the default for an out-of-mode variant,
+  // so a mismatched value resolves but does not belong here). An unknown / mismatched / absent variant
+  // is stored as null, which resolves to the type's DEFAULT Focus in code. Mode is FREE framing, so this
+  // never affects entitlements.
+  const requested = (input.modeVariant ?? '').trim()
+  const resolvedMode = requested && isSpaceType(type) ? resolveMode(type, requested) : null
+  const modeVariant =
+    requested && isModeVariant(requested) && resolvedMode?.variant === requested ? requested : null
+
   const entityId = await rootEntityId()
   if (!entityId) return fail('Spaces are not ready yet. Try again in a moment.')
 
@@ -124,7 +139,8 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     seedSpaceConfigFromDefaults(seedType, typeDefaults)
 
   // Insert the Space. status active, plan free, the seeded tool config, the blueprint's default skin,
-  // owner = caller, ported into the network. brand_name seeds from the chosen brand/name.
+  // owner = caller, ported into the network. brand_name seeds from the chosen brand/name. mode_variant
+  // seeds the chosen Focus (null = the type's default Focus, resolved in code); Space Modes M3.
   let spaceId: string
   try {
     const { data, error } = await spacesTable()
@@ -142,6 +158,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
         feature_roles: seedFeatureRoles,
         owner_profile_id: profileId,
         brand_name: brandName,
+        mode_variant: modeVariant,
       })
       .select('id')
       .maybeSingle()
@@ -153,6 +170,14 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
 
   // Seat the owner as a Space admin (an explicit membership row, alongside owner_profile_id).
   await addSpaceMember({ spaceId, profileId, role: 'admin', status: 'active' })
+
+  // ONBOARDING preset (Space Modes M4): seed the Mode's starter CRM pipeline. Reuses the existing
+  // ensureSpaceStages plumbing (lib/crm/pipeline.ts) keyed on the Space type, so onboarding does not
+  // fork a parallel seed path. Idempotent + fail-safe (a no-op when the space already has stages, and it
+  // never throws), so a seed failure never blocks provisioning. Best-effort: the redirect proceeds.
+  if (isSpaceType(type)) {
+    await ensureSpaceStages(spaceId, type)
+  }
 
   // Success: hand the owner straight to the settings surface to finish the profile. redirect()
   // throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
