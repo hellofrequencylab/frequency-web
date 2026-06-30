@@ -11,7 +11,7 @@
 >
 > **Status legend:** ✅ done · ⏳ in progress · 📋 planned (build-ready) · 🟡 roadmap-only (needs a
 > deep plan before build) · 🔒 dormant (behind `billing_live`).
-> **Last updated:** 2026-06-30 (Phase A/B + member block + events merged; Phase C building).
+> **Last updated:** 2026-06-30 (pricing Phases A-F + Space Modes M1-M6 + member viewer + events + console hotfix all merged; billing_live still OFF).
 
 ---
 
@@ -76,12 +76,13 @@ parallel when their files are disjoint. Status legend: ✅ done · 🔨 building
 | **P1** | Pricing **Phase B** — Stripe clean structure (catalog, multi-item subs, founding-price grandfather + annual, sync) | PRICING-LADDER-PLAN §1a/§4 · ADR-460 | applied ✅ | ✅ merged + migrated |
 | **P1** | **Member view block** — reusable master-detail member viewer (list/card + quick-stats) | ADR-459 | none | ✅ merged |
 | **P1** | **Events** — repeatable events UI + date selector defaults to active day | ADR-007 · ADR-462 | none | ✅ merged |
-| **P2** | Pricing **Phase C** — `/admin/pricing` console + plan/add-on picker + Crew upgrade (+ database.types regen) | PRICING-LADDER-PLAN §4 · ADR-458/463 | none | 🔨 building |
-| **P2** | **Space Modes M1-M4** — Mode registry, `mode_variant`, create-wizard + console Mode settings/switcher, coaching onto console | [SPACE-MODES-PLAN](SPACE-MODES-PLAN.md) · ADR-461 | file (modes data) | ⏳ after Phase C |
-| **P3** | Pricing **Phase D** — licensed per-seat billing (Team + Nonprofit) + invite seat-limit enforcement | PRICING-LADDER-PLAN §5 | with B | ⏳ after C |
-| **P3** | Pricing **Phase E** — the 5 wire-first in-context upsell teases | PRICING-LADDER-PLAN §4 | none | ⏳ after C |
-| **P4** | Pricing **Phase F** + **Space Modes M5-M6** — commercial pricing page **+ pricing table**, per-Mode persona/package landing pages, JSON-LD, llms.txt | PRICING-LADDER-PLAN §5 · SPACE-MODES-PLAN §4 | none | ⏳ after C |
-| **P5** | **Loose ends sweep** — regenerate `lib/database.types.ts` after B/C migrations applied; clear the IDEA-013 audit backlog (SEC-4/5, PERF-3/8/9/10, SEO-6/9); confirm no migration drift | [SITE-AUDIT](SITE-AUDIT-2026-06-29.md) · ADR-246 | none | ⏳ rolling |
+| **P2** | Pricing **Phase C** — `/admin/pricing` console + plan/add-on picker + Crew upgrade (+ database.types regen) | PRICING-LADDER-PLAN §4 · ADR-458/463 | none | ✅ merged |
+| **P2** | **Space Modes M1-M4** — Mode registry, `mode_variant`, create-wizard + console Mode settings/switcher, coaching onto console | [SPACE-MODES-PLAN](SPACE-MODES-PLAN.md) · ADR-461/464 | applied ✅ | ✅ merged + migrated |
+| **P3** | Pricing **Phase D** — licensed per-seat billing (Team + Nonprofit) + invite seat-limit enforcement | PRICING-LADDER-PLAN §5 · ADR-465 | none | ✅ merged |
+| **P3** | Pricing **Phase E** — the 5 wire-first in-context upsell teases | PRICING-LADDER-PLAN §4 · ADR-466 | none | ✅ merged |
+| **P4** | Pricing **Phase F** + **Space Modes M5-M6** — commercial pricing page **+ pricing table**, per-Mode persona/package landing pages, JSON-LD, llms.txt | PRICING-LADDER-PLAN §5 · SPACE-MODES-PLAN §4 · ADR-467 | none | ✅ merged |
+| **P4.5** | **Console hotfix** — `/manage` escapes the profile shell + non-looping section links | ADR-468 | none | ✅ merged |
+| **P5** | **Loose ends sweep** — types regen ✅ (Phase C); migration version-prefix reconciliation (MCP-apply stamps differ from repo filenames, db-push hazard); IDEA-013 audit backlog (SEC-4/5, PERF-3/8/9/10, SEO-6/9) | [SITE-AUDIT](SITE-AUDIT-2026-06-29.md) · ADR-246 | none | ⏳ rolling |
 | **P6** | **Flip gate** — advisors clean + Stripe products synced, then operator sets keys + flips `billing_live` + per-tier/add-on switches | PRICING-LADDER-PLAN §5 | none | 🔒 owner (needs live Stripe/EIN) |
 
 **Sequencing rules:** Phase C waits on B (shared `lib/billing`/`/admin/pricing`); D/E/F wait on C; Modes

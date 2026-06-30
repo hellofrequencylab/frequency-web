@@ -9992,3 +9992,59 @@ preserved across re-presets.
 
 **Consequences.** Migration adds two `spaces` columns (NOT APPLIED; owner hand-review). No entitlement or
 RLS change. M5-M6 (marketing persona pages + the pricing table) ride Phase F later.
+
+---
+
+## ADR-465: Phase D — licensed per-seat billing + invite seat-limit enforcement
+
+**Status:** Accepted (2026-06-30), behind `billing_live` OFF. Part of the pricing ladder (ADR-458).
+
+**Decision.** Team + Nonprofit bill on **licensed seats** (`spaces.seat_quantity` from Phase B, no new
+migration). An **operator seat** is consumed by an ACTIVE member with role admin/moderator/editor; viewers
+are free + unlimited; the owner is covered by the base allowance, so `licensedSeats = 1 + seat_quantity`.
+Enforcement (`lib/spaces/seats.ts` `checkSeatForOperatorInvite`) is re-checked **server-side** at three
+write points (`createInvite`, `acceptInvite`, `setMemberRole` promotion), each AFTER its own authz, and is
+**gated on `billingLive()`** (grant-all while OFF, activates on the flip). Accept/promote skip the check for
+an already-counted operator (idempotent). The seat-quantity setter is double-gated on space-admin
+(`canManageMembers`), since seats are money config. Checkout bills `quantity = seat_quantity` for the Team
+add-on + Nonprofit seat item. A `SeatCounter` surfaces "X of Y seats used" on the members + billing pages.
+
+## ADR-466: Phase E — in-context upsell teases (5 wire-first threads, dormant)
+
+**Status:** Accepted (2026-06-30), dormant behind `billing_live` OFF. Part of the pricing ladder (ADR-458).
+
+**Decision.** A reusable, presentation-neutral `UpsellTease` (`components/upsell/`) shown at the success
+moment of the 5 wire-first threads (Contacts→CRM, QR→Studio, Practice→Programs, Earn→Cash-in, Vera depth).
+The pure visibility rule (`lib/pricing/upsell-tease.ts` `shouldShowTease`) renders ONLY when `billingLive()`
+is ON AND the target capability is LOCKED AND a per-tease frequency cap (default 1, localStorage) is under
+budget; while OFF nothing renders, so no prompt appears that did not exist before the flip. Server resolvers
+(`lib/pricing/tease-gate.ts`, `server-only`) compose the EXISTING readers (`featureAllowed`, membership tier,
+`spaceHasEntitlement`) and fail-safe to hidden. Copy follows CONTENT-VOICE §10 (plain, no guilt, no urgency).
+
+## ADR-467: Phase F + Modes M5-M6 — commercial pricing page + table + per-Mode persona pages
+
+**Status:** Accepted (2026-06-30). Public marketing; part of the pricing ladder (ADR-458) + Space Modes
+(ADR-461).
+
+**Decision.** A **static (ISR), zero-per-request-billing-read** commercial pricing page (`/pricing`) with the
+Pro/Nonprofit/Organization **pricing table** (list anchor struck over the founding price, monthly/yearly
+toggle as a CSS-only client island, the 4 add-ons, take-rates) + a "by who you are" loadout strip, plus six
+per-Mode **persona pages** (`/for/[persona]`, `dynamicParams=false`). Everything renders from the CODE catalog
+(`defaultCatalogConfig` + `computeLoadoutTotal`), so structured data never drifts from copy and a catalog
+change reflows every figure. `Product`/`Offer`/`FAQPage` + Article/breadcrumb JSON-LD; `llms.txt` + sitemap
+carry the ladder + personas for answer engines. Public pages show the published founding prices regardless of
+`billing_live` (checkout stays gated elsewhere). One shared `PERSONA_LOADOUTS` source so the strip + persona
+figures cannot diverge.
+
+## ADR-468: Manage console escapes the profile shell + non-looping section links (hotfix)
+
+**Status:** Accepted (2026-06-30). Fixes a P0 regression on `/spaces/[slug]/manage`.
+
+**Decision.** The `[slug]` layout wrapped EVERY child segment in the public profile `DetailTemplate`, so the
+owner console (and `/settings`) rendered nested inside the profile hero + tabs (and read as full-width with no
+member rail). The layout now early-returns `children` for the owner surfaces (`manage`/`settings`, read off the
+proxy-stamped `x-pathname`), so the console renders as the intended standalone full-width Dashboard. (The
+absent member rail is the INTENDED state for owner consoles, consistent with `/admin` and `/circles/*/manage`
+via `page-chrome.ts`, not a bug.) Separately, the console's Basics link pointed at the `/settings` index, which
+redirects console types back to `/manage` (a loop); a non-redirecting `/settings/basics` editor was added and
+`hrefForSurface` (now exported + unit-tested) points there, so no section href can loop.
