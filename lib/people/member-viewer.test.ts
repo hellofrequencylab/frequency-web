@@ -82,15 +82,50 @@ describe('sortMembers', () => {
 })
 
 describe('clampPageSize', () => {
-  it('defaults to 15 for missing or non-finite input', () => {
-    expect(clampPageSize(undefined)).toBe(15)
-    expect(clampPageSize(NaN)).toBe(15)
+  it('defaults to 10 for missing or non-finite input (the ten most recent up front)', () => {
+    expect(clampPageSize(undefined)).toBe(10)
+    expect(clampPageSize(NaN)).toBe(10)
   })
 
   it('clamps to the 10..20 window', () => {
     expect(clampPageSize(5)).toBe(10)
     expect(clampPageSize(50)).toBe(20)
     expect(clampPageSize(12)).toBe(12)
+  })
+})
+
+describe('sortMembers · sortValues (the host-supplied sort signal)', () => {
+  // The "Recent" / "Active" hero sorts read a pre-computed sortValues entry (e.g. a joined epoch)
+  // that the host does not render as a visible stat.
+  const recencyRoster: MemberSummary[] = [
+    member({ id: 'a', handle: 'a', displayName: 'A', sortValues: { joined: 300 } }),
+    member({ id: 'b', handle: 'b', displayName: 'B', sortValues: { joined: 100 } }),
+    member({ id: 'c', handle: 'c', displayName: 'C', sortValues: { joined: 200 } }),
+  ]
+
+  it('sorts on a sortValues key, descending (most recent first)', () => {
+    const out = sortMembers(recencyRoster, { key: 'joined', direction: 'desc' }).map((m) => m.id)
+    expect(out).toEqual(['a', 'c', 'b'])
+  })
+
+  it('sorts on a sortValues key, ascending', () => {
+    const out = sortMembers(recencyRoster, { key: 'joined', direction: 'asc' }).map((m) => m.id)
+    expect(out).toEqual(['b', 'c', 'a'])
+  })
+
+  it('prefers a sortValues entry over a same-key stats entry', () => {
+    // sortValues.score=1 must win over the visible stats score=99, so this row sorts first asc.
+    const rows: MemberSummary[] = [
+      member({ id: 'hi', handle: 'hi', displayName: 'Hi', sortValues: { score: 99 }, stats: [{ label: 'score', value: '99' }] }),
+      member({ id: 'lo', handle: 'lo', displayName: 'Lo', sortValues: { score: 1 }, stats: [{ label: 'score', value: '1' }] }),
+    ]
+    const asc = sortMembers(rows, { key: 'score', direction: 'asc' }).map((m) => m.id)
+    expect(asc).toEqual(['lo', 'hi'])
+  })
+
+  it('falls back to the stats entry when there is no sortValues entry', () => {
+    const byHealth = sortMembers(ROSTER, { key: 'Health', direction: 'desc' }).map((m) => m.handle)
+    expect(byHealth).toEqual(['katherine', 'ada', 'grace', 'alan'])
   })
 })
 

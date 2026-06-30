@@ -9,11 +9,23 @@ export type {
   MemberSummary,
   MemberDetail,
   MemberAction,
+  MemberRole,
+  MemberFunnel,
+  MemberPipeline,
+  MemberInteraction,
   SortSpec,
+  SortOption,
   MemberQuery,
 } from '@/lib/people/member-viewer'
 
-import type { Facet, MemberSummary, MemberDetail, SortSpec, MemberQuery } from '@/lib/people/member-viewer'
+import type {
+  Facet,
+  MemberSummary,
+  MemberDetail,
+  SortSpec,
+  SortOption,
+  MemberQuery,
+} from '@/lib/people/member-viewer'
 
 /** How the right pane reads. `full` = the rich detail card (contact, activity, stats, actions);
  *  `quick-stats` = a compact stat grid topped by a prominent Open Profile button. Default `full`. */
@@ -33,11 +45,16 @@ export interface MemberViewerProps {
   detailMode?: DetailMode
   /** Initial list presentation; a visible toggle flips it. Default `list`. */
   defaultView?: ListView
-  /** Rows per page (clamped 10..20). Default 15. */
+  /** Rows per page (clamped 10..20). Default 10 (the ten most recent up front, then Show more). */
   pageSize?: number
-  /** The search bar config. Omit to hide search entirely. */
+  /** The search bar config. Omit to hide search entirely. Search is a HERO affordance. */
   search?: { placeholder?: string; facets?: Facet[] }
-  /** The active/initial sort. */
+  /** The hero sort selector's options (e.g. Recent / Active / Needs help / Name). Rendered as a
+   *  prominent segmented control next to search. The first option is the initial sort unless `sort`
+   *  is set. Omit to hide the sort control (the block still sorts via `sort` if given). */
+  sortOptions?: SortOption[]
+  /** The active/initial sort. When `sortOptions` is set, the option whose `spec` deep-equals this
+   *  is pre-selected; otherwise this seeds the sort with no visible control. */
   sort?: SortSpec
   /** Controlled selection. Omit for uncontrolled (first row preselected on desktop). */
   selectedId?: string | null

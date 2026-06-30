@@ -7,26 +7,45 @@ import { PersonCard } from '@/components/cards/person-card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getInitials, cn } from '@/lib/utils'
-import { applyQuery, type MemberDetail, type MemberQuery, type MemberSummary } from '@/lib/people/member-viewer'
+import {
+  applyQuery,
+  type MemberDetail,
+  type MemberQuery,
+  type MemberSummary,
+  type SortSpec,
+} from '@/lib/people/member-viewer'
 import { MemberDetailCard } from './member-detail-card'
-import type { ListView, MemberViewerProps } from './types'
+import type { ListView, MemberViewerProps, SortOption } from './types'
 
 // THE MEMBER-VIEWER BLOCK: a reusable master-detail member browser (list left, viewer right).
 // One presentation-neutral client island (ADR-017/018) reused/reconfigured by many surfaces, not a
 // one-off page. All list logic (filter + facet + sort + paginate) lives in the PURE core
 // (lib/people/member-viewer, unit-tested); this island is the thin interactive shell over it:
-// search + facets + view toggle + selection + keyboard nav + the lazy, fail-safe right pane.
+// the HERO toolbar (live search + a prominent sort selector) + facets + view toggle + selection +
+// keyboard nav + the lazy, fail-safe right pane.
 //
-// Responsive: desktop = two panes (left ~2/5, right ~3/5, both min-w-0, right scrolls
-// independently); mobile = list is primary, selecting opens the detail as an overlay with a Back
-// control. Keyboard: up/down move the selection, Enter opens (mobile overlay / focuses the pane),
-// a visible focus ring, motion-reduce honored. Semantic DAWN tokens only; copy plain, no em dashes.
+// Self-contained on screen: the two panes each scroll within their OWN column (the left list caps
+// its height and scrolls; the right detail scrolls independently), so the block never overflows its
+// host and depends on nothing beyond min-w-0. Responsive: desktop = two panes (left ~2/5, right
+// ~3/5); mobile = list is primary, selecting opens the detail as an overlay with a Back control.
+// Keyboard: up/down move the selection, Enter opens (mobile overlay / focuses the pane), a visible
+// focus ring, motion-reduce honored. Semantic DAWN tokens only; copy plain, no em dashes.
 
 type DetailState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'ready'; detail: MemberDetail }
   | { status: 'error' }
+
+/** Pick the initial sort option key: the one whose spec deep-equals `sort`, else the first option. */
+function initialSortKey(options: SortOption[], sort: SortSpec | undefined): string | null {
+  if (options.length === 0) return null
+  if (sort) {
+    const match = options.find((o) => o.spec.key === sort.key && o.spec.direction === sort.direction)
+    if (match) return match.key
+  }
+  return options[0].key
+}
 
 export function MemberViewer({
   members,
@@ -35,31 +54,40 @@ export function MemberViewer({
   defaultView = 'list',
   pageSize,
   search,
+  sortOptions,
   sort,
   selectedId: controlledSelectedId,
   onSelectedChange,
   onQueryChange,
   emptyState,
 }: MemberViewerProps) {
+  const options = useMemo(() => sortOptions ?? [], [sortOptions])
+
   const [view, setView] = useState<ListView>(defaultView)
   const [text, setText] = useState('')
   const [facetSel, setFacetSel] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [overlayOpen, setOverlayOpen] = useState(false) // mobile detail overlay
+  // The selected hero sort option (the visible control). Seeded from `sort` (if it matches an
+  // option) or the first option. The block's effective sort is this option's spec, else the bare
+  // `sort` prop (a host with no visible control still sorts).
+  const [sortKey, setSortKey] = useState<string | null>(() => initialSortKey(options, sort))
 
   // Selection: controlled when the host passes selectedId, else internal.
   const isControlled = controlledSelectedId !== undefined
   const [internalSelected, setInternalSelected] = useState<string | null>(null)
   const selectedId = isControlled ? controlledSelectedId : internalSelected
 
+  const activeSort: SortSpec | undefined =
+    options.find((o) => o.key === sortKey)?.spec ?? sort
+
   const query: MemberQuery = useMemo(
-    () => ({ text, facets: facetSel, sort }),
-    [text, facetSel, sort],
+    () => ({ text, facets: facetSel, sort: activeSort }),
+    [text, facetSel, activeSort],
   )
 
-  // Filter changes reset paging at the SOURCE (the handlers below call these), so there is no
-  // render-time mutation and no reset effect to cascade. `sort` is a prop; a host that changes it
-  // is expected to remount or accept the current page, which the cap math handles safely anyway.
+  // Filter / sort changes reset paging at the SOURCE (the handlers below call these), so there is no
+  // render-time mutation and no reset effect to cascade.
   const setSearchText = useCallback((next: string) => {
     setText(next)
     setPage(1)
@@ -68,9 +96,13 @@ export function MemberViewer({
     setFacetSel((prev) => ({ ...prev, [key]: value }))
     setPage(1)
   }, [])
+  const chooseSort = useCallback((key: string) => {
+    setSortKey(key)
+    setPage(1)
+  }, [])
 
   const { visible, total, hasMore } = useMemo(
-    () => applyQuery(members, query, page, pageSize ?? 15),
+    () => applyQuery(members, query, page, pageSize ?? 10),
     [members, query, page, pageSize],
   )
 
@@ -209,17 +241,20 @@ export function MemberViewer({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Toolbar: search + facets + view toggle (always shown; the view toggle is always useful) */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* HERO toolbar: live search + the sort selector are the headline of the block. Search spans the
+          row; the sort segmented control sits right beside it. Facets + the view toggle follow on a
+          quieter second line so the two primary affordances read first. */}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {search && (
-            <div className="relative min-w-0 flex-1">
+            <div className="relative min-w-0 flex-1 basis-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" />
               <input
                 value={text}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder={search.placeholder ?? 'Search members'}
                 aria-label={search.placeholder ?? 'Search members'}
-                className="w-full rounded-xl border border-border bg-surface py-2 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
+                className="w-full rounded-xl border border-border bg-surface py-2.5 pl-10 pr-9 text-sm text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none"
               />
               {text && (
                 <button
@@ -234,46 +269,79 @@ export function MemberViewer({
             </div>
           )}
 
-          {facets.map((f) => (
-            <label key={f.key} className="sr-only" htmlFor={`facet-${f.key}`}>
-              {f.label}
-            </label>
-          ))}
-          {facets.map((f) => (
-            <select
-              key={f.key}
-              id={`facet-${f.key}`}
-              value={facetSel[f.key] ?? ''}
-              onChange={(e) => setFacet(f.key, e.target.value)}
-              className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none',
-                facetSel[f.key]
-                  ? 'border-primary bg-primary-bg text-primary-strong'
-                  : 'border-border bg-surface text-muted hover:border-primary',
-              )}
+          {options.length > 0 && (
+            <div
+              role="group"
+              aria-label="Sort members"
+              className="inline-flex shrink-0 flex-wrap items-center gap-0.5 rounded-xl border border-border bg-surface p-0.5"
             >
-              <option value="">{f.label}</option>
-              {f.options.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          ))}
+              {options.map((o) => {
+                const active = o.key === sortKey
+                return (
+                  <button
+                    key={o.key}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => chooseSort(o.key)}
+                    className={cn(
+                      'rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
+                      active
+                        ? 'bg-primary text-on-primary'
+                        : 'text-muted hover:bg-surface-elevated hover:text-text',
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
-          <div className="ml-auto inline-flex rounded-lg border border-border bg-surface p-0.5">
-            <ViewToggleButton active={view === 'list'} onClick={() => setView('list')} label="List view">
-              <ListIcon className="h-4 w-4" aria-hidden />
-            </ViewToggleButton>
-            <ViewToggleButton active={view === 'card'} onClick={() => setView('card')} label="Card view">
-              <LayoutGrid className="h-4 w-4" aria-hidden />
-            </ViewToggleButton>
-          </div>
+        {/* Quieter second line: facets refine the set; the view toggle flips list / card. */}
+        <div className="flex flex-wrap items-center gap-2">
+            {facets.map((f) => (
+              <label key={f.key} className="sr-only" htmlFor={`facet-${f.key}`}>
+                {f.label}
+              </label>
+            ))}
+            {facets.map((f) => (
+              <select
+                key={f.key}
+                id={`facet-${f.key}`}
+                value={facetSel[f.key] ?? ''}
+                onChange={(e) => setFacet(f.key, e.target.value)}
+                className={cn(
+                  'rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors focus:outline-none',
+                  facetSel[f.key]
+                    ? 'border-primary bg-primary-bg text-primary-strong'
+                    : 'border-border bg-surface text-muted hover:border-primary',
+                )}
+              >
+                <option value="">{f.label}</option>
+                {f.options.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            ))}
+
+            <div className="ml-auto inline-flex rounded-lg border border-border bg-surface p-0.5">
+              <ViewToggleButton active={view === 'list'} onClick={() => setView('list')} label="List view">
+                <ListIcon className="h-4 w-4" aria-hidden />
+              </ViewToggleButton>
+              <ViewToggleButton active={view === 'card'} onClick={() => setView('card')} label="Card view">
+                <LayoutGrid className="h-4 w-4" aria-hidden />
+              </ViewToggleButton>
+            </div>
+        </div>
       </div>
 
-      {/* Two-pane (desktop) / list-primary (mobile) */}
-      <div className="flex min-w-0 gap-5">
-        {/* LEFT: the list */}
+      {/* Two-pane (desktop) / list-primary (mobile). Each column scrolls within ITSELF (self-contained,
+          no host overflow): the left list caps its height and scrolls; the right pane scrolls too. */}
+      <div className="flex min-w-0 items-start gap-5">
+        {/* LEFT: the list, scrolling within its own column. */}
         <div className="min-w-0 flex-1 lg:flex-[2]">
           {visible.length === 0 ? (
             empty
@@ -285,7 +353,7 @@ export function MemberViewer({
                 aria-label="Members"
                 tabIndex={0}
                 onKeyDown={onListKeyDown}
-                className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className="max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 {view === 'card' ? (
                   <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">

@@ -33,6 +33,10 @@ export interface MemberSummary {
   headline?: string
   /** Compact "label · value" stats for the list row / card meta. */
   stats?: { label: string; value: string }[]
+  /** Pre-computed values a sort can read by key, BEFORE the visible `stats` fallback (e.g. a
+   *  `joined` epoch for "Recent", a `lastActive` epoch for "Active"). Lets a host sort on a
+   *  signal it does not want to render as a stat. Numbers sort numerically; strings lexically. */
+  sortValues?: Record<string, number | string>
   /** Optional embedded detail (skips the lazy load for this row). */
   detail?: MemberDetail
 }
@@ -48,8 +52,42 @@ export interface MemberAction {
   variant?: 'primary' | 'secondary' | 'ghost'
 }
 
+/** A role designator chip in the rich detail (e.g. Crew, Host, Admin, Janitor). `tone` picks the
+ *  chip color family; omit for the neutral default. Presentation-neutral: a label + an intent. */
+export interface MemberRole {
+  label: string
+  tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'danger'
+}
+
+/** One funnel the member is active in (the rich detail's "Active funnels" section). */
+export interface MemberFunnel {
+  name: string
+  /** The stage / step the member sits at, when known. */
+  stage?: string
+}
+
+/** Where the member sits in the CRM / contact pipeline (the rich detail's "Pipeline" section). */
+export interface MemberPipeline {
+  /** A short context label (e.g. "Deal" or the pipeline name). */
+  label: string
+  /** The current stage in that pipeline. */
+  stage: string
+}
+
+/** One truncated interaction in the member's timeline (the rich detail's "Recent interactions"). */
+export interface MemberInteraction {
+  /** A short channel / kind label (e.g. "Emailed", "Note", "Met in person"). */
+  kind: string
+  /** A one-line summary of the touch. */
+  summary: string
+  /** A short relative time (e.g. "2 days ago"). */
+  when: string
+}
+
 /** The rich right-pane model. Every rich field is optional: a host omits what it cannot
- *  source cleanly (never invent it), and the viewer renders only what is present. */
+ *  source cleanly (never invent it), and the viewer renders only what is present. The `full`
+ *  detail card renders roles / funnels / pipeline / interactions when supplied; `quick-stats`
+ *  ignores them and stays a compact stat grid. */
 export interface MemberDetail {
   avatarUrl?: string | null
   displayName: string
@@ -57,16 +95,38 @@ export interface MemberDetail {
   contact?: { email?: string; phone?: string; links?: { label: string; href: string }[] }
   latestActivity?: { label: string; when: string; href?: string }[]
   engagementStats?: { label: string; value: string; hint?: string }[]
+  /** Role designators (Crew, Host, Admin, Janitor…), rendered as tone chips in `full` mode. */
+  roles?: MemberRole[]
+  /** The funnels the member is active in, rendered in `full` mode. */
+  funnels?: MemberFunnel[]
+  /** The member's CRM / contact pipeline stage, rendered in `full` mode. */
+  pipeline?: MemberPipeline
+  /** The member's recent interactions, TRUNCATED by the host (the card caps the render at ~5 and
+   *  shows a "view all" affordance pointing at `viewAllHref` / the View Member page). */
+  interactions?: MemberInteraction[]
+  /** Where "view all" interactions / the View Member button points. The full member / timeline page. */
+  viewAllHref?: string
   /** The canonical profile link; defaults to `/people/${handle}`. */
   profileHref?: string
   actions?: MemberAction[]
 }
 
-/** A field key the list can sort by. `name` and `handle` sort the row's own fields; any
- *  other key sorts on a matching `stats` entry's numeric-or-string value. */
+/** A field key the list can sort by. `name` and `handle` sort the row's own fields; any other
+ *  key sorts on a matching `sortValues` entry first, then a matching `stats` entry's value. */
 export interface SortSpec {
   key: 'name' | 'handle' | string
   direction: 'asc' | 'desc'
+}
+
+/** One entry in the viewer's hero sort selector. A host passes a small set (e.g. Recent / Active /
+ *  Needs help / Name) and the viewer renders them as a segmented control; selecting one drives the
+ *  pure `applyQuery` sort. Presentation-neutral: a label + the `SortSpec` to apply. */
+export interface SortOption {
+  /** Stable key for the control (also the selected-state marker). */
+  key: string
+  /** The control label (plain, sentence case, no em dashes). */
+  label: string
+  spec: SortSpec
 }
 
 /** The live query the viewer applies (or hands to a server-driven host via onQueryChange). */
@@ -78,11 +138,12 @@ export interface MemberQuery {
   sort?: SortSpec
 }
 
-const DEFAULT_PAGE_SIZE = 15
+const DEFAULT_PAGE_SIZE = 10
 const MIN_PAGE_SIZE = 10
 const MAX_PAGE_SIZE = 20
 
-/** Clamp a requested page size into the supported 10..20 window (default 15). Pure. */
+/** Clamp a requested page size into the supported 10..20 window (default 10: start with the ten most
+ *  recent and let "Show more" page through the rest). Pure. */
 export function clampPageSize(size: number | undefined): number {
   if (typeof size !== 'number' || !Number.isFinite(size)) return DEFAULT_PAGE_SIZE
   return Math.max(MIN_PAGE_SIZE, Math.min(MAX_PAGE_SIZE, Math.round(size)))
@@ -110,11 +171,14 @@ export function matchesFacets(member: MemberSummary, facets: Record<string, stri
 }
 
 /** The numeric or lowercased-string value a row offers for a sort key. `name`/`handle` read the
- *  row's own fields; any other key reads the matching `stats` entry (by label OR a normalized key).
- *  Returns '' when absent so missing values sort last under asc. Pure. */
+ *  row's own fields; any other key reads the row's `sortValues` entry FIRST (a host's pre-computed
+ *  signal, e.g. a `joined` epoch), then falls back to a matching `stats` entry (by label OR a
+ *  normalized key). Returns '' when absent so missing values sort last under asc. Pure. */
 function sortValue(member: MemberSummary, key: string): string | number {
   if (key === 'name') return member.displayName.toLowerCase()
   if (key === 'handle') return member.handle.toLowerCase()
+  const pre = member.sortValues?.[key]
+  if (pre != null) return typeof pre === 'number' ? pre : pre.toLowerCase()
   const stat = (member.stats ?? []).find(
     (s) => s.label === key || s.label.toLowerCase().replace(/\s+/g, '_') === key,
   )
