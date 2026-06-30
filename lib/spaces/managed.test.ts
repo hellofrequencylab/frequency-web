@@ -126,14 +126,24 @@ describe('listManagedSpaces (the launcher reader, tenancy + fail-safe)', () => {
     })
   })
 
-  it('routes a NON-console type (event_space) to the legacy /settings hub (ADR-441 EM1-3)', async () => {
+  it('routes a CONSOLE type (event_space) to the unified /manage console (ADR-441 EM2-3)', async () => {
     currentProfileId = 'owner-2'
     store.spaces = [
       space({ id: 'c', slug: 'the-loft', name: 'The Loft', type: 'event_space', owner_profile_id: 'owner-2' }),
     ]
     const out = await listManagedSpaces()
     expect(out).toHaveLength(1)
-    expect(out[0].settingsHref).toBe('/spaces/the-loft/settings')
+    expect(out[0].settingsHref).toBe('/spaces/the-loft/manage')
+  })
+
+  it('routes a NON-console type (coaching) to the legacy /settings hub (ADR-441 EM2-3)', async () => {
+    currentProfileId = 'owner-3'
+    store.spaces = [
+      space({ id: 'd', slug: 'the-academy', name: 'The Academy', type: 'coaching', owner_profile_id: 'owner-3' }),
+    ]
+    const out = await listManagedSpaces()
+    expect(out).toHaveLength(1)
+    expect(out[0].settingsHref).toBe('/spaces/the-academy/settings')
   })
 
   it('includes Spaces reached via an ACTIVE editor+ membership, marked as not owned', async () => {

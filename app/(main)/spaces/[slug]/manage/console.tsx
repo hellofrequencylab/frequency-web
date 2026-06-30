@@ -34,6 +34,12 @@ function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/settings/donations`
     case 'space.engage.enroll':
       return `${base}/settings/enroll`
+    case 'space.engage.memberships':
+      return `${base}/settings/memberships`
+    case 'space.engage.tickets':
+      return `${base}/settings/tickets`
+    case 'space.safety.checkin':
+      return `${base}/settings/checkin`
     case 'space.reach':
       return `${base}/settings/qr`
     case 'space.comms':
