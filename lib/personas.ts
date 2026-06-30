@@ -16,6 +16,18 @@ export const PARTNER_PERSONAS: readonly PartnerPersona[] = [
   'collaborator', 'practitioner', 'business', 'organization',
 ] as const
 
+// The money-moving partner programs (ROLES.md System 2): a Practitioner runs paywalled
+// Programs (Stripe Connect, verified) and an Organization carries tenant billing. These
+// are the focus of the admin verification queue (EM2-5): their `active` state is the one
+// gated on a real per-persona payout binding. The other two programs (Collaborator,
+// Business) verify the same way and ride a secondary section of the queue.
+export const MONEY_PERSONAS: readonly PartnerPersona[] = ['practitioner', 'organization'] as const
+
+/** Whether a persona's `active` state needs a per-persona Stripe Connect / billing binding. */
+export function isMoneyPersona(persona: PartnerPersona): boolean {
+  return (MONEY_PERSONAS as readonly string[]).includes(persona)
+}
+
 export type PersonaTool = { label: string; href: string }
 
 export const PERSONA_META: Record<
@@ -145,6 +157,9 @@ export interface PersonaQueueRow {
   notes: string | null
   createdAt: string
   verifiedAt: string | null
+  /** The per-persona Stripe Connect / billing account id, when one is bound. Reserved
+   *  for the multi-legal-entity case (a separate LLC); dormant until Connect lands. */
+  stripeAccountId: string | null
 }
 
 /** Every claimed persona with its member, for the staff verification surface.
@@ -152,7 +167,7 @@ export interface PersonaQueueRow {
 export async function getPersonaQueue(): Promise<PersonaQueueRow[]> {
   const { data } = await (createAdminClient())
     .from('profile_personas')
-    .select('persona, state, notes, created_at, verified_at, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
+    .select('persona, state, notes, created_at, verified_at, stripe_account_id, profile:profiles!profile_id ( id, display_name, handle, avatar_url )')
     .order('created_at', { ascending: false })
 
   return ((data ?? []) as unknown as Array<{
@@ -161,6 +176,7 @@ export async function getPersonaQueue(): Promise<PersonaQueueRow[]> {
     notes: string | null
     created_at: string
     verified_at: string | null
+    stripe_account_id: string | null
     profile: { id: string; display_name: string | null; handle: string | null; avatar_url: string | null } | null
   }>)
     .filter((r) => r.profile && isPersona(r.persona))
@@ -174,5 +190,56 @@ export async function getPersonaQueue(): Promise<PersonaQueueRow[]> {
       notes: r.notes,
       createdAt: r.created_at,
       verifiedAt: r.verified_at,
+      stripeAccountId: r.stripe_account_id,
     }))
+}
+
+// ── Queue analytics + the dormant payout binding (EM2-5) ─────────────────────
+
+export interface PersonaQueueStats {
+  /** Awaiting a verify decision (the operator's to-do count). */
+  pending: number
+  /** Verified — tools on. */
+  verified: number
+  /** Active — verified and money-bound (unreachable until Connect lands). */
+  active: number
+  /** Released or revoked. */
+  suspended: number
+}
+
+/** Headline counts for the verification dashboard band. Pure over a fetched queue. */
+export function personaQueueStats(rows: readonly PersonaQueueRow[]): PersonaQueueStats {
+  const stats: PersonaQueueStats = { pending: 0, verified: 0, active: 0, suspended: 0 }
+  for (const r of rows) {
+    if (r.state === 'claimed') stats.pending += 1
+    else stats[r.state] += 1
+  }
+  return stats
+}
+
+export type ConnectBindingState = 'dormant' | 'pending' | 'bound'
+
+/** The per-persona Stripe Connect / payout binding status for one queue row, for the
+ *  operator readout. The binding is the money gate at `active` and is intentionally
+ *  DORMANT platform-wide until Connect is wired (CONNECT_WIRED): no row can reach
+ *  `active`, so a money persona reads `pending` once verified (waiting on Connect) and
+ *  `dormant` before that. `bound` only appears once a real account id is attached. */
+export function connectBindingState(row: {
+  persona: PartnerPersona
+  state: PersonaState
+  stripeAccountId: string | null
+}): ConnectBindingState {
+  if (!isMoneyPersona(row.persona)) return 'dormant'
+  if (row.stripeAccountId) return 'bound'
+  if (!CONNECT_WIRED) return row.state === 'verified' || row.state === 'active' ? 'pending' : 'dormant'
+  return 'dormant'
+}
+
+export const CONNECT_BINDING_META: Record<
+  ConnectBindingState,
+  { label: string; tone: 'pending' | 'success' | 'muted' }
+> = {
+  dormant: { label: 'Payout binding off', tone: 'muted' },
+  pending: { label: 'Payout binding pending Connect', tone: 'pending' },
+  bound:   { label: 'Payout bound', tone: 'success' },
 }
