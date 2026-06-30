@@ -22,7 +22,14 @@
 UPDATE platform_flags SET value = false, updated_at = now() WHERE key = 'demo_mode';
 
 -- 2. Demo-metro geography, deleted child-first (FKs are NO ACTION):
---    hubs -> nexuses -> outposts -> regions(metros) -> regions(states).
+--    circles -> hubs -> nexuses -> outposts -> regions(metros) -> regions(states).
+--    The Houston/Portland demo circles (seeded in 20240303000000_seed_demo_circles.sql)
+--    carry circles.hub_id NOT NULL REFERENCES hubs with NO ACTION, so they must be
+--    removed before their hubs. Circle child rows (memberships, etc.) are ON DELETE
+--    CASCADE, so deleting the circle row cleans up after itself.
+DELETE FROM circles WHERE hub_id IN (
+  SELECT id FROM hubs WHERE slug IN ('bayou-city-hub','rose-city-hub')
+);
 DELETE FROM hubs    WHERE slug IN ('bayou-city-hub','rose-city-hub');
 DELETE FROM nexuses WHERE slug IN ('houston-nexus','portland-nexus');
 DELETE FROM outposts WHERE region_id IN (
