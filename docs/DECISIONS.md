@@ -9885,6 +9885,67 @@ one validator. Promotable to RRULE later still holds (ADR-007 unchanged).
 
 ---
 
+## ADR-463: Phase C pricing surfaces (admin catalog console, the live-loadout space picker, the Crew upgrade + PWYW Supporter badge)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel (Vision Steward). Builds on ADR-458 (the value ladder +
+the Phase A entitlement partition) and ADR-460 (the Phase B Stripe structure). Full build:
+[PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) §4. Ships behind `billing_live` OFF; **no migration** (the
+Phase A/B schema is enough; the config lives in the existing `pricing_settings` kv store).
+
+**Context.** ADR-460 left the Phase B backend (the typed catalog, `syncStripeCatalog`,
+`createSpaceLoadoutCheckout`, the generalized locked-price grandfather) dormant with no surfaces driving
+it. Phase C is the three operator/member surfaces: the owner's `/admin/pricing` catalog console, the
+Space Pro plan + add-on picker with a live total, and the Crew upgrade page with the PWYW Supporter badge.
+
+**Decision.**
+- **Catalog config is an operator overlay over the code catalog, in `pricing_settings`.** A new pure +
+  IO module `lib/pricing/catalog-config.ts` reads each catalog item's monthly **list** + **founding**
+  amount (and an optional explicit yearly override) from `pricing_settings` under **`catalog.<item>`**,
+  **fail-safe to the Phase B `CATALOG`** code default per field. Yearly derives two months free unless
+  overridden. Seat (`catalog.seat`, the bundled floor), PWYW (`catalog.pwyw`, the Supporter min +
+  suggested), and per-add-on enable (`catalog.addon_enabled`) are sibling keys. **No new table** (the kv
+  store already exists); the code catalog stays the source of truth, so an absent row reads the code
+  amount.
+- **Loadout math is one pure module, client + server.** `lib/pricing/loadout.ts` `computeLoadoutTotal`
+  sums the Pro base + each active add-on at the chosen interval (the Team add-on x its seat count),
+  returning BOTH the list total (the anchor) and the founding total (charged). The picker computes the
+  live total on the client from the operator-set amounts the server passes; the same math is import-safe
+  on the server. Direct unit coverage (`lib/pricing/loadout.test.ts`).
+- **`/admin/pricing` catalog console (C1).** Adds a Catalog section to the existing janitor-gated console:
+  per-item list + founding (monthly, with yearly override), per-add-on enable toggles, the seat bundled
+  floor, and the Supporter PWYW config, each persisted via a new `setPricingSetting`-backed action. The
+  Phase B `syncStripeCatalog` action is wired to a "Sync the catalog to Stripe" button (env-gated, a safe
+  no-op when Stripe is unconfigured) with the founding-vs-list framing in the resolved-prices table. The
+  OFF banner states the invariant plainly: **off means everything granted, nothing charged.**
+- **Space Pro plan + add-on picker (C2).** `SpaceLoadoutPicker` renders the Pro base + the four add-on
+  toggles with a live loadout total, a monthly/yearly switch (annual = two months free), the founding
+  price under the list anchor, 14-day trial badges, and a per-add-on CTA. A space already on a founding
+  rate sees a "founding price held" note (`readLockedPriceId` for the base item). While `billing_live` is
+  OFF the whole control set is a **disabled preview ("available soon")** so nothing charges; the buy CTA
+  wires to `createSpaceLoadoutCheckout` via `startSpaceLoadoutCheckout`, dormant until live. Writes are
+  **double-gated**: the action re-resolves the space + checks `canManage` server-side, and the checkout
+  itself re-gates on `billingLive` + the per-plan switch. The pre-selected add-ons come from a new pure
+  `addonsHeldBy` reader over the space's effective entitlements.
+- **Crew upgrade + PWYW Supporter badge (C3).** The upgrade page drops the retired Supporter **tier** and
+  adds the opt-in PWYW Supporter **badge** (`toggleSupporterBadge` writes `profiles.is_supporter`; the
+  contribution charge is dormant until live, and the contributions ledger stays deferred). The Crew price
+  shows the list anchor → founding price (a new optional `TierPrice.list_cents`, jsonb-additive, seeded
+  Crew list $12 / founding $9), the monthly/yearly note, and a plain **mission-framing** line (membership
+  funds the people + infrastructure; CONTENT-VOICE §10, no guilt, skeptic test, no em dashes).
+- **Types regenerated (clears loose-end P5).** `lib/database.types.ts` regenerated from prod (additive
+  only): `spaces.is_comped` / `spaces.seat_quantity`, `profiles.is_supporter`, and the
+  `space_subscription_items` / `pricing_settings` / `pricing_stripe_prices` tables are now typed. The
+  upgrade page's `is_founding_member` / `is_supporter` read drops its `as unknown as` cast; the shared
+  fail-safe `pricing_settings` readers stay untyped to avoid churn.
+
+**Consequences.** The operator now has full catalog control and a one-click Stripe catalog sync; an
+operator builds a Pro loadout and sees the live total; a member opts into the Supporter badge. Everything
+stays dormant behind `billing_live` OFF (disabled previews, gated checkouts, the badge write the only live
+mutation, harmless during beta). No migration. Phase E (in-context upsell teases) and Phase F (the
+commercial pricing page + mission copy at scale) build on these surfaces next.
+
+---
+
 ## ADR-464: Space Modes registry + Focus + non-destructive switcher + overrides + coaching onto the console
 
 **Status:** Accepted (2026-06-30). Owner: Daniel. Implements ADR-461 (the decision) and

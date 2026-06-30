@@ -2,13 +2,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight, Heart, Lock } from 'lucide-react'
+import { Zap, Check, MessageSquare, CalendarDays, Users, Star, Radio, BarChart3, ArrowRight } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getPricingValues } from '@/lib/pricing/settings'
 import { memberTierSellable } from '@/lib/pricing/settings'
-import { memberTierRows } from '@/lib/pricing/display'
+import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { formatCents, memberTierRows } from '@/lib/pricing/display'
 import { UpgradeToggle } from './upgrade-toggle'
 import { CheckoutButton } from './checkout-button'
+import { SupporterBadge } from './supporter-badge'
 
 // MEMBER UPGRADE SURFACE (Pricing P3, ADR-362/363). Renders the Crew + Supporter tiers with the
 // OPERATOR-SET prices (getPricingValues(), never hardcoded), honors the founder lock (a founding
@@ -33,34 +35,33 @@ export default async function UpgradePage() {
 
   if (!profile) redirect('/onboarding')
 
-  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew;
-  // Supporter is the pay-more tier above it (P2.4).
+  // Membership is the entitlement axis (orthogonal to the community role). Paid = Crew. Supporter is
+  // RETIRED as a tier (ADR-463) and is now the PWYW badge below (profiles.is_supporter).
   const tier = (profile.membership_tier ?? 'free') as string
   const isCrew = tier !== 'free'
-  const isSupporter = tier === 'supporter'
 
-  // The founder lock + the per-tier sell gates are read untyped (the columns aren't in the generated
-  // types yet, ADR-246), fail-safe. crewSellable/supporterSellable are billingLive() AND the switch:
-  // both false while billing is OFF, so the page degrades to the beta toggle + a disabled preview.
-  const [founder, values, crewSellable, supporterSellable] = await Promise.all([
+  // The founder lock + the Supporter badge are now TYPED (is_founding_member / is_supporter, regenerated
+  // in Phase C). crewSellable is billingLive() AND the tier switch: false while billing is OFF, so the
+  // page degrades to the beta toggle + a disabled preview. The catalog config carries the PWYW amounts.
+  const [founder, values, catalog, crewSellable] = await Promise.all([
     createAdminClient()
       .from('profiles')
-      .select('is_founding_member')
+      .select('is_founding_member, is_supporter')
       .eq('id', profile.id)
       .maybeSingle(),
     getPricingValues(),
+    loadCatalogConfig(),
     memberTierSellable('crew'),
-    memberTierSellable('supporter'),
   ])
-  const founderRow = founder.data as { is_founding_member?: boolean | null } | null
+  const founderRow = founder.data
   const isFounder = founderRow?.is_founding_member === true
+  const isSupporter = founderRow?.is_supporter === true
 
   // Live = the Crew checkout is actually sellable (billing on + the tier switch on). While OFF the
   // upgrade is the free beta toggle, exactly as before, with a disabled price preview beneath it.
   const live = crewSellable
   const rows = memberTierRows(values)
   const crew = rows.find((r) => r.key === 'crew')!
-  const supporter = rows.find((r) => r.key === 'supporter')!
 
   const benefits = [
     { icon: MessageSquare, label: 'Full community feed access' },
@@ -123,18 +124,24 @@ export default async function UpgradePage() {
           <div className="mt-4 flex items-baseline justify-center gap-1">
             {live ? (
               <>
+                {crew.list && (
+                  <span className="text-2xl font-black text-white line-through opacity-50 mr-1">{crew.list}</span>
+                )}
                 <span className="text-4xl font-black text-white">{crew.monthly}</span>
                 <span className="text-primary-strong text-sm ml-1">/ month</span>
               </>
             ) : (
               <>
-                <span className="text-3xl font-black text-white line-through opacity-50">{crew.monthly}</span>
+                <span className="text-3xl font-black text-white line-through opacity-50">{crew.list ?? crew.monthly}</span>
                 <span className="text-4xl font-black text-white ml-2">Free</span>
                 <span className="text-primary-strong text-sm ml-1">during beta</span>
               </>
             )}
           </div>
-          {live && crew.annual && (
+          {live && crew.list && (
+            <p className="mt-1 text-xs text-primary-strong/80">Founding price. {crew.annual ? `Or ${crew.annual} a year, two months free.` : ''}</p>
+          )}
+          {live && !crew.list && crew.annual && (
             <p className="mt-1 text-xs text-primary-strong/80">or {crew.annual} a year</p>
           )}
         </div>
@@ -173,32 +180,21 @@ export default async function UpgradePage() {
         </div>
       </div>
 
-      {/* Supporter tier — the pay-more upgrade (P2.4). When its checkout is live and the viewer
-          is not already a Supporter, offer it; otherwise show a quiet disabled "coming soon" preview
-          so the ladder is visible without a broken button (OFF reads as neutral). */}
-      {!isSupporter && (
-        <div className="mt-5 rounded-2xl border border-signal/30 bg-signal-bg/20 p-5">
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-signal-bg/60">
-              <Heart className="h-4 w-4 text-signal-strong" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-text">Become a Supporter</p>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                Chip in beyond membership to keep Frequency running, and wear the
-                Supporter badge on your profile.
-              </p>
-              <div className="mt-3">
-                {supporterSellable ? (
-                  <CheckoutButton tier="supporter" />
-                ) : (
-                  <ComingSoonCta label={`Supporter is ${supporter.monthly} a month`} />
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Mission framing (CONTENT-VOICE: plain, concrete, no narrating the reader's feelings, skeptic
+          test). State plainly what the membership funds. */}
+      <p className="mt-5 text-center text-xs leading-relaxed text-subtle px-4">
+        A paid membership keeps Frequency independent. It pays the people and the infrastructure that run
+        it, so the work stays member-funded instead of sold to advertisers.
+      </p>
+
+      {/* Supporter is RETIRED as a tier (ADR-463). It is now an opt-in pay-what-you-want BADGE on Crew
+          (profiles.is_supporter). The toggle writes the badge; the contribution charge is dormant until
+          billing goes live. The operator-set PWYW amounts frame it. */}
+      <SupporterBadge
+        initialOn={isSupporter}
+        minLabel={formatCents(catalog.pwyw.minCents)}
+        suggestedLabel={formatCents(catalog.pwyw.suggestedCents)}
+      />
 
       {/* Founder note — shown while paid membership has not launched. */}
       {!live && !isFounder && (
@@ -211,18 +207,5 @@ export default async function UpgradePage() {
         </div>
       )}
     </FocusTemplate>
-  )
-}
-
-/** A disabled, tasteful "coming soon" CTA for a tier whose checkout is not live yet. Reads as a
- *  neutral preview while billing is OFF, never a broken button (Pricing P3). */
-function ComingSoonCta({ label }: { label: string }) {
-  return (
-    <div
-      aria-disabled
-      className="flex w-full cursor-default items-center justify-center gap-2 rounded-xl border border-dashed border-border px-4 py-2.5 text-xs font-semibold text-subtle"
-    >
-      <Lock className="h-3.5 w-3.5" aria-hidden /> {label}. Coming soon.
-    </div>
   )
 }

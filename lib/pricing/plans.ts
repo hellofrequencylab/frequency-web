@@ -164,3 +164,17 @@ export const BILLING_MANAGED_KEYS: readonly string[] = (() => {
   for (const addon of ADDON_KEYS) for (const k of ADDON_ENTITLEMENT_KEYS[addon]) set.add(k)
   return [...set]
 })()
+
+/** Which add-ons a Space currently HOLDS, inferred from its effective entitlement set (ADR-463). PURE:
+ *  pass a predicate that answers "does the Space have entitlement key X" (e.g. a closure over
+ *  spaceHasEntitlement). An add-on counts as held when EVERY one of its entitlement keys is granted, so
+ *  a partial hand-grant of a single key does not flip the whole add-on on. Used by the loadout picker to
+ *  pre-select the add-ons the Space already runs. */
+export function addonsHeldBy(hasEntitlement: (key: string) => boolean): AddonKey[] {
+  const out: AddonKey[] = []
+  for (const addon of ADDON_KEYS) {
+    const keys = ADDON_ENTITLEMENT_KEYS[addon]
+    if (keys.length > 0 && keys.every((k) => hasEntitlement(k))) out.push(addon)
+  }
+  return out
+}

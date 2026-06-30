@@ -49,23 +49,32 @@ export interface PriceRow {
   annual: string | null
   /** One-time setup price label (white-label only), or null. */
   setup: string | null
+  /** The MONTHLY list-anchor label (ADR-463), e.g. "$12", or null when there is no anchor. The monthly
+   *  price is the founding price the anchor sits under. */
+  list: string | null
   /** Raw cents, for callers that need to compute (e.g. annual savings). */
   monthlyCents: number
   annualCents: number | null
   setupCents: number | null
+  listCents: number | null
 }
 
 /** Build a display row from a raw TierPrice + its key/label. PURE. */
 export function priceRow(key: string, label: string, price: TierPrice): PriceRow {
+  // The list anchor only reads when it is strictly above the founding (monthly) price; an absent or
+  // equal/lower anchor renders as no anchor (the monthly is shown plainly).
+  const hasAnchor = price.list_cents != null && price.list_cents > price.monthly_cents
   return {
     key,
     label,
     monthly: formatCents(price.monthly_cents),
     annual: price.annual_cents != null ? formatCents(price.annual_cents) : null,
     setup: price.setup_cents != null ? formatCents(price.setup_cents) : null,
+    list: hasAnchor ? formatCents(price.list_cents as number) : null,
     monthlyCents: price.monthly_cents,
     annualCents: price.annual_cents ?? null,
     setupCents: price.setup_cents ?? null,
+    listCents: hasAnchor ? (price.list_cents as number) : null,
   }
 }
 
