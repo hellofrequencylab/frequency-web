@@ -88,12 +88,8 @@ describe('money personas + queue analytics (EM2-5)', () => {
     // Non-money personas never carry a binding.
     expect(connectBindingState(row({ persona: 'collaborator', state: 'verified' }))).toBe('dormant')
     // A money persona reads pending once verified (waiting on Connect), dormant before that.
-    expect(connectBindingState(row({ persona: 'practitioner', state: 'claimed' }))).toBe(
-      CONNECT_WIRED ? 'dormant' : 'dormant',
-    )
-    expect(connectBindingState(row({ persona: 'practitioner', state: 'verified' }))).toBe(
-      CONNECT_WIRED ? 'dormant' : 'pending',
-    )
+    expect(connectBindingState(row({ persona: 'practitioner', state: 'claimed' }))).toBe('dormant')
+    expect(connectBindingState(row({ persona: 'practitioner', state: 'verified' }))).toBe('pending')
     // A real bound account always reads bound.
     expect(connectBindingState(row({ persona: 'organization', state: 'verified', stripeAccountId: 'acct_1' }))).toBe('bound')
   })
