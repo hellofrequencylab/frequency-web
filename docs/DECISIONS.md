@@ -9702,6 +9702,95 @@ pages for SEO/AIO. PRICING.md is updated per phase; this ADR + PRICING-LADDER-PL
 
 ---
 
+## ADR-459: The reusable member-viewer block (master-detail member browser)
+
+**Status.** Accepted, shipped. **Context.** Several surfaces browse members and want the same shape:
+a list on the left, a member viewer on the right. Hand-rolling that per surface drifts (each grows
+its own search, paging, selection, and detail card). We want ONE composable block, reused and
+reconfigured, not a one-off page, and presentation-neutral (ADR-017/018: data + intent in, no IO).
+
+**Decision.** Ship a `MemberViewer` block in `components/people/member-viewer/` (client island:
+`MemberViewer` + `MemberDetailCard`, exported via `index.ts`) over a PURE, unit-tested core in
+[`lib/people/member-viewer.ts`](../lib/people/member-viewer.ts) (`applyQuery` = text + facet filter,
+sort, paginate/cap; no React, no IO). The block composes the existing kit (`PersonCard`,
+`EmptyState`, `Skeleton`, `Button`), uses semantic DAWN tokens only, and keeps copy plain (no em
+dashes, NAMING nouns).
+
+**The contract (presentation-neutral).**
+
+| Type | What it is |
+|---|---|
+| `MemberSummary` | one left-list row: `id`, `handle`, `displayName`, `avatarUrl?`, `online?`, `badges?` (facet-matchable), `headline?`, `stats?`, embedded `detail?` |
+| `MemberDetail` | the right pane: `displayName`, `handle`, `avatarUrl?`, `contact?`, `latestActivity?`, `engagementStats?`, `profileHref` (default `/people/${handle}`), `actions?` — every rich field OPTIONAL, so a host omits what it cannot source cleanly and never invents data |
+| `MemberAction` | `{ key, label, icon?, href?, onSelect?, variant? }`; the viewer offers Connect + Message (full) and Open Profile (always) by default, merged ahead of the host's own |
+| `Facet` | a chip/select filter; the client filter matches a row's `badges` by default |
+
+**Reuse model.** Props tune the same block: `loadDetail?(id)` (lazy right pane with a dimension-matched
+skeleton, FAIL-SAFE to a calm error pane on reject; an embedded `detail` skips the fetch);
+`detailMode` `'full'` (contact + activity + stats + actions) or `'quick-stats'` (a compact stat grid
+under a prominent Open Profile); `defaultView` `'list'` | `'card'` with a visible toggle (card =
+`PersonCard` tiles whose click is repurposed for SELECTION, not navigation); `pageSize` (default 15,
+clamped 10..20) with Show more; `search` (text over name + handle + headline, plus facets);
+controlled `selectedId`/`onSelectedChange` (uncontrolled default, first row derived-preselected on
+desktop); `onQueryChange` for a server-driven host; `emptyState` override. Responsive: desktop two
+panes (left ~2/5, right ~3/5, both `min-w-0`, right scrolls independently); mobile = list primary, a
+selection opens a detail overlay with Back. Keyboard: up/down move selection, Enter opens, visible
+focus ring, `motion-reduce` honored. The page-reset and preselect are DERIVED (no cascading effects).
+
+**First reuse.** The Resonance CRM platform members surface (`app/(main)/admin/crm/members`) renders
+`<MemberViewer>` (full mode, list default, tier + lifecycle facets), KEEPING the list-first front
+door + the fail-safe empty state: a server component maps the shared `listMembersByFilter` rows to
+`MemberSummary[]` (handle/avatar BATCHED via `getProfileSummaries`, no N+1), and a staff-gated
+`loadMemberDetail` server action assembles `MemberDetail` from EXISTING readers only (profile
+summary, `getMemberScores`, the `contact_interactions` timeline). The cockpit's compact roster
+(`member-roster.tsx`) is unchanged.
+
+**Consequences.** New member-browsing surfaces compose the block + a row mapper instead of a bespoke
+page. No schema/migration change. The pure core is locked by `lib/people/member-viewer.test.ts`.
+
+---
+
+## ADR-461: Space Modes (type as operating mode, under the unified Pro plan)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel. Full plan:
+[SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md). Companion to ADR-458 (pricing ladder) and the profile
+blueprints (`lib/spaces/blueprints.ts`).
+
+**Context.** The 7 space plans collapsed to 3 (Pro / Nonprofit / Organization, ADR-458), so `spaces.type`
+(practitioner / coaching / business / event_space / organization / lab) is no longer a price tier. But
+these operators run very different businesses (a coach lives in packages + scheduling; a product business
+in catalog + storefront; a service business in bookings + quotes). A single generic Pro console serves
+none of them well.
+
+**Decision.**
+- **`spaces.type` becomes an operating Mode**: a preset layer that decides which Pro modules lead, the
+  default settings, the default CRM pipeline, the lexicon, the onboarding + starter templates, the
+  dashboard, and the recommended add-ons. It already drives the public profile blueprint; this extends
+  the same data-driven pattern onto the operator console.
+- **A new Focus (sub-mode) dimension** for types that span operating models, stored as
+  `spaces.mode_variant`: Business `service`/`product`, Coaching `packages`/`cohort`, Practitioner
+  `appointments`/`programs`, Event Space `ticketed`/`membership`, Organization `donations`/`programs`.
+- **Mode never gates.** Capabilities are gated only by the entitlement engine (plan + add-ons) and the
+  space-role ladder. Mode only orders, defaults, and labels, so every Pro Space can still reach every
+  module. Mode is FREE (framing, not entitlement), so it does not wait on `billing_live`.
+- **A pure data registry** (`lib/spaces/modes.ts`, a `ModeProfile` per `(type, variant)`) extends
+  `RoleBlueprint`; the create wizard, console nav/dashboard, CRM pipeline seed, onboarding, and marketing
+  pages all read it. A new Mode/Focus is one descriptor, never a core edit.
+- **Switching Mode/Focus is non-destructive + reversible**, and operator overrides (a hand-set toggle,
+  label, or pipeline) are never clobbered by a later re-preset.
+- **Surface rework** (Phase C): create wizard "what do you run?", a console Mode settings page with a
+  switcher + a plain "what this turns on" preview + overrides; brings `coaching` onto the unified console
+  (it has a blueprint but is not yet in `CONSOLE_SPACE_TYPES`).
+- **Marketing + pricing** (Phase F): per-Mode persona landing pages with package focus + recommended
+  loadout price, and a static pricing-page table (Pro / Nonprofit / Organization with the 4 add-ons) plus
+  a "by who you are" loadout strip, all with the founding-price anchor + JSON-LD.
+
+**Consequences.** Migration adds `spaces.mode_variant` (+ optionally `spaces.preferences` for overrides),
+additive, read untyped until types regenerate (ADR-246). Implementation slots into Phase C (M1-M4) and
+Phase F (M5-M6) of the pricing overhaul. No entitlement or RLS change.
+
+---
+
 ## ADR-462: Repeatable events surfaced (read-side next-occurrence + Duplicate + active-day default)
 
 **Status:** Accepted · corroborated by `lib/events/recurrence.ts`,

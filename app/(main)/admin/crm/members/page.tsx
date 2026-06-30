@@ -4,14 +4,17 @@ import { AdminTemplate, AdminSection } from '@/components/templates'
 import { type MemberFilter } from '@/lib/dashboard/scores'
 import { tierLabel } from '@/lib/dashboard/verdict'
 import type { ResonanceTier } from '@/lib/traits/compute'
-import { MemberRoster } from '../member-roster'
+import { Suspense } from 'react'
+import { MemberViewerRoster } from './member-viewer-roster'
 
-// The Resonance CRM member roster (Resonance Engine Phase 2 · ADR-383). LIST-FIRST
-// (docs/NEXT-GEN-CRM.md): with no filter this is the FULL scored roster, the familiar front door.
-// A tier band (?tier=at_risk) or a lifecycle step (?stage=new) drills the same list down; every
-// chart point on the cockpit lands here. Each member drills on to the contact_interactions timeline
-// (the one front door). STAFF-GATED like the cockpit. FAIL-SAFE: an absent matview shows a calm
-// empty state. Semantic tokens only; copy in voice (no em or en dashes).
+// The Resonance CRM member roster (Resonance Engine Phase 2 · ADR-383), rendered through the
+// REUSABLE member-viewer block (ADR-459). LIST-FIRST (docs/NEXT-GEN-CRM.md): with no filter this is
+// the FULL scored roster, the familiar front door, now in a master-detail browser (list left, the
+// member's detail right). A tier band (?tier=at_risk) or a lifecycle step (?stage=new) still drills
+// the same list down; every chart point on the cockpit lands here, and the viewer's own tier +
+// lifecycle facets refine it further. Each member's right pane links on to the contact_interactions
+// timeline. STAFF-GATED like the cockpit. FAIL-SAFE: an absent matview shows a calm empty state.
+// Semantic tokens only; copy in voice (no em or en dashes).
 
 export const dynamic = 'force-dynamic'
 
@@ -80,11 +83,13 @@ export default async function CockpitMembersPage({
       width="default"
     >
       <AdminSection>
-        <MemberRoster
-          filter={resolved.filter}
-          emptyTitle={resolved.emptyTitle}
-          emptyDescription={resolved.emptyDescription}
-        />
+        <Suspense fallback={null}>
+          <MemberViewerRoster
+            filter={resolved.filter}
+            emptyTitle={resolved.emptyTitle}
+            emptyDescription={resolved.emptyDescription}
+          />
+        </Suspense>
       </AdminSection>
     </AdminTemplate>
   )

@@ -26,6 +26,7 @@
 | Notion: *Community Launch Plan* (Frequency Projects DB) | Timeline overlay (P0–P4) | — | Notion tasks |
 | [BUILD-CATALOG.md](BUILD-CATALOG.md) | Reconciled master index of ALL unfinished work + orphan rescue + wave-of-agents plan | — | catalog |
 | [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) | Pricing + value ladder overhaul (Crew · Pro + 4 add-ons · Nonprofit · Organization); entitlement partition, Stripe multi-item, surfaces, SEO. Ships behind `billing_live` OFF | 458 | `Phase A–F` |
+| [SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md) | Space Modes — `spaces.type` as an operating Mode (+ Focus sub-modes) under the unified Pro plan: module emphasis, default settings, CRM pipeline, lexicon, onboarding, recommended add-ons. Roles surface + settings rework + marketing/pricing-table focus | 461 | `M1–M6` |
 
 The three tracks are strands of one rope: they share the **G0 hardening gate** and cross-reference
 each other (Entity Management is a prerequisite for Growth OS **G3**; the money foundation **F1**
@@ -62,6 +63,30 @@ Notion dates; the gate is the real trigger.
 
 **Start here:** Wave 0, beginning with `H0-1` (Supabase advisor sweep) + `H0-2` (migration drift) —
 they seed the exact backlog for the rest of Wave 0.
+
+### 2a. Active build queue (prioritized, 2026-06-30)
+
+The live, ordered worklist that overlays the waves above. Each row is a shippable PR (worktree agent →
+review → squash-merge; migrations hand-reviewed + applied to prod). Priority is top-down; P-items run in
+parallel when their files are disjoint. Status legend: ✅ done · 🔨 building · ⏳ queued · 🔒 gated.
+
+| Pri | Item | Plan ref | Migration | Status |
+|---|---|---|---|---|
+| **P0** | Pricing **Phase A** — entitlement partition + plan/member-tier collapse | [PRICING-LADDER-PLAN](PRICING-LADDER-PLAN.md) · ADR-458 | applied ✅ | ✅ merged + migrated |
+| **P1** | Pricing **Phase B** — Stripe clean structure (catalog, multi-item subs, founding-price grandfather + annual, sync) | PRICING-LADDER-PLAN §1a/§4 · ADR-460 | file (hand-review) | 🔨 building |
+| **P1** | **Member view block** — reusable master-detail member viewer (list/card + quick-stats) | ADR-459 | none | 🔨 building |
+| **P1** | **Events** — repeatable events UI + date selector defaults to active day | ADR-007 · ADR-462 | none | 🔨 building |
+| **P2** | Pricing **Phase C** + **Space Modes M1-M4** — `/admin/pricing` console + plan/add-on picker + Crew upgrade; Mode registry, `mode_variant`, create-wizard + console Mode settings/switcher, coaching onto console | PRICING-LADDER-PLAN §4 · [SPACE-MODES-PLAN](SPACE-MODES-PLAN.md) · ADR-458/461 | file (modes data) | ⏳ after P1 |
+| **P3** | Pricing **Phase D** — licensed per-seat billing (Team + Nonprofit) + invite seat-limit enforcement | PRICING-LADDER-PLAN §5 | with B | ⏳ after C |
+| **P3** | Pricing **Phase E** — the 5 wire-first in-context upsell teases | PRICING-LADDER-PLAN §4 | none | ⏳ after C |
+| **P4** | Pricing **Phase F** + **Space Modes M5-M6** — commercial pricing page **+ pricing table**, per-Mode persona/package landing pages, JSON-LD, llms.txt | PRICING-LADDER-PLAN §5 · SPACE-MODES-PLAN §4 | none | ⏳ after C |
+| **P5** | **Loose ends sweep** — regenerate `lib/database.types.ts` after B/C migrations applied; clear the IDEA-013 audit backlog (SEC-4/5, PERF-3/8/9/10, SEO-6/9); confirm no migration drift | [SITE-AUDIT](SITE-AUDIT-2026-06-29.md) · ADR-246 | none | ⏳ rolling |
+| **P6** | **Flip gate** — advisors clean + Stripe products synced, then operator sets keys + flips `billing_live` + per-tier/add-on switches | PRICING-LADDER-PLAN §5 | none | 🔒 owner (needs live Stripe/EIN) |
+
+**Sequencing rules:** Phase C waits on B (shared `lib/billing`/`/admin/pricing`); D/E/F wait on C; Modes
+M1-M4 ride inside Phase C (the role surface), M5-M6 inside Phase F (so copy + live prices ship together).
+The member-view block + events are independent (disjoint files) and run alongside the pricing lane. Every
+migration ships as a file first, is hand-reviewed, then applied to prod; types regenerate after apply.
 
 ---
 
@@ -109,6 +134,8 @@ chat are filed here automatically (see the protocol below).
 | IDEA-013 | 2026-06-29 | **Open audit backlog (fresh-thread handoff)** — everything still 📋 after this sweep, with pointers. Security: SEC-4 report-target existence check (`feed/report-actions.ts`), SEC-5 `joinRoom` per-scope membership check (`messages/rooms/actions.ts:108`, product decision — open-join vs scope-members-only), SEC-9 `event.ics` hide title/venue for hidden/cancelled (`events/[slug]/event.ics/route.ts:60`, decide intent), SEC-10 parameterize `searchMembersToLink` `.or()` → `.ilike()` (`connections/actions.ts:382`). Perf: PERF-3 batch `listCircleTasks` (`admin`/`lead/crew-tasks`), PERF-8 cap/precompute Vera `draftCardLines` concurrency (`lib/ai/vera/today.ts:436`), PERF-9 limit funnel-sequences list (`pages/sequences/page.tsx:49`), PERF-10 batch recursive menu inserts (`lib/menus/actions.ts:264`), `next/image` migration sweep. Bugs: BUG-6 `draftOfferingBlurbAction` parked (awaits an offerings editor). SEO: SEO-6 `organizationSchema.sameAs` (needs owner's real social URLs — Instagram handle TBD), SEO-9 per-pillar OG cards. Infra: INF-2 Auth leaked-password protection (owner dashboard), BUG-7 Stripe Connect activation gate (dormant — needs go-live). Also tracked separately: PD6 depth streak (IDEA-005), Vera AI fallback (IDEA-006), Effort-tier rollout (IDEA-003). | claude | Triaged | Hardening / per [SITE-AUDIT-2026-06-29.md](SITE-AUDIT-2026-06-29.md) §3–§6 |
 
 | IDEA-014 | 2026-06-30 | **Reconciled build catalog** ([BUILD-CATALOG.md](BUILD-CATALOG.md)) — six-way sweep indexed ALL unfinished work, condensed overlaps, rescued ~20 orphaned ideas (theme-switcher UI, engagement-currency engine, trust-score wiring, flyer designer, post-event recap, data-residency, gem-farm/TOCTOU, legal/compliance gates) into homed waves; path-to-completion guaranteed for every row | claude | Done (indexed) | per [BUILD-CATALOG.md](BUILD-CATALOG.md) §A.13 + Part C |
+| IDEA-017 | 2026-06-30 | **Repeatable events + active-day date default** — expose the existing recurrence model (recurrence_type/recurrence_until, ADR-007) in the create/edit forms, surface "repeats weekly" + compute the next upcoming occurrence so recurring events stay in upcoming listings, add a Duplicate-event action, and default the event date selector to the user's current/active day. Migration-free | owner | Scheduled (P1, building) | per active build queue §2a · ADR-462 |
+| IDEA-016 | 2026-06-30 | **Space Modes** ([SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md), [ADR-461](DECISIONS.md)) — `spaces.type` becomes an operating Mode (+ Focus sub-modes: business product/service, coach packages/cohort, etc.) under the unified Pro plan; presets module emphasis, default settings, CRM pipeline, lexicon, onboarding, recommended add-ons without gating. Rework the create wizard + console Mode settings/switcher, bring coaching onto the console, rewrite per-Mode marketing pages, add a pricing-page table | owner | Scheduled (M1-M6; Phase C + F) | per [SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md) §5 |
 | IDEA-015 | 2026-06-30 | **Pricing + value ladder overhaul** ([PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md), [ADR-458](DECISIONS.md)) — collapse 7 space plans → 3 (Pro + 4 toggle add-ons · Nonprofit · Organization), retire Supporter → PWYW badge, Partner → comped Pro, white-label → Branding add-on; keystone entitlement partition (billing-managed namespace, set-to-target), Stripe multi-item + licensed seats, rewrite all pricing/marketing surfaces + JSON-LD/persona SEO. Ships behind `billing_live` OFF. Phases A–F | owner | Scheduled (Phase A in flight) | per [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) §5 |
 
 > Add new ideas as `IDEA-###` rows above this line. Keep the description to one line; detail goes in
