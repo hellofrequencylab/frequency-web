@@ -25,9 +25,9 @@ export function BetaForm() {
 
   if (status === 'done' || status === 'already') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-8 text-center shadow-sm" role="status">
         <div className="mx-auto w-12 h-12 rounded-full bg-success-bg text-success flex items-center justify-center mb-4">
-          <Check className="w-6 h-6" strokeWidth={2.5} />
+          <Check className="w-6 h-6" strokeWidth={2.5} aria-hidden />
         </div>
         <h3 className="font-display uppercase text-text text-3xl mb-2">
           {status === 'already' ? "You're already on the list" : 'Check your inbox'}
@@ -69,13 +69,19 @@ export function BetaForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
+            aria-describedby={error ? 'beta-error' : undefined}
+            aria-invalid={error ? true : undefined}
             className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle focus:border-border-strong outline-none transition-colors"
             placeholder="you@email.com"
           />
         </div>
       </div>
 
-      {error && <p className="mt-4 text-sm text-danger">{error}</p>}
+      {error && (
+        <p id="beta-error" className="mt-4 text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
@@ -83,7 +89,7 @@ export function BetaForm() {
         className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors disabled:opacity-60"
       >
         {status === 'loading' ? 'Adding you…' : 'Join the Beta'}
-        {status !== 'loading' && <ArrowRight className="w-4 h-4" />}
+        {status !== 'loading' && <ArrowRight className="w-4 h-4" aria-hidden />}
       </button>
 
       <p className="mt-4 text-xs text-subtle leading-relaxed text-center">
