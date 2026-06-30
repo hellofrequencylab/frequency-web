@@ -29,6 +29,7 @@ const eqCalls: Array<[string, unknown]> = []
 
 function builder() {
   const filters: { space_id?: string; profile_id?: string } = {}
+  let pendingUpdate: Record<string, unknown> | null = null
   const api = {
     select() {
       return api
@@ -42,12 +43,25 @@ function builder() {
     order() {
       return api
     },
+    update(patch: Record<string, unknown>) {
+      pendingUpdate = patch
+      return api
+    },
     async maybeSingle() {
       const tenant = store.rows[filters.space_id ?? ''] ?? {}
       return { data: tenant[filters.profile_id ?? ''] ?? null, error: null }
     },
-    // listSpaceMembers awaits the builder after .order() — resolve via the thenable.
+    // listSpaceMembers awaits the builder after .order(); an update is awaited after .eq() — both
+    // resolve via the thenable. A pending update patches the targeted row in place first.
     then(resolve: (r: { data: MemberRow[] | null; error: null }) => unknown) {
+      if (pendingUpdate) {
+        const patch = pendingUpdate
+        pendingUpdate = null
+        const tenant = store.rows[filters.space_id ?? ''] ?? {}
+        const target = tenant[filters.profile_id ?? '']
+        if (target) Object.assign(target, patch)
+        return Promise.resolve(resolve({ data: null, error: null }))
+      }
       const tenant = store.rows[filters.space_id ?? ''] ?? {}
       return Promise.resolve(resolve({ data: Object.values(tenant), error: null }))
     },
@@ -66,6 +80,7 @@ import {
   isSpaceRole,
   getSpaceMembership,
   listSpaceMembers,
+  setSpaceMemberStatus,
 } from './membership'
 
 beforeEach(() => {
@@ -129,6 +144,27 @@ describe('getSpaceMembership (server seam)', () => {
     }
     const list = await listSpaceMembers(SPACE_A)
     expect(list.map((m) => m.profileId)).toEqual([ALICE]) // BOB's bogus role is dropped
+  })
+})
+
+describe('setSpaceMemberStatus (server seam)', () => {
+  it('flips a member status to suspended, scoped to (space_id, profile_id)', async () => {
+    store.rows[SPACE_A] = {
+      [ALICE]: { id: 'm1', space_id: SPACE_A, profile_id: ALICE, role: 'editor', status: 'active', invited_by: null, created_at: '2026-01-01T00:00:00Z' },
+    }
+    const okWrite = await setSpaceMemberStatus(SPACE_A, ALICE, 'suspended')
+    expect(okWrite).toBe(true)
+    expect((await getSpaceMembership(SPACE_A, ALICE))?.status).toBe('suspended')
+    expect(eqCalls).toContainEqual(['space_id', SPACE_A])
+    expect(eqCalls).toContainEqual(['profile_id', ALICE])
+  })
+
+  it('FAIL-CLOSED: an unknown status is rejected before any write', async () => {
+    store.rows[SPACE_A] = {
+      [ALICE]: { id: 'm1', space_id: SPACE_A, profile_id: ALICE, role: 'editor', status: 'active', invited_by: null, created_at: '2026-01-01T00:00:00Z' },
+    }
+    expect(await setSpaceMemberStatus(SPACE_A, ALICE, 'zombie' as never)).toBe(false)
+    expect((await getSpaceMembership(SPACE_A, ALICE))?.status).toBe('active') // unchanged
   })
 })
 

@@ -182,7 +182,7 @@ platform admin can run lifecycle + ownership on all of them.
 | ID | Task | Layers |
 |---|---|---|
 | **EM2-1** | **Build the spine modules per entity** (Place&Time, Engage, Reach, Comms, Safety, Insights) — the bulk; one `AdminModule` per cell in Appendix A. | L2/L3 |
-| **EM2-2** | **Per-entity member management** — roster table + invite + role assignment + bulk ops + per-entity moderation queue, as People/Safety modules. | L2 (People/Safety) |
+| **EM2-2** | **Per-entity member management** — roster table + invite + role assignment + bulk ops + per-entity moderation queue, as People/Safety modules. **🟡 Spaces slice shipped** (ADR-452): `/spaces/[slug]/settings/members` now has the full roster table (role assignment along the per-Space ladder, remove, suspend/reactivate, bulk multi-select ops) on the existing `space_members` + invite flow, capabilities re-checked in every server action (`lib/spaces/roster.ts`). Remaining: the per-entity moderation queue (Safety) + the cross-entity generalization to circle/hub/nexus/event (rides EM1-5). | L2 (People/Safety) |
 | **EM2-3** | **Space completion (non-money)** — seed content on create (ENTITY-SPACES Epic 1.10), per-tab module editor, Lab/Partner deep features, advanced availability, multi-cohort coaching, event capacity/waitlist. | L2 |
 | **EM2-4** | **Space money, built dormant** 🔒 — Stripe on memberships/donations/enrollment/tickets behind `billing_live`, entity-tagged; ties to hardening F1. | L2 (Engage/Billing) |
 | **EM2-5** | **Persona verification completion** (EM-ROLE-2) — `/admin/personas` queue + per-persona Stripe Connect binding. | L2 (admin) |
