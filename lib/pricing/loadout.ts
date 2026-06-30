@@ -1,9 +1,13 @@
-// LOADOUT MATH — the PURE Pro loadout total (ADR-463, docs/PRICING-LADDER-PLAN.md §4). A Space buys
-// Pro as a BASE plus the four toggle ADD-ONS (Marketing, AI Engine, Team, Branding); the picker shows a
-// LIVE total as the operator flips toggles + the monthly/yearly switch. This module is the single
+// LOADOUT MATH — the PURE Pro loadout total (ADR-463; re-tiered ADR-472, docs/PRICING-LADDER-PLAN.md
+// §1b/§4). A Space buys a BASE tier plus the sole metered ADD-ON (AI Engine); the picker shows a LIVE
+// total as the operator flips the AI toggle + the monthly/yearly switch. This module is the single
 // source of that arithmetic, framework-independent (no Stripe/Supabase/Next), so it runs identically on
 // the client (the live picker) and the server (a sanity check / a future quote), and is trivially
 // unit-testable.
+//
+// TODO(ADR-472 surfaces): the Marketing / Team / Branding add-ons folded into tier depth (Pro vs
+// Business), so they are no longer loadout lines. The Tier x Mode picker rebuild (separate PR) makes
+// this tier-aware; today it still composes a single Pro base + the AI add-on.
 //
 // THE SHAPE. Each catalog item carries a LIST anchor and a lower FOUNDING (charged) amount, per
 // interval (lib/pricing/catalog-config.ts resolves the operator-edited amounts). A loadout total sums
@@ -41,10 +45,10 @@ export interface LoadoutTotal {
   savingsCents: number
 }
 
-/** The catalog item key for an add-on (marketing -> addon_marketing, etc). PURE. */
+/** The catalog item key for an add-on (ai -> addon_ai). PURE. (Only AI is an add-on now, ADR-472.) */
 export function addonCatalogKey(addon: AddonKey): CatalogItemKey {
   // The catalog item keys are exactly `addon_<key>`; asCatalogItemKey narrows (default-deny).
-  return asCatalogItemKey(`addon_${addon}`) ?? 'addon_marketing'
+  return asCatalogItemKey(`addon_${addon}`) ?? 'addon_ai'
 }
 
 /** Normalize a selected-add-on list to the deduped, valid AddonKey set, honoring an optional enabled
@@ -68,18 +72,21 @@ export function normalizeAddons(
  *  @param itemsByKey  the resolved catalog items keyed by item key (from catalogConfigByKey)
  *  @param addons      the active add-on keys (deduped/validated internally)
  *  @param interval    'month' or 'year' (the amounts already encode two-months-free for year)
- *  @param seatQuantity the licensed seat count for the per-seat Team add-on (min 1)
+ *  @param seatQuantity reserved for the tier-level licensed seat count (Phase D); the AI add-on is not
+ *                      per-seat, so it does not multiply. Kept in the signature for caller compatibility.
  *
- *  The Pro base is always included. Each active add-on adds its line; the per-seat Team add-on
- *  multiplies by seatQuantity. List + founding totals are summed independently so the surface can show
- *  the anchor beneath the charged total. */
+ *  The base tier is always included. Each active add-on (only AI now, ADR-472) adds its line. List +
+ *  founding totals are summed independently so the surface can show the anchor beneath the charged total.
+ *
+ *  TODO(ADR-472 surfaces): this still hard-codes the `pro_base` line + a flat per-add-on quantity. The
+ *  Tier x Mode picker rebuild (separate PR) replaces this with a tier-aware base + per-seat tier billing. */
 export function computeLoadoutTotal(
   itemsByKey: Record<CatalogItemKey, ResolvedCatalogItem>,
   addons: readonly (AddonKey | string)[],
   interval: BillingInterval,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   seatQuantity = 1,
 ): LoadoutTotal {
-  const seats = Math.max(1, Math.floor(seatQuantity) || 1)
   const lines: LoadoutLine[] = []
 
   const pushLine = (key: CatalogItemKey, isBase: boolean, qty: number) => {
@@ -100,10 +107,9 @@ export function computeLoadoutTotal(
   // The Pro base is always the first line.
   pushLine('pro_base', true, 1)
 
-  // One line per active add-on; Team is the per-seat add-on (multiplied by the seat count).
+  // One line per active add-on. Only AI is a metered add-on now (not per-seat), so qty is always 1.
   for (const addon of normalizeAddons(addons)) {
-    const key = addonCatalogKey(addon)
-    pushLine(key, false, addon === 'team' ? seats : 1)
+    pushLine(addonCatalogKey(addon), false, 1)
   }
 
   const listCents = lines.reduce((s, l) => s + l.listCents, 0)

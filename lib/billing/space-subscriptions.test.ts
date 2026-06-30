@@ -48,17 +48,19 @@ describe('subscriptionKind', () => {
 })
 
 describe('planForSubscription', () => {
-  it('an active sub sets the metadata plan (narrowed to the collapsed ladder · ADR-458)', () => {
+  it('an active sub sets the metadata tier (narrowed through asSpacePlan · ADR-472)', () => {
     expect(planForSubscription('pro', 'active')).toBe('pro')
     expect(planForSubscription('nonprofit', 'trialing')).toBe('nonprofit')
-    // A legacy metadata label narrows to its new equivalent through asSpacePlan.
-    expect(planForSubscription('business', 'active')).toBe('pro')
+    // 'business' is a first-class tier now (passes through unchanged).
+    expect(planForSubscription('business', 'active')).toBe('business')
+    // Retired legacy labels narrow forward: practitioner -> pro; whitelabel -> business.
     expect(planForSubscription('practitioner', 'trialing')).toBe('pro')
+    expect(planForSubscription('whitelabel', 'active')).toBe('business')
   })
 
-  it('a past-due sub keeps the plan (still entitled until canceled)', () => {
+  it('a past-due sub keeps the tier (still entitled until canceled)', () => {
     expect(planForSubscription('pro', 'past_due')).toBe('pro')
-    expect(planForSubscription('business', 'past_due')).toBe('pro')
+    expect(planForSubscription('business', 'past_due')).toBe('business')
   })
 
   it('a canceled / incomplete sub reverts to free', () => {

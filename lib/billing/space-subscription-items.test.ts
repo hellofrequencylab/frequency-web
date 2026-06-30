@@ -17,18 +17,20 @@ import {
   type ItemKey,
 } from './space-subscription-items'
 
-describe('itemKeyForCatalogKey (catalog -> DB item_key)', () => {
-  it('pro_base -> base; addon_* -> their short key; seat/org map 1:1', () => {
+describe('itemKeyForCatalogKey (catalog -> DB item_key · re-tiered ADR-472)', () => {
+  it('pro_base -> base; business_base -> business; addon_ai -> ai; seat/org map 1:1', () => {
     expect(itemKeyForCatalogKey('pro_base')).toBe('base')
-    expect(itemKeyForCatalogKey('addon_marketing')).toBe('marketing')
+    expect(itemKeyForCatalogKey('business_base')).toBe('business')
     expect(itemKeyForCatalogKey('addon_ai')).toBe('ai')
-    expect(itemKeyForCatalogKey('addon_team')).toBe('team')
-    expect(itemKeyForCatalogKey('addon_branding')).toBe('branding')
     expect(itemKeyForCatalogKey('nonprofit_seat')).toBe('nonprofit_seat')
     expect(itemKeyForCatalogKey('organization')).toBe('organization')
   })
 
-  it('an unknown catalog key -> null (default-deny)', () => {
+  it('the retired add-on catalog keys + unknowns -> null (default-deny)', () => {
+    // addon_marketing/team/branding are no longer catalog items (folded into Business depth, ADR-472).
+    expect(itemKeyForCatalogKey('addon_marketing')).toBeNull()
+    expect(itemKeyForCatalogKey('addon_team')).toBeNull()
+    expect(itemKeyForCatalogKey('addon_branding')).toBeNull()
     expect(itemKeyForCatalogKey('nonsense')).toBeNull()
     expect(itemKeyForCatalogKey(null)).toBeNull()
   })
@@ -44,30 +46,38 @@ describe('stripItemPortion (price key -> catalog item key)', () => {
   })
 })
 
-describe('planForItemKeys', () => {
-  it('organization out-ranks all; nonprofit_seat -> nonprofit; base -> pro; empty -> free', () => {
+describe('planForItemKeys (re-tiered · ADR-472)', () => {
+  it('org > nonprofit > business > base(pro); empty -> free', () => {
     expect(planForItemKeys(['organization'])).toBe('organization')
     expect(planForItemKeys(['organization', 'base'])).toBe('organization')
     expect(planForItemKeys(['nonprofit_seat'])).toBe('nonprofit')
+    expect(planForItemKeys(['business'])).toBe('business')
+    expect(planForItemKeys(['business', 'base'])).toBe('business') // business out-ranks the pro base item
     expect(planForItemKeys(['base'])).toBe('pro')
-    expect(planForItemKeys(['base', 'marketing', 'ai'])).toBe('pro')
+    expect(planForItemKeys(['base', 'ai'])).toBe('pro')
     expect(planForItemKeys([])).toBe('free')
   })
 })
 
-describe('addonsForItemKeys', () => {
-  it('returns only the add-on items as AddonKeys, deduped; base/seat/org contribute none', () => {
-    expect(addonsForItemKeys(['base', 'marketing', 'ai']).sort()).toEqual(['ai', 'marketing'])
+describe('addonsForItemKeys (re-tiered · ADR-472)', () => {
+  it('returns only the AI add-on item; tier/seat/org + retired item keys contribute none', () => {
+    expect(addonsForItemKeys(['base', 'ai'])).toEqual(['ai'])
+    expect(addonsForItemKeys(['base', 'ai', 'ai' as ItemKey])).toEqual(['ai']) // deduped
+    expect(addonsForItemKeys(['business', 'ai'])).toEqual(['ai'])
     expect(addonsForItemKeys(['base'])).toEqual([])
     expect(addonsForItemKeys(['nonprofit_seat', 'organization'])).toEqual([])
-    expect(addonsForItemKeys(['base', 'team', 'team' as ItemKey])).toEqual(['team'])
+    // The retired marketing/team/branding item keys no longer narrow to an AddonKey.
+    expect(addonsForItemKeys(['base', 'marketing', 'team', 'branding'])).toEqual([])
   })
 })
 
 describe('asItemKey (default-deny)', () => {
-  it('accepts the seven DB item keys, rejects others', () => {
+  it('accepts the DB item keys (incl. business + the legacy-resolvable ones), rejects others', () => {
     expect(asItemKey('base')).toBe('base')
+    expect(asItemKey('business')).toBe('business')
+    expect(asItemKey('ai')).toBe('ai')
     expect(asItemKey('nonprofit_seat')).toBe('nonprofit_seat')
+    expect(asItemKey('marketing')).toBe('marketing') // kept resolvable for legacy rows
     expect(asItemKey('pro_base')).toBeNull() // that is a CATALOG key, not a DB key
     expect(asItemKey(null)).toBeNull()
   })
@@ -96,11 +106,11 @@ function fakeSub(items: Stripe.SubscriptionItem[]): Stripe.Subscription {
   return { items: { data: items } } as unknown as Stripe.Subscription
 }
 
-describe('reconciledItemsFromSubscription (the webhook item read)', () => {
-  it('maps a Pro + Marketing loadout to base + marketing items with their locked price ids', () => {
+describe('reconciledItemsFromSubscription (the webhook item read · re-tiered ADR-472)', () => {
+  it('maps a Pro + AI loadout to base + ai items with their locked price ids', () => {
     const sub = fakeSub([
       fakeItem({ id: 'si_base', catalogKey: 'pro_base_month', priceId: 'price_pro_founding' }),
-      fakeItem({ id: 'si_mkt', catalogKey: 'addon_marketing_month', priceId: 'price_mkt_founding' }),
+      fakeItem({ id: 'si_ai', catalogKey: 'addon_ai_month', priceId: 'price_ai_founding' }),
     ])
     const items = reconciledItemsFromSubscription(sub)
     expect(items).toHaveLength(2)
@@ -111,24 +121,25 @@ describe('reconciledItemsFromSubscription (the webhook item read)', () => {
     expect(base.interval).toBe('month')
     expect(base.quantity).toBe(1)
 
-    const mkt = items.find((i) => i.itemKey === 'marketing')!
-    expect(mkt.lockedPriceId).toBe('price_mkt_founding')
+    const ai = items.find((i) => i.itemKey === 'ai')!
+    expect(ai.lockedPriceId).toBe('price_ai_founding')
 
-    // The full mapping the resolver consumes: base -> pro, marketing add-on active.
+    // The full mapping the resolver consumes: base -> pro, AI add-on active.
     const keys = items.map((i) => i.itemKey)
     expect(planForItemKeys(keys)).toBe('pro')
-    expect(addonsForItemKeys(keys)).toEqual(['marketing'])
+    expect(addonsForItemKeys(keys)).toEqual(['ai'])
   })
 
-  it('carries the yearly interval and the seat quantity for a Team item', () => {
+  it('maps a Business base + AI subscription to business + ai (full depth + the metered add-on)', () => {
     const sub = fakeSub([
-      fakeItem({ id: 'si_base', catalogKey: 'pro_base_year', interval: 'year' }),
-      fakeItem({ id: 'si_team', catalogKey: 'addon_team_year', interval: 'year', quantity: 4 }),
+      fakeItem({ id: 'si_biz', catalogKey: 'business_base_year', interval: 'year' }),
+      fakeItem({ id: 'si_ai', catalogKey: 'addon_ai_year', interval: 'year' }),
     ])
     const items = reconciledItemsFromSubscription(sub)
-    const team = items.find((i) => i.itemKey === 'team')!
-    expect(team.interval).toBe('year')
-    expect(team.quantity).toBe(4)
+    const keys = items.map((i) => i.itemKey)
+    expect(planForItemKeys(keys)).toBe('business')
+    expect(addonsForItemKeys(keys)).toEqual(['ai'])
+    expect(items.find((i) => i.itemKey === 'business')!.interval).toBe('year')
   })
 
   it('maps a nonprofit seat subscription to the nonprofit plan with its seat quantity', () => {

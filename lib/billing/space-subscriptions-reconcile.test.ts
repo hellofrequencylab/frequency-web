@@ -78,22 +78,35 @@ beforeEach(() => {
 })
 
 describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', () => {
-  it('a Pro + Marketing + AI loadout set-to-targets pro with the two add-ons', async () => {
+  it('a Pro + AI loadout set-to-targets pro with the AI add-on (re-tiered ADR-472)', async () => {
     await reconcileSpacePlanSubscription(
       fakeSub({
         status: 'active',
-        items: [fakeItem('pro_base_month'), fakeItem('addon_marketing_month'), fakeItem('addon_ai_month')],
+        items: [fakeItem('pro_base_month'), fakeItem('addon_ai_month')],
       }),
     )
     expect(addonCalls).toHaveLength(1)
     expect(addonCalls[0].spaceId).toBe('space-1')
     expect(addonCalls[0].plan).toBe('pro')
-    expect(addonCalls[0].addons.sort()).toEqual(['ai', 'marketing'])
+    expect(addonCalls[0].addons.sort()).toEqual(['ai'])
     // The base-plan-only writer is NOT used on the multi-item path.
     expect(planCalls).toHaveLength(0)
     // The item rows are persisted with the active status.
-    expect(persistCalls[0].itemKeys.sort()).toEqual(['ai', 'base', 'marketing'])
+    expect(persistCalls[0].itemKeys.sort()).toEqual(['ai', 'base'])
     expect(persistCalls[0].status).toBe('active')
+  })
+
+  it('a Business base + AI sub set-to-targets business (full depth) with the AI add-on', async () => {
+    await reconcileSpacePlanSubscription(
+      fakeSub({
+        status: 'active',
+        items: [fakeItem('business_base_month'), fakeItem('addon_ai_month')],
+      }),
+    )
+    expect(addonCalls).toHaveLength(1)
+    expect(addonCalls[0].plan).toBe('business')
+    expect(addonCalls[0].addons.sort()).toEqual(['ai'])
+    expect(persistCalls[0].itemKeys.sort()).toEqual(['ai', 'business'])
   })
 
   it('a trialing loadout persists items as trialing (the trial is granted as active entitlements)', async () => {

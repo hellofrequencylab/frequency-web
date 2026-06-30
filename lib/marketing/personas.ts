@@ -60,8 +60,8 @@ export const PERSONAS: Persona[] = [
     highlights: [
       'Sell packages and programs, with scheduling built in.',
       'A client CRM that follows each person from first call to renewal.',
-      'The AI Engine reads your CRM and suggests who to follow up with.',
-      'Email and automation when you turn on Marketing.',
+      'The AI Engine add-on reads your CRM and suggests who to follow up with.',
+      'Marketing automation and team roles come with the Business tier.',
     ],
   },
   {
@@ -73,7 +73,7 @@ export const PERSONAS: Persona[] = [
     highlights: [
       'Bookings and availability so people pick a time without the back-and-forth.',
       'A quotes-to-booked pipeline in the CRM.',
-      'Email and automation when you turn on Marketing.',
+      'Marketing automation and team roles come with the Business tier.',
       'QR Studio to put your booking link on a card, a window, or a flyer.',
     ],
   },
@@ -86,8 +86,8 @@ export const PERSONAS: Persona[] = [
     highlights: [
       'A catalog and storefront for one-time and subscription products.',
       'A cart-to-repeat pipeline in the CRM.',
-      'Your own domain, with the Frequency badge removed, when you turn on Branding.',
-      'Email and automation when you turn on Marketing.',
+      'Your own domain, with the Frequency badge removed, on the Business tier.',
+      'Marketing automation and team roles come with the Business tier.',
     ],
   },
   {
@@ -100,7 +100,7 @@ export const PERSONAS: Persona[] = [
       'Memberships and class packs with recurring billing.',
       'Check-in at the door, with a QR code on the wall.',
       'A member CRM that flags who is lapsing.',
-      'Email and automation when you turn on Marketing.',
+      'Marketing automation and team roles come with the Business tier.',
     ],
   },
   {
@@ -108,11 +108,11 @@ export const PERSONAS: Persona[] = [
     type: 'organization',
     variant: 'donations',
     audience: 'Nonprofits',
-    focus: 'Raise money, grow your supporters, and run your programs, with every add-on included.',
+    focus: 'Raise money, grow your supporters, and run your programs, on the full-depth tier.',
     highlights: [
       'Donations and recurring giving, with a supporter CRM.',
       'Programs and enrollment when you run them.',
-      'All four add-ons are included on the Nonprofit plan.',
+      'Full Business depth: marketing automation, full CRM, team roles, and your own domain.',
       'A 3% take-rate on what you raise, for verified 501(c)(3) organizations.',
     ],
   },
@@ -194,18 +194,16 @@ export function personaCopy(persona: Persona): PersonaCopy {
   const addonPhrase =
     addonNames.length === 0
       ? 'the Pro base, no add-ons required'
-      : addonNames.length === 1
-        ? `Pro plus ${addonNames[0]}`
-        : `Pro plus ${addonNames.slice(0, -1).join(', ')} and ${addonNames[addonNames.length - 1]}`
+      : `Pro plus the ${addonNames.join(' and ')} add-on`
 
   const h1 = `Frequency for ${persona.audience}`
   const metaTitle = `Frequency for ${persona.audience}: ${persona.focus}`
   const description = `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The recommended loadout runs ${total} at the founding price.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} Every Frequency Space runs on one Pro plan with four add-ons you turn on as you need them, so you pay for the parts of the business you actually run.`
+  const lede = `${persona.focus} Every Frequency Space runs on a tier that fits, from the Pro base up. Marketing automation, team roles, and a custom domain come with the Business tier, and the AI Engine add-on is metered, available on any paid tier.`
 
   const loadoutLine = persona.slug === 'nonprofits'
-    ? `Nonprofits run on the Nonprofit plan at ${total}, per licensed seat, with all four add-ons included and a 3% take-rate on what you raise.`
+    ? `Nonprofits run on the Nonprofit tier at ${total}, per licensed seat. It carries the full Business depth, marketing automation, full CRM, team roles, and your own domain, with a 3% take-rate on what you raise.`
     : `The recommended loadout for ${persona.audience.toLowerCase()} is ${addonPhrase}, which runs ${total} at the founding price. Yearly is two months free.`
 
   const faq = [
@@ -219,7 +217,7 @@ export function personaCopy(persona: Persona): PersonaCopy {
     },
     {
       q: `Can I change my plan later?`,
-      a: `Yes. Frequency is one Pro plan plus four add-ons you toggle on and off. Each add-on has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free and locks your founding price for the year.`,
+      a: `Yes. You can move up a tier as you grow, from the Pro base to Business for the full depth, and toggle the AI Engine add-on on or off. The add-on has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free and locks your founding price for the year.`,
     },
     {
       q: `Where does the money go?`,

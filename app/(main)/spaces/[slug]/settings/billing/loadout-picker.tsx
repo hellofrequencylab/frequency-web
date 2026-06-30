@@ -13,28 +13,27 @@ import {
   intervalSuffix,
 } from '@/lib/pricing/loadout'
 
-// SPACE PRO LOADOUT PICKER (client · ADR-463, docs/PRICING-LADDER-PLAN.md §4). The operator builds their
-// Pro plan: the BASE plus the four toggle ADD-ONS, with a LIVE total that updates as they flip toggles
-// and the monthly/yearly switch. The total math is PURE + client-side (computeLoadoutTotal), reading the
-// operator-set catalog amounts the server passed. The founding price shows beneath the list anchor; the
-// annual is two months free ("back the build"). A space already on a founding rate sees its locked price
-// held (lockedHeld). While billing is OFF the whole picker is a DISABLED PREVIEW ("available soon") so
-// nothing charges; the buy CTA wires to startSpaceLoadoutCheckout, dormant until live. No em dashes.
+// SPACE PRO LOADOUT PICKER (client · ADR-463; re-tiered ADR-472, docs/PRICING-LADDER-PLAN.md §1b/§4).
+// The operator builds their plan: the BASE tier plus the sole metered ADD-ON (AI Engine), with a LIVE
+// total that updates as they flip the AI toggle and the monthly/yearly switch. The total math is PURE +
+// client-side (computeLoadoutTotal), reading the operator-set catalog amounts the server passed. The
+// founding price shows beneath the list anchor; the annual is two months free ("back the build"). A
+// space already on a founding rate sees its locked price held (lockedHeld). While billing is OFF the
+// whole picker is a DISABLED PREVIEW ("available soon") so nothing charges; the buy CTA wires to
+// startSpaceLoadoutCheckout, dormant until live. No em dashes.
+//
+// TODO(ADR-472 surfaces): the Marketing / Team / Branding add-ons folded into tier depth (the Pro vs
+// Business jump), so they are no longer toggles here. The Tier x Mode picker rebuild (separate PR)
+// replaces this Pro-base + add-on layout with a tier chooser. Today it shows the Pro base + the AI add-on.
 
-/** The four add-ons, in the picker's display order, with their plain blurb (CONTENT-VOICE: concrete,
- *  no narrating the reader's feelings). */
+/** The metered add-ons, in the picker's display order, with their plain blurb (CONTENT-VOICE: concrete,
+ *  no narrating the reader's feelings). Only AI Engine remains an add-on (ADR-472). */
 const ADDON_META: { key: AddonKey; catalogKey: CatalogItemKey; blurb: string }[] = [
-  { key: 'marketing', catalogKey: 'addon_marketing', blurb: 'Email, automation, multiple pipelines, and reporting.' },
   { key: 'ai', catalogKey: 'addon_ai', blurb: 'The Resonance Engine: the graph, predictive alerts, and managed matching.' },
-  { key: 'team', catalogKey: 'addon_team', blurb: 'Extra operator seats with roles. Billed per seat.' },
-  { key: 'branding', catalogKey: 'addon_branding', blurb: 'Your own domain and Frequency branding removed.' },
 ]
 
 const ADDON_LABEL: Record<AddonKey, string> = {
-  marketing: 'Marketing',
   ai: 'AI Engine',
-  team: 'Team',
-  branding: 'Branding',
 }
 
 export function SpaceLoadoutPicker({
@@ -67,7 +66,9 @@ export function SpaceLoadoutPicker({
   )
   const [interval, setInterval] = useState<BillingInterval>('month')
   const [selected, setSelected] = useState<Set<AddonKey>>(() => new Set(activeAddons))
-  const [seats, setSeats] = useState(Math.max(1, seatFloor))
+  // TODO(ADR-472 surfaces): seats are tier-level now (the Business jump), not an add-on stepper. The
+  // picker holds the seat floor as the licensed count to bill until the Tier x Mode rebuild lands.
+  const seats = Math.max(1, seatFloor)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
@@ -187,31 +188,9 @@ export function SpaceLoadoutPicker({
           })}
         </div>
 
-        {/* Team seat count, shown when Team is on. */}
-        {selected.has('team') && (
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-3">
-            <span className="text-sm font-semibold text-text">Team seats</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSeats((s) => Math.max(1, s - 1))}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-text hover:bg-surface-elevated"
-                aria-label="Fewer seats"
-              >
-                -
-              </button>
-              <span className="w-8 text-center text-sm font-semibold tabular-nums text-text">{seats}</span>
-              <button
-                type="button"
-                onClick={() => setSeats((s) => s + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-text hover:bg-surface-elevated"
-                aria-label="More seats"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        )}
+        {/* TODO(ADR-472 surfaces): Team seats are now tier-level (the Business jump), not an add-on
+            toggle, so the per-add-on seat stepper is gone. The Tier x Mode picker rebuild (separate PR)
+            adds tier-level seat management here. */}
       </fieldset>
 
       {/* The live total + the buy CTA (or the disabled preview). */}

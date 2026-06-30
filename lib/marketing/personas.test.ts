@@ -102,18 +102,20 @@ describe('persona copy is voice-compliant', () => {
     }
   })
 
-  it('addonLabel maps a known add-on to its display label', () => {
+  it('addonLabel maps the AI add-on to its display label', () => {
     expect(addonLabel('ai')).toBe('AI Engine')
-    expect(addonLabel('marketing')).toBe('Marketing')
   })
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  it('matches the plan figures: Coach $59, Service $39, Product $69, Studio $39, Event $19', () => {
+  // ADR-472: marketing/team/branding folded into tier depth, so the AI Engine is the only metered
+  // add-on. A persona loadout is the Pro base ($19) plus the AI Engine ($20) for the business personas,
+  // or the Pro base alone for the Event space.
+  it('matches the ladder: business personas $39 (Pro + AI Engine), Event $19 (Pro base)', () => {
     const expected: Record<string, string> = {
-      coaches: '$59/mo',
+      coaches: '$39/mo',
       'service-businesses': '$39/mo',
-      'product-businesses': '$69/mo',
+      'product-businesses': '$39/mo',
       studios: '$39/mo',
       'event-spaces': '$19/mo',
     }
@@ -163,11 +165,14 @@ describe('pricing table model', () => {
     expect(tierHeadline(np, 'month')).toBe('$12/seat/mo')
   })
 
-  it('the four Pro add-on prices match the ladder', () => {
-    expect(proAddonPrice('marketing')).toBe('+$20/mo')
+  it('the AI Engine add-on price matches the ladder (the only metered add-on, ADR-472)', () => {
     expect(proAddonPrice('ai')).toBe('+$20/mo')
-    expect(proAddonPrice('team')).toBe('+$9/seat/mo')
-    expect(proAddonPrice('branding')).toBe('+$30/mo')
+  })
+
+  it('every persona loadout uses only the AI Engine add-on (ADR-472)', () => {
+    for (const l of PERSONA_LOADOUTS) {
+      for (const addon of l.addons) expect(addon).toBe('ai')
+    }
   })
 
   it('the answer-engine ladder summary has no em dashes and lists every tier + add-on + Crew', () => {

@@ -117,14 +117,15 @@ export async function setSpacePlan(
   }
 }
 
-/** Set a Space's billing plan + active ADD-ONS in one set-to-target write. The billing namespace is
- *  replaced with the FULL key set = plan core unioned with each active add-on's keys. Toggling an
- *  add-on off (passing a smaller `addons` set) recomputes and the removed keys vanish from the billing
- *  namespace, while any manual top-level grant of the same key survives (the reader unions both).
- *  GATED on billingLive() with the same `opts.force` escape + fail-safe return shape as setSpacePlan.
+/** Set a Space's billing tier + active metered ADD-ONS in one set-to-target write. The billing namespace
+ *  is replaced with the FULL key set = the tier's BASE depth set unioned with each active add-on's keys.
+ *  Toggling the AI add-on off (passing a smaller `addons` set) recomputes and its resonance keys vanish
+ *  from the billing namespace, while any manual top-level grant of the same key survives (the reader
+ *  unions both). GATED on billingLive() with the same `opts.force` escape + fail-safe return shape as
+ *  setSpacePlan.
  *
- *  Add-ons only meaningfully layer onto Pro; nonprofit / organization are already all-inclusive, so
- *  passing add-ons there is harmless (the union is a no-op). 'free' grants nothing regardless. */
+ *  Only AI is an add-on now (ADR-472); a tier writes its full depth set (Business/Nonprofit/Organization
+ *  all FULL), and AI layers independently on any paid tier. 'free' grants nothing regardless. */
 export async function setSpaceAddons(
   spaceId: string,
   input: { plan: SpacePlan | string; addons: readonly (AddonKey | string)[] },

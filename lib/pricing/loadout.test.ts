@@ -102,10 +102,9 @@ describe('seat / pwyw / add-on-enable config', () => {
     expect(c.minCents).toBe(1000)
     expect(c.suggestedCents).toBe(1000) // suggested raised to the floor
   })
-  it('add-ons default to all-enabled; only an explicit false disables one', () => {
-    expect(asAddonEnabled(undefined)).toEqual({ marketing: true, ai: true, team: true, branding: true })
+  it('add-ons default to all-enabled; only an explicit false disables one (only AI now, ADR-472)', () => {
+    expect(asAddonEnabled(undefined)).toEqual({ ai: true })
     expect(asAddonEnabled({ ai: false }).ai).toBe(false)
-    expect(asAddonEnabled({ ai: false }).marketing).toBe(true)
   })
 })
 
@@ -120,11 +119,12 @@ describe('resolveCatalogConfig (whole config from a settings map)', () => {
     const config = resolveCatalogConfig(settings)
     const byKey = catalogConfigByKey(config)
     expect(byKey.pro_base.month.foundingCents).toBe(2900)
-    expect(byKey.addon_marketing.month.foundingCents).toBe(2000) // untouched -> code default
+    expect(byKey.business_base.month.foundingCents).toBe(4900) // untouched -> code default
+    expect(byKey.addon_ai.month.foundingCents).toBe(2000) // untouched -> code default
     expect(config.seat.bundledFloor).toBe(4)
     expect(config.pwyw.minCents).toBe(700)
-    expect(config.addonEnabled.branding).toBe(false)
-    expect(config.addonEnabled.marketing).toBe(true)
+    // Only AI is an add-on now (ADR-472); the ADDON_ENABLED override for a retired key is ignored.
+    expect(config.addonEnabled.ai).toBe(true)
   })
 
   it('defaultCatalogConfig matches resolving an empty settings map', () => {
@@ -139,18 +139,19 @@ describe('resolveCatalogConfig (whole config from a settings map)', () => {
 
 const ITEMS = catalogConfigByKey(defaultCatalogConfig())
 
-describe('addonCatalogKey + normalizeAddons', () => {
-  it('maps an add-on key to its catalog item key', () => {
-    expect(addonCatalogKey('marketing')).toBe('addon_marketing')
-    expect(addonCatalogKey('team')).toBe('addon_team')
+describe('addonCatalogKey + normalizeAddons (re-tiered · ADR-472)', () => {
+  it('maps the AI add-on key to its catalog item key', () => {
+    expect(addonCatalogKey('ai')).toBe('addon_ai')
   })
-  it('dedupes, drops unknowns, and honors the enabled map', () => {
-    expect(normalizeAddons(['marketing', 'marketing', 'nope'] as string[])).toEqual(['marketing'])
-    expect(normalizeAddons(['marketing', 'ai'], { marketing: true, ai: false, team: true, branding: true })).toEqual(['marketing'])
+  it('dedupes, drops the retired/unknown add-on keys, and honors the enabled map', () => {
+    // marketing/team/branding are no longer AddonKeys; only ai survives.
+    expect(normalizeAddons(['ai', 'ai', 'marketing', 'nope'] as string[])).toEqual(['ai'])
+    expect(normalizeAddons(['ai'], { ai: false })).toEqual([]) // AI disabled by the operator map
+    expect(normalizeAddons(['ai'], { ai: true })).toEqual(['ai'])
   })
 })
 
-describe('computeLoadoutTotal', () => {
+describe('computeLoadoutTotal (re-tiered · ADR-472)', () => {
   it('Pro base alone, monthly = $19 founding under a $29 list', () => {
     const t = computeLoadoutTotal(ITEMS, [], 'month')
     expect(t.foundingCents).toBe(1900)
@@ -160,41 +161,25 @@ describe('computeLoadoutTotal', () => {
     expect(t.lines[0].isBase).toBe(true)
   })
 
-  it('the coach loadout (Pro + Marketing) = $39 founding monthly', () => {
-    const t = computeLoadoutTotal(ITEMS, ['marketing'], 'month')
+  it('Pro + the AI add-on = $39 founding monthly ($19 base + $20 AI)', () => {
+    const t = computeLoadoutTotal(ITEMS, ['ai'], 'month')
     expect(t.foundingCents).toBe(1900 + 2000) // $39
     expect(t.lines).toHaveLength(2)
+    expect(t.lines[1].key).toBe('addon_ai')
+    expect(t.lines[1].quantity).toBe(1) // the AI add-on is not per-seat
   })
 
-  it('the small-business loadout (Pro + Marketing + AI) = $59 founding monthly', () => {
-    const t = computeLoadoutTotal(ITEMS, ['marketing', 'ai'], 'month')
-    expect(t.foundingCents).toBe(1900 + 2000 + 2000) // $59
-  })
-
-  it('everything (Pro + all four add-ons), Team x1 = $69 founding monthly', () => {
-    const t = computeLoadoutTotal(ITEMS, ['marketing', 'ai', 'team', 'branding'], 'month', 1)
-    expect(t.foundingCents).toBe(1900 + 2000 + 2000 + 900 + 3000) // $69
-  })
-
-  it('the Team add-on multiplies by the seat count', () => {
-    const one = computeLoadoutTotal(ITEMS, ['team'], 'month', 1)
-    const three = computeLoadoutTotal(ITEMS, ['team'], 'month', 3)
-    expect(three.foundingCents - one.foundingCents).toBe(900 * 2) // two extra seats x $9
-    const teamLine = three.lines.find((l) => l.key === 'addon_team')!
-    expect(teamLine.quantity).toBe(3)
-    expect(teamLine.foundingCents).toBe(2700)
+  it('the retired add-on keys are ignored (only AI layers on the base)', () => {
+    const t = computeLoadoutTotal(ITEMS, ['marketing', 'team', 'branding'] as string[], 'month')
+    expect(t.foundingCents).toBe(1900) // base only; the retired keys add nothing
+    expect(t.lines).toHaveLength(1)
   })
 
   it('yearly is two months free (10x the monthly total)', () => {
-    const monthly = computeLoadoutTotal(ITEMS, ['marketing'], 'month')
-    const yearly = computeLoadoutTotal(ITEMS, ['marketing'], 'year')
+    const monthly = computeLoadoutTotal(ITEMS, ['ai'], 'month')
+    const yearly = computeLoadoutTotal(ITEMS, ['ai'], 'year')
     expect(yearly.foundingCents).toBe(monthly.foundingCents * 10)
     expect(yearly.listCents).toBe(monthly.listCents * 10)
-  })
-
-  it('a seat count below 1 floors to 1 (never zero-charges the base)', () => {
-    const t = computeLoadoutTotal(ITEMS, ['team'], 'month', 0)
-    expect(t.lines.find((l) => l.key === 'addon_team')!.quantity).toBe(1)
   })
 })
 

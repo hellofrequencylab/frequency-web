@@ -25,17 +25,22 @@ import {
 } from './pricing-keys'
 
 // ── The per-item DB row item_key namespace (the space_subscription_items.item_key CHECK) ──────────
-// The base plan item is 'base' (Pro/Nonprofit/Org core); the four add-ons keep their short keys
-// (marketing/ai/team/branding); the seat + org items carry their own keys. This is the DB-level key,
-// distinct from the catalog item key (pro_base maps to 'base'; addon_marketing maps to 'marketing').
+// (ADR-460; re-tiered ADR-472.) The base TIER item is 'base' (Pro core) or 'business' (Business full
+// depth); the sole metered add-on item is 'ai'; the seat + org items carry their own keys. This is the
+// DB-level key, distinct from the catalog item key (pro_base -> 'base'; business_base -> 'business';
+// addon_ai -> 'ai'). The legacy marketing/team/branding short keys are KEPT in the set so a legacy
+// space_subscription_items row still narrows (asItemKey), but they no longer map to an AddonKey (their
+// depth folded into the Business tier) and the catalog no longer produces them.
 export const ITEM_KEYS = [
   'base',
-  'marketing',
+  'business',
   'ai',
-  'team',
-  'branding',
   'nonprofit_seat',
   'organization',
+  // RETIRED (ADR-472), kept resolvable for legacy rows only:
+  'marketing',
+  'team',
+  'branding',
 ] as const
 
 export type ItemKey = (typeof ITEM_KEYS)[number]
@@ -45,12 +50,13 @@ export function asItemKey(raw: string | null | undefined): ItemKey | null {
   return (ITEM_KEYS as readonly string[]).includes(raw ?? '') ? (raw as ItemKey) : null
 }
 
-/** The DB item_key for a catalog item key (pro_base -> base; addon_marketing -> marketing; the rest
- *  map 1:1). PURE. Returns null for an unknown catalog key. */
+/** The DB item_key for a catalog item key (pro_base -> base; business_base -> business; addon_ai -> ai;
+ *  the rest map 1:1). PURE. Returns null for an unknown catalog key. */
 export function itemKeyForCatalogKey(catalogKey: string | null | undefined): ItemKey | null {
   const key = asCatalogItemKey(catalogKey)
   if (!key) return null
   if (key === 'pro_base') return 'base'
+  if (key === 'business_base') return 'business'
   const addon = addonKeyForCatalogItem(key)
   if (addon) return addon
   // nonprofit_seat / organization map 1:1.
@@ -67,24 +73,25 @@ export interface ReconciledItem {
   lockedPriceId: string | null
 }
 
-/** The base plan a set of item keys implies. PURE. An 'organization' item -> organization; a
- *  'nonprofit_seat' item -> nonprofit; otherwise (a 'base' item, with or without add-ons) -> pro; an
- *  empty set -> free. Organization/Nonprofit out-rank Pro (they are all-inclusive). */
+/** The base TIER a set of item keys implies. PURE. Highest-ranked wins: an 'organization' item ->
+ *  organization; a 'nonprofit_seat' item -> nonprofit; a 'business' item -> business; otherwise a 'base'
+ *  item -> pro; an empty set -> free. Organization/Nonprofit/Business out-rank Pro (full depth). */
 export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
   if (itemKeys.includes('organization')) return 'organization'
   if (itemKeys.includes('nonprofit_seat')) return 'nonprofit'
+  if (itemKeys.includes('business')) return 'business'
   if (itemKeys.includes('base')) return 'pro'
   return 'free'
 }
 
-/** The active AddonKey set a set of item keys implies (the add-on items only). PURE. Deduped. The
- *  resolver (setSpaceAddons) unions these onto the base plan's core to set-to-target the billing
- *  namespace. Nonprofit/Organization are all-inclusive, so their add-ons are implied by the plan, not
- *  this set, but returning the add-on items present is harmless (the union is well-defined). */
+/** The active AddonKey set a set of item keys implies (the metered add-on items only). PURE. Deduped.
+ *  The resolver (setSpaceAddons) unions these onto the base tier's depth to set-to-target the billing
+ *  namespace. Only 'ai' is an add-on now (ADR-472); the legacy marketing/team/branding item keys narrow
+ *  to null and are ignored (their depth is implied by the Business tier, not an add-on). */
 export function addonsForItemKeys(itemKeys: readonly ItemKey[]): AddonKey[] {
   const out = new Set<AddonKey>()
   for (const key of itemKeys) {
-    const addon = asAddonKey(key) // marketing/ai/team/branding narrow to AddonKey; base/seat/org -> null
+    const addon = asAddonKey(key) // only 'ai' narrows to AddonKey; everything else -> null
     if (addon) out.add(addon)
   }
   return [...out]

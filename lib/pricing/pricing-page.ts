@@ -47,15 +47,16 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
 /** The price MODEL for one tier column. `kind` decides how the headline price reads:
  *  - `flat`   : a list anchor struck over a founding price (Pro).
  *  - `perSeat`: the same, but per licensed seat (Nonprofit).
- *  - `from`   : a "from $X" floor anchor, sales-assist (Organization). */
+ *  - `from`   : a "from $X" floor anchor, sales-assist (Organization).
+ *  TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization). */
 export type TierPriceKind = 'flat' | 'perSeat' | 'from'
 
 /** One add-on row value in a tier column: a price string for Pro, or a plain "included" / coverage note
- *  for Nonprofit / Organization (which bundle all four add-ons). */
+ *  for the higher tiers. ADR-472: the AI Engine is the only metered add-on, so a tier carries one cell. */
 export interface TierAddonCell {
   /** The add-on this cell is for. */
   addon: AddonKey
-  /** What the cell reads in this column (e.g. "+$20/mo", "Included", "De-brand"). */
+  /** What the cell reads in this column (e.g. "+$20/mo", "Included"). */
   value: string
 }
 
@@ -77,7 +78,7 @@ export interface PricingTier {
   billing: string
   /** The core-included summary line. */
   coreIncluded: string
-  /** The four add-on cells in this column's order (marketing, ai, team, branding). */
+  /** The add-on cells in this column (ADR-472: the AI Engine is the only metered add-on). */
   addons: TierAddonCell[]
   /** The take-rate line (5% / 3% / custom). */
   takeRate: string
@@ -85,21 +86,19 @@ export interface PricingTier {
   cta: { label: string; href: string }
 }
 
-/** The four Pro add-ons in display order, with their plain marketing labels + the glyph the table prints
- *  beside them. The price comes from the catalog (so a config change is one number). */
+/** The metered add-ons in display order, with their plain marketing labels + the glyph the table prints
+ *  beside them. The price comes from the catalog (so a config change is one number). ADR-472: the AI
+ *  Engine is now the SOLE metered add-on; Marketing, Team, and Branding folded into Business tier depth. */
 export const PRICING_ADDONS: readonly { key: AddonKey; glyph: string; label: string; turnsOn: string }[] = [
-  { key: 'marketing', glyph: '🎯', label: 'Marketing', turnsOn: 'Email, automation, multi-pipeline, and reporting.' },
   { key: 'ai', glyph: '🧠', label: 'AI Engine', turnsOn: 'Resonance goes from read-only to a working graph that suggests matches.' },
-  { key: 'team', glyph: '👥', label: 'Team', turnsOn: 'Extra operator seats and roles.' },
-  { key: 'branding', glyph: '🎨', label: 'Branding', turnsOn: 'Your own domain, with the Frequency badge removed.' },
 ]
 
-/** The catalog item key for a Pro add-on (marketing -> addon_marketing, etc). PURE. */
+/** The catalog item key for a metered add-on (ai -> addon_ai). PURE. */
 function addonItemKey(addon: AddonKey): CatalogItemKey {
   return `addon_${addon}` as CatalogItemKey
 }
 
-/** The Pro column's price string for an add-on, e.g. "+$20/mo" (or "+$9/seat/mo" for Team). PURE. */
+/** The add-on price string on a paid tier, e.g. "+$20/mo". PURE. */
 export function proAddonPrice(addon: AddonKey): string {
   const item = pricingCatalog()[addonItemKey(addon)]
   const amount = formatLoadoutCents(item.month.foundingCents)
@@ -108,24 +107,16 @@ export function proAddonPrice(addon: AddonKey): string {
 
 /** Build the three commercial tier columns from the CODE catalog. PURE — no DB, no per-request read.
  *  The Pro headline is the base price; Nonprofit is the per-seat price; Organization is the floor
- *  anchor. The add-on cells read the catalog for Pro and the bundled coverage note for the other two. */
+ *  anchor. The add-on cells now carry only the AI Engine (ADR-472): metered on Pro, available on every
+ *  tier; the former Marketing/Team/Branding add-ons fold into the depth each tier already includes.
+ *  TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization) with the
+ *  Business base from cat.business_base, instead of the three columns kept here for a minimal change. */
 export function pricingTiers(): PricingTier[] {
   const cat = pricingCatalog()
 
+  // The AI Engine is the only metered add-on. It is priced on Pro and available on every paid tier.
   const proAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
-  // Nonprofit + Organization bundle every add-on; the cell states the coverage plainly per add-on.
-  const npAddons: TierAddonCell[] = [
-    { addon: 'marketing', value: 'Included' },
-    { addon: 'ai', value: 'Included' },
-    { addon: 'team', value: 'Per seat' },
-    { addon: 'branding', value: 'De-brand' },
-  ]
-  const orgAddons: TierAddonCell[] = [
-    { addon: 'marketing', value: 'Included' },
-    { addon: 'ai', value: 'Included' },
-    { addon: 'team', value: 'Volume' },
-    { addon: 'branding', value: 'Included' },
-  ]
+  const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
 
   return [
     {
@@ -137,7 +128,7 @@ export function pricingTiers(): PricingTier[] {
       forWho: 'Coaches, service and product businesses, studios, and practitioners.',
       billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'Branded Space site, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, CRM, and analytics.',
+        'Branded Space site, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, CRM, and analytics. One seat.',
       addons: proAddons,
       takeRate: '5% on what you sell',
       cta: { label: 'Start a Space', href: '/spaces' },
@@ -150,8 +141,9 @@ export function pricingTiers(): PricingTier[] {
       featured: false,
       forWho: 'Verified 501(c)(3) organizations.',
       billing: 'Per licensed seat. Three-seat minimum.',
-      coreIncluded: 'Everything in Pro, with all four add-ons included.',
-      addons: npAddons,
+      coreIncluded:
+        'Full Business depth: marketing automation, full CRM, team roles, and your own domain. Discounted, with donation framing.',
+      addons: tierAddons,
       takeRate: '3% on what you raise',
       cta: { label: 'Talk to us', href: '/about' },
     },
@@ -163,8 +155,9 @@ export function pricingTiers(): PricingTier[] {
       featured: false,
       forWho: 'Enterprise and multi-Space teams.',
       billing: 'Sales-assist. We size it with you.',
-      coreIncluded: 'Everything, plus SSO and federation across Spaces.',
-      addons: orgAddons,
+      coreIncluded:
+        'Full Business depth plus custom, white-label, and governance: SSO and federation across Spaces.',
+      addons: tierAddons,
       takeRate: 'Custom',
       cta: { label: 'Talk to us', href: '/about' },
     },
@@ -230,14 +223,16 @@ export interface PersonaLoadout {
   perSeat?: boolean
 }
 
-/** The persona loadouts, in the plan §4a / §4b order. The monthly totals these produce match the plan's
- *  figures (Coach ~$59, Service ~$39, Product ~$69, Studio ~$39, Event $19) because they sum the same
- *  Pro base + add-ons from the catalog. */
+/** The persona loadouts, in the plan §4a / §4b order. ADR-472: marketing automation, team roles, and a
+ *  custom domain are now TIER depth (Business and up), not add-ons, so a loadout's only metered add-on is
+ *  the AI Engine. Coaches and the business personas turn it on (Pro base + AI Engine = $39/mo); the
+ *  Nonprofit and Event personas run on the base. The monthly totals come from the catalog, never
+ *  hardcoded, so a catalog change reflows every figure. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
-  { slug: 'coaches', label: 'Coach', addons: ['ai', 'marketing'], note: 'Packages, scheduling, and a client CRM.' },
-  { slug: 'service-businesses', label: 'Service business', addons: ['marketing'], note: 'Bookings, quotes, and repeat clients.' },
-  { slug: 'product-businesses', label: 'Product business', addons: ['marketing', 'branding'], note: 'A catalog, a storefront, and your own domain.' },
-  { slug: 'studios', label: 'Studio', addons: ['marketing'], note: 'Classes, memberships, and check-in.' },
+  { slug: 'coaches', label: 'Coach', addons: ['ai'], note: 'Packages, scheduling, and a client CRM.' },
+  { slug: 'service-businesses', label: 'Service business', addons: ['ai'], note: 'Bookings, quotes, and repeat clients.' },
+  { slug: 'product-businesses', label: 'Product business', addons: ['ai'], note: 'A catalog, a storefront, and your own domain.' },
+  { slug: 'studios', label: 'Studio', addons: ['ai'], note: 'Classes, memberships, and check-in.' },
   { slug: 'nonprofits', label: 'Nonprofit', addons: [], note: 'Programs, donations, and supporters.', perSeat: true },
   { slug: 'event-spaces', label: 'Event space', addons: [], note: 'Tickets, check-in, and dispatch.' },
 ]
@@ -310,7 +305,7 @@ export function pricingLadderSummary(): string[] {
     lines.push(`- ${t.name}: ${price}. For ${t.forWho.toLowerCase()} ${t.takeRate} take-rate.`)
   }
   for (const a of PRICING_ADDONS) {
-    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)} on Pro, included on Nonprofit and Organization.`)
+    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, metered, available on any paid tier.`)
   }
   lines.push(`- ${CREW_NOTE.name}: ${CREW_NOTE.foundingLabel}/mo, the personal tier (list ${CREW_NOTE.listLabel}).`)
   return lines
