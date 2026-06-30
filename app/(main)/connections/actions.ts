@@ -357,18 +357,32 @@ export async function searchMembersToLink(
   q: string,
 ): Promise<{ id: string; displayName: string | null; handle: string | null; avatarUrl: string | null }[]> {
   const ownerId = await requireOwner()
-  const term = q.trim().replace(/[%,()]/g, '')
+  const term = q.trim()
   if (term.length < 2) return []
-  const { createAdminClient } = await import('@/lib/supabase/admin')
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id, display_name, handle, avatar_url')
-    .eq('is_active', true)
-    .eq('is_demo', false)
-    .neq('id', ownerId)
-    .or(`display_name.ilike.%${term}%,handle.ilike.%${term}%`)
-    .limit(8)
-  return ((data ?? []) as { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }[]).map(
+  // SEC-10: search each column with a parameterized `.ilike()` and merge,
+  // instead of interpolating user input into a `.or()` filter string (which
+  // PostgREST parses for its own operators/delimiters). `.ilike()` takes the
+  // pattern as a bound value, so only the wildcard needs escaping.
+  const pattern = `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
+  const admin = (await import('@/lib/supabase/admin')).createAdminClient()
+  const base = () =>
+    admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url')
+      .eq('is_active', true)
+      .eq('is_demo', false)
+      .neq('id', ownerId)
+      .limit(8)
+  const [byName, byHandle] = await Promise.all([
+    base().ilike('display_name', pattern),
+    base().ilike('handle', pattern),
+  ])
+  type Row = { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }
+  const merged = new Map<string, Row>()
+  for (const p of [...((byName.data ?? []) as Row[]), ...((byHandle.data ?? []) as Row[])]) {
+    if (!merged.has(p.id)) merged.set(p.id, p)
+  }
+  return [...merged.values()].slice(0, 8).map(
     (p) => ({ id: p.id, displayName: p.display_name, handle: p.handle, avatarUrl: p.avatar_url }),
   )
 }

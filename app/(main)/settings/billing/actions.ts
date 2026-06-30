@@ -4,9 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createBillingPortal } from '@/lib/billing/checkout'
-import { createOnboardingLink, createDashboardLink } from '@/lib/billing/connect'
-import { getPersonaStates } from '@/lib/personas'
-import { atLeastRole } from '@/lib/core/roles'
+import { createOnboardingLink, createDashboardLink, canReceivePayouts } from '@/lib/billing/connect'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Open the Stripe billing portal so a member can update or cancel their subscription.
@@ -28,14 +26,9 @@ export async function openBillingPortal(): Promise<ActionResult<{ url: string }>
 }
 
 // ── Connect payouts (ADR-175) ────────────────────────────────────────────────
-// Who may receive payouts ("earners"): a community host+ (runs paid circles/events)
-// OR anyone holding a partner persona (a business/practitioner who sells or is
-// tipped). A plain member with no persona can't, so the card stays hidden for them.
-export async function canReceivePayouts(profileId: string, role: import('@/lib/core/roles').CommunityRole): Promise<boolean> {
-  if (atLeastRole(role, 'host')) return true
-  const personas = await getPersonaStates(profileId)
-  return Object.values(personas).some((s) => s !== null && s !== 'suspended')
-}
+// `canReceivePayouts` is a pure capability predicate, so it lives in the
+// server-only plumbing (lib/billing/connect) rather than this `'use server'`
+// module — exporting it here would have made it a public RPC (AUTHZ-4).
 
 // Send a host into Stripe-hosted Express onboarding; returns the link URL to redirect to.
 export async function startPayoutOnboarding(): Promise<ActionResult<{ url: string }>> {

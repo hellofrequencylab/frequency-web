@@ -40,9 +40,16 @@ const VIEW_LINK = 'inline-flex items-center gap-1 text-xs text-muted hover:text-
 const EDIT_BTN =
   'inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover'
 
+// PERF-9: each custom funnel below costs a resolveSequence read + a server-side QR
+// render, so cap how many we fan out per page load. Operators have a handful, not
+// hundreds; this bounds the work even if the list grows unexpectedly.
+const MAX_FUNNELS = 100
+
 export default async function SplashFunnelsPage() {
   await requireAdmin('janitor')
-  const funnels = (await listAllSequences()).filter((s) => s.source === 'custom')
+  const funnels = (await listAllSequences())
+    .filter((s) => s.source === 'custom')
+    .slice(0, MAX_FUNNELS)
 
   // Resolve each funnel (copy + tag, preview so drafts show their real content) and
   // pre-render its induction QR server-side (same renderer as every other QR surface).
