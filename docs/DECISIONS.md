@@ -9642,3 +9642,60 @@ and applications (ADR-456) data-model ADRs in this engine series.
   density read here is a single Acquisition > Expansion link, not the three-layer suite). The
   `nexus_region_id` ring mapping is still deferred; the coarsened-bucket "city" is the interim, and a
   later precise region mapping can replace the bucket key without changing the read-model shape.
+
+---
+
+## ADR-458: The pricing + value ladder overhaul (Crew · Pro · Nonprofit · Organization)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel (Vision Steward). Full build:
+[PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md). Supersedes the 7-plan model in
+[PRICING.md](PRICING.md) as phases land.
+
+**Context.** The owner-approved value ladder (Notion: "Pricing & Value Ladder, Draft for Review")
+collapses the published offer to three commercial tiers and reframes Pro as a low base plus four
+toggle add-ons. The current system already ships the entitlement engine (ADR-362/363/364/370/373),
+so this is ~80% a repackaging, not a rebuild.
+
+**Decision.**
+- **Value ladder.** Access is the union of independent axes (Membership · Stewardship · Space plan ·
+  Space role · Platform staff). Commercial page shows **Pro** (from $19/mo + four add-ons: Marketing
+  +$20, AI Engine +$20, Team +$9/seat, Branding +$30), **Nonprofit** ($12/licensed-seat, 3% take,
+  3-seat floor), **Organization** (from $199/mo, sales-assist). **Crew** ($9) lives on the personal
+  upgrade page. Stewardship stays earned-never-paid (ADR-207, unchanged).
+- **Consolidations.** 7 space plans → 3 (pro/nonprofit/organization). `spaces.type` (practitioner/
+  coaching/business/event_space/lab/partner) stays as identity/skin, decoupled from plan; all business
+  types run on Pro. **Partner** → comped Pro (`spaces.is_comped`), never public. **White-label** →
+  the Branding add-on, not a plan. **Supporter** → retired tier → optional PWYW "Supporter" badge on Crew.
+- **Keystone change — entitlement partition.** `spaces.entitlements` is partitioned into a
+  **billing-managed namespace** (written only by the webhook/plan resolver, service-role only) and the
+  existing top-level **manual grants**. `setSpacePlan`/`setSpaceAddons` become **set-to-target** (compute
+  the exact billing key set from base plan + active add-on items, then replace the billing namespace),
+  so an add-on toggling **off** removes only its billing keys and never nukes a hand-grant. A client can
+  never forge a billing key.
+- **Stripe.** Pro = one subscription with multiple items (base + one price item per active add-on,
+  proration + 14-day per-item trial). Team + Nonprofit = quantity (licensed-seat) items. Connect
+  destination charge + application fee (5/3/custom) and founder lock unchanged.
+- **Anchor + founding price + grandfather (owner strategy, 2026-06-30).** Every published price ships as a
+  **list anchor** (Pro $29) with a lower **founding price** (Pro $19) beneath it. Subscribing at the founding
+  price **grandfathers it for the life of the subscription**: the charged Stripe price id is recorded as a
+  per-subscription **locked price id** (generalize `profiles.locked_price_id`/ADR-363 to space items), and
+  renewals + add-on toggles re-bill the locked price, not the current list price. A lapse that cancels ends
+  the lock; re-subscribing pays the then-current price. Same Pro/Nonprofit/Org item at a locked price id, not
+  a separate plan.
+- **Annual option.** Each plan + add-on has a **monthly** and a **yearly** Stripe price (interval `year`, two
+  months free), framed as the "back the build" path; monthly stays the low-friction default.
+- **Mission framing.** Pricing + upgrade copy states plainly that a paid plan keeps Frequency independent and
+  funds the team + infrastructure that run it (membership funds the mission + operations, not buying
+  software). Voice binds (CONTENT-VOICE §10): plain + concrete, no guilt, never narrate the reader's feelings,
+  skeptic-test, no em dashes.
+- **Owner-locked answers.** Supporter → PWYW badge; Partner → comped Pro; multi-pipeline + reporting
+  live inside Marketing; Nonprofit = $12 licensed-seat (active-seat true-up is v2); Organization keeps
+  the published $199 floor anchor.
+- **Everything ships behind `billing_live` OFF.** Grant-all-while-OFF preserves current behavior; the
+  flip is one switch after all phases (A keystone → B Stripe → C surfaces → D seats → E threads →
+  F pages/SEO) merge, advisors are clean, and Stripe products are synced.
+
+**Consequences.** Add-on toggle-off semantics become correct (partition prevents grant loss). Creation/
+hosting/authoring move to a server-side Crew gate (capability resolver) on each create action. Commercial
+pricing page is fully static (ISR) with `Product`/`Offer`/`FAQPage` JSON-LD + per-loadout persona landing
+pages for SEO/AIO. PRICING.md is updated per phase; this ADR + PRICING-LADDER-PLAN.md are the source of truth.
