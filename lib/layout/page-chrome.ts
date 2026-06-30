@@ -102,6 +102,7 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // the community rail beside it. Pass 1 ships the circle console; sibling entity consoles
   // add their own pattern here as they land.
   /^\/circles\/[^/]+\/manage$/, // a circle's owner console
+  /^\/spaces\/[^/]+\/manage$/, // a Space's owner console (EM1-3)
 ]
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️

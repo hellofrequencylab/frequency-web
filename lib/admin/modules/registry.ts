@@ -27,6 +27,11 @@ export type AdminSlot =
   | 'comms'
   | 'safety'
   | 'insights'
+  // Space-only category (ENTITY-MANAGEMENT-OVERHAUL §4 / Appendix A): a Space's plan ladder + billing.
+  // No core module uses it yet (the unified entity registry has no billing surface); it exists so the
+  // parallel Space spine (lib/admin/entities/registry.ts SPACE_SURFACES, EM1-3) can order a billing
+  // section. Sits just before Danger, mirroring the entity x spine matrix.
+  | 'billing'
   | 'danger'
 
 /** Which surface renders a module (ADR-138): `inline` = tune, on the page ·
