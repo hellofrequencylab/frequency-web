@@ -1,14 +1,12 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowRight, Users, CalendarDays, MapPin } from 'lucide-react'
 import { listDiscoverCities } from './_data'
 import {
   PageHero,
   Section,
   SectionHeading,
-  Card,
   BetaCTA,
 } from '@/components/marketing/marketing-ui'
+import { PlacesFinder } from '@/components/discover/places-finder'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/jsonld'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -29,6 +27,11 @@ export const metadata: Metadata = {
 
 export default async function DiscoverPlacesPage() {
   const cities = await listDiscoverCities()
+
+  // Aggregate the activity already on the page into a single proof line. These are
+  // sums over the same public counts the cards show — no extra reads, no new data.
+  const totalCircles = cities.reduce((n, c) => n + c.circleCount, 0)
+  const totalEvents = cities.reduce((n, c) => n + c.eventCount, 0)
 
   return (
     <>
@@ -63,6 +66,42 @@ export default async function DiscoverPlacesPage() {
         subtitle="Somewhere close to you, neighbors are already meeting this week. Pick your town to see the Circles forming and the events coming up there."
       />
 
+      {/* Proof band: the activity across every town, summed from the same public
+          counts the cards below show. Concrete numbers, so the page reads as a
+          living community rather than an empty directory. */}
+      {cities.length > 0 && (totalCircles > 0 || totalEvents > 0) && (
+        <div className="border-b border-border/60 bg-surface px-6 py-8">
+          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-center text-sm text-muted">
+            <span>
+              <strong className="text-text">{cities.length}</strong>{' '}
+              {cities.length === 1 ? 'town' : 'towns'}
+            </span>
+            {totalCircles > 0 && (
+              <>
+                <span aria-hidden className="text-border-strong">
+                  |
+                </span>
+                <span>
+                  <strong className="text-text">{totalCircles}</strong>{' '}
+                  {totalCircles === 1 ? 'Circle' : 'Circles'}
+                </span>
+              </>
+            )}
+            {totalEvents > 0 && (
+              <>
+                <span aria-hidden className="text-border-strong">
+                  |
+                </span>
+                <span>
+                  <strong className="text-text">{totalEvents}</strong> upcoming{' '}
+                  {totalEvents === 1 ? 'event' : 'events'}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <Section tone="canvas" className="!max-w-none">
         <div className="mx-auto max-w-4xl">
           <SectionHeading
@@ -75,40 +114,7 @@ export default async function DiscoverPlacesPage() {
               The first Circles are forming now. Check back soon to browse by place.
             </p>
           ) : (
-            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {cities.map((c) => (
-                <li key={c.slug}>
-                  <Link href={`/discover/places/${c.slug}`} className="group block h-full">
-                    <Card
-                      tone="feature"
-                      className="flex h-full flex-col transition-colors hover:border-border-strong"
-                    >
-                      <div className="mb-3 flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-primary-strong" />
-                        <h3 className="text-base font-bold text-text transition-colors group-hover:text-primary-strong">
-                          {c.city}
-                        </h3>
-                      </div>
-                      <div className="mt-auto flex items-center gap-4 text-xs text-subtle">
-                        {c.circleCount > 0 && (
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="h-3.5 w-3.5" />
-                            {c.circleCount} {c.circleCount === 1 ? 'Circle' : 'Circles'}
-                          </span>
-                        )}
-                        {c.eventCount > 0 && (
-                          <span className="inline-flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            {c.eventCount} {c.eventCount === 1 ? 'event' : 'events'}
-                          </span>
-                        )}
-                        <ArrowRight className="ml-auto h-4 w-4 text-primary-strong opacity-0 transition-opacity group-hover:opacity-100" />
-                      </div>
-                    </Card>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <PlacesFinder cities={cities} />
           )}
         </div>
       </Section>
