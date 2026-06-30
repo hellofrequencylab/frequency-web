@@ -191,4 +191,18 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     // A non-admin path that merely shares the prefix text keeps the global rails.
     expect(railFor('/administrators')).toBe('global')
   })
+
+  it('drops the right rail on the full-width owner consoles + the Space CRM board (DashboardTemplate)', () => {
+    // The entity OWNER CONSOLE (/{entity}/[id]/manage, ADR-441) and a Space's paid CRM board are
+    // full-width <DashboardTemplate> workspaces (PAGE-FRAMEWORK §3 → 'none'); they keep the left menu
+    // but drop the member right rail. EM1-3 adds the Space owner console pattern beside the circle one.
+    expect(railFor('/circles/sunrise-sit/manage')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/manage')).toBe('none')
+    expect(railFor('/spaces/demo-org/manage')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/crm')).toBe('none')
+    // The left menu stays on these member-side dashboards.
+    expect(leftRailFor('/spaces/demo-practitioner/manage')).toBe('global')
+    // The Space SETTINGS cockpit (the legacy 7-tab) still rides the global rail — only /manage is none.
+    expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
+  })
 })

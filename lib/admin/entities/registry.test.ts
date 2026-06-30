@@ -3,9 +3,12 @@ import {
   ENTITY_SURFACES,
   surfacesFor,
   managesEntity,
+  SPACE_SURFACES,
+  spaceSurfacesFor,
   type ManagedEntity,
 } from './registry'
 import type { Capability } from '@/lib/core/capabilities'
+import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 
 // EM1-1 / EM1-3: the entity registry's selection is pure — which surfaces a viewer sees
 // is (entity × the capabilities they hold for that scope), filtered + spine-ordered.
@@ -90,5 +93,93 @@ describe('entity registry · surfacesFor', () => {
         .sort()
       expect(slots).toEqual(['basics', 'danger'])
     }
+  })
+})
+
+// EM1-3: the PARALLEL Space spine. A Space is gated by the per-Space function world, not the unified
+// Capability set, so `spaceSurfacesFor(type, canUse)` selects by (type offers the surface) AND (the
+// caller's `canUse(fn)` predicate). These lock the practitioner + organization spines this slice
+// ships, and that always-on Basics + Danger render regardless of the per-tool gate.
+
+describe('entity registry · spaceSurfacesFor', () => {
+  // A canUse predicate that grants every tool (an owner of a fully-entitled space).
+  const allow = (): boolean => true
+  // A canUse predicate that denies every tool (no plan / a low role): only the null-gated surfaces.
+  const deny = (): boolean => false
+
+  it('gives a practitioner the full spine in order: basics, place, people, engage, reach, comms, insights, danger', () => {
+    const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
+    expect(ids).toEqual([
+      'space.basics',
+      'space.place',
+      'space.people',
+      'space.engage.crm',
+      'space.reach',
+      'space.comms',
+      'space.insights',
+      'space.danger',
+    ])
+  })
+
+  it('gives an organization the donation/enrollment + billing spine, never the practitioner-only place/CRM', () => {
+    const ids = spaceSurfacesFor('organization', allow).map((s) => s.id)
+    expect(ids).toEqual([
+      'space.basics',
+      'space.people',
+      'space.engage.donations',
+      'space.engage.enroll',
+      'space.reach',
+      'space.comms',
+      'space.insights',
+      'space.billing',
+      'space.danger',
+    ])
+    // The practitioner-only surfaces never leak onto an organization.
+    expect(ids).not.toContain('space.place')
+    expect(ids).not.toContain('space.engage.crm')
+    // And billing is an organization-spine surface this slice does not give the practitioner.
+    expect(spaceSurfacesFor('practitioner', allow).map((s) => s.id)).not.toContain('space.billing')
+  })
+
+  it('falls back to only the always-on Basics + Danger when the viewer can use no tool', () => {
+    expect(spaceSurfacesFor('practitioner', deny).map((s) => s.id)).toEqual(['space.basics', 'space.danger'])
+    expect(spaceSurfacesFor('organization', deny).map((s) => s.id)).toEqual(['space.basics', 'space.danger'])
+  })
+
+  it('orders Basics first and Danger last regardless of which tools are on', () => {
+    for (const type of ['practitioner', 'organization'] as const) {
+      const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
+      expect(ids[0]).toBe('space.basics')
+      expect(ids[ids.length - 1]).toBe('space.danger')
+    }
+  })
+
+  it('passes the surface function to canUse so the caller binds the real per-Space gate', () => {
+    // Only enable CRM; the practitioner spine should then include engage.crm but drop, e.g., email.
+    const onlyCrm = (fn: SpaceFunctionKey): boolean => fn === 'crm'
+    const ids = spaceSurfacesFor('practitioner', onlyCrm).map((s) => s.id)
+    expect(ids).toContain('space.engage.crm')
+    expect(ids).not.toContain('space.comms') // email gate denied
+    expect(ids).toContain('space.basics') // always-on
+    expect(ids).toContain('space.danger') // always-on
+  })
+
+  it('defers business / event_space / lab / partner (no spine declared yet)', () => {
+    for (const type of ['business', 'event_space', 'lab', 'partner', 'coaching'] as const) {
+      // The only surfaces a deferred type could match are the '*' (every-type) ones; this slice still
+      // does not OFFER a console for them (the page notFound()s), but the registry would only ever
+      // hand back the universal rows. Lock that none of the type-specific rows leak to them.
+      const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
+      expect(ids).not.toContain('space.place')
+      expect(ids).not.toContain('space.engage.crm')
+      expect(ids).not.toContain('space.engage.donations')
+      expect(ids).not.toContain('space.engage.enroll')
+      expect(ids).not.toContain('space.billing')
+    }
+  })
+
+  it('has unique Space surface ids', () => {
+    const ids = SPACE_SURFACES.map((s) => s.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
