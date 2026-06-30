@@ -10,10 +10,14 @@ import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { getPricingValues } from '@/lib/pricing/settings'
-import { spacePlanSellable } from '@/lib/billing/space-plan-checkout'
+import { loadCatalogConfig } from '@/lib/pricing/catalog-config'
+import { spacePlanSellable, spaceLoadoutSellable } from '@/lib/billing/space-plan-checkout'
+import { readLockedPriceId } from '@/lib/billing/space-subscription-items'
+import { addonKeyForCatalogItem } from '@/lib/billing/pricing-keys'
 import { spacePlanRows } from '@/lib/pricing/display'
-import { asSpacePlan, planEntitlementKeys, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
+import { asSpacePlan, planEntitlementKeys, addonsHeldBy, SPACE_PLAN_LABEL } from '@/lib/pricing/plans'
 import { SpacePlanPicker } from './plan-picker'
+import { SpaceLoadoutPicker } from './loadout-picker'
 import { WhitelabelRequest } from './whitelabel-request'
 
 // SPACE PLAN AND BILLING (Pricing P3, ADR-363/364). The owner-facing space plan ladder. It shows the
@@ -101,6 +105,22 @@ export default async function SpaceBillingPage({
   // What each plan unlocks, for the picker copy (the entitlement keys the plan grants).
   const unlocks = Object.fromEntries(rows.map((r) => [r.key, planEntitlementKeys(asSpacePlan(r.key))])) as Record<string, readonly string[]>
 
+  // PHASE C: the Pro LOADOUT picker (base + add-ons, ADR-463). Reads the operator-set catalog amounts,
+  // the loadout-sellable gate (billingLive AND the per-plan switch, FALSE while OFF -> a disabled
+  // preview), the trial length, the add-ons the space already holds (pre-selected), and whether the
+  // space holds a grandfathered locked base price (its founding rate is held).
+  const [catalog, loadoutSellable, lockedBase] = await Promise.all([
+    loadCatalogConfig(),
+    spaceLoadoutSellable('pro'),
+    readLockedPriceId(space.id, 'base'),
+  ])
+  // The Pro base + the four add-on items, with their operator-set amounts (the picker computes the live
+  // total from these client-side).
+  const loadoutItems = catalog.items.filter(
+    (i) => i.key === 'pro_base' || addonKeyForCatalogItem(i.key) !== null,
+  )
+  const activeAddons = addonsHeldBy((key) => spaceHasEntitlement(space, key))
+
   return (
     <FocusTemplate
       eyebrow={brandName}
@@ -117,15 +137,42 @@ export default async function SpaceBillingPage({
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
 
+        {/* The Pro loadout picker: the base plus the four add-ons, with a live total (ADR-463). A
+            disabled preview while billing is OFF; the buy CTA is dormant until live. Staff preview is
+            read-only (the fieldset disables it). */}
         <fieldset disabled={staffViewing} className="contents">
-          <SpacePlanPicker
+          <SpaceLoadoutPicker
             slug={space.slug}
-            currentPlan={currentPlan}
-            rows={rows}
-            sellable={sellable}
-            unlocks={unlocks}
+            items={loadoutItems}
+            addonEnabled={catalog.addonEnabled}
+            activeAddons={activeAddons}
+            sellable={loadoutSellable}
+            trialDays={values.trial.days}
+            lockedHeld={lockedBase !== null}
+            seatFloor={catalog.seat.bundledFloor}
           />
         </fieldset>
+
+        {/* Nonprofit and Organization run on the legacy plan ladder (all-inclusive, not the Pro
+            loadout). The picker covers them; the Pro rows there overlap the loadout above, so this
+            reads as the other plans. */}
+        <details className="group rounded-2xl border border-border bg-surface">
+          <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-text">
+            Nonprofit and Organization plans
+            <span className="ml-2 text-2xs font-normal text-subtle group-open:hidden">Show</span>
+          </summary>
+          <div className="border-t border-border px-5 py-5">
+            <fieldset disabled={staffViewing} className="contents">
+              <SpacePlanPicker
+                slug={space.slug}
+                currentPlan={currentPlan}
+                rows={rows}
+                sellable={sellable}
+                unlocks={unlocks}
+              />
+            </fieldset>
+          </div>
+        </details>
 
         {/* White-label: the high-touch door (ADR-364). A lead, never a checkout. */}
         <WhitelabelRequest

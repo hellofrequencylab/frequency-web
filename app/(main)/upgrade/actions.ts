@@ -61,3 +61,30 @@ export async function startMembershipCheckout(
   if (!url) return fail('Billing isn’t available right now.')
   return ok({ url })
 }
+
+// PWYW SUPPORTER BADGE (Pricing ladder Phase C, ADR-463). Supporter is retired as a tier and becomes an
+// opt-in pay-what-you-want badge on Crew (profiles.is_supporter). This writes the badge flag only: the
+// actual contribution charge is dormant until billing goes live (the PWYW contribution flow + ledger
+// were deferred). A member can turn the badge on or off freely. Writes the caller's OWN profile only
+// (re-resolved from the session), never another member's.
+export async function toggleSupporterBadge(on: boolean): Promise<ActionResult<{ isSupporter: boolean }>> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return fail('Not signed in')
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return fail('Profile not found')
+
+  const { error } = await admin.from('profiles').update({ is_supporter: on }).eq('id', profile.id)
+  if (error) return fail(error.message)
+
+  revalidatePath('/upgrade')
+  return ok({ isSupporter: on })
+}

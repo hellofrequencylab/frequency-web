@@ -276,6 +276,35 @@ Space: `space_id`, `item_key`, `stripe_subscription_item_id`, `status`, `trial_e
 `interval`, `locked_price_id`; RLS: staff read all, a Space owner/admin reads their own, writes
 service-role only) + `spaces.seat_quantity` (licensed seats, v1). Reached untyped (ADR-246).
 
+## Phase C — the pricing surfaces (ADR-463)
+
+Phase C is the operator/member surfaces that drive the Phase B backend. Still entirely OFF: every CTA is
+a disabled preview while `billing_live` is OFF, the badge write is the only live mutation (harmless during
+beta). **No migration** (the config lives in the existing `pricing_settings` kv store).
+
+**Catalog config (operator overlay).** `lib/pricing/catalog-config.ts` reads each Phase B catalog item's
+monthly **list** + **founding** amount (plus an optional explicit yearly override) from `pricing_settings`
+under **`catalog.<item>`**, **fail-safe to the `CATALOG` code default per field** (so an absent row reads
+the code amount; the code catalog stays the source of truth). Sibling keys: `catalog.seat` (the bundled
+floor), `catalog.pwyw` (the Supporter min + suggested), `catalog.addon_enabled` (per-add-on offer toggle).
+The yearly derives two months free unless overridden.
+
+**Loadout math (one pure module).** `lib/pricing/loadout.ts` `computeLoadoutTotal` sums the Pro base + each
+active add-on at the chosen interval (Team x its seat count), returning the list total (anchor) and the
+founding total (charged). Pure + framework-free, so it runs identically on the client picker and the
+server. Unit-tested (`lib/pricing/loadout.test.ts`).
+
+| Surface | File | OFF state | ON state |
+|---|---|---|---|
+| **Admin catalog console** (C1) | `app/(main)/admin/pricing/` (`pricing-console.tsx`, `actions.ts`, `load.ts`) | edit every catalog list/founding amount, the per-add-on enable toggles, the seat floor, the Supporter PWYW config; the "Sync the catalog to Stripe" button (env-gated, safe no-op when unconfigured) | the catalog sync writes the Phase B Products/Prices; `billing_live` flip goes live |
+| **Space Pro plan + add-on picker** (C2) | `app/(main)/spaces/[slug]/settings/billing/` (`loadout-picker.tsx`, `actions.ts` `startSpaceLoadoutCheckout`) | a disabled preview ("available soon"): the base + four add-on toggles, a live total, the monthly/yearly switch, the founding-under-list anchor, trial badges, "founding price held" when the space holds a locked base price | the buy CTA → `createSpaceLoadoutCheckout` (double-gated: `canManage` server-side + `billingLive` + the per-plan switch) |
+| **Crew upgrade + PWYW badge** (C3) | `app/(main)/upgrade/page.tsx` + `supporter-badge.tsx` | the free-beta toggle (unchanged) + the Crew list→founding price + the mission-framing line; the Supporter badge opt-in (writes `profiles.is_supporter`, the only live mutation) | a live Crew Stripe checkout via `createMembershipCheckout` |
+
+The **Crew list anchor** is an optional `TierPrice.list_cents` (jsonb-additive, no migration), seeded Crew
+list $12 / founding $9. **Supporter is retired as a tier** and is now the PWYW badge; the contribution
+charge stays dormant and the contributions ledger stays deferred (no ledger table). The Space picker
+pre-selects the add-ons the space already holds via the pure `addonsHeldBy` reader.
+
 ## The /admin/pricing console
 
 A janitor-gated operator surface (`app/(main)/admin/pricing/`, registered in
@@ -286,13 +315,17 @@ admin page kit (`AdminTemplate` + `FormSection` + `Toggle`). Routes:
 |---|---|
 | `/admin/pricing` | the whole console |
 
-Sections: **Switches** (master `billing_live`, prominent + OFF; per-tier/plan enable; per-role
-gamification) · **Plans and prices** (every value, in dollars) · **Feature gates** (the editable
-feature → entitlement matrix with a per-feature enable toggle) · **Founding members** (the founder
-lock + locked-price reference, honored at checkout) · **Stripe products** (P2: status, the
-env-gated "Sync products to Stripe" action, and the resolved `pricing_stripe_prices` map; the sync
-button is disabled until the Stripe env keys are set). All writes are admin-gated server actions
-(`actions.ts`) that audit flag flips via `setPlatformFlag` → `platform_flag_events`.
+Sections: **Switches** (master `billing_live`, prominent + OFF, with the "off = everything granted,
+nothing charged" explainer; per-tier/plan enable; per-role gamification) · **Catalog** (C1/ADR-463: the
+clean catalog editor — Pro base + the four add-ons + nonprofit seat + organization, each with a list
+anchor + founding price; the per-add-on enable toggles; the seat bundled floor; the Supporter PWYW
+config) · **Plans and prices** (the legacy per-plan values, in dollars; Crew shows its list→founding
+anchor) · **Feature gates** (the editable feature → entitlement matrix with a per-feature enable toggle) ·
+**Founding members** (the founder lock + locked-price reference, honored at checkout) · **Stripe
+products** (status, the env-gated "Sync the catalog to Stripe" + legacy-product sync actions, and the
+resolved `pricing_stripe_prices` map; the sync buttons are disabled until the Stripe env keys are set).
+All writes are admin-gated server actions (`actions.ts`) that audit flag flips via `setPlatformFlag` →
+`platform_flag_events`.
 
 ## Files
 
@@ -309,8 +342,10 @@ button is disabled until the Stripe env keys are set). All writes are admin-gate
 | Resolved Stripe price map (IO) | `lib/billing/pricing-prices.ts` |
 | Space plan / membership checkout | `lib/billing/space-plan-checkout.ts` · `lib/billing/space-membership-checkout.ts` |
 | Pricing display shaping (pure, P3) | `lib/pricing/display.ts` |
-| Member upgrade surface (P3) | `app/(main)/upgrade/page.tsx` |
-| Space plan + white-label lead (P3) | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx`, `plan-picker.tsx`, `whitelabel-request.tsx`, `actions.ts`) |
+| Catalog config overlay (pure + IO, Phase C) | `lib/pricing/catalog-config.ts` |
+| Loadout total math (pure, Phase C) | `lib/pricing/loadout.ts` · tests `lib/pricing/loadout.test.ts` |
+| Member upgrade surface + PWYW badge (P3/C3) | `app/(main)/upgrade/page.tsx` · `supporter-badge.tsx` |
+| Space plan + loadout picker + white-label lead (P3/C2) | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx`, `plan-picker.tsx`, `loadout-picker.tsx`, `whitelabel-request.tsx`, `actions.ts`) |
 | Space membership join CTA (P3) | `components/spaces/membership-join.tsx` · `membership-join-card.tsx` · `lib/spaces/memberships-actions.ts` (`startSpaceMembershipCheckout`) |
 | Vault cash-in gate wiring (P3) | `app/(main)/crew/store/actions.ts` (`redeemItem`) |
 | Webhook → entitlements (by `metadata.kind`) | `lib/billing/space-subscriptions.ts` · `app/api/stripe/webhook/route.ts` |
@@ -387,6 +422,9 @@ All wired through the OFF-preserving seam (`featureAllowed` grant-all while OFF,
 | ✅ **P3** | member-facing upgrade/plan/join surfaces on the operator values, white-label as a lead, the `vault_cash_in` gate routed through `featureAllowed`; still ships OFF (see Status & deferred) |
 | ✅ **Deferred gates (ADR-370)** | leaderboard compete · gamification access consumer + standalone gate · `vera_unlimited` · `space_*` via `featureAllowed` · Household bundle · dunning/proration UX · season-reset conversion nudge; all NO-OP while OFF |
 | ✅ **Nonprofit + Partner plans (ADR-373)** | new Nonprofit (501c3) self-serve plan + comped Partner plan, capability-ordered `SPACE_PLANS` ladder, Practitioner/Business/white-label price changes, Organization repositioned custom; per-seat billing deferred; ships inert (billing OFF) |
+| ✅ **Ladder Phase A (ADR-458)** | entitlement partition (billing namespace) + `setSpaceAddons` set-to-target + plan/member-tier collapse; ships OFF |
+| ✅ **Ladder Phase B (ADR-460)** | clean Stripe catalog (one Product/item, list+founding x month+year) + multi-item subscription + generalized locked-price grandfather + set-to-target webhook; ships OFF |
+| ✅ **Ladder Phase C (ADR-463)** | the surfaces: `/admin/pricing` catalog console + the Space Pro plan/add-on picker (live loadout) + the Crew upgrade + PWYW Supporter badge; types regenerated; ships OFF |
 
 ## References
 
