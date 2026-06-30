@@ -8,7 +8,13 @@
 -- NOTE: this SUPERSEDES the feed_for_viewer body in 20260604185000_member_geo_and_
 -- local_feed.sql (which lacks the demo predicate). That migration's geo COLUMNS were
 -- applied separately; this is the reconciled function.
+-- REPLAY FIX: this migration changes the return-table columns of feed_for_viewer
+-- (adds `is_demo`), which CREATE OR REPLACE cannot do for an existing function. The
+-- prior body created in 20260604185000_member_geo_and_local_feed.sql installed the
+-- 5-arg signature, so drop THAT exact signature (not the historical 2-arg one) before
+-- recreating. Both drops are guarded with IF EXISTS so this stays idempotent.
 drop function if exists public.feed_for_viewer(text, integer);
+drop function if exists public.feed_for_viewer(text, integer, double precision, double precision, integer);
 
 create or replace function public.feed_for_viewer(
   _sort     text             default 'relevant',
