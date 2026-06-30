@@ -9882,3 +9882,52 @@ field also seeded blank.
 **Consequences.** No migration (columns exist). Cards carry a "Repeats weekly" / "Part of a
 series" line. The repeat-end rule reads identically on the client and both server actions via
 one validator. Promotable to RRULE later still holds (ADR-007 unchanged).
+
+---
+
+## ADR-464: Space Modes registry + Focus + non-destructive switcher + overrides + coaching onto the console
+
+**Status:** Accepted (2026-06-30). Owner: Daniel. Implements ADR-461 (the decision) and
+[SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md) §5 steps M1-M4. Builds on the profile blueprints
+(`lib/spaces/blueprints.ts`), the per-Space functions world (`lib/spaces/functions.ts`), and the unified
+console (ADR-441). Corroborated by `lib/spaces/modes.ts`, `lib/spaces/modes.test.ts`,
+`supabase/migrations/20260917000000_space_modes.sql`, `lib/spaces/types.ts`, `lib/spaces/store.ts`,
+`lib/spaces/provision.ts`, `lib/admin/entities/registry.ts`,
+`app/(main)/spaces/[slug]/manage/mode/*`, `app/(main)/spaces/new/*`.
+
+**Context.** ADR-461 decided that `spaces.type` becomes an operating Mode (with a finer Focus) under the
+unified Pro plan, the operator-side twin of the public-profile blueprint, WITHOUT changing entitlements.
+This ADR records HOW M1-M4 ship.
+
+**Decision.**
+1. **A pure Mode registry (M1, `lib/spaces/modes.ts`).** A data-only `ModeProfile` per `(type, variant)`
+   that EXTENDS the type's `RoleBlueprint` (reused for the public side) with the operator facets:
+   console nav order / module emphasis, default settings toggles, the default CRM pipeline + stages, the
+   lexicon (clients vs customers vs members vs supporters; offerings vs classes vs programs vs products
+   vs events), recommended add-ons (suggested, never auto-on), and dashboard next-best-actions. Variants
+   per the plan §2a (Business service/product, Coaching packages/cohort, Practitioner appointments/
+   programs, Event Space ticketed/membership, Organization donations/programs, Lab cohort).
+   `resolveMode(type, variant)` is pure + total: an exact match wins, a null/unknown variant falls back
+   to the type default, and a type with no Mode (root) returns null (a missing Mode is "no preset", not
+   "no access"). Unit-tested in `lib/spaces/modes.test.ts`.
+2. **Data (M2, migration FILE only, NOT applied).** `spaces.mode_variant text` (nullable; null resolves
+   to the type default in code) and `spaces.preferences jsonb not null default '{}'` for operator
+   OVERRIDES (nav order, label overrides, toggle overrides). Additive + idempotent, RLS unchanged (the
+   existing `spaces` row policies cover the new columns), read untyped per ADR-246.
+3. **Surface rework (M3).** The create wizard leads with "what do you run?" mapping to a Mode + Focus and
+   seeds the preset on provision. A console Mode settings page (Focus template, in `/manage`) shows the
+   current Mode + Focus, a non-destructive switcher (data stays; re-seeds the suggested pipeline
+   idempotently, so a customized pipeline is never clobbered), a plain "what this turns on" preview, and
+   per-facet overrides persisted to `spaces.preferences` (operator override wins). `coaching` joins
+   `CONSOLE_SPACE_TYPES` (it had a blueprint but fell back to the legacy `/settings`); the console nav
+   reads the Mode's `navEmphasis` once to order sections (no N+1, no surface added or dropped).
+4. **Onboarding presets (M4).** The per-Mode starter CRM pipeline is seeded on provision through the
+   existing `ensureSpaceStages` plumbing (keyed on the Space type), not a forked seed path.
+
+**Guarantees.** Mode NEVER gates a capability: the entitlement engine (plan + add-ons) and the
+space-role ladder stay the only gates; Mode only orders, defaults, and labels, and is FREE (no
+`billing_live` dependency). Switching Mode/Focus is non-destructive + reversible; operator overrides are
+preserved across re-presets.
+
+**Consequences.** Migration adds two `spaces` columns (NOT APPLIED; owner hand-review). No entitlement or
+RLS change. M5-M6 (marketing persona pages + the pricing table) ride Phase F later.

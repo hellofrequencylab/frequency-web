@@ -7,9 +7,10 @@ import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functio
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { blueprintForType } from '@/lib/spaces/blueprints'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
 import { isStaff } from '@/lib/core/roles'
-import { spaceSurfacesFor } from '@/lib/admin/entities/registry'
+import { spaceSurfacesFor, orderSurfacesByEmphasis } from '@/lib/admin/entities/registry'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -18,10 +19,11 @@ import { SpaceManageConsole } from './console'
 // The Space OWNER CONSOLE (ADR-441 EM1-3, the Spaces harmonization slice). The unified
 // `/{entity}/[id]/manage` Dashboard surface, brought to Spaces: an owner / admin / editor (or a
 // platform janitor previewing) manages their Space here, organized by the SAME 9-category spine the
-// circle console uses. As of EM2-3 ("all Space profiles") the console serves EVERY provisionable
-// type except coaching (practitioner, organization, business, event_space, lab, partner); coaching
-// (and root) stay on the existing /spaces/[slug]/settings 7-tab cockpit. No feature is rebuilt: each
-// section LINKS to the existing settings sub-page that already serves it.
+// circle console uses. As of Space Modes M3 (ADR-461/464) the console serves EVERY provisionable type
+// (practitioner, organization, business, coaching, event_space, lab, partner); only root stays on the
+// existing /spaces/[slug]/settings cockpit. No feature is rebuilt: each section LINKS to the existing
+// settings sub-page that already serves it. The console also reads the Space's MODE preset to order the
+// sections (module emphasis) and surfaces a Mode and focus settings page.
 //
 // SECURITY: a Server Component, gated server-side. It resolves the Space, gates RENDER on
 // resolveSpaceManageAccess (canManage owner/admin/editor || staffViewing janitor preview), and
@@ -71,7 +73,16 @@ export default async function SpaceManagePage({
   const canUse = (fn: SpaceFunctionKey): boolean =>
     staffViewing || spaceFunctionAccess(space, fn, caps.role)
 
-  const surfaces = spaceSurfacesFor(space.type, canUse)
+  // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE and re-order the gated
+  // surfaces so the console leads with the modules this Mode emphasizes. Mode never gates: ordering only,
+  // no surface is added or dropped. A type with no Mode (root, already excluded above) or no preset
+  // resolves to null, in which case the spine order stands unchanged.
+  const mode = resolveMode(space.type, space.modeVariant)
+  const prefs = readModePreferences(space.preferences)
+  const surfaces = orderSurfacesByEmphasis(
+    spaceSurfacesFor(space.type, canUse),
+    effectiveNavEmphasis(mode, prefs),
+  )
 
   // Deleting a Space is OWNER-grade (or platform staff). The Danger section's control only renders
   // when this is true; otherwise the section shows header-only (mirrors circle's Danger).
@@ -80,6 +91,8 @@ export default async function SpaceManagePage({
   const brandName = space.brandName ?? space.name
   const typeLabel = blueprintForType(space.type)?.typeLabel ?? 'Space'
   const planLabel = SPACE_PLAN_LABEL[asSpacePlan(space.plan)]
+  // The Mode + Focus label for the stat row (falls back to the type label when a Space has no Mode).
+  const modeLabel = mode ? `${mode.modeLabel}: ${mode.focusLabel}` : typeLabel
 
   // Member count for the stat row (service-role read, fail-safe to an empty list).
   const members = await listSpaceMembers(space.id)
@@ -97,7 +110,7 @@ export default async function SpaceManagePage({
         <>
           <StatCard label="Team members" value={activeMembers} />
           <StatCard label="Plan" value={planLabel} size="sm" />
-          <StatCard label="Type" value={typeLabel} size="sm" />
+          <StatCard label="Mode" value={modeLabel} size="sm" />
         </>
       }
     >

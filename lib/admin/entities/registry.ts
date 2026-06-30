@@ -219,8 +219,11 @@ export function managesEntity(
 //                  in v1; CRM/email are not in those types' function `types`, so no schema change
 //                  adds them here).
 // Each surface still WRAPS the existing settings sub-page it already gated on; nothing is rebuilt.
-// `coaching` and `root` stay on the legacy cockpit (coaching has no console spine declared yet;
-// root is the never-provisioned platform host).
+// `coaching` joined the console with Space Modes M3 (ADR-461/464): it carries CRM (its function registry
+// already lists coaching in the `crm` types) plus the universal Members / QR / Insights / Billing and the
+// new Mode and focus surface. Only `root` stays off the console (the never-provisioned platform host).
+// Every console type also gets the always-on Mode and focus surface (`space.mode`), Mode being FREE
+// framing, never a gate.
 
 /** One manageable surface of a Space: a spine slot + the per-Space function that gates it + the
  *  Space types that offer it. The Space twin of `EntitySurface` (which the core Scope spine uses).
@@ -275,6 +278,17 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: null,
     types: ['*'],
   },
+  // Mode and focus (Space Modes M3, ADR-461/464) — the operating Mode + Focus this space runs on, what
+  // the preset surfaces, and per-facet overrides. Always present for a manager (no per-tool function):
+  // Mode is FREE framing, never a gate, so it sits in the spine alongside Basics for every console type.
+  {
+    id: 'space.mode',
+    slot: 'basics',
+    label: 'Mode and focus',
+    desc: 'Pick how this space runs, see what the preset turns on, and adjust it.',
+    requiredFunction: null,
+    types: ['*'],
+  },
   // Place & Time — the practitioner's weekly booking windows + upcoming bookings.
   {
     id: 'space.place',
@@ -293,14 +307,16 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'members',
     types: ['*'],
   },
-  // Engage — the CRM pipeline (practitioner + business; the `crm` function offers it to both).
+  // Engage — the CRM pipeline. The `crm` function offers it to practitioner, business, and coaching
+  // (coaching joined the console with Space Modes M3); the function registry already lists coaching in
+  // the `crm` types, so the surface gate and the function gate stay the same check.
   {
     id: 'space.engage.crm',
     slot: 'engage',
     label: 'CRM',
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
     requiredFunction: 'crm',
-    types: ['practitioner', 'business'],
+    types: ['practitioner', 'business', 'coaching'],
   },
   // Engage — the studio's membership tiers and who has joined (business only; money dormant in v1).
   {
@@ -375,7 +391,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'Insights',
     desc: 'See how your codes and pages are performing.',
     requiredFunction: 'qr',
-    types: ['practitioner', 'business', 'organization', 'event_space', 'lab', 'partner'],
+    types: ['practitioner', 'business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
   },
   // Billing — the plan ladder and what each plan unlocks. The `billing` function is universal ('*'),
   // so every console type shows it.
@@ -385,7 +401,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'Plan and billing',
     desc: 'See your current plan and what each plan unlocks.',
     requiredFunction: 'billing',
-    types: ['business', 'organization', 'event_space', 'lab', 'partner'],
+    types: ['business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
   },
   // Danger — delete this space (owner-grade, permanent). Gated by manage access + owner check in the
   // console, like the legacy cockpit; no per-tool function.
@@ -426,4 +442,36 @@ export function spaceSurfacesFor(
       spaceSurfaceAppliesToType(s, type) &&
       (s.requiredFunction === null || canUse(s.requiredFunction)),
   ).sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
+}
+
+/**
+ * Re-order surfaces by a Mode's MODULE EMPHASIS (Space Modes M3, ADR-461/464), keeping the spine
+ * order otherwise. A surface whose `requiredFunction` appears earlier in `emphasis` sorts ahead of one
+ * that appears later (or not at all), so the console leads with the modules a Mode emphasizes WITHOUT
+ * dropping any surface (Mode never hides a capability; it only orders). PURE: it is a stable sort over
+ * the already-gated list, so it never changes WHICH surfaces show, only their order. A surface with no
+ * `requiredFunction` (Basics / Mode / Danger) keeps its spine position. The emphasis list is the
+ * ModeProfile.navEmphasis the caller resolves once (no N+1).
+ */
+export function orderSurfacesByEmphasis(
+  surfaces: SpaceSurface[],
+  emphasis: readonly SpaceFunctionKey[],
+): SpaceSurface[] {
+  if (emphasis.length === 0) return surfaces
+  const rank = (s: SpaceSurface): number => {
+    if (!s.requiredFunction) return Number.MAX_SAFE_INTEGER // unfunctioned surfaces keep spine order
+    const i = emphasis.indexOf(s.requiredFunction)
+    return i === -1 ? Number.MAX_SAFE_INTEGER : i
+  }
+  // Stable sort: equal ranks (incl. all the un-emphasized + unfunctioned surfaces) keep their incoming
+  // spine order, so this only PROMOTES the emphasized functional surfaces ahead of the rest.
+  return surfaces
+    .map((s, idx) => ({ s, idx }))
+    .sort((a, b) => {
+      const ra = rank(a.s)
+      const rb = rank(b.s)
+      if (ra !== rb) return ra - rb
+      return a.idx - b.idx
+    })
+    .map((w) => w.s)
 }

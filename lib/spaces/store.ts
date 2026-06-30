@@ -18,8 +18,10 @@ const COLS =
   'id, slug, name, type, status, entity_id, skin, domain, network_connected, enabled_verticals, owner_profile_id, brand_name, brand_logo_url, brand_accent, entitlements, plan'
 
 // `feature_roles` is appended to every select via this tail so a single change covers all readers; it
-// is reached untyped (ADR-246) because the column is not in the generated types yet.
-const COLS_FULL = `${COLS}, feature_roles`
+// is reached untyped (ADR-246) because the column is not in the generated types yet. `mode_variant` +
+// `preferences` (Space Modes M2, ADR-461/464) ride the same untyped tail: the Focus sub-mode and the
+// operator's Mode-preset overrides, both FRAMING only (never a gate), defaulting safe when absent.
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences`
 
 type SpaceRow = {
   id: string
@@ -39,6 +41,8 @@ type SpaceRow = {
   entitlements: unknown
   feature_roles?: unknown
   plan?: string | null
+  mode_variant?: string | null
+  preferences?: unknown
 }
 
 function mapSpace(r: SpaceRow): Space {
@@ -65,6 +69,12 @@ function mapSpace(r: SpaceRow): Space {
     // The billing plan label feeds the live plan-ladder gate (lib/spaces/function-access.ts). Null
     // pre-write reads as 'free' there; while billing is OFF it never gates anything.
     plan: r.plan ?? null,
+    // Space Modes (ADR-461/464): the Focus sub-mode + the operator's Mode-preset overrides. Both are
+    // FRAMING only (never a gate); the Mode reader (lib/spaces/modes.ts) normalizes them. Default safe
+    // when the columns are absent pre-migration (null variant -> the type's default Focus; {} = no
+    // overrides).
+    modeVariant: r.mode_variant ?? null,
+    preferences: r.preferences ?? {},
   }
 }
 
