@@ -75,26 +75,68 @@ export async function listCircleTasks(circleId: string): Promise<CircleTask[]> {
 
   const rows = (data ?? []) as unknown as CircleTaskRow[]
   return rows
-    .map((r) => ({
-      id: r.id,
-      circleId: r.circle_id,
-      name: r.name,
-      taskType: r.task_type,
-      zapsValue: r.zaps_value ?? 0,
-      isRepeatable: r.is_repeatable ?? false,
-      requiresVerification: r.requires_verification ?? false,
-      assignedTo: r.assigned_to,
-      claimedAt: r.claimed_at,
-      assignee: r.assignee
-        ? {
-            id: r.assignee.id,
-            displayName: r.assignee.display_name,
-            handle: r.assignee.handle,
-            avatarUrl: r.assignee.avatar_url,
-          }
-        : null,
-    }))
+    .map(mapCircleTaskRow)
     .sort((a, b) => Number(a.assignedTo !== null) - Number(b.assignedTo !== null))
+}
+
+/** Map a CircleTaskRow → CircleTask (shared by the single- and batched reads). */
+function mapCircleTaskRow(r: CircleTaskRow): CircleTask {
+  return {
+    id: r.id,
+    circleId: r.circle_id,
+    name: r.name,
+    taskType: r.task_type,
+    zapsValue: r.zaps_value ?? 0,
+    isRepeatable: r.is_repeatable ?? false,
+    requiresVerification: r.requires_verification ?? false,
+    assignedTo: r.assigned_to,
+    claimedAt: r.claimed_at,
+    assignee: r.assignee
+      ? {
+          id: r.assignee.id,
+          displayName: r.assignee.display_name,
+          handle: r.assignee.handle,
+          avatarUrl: r.assignee.avatar_url,
+        }
+      : null,
+  }
+}
+
+/** PERF-3: tasks for MANY circles in ONE query, grouped by circle id (open
+ *  first, then claimed — same ordering as listCircleTasks). Returns a Map so a
+ *  caller iterating its circles avoids the N+1 of one read per circle. Circles
+ *  with no tasks are present with an empty array. */
+export async function listCircleTasksByCircle(
+  circleIds: string[],
+): Promise<Map<string, CircleTask[]>> {
+  const grouped = new Map<string, CircleTask[]>()
+  for (const id of circleIds) grouped.set(id, [])
+  if (circleIds.length === 0) return grouped
+
+  const { data, error } = await db()
+    .from('crew_tasks')
+    .select(`
+      id, circle_id, name, task_type, zaps_value, is_repeatable,
+      requires_verification, assigned_to, claimed_at,
+      assignee:profiles!assigned_to ( id, display_name, handle, avatar_url )
+    `)
+    .in('circle_id', circleIds)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('[listCircleTasksByCircle]', error.message)
+    return grouped
+  }
+
+  for (const r of (data ?? []) as unknown as CircleTaskRow[]) {
+    const bucket = grouped.get(r.circle_id)
+    if (bucket) bucket.push(mapCircleTaskRow(r))
+  }
+  // Open tasks first within each circle (stable on the created_at order above).
+  for (const bucket of grouped.values()) {
+    bucket.sort((a, b) => Number(a.assignedTo !== null) - Number(b.assignedTo !== null))
+  }
+  return grouped
 }
 
 /** Count of a circle's open (unclaimed) tasks — the `openTaskCount` input the

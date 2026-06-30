@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { CrewTasksClient } from './crew-tasks-client'
 import { CircleTasksPanel, type HostedCircleTasks } from './circle-tasks-panel'
 import { NewTaskCompose } from '@/components/compose/new-task-compose'
-import { listCircleTasks } from '@/lib/crew/circle-tasks'
+import { listCircleTasksByCircle } from '@/lib/crew/circle-tasks'
 
 
 export default async function AdminCrewTasksPage() {
@@ -68,13 +68,13 @@ export default async function AdminCrewTasksPage() {
     .select('id, name')
     .eq('host_id', profileId)
     .order('name')
-  const hostedCircles: HostedCircleTasks[] = await Promise.all(
-    (hostedRows ?? []).map(async (c) => ({
-      id: c.id,
-      name: c.name,
-      tasks: await listCircleTasks(c.id),
-    })),
-  )
+  // PERF-3: one batched read for every hosted circle, not one query per circle.
+  const tasksByCircle = await listCircleTasksByCircle((hostedRows ?? []).map((c) => c.id))
+  const hostedCircles: HostedCircleTasks[] = (hostedRows ?? []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    tasks: tasksByCircle.get(c.id) ?? [],
+  }))
 
   const tasks = (tasksRes.data ?? []).map((t) => ({
     id: t.id,

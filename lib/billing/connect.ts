@@ -19,6 +19,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl, billingEnabled } from './stripe'
 import { hostPayoutsEnabledFlag } from '@/lib/platform-flags'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { getPersonaStates } from '@/lib/personas'
 
 /** The single live-gate for every Connect payout channel: a configured Stripe key
  *  AND the operator-controlled `host_payouts_enabled` flag (default OFF). Tips,
@@ -26,6 +28,18 @@ import { createAdminClient } from '@/lib/supabase/admin'
  *  until an operator flips the switch (ADR-178). */
 export async function payoutsLive(): Promise<boolean> {
   return billingEnabled() && (await hostPayoutsEnabledFlag())
+}
+
+// ── Connect payouts eligibility (ADR-175, AUTHZ-4) ───────────────────────────
+// Who may receive payouts ("earners"): a community host+ (runs paid circles/events)
+// OR anyone holding a partner persona (a business/practitioner who sells or is
+// tipped). A plain member with no persona can't, so the card stays hidden for them.
+// Lives here (server-only plumbing), NOT in a `'use server'` module — it is a pure
+// capability predicate, not a callable RPC.
+export async function canReceivePayouts(profileId: string, role: CommunityRole): Promise<boolean> {
+  if (atLeastRole(role, 'host')) return true
+  const personas = await getPersonaStates(profileId)
+  return Object.values(personas).some((s) => s !== null && s !== 'suspended')
 }
 
 /** Payout-readiness for a profile, derived from the mirrored Stripe flags. */

@@ -2,7 +2,7 @@ import { requireLeadFloor } from '@/lib/admin/guard'
 import { DashboardTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getLedCircles } from '../load-led-circles'
-import { listCircleTasks } from '@/lib/crew/circle-tasks'
+import { listCircleTasksByCircle } from '@/lib/crew/circle-tasks'
 import { CircleTasksPanel, type HostedCircleTasks } from '@/app/(main)/admin/crew-tasks/circle-tasks-panel'
 
 // Crew tasks under Leadership (ADR-266): the leader-facing surface for the internal
@@ -22,9 +22,13 @@ export default async function LeadershipCrewTasksPage() {
   const { profileId } = await requireLeadFloor()
 
   const hosted = await getLedCircles(profileId)
-  const circles: HostedCircleTasks[] = await Promise.all(
-    hosted.map(async (c) => ({ id: c.id, name: c.name, tasks: await listCircleTasks(c.id) })),
-  )
+  // PERF-3: one batched read for every hosted circle, not one query per circle.
+  const tasksByCircle = await listCircleTasksByCircle(hosted.map((c) => c.id))
+  const circles: HostedCircleTasks[] = hosted.map((c) => ({
+    id: c.id,
+    name: c.name,
+    tasks: tasksByCircle.get(c.id) ?? [],
+  }))
 
   return (
     <DashboardTemplate

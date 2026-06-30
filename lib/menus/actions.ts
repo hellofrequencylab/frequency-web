@@ -231,46 +231,52 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
     const colUpd = await db.from('menus').update({ columns: clampColumns(def.columns) }).eq('id', menuId)
     if (colUpd.error) return { ok: false, error: colUpd.error.message }
 
-    // Insert categories depth-first so a parent exists before its children. We map
-    // each synthetic default id to its freshly-inserted DB uuid as we go.
+    // Insert categories one DEPTH LEVEL at a time (PERF-10): a parent must exist
+    // before its children, but all categories at the same depth are independent, so
+    // each level is ONE batched insert instead of one round-trip per node. We map
+    // each synthetic default id to its freshly-inserted DB uuid as we go; the
+    // returned rows preserve input order, so we zip them back by index.
     const idMap = new Map<string, string>()
-    async function insertCategory(cat: ResolvedCategory, parentDbId: string | null): Promise<string | null> {
+    const categoryRow = (cat: ResolvedCategory, parentDbId: string | null) => ({
+      menu_id: menuId,
+      parent_id: parentDbId,
+      label: cat.label ?? null,
+      position: cat.position,
+      grid_col: clampGrid(cat.gridCol) ?? null,
+      grid_row: clampGrid(cat.gridRow) ?? null,
+      col_span: clampSpan(cat.colSpan) ?? 1,
+      min_access: cat.minAccess ?? 'visitor',
+      staff_domain: cleanStaffDomain(cat.staffDomain),
+      staff_level: cleanStaffLevel(cat.staffLevel),
+      icon: cat.icon ?? null,
+      blurb: cat.blurb ?? null,
+    })
+
+    // Seed the first level with the root categories (no parent).
+    let level: { cat: ResolvedCategory; parentDbId: string | null }[] = def.categories.map(
+      (cat) => ({ cat, parentDbId: null }),
+    )
+    while (level.length > 0) {
       const { data, error } = await db
         .from<{ id: string }>('menu_categories')
-        .insert({
-          menu_id: menuId,
-          parent_id: parentDbId,
-          label: cat.label ?? null,
-          position: cat.position,
-          grid_col: clampGrid(cat.gridCol) ?? null,
-          grid_row: clampGrid(cat.gridRow) ?? null,
-          col_span: clampSpan(cat.colSpan) ?? 1,
-          min_access: cat.minAccess ?? 'visitor',
-          staff_domain: cleanStaffDomain(cat.staffDomain),
-          staff_level: cleanStaffLevel(cat.staffLevel),
-          icon: cat.icon ?? null,
-          blurb: cat.blurb ?? null,
-        })
+        .insert(level.map(({ cat, parentDbId }) => categoryRow(cat, parentDbId)))
         .select('id')
-        .limit(1)
-      if (error) return null
-      const dbId = (data ?? [])[0]?.id ?? null
-      if (dbId) idMap.set(cat.id, dbId)
-      return dbId
-    }
-
-    // Walk categories, inserting and capturing the id map.
-    async function walk(cats: ResolvedCategory[], parentDbId: string | null): Promise<Result> {
-      for (const cat of cats) {
-        const dbId = await insertCategory(cat, parentDbId)
-        if (!dbId) return { ok: false, error: `Failed to insert category ${cat.label ?? cat.id}` }
-        const child = await walk(cat.children, dbId)
-        if (!child.ok) return child
+      if (error) return { ok: false, error: error.message }
+      const ids = (data ?? []) as { id: string }[]
+      if (ids.length !== level.length) {
+        return { ok: false, error: 'Failed to insert menu categories (row count mismatch)' }
       }
-      return { ok: true }
+      // Zip returned ids back to their synthetic ids, then queue this level's children.
+      const next: { cat: ResolvedCategory; parentDbId: string | null }[] = []
+      level.forEach(({ cat }, i) => {
+        const dbId = ids[i]?.id
+        if (dbId) {
+          idMap.set(cat.id, dbId)
+          for (const child of cat.children) next.push({ cat: child, parentDbId: dbId })
+        }
+      })
+      level = next
     }
-    const walked = await walk(def.categories, null)
-    if (!walked.ok) return walked
 
     // Insert items: root items (category_id null) + each category's items.
     type ItemInsert = {
