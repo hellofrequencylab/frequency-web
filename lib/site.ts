@@ -114,6 +114,7 @@ export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
   {
     label: "About",
     items: [
+      { label: "What is Frequency", href: "/what-is-frequency", desc: "The short version: what it is, how it works, why it exists" },
       { label: "About", href: "/about", desc: "The mission and the people building it" },
       { label: "Help center", href: "/help", desc: "Answers, guides, and support" },
       { label: "Privacy", href: "/privacy", desc: "How we handle your data" },
