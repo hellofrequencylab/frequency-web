@@ -39,6 +39,10 @@ const GUIDES: { path: string; label: string; desc: string }[] = [
   { path: '/friendship-as-an-adult', label: 'Friendship as an adult', desc: 'Why it gets hard to make friends after 30, and how to start.' },
   { path: '/how-to-build-community', label: 'How to build community', desc: 'How to start a community group that lasts, step by step.' },
   { path: '/life-after-the-feed', label: 'Life after the feed', desc: 'How to quit doomscrolling and replace it with something real.' },
+  { path: '/calm-down-fast', label: 'How to calm down fast', desc: 'What to do when you are wired and cannot switch off, and the quiet fix underneath it.' },
+  { path: '/meet-people-new-city', label: 'How to meet people in a new city', desc: 'You moved and know no one. The fastest honest way to meet people: pick one recurring thing and become a regular.' },
+  { path: '/feel-less-awkward-in-groups', label: 'Feeling less awkward in groups', desc: 'How to feel less awkward around new people: return to one small room and let the activity carry you.' },
+  { path: '/find-like-minded-people', label: 'Find like-minded people', desc: 'How to find your people by leading with what you care about and becoming a regular where it happens.' },
 ]
 
 // ── Live first-party stats (AIO citation lever, CONTENT-VOICE §8c) ───────────
