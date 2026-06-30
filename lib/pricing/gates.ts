@@ -16,7 +16,7 @@
 // billing on (P2/P3). The reader is fail-safe to the code map on any DB error.
 
 import { ENTITLEMENT_TIERS, type EntitlementTier } from '@/lib/core/entitlement'
-import { SPACE_PLANS, asSpacePlan, type SpacePlan } from './plans'
+import { SPACE_PLANS, asSpacePlan, isSpacePlanLabel, type SpacePlan } from './plans'
 
 // ── The two entitlement ladders (low → high) ────────────────────────────────────────────
 // Personal: free < crew < supporter (ENTITLEMENT_TIERS from lib/core/entitlement.ts).
@@ -24,7 +24,11 @@ const TIER_RANK: Record<EntitlementTier, number> = Object.fromEntries(
   ENTITLEMENT_TIERS.map((t, i) => [t, i]),
 ) as Record<EntitlementTier, number>
 
-// Space: free < practitioner < business < organization < whitelabel (SPACE_PLANS).
+// Space: free < pro < nonprofit < organization (SPACE_PLANS, collapsed per ADR-458). The plan-rank
+// gate is the COARSE paid-floor check; the FINE per-feature gating is the entitlement-key UNION
+// (spaceHasEntitlement, lib/spaces/entitlements.ts) the add-on resolver writes. Add-ons are toggles
+// WITHIN Pro, so they are not a higher plan rank — a feature that needs a specific add-on gates on its
+// entitlement KEY, not on this ladder.
 const PLAN_RANK: Record<SpacePlan, number> = Object.fromEntries(
   SPACE_PLANS.map((p, i) => [p, i]),
 ) as Record<SpacePlan, number>
@@ -48,25 +52,30 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   gamification_full: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // full loop; free = earn-only
   vera_unlimited: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // Vera beyond the free daily cap
 
-  // §5 space plans (reuse spaces.plan)
-  space_crm: { axis: 'plan', minEntitlement: 'practitioner', enabled: true }, // the per-Space CRM
-  space_email: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_automation: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_team: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_whitelabel: { axis: 'plan', minEntitlement: 'whitelabel', enabled: true },
-  space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // §5 space plans (reuse spaces.plan). COLLAPSED to the new ladder (ADR-458): the paid floor is
+  // 'pro' for every paid space feature (Pro core + the four add-ons), since add-ons are toggles WITHIN
+  // Pro rather than separate plan ranks. The fine-grained "does this space have email / the AI engine /
+  // branding" decision is the entitlement-KEY union (spaceHasEntitlement), which the add-on resolver
+  // set-to-targets; this plan-rank gate is only the coarse "is this a paid space" floor.
+  space_crm: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // the per-Space CRM (Pro core)
+  space_email: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on key 'email'
+  space_automation: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on
+  space_team: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Team add-on
+  space_whitelabel: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Branding add-on key 'whitelabel'
+  space_multi_pipeline: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
 
-  // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine, on the
-  // same plan ladder. The free wedge (Today suggest-only + summaries + read-only scoring) is NEVER a
-  // gate, so it has no entry here. Practitioner+ unlocks governed playbooks + advanced segments; the
-  // top rung (organization+) unlocks the full Resonance Graph + managed matching. While billing is
+  // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine. The free
+  // wedge (Today suggest-only + summaries + read-only scoring) is NEVER a gate, so it has no entry
+  // here. Pro core grants governed playbooks + advanced segments; the AI Engine add-on grants the
+  // resonance surface + the full Resonance Graph. The plan-rank floor is 'pro' for all three; the
+  // resonance keys additionally gate on their entitlement key (the AI Engine add-on). While billing is
   // OFF, featureAllowed short-circuits to true and these never bind (today's behavior).
-  space_crm_playbooks: { axis: 'plan', minEntitlement: 'practitioner', enabled: true },
-  space_crm_resonance: { axis: 'plan', minEntitlement: 'business', enabled: true },
-  space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'organization', enabled: true },
+  space_crm_playbooks: { axis: 'plan', minEntitlement: 'pro', enabled: true },
+  space_crm_resonance: { axis: 'plan', minEntitlement: 'pro', enabled: true },
+  space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'pro', enabled: true },
 }
 
 export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})
@@ -102,7 +111,8 @@ export function mergeGate(
   const row = overrides[feature]
   if (!code && !row) return null
   const base: FeatureGate = code ?? {
-    axis: (SPACE_PLANS as readonly string[]).includes(row?.minEntitlement ?? '') ? 'plan' : 'tier',
+    // Infer the axis from the label: a plan label (current or legacy, ADR-458) -> 'plan', else 'tier'.
+    axis: isSpacePlanLabel(row?.minEntitlement) ? 'plan' : 'tier',
     minEntitlement: 'free',
     enabled: true,
   }

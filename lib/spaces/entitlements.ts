@@ -18,6 +18,24 @@ import { atLeastSpaceRole, getSpaceMembership, type SpaceRole } from './membersh
 import { isJanitor, type WebRole } from '@/lib/core/roles'
 
 // ── Entitlements (pure: jsonb in, boolean out, default-deny) ─────────────────────────────
+//
+// THE PARTITION (Pricing ladder Phase A · ADR-458). `spaces.entitlements` holds TWO kinds of grant,
+// kept apart so an add-on toggling OFF removes only what the plan granted and never nukes a hand-grant:
+//   * BILLING-MANAGED keys live under a reserved nested object, `entitlements.billing` (shape
+//     `{ billing: { crm: true, email: true, … } }`). Written ONLY by the plan/add-on resolver
+//     (setSpacePlan / setSpaceAddons, service-role), which REPLACES the whole `billing` object to the
+//     exact target key set (set-to-target). A client can never forge a billing key (service-role only).
+//   * MANUAL grants stay as the existing TOP-LEVEL keys (`{ crm: true, … }`) an operator sets by hand.
+// A capability reads as granted when EITHER source has it `true` (the UNION). DEFAULT-DENY survives:
+// a missing key, a non-`true` value, a malformed blob, or a null Space all read as OFF.
+//
+// `crm.autonomy` (the Phase 3 per-Space autonomy DIAL, ADR-384) is NOT a billing key. It is read from
+// the TOP LEVEL only (spaceAutonomyLevel), so it stays an operator dial untouched by the resolver.
+
+/** The reserved TOP-LEVEL key the billing-managed namespace lives under. The resolver replaces the
+ *  object at this key wholesale (set-to-target); it is never a capability key itself, so the union
+ *  read skips it. */
+export const BILLING_NAMESPACE = 'billing' as const
 
 /** A normalized entitlement map: capability key -> granted. */
 export type Entitlements = Record<string, boolean>
@@ -32,16 +50,44 @@ export interface SpaceLike {
   id?: string
 }
 
-/** Normalize the raw `spaces.entitlements` jsonb to a clean `{ key: boolean }` map. DEFAULT-DENY
- *  is the whole contract: anything that isn't an object of booleans collapses to {} (or drops the
- *  bad keys), so a missing/garbage blob grants NOTHING. Only an explicit `true` counts as granted;
- *  any other value for a key reads as `false`. */
-export function spaceEntitlements(space: SpaceLike | null | undefined): Entitlements {
-  const raw = space?.entitlements
+/** Normalize a raw jsonb blob to a clean `{ key: boolean }` map, default-deny. Anything that is not
+ *  an object collapses to {}; only an explicit `true` counts as granted. PURE, internal. */
+function normalizeBlob(raw: unknown): Entitlements {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   const out: Entitlements = {}
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     out[key] = value === true
+  }
+  return out
+}
+
+/** Read the BILLING-MANAGED namespace (`entitlements.billing`) as a clean `{ key: boolean }` map,
+ *  default-deny. A missing/garbage `billing` object grants NOTHING. PURE. The resolver
+ *  (setSpacePlan / setSpaceAddons) is the only writer of this object. */
+export function spaceBillingEntitlements(space: SpaceLike | null | undefined): Entitlements {
+  const raw = space?.entitlements
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  return normalizeBlob((raw as Record<string, unknown>)[BILLING_NAMESPACE])
+}
+
+/** Normalize the raw `spaces.entitlements` jsonb to a clean `{ key: boolean }` map — the UNION of the
+ *  TOP-LEVEL manual grants and the BILLING-MANAGED namespace (`entitlements.billing`). A key reads as
+ *  granted when EITHER source has it `true`. DEFAULT-DENY is the whole contract: anything that isn't
+ *  an object of booleans collapses to {} (or drops the bad keys), so a missing/garbage blob grants
+ *  NOTHING; only an explicit `true` counts as granted. The reserved `billing` object itself is NOT a
+ *  capability key, so it never leaks into the map (only the keys INSIDE it do, unioned in). */
+export function spaceEntitlements(space: SpaceLike | null | undefined): Entitlements {
+  const raw = space?.entitlements
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  // Top-level manual grants, minus the reserved billing object (it is a container, not a capability).
+  const out: Entitlements = {}
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (key === BILLING_NAMESPACE) continue
+    out[key] = value === true
+  }
+  // Union the billing-managed keys: a billing `true` grants even if the top level is absent/false.
+  for (const [key, granted] of Object.entries(spaceBillingEntitlements(space))) {
+    if (granted) out[key] = true
   }
   return out
 }

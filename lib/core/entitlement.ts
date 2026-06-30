@@ -28,8 +28,17 @@ export const ENTITLEMENT_LABEL: Record<EntitlementTier, string> = {
  * Resolve a profile's entitlement tier from the billing flag. The column is live and
  * backfilled, so this is just the source of truth + a safe default; kept as the single
  * seam so any future billing logic (grace periods, comps) lives in one place.
+ *
+ * TRANSITION (Pricing ladder Phase A · ADR-458). The member tiers collapse to free / crew;
+ * Supporter is retired as a tier (it becomes a pay-what-you-want badge, `profiles.is_supporter`).
+ * This reader stays TOLERANT of the old `supporter` label during the transition window — it maps
+ * `supporter -> crew` at READ time, which is access-preserving (Supporter sat ABOVE Crew; both are
+ * paid, both cash in, both get full gamification, so collapsing to crew never reduces access). The
+ * collapse migration (pricing_member_tier) remaps the column the same way.
+ * TODO(ADR-458): drop the supporter mapping once the migration has applied and no profile carries it.
  */
 export function deriveTier(membershipTier: EntitlementTier | null | undefined): EntitlementTier {
+  if (membershipTier === 'supporter') return 'crew'
   return membershipTier ?? 'free'
 }
 

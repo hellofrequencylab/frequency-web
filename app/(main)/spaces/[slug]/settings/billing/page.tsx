@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceManageHref } from '@/lib/spaces/types'
-import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
@@ -132,7 +132,7 @@ export default async function SpaceBillingPage({
           slug={space.slug}
           monthly={rows.find((r) => r.key === 'whitelabel')?.monthly ?? null}
           setup={rows.find((r) => r.key === 'whitelabel')?.setup ?? null}
-          isWhitelabel={currentPlan === 'whitelabel'}
+          isWhitelabel={spaceHasEntitlement(space, 'whitelabel')}
           defaultEmail={defaultEmail}
         />
       </div>
