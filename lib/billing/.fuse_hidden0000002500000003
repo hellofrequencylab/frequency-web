@@ -1,0 +1,120 @@
+// FOUNDERS ROUND — the one-time founding-membership domain (Founders Round). The fixed
+// tier catalog (amounts + labels + the synced-price key namespace) and the single grant
+// that flips a buyer to a founding member on a PAID checkout. Server-only (service-role
+// write). Reused by BOTH the success-page confirm action and the Stripe webhook branch so
+// the grant is written in exactly one place and is idempotent either way.
+//
+// These are ONE-TIME purchases (Stripe mode:'payment'), a deliberately SEPARATE namespace
+// from the recurring crew/supporter `_founder` subscription variants in lib/billing/
+// pricing-keys.ts. The founder one-time price key is `founder_<tier>_onetime`, so it never
+// collides with the subscription catalog (allPublicPriceKeys / allFounderPriceKeys).
+
+import type Stripe from 'stripe'
+import { createAdminClient } from '@/lib/supabase/admin'
+
+/** The three founding tiers (Founders Round). Display copy lives in /founders/offer. */
+export const FOUNDER_TIERS = ['supporter', 'member', 'patron'] as const
+export type FounderTier = (typeof FOUNDER_TIERS)[number]
+
+/** The fixed one-time amount (USD cents) for each founding tier. Source of truth for the
+ *  inline-price fallback. Member is the $250 founder rate, locked for life. */
+const FOUNDER_AMOUNT_CENTS: Record<FounderTier, number> = {
+  supporter: 2500, // $25
+  member: 25000, // $250
+  patron: 100000, // $1,000
+}
+
+/** Human label per tier (used in the Stripe product name + thank-you copy). */
+const FOUNDER_LABEL: Record<FounderTier, string> = {
+  supporter: 'Founding Supporter',
+  member: 'Founding Member',
+  patron: 'Founding Patron',
+}
+
+/** The fixed one-time amount in cents for a founding tier. PURE. */
+export function founderOneTimeAmountCents(tier: FounderTier): number {
+  return FOUNDER_AMOUNT_CENTS[tier]
+}
+
+/** The display label for a founding tier. PURE. */
+export function founderTierLabel(tier: FounderTier): string {
+  return FOUNDER_LABEL[tier]
+}
+
+/** The `pricing_stripe_prices` key for a tier's one-time founder price (when synced). PURE.
+ *  Its own namespace (`founder_<tier>_onetime`) so it never collides with the subscription
+ *  founder variants (`crew_monthly_founder`, etc.). */
+export function founderOneTimePriceKey(tier: FounderTier): string {
+  return `founder_${tier}_onetime`
+}
+
+/** Narrow an arbitrary metadata string to a FounderTier, or null (default-deny). PURE. */
+export function asFounderTier(value: string | null | undefined): FounderTier | null {
+  return (FOUNDER_TIERS as readonly string[]).includes(value ?? '') ? (value as FounderTier) : null
+}
+
+/**
+ * Grant the founding membership behind a PAID founders Checkout session. Idempotent and
+ * write-once-shaped: it sets profiles.is_founding_member=true, records the founder tier (in
+ * profiles.meta.founder.tier), and stores the locked price id (profiles.locked_price_id) so
+ * the member is grandfathered at the founder rate for life. Returns the granted tier, or null
+ * when the session is not a paid founders session (so a non-founders / unpaid session is a
+ * clean no-op).
+ *
+ * This is the SINGLE grant point, shared by the webhook branch and the success-page confirm
+ * action, so the founding membership lands once regardless of which fires first. Re-running it
+ * (a Stripe retry, a webhook + confirm race) is harmless: it writes the same fixed values.
+ *
+ * NOTE: this does NOT trust billingLive() — it is only ever reached AFTER a real paid Stripe
+ * session exists (gate enforced at session creation), so a paid session must be honored even
+ * if the operator later toggled the flag.
+ */
+// authz-delegated: the buyer identity is bound to the Stripe session (metadata.profile_id /
+// client_reference_id, written by the gated createFounderCheckout from the auth session, never
+// client-supplied), and the write is scoped to that profile id (.eq('id', profileId)). The only
+// callers are the signature-verified Stripe webhook and the ownership-checked success-page confirm
+// action, both reached ONLY for a real paid founders session. No per-caller scope is added here by
+// design — Stripe IS the authority for "this payment happened, for this profile."
+export async function grantFounderFromSession(session: Stripe.Checkout.Session): Promise<FounderTier | null> {
+  if (session.metadata?.kind !== 'founders') return null
+  if (session.payment_status !== 'paid') return null
+
+  const tier = asFounderTier(session.metadata?.founder_tier)
+  if (!tier) return null
+
+  const profileId = session.metadata?.profile_id ?? session.client_reference_id ?? null
+  if (!profileId) return null
+
+  const admin = createAdminClient()
+
+  // The concrete Stripe price id actually charged (the locked founder price). Prefer the line
+  // item's price id; the payment intent id is a safe fallback so locked_price_id is never null
+  // for a member tier (lets the founder lock resolve at a future renewal, ADR-363).
+  const lineItems = (session.line_items?.data ?? []) as Stripe.LineItem[]
+  const chargedPriceId =
+    (typeof lineItems[0]?.price?.id === 'string' ? lineItems[0]?.price?.id : null) ??
+    (typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null)
+
+  // Merge the founder tier into profiles.meta.founder (the existing founder meta sub-object,
+  // app/(main)/founder/founder-actions.ts) so we record the tier without a new column.
+  const { data: row } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
+  const meta = ((row?.meta ?? {}) as Record<string, unknown>) ?? {}
+  const founderMeta = (meta.founder ?? {}) as Record<string, unknown>
+
+  // Only the Founding Member tier locks a price for life; supporter/patron are one-time perks.
+  const lockPrice = tier === 'member' ? chargedPriceId : null
+
+  await admin
+    .from('profiles')
+    .update({
+      is_founding_member: true,
+      ...(lockPrice ? { locked_price_id: lockPrice } : {}),
+      meta: {
+        ...meta,
+        founder: { ...founderMeta, tier, founder_round: true, granted_at: new Date().toISOString() },
+      },
+    })
+    .eq('id', profileId)
+
+  return tier
+}

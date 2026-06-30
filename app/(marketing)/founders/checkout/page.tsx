@@ -1,15 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { billingLive } from '@/lib/pricing/settings'
+import { FounderCheckoutButton } from '@/components/marketing/founder-checkout-button'
+import { asFounderTier, type FounderTier } from '@/lib/billing/founders'
 
-// STUB checkout route for the live-checkout path (billingLive() === true). This is
-// a PLACEHOLDER only, it does NOT charge, create a Stripe session, or take a card.
-// It exists so the flag-gated live CTA has a real destination today; the real
-// founding-checkout flow lands here later WITHOUT a page rewrite.
+// The one-time Founders Round checkout route.
 //
-// While billingLive() is false (today), this page renders the "not open yet" state
-// and routes the reader back to the free reservation, so a stray link can never
-// imply a charge.
+// While billingLive() is false (today), this page renders the "not open yet" state and
+// routes the reader back to the free reservation, so a stray link can never imply a charge.
+//
+// When billingLive() is true (after the owner flips billing_live), it renders the real
+// "Complete your founding membership" CTA, which calls the GATED createFounderCheckout
+// server action and redirects to Stripe. The gate lives in the action, not the page, so
+// even a live render cannot charge until billing is actually on.
 
 export const metadata: Metadata = {
   title: 'Founding checkout',
@@ -23,6 +26,7 @@ export default async function FoundersCheckoutPage({
 }) {
   const { tier } = await searchParams
   const live = await billingLive()
+  const defaultTier: FounderTier = asFounderTier(tier) ?? 'member'
 
   return (
     <section className="px-6 py-28 sm:py-32">
@@ -33,20 +37,13 @@ export default async function FoundersCheckoutPage({
         {live ? (
           <>
             <h1 className="font-display uppercase text-text text-4xl sm:text-5xl mb-4">
-              Checkout is almost here.
+              Complete your founding membership.
             </h1>
             <p className="text-lg text-muted leading-relaxed mb-8">
-              This is the founding checkout placeholder
-              {tier ? ` for the ${tier} tier` : ''}. Live payment is being wired
-              up. Your founder rate is locked in the moment it opens. Founding
-              memberships are a membership, not an investment.
+              Pick your tier and check out. Your founder rate is locked in the moment
+              you join. Founding memberships are a membership, not an investment.
             </p>
-            <Link
-              href="/founders/offer"
-              className="inline-flex rounded-2xl bg-primary text-on-primary px-8 py-3.5 text-base font-bold hover:bg-primary-hover transition-colors"
-            >
-              Back to the offer
-            </Link>
+            <FounderCheckoutButton defaultTier={defaultTier} />
           </>
         ) : (
           <>
