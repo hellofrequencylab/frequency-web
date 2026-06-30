@@ -12,6 +12,7 @@ import {
   Lead,
   Body,
   Button,
+  PullQuote,
 } from '@/components/marketing/marketing-ui'
 import { FounderCtaButton } from '@/components/marketing/founder-cta'
 import { JsonLd } from '@/components/json-ld'
@@ -62,6 +63,24 @@ const HOW_IT_WORKS = [
   {
     title: 'Play the Quest',
     body: 'Seasonal practices and challenges, earn your way up, help shape what gets built.',
+  },
+]
+
+// The rally: why this matters and why now, written plain per CONTENT-VOICE
+// (campfire-honest, concrete, no hype words, no em dashes). This is the "what
+// we're actually building, together" beat that turns a reader into a Founder.
+const THE_RALLY = [
+  {
+    label: 'It only works if people show up',
+    body: 'A community is the people in the room, not the app around them. The first 150 set the tone everyone who comes after inherits.',
+  },
+  {
+    label: 'Early is the whole point',
+    body: 'Being first is not a perk we tacked on. The founding cohort picks the first cities, the first gatherings, and what gets built next.',
+  },
+  {
+    label: 'Small on purpose',
+    body: 'We capped it at 150 so it stays a room you can actually know, not a feed you scroll. When it is full, it is full.',
   },
 ]
 
@@ -199,6 +218,41 @@ export default function FoundersPage() {
           When the doors open, you were here first, and it shows.
         </p>
         <Button href="/founders/offer">Become a Founder</Button>
+      </Section>
+
+      {/* ── The rally ────────────────────────────────────────────────────────── */}
+      <PullQuote tone="canvas" cite="Why the first 150 matter">
+        A community is the people who{' '}
+        <span className="text-primary">show up</span>, not the app around them.
+      </PullQuote>
+
+      <Section tone="surface" pad="pt-10 pb-20 sm:pt-12 sm:pb-24">
+        <SectionHeading
+          eyebrow="The rally"
+          title="Why now, and why you."
+          kicker="Not a launch. A first room, and you help set the tone."
+        />
+        <Body>
+          Most apps want your attention. We want your Thursday night. The founding
+          round is how Frequency starts for real: 150 people who reserve a spot now,
+          help pick the first cities, and show up first when the doors open.
+        </Body>
+        <div className="grid gap-4 sm:grid-cols-3 mt-2">
+          {THE_RALLY.map(({ label, body }) => (
+            <Card key={label} tone="feature" className="hover:border-border-strong transition-colors">
+              <h3 className="font-display uppercase text-text text-2xl leading-none">{label}</h3>
+              <p className="mt-3 text-base text-muted leading-relaxed">{body}</p>
+            </Card>
+          ))}
+        </div>
+        <p className="mt-8 text-base text-muted leading-relaxed">
+          Reserving is free. No card, no charge yet. You are not buying a product,
+          you are taking a seat at the start of something and locking your founder
+          rate for life.
+        </p>
+        <div className="mt-8">
+          <FounderCtaButton formHref="/founders/offer#reserve" />
+        </div>
       </Section>
 
       {/* ── Built in public ──────────────────────────────────────────────────── */}
