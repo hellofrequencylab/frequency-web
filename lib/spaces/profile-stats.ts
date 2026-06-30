@@ -5,25 +5,34 @@
 //
 // Proof over claims (CONTENT-VOICE §6f): honest first-party counts, plain-noun labels (no "points").
 
-import { blueprintForType, type HeroStat } from './blueprints'
+import { type HeroStat } from './blueprints'
+import { templateDescriptorForSpace, type TemplateResolverInput } from './templates'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpaceMembers } from './membership'
 
-/** One resolved hero stat: the blueprint's label + the live value from the Space's own rows. */
+/** One resolved hero stat: the template's label + the live value from the Space's own rows. */
 export interface ResolvedStat {
   metric: HeroStat['metric']
   label: string
   value: number
 }
 
-/** Compute the blueprint's hero stats (up to four) for a Space from its own rows. Returns [] when
- *  the type has no blueprint. FAIL-SAFE: every underlying read degrades to 0. */
-export async function resolveProfileStats(spaceId: string, type: string): Promise<ResolvedStat[]> {
-  const blueprint = blueprintForType(type)
-  if (!blueprint) return []
+/** Compute the public-page TEMPLATE's hero stats (up to four) for a Space from its own rows (ADR-472):
+ *  the ordered stat set is now driven by the resolved layout template, not the per-type blueprint, so the
+ *  four templates (Book / Schedule / Storefront / Hub) show distinct, template-framed numbers. FAIL-SAFE:
+ *  every underlying read degrades to 0, and the hero drops any stat that resolves to 0. The legacy
+ *  `(spaceId, type)` call site keeps working: a bare `type` string resolves through the template layer
+ *  with no variant/plan/preferences (the per-type fallback template), so the resolver stays total. */
+export async function resolveProfileStats(
+  spaceId: string,
+  input: string | TemplateResolverInput,
+): Promise<ResolvedStat[]> {
+  const resolverInput: TemplateResolverInput =
+    typeof input === 'string' ? { type: input as TemplateResolverInput['type'] } : input
+  const descriptor = templateDescriptorForSpace(resolverInput)
 
   const [events, practices, journeys, circles, members] = await Promise.all([
     listEventsForSpace(spaceId, { limit: 200 }),
@@ -49,15 +58,21 @@ export async function resolveProfileStats(spaceId: string, type: string): Promis
       case 'circles':
         return activeCircles
       case 'members':
-        // The lead stat for the Business/Organization/Coaching/Event Space blueprints: active
-        // space_members (Members / Supporters / Cohort / Attendees, labeled by the blueprint).
+        // The lead "people" stat: active space_members (Members / Supporters / People supported,
+        // labeled by the template).
         return activeMembers
-      // Any remaining metric a future blueprint declares (e.g. clients/standing) isn't sourced yet;
-      // it resolves to 0 and is dropped by the hero (which shows only non-zero stats).
+      case 'clients':
+        // The Book / Storefront templates frame the same active members as "Clients" (proof over
+        // claims: the same honest first-party count, a client-facing label). No separate source.
+        return activeMembers
+      // `standing` has no honest live source yet, so it resolves to 0 and is dropped by the hero
+      // (which shows only non-zero stats). Never an invented number (CONTENT-VOICE §6f).
       default:
         return 0
     }
   }
 
-  return blueprint.heroStats.slice(0, 4).map((s) => ({ metric: s.metric, label: s.label, value: valueFor(s.metric) }))
+  return descriptor.hero.heroStats
+    .slice(0, 4)
+    .map((s) => ({ metric: s.metric, label: s.label, value: valueFor(s.metric) }))
 }

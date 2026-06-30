@@ -13,6 +13,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
+import { blueprintForSpace } from '@/lib/spaces/templates'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { ProfileHeroStats } from '@/components/spaces/profile-hero-stats'
@@ -155,7 +156,20 @@ export default async function SpaceProfileLayout({
   // Owner surfaces returned above, so a manage / settings visit is never miscounted as a profile view.
   void trackSpaceProfileViewOnce(space.id, viewerProfileId)
 
-  const blueprint = blueprintForType(space.type)
+  // The EFFECTIVE blueprint is the per-type composition RE-FRAMED by the resolved public-page TEMPLATE
+  // (Book / Schedule / Storefront / Hub, ADR-472): the template forwards the primary CTA, the hero stat
+  // set, the tab order, and the About body lead block, while the per-type blueprint still supplies the
+  // tab labels + module sets + the default accent. So two Spaces of the same type but different Mode read
+  // as visibly different sites, and an operator template override (preferences.template) wins on top. The
+  // resolver is pure + total; a null blueprint (unknown type) still fails closed to About-only below.
+  const baseBlueprint = blueprintForType(space.type)
+  const templateInput = {
+    type: space.type,
+    variant: space.modeVariant,
+    plan: space.plan,
+    preferences: space.preferences,
+  }
+  const blueprint = blueprintForSpace(baseBlueprint, templateInput)
   const brandName = space.brandName ?? space.name
   const typeLabel = spaceTypeLabel(space.type)
 
@@ -238,7 +252,7 @@ export default async function SpaceProfileLayout({
             tagline={tagline}
             stats={
               <Suspense fallback={<HeroStatsSkeleton />}>
-                <ProfileHeroStats spaceId={space.id} type={space.type} />
+                <ProfileHeroStats spaceId={space.id} input={templateInput} />
               </Suspense>
             }
             actions={

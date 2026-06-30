@@ -3,6 +3,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { blueprintForType, tabForSegment, type EntityTabId } from '@/lib/spaces/blueprints'
+import { blueprintForSpace } from '@/lib/spaces/templates'
 import { PageModules } from '@/components/widgets/page-modules'
 
 // The shared BODY of one entity-profile tab (ENTITY-SPACES-BUILD §B.1). Every tab page
@@ -22,7 +23,16 @@ export async function ProfileTabBody({ slug, tabId }: { slug: string; tabId: Ent
   if (!space) notFound()
   setActiveSpace(space)
 
-  const blueprint = blueprintForType(space.type)
+  // The EFFECTIVE blueprint is re-framed by the resolved public-page TEMPLATE (ADR-472): the About tab's
+  // module ORDER now leads with the template's lead block (so the four templates open on a distinct body),
+  // while every other tab keeps its blueprint module set. The per-type blueprint supplies the labels +
+  // module sets; the template re-orders. Falls closed to the per-type blueprint when no template applies.
+  const blueprint = blueprintForSpace(blueprintForType(space.type), {
+    type: space.type,
+    variant: space.modeVariant,
+    plan: space.plan,
+    preferences: space.preferences,
+  })
   // Fail closed: an unknown type (no blueprint) shows About only (a single safe module).
   const tab = blueprint ? tabForSegment(blueprint, tabId) : { id: 'about' as const, label: 'About', modules: ['entity-about'] }
   // The section route carries the family scope; the tab id distinguishes the layout-store row a
