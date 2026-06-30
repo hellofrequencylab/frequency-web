@@ -81,6 +81,24 @@ onboarding seeder, and the marketing/landing pages. One source of truth, read ev
   Mode default never clobbers it (track "set by operator" so re-presets are safe, the same posture as
   the brand accent "guest" rule in the blueprints).
 
+### 2d. Modes belong to tiers (Tier × Mode, ADR-472)
+
+Modes thread HORIZONTALLY across the four Space tiers (Pro · Business · Non-profit · Organization,
+`docs/PRICING-LADDER-PLAN.md` §1b). The Tier sets the depth + seat envelope; the Mode sets the layout +
+features-forward inside it. A tier surfaces only a CURATED set of Modes in the create wizard + Mode settings
+(framing only, never a gate):
+
+| Tier | Modes surfaced |
+|---|---|
+| **Pro** (solo) | Practitioner · Coaching · Creator (solo-shaped, monetization-forward layouts) |
+| **Business** (team) | + Business · Studio · Event space (all modes, full depth) |
+| **Non-profit** | Organization · Community forward; all available |
+| **Organization** | all + **Custom mode** (bespoke layout/features, made-to-order) · Lab |
+
+The `ModeProfile` registry gains the curated per-tier sets + the Organization-only **Custom mode**. Switching
+Mode still changes only ordering/labels/defaults (ADR-461 §2c), so the Tier × Mode pairing never affects any
+capability gate.
+
 ## 3. The role surface + settings rework
 
 ### 3a. Create wizard — "What do you run?"
