@@ -199,6 +199,14 @@ The full 18-job list is the source of truth in `vercel.json`; this table groups 
 the urgency of their silence. The heartbeat monitor (H0-5) owns the paging; this row sets
 the contract it pages against.
 
+**Checking the contract.** `scripts/cron-freshness.mjs` reads `vercel.json`, derives each
+job's fresh-by window (2 × interval per the rule above), and reports whether a heartbeat
+monitor is configured for it — so a *paging-blind* cron (one whose silent death would
+never reach a human) is visible instead of assumed-covered. It reads no secret; it only
+checks for the presence of the `CRON_HEARTBEAT_*` env vars `cron-heartbeat.ts` resolves.
+Run `pnpm check:cron-freshness` to print the table, or `--strict` in CI to fail when any
+job lacks monitor coverage.
+
 ### 4b. What happens when an SLO is breached
 
 - **Page (immediate):** uptime, error rate, any cron going stale, queue lag over budget.
@@ -230,6 +238,13 @@ node scripts/perf-baseline.mjs --json     # machine-readable output for pasting 
 # computes the per-1k-members unit costs for §3b.
 node scripts/cost-baseline.mjs            # prints the template + any computed unit costs
 node scripts/cost-baseline.mjs --json     # machine-readable output
+
+# Cron freshness: reads vercel.json, derives each of the 18 jobs' §4a fresh-by window,
+# and reports which jobs have a heartbeat monitor configured (presence only — no secret
+# read). Use --strict in CI to fail when a cron is paging-blind.
+node scripts/cron-freshness.mjs           # print the freshness contract table
+node scripts/cron-freshness.mjs --json    # machine-readable output
+node scripts/cron-freshness.mjs --strict  # exit 1 if any job has no monitor
 ```
 
 **Environment (all optional; unset = documentation-only no-op):**
@@ -244,6 +259,8 @@ node scripts/cost-baseline.mjs --json     # machine-readable output
 | `ANTHROPIC_MONTHLY_SPEND_USD` | cost | this month's Anthropic bill |
 | `RESEND_MONTHLY_SPEND_USD` | cost | this month's Resend bill |
 | `UPSTASH_MONTHLY_SPEND_USD` | cost | this month's Upstash bill |
+| `CRON_HEARTBEAT_BASE_URL` | cron-freshness | presence-checked (not read) to mark every job covered |
+| `CRON_HEARTBEAT_URL_<SLUG>` | cron-freshness | presence-checked (not read) to mark one job covered |
 
 No secret (API key, DSN, service-role key) is read or printed by either script. Spend
 figures are non-sensitive dollar amounts you copy from each vendor's billing console.
@@ -257,5 +274,6 @@ figures are non-sensitive dollar amounts you copy from each vendor's billing con
 | **Once now (H0 close-out)** | Owner fills the §2b latency table + §2c plans, the §3a/§3b cost tables. Scripts make this mechanical. |
 | **Per H3 change** | Re-capture the affected path's row in §2b + its §2c plan; confirm it beats the §4 SLO. |
 | **Monthly** | Re-run `cost-baseline.mjs`, append a dated §3 snapshot; watch the per-1k trend. |
+| **Per deploy / CI** | `pnpm check:cron-freshness --strict` confirms no cron is paging-blind (every §4a job has a heartbeat monitor) before shipping. |
 | **Per incident** | If an SLO pages, the runbook (H4-7) references the relevant §4 row. |
 ```
