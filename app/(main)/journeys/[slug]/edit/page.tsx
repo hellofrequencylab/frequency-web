@@ -11,6 +11,7 @@ import { JourneyAdvanced } from '@/components/journey/v2/journey-advanced'
 import { JourneyBuilder } from '@/components/journey/v2/journey-builder'
 import { JourneyComposer } from '@/components/journey/v2/journey-composer'
 import { JourneyDangerZone } from '@/components/journey/v2/journey-danger-zone'
+import { JourneyExport } from '@/components/journey/v2/journey-export'
 
 // Journeys v2 — the author-only structure editor route (ADR-252, J4b). Loads the plan's
 // block tree and hands it to the client editor. Only the author may open it; everyone else
@@ -128,7 +129,14 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
             initialQuestId={plan.quest_id}
             initialWindowStartsAt={plan.window_starts_at}
             initialWindowEndsAt={plan.window_ends_at}
-            footer={<JourneyDangerZone planId={plan.id} title={plan.title} />}
+            footer={
+              <div className="space-y-4">
+                <JourneyExport slug={slug} />
+                <div className="border-t border-border pt-4">
+                  <JourneyDangerZone planId={plan.id} title={plan.title} />
+                </div>
+              </div>
+            }
           />
         </div>
       }
