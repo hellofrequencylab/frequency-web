@@ -36,9 +36,9 @@ export function InlineBetaCapture({
 
   if (status === 'done' || status === 'already') {
     return (
-      <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-sm" role="status">
         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-bg text-success">
-          <Check className="h-5 w-5" strokeWidth={2.5} />
+          <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden />
         </div>
         <h3 className="text-lg font-semibold text-text">
           {status === 'already' ? "You're already on the list" : 'Check your inbox'}
@@ -76,6 +76,8 @@ export function InlineBetaCapture({
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           aria-label="Email"
+          aria-describedby={error ? 'inline-beta-error' : undefined}
+          aria-invalid={error ? true : undefined}
           placeholder="you@email.com"
           className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle outline-none transition-colors focus:border-border-strong"
         />
@@ -85,10 +87,14 @@ export function InlineBetaCapture({
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-base font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {status === 'loading' ? 'Adding…' : 'Join the Beta'}
-          {status !== 'loading' && <ArrowRight className="h-4 w-4" />}
+          {status !== 'loading' && <ArrowRight className="h-4 w-4" aria-hidden />}
         </button>
       </div>
-      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {error && (
+        <p id="inline-beta-error" className="mt-3 text-sm text-danger" role="alert">
+          {error}
+        </p>
+      )}
     </form>
   )
 }
