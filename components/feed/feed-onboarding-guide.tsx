@@ -61,6 +61,9 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
   const current = status.current
   if (!current) return null // complete — the JourneyBoard tracker takes over
 
+  // One step left → a gentle "almost there" cue, using only the status counts.
+  const lastStepLeft = status.todo.length === 1
+
   const tourEl = tourOpen ? (
     <SpotlightTour stops={SPOTLIGHT_STOPS} startStop={resumeStop} onExit={onTourExit} />
   ) : null
@@ -78,7 +81,7 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
         >
           <Compass className="h-4 w-4 shrink-0 text-broadcast-strong" />
           <span className="text-sm font-semibold text-text">Getting set up</span>
-          <span className="text-xs font-bold tabular-nums text-broadcast-strong">{status.pct}%</span>
+          <span className="text-xs font-medium tabular-nums text-broadcast-strong/80">{status.doneCount} of {status.total}</span>
           <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-broadcast-bg">
             <span className="block h-full rounded-full bg-broadcast transition-all" style={{ width: `${status.pct}%` }} />
           </span>
@@ -111,6 +114,11 @@ export function FeedOnboardingGuide({ status }: { status: OnboardingStatus }) {
           </span>
         </div>
         <div className="min-w-0 flex-1">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-broadcast-strong/80">
+            {lastStepLeft
+              ? 'Almost there — one step left'
+              : `Step ${status.doneCount + 1} of ${status.total}`}
+          </p>
           <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>
           <p className="mt-0.5 text-sm leading-snug text-muted">{current.blurb}</p>
         </div>
