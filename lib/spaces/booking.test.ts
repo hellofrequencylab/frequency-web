@@ -201,6 +201,7 @@ import {
   normalizeWindow,
   generateOpenSlots,
   slotLengthAt,
+  summarizeAvailability,
   zoneOffsetMinutes,
   zonedTimeToUtc,
   setSpaceAvailability,
@@ -632,5 +633,41 @@ describe('listSpaceBookings (action) — owner only', () => {
     db.profiles = []
     const list = await listSpaceBookings('space-1')
     expect(list[0]!.memberName).toBe('A member')
+  })
+})
+
+// ── summarizeAvailability (pure, the owner-console at-a-glance read) ─────────────────────────────
+describe('summarizeAvailability', () => {
+  const w = (
+    weekday: number,
+    startMinute: number,
+    endMinute: number,
+    slotMinutes: number,
+  ): AvailabilityWindow => ({ weekday, startMinute, endMinute, slotMinutes, timezone: 'UTC' })
+
+  it('is all zero for no windows', () => {
+    expect(summarizeAvailability([])).toEqual({
+      windowCount: 0,
+      dayCount: 0,
+      weeklySlots: 0,
+      slotLengths: [],
+    })
+  })
+
+  it('counts only whole slots that fit (drops the trailing partial, like the generator)', () => {
+    // 09:00-10:15 (75 min) at 30 min => 2 whole slots (the trailing 15 min is dropped).
+    expect(summarizeAvailability([w(1, 540, 615, 30)]).weeklySlots).toBe(2)
+  })
+
+  it('aggregates days, weekly slots, and distinct ascending slot lengths', () => {
+    const s = summarizeAvailability([
+      w(1, 540, 600, 30), // Mon 09:00-10:00 @30 => 2
+      w(1, 600, 660, 60), // Mon 10:00-11:00 @60 => 1
+      w(3, 540, 600, 30), // Wed 09:00-10:00 @30 => 2
+    ])
+    expect(s.windowCount).toBe(3)
+    expect(s.dayCount).toBe(2) // Mon + Wed (the two Monday windows collapse to one day)
+    expect(s.weeklySlots).toBe(5)
+    expect(s.slotLengths).toEqual([30, 60])
   })
 })

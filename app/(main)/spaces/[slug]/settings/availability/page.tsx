@@ -7,6 +7,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/components/spaces/booking-availability-form'
+import { BookingAvailabilitySummary } from '@/components/spaces/booking-availability-summary'
 import { BookingOwnerList } from '@/components/spaces/booking-owner-list'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
@@ -96,6 +97,10 @@ export default async function SpaceAvailabilityPage({
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-8">
+        {/* A read-only read of what the saved windows offer members (weekly slots, days, lengths),
+            derived purely from the windows already loaded above. Renders null when none are saved. */}
+        <BookingAvailabilitySummary windows={windows} />
+
         {/* A disabled fieldset renders the editor READ-ONLY for a staff preview (it natively disables
             every nested control in the form). `display: contents` keeps it out of the layout box. */}
         <fieldset disabled={staffViewing} className="contents">

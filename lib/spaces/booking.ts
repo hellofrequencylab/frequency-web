@@ -244,6 +244,44 @@ export function slotLengthAt(
   return null
 }
 
+/** A plain-language read of what a Space currently publishes, derived purely from its windows (no
+ *  IO). Used by the owner console to show capacity at a glance: how many weekly slots are offered,
+ *  how many distinct weekdays carry a window, and the distinct slot lengths in use. `weeklySlots` is
+ *  the count of slots one full week of these windows yields (the same fully-fitting slice the
+ *  generator uses), so it tracks what members actually see. Empty windows give an all-zero summary. */
+export interface AvailabilitySummary {
+  /** Number of availability windows published. */
+  windowCount: number
+  /** Number of distinct weekdays that carry at least one window. */
+  dayCount: number
+  /** Total bookable slots one week of these windows yields. */
+  weeklySlots: number
+  /** The distinct slot lengths (minutes) in use, ascending. */
+  slotLengths: number[]
+}
+
+/** Summarize a Space's published windows for the owner console (pure, testable). Counts only fully
+ *  fitting slots per window (matching the generator's trailing-partial drop), so the weekly total is
+ *  the real offered capacity. */
+export function summarizeAvailability(windows: AvailabilityWindow[]): AvailabilitySummary {
+  const days = new Set<number>()
+  const lengths = new Set<number>()
+  let weeklySlots = 0
+  for (const w of windows) {
+    days.add(w.weekday)
+    lengths.add(w.slotMinutes)
+    // Whole slots that fit in [startMinute, endMinute); a trailing partial is dropped (as the
+    // generator drops it), so the count matches what members can actually book.
+    weeklySlots += Math.floor((w.endMinute - w.startMinute) / w.slotMinutes)
+  }
+  return {
+    windowCount: windows.length,
+    dayCount: days.size,
+    weeklySlots,
+    slotLengths: [...lengths].sort((a, b) => a - b),
+  }
+}
+
 // ── IO: the untyped admin-client seams (tables not in generated types yet, ADR-246) ────────────
 
 // Loosely-typed builders for the two not-yet-typed tables, mirroring lib/spaces/membership.ts.
