@@ -8,7 +8,13 @@
 -- NOTE: this SUPERSEDES the feed_for_viewer body in 20260604185000_member_geo_and_
 -- local_feed.sql (which lacks the demo predicate). That migration's geo COLUMNS were
 -- applied separately; this is the reconciled function.
+-- Drop BOTH the pre-geo 2-arg signature and the geo 5-arg signature created in
+-- 20260604185000_member_geo_and_local_feed.sql. The geo version there returns a
+-- table WITHOUT the `is_demo` column; this migration's body adds `is_demo`, which
+-- changes the OUT row type. Postgres rejects CREATE OR REPLACE on a return-type
+-- change, so the existing 5-arg function must be dropped first.
 drop function if exists public.feed_for_viewer(text, integer);
+drop function if exists public.feed_for_viewer(text, integer, double precision, double precision, integer);
 
 create or replace function public.feed_for_viewer(
   _sort     text             default 'relevant',
