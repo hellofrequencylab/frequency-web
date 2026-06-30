@@ -173,7 +173,7 @@ analytics rollup (entry→wedge→capture→convert with drop-off).
   `context.funnel_id` / `context.funnel_stage` onto the engagement events those components emit so the
   rollup populates without manual context.
 
-### Engine 3 — Waitlist + Application/Intake System  ·  🆕 (beta funnel ✅ as base)
+### Engine 3 — Waitlist + Application/Intake System  ·  🟡 core ✅ (GE3-1..4, ADR-456); GE3-5/6 deferred
 **Purpose:** the dual-track top of funnel: **builders apply** (review queue → accept → host
 onboarding), **seekers join** manifesto-first with a **referral position**; plus **operator
 applications** (coach/practitioner/business/nonprofit/etc.).
@@ -189,10 +189,25 @@ share), acceptance email → induction.
 - **L2:** Application **review queue** (filter by track/status, one-tap accept/decline + reason,
   notes), waitlist manager (referral-position view, cohort gating, bulk invite), conversion stats.
 - **L3:** per-application detail console (answers, applicant trail from CRM, decision history).
-**Tasks:** GE3-1 `applications` + `waitlist_entries` schema + RLS; GE3-2 apply-to-host flow +
-acceptance → host role + Starter Circle handoff; GE3-3 operator application flows (per persona);
-GE3-4 review-queue admin; GE3-5 referral-position + share mechanics; GE3-6 cohort gating + bulk
-invite. **Notion:** "Waitlist page live" (P0), "Recruit founding builders" (P0).
+**Tasks:**
+- ✅ GE3-1 `applications` + `waitlist_entries` schema + RLS — `supabase/migrations/20260914000000_applications.sql`
+  (two tables, RLS staff-read + member-own-read, server-mediated writes; partial unique indexes guard
+  one-open-application-per-track + waitlist dedupe). **NOT applied; ships for hand-review.** ADR-456.
+- ✅ GE3-2 apply-to-host flow + acceptance → host role + Starter Circle handoff —
+  `app/(main)/apply/*` (member surface) + `lib/applications/handoff.ts` `decideApplication`, which on a
+  host accept REUSES `remixTemplate` (lib/circles/remix.ts): grants host (`ensureHostOnOwnership`) and
+  hands off a Starter Circle draft. The handoff is recorded on the row so re-running accept is a no-op.
+- ✅ GE3-3 operator application flows (per persona) — `lib/applications/tracks.ts` (code-first tracks:
+  host + practitioner/partner/coach/business/nonprofit/collective; only host grants host, operator tracks
+  record the accept and defer Space provisioning to GE10). Reachable at `/apply/<track>`.
+- ✅ GE3-4 review-queue admin — `app/(main)/admin/growth/applications/*` (the queue with track/status
+  filters + KPIs, the per-application detail console with answers + decision trail + accept/decline,
+  the seeker waitlist count at a glance). Composed from the kit; gated on the `members` capability.
+- ⏳ GE3-5 referral-position + share mechanics (DEFERRED): the schema carries `position`,
+  `referred_by_profile_id`, and `cohort`; position is a plain append today (`nextWaitlistPosition`).
+- ⏳ GE3-6 cohort gating + bulk invite (DEFERRED): `cohort` + `status` land it without a migration.
+
+**Notion:** "Waitlist page live" (P0), "Recruit founding builders" (P0).
 
 ### Engine 4 — Onboarding Sequence Engine  ·  🟡 extend
 **Purpose:** per-persona stepped flows to first real action, fully instrumented; the activation

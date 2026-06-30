@@ -251,6 +251,8 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
       { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Entry points' },
       { href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', Icon: Share2, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
+      // ── Waitlist & Applications (Growth OS Engine 3) ──
+      { href: '/admin/growth/applications', label: 'Applications', desc: 'The dual-track review queue: builders apply to host, operators bring an offering, and seekers wait for a Circle near them.', Icon: ClipboardList, min: 'host', staffDomain: 'members', section: 'Waitlist & Applications' },
       // ── Onboarding ──
       { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor', section: 'Onboarding' },
       { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Onboarding' },

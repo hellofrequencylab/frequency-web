@@ -103,6 +103,13 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
     staffDomain: 'marketing',
     groups: [
       {
+        heading: 'Acquisition',
+        items: [
+          { label: 'Applications', href: '/admin/growth/applications' },
+          { label: 'Referrals', href: '/admin/referrals' },
+        ],
+      },
+      {
         heading: 'Marketing',
         items: [
           { label: 'Campaigns', href: '/admin/marketing/campaigns' },
@@ -111,7 +118,6 @@ export const ADMIN_NAV: readonly AdminNavSection[] = [
           { label: 'Nurture', href: '/admin/marketing/nurture' },
           { label: 'Analytics', href: '/admin/marketing/analytics' },
           { label: 'Beta', href: '/admin/marketing/beta' },
-          { label: 'Referrals', href: '/admin/referrals' },
         ],
       },
     ],

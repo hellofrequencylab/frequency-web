@@ -38,6 +38,12 @@ const FULL_TAKEOVER_PREFIXES = [
   '/print', // print sheets (e.g. /print/qr) — a paper surface, no rail
 ]
 
+// FOCUS surfaces — centered, no-rail single-task flows that compose <FocusTemplate>
+// (a form, a single decision). They keep the global LEFT menu but drop the member
+// RIGHT rail so the form reads centered. Growth OS Engine 3 (ADR-456): the apply
+// flows (/apply, /apply/<track>) and the seeker waitlist (/waitlist) are such flows.
+const FOCUS_NONE_PREFIXES: readonly string[] = ['/apply', '/waitlist']
+
 // SCOPED — entity-detail sections that render their OWN in-body scope rail
 // (the double-rail trap is avoided by suppressing the global rail). Nothing is
 // scoped today: every section (including member PROFILES) keeps the GLOBAL community
@@ -141,6 +147,12 @@ export function railFor(pathname: string): Rail {
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   )
   if (isTakeover) return 'none'
+
+  // Engine 3 apply / waitlist Focus flows: centered, no member right rail.
+  const isFocusFlow = FOCUS_NONE_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  if (isFocusFlow) return 'none'
 
   const isScopedDetail = SCOPED_PREFIXES.some(
     (s) => pathname.startsWith(s) && pathname.length > s.length,
