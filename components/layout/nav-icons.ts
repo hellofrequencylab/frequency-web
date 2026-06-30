@@ -93,6 +93,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   'admin-spaces': LayoutGrid,
   crm: Contact,
   connections: ContactRound,
+  'my-spaces': Building2,
   journal: NotebookPen,
   marketing: Briefcase,
   outreach: Send,
