@@ -1,4 +1,6 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Copy } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { EventForm, type EventFormInitial } from '../../new/event-form'
@@ -34,6 +36,17 @@ interface EventEditRow {
   is_cancelled: boolean | null
   cover_image_path: string | null
   gallery_image_paths: string[] | null
+  recurrence_type: string | null
+  recurrence_until: string | null
+}
+
+// A stored recurrence_until ISO -> the `YYYY-MM-DD` the date input wants (UTC date part).
+function toDateInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 }
 
 // Event times are stored UTC-naive (the host's datetime-local value is kept as-is, rendered in
@@ -54,7 +67,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -80,6 +93,8 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     scopeId: ev.scope_id ?? '',
     startsAt: toInput(ev.starts_at),
     endsAt: toInput(ev.ends_at),
+    recurrenceType: (['daily', 'weekly', 'monthly'] as const).find((r) => r === ev.recurrence_type) ?? 'none',
+    recurrenceUntil: toDateInput(ev.recurrence_until),
     capacity: ev.capacity != null ? String(ev.capacity) : '',
     visibility: ev.visibility ?? 'circle_only',
     category: ev.category ?? 'gathering',
@@ -105,6 +120,23 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
         currentScopeName={scopeName ?? undefined}
         backHref={`/events/${slug}`}
       />
+
+      {/* Duplicate event — clone this event into a fresh, prefilled draft so a one-off can be
+          repeated quickly. The create page re-checks the same edit capability on the source. */}
+      <div className="mt-6 rounded-xl border border-border bg-surface-elevated/40 p-4">
+        <p className="text-sm font-semibold text-text">Duplicate this event</p>
+        <p className="mt-0.5 text-xs text-muted">
+          Start a new event prefilled from this one. The date defaults to today so you can set the next one.
+        </p>
+        <div className="mt-3">
+          <Link
+            href={`/events/new?duplicate=${ev.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+          >
+            <Copy className="h-3.5 w-3.5" /> Duplicate event
+          </Link>
+        </div>
+      </div>
 
       {!ev.is_cancelled && (
         <div className="mt-6 rounded-xl border border-danger/30 bg-danger-bg/30 p-4">

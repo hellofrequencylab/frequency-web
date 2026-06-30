@@ -1,11 +1,20 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+
+// Today in the VIEWER's local timezone, as the `YYYY-MM-DD` a date/datetime-local
+// input seeds with. Built from local parts (never `toISOString().slice`, which is
+// UTC and would show "yesterday" for a viewer west of UTC late in the day).
+function localToday(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
 type Group = {
   id: string
@@ -69,6 +78,10 @@ export interface EventFormInitial {
   /** datetime-local value (YYYY-MM-DDTHH:mm). */
   startsAt: string
   endsAt: string
+  /** Recurrence cadence (none/daily/weekly/monthly). */
+  recurrenceType: RecurrenceType
+  /** date value (YYYY-MM-DD) the series repeats until, or '' for indefinite. */
+  recurrenceUntil: string
   capacity: string
   visibility: string
   category: string
@@ -119,10 +132,17 @@ export function EventForm({
   const [scopeId, setScopeId] = useState(
     initial?.scopeId ?? defaultGroupId ?? groups[0]?.id ?? (isEdit ? '' : PUBLIC_SCOPE),
   )
-  const [startsAt, setStartsAt] = useState(initial?.startsAt ?? '')
+  // PART 2: on create, the date field defaults to the viewer's current (active) local
+  // day at a sensible hour, so it is never blank or tz-shifted to yesterday. Edit keeps
+  // the event's real stored time. `localToday()` is read once at mount (a stable seed).
+  const [startsAt, setStartsAt] = useState(
+    initial?.startsAt ?? (isEdit ? '' : `${localToday()}T18:00`),
+  )
   const [endsAt, setEndsAt] = useState(initial?.endsAt ?? '')
-  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>('none')
-  const [recurrenceUntil, setRecurrenceUntil] = useState('')
+  const [recurrenceType, setRecurrenceType] = useState<RecurrenceType>(
+    initial?.recurrenceType ?? 'none',
+  )
+  const [recurrenceUntil, setRecurrenceUntil] = useState(initial?.recurrenceUntil ?? '')
   const [capacity, setCapacity] = useState(initial?.capacity ?? '')
   const [visibility, setVisibility] = useState(
     initial?.visibility ?? (groups.length === 0 && !isEdit ? 'public' : 'circle_only'),
@@ -142,9 +162,20 @@ export function EventForm({
   const [coverImagePath, setCoverImagePath] = useState<string | null>(initial?.coverImagePath || null)
   const [galleryImagePaths, setGalleryImagePaths] = useState<string[]>(initial?.galleryImagePaths ?? [])
 
+  // Client guard for the repeat-end date: when a cadence is set and an end is given,
+  // it must be after the start day (the server re-validates the same rule). The until
+  // is a date (YYYY-MM-DD); compare it to the start's date portion.
+  const recurrenceError = useMemo(() => {
+    if (recurrenceType === 'none' || !recurrenceUntil) return null
+    const startDay = startsAt.slice(0, 10)
+    if (startDay && recurrenceUntil <= startDay) return 'The repeat end date must be after the start.'
+    return null
+  }, [recurrenceType, recurrenceUntil, startsAt])
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || !scopeId || !startsAt || isPending) return
+    if (recurrenceError) return
 
     const fd = new FormData()
     fd.set('title', title.trim())
@@ -159,13 +190,11 @@ export function EventForm({
     fd.set('scopeId', isPublicScope ? '' : scopeId)
     fd.set('startsAt', startsAt)
     if (endsAt) fd.set('endsAt', endsAt)
-    // Recurrence is a create-time decision (it materialises occurrences); editing it later
-    // is out of scope for the per-event editor, so only the create flow sends it.
-    if (!isEdit) {
-      fd.set('recurrenceType', recurrenceType)
-      if (recurrenceType !== 'none' && recurrenceUntil) {
-        fd.set('recurrenceUntil', recurrenceUntil)
-      }
+    // Recurrence is editable on both create and edit. The server re-validates + re-
+    // materialises the occurrence window when the cadence changes (the cron is the backstop).
+    fd.set('recurrenceType', recurrenceType)
+    if (recurrenceType !== 'none' && recurrenceUntil) {
+      fd.set('recurrenceUntil', recurrenceUntil)
     }
     fd.set('category', category)
     fd.set('visibility', visibility)
@@ -310,8 +339,7 @@ export function EventForm({
         />
       </div>
 
-      {/* Recurrence — a create-time decision (it materialises occurrences). */}
-      {!isEdit && (
+      {/* Recurrence — set the cadence on create, change it on edit. */}
       <div className="space-y-1.5">
         <Label className="text-sm text-text">Repeats</Label>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -346,15 +374,19 @@ export function EventForm({
               type="date"
               value={recurrenceUntil}
               onChange={(e) => setRecurrenceUntil(e.target.value)}
+              min={startsAt.slice(0, 10) || undefined}
               disabled={isPending}
             />
-            <p className="mt-1.5 text-2xs text-muted">
-              The first 60 days of occurrences will be created immediately. A daily job rolls the window forward.
-            </p>
+            {recurrenceError ? (
+              <p className="mt-1.5 text-2xs text-danger">{recurrenceError}</p>
+            ) : (
+              <p className="mt-1.5 text-2xs text-muted">
+                The next 60 days of dates show right away. A daily job rolls the window forward.
+              </p>
+            )}
           </div>
         )}
       </div>
-      )}
 
       {/* Location */}
       <div className="space-y-1.5">
@@ -546,7 +578,7 @@ export function EventForm({
       <div className="flex items-center gap-3 pt-1">
         <button
           type="submit"
-          disabled={!title.trim() || !scopeId || !startsAt || isPending}
+          disabled={!title.trim() || !scopeId || !startsAt || !!recurrenceError || isPending}
           className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending ? (isEdit ? 'Saving…' : 'Creating…') : isEdit ? 'Save changes' : 'Create Event'}

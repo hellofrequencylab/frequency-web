@@ -9844,3 +9844,41 @@ none of them well.
 **Consequences.** Migration adds `spaces.mode_variant` (+ optionally `spaces.preferences` for overrides),
 additive, read untyped until types regenerate (ADR-246). Implementation slots into Phase C (M1-M4) and
 Phase F (M5-M6) of the pricing overhaul. No entitlement or RLS change.
+
+---
+
+## ADR-462: Repeatable events surfaced (read-side next-occurrence + Duplicate + active-day default)
+
+**Status:** Accepted · corroborated by `lib/events/recurrence.ts`,
+`app/(main)/events/new/event-form.tsx`, `app/(main)/events/new/page.tsx`,
+`app/(main)/events/actions.ts`, `app/(main)/events/[slug]/edit/page.tsx`,
+`app/(main)/events/[slug]/page.tsx`, `components/events/event-card.tsx`.
+
+**Context.** The simple-enum recurrence model (ADR-007) already existed end to end:
+the columns, the materialised-occurrence machinery (`lib/event-recurrence.ts` + the daily
+cron), the create-form picker, and a "Repeats weekly" line on the event page. Three gaps
+remained for the owner ask: recurrence could not be changed after create, recurring events
+were not legible on cards, and a one-off could not be quickly repeated. The create date
+field also seeded blank.
+
+**Decision.**
+1. **Next-occurrence is a PURE read helper, not new storage.** `lib/events/recurrence.ts`
+   adds `nextOccurrence(anchor, now)` (+ `recurrenceLabel`, `validateRecurrenceUntil`),
+   clock-injected and unit-tested, reusing ADR-007's month-day clamping. The event page
+   shows a "Next: ..." line for a recurring anchor whose start has passed, computed from the
+   enum. No occurrences table is introduced; the existing materialised child rows still keep
+   a series in "upcoming" listings, and this helper covers the anchor-passed display case.
+2. **Recurrence is editable.** The member edit form exposes the same picker; `updateEvent`
+   validates + persists the cadence and re-materialises the window (idempotent), but ONLY on
+   an anchor row (a DB CHECK forbids a child occurrence from recurring), so editing an
+   occurrence leaves recurrence untouched.
+3. **Duplicate = prefilled create, same authz.** "Duplicate event" links to
+   `/events/new?duplicate=<id>`; the create page clones the source via a server read gated by
+   the SAME `event.editSettings` capability as editing it, drops the date (defaults to the
+   active day) and inherited media, and opens the manual form. No new write path, no looser gate.
+4. **The create date defaults to the viewer's active local day** (built from local parts, not
+   `toISOString`, so a west-of-UTC viewer never sees yesterday). Edit keeps the real stored time.
+
+**Consequences.** No migration (columns exist). Cards carry a "Repeats weekly" / "Part of a
+series" line. The repeat-end rule reads identically on the client and both server actions via
+one validator. Promotable to RRULE later still holds (ADR-007 unchanged).

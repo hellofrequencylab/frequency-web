@@ -9,7 +9,7 @@ import type { ExtractedEvent } from '@/lib/events/types'
 import { sparkEventAction } from './create-actions'
 import { saveDraft, scanPoster } from './scan/actions'
 import { downscaleForScan } from './scan/image-tools'
-import { EventForm } from './new/event-form'
+import { EventForm, type EventFormInitial } from './new/event-form'
 
 // The PRIVATE bucket the poster scanner uploads to (owner-scoped RLS, path `${uid}/...`).
 // scanPoster + saveDraft both re-validate the path is the caller's, so the wizard reuses it.
@@ -30,9 +30,21 @@ const FIELD =
 
 type Group = { id: string; name: string }
 
-export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaultGroupId?: string }) {
+export function EventSpark({
+  groups,
+  defaultGroupId,
+  initial,
+  startInManual,
+}: {
+  groups: Group[]
+  defaultGroupId?: string
+  /** Prefill for the manual form (used by Duplicate event — a cloned draft). */
+  initial?: Partial<EventFormInitial>
+  /** Skip Vera's wizard and open the manual form straight away (Duplicate event). */
+  startInManual?: boolean
+}) {
   const router = useRouter()
-  const [mode, setMode] = useState<'wizard' | 'manual'>('wizard')
+  const [mode, setMode] = useState<'wizard' | 'manual'>(startInManual ? 'manual' : 'wizard')
   const [usingFlyer, setUsingFlyer] = useState(false)
   const [step, setStep] = useState(1)
   const [pending, start] = useTransition()
@@ -58,7 +70,8 @@ export function EventSpark({ groups, defaultGroupId }: { groups: Group[]; defaul
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
 
-  if (mode === 'manual') return <EventForm groups={groups} defaultGroupId={defaultGroupId} />
+  if (mode === 'manual')
+    return <EventForm groups={groups} defaultGroupId={defaultGroupId} initial={initial} />
 
   const onReview = step === 5
   const total = usingFlyer ? 2 : 5

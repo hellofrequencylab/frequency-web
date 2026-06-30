@@ -39,6 +39,12 @@ export type EventRow = {
   attendance_mode: string | null
   price_cents: number | null
   cover_image_path: string | null
+  // Recurrence (ADR-007): the cadence on an anchor, and parent_event_id on a materialised
+  // occurrence. Either marks the card with a "Repeats weekly" line so a series reads as
+  // recurring at a glance. Newer than the generated DB types -> untyped-client cast.
+  recurrence_type?: string | null
+  recurrence_until?: string | null
+  parent_event_id?: string | null
   // The original scanned poster (events.poster_path) — the card's header-image fallback when
   // there's no uploaded cover. Lives in the PRIVATE network-contacts bucket, so it serves via a
   // short-lived signed URL (mirrors the detail page), not the public event-media URL.
@@ -312,7 +318,8 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   // not-yet-regenerated columns; see lib/events/geocode.ts).
   const EVENT_SELECT = `id, title, slug, location, starts_at, ends_at, is_cancelled, is_demo,
        featured_at, scope_id, scope_type, category, energy_tag, capacity, attendance_mode, price_cents,
-       cover_image_path, poster_path, geog, host:profiles!host_id ( id, display_name, handle )`
+       cover_image_path, recurrence_type, recurrence_until, parent_event_id, poster_path, geog,
+       host:profiles!host_id ( id, display_name, handle )`
 
   // ── (1) In-scope CIRCLE events (the original circle-anchored listing) ────────
   let circleEvents: EventRow[] = []

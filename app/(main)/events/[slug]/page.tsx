@@ -45,6 +45,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 import { PageModules } from '@/components/widgets/page-modules'
 import { setEventContext } from '@/lib/events/active-event'
 import { EditEventButton } from '@/components/events/edit-event-button'
+import { nextOccurrence } from '@/lib/events/recurrence'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -527,6 +528,21 @@ export default async function EventDetailPage({
   // member can still un-RSVP during a live session. Falls back to starts_at when
   // no end time is set.
   const hasEnded = new Date(event.ends_at ?? event.starts_at) < new Date()
+
+  // For a recurring anchor whose start has passed, compute the next upcoming date so the
+  // page surfaces "Next: ..." instead of looking like a one-off that already happened
+  // (pure helper, lib/events/recurrence). Null when not recurring or the series has ended.
+  const nextRecurrence =
+    event.recurrence_type !== 'none' && isPast
+      ? nextOccurrence(
+          {
+            startsAt: event.starts_at,
+            recurrenceType: event.recurrence_type,
+            recurrenceUntil: event.recurrence_until,
+          },
+          new Date(),
+        )
+      : null
 
   const isGoing = myRsvpStatus === 'going'
   const isWaitlisted = myRsvpStatus === 'waitlist'
@@ -1048,6 +1064,20 @@ export default async function EventDetailPage({
                       · until {new Date(event.recurrence_until).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </span>
                   )}
+                </span>
+              </div>
+            )}
+
+            {/* Recurring anchor whose date has passed: surface the next upcoming date so the
+                series never reads as a one-off that already happened. */}
+            {nextRecurrence && (
+              <div className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4 text-subtle shrink-0" />
+                <span>
+                  Next:{' '}
+                  {nextRecurrence.toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+                  })}
                 </span>
               </div>
             )}
