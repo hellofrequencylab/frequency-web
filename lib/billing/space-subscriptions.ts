@@ -1,9 +1,14 @@
-// SPACE SUBSCRIPTION RECONCILIATION (Pricing P2, ADR-363). The webhook entry points that route a
-// Stripe subscription event by its `metadata.kind` to the right Space entitlement write:
+// SPACE SUBSCRIPTION RECONCILIATION (Pricing P2 ADR-363; Phase B multi-item ADR-460). The webhook
+// entry points that route a Stripe subscription event by its `metadata.kind` to the right Space write:
 //
-//   kind:'space_plan'        → setSpacePlan(space_id, plan|free) + persist spaces.stripe_subscription_id
-//                              / stripe_customer_id. There is no spaces.payment_status column: the
-//                              space's plan (free vs paid) is the payment state-of-record.
+//   kind:'space_plan'        → read ALL of the subscription's items, map each item_key to the base plan
+//                              + active add-on set, and setSpaceAddons (set-to-target the billing
+//                              namespace, ADR-460); persist each item row (locked_price_id, interval,
+//                              quantity) into space_subscription_items + spaces.stripe_subscription_id /
+//                              stripe_customer_id. A canceled sub targets the empty set (revert to free).
+//                              A legacy single-price sub falls back to setSpacePlan(metadata.plan). There
+//                              is no spaces.payment_status column: the space's plan is the payment
+//                              state-of-record.
 //   kind:'space_membership'  → upsert space_memberships.stripe_subscription_id + payment_status + status.
 //
 // The member Crew/Supporter path stays in app/api/stripe/webhook/route.ts UNTOUCHED. All writes are
@@ -15,8 +20,14 @@
 
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { setSpacePlan } from '@/lib/pricing/space-plan'
+import { setSpaceAddons, setSpacePlan } from '@/lib/pricing/space-plan'
 import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
+import {
+  reconciledItemsFromSubscription,
+  planForItemKeys,
+  addonsForItemKeys,
+  persistSpaceSubscriptionItems,
+} from './space-subscription-items'
 
 /** The metadata kinds the space subscription webhook handles. */
 export type SubscriptionKind = 'space_plan' | 'space_membership'
@@ -59,23 +70,55 @@ export function planForSubscription(
   return 'free' // canceled / pending → no paid plan
 }
 
-/** Reconcile a `space_plan` subscription event: set the Space's plan (active → the plan, canceled →
- *  free) via the gated setSpacePlan, and persist the subscription/customer ids + payment_status.
- *  No-ops on a missing space_id. Idempotent (writes fixed values keyed by id).
- *  authz-delegated: a Stripe-signed webhook event drives this; the write is bound to the space_id
- *  stamped in the subscription metadata at the gated checkout. */
+/** The reconciled per-item status for a space_subscription_items row, from the Stripe subscription
+ *  status. PURE. active/trialing keep their own labels (a trial is recorded as 'trialing' so the
+ *  surface can show the trial); past_due/unpaid -> past_due; canceled/expired -> canceled; else
+ *  pending. */
+export function itemStatusForSubscription(
+  status: Stripe.Subscription.Status | string | null | undefined,
+): 'active' | 'trialing' | 'past_due' | 'canceled' | 'pending' {
+  if (status === 'trialing') return 'trialing'
+  const payment = paymentStatusForSubscription(status)
+  return payment
+}
+
+/** Reconcile a `space_plan` subscription event the MULTI-ITEM way (Phase B, ADR-460). Read ALL of the
+ *  subscription's items, map each item_key -> the base plan + active add-on set, and SET-TO-TARGET the
+ *  Space's billing-managed entitlement namespace via the gated setSpaceAddons. Persist each item row
+ *  (incl. the grandfathered locked_price_id, interval, quantity) into space_subscription_items, and
+ *  persist the subscription/customer ids on the Space.
+ *
+ *  Backward-compatible: a LEGACY single-price space_plan sub (no recognized catalog items) falls back
+ *  to the metadata.plan path (planForSubscription + setSpacePlan), so a grandfathered Phase A
+ *  subscription still reconciles. No-ops on a missing space_id. Idempotent (writes fixed values keyed
+ *  by id + set-to-target). authz-delegated: a Stripe-signed webhook event drives this; the write is
+ *  bound to the space_id stamped in the subscription metadata at the gated checkout. */
 export async function reconcileSpacePlanSubscription(sub: Stripe.Subscription): Promise<void> {
   const spaceId = sub.metadata?.space_id
   if (!spaceId) return
   const status = sub.status
-  const plan = planForSubscription(sub.metadata?.plan, status)
   const isCanceled = paymentStatusForSubscription(status) === 'canceled'
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null
 
-  // Expand/contract entitlements via the gated writer (a no-op if billing somehow went OFF mid-flight).
-  // The space's effective plan IS the payment-state-of-record here: there is no spaces.payment_status
-  // column, so a canceled sub reverts the space to 'free' via setSpacePlan rather than persisting a status.
-  await setSpacePlan(spaceId, plan)
+  // Read the live item set. A canceled subscription targets the empty set (every item removed -> the
+  // space reverts to free + the billing namespace clears); otherwise map the present items to the plan.
+  const items = isCanceled ? [] : reconciledItemsFromSubscription(sub)
+
+  if (items.length > 0) {
+    // Multi-item Phase B path: the live items ARE the plan. Set-to-target the billing namespace from
+    // the base plan + active add-on set the items imply.
+    const itemKeys = items.map((i) => i.itemKey)
+    const plan = planForItemKeys(itemKeys)
+    const addons = addonsForItemKeys(itemKeys)
+    await setSpaceAddons(spaceId, { plan, addons })
+    await persistSpaceSubscriptionItems(spaceId, items, itemStatusForSubscription(status))
+  } else {
+    // Fallback: a canceled sub, or a legacy single-price sub with no recognized catalog items. Use the
+    // metadata.plan (canceled -> free) via the base-plan writer, and cancel any persisted item rows.
+    const plan = planForSubscription(sub.metadata?.plan, status)
+    await setSpacePlan(spaceId, plan)
+    await persistSpaceSubscriptionItems(spaceId, [], 'canceled')
+  }
 
   // Persist the subscription identifiers (audit/reference); a canceled sub clears the id. The columns
   // aren't in the generated types yet (ADR-246) — reach untyped, scope the write to the space id.

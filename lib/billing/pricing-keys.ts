@@ -136,3 +136,232 @@ export function memberCheckoutPriceKey(opts: {
   }
   return priceKey(opts.base, opts.period)
 }
+
+// ── PHASE B: the CLEAN Stripe catalog (ADR-460, docs/PRICING-LADDER-PLAN.md §1a/§4/§5) ────────────
+// The collapsed ladder (free / pro / nonprofit / organization) is sold as a set of CATALOG ITEMS, one
+// Stripe Product each, each carrying FOUR prices: { list, founding } x { month, year }. This replaces
+// the legacy per-plan key axis (SPACE_PLAN_KEYS above, kept resolvable for legacy rows) with a typed
+// catalog the sync (pricing-products.ts) walks and the checkout (space-plan-checkout.ts) resolves.
+//
+// THE SHAPE (owner strategy, 2026-06-30):
+//   * Every item ships a LIST amount (the visible anchor, e.g. Pro $29) and a lower FOUNDING amount
+//     (the real price today, e.g. Pro $19). The founding price is what checkout charges; the list
+//     price is the anchor the surface shows it beneath.
+//   * Every item ships a MONTHLY and a YEARLY Stripe price. Yearly = TWO MONTHS FREE = 10x monthly
+//     (yearlyFromMonthly below is the single source of that math).
+//   * Pro = a BASE item plus the four ADD-ON items (marketing / ai / team / branding), each its own
+//     subscription item so it can toggle on/off independently. Nonprofit + Organization are their own
+//     items; nonprofit is a per-SEAT (quantity) item.
+//
+// The price-row KEY namespace is `<item>_<interval>` (interval month|year), e.g. pro_base_month,
+// addon_marketing_year, nonprofit_seat_month, organization_year. Each KEY resolves to a synced Stripe
+// price id in pricing_stripe_prices; the founding KEY is the one CHARGED, and the LIST anchor is synced
+// under `<item>_<interval>_list` so the surface can read the anchor amount/id from one source.
+
+/** A subscription billing interval (Stripe's own vocabulary; distinct from the legacy BillingPeriod
+ *  monthly|annual used by the member-tier key axis). PURE. */
+export type BillingInterval = 'month' | 'year'
+
+export const BILLING_INTERVALS: readonly BillingInterval[] = ['month', 'year']
+
+/** The Phase B catalog item keys: the Pro base, the four add-ons, the nonprofit licensed seat, and the
+ *  organization plan. Each is one Stripe Product with list + founding x month + year prices. */
+export const CATALOG_ITEM_KEYS = [
+  'pro_base',
+  'addon_marketing',
+  'addon_ai',
+  'addon_team',
+  'addon_branding',
+  'nonprofit_seat',
+  'organization',
+] as const
+
+export type CatalogItemKey = (typeof CATALOG_ITEM_KEYS)[number]
+
+/** Narrow an arbitrary value to a known catalog item key, or null (default-deny). PURE. */
+export function asCatalogItemKey(raw: string | null | undefined): CatalogItemKey | null {
+  return (CATALOG_ITEM_KEYS as readonly string[]).includes(raw ?? '') ? (raw as CatalogItemKey) : null
+}
+
+/** A catalog item's per-interval amounts. `listCents` is the visible anchor; `foundingCents` is the
+ *  real price charged today (the grandfathered rate). */
+export interface CatalogAmounts {
+  listCents: number
+  foundingCents: number
+}
+
+/** A full catalog item: its label, whether it is a per-seat (quantity) item, and the month + year
+ *  amount grids. PURE data. */
+export interface CatalogItem {
+  key: CatalogItemKey
+  label: string
+  /** True for items billed per licensed seat (Team, Nonprofit seat): checkout sets a quantity. */
+  perSeat: boolean
+  /** The month amounts (list anchor + founding charged). */
+  month: CatalogAmounts
+  /** The year amounts, two months free (10x monthly). */
+  year: CatalogAmounts
+}
+
+/** Yearly amount from a monthly one: TWO MONTHS FREE (10x monthly), the single source of the annual
+ *  math (PRICING-LADDER-PLAN §1a). PURE. Floors to whole cents (monthly amounts are whole cents, so
+ *  10x is exact, but the floor keeps it robust to any future fractional input). */
+export function yearlyFromMonthly(monthlyCents: number): number {
+  if (!Number.isFinite(monthlyCents) || monthlyCents <= 0) return 0
+  return Math.floor(monthlyCents * 10)
+}
+
+/** Build a CatalogItem's month + year grids from a monthly list + monthly founding amount, deriving
+ *  both yearly amounts as two months free. PURE. */
+function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: number): {
+  month: CatalogAmounts
+  year: CatalogAmounts
+} {
+  return {
+    month: { listCents: listMonthlyCents, foundingCents: foundingMonthlyCents },
+    year: {
+      listCents: yearlyFromMonthly(listMonthlyCents),
+      foundingCents: yearlyFromMonthly(foundingMonthlyCents),
+    },
+  }
+}
+
+// The CLEAN catalog (ADR-460). Monthly LIST + FOUNDING amounts from the owner-approved ladder
+// (PRICING-LADDER-PLAN §1: Pro $29 list / $19 founding; add-ons Marketing/AI +$20, Team +$9/seat,
+// Branding +$30; Nonprofit $15/$12 per licensed seat; Organization $249 list / $199 founding). Yearly
+// derives as two months free. Add-ons carry the same list + founding when no separate anchor was
+// published (founding == list reads flat today; the field still exists so a future anchor is a
+// one-line edit, never a schema change).
+const CATALOG: Record<CatalogItemKey, CatalogItem> = {
+  pro_base: {
+    key: 'pro_base',
+    label: 'Frequency Pro',
+    perSeat: false,
+    ...amountsFromMonthly(2900, 1900), // $29 list / $19 founding
+  },
+  addon_marketing: {
+    key: 'addon_marketing',
+    label: 'Frequency Pro add-on: Marketing',
+    perSeat: false,
+    ...amountsFromMonthly(2000, 2000), // +$20 (no separate anchor today)
+  },
+  addon_ai: {
+    key: 'addon_ai',
+    label: 'Frequency Pro add-on: AI Engine',
+    perSeat: false,
+    ...amountsFromMonthly(2000, 2000), // +$20
+  },
+  addon_team: {
+    key: 'addon_team',
+    label: 'Frequency Pro add-on: Team seat',
+    perSeat: true,
+    ...amountsFromMonthly(900, 900), // +$9 / seat
+  },
+  addon_branding: {
+    key: 'addon_branding',
+    label: 'Frequency Pro add-on: Branding',
+    perSeat: false,
+    ...amountsFromMonthly(3000, 3000), // +$30
+  },
+  nonprofit_seat: {
+    key: 'nonprofit_seat',
+    label: 'Frequency Nonprofit (licensed seat)',
+    perSeat: true,
+    ...amountsFromMonthly(1500, 1200), // $15 list / $12 founding per seat
+  },
+  organization: {
+    key: 'organization',
+    label: 'Frequency Organization',
+    perSeat: false,
+    ...amountsFromMonthly(24900, 19900), // $249 list / $199 founding (floor anchor)
+  },
+}
+
+/** Read a catalog item by key (PURE). Returns the typed item for a known key. */
+export function catalogItem(key: CatalogItemKey): CatalogItem {
+  return CATALOG[key]
+}
+
+/** The whole catalog as an ordered array (PURE), the list the sync walks. */
+export function catalogItems(): readonly CatalogItem[] {
+  return CATALOG_ITEM_KEYS.map((k) => CATALOG[k])
+}
+
+/** The amounts grid for an item + interval (PURE). */
+export function catalogAmounts(key: CatalogItemKey, interval: BillingInterval): CatalogAmounts {
+  const item = CATALOG[key]
+  return interval === 'month' ? item.month : item.year
+}
+
+/** The `pricing_stripe_prices` key for a catalog item + interval, optionally the LIST-anchor variant.
+ *  PURE. The FOUNDING price (the one charged) is the plain key `<item>_<interval>`; the list anchor is
+ *  synced under `<item>_<interval>_list` so the surface can resolve the anchor amount/id without a
+ *  second source. E.g. catalogPriceKey('pro_base','month') = 'pro_base_month';
+ *  catalogPriceKey('pro_base','month',true) = 'pro_base_month_list'. */
+export function catalogPriceKey(key: CatalogItemKey, interval: BillingInterval, list = false): string {
+  return `${key}_${interval}${list ? '_list' : ''}`
+}
+
+/** Every catalog price-row key the sync produces: for each item, both intervals, both the founding
+ *  (charged) and list (anchor) variants. PURE. */
+export function allCatalogPriceKeys(): string[] {
+  const keys: string[] = []
+  for (const key of CATALOG_ITEM_KEYS) {
+    for (const interval of BILLING_INTERVALS) {
+      keys.push(catalogPriceKey(key, interval, false)) // founding (charged)
+      keys.push(catalogPriceKey(key, interval, true)) // list (anchor)
+    }
+  }
+  return keys
+}
+
+// ── Add-on item key -> entitlement add-on key bridge (ADR-460) ───────────────────────────────────
+// The webhook maps each subscription item's catalog item key to the ENTITLEMENT add-on key the
+// resolver consumes (lib/pricing/plans.ts AddonKey). Base/seat/org are PLAN-level (no add-on key); the
+// four addon_* items each map to their AddonKey.
+
+/** The entitlement add-on key (marketing|ai|team|branding) a catalog item maps to, or null for
+ *  plan-level items (pro_base, nonprofit_seat, organization). PURE. The string is an AddonKey from
+ *  lib/pricing/plans.ts (kept loose here to avoid a circular import; callers narrow with asAddonKey). */
+export function addonKeyForCatalogItem(key: CatalogItemKey): 'marketing' | 'ai' | 'team' | 'branding' | null {
+  switch (key) {
+    case 'addon_marketing':
+      return 'marketing'
+    case 'addon_ai':
+      return 'ai'
+    case 'addon_team':
+      return 'team'
+    case 'addon_branding':
+      return 'branding'
+    default:
+      return null
+  }
+}
+
+// ── RETIRED legacy catalog keys (kept resolvable for legacy rows · ADR-460) ───────────────────────
+// The Phase A collapse retired practitioner / business / whitelabel / supporter as sold tiers. Their
+// legacy price KEYS (practitioner_monthly, business_annual, whitelabel_monthly, supporter_*) are NOT
+// deleted: a legacy `pricing_stripe_prices` row + a member already locked to one of those price ids
+// must still RESOLVE. The sync no longer CREATES them (they are absent from CATALOG_ITEM_KEYS), but it
+// ARCHIVES (never deletes) the rows, and loadStripePriceMap still returns them so resolveStripePriceId
+// works for a grandfathered row.
+
+/** The legacy catalog price keys that are RETIRED (no longer synced) but kept resolvable for legacy
+ *  rows + locked price ids. PURE. Used by the sync to ARCHIVE (not delete) the rows it no longer
+ *  refreshes. */
+export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
+  const retiredBases: readonly SpacePlanKey[] = ['practitioner', 'business', 'whitelabel']
+  const keys: string[] = []
+  for (const base of retiredBases) {
+    for (const period of PERIODS_BY_KEY[base]) {
+      keys.push(priceKey(base, period))
+      keys.push(priceKey(base, period, true))
+    }
+  }
+  // Supporter is retired as a sold tier (becomes a PWYW badge), so its catalog keys retire too.
+  for (const period of PERIODS_BY_KEY.supporter) {
+    keys.push(priceKey('supporter', period))
+    keys.push(priceKey('supporter', period, true))
+  }
+  return keys
+})()

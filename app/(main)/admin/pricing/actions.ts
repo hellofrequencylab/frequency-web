@@ -7,7 +7,7 @@ import { setPricingSetting, type TierPrice } from '@/lib/pricing/settings'
 import { setFeatureGateOverride } from '@/lib/pricing/gates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { billingEnabled } from '@/lib/billing/stripe'
-import { syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
+import { syncPricingCatalogToStripe, syncPricingProductsToStripe } from '@/lib/billing/pricing-products'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 
 // Operator writes for /admin/pricing (ADR-362, docs/PRICING.md). EVERYTHING SHIPS OFF: these only
@@ -126,6 +126,28 @@ export async function syncStripeProducts(): Promise<
     return ok({ synced: res.synced.length, errors: res.errors })
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not sync products to Stripe.')
+  }
+}
+
+/** Sync the CLEAN Phase B catalog to Stripe (Pricing ladder Phase B, ADR-460): one Product per catalog
+ *  item (Pro base + the four add-ons + nonprofit seat + organization), each with its list + founding x
+ *  month + year Prices, and archive the retired legacy keys. Janitor-gated; ONLY runs when the Stripe
+ *  env keys are present (billingEnabled), never a Stripe call otherwise. Idempotent. Returns a per-key
+ *  summary for the surface (Phase C wires the button). */
+export async function syncStripeCatalog(): Promise<
+  ActionResult<{ synced: number; errors: { key: string; message: string }[] }>
+> {
+  const ctx = await requireAdmin('janitor')
+  if (!billingEnabled()) return fail('Connect Stripe first. Set the Stripe env keys, then sync.')
+  try {
+    const res = await syncPricingCatalogToStripe(ctx.profileId)
+    revalidatePath(PATH)
+    if (!res.ok && res.synced.length === 0) {
+      return fail(res.errors[0]?.message ?? 'Could not sync the catalog to Stripe.')
+    }
+    return ok({ synced: res.synced.length, errors: res.errors })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not sync the catalog to Stripe.')
   }
 }
 
