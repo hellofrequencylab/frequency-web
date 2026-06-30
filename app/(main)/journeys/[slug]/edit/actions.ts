@@ -25,6 +25,7 @@ import {
   type ComposedRow,
 } from '@/lib/journeys/compose'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
 
@@ -632,4 +633,25 @@ export async function moveBlockAction(slug: string, itemId: string, dir: 'up' | 
   await admin.from('journey_plan_items').update({ sort_order: s.sort_order }).eq('id', neighbor.id)
   done(slug)
   return ok()
+}
+
+/** Export a Journey as a versioned PortableJourney JSON (the federated contract, lib/journeys/
+ *  portable.ts) so it can be re-imported into another Frequency Space or a Hook cohort community.
+ *  Owner-only: reuses the same `authorPlan` guard + `getPlan` read every editor action uses, plus
+ *  the pure `toPortable` serializer — no DB writes, no schema change. Returns the JSON string +
+ *  a suggested filename; the client triggers the download (no extra read path or RLS surface). */
+export async function exportJourneyAction(
+  slug: string,
+): Promise<ActionResult<{ filename: string; json: string; portable: PortableJourney }>> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can export this journey.')
+  const loaded = await getPlan(slug)
+  if (!loaded) return fail('Journey not found.')
+  const portable = toPortable(loaded.plan, loaded.items)
+  const safeSlug = (loaded.plan.slug || 'journey').replace(/[^a-z0-9-]+/gi, '-')
+  return ok({
+    filename: `${safeSlug}.journey.json`,
+    json: JSON.stringify(portable, null, 2),
+    portable,
+  })
 }
