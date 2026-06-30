@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, CalendarClock, ChevronRight, CreditCard, DoorOpen, GraduationCap, HeartHandshake, Mail, QrCode, SlidersHorizontal, Ticket, Users } from 'lucide-react'
+import { BadgeCheck, Briefcase, ChevronRight, CreditCard, DoorOpen, GraduationCap, Mail, QrCode, SlidersHorizontal, Ticket, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
@@ -19,8 +19,16 @@ import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 // page-chrome.ts). It resolves the Space, gates RENDER on resolveSpaceManageAccess (canManage ||
 // staffViewing), and 404s for everyone else so a non-editor / non-staff viewer can't tell the
 // settings surface exists. It seats the profile-settings FORM plus a card-linked set of every
-// management surface this Space's type offers (Availability for a practitioner, Memberships for a
-// business, Members for all).
+// management surface this Space's type offers (Memberships for a business, Check in / Tickets for an
+// event space, Members for all).
+//
+// HARMONIZED (ADR-441 EM1-3, the Spaces harmonization finish): the unified
+// `/spaces/<slug>/manage` console now serves the `practitioner` and `organization` Space types, so
+// this legacy 7-card hub REDIRECTS those two types to it (after the SAME access gate, so a
+// non-manager still 404s and the route never leaks). Every settings SUB-page (availability, members,
+// donations, qr, email, billing, features, crm, …) stays in place: the console links to them as its
+// section targets. The OTHER types (business / event_space / lab / partner) have no console yet
+// (manage notFound()s for them), so they keep this hub unchanged.
 //
 // TWO VIEWERS:
 //   • canManage (owner / admin / editor) — the form is live and saves through updateSpaceProfile.
@@ -105,6 +113,16 @@ export default async function SpaceSettingsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
+  // HARMONIZATION (ADR-441 EM1-3, decided in ADR-452): the unified /spaces/<slug>/manage console serves the
+  // `practitioner` and `organization` types. Send a manager / staff previewer of those types there so
+  // there is one console, not two. The gate above already ran, so a non-manager 404s before this and
+  // the redirect never reveals the route. All OTHER types fall through to the legacy hub below
+  // (manage notFound()s for them, so there is nothing to redirect to yet). redirect() throws to
+  // unwind rendering, so nothing past this line runs for the redirected types.
+  if (space.type === 'practitioner' || space.type === 'organization') {
+    redirect(`/spaces/${space.slug}/manage`)
+  }
+
   // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). The hub stays the navigation entry point, so it
   // renders for any manager / staff previewer. What it GATES is the cards: a tool the viewer's role
   // cannot use (or that is turned off / not on the plan) does not render a dead card. The profile FORM
@@ -174,16 +192,10 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {space.type === 'practitioner' && canUse('availability') && (
-          // The Practitioner's 1:1 booking lives on its own Focus surface (weekly availability + the
-          // owner's upcoming bookings). Link to it from the hub rather than nesting another editor.
-          <HubCard
-            href={`/spaces/${space.slug}/settings/availability`}
-            icon={CalendarClock}
-            title="Availability and bookings"
-            description="Set the weekly times members can book, and see who is on your calendar."
-          />
-        )}
+        {/* practitioner (availability) and organization (donations) are CONSOLE types now: this hub
+            redirects them to /spaces/<slug>/manage above, so their branches were unreachable here and
+            were removed (ADR-441 EM1-3). Their settings sub-pages are intact — the console links to
+            them. The branches below are the types that still use this legacy hub. */}
 
         {space.type === 'business' && canUse('memberships') && (
           // The Business's memberships live on their own Focus surface (the tier editor + the member
@@ -193,19 +205,6 @@ export default async function SpaceSettingsPage({
             icon={BadgeCheck}
             title="Memberships"
             description="Define the tiers members can join, and see who has joined."
-          />
-        )}
-
-        {space.type === 'organization' && canUse('donations') && (
-          // A nonprofit (the `organization` Space type) configures its hosted donation asks (a fund
-          // label, a short description, and suggested amounts). No money in v1 (ADMIN-01); the member
-          // Donate CTA reads this config. The Nonprofit plan ($29, verified 501c3) is the plan for
-          // this Space type; the plan-and-billing card above names it the same way.
-          <HubCard
-            href={`/spaces/${space.slug}/settings/donations`}
-            icon={HeartHandshake}
-            title="Donations"
-            description="Set up your nonprofit's fund, a short description, and the amounts supporters can pick."
           />
         )}
 

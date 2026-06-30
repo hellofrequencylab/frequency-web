@@ -28,7 +28,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { atLeastSpaceRole, isSpaceRole } from './membership'
-import type { SpaceType } from './types'
+import { spaceManageHref, type SpaceType } from './types'
 
 /** One managed Space as the launcher consumes it — the brand anchor, its type, the
  *  viewer's relationship to it, and the deep-link target. Camel-cased; only the fields
@@ -41,7 +41,8 @@ export interface ManagedSpace {
   type: SpaceType
   /** True when the viewer OWNS this Space; false when they reach it via an editor+ membership. */
   isOwner: boolean
-  /** The settings hub for this Space — where a manager lands to steward it. */
+  /** The owner-management entry for this Space — where a manager lands to steward it. The unified
+   *  /manage console for the console types, the legacy /settings hub otherwise (spaceManageHref). */
   settingsHref: string
 }
 
@@ -180,6 +181,6 @@ function mapManaged(r: ManagedSpaceRow, isOwner: boolean): ManagedSpace {
     name: r.brand_name?.trim() || r.name,
     type: r.type as SpaceType,
     isOwner,
-    settingsHref: `/spaces/${r.slug}/settings`,
+    settingsHref: spaceManageHref(r.type as SpaceType, r.slug),
   }
 }

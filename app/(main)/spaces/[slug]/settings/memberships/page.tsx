@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
@@ -67,11 +68,12 @@ export default async function SpaceMembershipsPage({
         eyebrow={brandName}
         title="Memberships"
         description="The membership tiers for this space."
-        back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
           slug={space.slug}
+          type={space.type}
           label="Memberships"
           reason={spaceFunctionAccess(space, 'memberships', 'admin') ? 'role' : 'disabled'}
           canManageMembers={caps.canManageMembers}
@@ -87,7 +89,7 @@ export default async function SpaceMembershipsPage({
       eyebrow={brandName}
       title="Memberships"
       description="Define the tiers members can join. The price is what membership will cost. Joining registers a member, and paid billing comes later."
-      back={{ href: `/spaces/${space.slug}/settings`, label: `Manage ${brandName}` }}
+      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

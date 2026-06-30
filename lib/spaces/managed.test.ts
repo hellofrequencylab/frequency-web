@@ -110,9 +110,10 @@ beforeEach(() => {
 })
 
 describe('listManagedSpaces (the launcher reader, tenancy + fail-safe)', () => {
-  it('returns the Spaces the viewer OWNS, brand name leading, with the settings deep link', async () => {
+  it('returns the Spaces the viewer OWNS, brand name leading, with the manage deep link', async () => {
     currentProfileId = 'owner-1'
     store.spaces = [
+      // A practitioner is a CONSOLE type (ADR-441 EM1-3), so its manage entry is the unified /manage.
       space({ id: 'a', slug: 'river-yoga', name: 'River Yoga', brand_name: 'River', owner_profile_id: 'owner-1' }),
     ]
     const out = await listManagedSpaces()
@@ -121,8 +122,18 @@ describe('listManagedSpaces (the launcher reader, tenancy + fail-safe)', () => {
       id: 'a',
       name: 'River', // brand_name wins over name
       isOwner: true,
-      settingsHref: '/spaces/river-yoga/settings',
+      settingsHref: '/spaces/river-yoga/manage',
     })
+  })
+
+  it('routes a NON-console type (event_space) to the legacy /settings hub (ADR-441 EM1-3)', async () => {
+    currentProfileId = 'owner-2'
+    store.spaces = [
+      space({ id: 'c', slug: 'the-loft', name: 'The Loft', type: 'event_space', owner_profile_id: 'owner-2' }),
+    ]
+    const out = await listManagedSpaces()
+    expect(out).toHaveLength(1)
+    expect(out[0].settingsHref).toBe('/spaces/the-loft/settings')
   })
 
   it('includes Spaces reached via an ACTIVE editor+ membership, marked as not owned', async () => {

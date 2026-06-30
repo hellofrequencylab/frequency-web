@@ -162,6 +162,12 @@ export default async function SpaceProfileLayout({
   const isNetwork = visibility !== 'private'
 
   const base = `/spaces/${space.slug}`
+  // The owner-affordance target (ADR-441 EM1-3): the `practitioner` and `organization` types are
+  // served by the unified /manage console, so point their Manage button straight at it. The legacy
+  // /settings hub redirects those two types to /manage anyway, so this just skips the bounce; every
+  // other type still opens the working /settings hub.
+  const manageHref =
+    space.type === 'practitioner' || space.type === 'organization' ? `${base}/manage` : `${base}/settings`
   const tabs: DetailTab[] = (blueprint?.tabs ?? [{ id: 'about', label: 'About', modules: [] }]).map((t) => ({
     href: t.id === 'about' ? base : `${base}/${t.id}`,
     label: t.label,
@@ -234,7 +240,7 @@ export default async function SpaceProfileLayout({
                   <QrCode className="h-4 w-4" aria-hidden />
                 </Link>
                 {canSeeAsOwner && (
-                  <Link href={`${base}/settings`} className={buttonClasses('secondary', 'md')}>
+                  <Link href={manageHref} className={buttonClasses('secondary', 'md')}>
                     <Pencil className="h-3.5 w-3.5" aria-hidden />
                     {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
                   </Link>

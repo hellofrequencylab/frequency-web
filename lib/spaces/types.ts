@@ -22,6 +22,21 @@ export type SpaceType =
 
 export type SpaceStatus = 'active' | 'suspended' | 'archived'
 
+// The Space types the unified owner CONSOLE (/spaces/<slug>/manage) serves today (ADR-441 EM1-3).
+// The console notFound()s for every other type, so they stay on the legacy /settings hub. Keep this
+// list in lockstep with the type gate in app/(main)/spaces/[slug]/manage/page.tsx.
+const CONSOLE_SPACE_TYPES: readonly SpaceType[] = ['practitioner', 'organization']
+
+/** The owner-management entry point for a Space, by type (ADR-441 EM1-3). The unified `/manage`
+ *  console serves `practitioner` and `organization`; every other type still opens the legacy
+ *  `/settings` hub. PURE (a type + slug in, a path out), so it is the one place the harmonization
+ *  rule lives for every "Manage" affordance. The legacy hub redirects the console types to /manage
+ *  anyway, so this just avoids the bounce. */
+export function spaceManageHref(type: SpaceType, slug: string): string {
+  const base = `/spaces/${slug}`
+  return CONSOLE_SPACE_TYPES.includes(type) ? `${base}/manage` : `${base}/settings`
+}
+
 export interface Space {
   id: string
   /** URL handle. */

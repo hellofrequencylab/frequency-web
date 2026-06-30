@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Sprout, ArrowRight } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
+import { spaceManageHref } from '@/lib/spaces/types'
 import { blueprintForType } from '@/lib/spaces/blueprints'
 import { spaceProfileIsEmpty, viewerCanEditActiveSpace } from '@/lib/spaces/profile-presence'
 import { buttonClasses } from '@/components/ui/button'
@@ -42,7 +43,9 @@ export async function EntityGettingStarted() {
   const typeLabel = (blueprint?.typeLabel ?? 'space').toLowerCase()
   const coming = COMING[space.type] ?? DEFAULT_COMING
   const canEdit = await viewerCanEditActiveSpace()
-  const settingsHref = `/spaces/${space.slug}/settings`
+  // The management entry (ADR-441 EM1-3): the unified /manage console for the console types, the
+  // legacy /settings hub otherwise. One rule, one helper.
+  const settingsHref = spaceManageHref(space.type, space.slug)
 
   return (
     <section className="rounded-2xl border border-dashed border-border bg-surface/50 p-6 sm:p-8">
