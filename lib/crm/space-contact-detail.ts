@@ -20,7 +20,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, autoExecutionAllowed } from '@/lib/spaces/entitlements'
 import { getContact, getDeals, type CrmDeal } from '@/lib/crm/pipeline'
 import { listClientNotes, type ClientNote } from '@/lib/crm/client-notes'
 import { listContactInteractions } from '@/lib/crm/interactions'
@@ -28,6 +28,8 @@ import { buildTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 import { getMemberScores, type MemberScores } from '@/lib/dashboard/scores'
 import { draftContextLine, explainMemberScores, type ScoreReadout } from '@/lib/dashboard/person-band'
 import { getMemberContext, type MemberFacts } from '@/lib/ai/memory'
+import { resolvePlaybookForScores } from '@/lib/playbooks/resolve'
+import { effectiveAutonomyTier, type AutonomyTier } from '@/lib/playbooks/registry'
 
 /** The identity + enriched fields the detail header shows. name/email come from the Space contact row;
  *  phone/company/city are best-effort enrichment from a linked capture (null when none is known). */
@@ -58,6 +60,25 @@ export interface SpaceContactInsight {
   readout: ScoreReadout
   /** The member's confirmed facts (interests, goals, neighborhood) for the About panel, when any. */
   facts: MemberFacts | null
+  /** The one-tap next-best-action play for this member (Altitude 3 picker), or null when there is
+   *  nothing worth surfacing (a steady member, or a pure lead with no scores). The autonomy tier is
+   *  the EFFECTIVE tier after this Space's slider, so the badge reads the same as the worklist. */
+  nextBestPlay: SpaceContactPlay | null
+}
+
+/** The next-best-action play offered on the Space contact detail picker. Resolved server-side from the
+ *  member's scores (the registry resolver), with the Space's effective autonomy tier baked in. */
+export interface SpaceContactPlay {
+  /** The registry playbook id the picker runs. */
+  playbookId: string
+  /** The operator-facing playbook name. */
+  playbookName: string
+  /** One plain line: what this play is for + why now (the registry rationale). */
+  rationale: string
+  /** The EFFECTIVE autonomy tier after the per-Space slider (auto -> suggest when suggest_only). */
+  autonomyTier: AutonomyTier
+  /** True when the primary action is outbound (the operator may Tweak the draft; it never auto-sends). */
+  isOutbound: boolean
 }
 
 /** Everything the per-space contact detail surface renders for one contact. */
@@ -127,9 +148,15 @@ export async function getSpaceContactDetail(
     createdAt: contact.created_at,
   }
 
+  // The Space's effective autonomy allowance sets the picker's EFFECTIVE tier (fail-closed to
+  // suggest_only when the read misses), so the badge reads the same as the worklist + Today.
+  const space = await getSpaceById(spaceId)
+  const autoAllowed = autoExecutionAllowed(space)
+
   const insight = await buildInsight(
     profileId,
     contact.display_name || contact.email.split('@')[0] || 'This person',
+    autoAllowed,
   )
 
   return { identity, timeline, deals, notes, insight }
@@ -159,7 +186,11 @@ async function resolveContactProfileId(contactId: string): Promise<string | null
 /** Assemble the Altitude 3 insight band: the shared scores, the "where this person is" line, the
  *  plain "why" readout, and the member's confirmed facts. FAIL-SAFE end to end: a lead (no profile)
  *  or any read error yields a calm "not scored yet" band with no facts. */
-async function buildInsight(profileId: string | null, name: string): Promise<SpaceContactInsight> {
+async function buildInsight(
+  profileId: string | null,
+  name: string,
+  autoAllowed: boolean,
+): Promise<SpaceContactInsight> {
   // A pure lead has no member profile, so no scores / matches / facts to read.
   const scores = await getMemberScores(profileId)
   const hasScores = scores.resonanceTier != null || scores.lifecycleStage != null
@@ -171,7 +202,25 @@ async function buildInsight(profileId: string | null, name: string): Promise<Spa
     profileId ? getMemberContext(profileId) : Promise.resolve(null),
   ])
   const facts = context?.facts && hasAnyFact(context.facts) ? context.facts : null
-  return { profileId, scores, hasScores, contextLine, readout, facts }
+
+  // The one-tap next-best-action play (Altitude 3 picker). Resolved PURELY from the scores via the
+  // shared registry resolver (the same choice the worklist + Today make), with this Space's effective
+  // autonomy tier baked into the badge. Null for a pure lead (no profile) or a steady member.
+  const nextBestPlay: SpaceContactPlay | null = (() => {
+    if (!profileId) return null
+    const playbook = resolvePlaybookForScores(scores)
+    if (!playbook) return null
+    const primary = playbook.actions[0]
+    return {
+      playbookId: playbook.id,
+      playbookName: playbook.name,
+      rationale: playbook.rationale,
+      autonomyTier: effectiveAutonomyTier(playbook.autonomyTier, autoAllowed),
+      isOutbound: primary?.surface === 'outbound',
+    }
+  })()
+
+  return { profileId, scores, hasScores, contextLine, readout, facts, nextBestPlay }
 }
 
 /** True when a facts record carries at least one usable value (so an empty {} hides the About panel). */

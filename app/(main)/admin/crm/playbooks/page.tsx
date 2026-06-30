@@ -8,6 +8,7 @@ import { PLAYBOOK_REGISTRY, isFullyInProduct, type Playbook, type PlaybookTrigge
 import { getPausedPlaybooks } from '@/lib/playbooks/circuit-breaker'
 import { autoExecutionAllowed } from '@/lib/spaces/entitlements'
 import { getPlaybookActivity, type PlaybookRunRow } from '@/lib/playbooks/overview'
+import { seedPlaybooks } from '@/lib/playbooks/seed'
 import type { PlaybookRunStatus } from '@/lib/playbooks/runs'
 
 // PLAYBOOKS, the registry of saved Vera plays + their run history (Resonance Engine · ADR-389 ·
@@ -30,6 +31,11 @@ export const dynamic = 'force-dynamic'
 
 export default async function PlaybooksPage() {
   await requireAdmin('janitor')
+
+  // Keep the durable `playbooks` table in sync with the CODE registry (the source of truth). Idempotent
+  // + fail-safe: a re-run is a no-op, and a missing table / write error degrades silently (the code
+  // registry still drives everything). This is the seam that populates the formerly-empty prod table.
+  await seedPlaybooks()
 
   // The registry is the code source of truth (no IO); the breaker + autonomy reads are fail-safe.
   const [paused] = await Promise.all([getPausedPlaybooks()])
