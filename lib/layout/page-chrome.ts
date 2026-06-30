@@ -221,6 +221,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // like its sibling settings sub-pages (CRM notes, availability, memberships); this catalog entry makes
   // the route an explicitly managed surface an operator can reframe.
   { route: '/spaces/_/settings/features', label: 'Space features and access', area: 'Focus surfaces' },
+  // The Mode and focus settings page (Space Modes M3, ADR-461/464): a centered Focus surface that
+  // composes <FocusTemplate> inside the unified console. It falls through to 'global' in railFor (the
+  // console manage root is full-width 'none', but its /manage/mode sub-page is a Focus form that keeps
+  // the global rail beside its centered body); this catalog entry makes it an explicitly managed surface.
+  { route: '/spaces/_/manage/mode', label: 'Space mode and focus', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },

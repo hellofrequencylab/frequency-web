@@ -14,17 +14,22 @@ import {
   FormError,
 } from '@/components/spaces/space-form'
 
-// The CREATE-A-SPACE form (client). Collects type, name, slug, brand name, and visibility, then
-// calls the createSpace server action (which redirects to the new Space's settings on success). The
-// server re-validates everything; this form mirrors the checks for fast, inline feedback only.
+// The CREATE-A-SPACE form (client). Leads with "what do you run?" (a Mode + Focus choice), then
+// collects name, slug, brand name, and visibility, and calls the createSpace server action (which seeds
+// the Mode preset and redirects to the new Space's settings on success). The server re-validates
+// everything; this form mirrors the checks for fast, inline feedback only.
 //
-// Type choices come from the parent (the blueprinted types), so the form auto-includes every wired
-// role with no hardcoded type list here.
+// The "what do you run?" choices come from the parent (the Mode registry, Space Modes M3), so the form
+// auto-includes every operating model the registry offers with no hardcoded list here.
 
-/** A type the wizard offers: its value, member-facing label, and the blueprint's type label. */
-export interface SpaceTypeChoice {
-  value: string
+/** One "what do you run?" choice the wizard offers: its id, the (type, variant) it maps to, and the
+ *  plain headline + tagline (mirrors lib/spaces/modes.ts ModeChoice). */
+export interface SpaceModeChoice {
+  id: string
+  type: string
+  variant: string
   label: string
+  hint: string
 }
 
 /** Derive a slug suggestion from a name: lowercase, spaces -> hyphens, drop unsafe chars. */
@@ -37,8 +42,8 @@ function slugify(name: string): string {
     .slice(0, 40)
 }
 
-export function CreateSpaceForm({ types }: { types: SpaceTypeChoice[] }) {
-  const [type, setType] = useState(types[0]?.value ?? '')
+export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
+  const [choiceId, setChoiceId] = useState(choices[0]?.id ?? '')
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
@@ -47,6 +52,8 @@ export function CreateSpaceForm({ types }: { types: SpaceTypeChoice[] }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
+  const choice = choices.find((c) => c.id === choiceId) ?? choices[0]
+
   // Keep the slug in sync with the name until the owner edits the slug by hand.
   function onNameChange(v: string) {
     setName(v)
@@ -54,13 +61,15 @@ export function CreateSpaceForm({ types }: { types: SpaceTypeChoice[] }) {
   }
 
   const slugValid = slug === '' || isSafeSlug(slug)
-  const canSubmit = !!type && name.trim().length > 0 && isSafeSlug(slug) && !pending
+  const canSubmit = !!choice && name.trim().length > 0 && isSafeSlug(slug) && !pending
 
   function submit() {
+    if (!choice) return
     setError(null)
     start(async () => {
       const result = await createSpace({
-        type,
+        type: choice.type,
+        modeVariant: choice.variant,
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
         brandName: brandName.trim() || null,
@@ -79,25 +88,31 @@ export function CreateSpaceForm({ types }: { types: SpaceTypeChoice[] }) {
         if (canSubmit) submit()
       }}
     >
-      {/* Type — the role blueprint to provision (drives the profile shape + default skin). */}
-      <Field id="space-type" label="Type" hint="What this space is. It sets the profile layout and default look.">
+      {/* What do you run? — the Mode + Focus to provision (drives the console, the starter pipeline, the
+          lexicon, and the profile shape). You can switch this later in your console. */}
+      <Field
+        id="space-mode"
+        label="What do you run?"
+        hint="This sets up your console and a starter pipeline for how you work. You can switch it later."
+      >
         <div className="grid gap-2 sm:grid-cols-2">
-          {types.map((t) => {
-            const active = type === t.value
+          {choices.map((c) => {
+            const active = choiceId === c.id
             return (
               <button
-                key={t.value}
+                key={c.id}
                 type="button"
-                onClick={() => setType(t.value)}
+                onClick={() => setChoiceId(c.id)}
                 aria-pressed={active}
                 className={cn(
-                  'rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-colors',
+                  'rounded-lg border px-3 py-2 text-left transition-colors',
                   active
                     ? 'border-primary bg-primary-bg text-text'
                     : 'border-border bg-surface text-muted hover:border-border-strong',
                 )}
               >
-                {t.label}
+                <span className="block text-sm font-semibold text-text">{c.label}</span>
+                <span className="mt-0.5 block text-xs text-muted">{c.hint}</span>
               </button>
             )
           })}

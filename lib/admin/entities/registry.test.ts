@@ -107,10 +107,11 @@ describe('entity registry · spaceSurfacesFor', () => {
   // A canUse predicate that denies every tool (no plan / a low role): only the null-gated surfaces.
   const deny = (): boolean => false
 
-  it('gives a practitioner the full spine in order: basics, place, people, engage, reach, comms, insights, danger', () => {
+  it('gives a practitioner the full spine in order: basics, mode, place, people, engage, reach, comms, insights, danger', () => {
     const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
+      'space.mode',
       'space.place',
       'space.people',
       'space.engage.crm',
@@ -125,6 +126,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     const ids = spaceSurfacesFor('organization', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
+      'space.mode',
       'space.people',
       'space.engage.donations',
       'space.engage.enroll',
@@ -145,6 +147,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     const ids = spaceSurfacesFor('business', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
+      'space.mode',
       'space.people',
       'space.engage.crm',
       'space.engage.memberships',
@@ -163,6 +166,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     const ids = spaceSurfacesFor('event_space', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
+      'space.mode',
       'space.people',
       'space.engage.tickets',
       'space.reach',
@@ -181,6 +185,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
       expect(ids).toEqual([
         'space.basics',
+        'space.mode',
         'space.people',
         'space.reach',
         'space.insights',
@@ -194,14 +199,20 @@ describe('entity registry · spaceSurfacesFor', () => {
     }
   })
 
-  it('falls back to only the always-on Basics + Danger when the viewer can use no tool', () => {
-    for (const type of ['practitioner', 'organization', 'business', 'event_space', 'lab', 'partner'] as const) {
-      expect(spaceSurfacesFor(type, deny).map((s) => s.id)).toEqual(['space.basics', 'space.danger'])
+  it('falls back to only the always-on Basics + Mode + Danger when the viewer can use no tool', () => {
+    // Mode and focus is null-gated (Mode is FREE framing, never a per-tool gate), so it renders for a
+    // manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3).
+    for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
+      expect(spaceSurfacesFor(type, deny).map((s) => s.id)).toEqual([
+        'space.basics',
+        'space.mode',
+        'space.danger',
+      ])
     }
   })
 
   it('orders Basics first and Danger last regardless of which tools are on', () => {
-    for (const type of ['practitioner', 'organization', 'business', 'event_space', 'lab', 'partner'] as const) {
+    for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
       const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
       expect(ids[0]).toBe('space.basics')
       expect(ids[ids.length - 1]).toBe('space.danger')
@@ -218,18 +229,29 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(ids).toContain('space.danger') // always-on
   })
 
-  it('defers coaching (no console spine declared yet): only the always-on + universal rows, no role-specific surface', () => {
-    // Coaching is the one provisionable type the console does not serve; the page notFound()s for it
-    // so it stays on the legacy cockpit. The registry would only ever hand it the '*' rows; lock that
-    // none of the role-specific surfaces (including the other types' engage tools) leak to it.
+  it('gives coaching the console spine with CRM (Space Modes M3): basics, mode, people, CRM, reach, insights, billing, danger', () => {
+    // Coaching joined the console with Space Modes M3 (ADR-461/464). Its `crm` function lists coaching, so
+    // the CRM surface shows; it carries the universal Members / QR / Insights / Billing + the always-on
+    // Mode surface. It does NOT get the other types' role-specific engage tools or email (the email
+    // function does not list coaching).
     const ids = spaceSurfacesFor('coaching', allow).map((s) => s.id)
+    expect(ids).toEqual([
+      'space.basics',
+      'space.mode',
+      'space.people',
+      'space.engage.crm',
+      'space.reach',
+      'space.insights',
+      'space.billing',
+      'space.danger',
+    ])
     expect(ids).not.toContain('space.place')
-    expect(ids).not.toContain('space.engage.crm')
     expect(ids).not.toContain('space.engage.donations')
     expect(ids).not.toContain('space.engage.enroll')
     expect(ids).not.toContain('space.engage.memberships')
     expect(ids).not.toContain('space.engage.tickets')
     expect(ids).not.toContain('space.safety.checkin')
+    expect(ids).not.toContain('space.comms')
   })
 
   it('has unique Space surface ids', () => {

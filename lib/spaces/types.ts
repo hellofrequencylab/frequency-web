@@ -24,13 +24,15 @@ export type SpaceStatus = 'active' | 'suspended' | 'archived'
 
 // The Space types the unified owner CONSOLE (/spaces/<slug>/manage) serves (ADR-441 EM1-3, completed
 // in EM2-3 "all Space profiles"). The console notFound()s for every other type, so they stay on the
-// legacy /settings hub. Every PROVISIONABLE type is served except `coaching` (no console spine
-// declared yet); `root` is the never-provisioned platform host. Keep this list in lockstep with the
-// type gate in app/(main)/spaces/[slug]/manage/page.tsx (the page imports `isConsoleSpaceType`).
+// legacy /settings hub. Every PROVISIONABLE type is now served, including `coaching` (brought onto the
+// console with Space Modes M3, ADR-461/464; it previously fell back to the legacy /settings hub);
+// `root` is the never-provisioned platform host. Keep this list in lockstep with the type gate in
+// app/(main)/spaces/[slug]/manage/page.tsx (the page imports `isConsoleSpaceType`).
 const CONSOLE_SPACE_TYPES: readonly SpaceType[] = [
   'practitioner',
   'organization',
   'business',
+  'coaching',
   'event_space',
   'lab',
   'partner',
@@ -43,10 +45,10 @@ export function isConsoleSpaceType(type: SpaceType): boolean {
 }
 
 /** The owner-management entry point for a Space, by type (ADR-441 EM1-3 / EM2-3). The unified
- *  `/manage` console serves every provisionable type except coaching; coaching (and root) open the
- *  legacy `/settings` hub. PURE (a type + slug in, a path out), so it is the one place the
- *  harmonization rule lives for every "Manage" affordance. The legacy hub redirects the console
- *  types to /manage anyway, so this just avoids the bounce. */
+ *  `/manage` console serves every provisionable type (coaching joined with Space Modes M3); only
+ *  `root` opens the legacy `/settings` hub. PURE (a type + slug in, a path out), so it is the one
+ *  place the harmonization rule lives for every "Manage" affordance. The legacy hub redirects the
+ *  console types to /manage anyway, so this just avoids the bounce. */
 export function spaceManageHref(type: SpaceType, slug: string): string {
   const base = `/spaces/${slug}`
   return isConsoleSpaceType(type) ? `${base}/manage` : `${base}/settings`
@@ -90,4 +92,13 @@ export interface Space {
    *  ADR-322). Projected for the live plan-ladder gate (lib/spaces/function-access.ts, ADR-370). Null
    *  defaults to 'free'. While billing is OFF the plan never gates anything (featureAllowed grants all). */
   plan?: string | null
+  /** The Focus sub-mode (spaces.mode_variant, Space Modes M2, ADR-461/464). Null resolves to the
+   *  type's DEFAULT Focus in lib/spaces/modes.ts resolveMode. FRAMING only, never a gate. Read untyped
+   *  (ADR-246) until lib/database.types.ts regenerates. */
+  modeVariant?: string | null
+  /** Operator OVERRIDES of the Mode preset (spaces.preferences jsonb, Space Modes M2). Nav order, label
+   *  overrides, and toggle overrides merged OVER the Mode defaults so operator override wins. Carried
+   *  loosely as `unknown` (ADR-246); the Mode reader normalizes it. Default '{}' = no overrides =
+   *  the pure Mode defaults. FRAMING only, never a gate. */
+  preferences?: unknown
 }

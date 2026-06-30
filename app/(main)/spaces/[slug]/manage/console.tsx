@@ -24,6 +24,8 @@ function hrefForSurface(id: string, slug: string): string | null {
   switch (id) {
     case 'space.basics':
       return `${base}/settings`
+    case 'space.mode':
+      return `${base}/manage/mode`
     case 'space.place':
       return `${base}/settings/availability`
     case 'space.people':
