@@ -13,6 +13,11 @@ export type {
   MemberSummary,
   MemberDetail,
   MemberAction,
+  MemberRole,
+  MemberFunnel,
+  MemberPipeline,
+  MemberInteraction,
   SortSpec,
+  SortOption,
   MemberQuery,
 } from './types'
