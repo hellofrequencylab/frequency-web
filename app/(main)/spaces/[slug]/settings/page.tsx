@@ -1,12 +1,13 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { BadgeCheck, Briefcase, ChevronRight, CreditCard, DoorOpen, GraduationCap, Mail, QrCode, SlidersHorizontal, Ticket, Users } from 'lucide-react'
+import { Briefcase, ChevronRight, CreditCard, GraduationCap, Mail, QrCode, SlidersHorizontal, Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { isStaff } from '@/lib/core/roles'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { DangerDelete } from '@/components/admin/danger-delete'
@@ -22,13 +23,13 @@ import { SpaceSettingsForm, type SpaceSettingsValues } from './settings-form'
 // management surface this Space's type offers (Memberships for a business, Check in / Tickets for an
 // event space, Members for all).
 //
-// HARMONIZED (ADR-441 EM1-3, the Spaces harmonization finish): the unified
-// `/spaces/<slug>/manage` console now serves the `practitioner` and `organization` Space types, so
-// this legacy 7-card hub REDIRECTS those two types to it (after the SAME access gate, so a
-// non-manager still 404s and the route never leaks). Every settings SUB-page (availability, members,
-// donations, qr, email, billing, features, crm, …) stays in place: the console links to them as its
-// section targets. The OTHER types (business / event_space / lab / partner) have no console yet
-// (manage notFound()s for them), so they keep this hub unchanged.
+// HARMONIZED (ADR-441 EM1-3, completed in EM2-3 "all Space profiles"): the unified
+// `/spaces/<slug>/manage` console now serves every provisionable type except coaching, so this legacy
+// 7-card hub REDIRECTS those types to it (after the SAME access gate, so a non-manager still 404s and
+// the route never leaks). Every settings SUB-page (availability, members, donations, memberships,
+// tickets, checkin, qr, email, billing, features, crm, …) stays in place: the console links to them
+// as its section targets. Coaching (and root) have no console spine yet (manage notFound()s for
+// them), so they keep this hub unchanged.
 //
 // TWO VIEWERS:
 //   • canManage (owner / admin / editor) — the form is live and saves through updateSpaceProfile.
@@ -113,13 +114,14 @@ export default async function SpaceSettingsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  // HARMONIZATION (ADR-441 EM1-3, decided in ADR-453): the unified /spaces/<slug>/manage console serves the
-  // `practitioner` and `organization` types. Send a manager / staff previewer of those types there so
-  // there is one console, not two. The gate above already ran, so a non-manager 404s before this and
-  // the redirect never reveals the route. All OTHER types fall through to the legacy hub below
-  // (manage notFound()s for them, so there is nothing to redirect to yet). redirect() throws to
+  // HARMONIZATION (ADR-441 EM1-3, decided in ADR-453; completed in EM2-3): the unified
+  // /spaces/<slug>/manage console serves every provisionable type except coaching (isConsoleSpaceType,
+  // the same predicate the manage page gates on). Send a manager / staff previewer of those types
+  // there so there is one console, not two. The gate above already ran, so a non-manager 404s before
+  // this and the redirect never reveals the route. Coaching (and root) fall through to the legacy hub
+  // below (manage notFound()s for them, so there is nothing to redirect to yet). redirect() throws to
   // unwind rendering, so nothing past this line runs for the redirected types.
-  if (space.type === 'practitioner' || space.type === 'organization') {
+  if (isConsoleSpaceType(space.type)) {
     redirect(`/spaces/${space.slug}/manage`)
   }
 
@@ -192,21 +194,12 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {/* practitioner (availability) and organization (donations) are CONSOLE types now: this hub
-            redirects them to /spaces/<slug>/manage above, so their branches were unreachable here and
-            were removed (ADR-441 EM1-3). Their settings sub-pages are intact — the console links to
-            them. The branches below are the types that still use this legacy hub. */}
-
-        {space.type === 'business' && canUse('memberships') && (
-          // The Business's memberships live on their own Focus surface (the tier editor + the member
-          // list). Link to it from the hub rather than nesting another editor.
-          <HubCard
-            href={`/spaces/${space.slug}/settings/memberships`}
-            icon={BadgeCheck}
-            title="Memberships"
-            description="Define the tiers members can join, and see who has joined."
-          />
-        )}
+        {/* As of EM2-3 ("all Space profiles") every provisionable type except coaching is a CONSOLE
+            type: this hub redirects them to /spaces/<slug>/manage above (isConsoleSpaceType), so only
+            coaching (and root) ever render here. The type-specific cards below are coaching's; the
+            business / event_space branches were removed because they are now unreachable (the
+            redirect fires first). Every settings sub-page they used (memberships, tickets, checkin)
+            stays in place as the console's section targets. */}
 
         {space.type === 'coaching' && canUse('enroll') && (
           // The Coaching academy's enrollment lives on its own Focus surface (the program editor + the
@@ -216,30 +209,6 @@ export default async function SpaceSettingsPage({
             icon={GraduationCap}
             title="Enrollment"
             description="Define your program and see who has enrolled."
-          />
-        )}
-
-        {/* `event_space` is a first-class member of `SpaceType` (HARD-01 / ADR-339), so this branch is a
-            plain, exhaustively-checked comparison: no `as string` cast. */}
-        {space.type === 'event_space' && canUse('checkin') && (
-          // An Event Space runs door check-in: a reusable QR by the door, and the live roster of who
-          // scanned in. Reuses the existing scan path; this card links to the owner roster surface.
-          <HubCard
-            href={`/spaces/${space.slug}/settings/checkin`}
-            icon={DoorOpen}
-            title="Check in"
-            description="Show your door code and see who checked in."
-          />
-        )}
-
-        {space.type === 'event_space' && canUse('tickets') && (
-          // An Event Space runs free / RSVP ticketing (no money in v1; real paid ticketing is Phase 4):
-          // the owner tier editor + the RSVP roster (ADMIN-03).
-          <HubCard
-            href={`/spaces/${space.slug}/settings/tickets`}
-            icon={Ticket}
-            title="Tickets"
-            description="Set up free or RSVP ticket tiers, and see who has reserved a spot."
           />
         )}
 

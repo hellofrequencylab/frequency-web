@@ -208,10 +208,19 @@ export function managesEntity(
 // (/spaces/[slug]/manage, EM1-2) renders, in spine order; the console binds each id to the EXISTING
 // settings sub-page (no feature is rebuilt). Adding a Space surface is one row here.
 //
-// SCOPE: this rollout (EM1-3) ships the `practitioner` and `organization` (nonprofit) types only.
-// `business`, `event_space`, `lab`, and `partner` are INTENTIONALLY DEFERRED — their surfaces
-// (memberships, tickets, check-in, lab/partner depth) are groundwork for a later slice. They keep
-// working through the existing /spaces/[slug]/settings 7-tab cockpit, which is NOT retired here.
+// SCOPE: this rollout completes the Space spine for EVERY provisionable type. EM1-3 shipped
+// `practitioner` + `organization`; this slice (EM2-3, "all Space profiles") adds `business`,
+// `event_space`, `lab`, and `partner`, so every provisionable type is managed through the one
+// console, gated by each type's existing per-Space functions:
+//   business    -> CRM, email, memberships (+ the universal Members / QR / Insights / Billing)
+//   event_space -> tickets, check-in (+ the universal Members / QR / Insights / Billing)
+//   lab/partner -> the universal four they actually carry functions for: Members, QR, Insights,
+//                  Billing (their blueprints, ADR-341 section 2.10, compose only the universal tools
+//                  in v1; CRM/email are not in those types' function `types`, so no schema change
+//                  adds them here).
+// Each surface still WRAPS the existing settings sub-page it already gated on; nothing is rebuilt.
+// `coaching` and `root` stay on the legacy cockpit (coaching has no console spine declared yet;
+// root is the never-provisioned platform host).
 
 /** One manageable surface of a Space: a spine slot + the per-Space function that gates it + the
  *  Space types that offer it. The Space twin of `EntitySurface` (which the core Scope spine uses).
@@ -230,24 +239,30 @@ export interface SpaceSurface {
    *  settings sub-page re-checks server-side. `null` = an always-on surface (Basics / Danger) gated
    *  only by manage access (resolveSpaceManageAccess), not a per-tool function. */
   requiredFunction: SpaceFunctionKey | null
-  /** The Space types that offer this surface ('*' = every provisionable type). EM1-3 ships the
-   *  practitioner + organization rows; other types stay on the legacy cockpit until their slice. */
+  /** The Space types that offer this surface ('*' = every provisionable type). The console serves
+   *  every provisionable type except coaching (CONSOLE_SPACE_TYPES in lib/spaces/types.ts). */
   types: readonly (SpaceType | '*')[]
 }
 
 /**
- * The declared Space surfaces, per the 9-category spine. Two type spines (EM1-3):
+ * The declared Space surfaces, per the 9-category spine. Each provisionable type's spine:
  *
  *   Practitioner: Basics · Place & Time (availability) · People (members) ·
  *                 Engage (CRM) · Reach (QR) · Comms (email) · Insights · Danger
  *   Organization: Basics · People (members) · Engage (donations + enrollment, money dormant) ·
  *                 Reach (QR) · Comms (email) · Insights · Billing · Danger
+ *   Business:     Basics · People (members) · Engage (memberships + CRM) · Reach (QR) ·
+ *                 Comms (email) · Insights · Billing · Danger
+ *   Event Space:  Basics · People (members) · Engage (tickets) · Reach (QR) · Safety (check-in) ·
+ *                 Insights · Billing · Danger
+ *   Lab/Partner:  Basics · People (members) · Reach (QR) · Insights · Billing · Danger
+ *                 (the universal four they carry functions for; ADR-341 section 2.10)
  *
  * Each surface's `requiredFunction` is the EXISTING per-Space function the legacy settings sub-page
  * already gates on (lib/spaces/functions.ts), so the console gate and the sub-page gate are the same
  * check. Basics + Danger carry `null` (no per-tool function — gated by manage access alone). The
- * money-adjacent organization surfaces (donations / enrollment) stay v1 display-only: the existing
- * sub-pages keep money dormant (no schema change here).
+ * money-adjacent surfaces (donations / enrollment / memberships / tickets) stay v1 display-only: the
+ * existing sub-pages keep money dormant (no schema change here).
  */
 export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // Basics — profile, brand, visibility (the `profile` function gates the form; the surface itself
@@ -278,14 +293,23 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'members',
     types: ['*'],
   },
-  // Engage — the practitioner's CRM pipeline.
+  // Engage — the CRM pipeline (practitioner + business; the `crm` function offers it to both).
   {
     id: 'space.engage.crm',
     slot: 'engage',
     label: 'CRM',
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
     requiredFunction: 'crm',
-    types: ['practitioner'],
+    types: ['practitioner', 'business'],
+  },
+  // Engage — the studio's membership tiers and who has joined (business only; money dormant in v1).
+  {
+    id: 'space.engage.memberships',
+    slot: 'engage',
+    label: 'Memberships',
+    desc: 'Define the tiers members can join, and see who has joined.',
+    requiredFunction: 'memberships',
+    types: ['business'],
   },
   // Engage — the nonprofit's hosted donation asks (money dormant in v1; the Donate CTA reads this).
   {
@@ -305,6 +329,24 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'enroll',
     types: ['organization'],
   },
+  // Engage — the venue's ticket tiers and reservations (event_space only; money dormant in v1).
+  {
+    id: 'space.engage.tickets',
+    slot: 'engage',
+    label: 'Tickets',
+    desc: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
+    requiredFunction: 'tickets',
+    types: ['event_space'],
+  },
+  // Safety — the venue's door code and the people who have checked in (event_space only).
+  {
+    id: 'space.safety.checkin',
+    slot: 'safety',
+    label: 'Check in',
+    desc: 'Show the door code and see who has checked in.',
+    requiredFunction: 'checkin',
+    types: ['event_space'],
+  },
   // Reach — QR codes for the space and the landing pages they open to. Every type.
   {
     id: 'space.reach',
@@ -314,34 +356,36 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'qr',
     types: ['*'],
   },
-  // Comms — write a campaign, pick who gets it, and send or schedule it.
+  // Comms — write a campaign, pick who gets it, and send or schedule it. The `email` function gates
+  // it; the types that compose an email surface are practitioner, business, and organization.
   {
     id: 'space.comms',
     slot: 'comms',
     label: 'Email',
     desc: 'Write a campaign, pick who gets it, and send or schedule it.',
     requiredFunction: 'email',
-    types: ['practitioner', 'organization'],
+    types: ['practitioner', 'business', 'organization'],
   },
   // Insights — the space's analytics. Carried by the QR function today (the analytics surface lives
   // beside QR codes); a dedicated insights function lands when its own surface is built (Pass 2).
+  // Every console type that has the QR surface has the insights view beside it.
   {
     id: 'space.insights',
     slot: 'insights',
     label: 'Insights',
     desc: 'See how your codes and pages are performing.',
     requiredFunction: 'qr',
-    types: ['practitioner', 'organization'],
+    types: ['practitioner', 'business', 'organization', 'event_space', 'lab', 'partner'],
   },
-  // Billing — the plan ladder and what each plan unlocks (organization spine; the practitioner
-  // reaches billing through the legacy cockpit until its own slice).
+  // Billing — the plan ladder and what each plan unlocks. The `billing` function is universal ('*'),
+  // so every console type shows it.
   {
     id: 'space.billing',
     slot: 'billing',
     label: 'Plan and billing',
     desc: 'See your current plan and what each plan unlocks.',
     requiredFunction: 'billing',
-    types: ['organization'],
+    types: ['business', 'organization', 'event_space', 'lab', 'partner'],
   },
   // Danger — delete this space (owner-grade, permanent). Gated by manage access + owner check in the
   // console, like the legacy cockpit; no per-tool function.
