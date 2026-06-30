@@ -1,14 +1,28 @@
 import { describe, expect, it } from 'vitest'
 import {
   canStaffTransition,
+  connectBindingState,
   CONNECT_WIRED,
+  isMoneyPersona,
   LIVE_PERSONA_STATES,
+  MONEY_PERSONAS,
   PARTNER_PERSONAS,
+  personaQueueStats,
   PERSONA_STATE_META,
+  type PersonaQueueRow,
   type PersonaState,
 } from './personas'
 
 const ALL_STATES: PersonaState[] = ['claimed', 'verified', 'active', 'suspended']
+
+function row(over: Partial<PersonaQueueRow>): PersonaQueueRow {
+  return {
+    profileId: 'p', displayName: 'A', handle: null, avatarUrl: null,
+    persona: 'practitioner', state: 'claimed', notes: null,
+    createdAt: '', verifiedAt: null, stripeAccountId: null,
+    ...over,
+  }
+}
 
 describe('persona verification state machine (P2.7)', () => {
   it('only verified + active light the matrix surfaces', () => {
@@ -48,5 +62,35 @@ describe('persona verification state machine (P2.7)', () => {
       expect(PERSONA_STATE_META[s].label).toBeTruthy()
     }
     expect(PARTNER_PERSONAS.length).toBe(4)
+  })
+})
+
+describe('money personas + queue analytics (EM2-5)', () => {
+  it('scopes the money paths to Practitioner + Organization only', () => {
+    expect([...MONEY_PERSONAS].sort()).toEqual(['organization', 'practitioner'])
+    expect(isMoneyPersona('practitioner')).toBe(true)
+    expect(isMoneyPersona('organization')).toBe(true)
+    expect(isMoneyPersona('collaborator')).toBe(false)
+    expect(isMoneyPersona('business')).toBe(false)
+  })
+
+  it('counts the queue by lifecycle state', () => {
+    const stats = personaQueueStats([
+      row({ state: 'claimed' }),
+      row({ state: 'claimed' }),
+      row({ state: 'verified' }),
+      row({ state: 'suspended' }),
+    ])
+    expect(stats).toEqual({ pending: 2, verified: 1, active: 0, suspended: 1 })
+  })
+
+  it('keeps the per-persona payout binding dormant until Connect lands', () => {
+    // Non-money personas never carry a binding.
+    expect(connectBindingState(row({ persona: 'collaborator', state: 'verified' }))).toBe('dormant')
+    // A money persona reads pending once verified (waiting on Connect), dormant before that.
+    expect(connectBindingState(row({ persona: 'practitioner', state: 'claimed' }))).toBe('dormant')
+    expect(connectBindingState(row({ persona: 'practitioner', state: 'verified' }))).toBe('pending')
+    // A real bound account always reads bound.
+    expect(connectBindingState(row({ persona: 'organization', state: 'verified', stripeAccountId: 'acct_1' }))).toBe('bound')
   })
 })
