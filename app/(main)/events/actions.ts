@@ -13,6 +13,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { recordEngagementEvent } from '@/lib/engagement/events'
 import { markVerifiedByAttendance } from '@/lib/verification/attendance'
 import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-recurrence'
+import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
@@ -146,6 +147,10 @@ export async function createEvent(formData: FormData) {
   const endsIso = endsAt ? wallClockToIso(endsAt) : null
   if (!startsIso) return
 
+  // A repeat-end before the start would yield zero occurrences — reject rather than
+  // store a dead series (the form blocks it too; this is the server guard).
+  if (validateRecurrenceUntil(recurrenceType, startsIso, recurrenceUntil)) return
+
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
 
@@ -247,9 +252,10 @@ export async function createEvent(formData: FormData) {
 // Edit an existing event's details (EVENTS host self-service). Gated by the same
 // `event.editSettings` capability the admin editor + /manage use, so the host, a circle
 // manager, OR a community admin can edit — re-checked server-side. The event's circle,
-// host, slug, and recurrence are NOT changed here (moving circles / re-materialising
-// occurrences is a separate concern); everything else the create form sets is editable,
-// and the structured address re-geocodes on save (best-effort).
+// host, and slug are NOT changed here (moving circles is a separate concern); everything
+// else the create form sets is editable, including the recurrence cadence (changing it
+// re-materialises the occurrence window; the daily cron is the backstop). The structured
+// address re-geocodes on save (best-effort).
 export async function updateEvent(eventId: string, formData: FormData) {
   const caps = await getEventCapabilities(eventId)
   if (!caps.has('event.editSettings')) return
@@ -269,6 +275,19 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const endsIso = endsAt ? wallClockToIso(endsAt) : null
   if (!startsIso) return
 
+  // Recurrence (additive, validated). Only an ANCHOR row (parent_event_id IS NULL) may
+  // carry a cadence — a DB CHECK forbids a materialised occurrence from itself recurring,
+  // so for a child occurrence we leave recurrence untouched (read below before persisting).
+  const recurrenceRawEdit = (formData.get('recurrenceType') as string | null) ?? 'none'
+  const recurrenceTypeEdit: RecurrenceType = (VALID_RECURRENCE as string[]).includes(recurrenceRawEdit)
+    ? (recurrenceRawEdit as RecurrenceType)
+    : 'none'
+  const recurrenceUntilRawEdit = (formData.get('recurrenceUntil') as string | null) || null
+  const recurrenceUntilEdit = recurrenceTypeEdit !== 'none' && recurrenceUntilRawEdit
+    ? dateToWallClockIso(recurrenceUntilRawEdit)
+    : null
+  if (validateRecurrenceUntil(recurrenceTypeEdit, startsIso, recurrenceUntilEdit)) return
+
   const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
   const capacity = Number.isFinite(capacityParsed) && capacityParsed > 0 ? capacityParsed : null
@@ -282,9 +301,16 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
   const admin = createAdminClient()
-  const { data: ev } = await admin.from('events').select('slug').eq('id', eventId).maybeSingle()
-  const slug = (ev as { slug: string } | null)?.slug
+  const { data: ev } = await admin
+    .from('events')
+    .select('slug, parent_event_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const evRow = ev as { slug: string; parent_event_id: string | null } | null
+  const slug = evRow?.slug
   if (!slug) return
+  // Recurrence is an anchor-only concern (a child occurrence cannot itself recur).
+  const isAnchor = !evRow?.parent_event_id
 
   const { error } = await admin
     .from('events')
@@ -300,11 +326,24 @@ export async function updateEvent(eventId: string, formData: FormData) {
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
-    })
+      // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
+      ...(isAnchor
+        ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
+        : {}),
+    } as never)
     .eq('id', eventId)
   if (error) {
     console.error('updateEvent error', error)
     return
+  }
+
+  // If this anchor is (still) recurring, materialise the occurrence window for the
+  // current cadence right away so the change shows immediately (the daily cron is the
+  // backstop, and generateOccurrencesForAnchor is idempotent + dedupes by day).
+  if (isAnchor && recurrenceTypeEdit !== 'none') {
+    generateOccurrencesForAnchor(eventId).catch((e) =>
+      console.error('[updateEvent] occurrence generation:', e),
+    )
   }
 
   // Re-persist the structured address + re-geocode the venue (best-effort; never fails the save).

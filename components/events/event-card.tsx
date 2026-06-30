@@ -1,10 +1,11 @@
 import Image from 'next/image'
-import { MapPin, Users, Globe, Calendar } from 'lucide-react'
+import { MapPin, Users, Globe, Calendar, Repeat } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
 import { RsvpButton } from '@/components/events/rsvp-button'
 import { formatWhen, type EventRow } from '@/app/(main)/events/index-data'
+import { recurrenceLabel, type RecurrenceType } from '@/lib/events/recurrence'
 
 function eventDate(iso: string) {
   const d = new Date(iso)
@@ -69,6 +70,14 @@ export function EventCard({
   blurb?: string
 }) {
   const warm = <WarmBadge capacity={event.capacity} going={going} />
+  // Recurrence line: an anchor names its cadence ("Repeats weekly"); a materialised
+  // occurrence (parent_event_id set, cadence 'none' on the child) reads as part of a series.
+  const repeatLabel =
+    event.recurrence_type && event.recurrence_type !== 'none'
+      ? recurrenceLabel(event.recurrence_type as RecurrenceType)
+      : event.parent_event_id
+        ? 'Part of a series'
+        : null
   // At capacity → the one-tap RSVP joins the waitlist (framed as care, not scarcity).
   // RsvpButton already supports this; the index just needs to pass it.
   const isFull = event.capacity != null && going >= event.capacity
@@ -123,6 +132,11 @@ export function EventCard({
       meta={
         <>
           {provenance}
+          {repeatLabel && (
+            <span className="flex items-center gap-0.5">
+              <Repeat className="h-3 w-3" />{repeatLabel}
+            </span>
+          )}
           {event.location && (
             <span className="flex items-center gap-0.5">
               <MapPin className="h-3 w-3" />{event.location}
