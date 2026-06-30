@@ -23,7 +23,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
       <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={!!user} />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
+      <main id="main" className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
       <MarketingFooter menu={footerMenu} />
     </>
   )
