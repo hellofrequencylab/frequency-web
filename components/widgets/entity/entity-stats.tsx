@@ -15,7 +15,14 @@ export async function EntityStats() {
   const space = getActiveSpace()
   if (!space) return null
 
-  const stats = await resolveProfileStats(space.id, space.type)
+  // Template-driven stats (ADR-472): pass the full resolver input (type + Mode variant + plan +
+  // preferences) so the Highlights row matches the hero strip's template-framed numbers exactly.
+  const stats = await resolveProfileStats(space.id, {
+    type: space.type,
+    variant: space.modeVariant,
+    plan: space.plan,
+    preferences: space.preferences,
+  })
   const shown = stats.filter((s) => s.value > 0)
   if (shown.length === 0) return null
 
