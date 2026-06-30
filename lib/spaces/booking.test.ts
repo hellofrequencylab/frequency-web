@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // 1:1 BOOKING (ENTITY-SPACES-SYSTEM section 2.4, booking v1). What is locked here, all network-free
 // (the supabase admin client + auth + store + capability seam are mocked):
@@ -486,8 +486,21 @@ describe('listOpenSlots (action)', () => {
 })
 
 describe('createBooking (action)', () => {
+  // The createBooking action derives "now" from the real system clock (new Date()), and the slot
+  // generator only emits instants within HORIZON_DAYS of now. These tests assert against fixed
+  // instants (the 2026-06-30 slot boundaries and a 2020 past time), so we FREEZE the clock to a
+  // fixed instant where those dates land correctly: 2026-06-29T08:00:00Z makes the 2026-06-30 slots
+  // future AND within the 14-day horizon, and the 2020 instant past. Without this the suite is a
+  // time-bomb: once the real date reaches 2026-06-30 the "future" slot instants become past and the
+  // off-boundary test wrongly trips the "already passed" guard before the slot-boundary guard.
   beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z'))
     db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('rejects an anonymous caller', async () => {
