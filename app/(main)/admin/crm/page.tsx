@@ -16,42 +16,103 @@ import { LifecycleFunnelPanel } from '@/components/dashboard/lifecycle-funnel'
 import { RisingMembers } from './rising-members'
 import { ToneStat } from './tone-stat'
 import { runChurnBacktest } from '@/lib/playbooks/backtest'
+import { CrmViewTabs, type CrmAdminView } from './crm-view-tabs'
+import { MemberRoster } from './member-roster'
 
-// ALTITUDE 1 - the Platform cockpit (Resonance Engine Phase 2 · ADR-383 ·
-// docs/NEXT-GEN-CRM.md "The brilliant admin dashboard"). The whole platform in one screen:
-// a computed verdict line, four StatCards, the who-needs-attention worklist (the part operators
-// use), then a drillable lifecycle funnel + a "rising members about to resonate" card. It passes
-// the 5-second test: an owner who looks for five seconds knows the one thing to do next.
+// ALTITUDE 1 - the Platform Resonance CRM (Resonance Engine Phase 2 · ADR-383 ·
+// docs/NEXT-GEN-CRM.md "The brilliant admin dashboard" + the "list-first" principle). LIST-FIRST
+// (mirroring the Space CRM, #1303): the familiar member roster is the DEFAULT front door and always
+// one tap away. The cockpit (the computed verdict, four StatCards, the who-needs-attention worklist,
+// the lifecycle funnel, the rising-members pool, and the score-trustworthiness backtest) is the
+// SECONDARY view behind ?view=cockpit, so the scored members are visible up front even when the
+// action panels are calm (the expected first-reading state). A persistent tabs row (Members default
+// · Cockpit) keeps the list one tap from the cockpit and from any drill.
 //
 // STAFF-GATED, mirroring Phase 1's /admin/crm/today (requireAdmin('janitor')): a platform-wide
 // member-health read is a sensitive operator view. The /admin/* group mounts its own info rail
 // (page-chrome returns 'none' for /admin/*), so no rail registration is needed in a page.
 //
-// SPEED IS STRUCTURAL: the verdict + worklist read first (they are what matters); the heavy
-// aggregates (funnel, rising members) each sit behind their own <Suspense>. Every read is
-// fail-safe (zeros / empty), so the cockpit degrades to a calm empty state, never a crash.
-// Semantic tokens only (no hardcoded hex); copy in voice (no em or en dashes).
+// SPEED IS STRUCTURAL: the member roster and each heavy cockpit aggregate (funnel, rising members,
+// backtest) sit behind their own <Suspense>. Every read is fail-safe (zeros / empty), so the CRM
+// degrades to a calm empty state, never a crash. Semantic tokens only (no hardcoded hex); copy in
+// voice (no em or en dashes).
 
 export const dynamic = 'force-dynamic'
 
+const CRM_HREF = '/admin/crm'
 const MEMBERS_DRILL = '/admin/crm/members'
 
-export default async function PlatformCockpitPage() {
+export default async function PlatformCrmPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[] }>
+}) {
   await requireAdmin('janitor')
+  const { view } = await searchParams
+  // LIST-FIRST: Members is the default front door. The cockpit is the secondary view behind
+  // ?view=cockpit, never the landing. An unknown value falls back to Members.
+  const rawView = Array.isArray(view) ? (view[0] ?? null) : (view ?? null)
+  const activeView: CrmAdminView = rawView === 'cockpit' ? 'cockpit' : 'members'
 
-  // The verdict + worklist read together up front: they are the answer-first part of the page.
+  const viewCopy: Record<CrmAdminView, { title: string; description: string }> = {
+    members: {
+      title: 'Members',
+      description: 'Everyone the engine has scored, lowest health first. Tap anyone to open their full timeline.',
+    },
+    cockpit: {
+      title: 'Cockpit',
+      description: 'The health read for the platform: who needs you, where members stall, and who is about to resonate.',
+    },
+  }
+
+  return (
+    <AdminTemplate
+      title={viewCopy[activeView].title}
+      eyebrow="CRM"
+      icon={Sparkles}
+      description={viewCopy[activeView].description}
+      width="wide"
+    >
+      {/* LIST-FIRST (docs/NEXT-GEN-CRM.md): the persistent view tabs sit at the top of every view,
+          so the familiar member list is always one tap away from the Cockpit. */}
+      <CrmViewTabs boardHref={CRM_HREF} active={activeView} />
+
+      {activeView === 'members' ? <MembersView /> : <CockpitView />}
+    </AdminTemplate>
+  )
+}
+
+// ── MEMBERS (default front door): the full scored roster, the familiar list ───────────────────────
+
+function MembersView() {
+  return (
+    <AdminSection>
+      <Suspense fallback={<ListSkeleton />}>
+        <MemberRoster
+          filter={{ kind: 'all' }}
+          emptyTitle="No members scored yet"
+          emptyDescription="Once the overnight refresh scores members, your whole roster shows here, each linking to their timeline."
+        />
+      </Suspense>
+    </AdminSection>
+  )
+}
+
+// ── COCKPIT (secondary): verdict + stats + worklist + funnel + rising + trust ─────────────────────
+
+async function CockpitView() {
+  // The verdict + worklist read together up front: they are the answer-first part of the cockpit.
   // Both are fail-safe (zeros / empty list), so this await never throws.
   const [{ summary, funnel }, worklist] = await Promise.all([getPlatformHealth(), getWorklist()])
   const verdict = verdictLine(summary.meanHealth, worklist.rows.length)
 
   return (
-    <AdminTemplate
-      title="Resonance cockpit"
-      eyebrow="CRM"
-      icon={Sparkles}
-      description={verdict}
-      width="wide"
-    >
+    <>
+      {/* The computed verdict line: the whole cockpit in one sentence (the 5-second test). */}
+      <AdminSection>
+        <p className="text-sm text-text">{verdict}</p>
+      </AdminSection>
+
       {/* The four-stat row: the platform's health at a glance, each colored by the legend. */}
       <AdminSection>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -85,7 +146,7 @@ export default async function PlatformCockpitPage() {
           <TrustSection />
         </Suspense>
       </AdminSection>
-    </AdminTemplate>
+    </>
   )
 }
 
@@ -184,4 +245,14 @@ async function TrustSection() {
 
 function PanelSkeleton() {
   return <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/50" />
+}
+
+function ListSkeleton() {
+  return (
+    <div className="space-y-px rounded-2xl border border-border bg-surface p-2 shadow-sm">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
+      ))}
+    </div>
+  )
 }
