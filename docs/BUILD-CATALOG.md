@@ -253,14 +253,14 @@ These were mentioned once with no wave/track/ADR. Each is now homed (see "Lands 
 | 3 | **Trust-score wiring** — emitters + read RPC + recompute job (in-repo, **not** owner-gated, unlike other empty-in-prod seams) | Mislabeled as owner-gated | Wave D / F2-2 |
 | 4 | **Entry-point flyer/PDF designer** — pipeline turned off; only QR PNG/SVG ship | 🅿️ in BACKLOG, unmentioned since | Wave E (growth studio) |
 | 5 | **Outpost stewardship** — `outpost_lead`/`outpost` in CHECK constraints; `transition` is a no-op; nothing writes them | Parked (P1.5), forward-compat only | Park explicitly; revisit with EM1-5 |
-| 6 | **Post-event recap album** (`event_posts` unused) | Listed once; likely dead | Verify-or-drop in Wave D |
+| 6 | **Post-event recap album** (`event_posts`) | ✅ **VERIFIED LIVE — not dead.** Fully wired (PR #498): `event_posts`/`event_media`/`event_cohosts` + reactions; server actions in `app/(main)/events/[slug]/social-actions.ts` (`createEventPost`/`deleteEventPost`/`uploadEventMedia`), read in `page.tsx`, rendered by `components/events/event-activity.tsx` + the `event-activity-block` widget. | Done — keep, no action |
 | 7 | **SMS reminders (Twilio/A2P 10DLC)** | Deferred since 2026-06-10; needs EIN | Part B external-gate |
 | 8 | **CAN-SPAM postal address** (`COMPANY_POSTAL_ADDRESS`) for scan-intro email footer | Config item, easy to forget | Part B external-gate |
 | 9 | **Marketplace in-app payment / inter-entity bridge** | BACKLOG §K, no design owner | Held (F1-7 ledger built; UX later) |
 | 10 | **Data-residency posture (H3-12)** | Decision gate, no ADR, no owner | Part B open-decision |
 | 11 | **Gem-farm decision + `awardZaps` auto-promotion** | BACKLOG §C, never surfaced | Wave D (anti-abuse H2-7) |
 | 12 | **Payment TOCTOU race (store redeem)** | Decision needed, no wave | Wave D / H2 |
-| 13 | **`welcome_member` achievement unobtainability** | Flagged once, unverified | Verify in Wave D |
+| 13 | **`welcome_member` achievement unobtainability** | ⚠️ **VERIFIED STILL UNOBTAINABLE** (badge only). The `welcomer` *achievement badge* ("welcome 5 new members") cannot unlock: `isCriteriaMet` hard-codes `case 'welcome_member': return false` (`lib/achievements.ts:376`) with no welcome-count in `UserStats`. NOTE: the `welcome_member` *gem action* (distinct) IS now wired (`app/(main)/feed/chores-actions.ts:47`, awarded at onboarding 100%). Fix scoped to the badge; reward logic left untouched here (Wave D). | Verified — fix in Wave D |
 | 14 | **Teaser-gate extensions** (event/interest/best-practice pages) | Only in BACKLOG §N | Wave E (gated, flip with paid tiers) |
 | 15 | **Resonance Graph cold-start** (seed from onboarding Pillars) — no onboarding screen specified | Dangling impl detail | Fold into A.2 Resonance Graph |
 | 16 | **Underspecified CRM trait formulas** — Resonance Health, RFM, decline-slope, notification-budget have no formula | Designed without spec | Spec in A.2 before build |
@@ -269,13 +269,13 @@ These were mentioned once with no wave/track/ADR. Each is now homed (see "Lands 
 | 19 | **Apple Wallet (ADR-082), magic-link ghost-node geo authoring** | Deferred seam | Park; revisit post-launch |
 | 20 | **Per-space `entitlements.jsonb` key catalog** — structure defined, per-tier keys not enumerated | Underspecified | Spec alongside EM2-4 |
 
-### ⚠️ Stale pointers to verify (doc drift — code may have moved or shipped)
+### Stale pointers — verified 2026-06-30 (was "⚠️ to verify")
 
-- `savePageDraft` server action: A-PLUS §9 cites `app/edit/actions.ts:36` but the seam appears gone — confirm wired/removed.
-- Coming-soon nav: roadmap cites `lib/nav-areas.ts` but no `coming-soon` ref found there now.
-- ADR-015 "blocked by marketplace": marketplace shipped (ADR-392) — re-evaluate.
-- ADR-349 broad `<PageModules>` coverage vs hardcoded focus-mode in `app-shell.tsx` (~9 pages) — verify drift.
-- Line-number drift: `lib/personas.ts:103-106`, `entry-points-client.tsx:322` (seams real, lines moved).
+- ✅ **`savePageDraft` server action — DROPPED (already removed).** Zero occurrences in code (`*.ts`/`*.tsx`); `app/edit/actions.ts` now exports only `publishPage`/`unpublishPage`. The A-PLUS §9 / MASTER-PLAN pointers to `app/edit/actions.ts:36` are dead history. No cleanup needed (the seam is gone); remaining doc mentions are historical and harmless.
+- ✅ **Coming-soon nav — CORRECTED (no such ref).** No `coming-soon`/`comingSoon`/`coming_soon` token anywhere in `lib/nav-areas.ts` (nav is `NavArea[]` keyed by access level, no coming-soon concept). The roadmap pointer was stale; treat as resolved.
+- ✅ **ADR-015 "blocked by marketplace" — RESOLVED.** Marketplace shipped (ADR-392, live in prod 2026-06-25). First-class blocking — the only ADR-015 item that ever depended on the marketplace — was superseded by **ADR-036** and shipped (`lib/blocking.ts` + migration `20240301000000_blocked_users.sql`). ADR-015 itself (friendship graph, no `declined` tombstone) stands as-is; nothing about it is blocked. No re-evaluation outstanding.
+- ✅ **ADR-349 `<PageModules>` vs "hardcoded focus-mode in `app-shell.tsx`" — NO DRIFT.** The feared drift does not exist: `app-shell.tsx` carries **no** hardcoded focus/takeover page list (no `FOCUS`/`focusPages`/`FULL_TAKEOVER`/literal route arrays). Per **ADR-350**, the rail decision is a single declarative map in `lib/layout/page-chrome.ts` (`railFor`/`leftRailFor` + `FULL_TAKEOVER_PREFIXES`/`DASHBOARD_NONE_PATTERNS`); the shell only calls `railFor(pathname)`. Adding a Focus page is one line in `page-chrome.ts`, exactly as PAGE-FRAMEWORK §3 states.
+- ℹ️ **Line-number drift** (`lib/personas.ts:103-106`, `entry-points-client.tsx:322`): seams still real, line numbers continue to move with edits. Informational only — do not chase exact lines; grep the symbol.
 
 ---
 
