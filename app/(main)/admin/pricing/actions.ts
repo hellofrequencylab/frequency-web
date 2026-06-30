@@ -128,9 +128,11 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
     // Read-modify-write the whole map (default-all-enabled), so we never drop an unmentioned add-on.
     const { loadCatalogConfig } = await import('@/lib/pricing/catalog-config')
     const current = (await loadCatalogConfig()).addonEnabled
+    // Write target is ALWAYS a trusted key from the ADDON_KEYS constant (never the user-supplied
+    // `key`, which is only compared) so a property name can never be injected from input. `key` is
+    // already validated by asAddonKey above; this keeps the write provably safe to static analysis.
     const next: Record<string, boolean> = {}
-    for (const k of ADDON_KEYS) next[k] = current[k]
-    next[key] = enabled
+    for (const k of ADDON_KEYS) next[k] = k === key ? enabled : current[k]
     await setPricingSetting(ADDON_ENABLED_KEY, next, ctx.profileId)
     revalidatePath(PATH)
     return ok()
