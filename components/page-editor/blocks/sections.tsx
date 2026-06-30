@@ -393,7 +393,7 @@ export function QuoteSection({
         <figcaption className={`flex items-center gap-4 ${centered ? 'flex-col' : ''}`}>
           {avatar && (
             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-border">
-              <Image src={avatar} alt={attribution ?? ''} fill className="object-cover" />
+              <Image src={avatar} alt={attribution ?? ''} fill sizes="48px" className="object-cover" />
             </div>
           )}
           <div>
