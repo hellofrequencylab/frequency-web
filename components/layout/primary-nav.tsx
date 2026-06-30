@@ -1,5 +1,3 @@
-'use client'
-
 import { MegaBar } from '@/components/layout/mega-menu'
 import { defaultMenu } from '@/lib/menus/defaults'
 import type { MenuAccess, MenuSettings, ResolvedMenu } from '@/lib/menus/types'
@@ -16,6 +14,11 @@ import type { MenuAccess, MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 // DATA + FALLBACK: the server layout fetches the ResolvedMenu + the viewer's role + the
 // interaction timings and passes them in. If `headerMenu` is missing, we fall back to the
 // code default (defaultMenu('header')) so the header NEVER breaks.
+//
+// No 'use client' here: this is a thin, prop-only pass-through to <MegaBar> (which owns the
+// client boundary). Keeping it server-renderable lets the menu-fallback resolution stay on
+// the server for Server Component consumers (e.g. site-header) and ships less JS, while it
+// still renders unchanged inside the client headers (marketing-header / app-shell).
 
 type Variant = 'light' | 'dark'
 
