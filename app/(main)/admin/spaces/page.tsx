@@ -1,5 +1,15 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { Building2, Palette, Pencil, Eye, Settings, Network, SlidersHorizontal } from 'lucide-react'
+import {
+  Building2,
+  Palette,
+  Pencil,
+  Eye,
+  Settings,
+  SlidersHorizontal,
+  HeartPulse,
+  Users,
+} from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -8,20 +18,28 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
 import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
 import { listSpaces } from '@/lib/spaces/store'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
+import { resolveMode } from '@/lib/spaces/modes'
+import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
+import {
+  HEALTH_BUCKETS,
+  HEALTH_BUCKET_LABEL,
+  HEALTH_BUCKET_TONE,
+  type HealthBucket,
+} from '@/lib/spaces/health'
+import { gatherSpacesHealth, type SpaceWithHealth } from '@/lib/spaces/health-signals'
 import { spaceManageHref, type Space, type SpaceStatus } from '@/lib/spaces/types'
 
 export const dynamic = 'force-dynamic'
 
-// Per-Space tenancy admin (docs/SPACES.md, ADR-249/250; ENTITY-SPACES-BUILD). Janitor-gated. Lists
-// every Space with its assigned theme (spaces.skin) and brand fields; each row links to the branding
-// editor AND, for tenant Spaces, straight to the live profile (/spaces/<slug>) and the owner settings
-// surface (/spaces/<slug>/settings) the entity-spaces system shipped. Each tenant row also carries a
-// "View as <space>" affordance: it starts a preview of THAT specific Space and routes into its owner
-// experience, which renders read-only for a janitor, so an operator sees exactly what that Space
-// sees (the previewAsSpace action is the gate). Best-effort read: if the spaces table or its columns
-// aren't migrated yet the list degrades to empty rather than erroring.
+// Per-Space tenancy admin, now a HEALTH dashboard (docs/SPACES.md, ADR-249/250; ENTITY-SPACES-BUILD).
+// Janitor-gated. Every Space is sorted into a health bucket (lib/spaces/health.ts) from cheaply-read
+// signals (status + a batched member count + recency, gathered without an N+1 in
+// lib/spaces/health-signals.ts) and the list is GROUPED by bucket, most urgent first. Each row keeps
+// every tenancy affordance the branding list shipped: the branding editor (/admin/spaces/<id>), the
+// live profile (/spaces/<slug>) and owner settings for tenant Spaces, and the "View as <space>"
+// preview. The header + summary render immediately; the grouped list streams behind <Suspense> so a
+// slow signal gather never blocks the shell (PAGE-FRAMEWORK §5). Best-effort: a missing signal source
+// degrades to "unknown" rather than erroring the page.
 
 const STATUS_TONE: Record<SpaceStatus, StatusTone> = {
   active: 'success',
@@ -29,55 +47,27 @@ const STATUS_TONE: Record<SpaceStatus, StatusTone> = {
   archived: 'neutral',
 }
 
-// The entity-spaces columns (visibility, tagline) are NOT on the typed Space yet (ADR-246), so the
-// list projects them through a small untyped admin query — the same pattern lib/spaces/membership.ts
-// uses — rather than widening the shared types.ts/store.ts. Keyed by space id for the row to read.
-type SpaceAdminMeta = { visibility: 'network' | 'private'; tagline: string | null }
-
-async function listSpaceAdminMeta(): Promise<Map<string, SpaceAdminMeta>> {
-  const out = new Map<string, SpaceAdminMeta>()
-  try {
-    const db = createAdminClient() as unknown as {
-      from: (table: string) => {
-        select: (cols: string) => Promise<{
-          data: { id: string; visibility?: string | null; tagline?: string | null }[] | null
-        }>
-      }
-    }
-    const { data } = await db.from('spaces').select('id, visibility, tagline')
-    for (const r of data ?? []) {
-      out.set(r.id, {
-        visibility: r.visibility === 'private' ? 'private' : 'network',
-        tagline: typeof r.tagline === 'string' && r.tagline.trim() ? r.tagline.trim() : null,
-      })
-    }
-  } catch {
-    // Pre-migration (no visibility/tagline columns): degrade to no metadata, rows still render.
-  }
-  return out
+/** The Mode/type TAG for a row: the resolved operator Mode label (resolveMode), falling back to the
+ *  raw spaces.type when a type has no registered Mode (root / unknown). Framing only, never a gate. */
+function modeTag(s: Space): string {
+  return resolveMode(s.type, s.modeVariant)?.modeLabel ?? s.type
 }
 
-/** The stored accent rendered as a swatch + label. The owner settings surface writes a DAWN TOKEN
- *  NAME (lib/spaces/profile-settings.ts → TOKEN_ALLOWLIST); the legacy admin branding action writes a
- *  hex/rgb/hsl color. Re-validate the DB value before it touches a style (never trust a stored value
- *  it did not re-check): an allowlisted token renders via `var(<token>)`; else a hex/rgb/hsl renders
- *  directly; else nothing. */
-function accentSwatch(brandAccent: string | null): { background: string; label: string } | null {
-  if (!brandAccent) return null
-  if (TOKEN_ALLOWLIST.has(brandAccent)) {
-    return { background: `var(${brandAccent})`, label: brandAccent }
-  }
-  if (/^#[0-9a-fA-F]{3,8}$|^(?:rgb|hsl)a?\([0-9.,%/\s]+\)$/.test(brandAccent)) {
-    return { background: brandAccent, label: brandAccent }
-  }
-  return null
-}
-
-function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
-  const accent = accentSwatch(s.brandAccent)
+function SpaceRow({ entry }: { entry: SpaceWithHealth }) {
+  const { space: s, signals, health } = entry
   // The root Space serves the app itself; it has no public /spaces/<slug> profile or owner settings.
   const hasProfile = s.type !== 'root'
   const brandName = s.brandName || s.name
+  const planLabel = SPACE_PLAN_LABEL[asSpacePlan(s.plan)]
+  const active = signals.activeMembers
+  const total = signals.totalMembers
+  const memberCount =
+    typeof active === 'number'
+      ? typeof total === 'number' && total > active
+        ? `${active} active of ${total}`
+        : `${active} active`
+      : 'Members unknown'
+
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
@@ -88,36 +78,28 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
           >
             {brandName}
           </Link>
+          <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+            {modeTag(s)}
+          </span>
           <StatusChip tone={STATUS_TONE[s.status]} size="sm">
             {s.status}
           </StatusChip>
           <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
-            {s.type}
+            {planLabel}
           </span>
-          {meta && (
-            <StatusChip tone={meta.visibility === 'private' ? 'neutral' : 'info'} size="sm">
-              {meta.visibility === 'private' ? 'Private' : 'Networked'}
-            </StatusChip>
-          )}
         </div>
-        {meta?.tagline && <p className="mt-1 truncate text-sm text-muted">{meta.tagline}</p>}
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
           <span>/{s.slug}</span>
           <span className="inline-flex items-center gap-1">
+            <Users className="h-3 w-3" aria-hidden /> {memberCount}
+          </span>
+          <span className="inline-flex items-center gap-1">
             <Palette className="h-3 w-3" aria-hidden /> Theme: {s.skin}
           </span>
-          {accent && (
-            <span className="inline-flex items-center gap-1">
-              <span
-                className="inline-block h-3 w-3 rounded-full border border-border"
-                style={{ background: accent.background }}
-                aria-hidden
-              />
-              {accent.label}
-            </span>
-          )}
-          {s.brandLogoUrl && <span className="truncate">Logo set</span>}
         </div>
+        {health.reasons.length > 0 && (
+          <p className="mt-2 text-sm text-muted">{health.reasons.join(' ')}</p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Button asChild variant="secondary" size="sm">
@@ -148,19 +130,98 @@ function SpaceRow({ s, meta }: { s: Space; meta?: SpaceAdminMeta }) {
   )
 }
 
-export default async function SpacesBrandingPage() {
-  await requireAdmin('janitor')
-  const [spaces, meta] = await Promise.all([listSpaces(), listSpaceAdminMeta()])
+/** One health section: the bucket title + count, then its Spaces. Rendered only when non-empty. */
+function HealthSection({ bucket, entries }: { bucket: HealthBucket; entries: SpaceWithHealth[] }) {
+  if (entries.length === 0) return null
+  return (
+    <AdminSection
+      title={`${HEALTH_BUCKET_LABEL[bucket]} (${entries.length})`}
+      actions={
+        <StatusChip tone={HEALTH_BUCKET_TONE[bucket]} size="sm">
+          {entries.length}
+        </StatusChip>
+      }
+    >
+      <div className="space-y-3">
+        {entries.map((entry) => (
+          <SpaceRow key={entry.space.id} entry={entry} />
+        ))}
+      </div>
+    </AdminSection>
+  )
+}
 
-  const branded = spaces.filter((s) => s.brandName || s.brandLogoUrl || s.brandAccent).length
-  const networked = spaces.filter((s) => meta.get(s.id)?.visibility !== 'private').length
+/** The async body: the batched signal gather + the grouped, by-health list. Streamed behind a
+ *  <Suspense> boundary so the header + the empty-state check render immediately. */
+async function SpacesHealthBody({ spaces }: { spaces: Space[] }) {
+  const graded = await gatherSpacesHealth(spaces)
+
+  // Group by bucket, then render the sections most-urgent first (HEALTH_BUCKETS order).
+  const byBucket = new Map<HealthBucket, SpaceWithHealth[]>()
+  for (const bucket of HEALTH_BUCKETS) byBucket.set(bucket, [])
+  for (const entry of graded) byBucket.get(entry.health.bucket)!.push(entry)
+
+  const counts = Object.fromEntries(
+    HEALTH_BUCKETS.map((b) => [b, byBucket.get(b)!.length]),
+  ) as Record<HealthBucket, number>
+
+  return (
+    <>
+      <AdminSection>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <StatCard bordered label="Spaces" value={spaces.length} icon={Building2} />
+          <StatCard
+            bordered
+            label="Healthy"
+            value={counts.healthy}
+            icon={HeartPulse}
+            detail={counts.healthy === spaces.length ? 'All clear' : undefined}
+          />
+          <StatCard
+            bordered
+            label="Needs attention"
+            value={counts.needs_attention}
+            icon={HeartPulse}
+          />
+          <StatCard bordered label="At risk" value={counts.at_risk} icon={HeartPulse} />
+          <StatCard bordered label="Dormant" value={counts.dormant} icon={HeartPulse} />
+        </div>
+      </AdminSection>
+      {HEALTH_BUCKETS.map((bucket) => (
+        <HealthSection key={bucket} bucket={bucket} entries={byBucket.get(bucket)!} />
+      ))}
+    </>
+  )
+}
+
+/** The streaming fallback: the header has already painted; show a calm placeholder for the list. */
+function SpacesHealthSkeleton() {
+  return (
+    <AdminSection>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/60" />
+        ))}
+      </div>
+      <div className="mt-6 space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-elevated/60" />
+        ))}
+      </div>
+    </AdminSection>
+  )
+}
+
+export default async function SpacesHealthPage() {
+  await requireAdmin('janitor')
+  const spaces = await listSpaces()
 
   return (
     <AdminTemplate
       title="Spaces"
       icon={Building2}
       eyebrow="Operations · Tenancy"
-      description="Each Space is a white-label tenant of the one app. Set its theme and brand here, then jump to its live profile or open the owner settings the Space runs on."
+      description="Every Space, sorted by how it is doing. Start at the top: the Spaces that need a look come first. Each row still opens its branding, live profile, and owner settings."
       width="wide"
       actions={
         // The per-TYPE function-defaults editor (per-space-roles Phase 2): what every NEW space of a
@@ -176,34 +237,12 @@ export default async function SpacesBrandingPage() {
         <EmptyState
           icon={Building2}
           title="No Spaces yet"
-          description="Spaces are the white-label tenants of Frequency. Once a Space exists you can assign its theme and brand here."
+          description="Spaces are the white-label tenants of Frequency. Once a Space exists it shows up here, sorted by how it is doing."
         />
       ) : (
-        <>
-          <AdminSection>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard bordered label="Spaces" value={spaces.length} icon={Building2} />
-              <StatCard
-                bordered
-                label="Active"
-                value={spaces.filter((s) => s.status === 'active').length}
-                icon={Building2}
-              />
-              <StatCard bordered label="Networked" value={networked} icon={Network} />
-              <StatCard bordered label="Branded" value={branded} icon={Palette} />
-            </div>
-          </AdminSection>
-          <AdminSection
-            title="All Spaces"
-            description="Set a Space's theme and brand, view its live profile, or open the owner settings."
-          >
-            <div className="space-y-3">
-              {spaces.map((s) => (
-                <SpaceRow key={s.id} s={s} meta={meta.get(s.id)} />
-              ))}
-            </div>
-          </AdminSection>
-        </>
+        <Suspense fallback={<SpacesHealthSkeleton />}>
+          <SpacesHealthBody spaces={spaces} />
+        </Suspense>
       )}
     </AdminTemplate>
   )
