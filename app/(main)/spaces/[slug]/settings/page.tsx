@@ -197,13 +197,15 @@ export default async function SpaceSettingsPage({
         )}
 
         {space.type === 'organization' && canUse('donations') && (
-          // An Organization configures its hosted donation asks (a fund label, a short description, and
-          // suggested amounts). No money in v1 (ADMIN-01); the member Donate CTA reads this config.
+          // A nonprofit (the `organization` Space type) configures its hosted donation asks (a fund
+          // label, a short description, and suggested amounts). No money in v1 (ADMIN-01); the member
+          // Donate CTA reads this config. The Nonprofit plan ($29, verified 501c3) is the plan for
+          // this Space type; the plan-and-billing card above names it the same way.
           <HubCard
             href={`/spaces/${space.slug}/settings/donations`}
             icon={HeartHandshake}
             title="Donations"
-            description="Set up your fund, a short description, and the amounts members can pick."
+            description="Set up your nonprofit's fund, a short description, and the amounts supporters can pick."
           />
         )}
 

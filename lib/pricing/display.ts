@@ -66,13 +66,19 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
   ]
 }
 
-/** The four PAID space plans as display rows, in ladder order (practitioner -> white-label). PURE.
- *  'free' is the baseline and is rendered by the caller, not part of the paid ladder here. */
+/** The PAID space plans as display rows, in ladder order (practitioner -> white-label). PURE.
+ *  'free' is the baseline and is rendered by the caller, not part of the paid ladder here.
+ *
+ *  Nonprofit (the $29 verified-501c3 plan) rides between business and organization: it is the plan
+ *  built FOR a Space of type `organization` (a nonprofit), so an organization owner has to be able
+ *  to FIND it on their own billing ladder. The 'organization' row above it is the high-end custom
+ *  plan (built, not publicly sold) for large orgs; the two read as a clear ladder once both show. */
 export function spacePlanRows(values: PricingDefaults): PriceRow[] {
   const labelFor = (p: SpacePlan): string => SPACE_PLAN_LABEL[p]
   return [
     priceRow('practitioner', labelFor('practitioner'), values.plan.practitioner),
     priceRow('business', labelFor('business'), values.plan.business),
+    priceRow('nonprofit', labelFor('nonprofit'), values.plan.nonprofit),
     priceRow('organization', labelFor('organization'), values.plan.organization),
     priceRow('whitelabel', labelFor('whitelabel'), values.plan.whitelabel),
   ]

@@ -6,7 +6,7 @@ import { isError } from '@/lib/action-result'
 import { startSpacePlanCheckout } from './actions'
 import type { PriceRow } from '@/lib/pricing/display'
 
-// SPACE PLAN PICKER (client). Renders the paid plan ladder (Practitioner -> Organization;
+// SPACE PLAN PICKER (client). Renders the paid plan ladder (Practitioner -> Nonprofit -> Organization;
 // white-label is its own lead surface). The CURRENT plan is marked; a higher plan whose checkout is
 // live shows an "Upgrade" button (-> startSpacePlanCheckout -> Stripe); when not sellable (billing
 // OFF, or the per-plan switch off) it shows a disabled "coming soon" CTA so nothing is ever a broken
@@ -23,7 +23,9 @@ const UNLOCK_LABEL: Record<string, string> = {
   whitelabel: 'White-label branding',
 }
 
-const PLAN_ORDER = ['free', 'practitioner', 'business', 'organization', 'whitelabel']
+// The capability/ladder order the picker ranks on (current vs lower vs upgrade). Nonprofit rides
+// between business and organization, mirroring lib/pricing/display.ts spacePlanRows.
+const PLAN_ORDER = ['free', 'practitioner', 'business', 'nonprofit', 'organization', 'whitelabel']
 
 export function SpacePlanPicker({
   slug,
