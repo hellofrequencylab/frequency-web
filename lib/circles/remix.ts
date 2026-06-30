@@ -137,6 +137,18 @@ export async function publishCircle(input: { circleId: string; profileId: string
     /* rewards must never block publish */
   }
 
+  // Keystone global-to-local conversion goal (GE8-6): a founder seeded a real local room.
+  // Tagged with the founder's fuzzed city bucket so the funnel can verify global signups
+  // convert to local activity. Best-effort, idempotent on the circle id, never blocks publish.
+  try {
+    const { getLocalitySeedSignal } = await import('@/lib/keystone/store')
+    const { trackLocalActivitySeeded } = await import('@/lib/keystone/instrumentation')
+    const { cityKey } = await getLocalitySeedSignal(input.profileId)
+    trackLocalActivitySeeded(input.profileId, 'circle', c.id, { cityKey })
+  } catch {
+    /* instrumentation must never block publish */
+  }
+
   // Announce the new Circle, best-effort (mirrors createCircle).
   try {
     await admin.from('posts').insert({
