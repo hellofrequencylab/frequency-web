@@ -13,8 +13,10 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const result = await generateAllOccurrences()
-  log.info('cron.event_occurrences', {
+  // Timed: log.time wraps the materialisation roll and emits one structured line
+  // carrying duration_ms + ok, so a slow run is queryable by `cron.event_occurrences`.
+  const result = await log.time('cron.event_occurrences', () => generateAllOccurrences())
+  log.info('cron.event_occurrences.counts', {
     anchors:            result.anchorCount,
     occurrencesCreated: result.occurrencesCreated,
   })

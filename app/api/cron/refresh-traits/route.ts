@@ -16,8 +16,11 @@ async function handler(req: NextRequest) {
   const denied = rejectUnauthorizedCron(req)
   if (denied) return denied
 
-  const result = await refreshMemberTraits()
-  log.info('cron.refresh_traits', result)
+  // Timed: the primary nightly recompute is the cron's heaviest step, so wrap it
+  // in log.time to emit duration_ms + ok queryable by `cron.refresh_traits`. The
+  // existing counts line is kept under a `.counts` event for back-compat.
+  const result = await log.time('cron.refresh_traits', () => refreshMemberTraits())
+  log.info('cron.refresh_traits.counts', result)
 
   // Resonance Graph step (ADR-385): recompute + persist the consenting graph's edges AFTER the trait
   // refresh, so the reciprocal re-ranker reads tonight's activation_propensity + churn_risk. It also
