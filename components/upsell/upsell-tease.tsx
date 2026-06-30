@@ -85,10 +85,14 @@ export function UpsellTease({
     // Only consult the meter when the server-side gate would even allow a tease — keeps OFF a true no-op.
     if (!shouldShowTease({ billingLive: live, locked })) return
     const spent = teaseCapSpent(readSeen()[target], cap)
-    setDismissed(spent)
-    setReady(true)
     // Count this appearance toward the cap so the next success moment stays quiet.
     if (!spent) markSeen(target, cap)
+    // Defer the state flip out of the synchronous effect body (mirrors components/teaser-gate.tsx) so
+    // it does not trigger a cascading render — and so the first paint matches the server (nothing shown).
+    queueMicrotask(() => {
+      setDismissed(spent)
+      setReady(true)
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

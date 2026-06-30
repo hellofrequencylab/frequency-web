@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { RelationshipTimeline } from '@/components/people/relationship-timeline'
 import { LinkMemberCard } from '@/components/connections/link-member-card'
 import { getProfileSummaries } from '@/lib/connections/matching'
+import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { Detail } from './detail'
 
 export const dynamic = 'force-dynamic'
@@ -54,11 +55,15 @@ export default async function ProfileDetailPage({ params }: { params: Promise<{ 
   // The linked member's public identity (for the On Frequency card), if linked.
   const linked = linkedId ? (await getProfileSummaries([linkedId])).get(linkedId) ?? null : null
 
+  // Phase E upsell tease gate (ADR-466): at the saved-contact success moment, tease the CRM upgrade —
+  // ONLY when billing is live AND the caller is below Crew. Dormant (HIDDEN) while billing_live is OFF.
+  const crmTease = await resolveTierTeaseGate('crew')
+
   return (
     // Focus surface (page-chrome.ts → 'none'): centered, no rail. The Detail shell owns the
     // header band + the single back-link; the page never hand-rolls chrome (PAGE-FRAMEWORK §8).
     <div className="mx-auto max-w-2xl">
-      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} />
+      <Detail initial={data} reminders={reminders} timeline={timeline} timelineEntries={timelineEntries} back={{ href: '/connections', label: 'Profiles' }} crmTease={crmTease} />
       {/* Manual contact ↔ member link — the path for when the auto detector can't
           fire (card email differs from signup email, no phone on the profile). */}
       <LinkMemberCard contactId={id} contactName={data.contact.displayName} linked={linked} />
