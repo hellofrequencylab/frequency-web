@@ -10,7 +10,11 @@ import {
   asSpacePlan,
   planEntitlementKeys,
   planEntitlements,
+  planKeysWithAddons,
   SPACE_PLAN_LABEL,
+  ADDON_ENTITLEMENT_KEYS,
+  ADDON_KEYS,
+  BILLING_MANAGED_KEYS,
 } from './plans'
 import {
   deriveGamificationAccess,
@@ -27,82 +31,79 @@ import {
 import { PRICING_DEFAULTS } from './settings'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 
-describe('space plans', () => {
-  it('narrows unknown / null labels to free (default-deny)', () => {
-    expect(asSpacePlan('business')).toBe('business')
-    expect(asSpacePlan('whitelabel')).toBe('whitelabel')
+describe('space plans (collapsed ladder · ADR-458)', () => {
+  it('narrows unknown / null labels to free, and OLD labels to their new equivalent (transition shim)', () => {
+    // The four new plans pass through.
+    expect(asSpacePlan('pro')).toBe('pro')
+    expect(asSpacePlan('nonprofit')).toBe('nonprofit')
+    expect(asSpacePlan('organization')).toBe('organization')
+    expect(asSpacePlan('free')).toBe('free')
+    // Legacy labels narrow to pro until the collapse migration runs.
+    expect(asSpacePlan('practitioner')).toBe('pro')
+    expect(asSpacePlan('business')).toBe('pro')
+    expect(asSpacePlan('partner')).toBe('pro')
+    expect(asSpacePlan('whitelabel')).toBe('pro')
+    // Unknown / null -> free (default-deny).
     expect(asSpacePlan('nonsense')).toBe('free')
     expect(asSpacePlan(null)).toBe('free')
     expect(asSpacePlan(undefined)).toBe('free')
   })
 
-  it('expands plan -> entitlement keys cumulatively', () => {
+  it('Pro core = crm + the governed playbooks lever (non-regressive vs the old practitioner plan)', () => {
     expect(planEntitlementKeys('free')).toEqual([])
-    // Practitioner gets the CRM + the AI-depth playbooks lever (Phase 6 · ADR-387).
-    expect(planEntitlementKeys('practitioner')).toContain('crm')
-    expect(planEntitlementKeys('practitioner')).toContain('crm.playbooks')
-    expect(planEntitlementKeys('business')).toContain('crm')
-    expect(planEntitlementKeys('business')).toContain('email')
-    // whitelabel includes everything business + org have, plus the whitelabel key
-    expect(planEntitlementKeys('whitelabel')).toContain('whitelabel')
-    expect(planEntitlementKeys('whitelabel')).toContain('crm')
-  })
-
-  it('the AI-depth keys ride the plan ladder cumulatively (Phase 6 · ADR-387)', () => {
+    expect(planEntitlements('pro')).toEqual({ crm: true, 'crm.playbooks': true })
+    // crm.playbooks stays in Pro core so a former practitioner does not lose the depth on the collapse.
+    expect(planEntitlementKeys('pro')).toContain('crm')
+    expect(planEntitlementKeys('pro')).toContain('crm.playbooks')
+    // The resonance depth is the AI Engine ADD-ON, not Pro core.
+    expect(planEntitlementKeys('pro')).not.toContain('crm.resonance')
+    expect(planEntitlementKeys('pro')).not.toContain('crm.resonance_ai')
     // The free wedge is NEVER an entitlement key (every Space gets it).
     expect(planEntitlementKeys('free')).not.toContain('crm.playbooks')
-    // Practitioner+: governed playbooks; business+: the read-only resonance surface; org+/whitelabel:
-    // the full Resonance Graph + managed matching.
-    expect(planEntitlements('practitioner')['crm.playbooks']).toBe(true)
-    expect(planEntitlements('practitioner')['crm.resonance']).toBeUndefined()
-    expect(planEntitlements('business')['crm.resonance']).toBe(true)
-    expect(planEntitlements('business')['crm.resonance_ai']).toBeUndefined()
-    expect(planEntitlements('organization')['crm.resonance_ai']).toBe(true)
-    expect(planEntitlements('whitelabel')['crm.resonance_ai']).toBe(true)
     // crm.autonomy (Phase 3) is a per-Space DIAL, never a plan grant.
     for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
   })
 
-  it('planEntitlements is exactly the { key: true } blob spaceHasEntitlement reads', () => {
-    expect(planEntitlements('free')).toEqual({})
-    expect(planEntitlements('practitioner')).toEqual({ crm: true, 'crm.playbooks': true })
-    const biz = planEntitlements('business')
-    expect(biz.crm).toBe(true)
-    expect(biz.email).toBe(true)
+  it('the add-on key sets define the Pro extras (ADR-458 §1)', () => {
+    expect(ADDON_ENTITLEMENT_KEYS.marketing).toEqual(['email', 'automation', 'multi_pipeline', 'reporting'])
+    expect(ADDON_ENTITLEMENT_KEYS.ai).toEqual(['crm.resonance', 'crm.resonance_ai'])
+    expect(ADDON_ENTITLEMENT_KEYS.team).toEqual(['team'])
+    expect(ADDON_ENTITLEMENT_KEYS.branding).toEqual(['whitelabel'])
+  })
+
+  it('planKeysWithAddons layers add-on keys onto Pro core (the set-to-target source)', () => {
+    const withMarketing = planKeysWithAddons('pro', ['marketing'])
+    expect(withMarketing).toContain('crm') // core preserved
+    expect(withMarketing).toContain('email')
+    expect(withMarketing).toContain('multi_pipeline')
+    expect(withMarketing).not.toContain('crm.resonance') // that is the AI add-on
+    expect(withMarketing).not.toContain('whitelabel') // that is the Branding add-on
+    // Unknown add-on keys are dropped (default-deny); the result is just the base.
+    expect(planKeysWithAddons('pro', ['nope' as never])).toEqual([...planEntitlementKeys('pro')])
+  })
+
+  it('Nonprofit + Organization are all-inclusive: Pro core unioned with EVERY add-on', () => {
+    const all = planKeysWithAddons('pro', ADDON_KEYS)
+    for (const plan of ['nonprofit', 'organization'] as const) {
+      const ents = planEntitlements(plan)
+      for (const key of all) expect(ents[key]).toBe(true)
+      // including the branding key (the old whitelabel) and the full resonance depth
+      expect(ents.whitelabel).toBe(true)
+      expect(ents['crm.resonance_ai']).toBe(true)
+      expect(planEntitlementKeys(plan).length).toBe(all.length)
+    }
+  })
+
+  it('BILLING_MANAGED_KEYS is the union of every plan + add-on key, and excludes the autonomy dial', () => {
+    expect(BILLING_MANAGED_KEYS).toContain('crm')
+    expect(BILLING_MANAGED_KEYS).toContain('email')
+    expect(BILLING_MANAGED_KEYS).toContain('crm.resonance_ai')
+    expect(BILLING_MANAGED_KEYS).toContain('whitelabel')
+    expect(BILLING_MANAGED_KEYS).not.toContain('crm.autonomy')
   })
 
   it('has a label for every plan', () => {
     for (const p of SPACE_PLANS) expect(typeof SPACE_PLAN_LABEL[p]).toBe('string')
-  })
-
-  it('includes the nonprofit + partner plans on the capability ladder', () => {
-    expect(SPACE_PLANS).toContain('nonprofit')
-    expect(SPACE_PLANS).toContain('partner')
-    expect(asSpacePlan('nonprofit')).toBe('nonprofit')
-    expect(asSpacePlan('partner')).toBe('partner')
-  })
-
-  it('nonprofit + partner grant the full business toolset, NOT whitelabel / reporting', () => {
-    for (const plan of ['nonprofit', 'partner'] as const) {
-      const ents = planEntitlements(plan)
-      // business-level capabilities
-      expect(ents.crm).toBe(true)
-      expect(ents.email).toBe(true)
-      expect(ents.automation).toBe(true)
-      expect(ents.team).toBe(true)
-      expect(ents.multi_pipeline).toBe(true)
-      // but NOT the org/whitelabel-only keys
-      expect(ents.reporting).toBeUndefined()
-      expect(ents.whitelabel).toBeUndefined()
-      // keys reader agrees
-      expect(planEntitlementKeys(plan)).not.toContain('reporting')
-      expect(planEntitlementKeys(plan)).not.toContain('whitelabel')
-    }
-  })
-
-  it('nonprofit + partner unlock exactly the business toolset (same key set)', () => {
-    expect(planEntitlements('nonprofit')).toEqual(planEntitlements('business'))
-    expect(planEntitlements('partner')).toEqual(planEntitlements('business'))
   })
 })
 
@@ -142,33 +143,29 @@ describe('gamification access (the third flag)', () => {
 
 describe('feature gate ladder math (meetsGate)', () => {
   const tierGate: FeatureGate = { axis: 'tier', minEntitlement: 'crew', enabled: true }
-  const planGate: FeatureGate = { axis: 'plan', minEntitlement: 'business', enabled: true }
+  const planGate: FeatureGate = { axis: 'plan', minEntitlement: 'pro', enabled: true }
 
-  it('tier ladder: free < crew < supporter', () => {
+  it('tier ladder: free < crew (supporter still ranks as paid during the transition)', () => {
     expect(meetsGate(tierGate, { tier: 'free' })).toBe(false)
     expect(meetsGate(tierGate, { tier: 'crew' })).toBe(true)
+    // Supporter is retired as a tier (ADR-458) but the rank still treats it as paid until the
+    // member-tier collapse migration remaps it to crew, so a still-supporter row never loses access.
     expect(meetsGate(tierGate, { tier: 'supporter' })).toBe(true)
   })
 
-  it('plan ladder: free < practitioner < business < organization < whitelabel', () => {
-    expect(meetsGate(planGate, { plan: 'practitioner' })).toBe(false)
-    expect(meetsGate(planGate, { plan: 'business' })).toBe(true)
-    expect(meetsGate(planGate, { plan: 'organization' })).toBe(true)
-    expect(meetsGate(planGate, { plan: 'whitelabel' })).toBe(true)
-  })
-
-  it('nonprofit + partner rank ABOVE business: they clear a business-min gate', () => {
-    // The capability ladder (SPACE_PLANS order) ranks nonprofit/partner over business ON PURPOSE,
-    // so both clear the business-level feature gates (email / automation / team / multi-pipeline).
+  it('collapsed plan ladder: free < pro < nonprofit < organization (paid floor is pro · ADR-458)', () => {
+    expect(meetsGate(planGate, { plan: 'free' })).toBe(false)
+    expect(meetsGate(planGate, { plan: 'pro' })).toBe(true)
     expect(meetsGate(planGate, { plan: 'nonprofit' })).toBe(true)
-    expect(meetsGate(planGate, { plan: 'partner' })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'organization' })).toBe(true)
   })
 
-  it('nonprofit does NOT clear a whitelabel-min gate (full-featured, but not white-label)', () => {
-    const whitelabelGate: FeatureGate = { axis: 'plan', minEntitlement: 'whitelabel', enabled: true }
-    expect(meetsGate(whitelabelGate, { plan: 'nonprofit' })).toBe(false)
-    expect(meetsGate(whitelabelGate, { plan: 'partner' })).toBe(false)
-    expect(meetsGate(whitelabelGate, { plan: 'whitelabel' })).toBe(true)
+  it('legacy labels narrow through asSpacePlan, so they clear the pro floor', () => {
+    // meetsGate runs the plan through asSpacePlan, so a Space still carrying a legacy label resolves
+    // to pro-equivalent and clears the pro gate (the transition shim, no regression).
+    expect(meetsGate(planGate, { plan: 'practitioner' as never })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'business' as never })).toBe(true)
+    expect(meetsGate(planGate, { plan: 'whitelabel' as never })).toBe(true)
   })
 
   it('a disabled gate never blocks', () => {

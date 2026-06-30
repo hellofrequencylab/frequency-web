@@ -6,9 +6,14 @@ describe('deriveTier', () => {
   it('returns the billing flag, defaulting to free', () => {
     expect(deriveTier('free')).toBe('free')
     expect(deriveTier('crew')).toBe('crew')
-    expect(deriveTier('supporter')).toBe('supporter')
     expect(deriveTier(null)).toBe('free')
     expect(deriveTier(undefined)).toBe('free')
+  })
+
+  it('maps the retired supporter tier to crew at read time (transition · ADR-458)', () => {
+    // Member tiers collapse to free / crew; Supporter is retired (becomes the PWYW badge,
+    // profiles.is_supporter). Mapping supporter -> crew is access-preserving (both are paid).
+    expect(deriveTier('supporter')).toBe('crew')
   })
 })
 

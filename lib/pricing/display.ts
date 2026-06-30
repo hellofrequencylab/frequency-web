@@ -10,7 +10,19 @@
 // Practitioner, Business, Organization, White-label).
 
 import type { PricingDefaults, TierPrice } from './settings'
-import { SPACE_PLAN_LABEL, type SpacePlan } from './plans'
+
+// LEGACY price-catalog labels (ADR-458). This P3 price ladder still renders the legacy plan rows
+// (practitioner/business/nonprofit/organization/whitelabel) keyed to the pricing_settings.plan VALUE
+// shape, which Phase C / F rewrites into the commercial Pro + add-ons surface. It is deliberately
+// decoupled from the new SPACE_PLAN_LABEL (free/pro/nonprofit/organization) so Phase A can collapse
+// the plan model without churning the existing display rows. Plain voice, no em dashes.
+const PRICE_CATALOG_LABEL: Record<string, string> = {
+  practitioner: 'Practitioner',
+  business: 'Business',
+  nonprofit: 'Nonprofit',
+  organization: 'Organization',
+  whitelabel: 'White-label',
+}
 
 /** Cents to a plain price label, e.g. 900 -> "$9", 950 -> "$9.50". Whole dollars drop the cents.
  *  USD only (mirrors the membership join card). PURE. */
@@ -74,7 +86,7 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
  *  to FIND it on their own billing ladder. The 'organization' row above it is the high-end custom
  *  plan (built, not publicly sold) for large orgs; the two read as a clear ladder once both show. */
 export function spacePlanRows(values: PricingDefaults): PriceRow[] {
-  const labelFor = (p: SpacePlan): string => SPACE_PLAN_LABEL[p]
+  const labelFor = (p: string): string => PRICE_CATALOG_LABEL[p] ?? p
   return [
     priceRow('practitioner', labelFor('practitioner'), values.plan.practitioner),
     priceRow('business', labelFor('business'), values.plan.business),

@@ -29,18 +29,19 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 export type OutcomeUnit = 'playbook_actions' | 'members_reactivated' | 'advocacy_accepted'
 
 /** The plan-shaped MONTHLY ceiling for playbook actions run, the volume lever in the tier ladder
- *  (Practitioner+ gets "larger action volume"). `null` = unlimited (no ceiling, no upsell trigger).
- *  These are SOFT ceilings that power the contextual upsell, not hard gates: hitting one never blocks
- *  an action, it only surfaces a tasteful "ready for more room" nudge. The free wedge gets a generous
- *  starter volume so the engine is genuinely useful before any upsell. PURE. */
+ *  (Pro gets "larger action volume"). `null` = unlimited (no ceiling, no upsell trigger). These are
+ *  SOFT ceilings that power the contextual upsell, not hard gates: hitting one never blocks an action,
+ *  it only surfaces a tasteful "ready for more room" nudge. The free wedge gets a generous starter
+ *  volume so the engine is genuinely useful before any upsell. PURE.
+ *
+ *  Collapsed ladder (ADR-458): free / pro / nonprofit / organization. Pro carries the generous 2000
+ *  volume (the more generous of the legacy practitioner/business numbers, so no legacy Space regresses
+ *  once it narrows to pro); the all-inclusive plans are unlimited. */
 const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   free: 50,
-  practitioner: 500,
-  business: 2000,
-  nonprofit: 2000,
-  partner: 2000,
+  pro: 2000,
+  nonprofit: null,
   organization: null,
-  whitelabel: null,
 }
 
 /** The monthly playbook-action ceiling for a plan (the soft volume lever). `null` = unlimited.

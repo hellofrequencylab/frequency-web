@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 import {
   spaceEntitlements,
   spaceHasEntitlement,
+  spaceBillingEntitlements,
   spaceCapabilitiesFor,
   resolveSpaceManageAccess,
   spaceAutonomyLevel,
@@ -21,6 +22,7 @@ import {
   spaceCanUseAdvancedSegments,
   FREE_AI_DEPTH,
   AI_DEPTH_KEYS,
+  BILLING_NAMESPACE,
   type SpaceLike,
 } from './entitlements'
 
@@ -54,6 +56,107 @@ describe('entitlements (DEFAULT-DENY)', () => {
     expect(spaceEntitlements({ entitlements: 'not-an-object' })).toEqual({})
     expect(spaceEntitlements({ entitlements: ['crm'] })).toEqual({}) // arrays are not maps
     expect(spaceHasEntitlement({ entitlements: null }, 'crm')).toBe(false)
+  })
+})
+
+describe('entitlement partition: billing namespace UNION read (the keystone · ADR-458)', () => {
+  it('reads the UNION of top-level manual grants and the billing namespace', () => {
+    // crm is a manual top-level grant; email lives only in the billing namespace. Both read granted.
+    const space: SpaceLike = {
+      entitlements: { crm: true, [BILLING_NAMESPACE]: { email: true, automation: true } },
+    }
+    expect(spaceHasEntitlement(space, 'crm')).toBe(true) // manual top-level
+    expect(spaceHasEntitlement(space, 'email')).toBe(true) // billing namespace
+    expect(spaceHasEntitlement(space, 'automation')).toBe(true) // billing namespace
+    expect(spaceHasEntitlement(space, 'reporting')).toBe(false) // neither source
+    // The reserved `billing` object itself is never a capability key.
+    expect(spaceHasEntitlement(space, BILLING_NAMESPACE)).toBe(false)
+    expect(spaceEntitlements(space)).toEqual({ crm: true, email: true, automation: true })
+  })
+
+  it('a billing key grants even when the top level is absent or explicitly false', () => {
+    const space: SpaceLike = {
+      entitlements: { email: false, [BILLING_NAMESPACE]: { email: true, crm: true } },
+    }
+    // The billing `true` wins the OR even over a top-level `false`.
+    expect(spaceHasEntitlement(space, 'email')).toBe(true)
+    expect(spaceHasEntitlement(space, 'crm')).toBe(true)
+  })
+
+  it('a manual top-level grant SURVIVES even when the billing namespace lacks the key (toggle-off)', () => {
+    // Simulate an add-on toggled OFF: the billing namespace no longer carries `email`, but an operator
+    // hand-granted it at the top level. The union keeps it granted (a billing write never nukes a hand-grant).
+    const afterToggleOff: SpaceLike = {
+      entitlements: { email: true, [BILLING_NAMESPACE]: { crm: true } },
+    }
+    expect(spaceHasEntitlement(afterToggleOff, 'email')).toBe(true) // manual grant survives
+    expect(spaceHasEntitlement(afterToggleOff, 'crm')).toBe(true) // billing core
+  })
+
+  it('a billing-only key is REMOVED when the billing namespace drops it (toggle-off, no manual grant)', () => {
+    // Before: the AI Engine add-on granted crm.resonance via the billing namespace.
+    const before: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { crm: true, 'crm.resonance': true } },
+    }
+    expect(spaceHasEntitlement(before, 'crm.resonance')).toBe(true)
+    // After the add-on toggles off, the resolver set-to-targets the billing namespace WITHOUT the key.
+    const after: SpaceLike = { entitlements: { [BILLING_NAMESPACE]: { crm: true } } }
+    expect(spaceHasEntitlement(after, 'crm.resonance')).toBe(false) // gone (no manual grant to keep it)
+    expect(spaceHasEntitlement(after, 'crm')).toBe(true) // core stays
+  })
+
+  it('spaceBillingEntitlements reads ONLY the billing namespace, default-deny', () => {
+    const space: SpaceLike = {
+      entitlements: { crm: true, [BILLING_NAMESPACE]: { email: true, reporting: 'yes' } },
+    }
+    // Only the billing object, and only `true` values.
+    expect(spaceBillingEntitlements(space)).toEqual({ email: true, reporting: false })
+    // A missing / malformed billing object grants nothing.
+    expect(spaceBillingEntitlements({ entitlements: { crm: true } })).toEqual({})
+    expect(spaceBillingEntitlements({ entitlements: { [BILLING_NAMESPACE]: 'nope' } })).toEqual({})
+    expect(spaceBillingEntitlements(null)).toEqual({})
+  })
+
+  it('DEFAULT-DENY survives the partition: a non-true billing value never grants', () => {
+    const space: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { email: 'yes', crm: 1, automation: null } },
+    }
+    expect(spaceHasEntitlement(space, 'email')).toBe(false)
+    expect(spaceHasEntitlement(space, 'crm')).toBe(false)
+    expect(spaceHasEntitlement(space, 'automation')).toBe(false)
+  })
+
+  it('the autonomy DIAL resolves from the TOP LEVEL only (never the billing namespace)', () => {
+    // crm.autonomy is a per-Space operator dial, not a billing key. It must read from the top level.
+    const topLevelDial: SpaceLike = {
+      entitlements: { 'crm.autonomy': 'safe_auto', [BILLING_NAMESPACE]: { crm: true } },
+    }
+    expect(spaceAutonomyLevel(topLevelDial)).toBe('safe_auto')
+    expect(autoExecutionAllowed(topLevelDial)).toBe(true)
+    // A stray autonomy value parked in the billing namespace does NOT raise the dial (top-level only).
+    const billingDial: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { 'crm.autonomy': 'safe_auto', crm: true } },
+    }
+    expect(spaceAutonomyLevel(billingDial)).toBe('suggest_only')
+    expect(autoExecutionAllowed(billingDial)).toBe(false)
+  })
+
+  it('the AI-depth ladder resolves through the UNION (billing-granted depth keys count)', () => {
+    // The resonance depth keys arrive via the billing namespace (the AI Engine add-on); the AI-depth
+    // readers resolve them through spaceHasEntitlement, so the union read lights up the right rung.
+    const aiEngine: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { crm: true, 'crm.resonance': true, 'crm.resonance_ai': true } },
+    }
+    expect(spaceAiDepth(aiEngine)).toBe('resonance_ai')
+    expect(spaceCanSeeResonance(aiEngine)).toBe(true)
+    expect(spaceCanUseResonanceAi(aiEngine)).toBe(true)
+    // Pro core (playbooks) via the billing namespace lights the playbooks rung but not resonance.
+    const proCore: SpaceLike = {
+      entitlements: { [BILLING_NAMESPACE]: { crm: true, 'crm.playbooks': true } },
+    }
+    expect(spaceAiDepth(proCore)).toBe('playbooks')
+    expect(spaceCanRunPlaybooks(proCore)).toBe(true)
+    expect(spaceCanSeeResonance(proCore)).toBe(false)
   })
 })
 

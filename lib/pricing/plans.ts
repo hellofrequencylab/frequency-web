@@ -1,93 +1,166 @@
-// SPACE PLANS — the billing axis for a Space (the tenant), the sibling of the personal
+// SPACE PLANS, the billing axis for a Space (the tenant), the sibling of the personal
 // EntitlementTier (lib/core/entitlement.ts). PURE + framework-independent (no Supabase/Next),
 // like lib/core/* and lib/spaces/entitlements.ts, so it's trivially unit-testable.
 //
-// This is the FIRST of the three independent flags (ADR-362) for a Space: what the Space
-// PAYS for. It reuses the existing `spaces.plan` text label (ADR-322) — we do NOT add a new
-// column. This module just gives the labels a typed home + the default plan -> entitlement-keys
-// map (which `spaces.entitlements` jsonb keys a plan unlocks), so `setSpacePlan` (lib/pricing/
-// space-plan.ts) can EXPAND the entitlements blob the existing `spaceHasEntitlement` reads.
-// We do NOT restructure `spaceHasEntitlement` (lib/spaces/entitlements.ts) — this only writes
-// the keys it already reads.
+// PRICING LADDER PHASE A (ADR-458, docs/PRICING-LADDER-PLAN.md §1/§3). The 7 legacy plans collapse
+// to FOUR: free / pro / nonprofit / organization. `spaces.type` stays as identity/skin, decoupled
+// from the plan. Pro is a strong CORE plus four toggle ADD-ONS (Marketing, AI Engine, Team,
+// Branding); Nonprofit + Organization are all-inclusive (core plus every add-on). The legacy plans
+// fold in: practitioner/business -> pro, partner -> pro (comped), whitelabel -> pro + the Branding
+// add-on key. White-label is no longer a plan, it is the Branding add-on.
+//
+// This module gives the labels a typed home + the plan/add-on -> entitlement-keys maps (which
+// `spaces.entitlements.billing` keys a plan + active add-ons unlock), so the resolver (setSpacePlan /
+// setSpaceAddons, lib/pricing/space-plan.ts) can SET-TO-TARGET the billing namespace the
+// `spaceHasEntitlement` UNION reader consumes (lib/spaces/entitlements.ts). We do NOT restructure
+// the readers here; this only computes the keys they read.
 
-/** The Space billing plans (the spaces.plan label). 'free' = no paid plan. */
-export const SPACE_PLANS = [
-  'free',
-  'practitioner',
-  'business',
-  // Nonprofit + Partner sit ABOVE business in this list ON PURPOSE. This array is the CAPABILITY
-  // ladder meetsGate ranks on (gates.ts PLAN_RANK), NOT a price order. Both are "lower-priced or
-  // comped but full-featured" (verified mission orgs / hosted programs), so they must out-rank
-  // business to clear the business-level feature gates (email / automation / team / multi-pipeline).
-  // Price + upgrade order live in PRICING_DEFAULTS and the admin console, not here.
-  'nonprofit',
-  'partner',
-  'organization',
-  'whitelabel',
-] as const
+/** The Space billing plans (the spaces.plan label). 'free' = no paid plan. Four plans (ADR-458):
+ *  free < pro < nonprofit < organization, ordered by CAPABILITY (gates.ts PLAN_RANK ranks on this),
+ *  not price. Nonprofit + Organization are all-inclusive, so they out-rank Pro to clear every gate. */
+export const SPACE_PLANS = ['free', 'pro', 'nonprofit', 'organization'] as const
 
 export type SpacePlan = (typeof SPACE_PLANS)[number]
 
-/** Operator-facing label for a Space plan (member/operator copy — plain voice, no em dashes). */
+/** Operator-facing label for a Space plan (member/operator copy, plain voice, no em dashes). */
 export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
-  practitioner: 'Practitioner',
-  business: 'Business',
-  // The verified-501c3 plan is the plan FOR a Space of type `organization` (a nonprofit), so its
-  // label names both: the operator picks the right plan for an Organization space without guessing,
-  // and the plan label + the Space type label read as the same thing.
-  nonprofit: 'Nonprofit (Organization)',
-  partner: 'Partner',
-  // The high-end CUSTOM plan for a large organization (built, not publicly sold) — distinct from the
-  // verified-nonprofit plan above. 'Enterprise' so it never reads as the same row as Nonprofit.
-  organization: 'Organization (Enterprise)',
-  whitelabel: 'White-label',
+  pro: 'Pro',
+  nonprofit: 'Nonprofit',
+  organization: 'Organization',
 }
 
-/** Narrow an arbitrary string (e.g. the raw `spaces.plan`) to a known SpacePlan, defaulting
- *  to 'free' for null/unknown values (default-deny: an unrecognized plan grants nothing). */
+// LEGACY -> NEW plan remap (ADR-458). The collapse migration (pricing_plan_collapse) rewrites
+// spaces.plan, but this code ships BEFORE that migration applies to prod, so a Space may still carry
+// an old label. asSpacePlan NARROWS old labels to their new equivalent at READ time, so capabilities
+// resolve correctly during the transition window:
+//   practitioner | business | partner | whitelabel -> pro
+// Partner is a comped Pro (spaces.is_comped); whitelabel folds to Pro and the migration adds the
+// Branding add-on key separately. Any unknown label -> free (default-deny).
+// TODO(ADR-458): remove this transition shim once supabase/migrations/<ts>_pricing_plan_collapse.sql
+// has applied to prod and every spaces.plan is one of the four new labels.
+const LEGACY_PLAN_REMAP: Record<string, SpacePlan> = {
+  practitioner: 'pro',
+  business: 'pro',
+  partner: 'pro',
+  whitelabel: 'pro',
+}
+
+/** Narrow an arbitrary string (e.g. the raw `spaces.plan`) to a known SpacePlan, defaulting to 'free'
+ *  for null/unknown values (default-deny: an unrecognized plan grants nothing). TOLERANT of the OLD
+ *  labels during the transition window: practitioner/business/partner/whitelabel narrow to 'pro' so a
+ *  Space still carrying a legacy label resolves to Pro-equivalent capabilities until the collapse
+ *  migration runs. See LEGACY_PLAN_REMAP. */
 export function asSpacePlan(raw: string | null | undefined): SpacePlan {
-  return (SPACE_PLANS as readonly string[]).includes(raw ?? '') ? (raw as SpacePlan) : 'free'
+  const v = raw ?? ''
+  if ((SPACE_PLANS as readonly string[]).includes(v)) return v as SpacePlan
+  return LEGACY_PLAN_REMAP[v] ?? 'free'
 }
 
-// The default plan -> entitlement-keys map. Each plan CUMULATIVELY unlocks the `spaces.entitlements`
-// jsonb keys (the same keys `spaceHasEntitlement` reads). Mirrors the §5 spec: practitioner gets the
-// CRM; business adds email/automation/team/multi-pipeline; organization is business + everything;
-// white-label adds branding removal. The keys here are the EXISTING entitlement keys (e.g. 'crm' is
-// the one the Space CRM board already gates on, ADR-361 P3) — adding a capability is one key, never a
-// schema change.
+/** Is this label a Space PLAN label (a current one OR a legacy one in the transition window)? Used to
+ *  distinguish the plan ladder from the personal tier ladder when inferring a gate's axis. PURE. */
+export function isSpacePlanLabel(raw: string | null | undefined): boolean {
+  const v = raw ?? ''
+  return (SPACE_PLANS as readonly string[]).includes(v) || v in LEGACY_PLAN_REMAP
+}
+
+// ── Add-on key sets + Pro core (ADR-458, PRICING-LADDER-PLAN.md §1) ───────────────────────────────
+// Pro = CORE plus four toggle ADD-ONS, each on/off independently. The keys here are the EXISTING
+// `spaces.entitlements` capability keys the readers already gate on (e.g. 'crm', 'email',
+// 'crm.resonance'); a plan/add-on grant is one key, never a schema change.
 //
-// AI-DEPTH (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine rides the SAME ladder:
-//   • crm.playbooks    — Practitioner+ (governed auto-execution of safe playbooks + advanced segments)
-//   • crm.resonance    — Business+ (the read-only resonance surface)
-//   • crm.resonance_ai — Organization+ (the full Resonance Graph + managed matching, the top rung)
-// The FREE WEDGE (Today suggest-only + summaries + read-only scoring) is NEVER a key here: every
-// Space gets it whether or not a plan grants anything. So `free` stays empty and a missing depth key
-// reads as the wedge (fail-closed in spaceAiDepth). `crm.autonomy` (Phase 3) is a per-Space DIAL, not
-// a plan grant, so it is deliberately NOT in this map.
+// THE PRO-CORE vs ADD-ON BOUNDARY (non-regressive choice). Today's `practitioner` plan grants
+// ['crm', 'crm.playbooks']. The new Pro plan REPLACES practitioner, so Pro core MUST keep BOTH or a
+// practitioner would lose the governed-playbooks depth on the collapse (a regression). So Pro core =
+// ['crm', 'crm.playbooks']: the CRM (pipeline/contacts/notes) plus the Practitioner+ governed
+// auto-execution + advanced segments lever. The resonance DEPTH (crm.resonance / crm.resonance_ai)
+// moves into the AI Engine add-on (it was Business+/Org-only before, never a practitioner default, so
+// gating it behind an add-on is not a regression for the entry plan).
+
+/** Pro CORE entitlement keys, granted by the Pro base plan, before any add-on. Includes
+ *  `crm.playbooks` so a former practitioner does not regress on the collapse (see boundary note). */
+export const PRO_CORE_ENTITLEMENT_KEYS: readonly string[] = ['crm', 'crm.playbooks']
+
+/** The four Pro ADD-ONS -> the entitlement keys each turns on (ADR-458 §1). Marketing bundles
+ *  multi-pipeline + reporting (owner-locked); AI Engine is the resonance depth; Team is operator
+ *  seats; Branding is white-label / branding removal (the old whitelabel plan, now an add-on). */
+export const ADDON_ENTITLEMENT_KEYS = {
+  marketing: ['email', 'automation', 'multi_pipeline', 'reporting'],
+  ai: ['crm.resonance', 'crm.resonance_ai'],
+  team: ['team'],
+  branding: ['whitelabel'],
+} as const
+
+/** The Pro add-on item keys (the toggles a Space can turn on). */
+export type AddonKey = keyof typeof ADDON_ENTITLEMENT_KEYS
+
+/** The add-on item keys, for iteration / validation. */
+export const ADDON_KEYS = Object.keys(ADDON_ENTITLEMENT_KEYS) as readonly AddonKey[]
+
+/** Narrow an arbitrary value to a known add-on key, or null (default-deny). PURE. */
+export function asAddonKey(raw: string | null | undefined): AddonKey | null {
+  return (ADDON_KEYS as readonly string[]).includes(raw ?? '') ? (raw as AddonKey) : null
+}
+
+/** Compute the full entitlement key set for a base plan unioned with a set of active add-ons. PURE.
+ *  The dedup keeps the result a clean set (the resolver writes each as `true`). Used to seed the
+ *  all-inclusive plans and by setSpaceAddons. A base plan other than 'pro' uses its own base keys;
+ *  add-ons only meaningfully layer onto Pro, but the union is well-defined for any base. */
+export function planKeysWithAddons(plan: SpacePlan, addons: readonly AddonKey[]): readonly string[] {
+  const base = plan === 'pro' ? PRO_CORE_ENTITLEMENT_KEYS : (BASE_PLAN_KEYS[plan] ?? [])
+  const set = new Set<string>(base)
+  for (const addon of addons) {
+    const key = asAddonKey(addon)
+    if (!key) continue
+    for (const k of ADDON_ENTITLEMENT_KEYS[key]) set.add(k)
+  }
+  return [...set]
+}
+
+// The base-plan key sets (no add-ons), the seed for the plan map below. free = nothing; pro = CORE;
+// nonprofit/organization fold here too but get their add-ons unioned in PLAN_ENTITLEMENT_KEYS.
+const BASE_PLAN_KEYS: Record<SpacePlan, readonly string[]> = {
+  free: [],
+  pro: PRO_CORE_ENTITLEMENT_KEYS,
+  nonprofit: PRO_CORE_ENTITLEMENT_KEYS,
+  organization: PRO_CORE_ENTITLEMENT_KEYS,
+}
+
+// The plan -> entitlement-keys map (ADR-458). Each plan grants the keys it unlocks; the resolver
+// writes them into `entitlements.billing` (set-to-target). free = nothing. pro = CORE only (add-ons
+// layer ON via setSpaceAddons). nonprofit + organization = CORE plus EVERY add-on (all-inclusive).
+//
+// AI-DEPTH note: crm.playbooks rides Pro core (non-regressive, see boundary note); crm.resonance +
+// crm.resonance_ai ride the AI Engine add-on. The free wedge (Today suggest-only + summaries +
+// read-only scoring) is NEVER a key here, every Space gets it (fail-closed in spaceAiDepth).
+// crm.autonomy (Phase 3) is a per-Space DIAL, deliberately NOT in any map.
 const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
-  practitioner: ['crm', 'crm.playbooks'],
-  business: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
-  // Nonprofit (verified mission orgs) + Partner (comped, hosting a program) get the full business
-  // toolset minus white-label branding. Per-feature tunable in /admin/pricing.
-  nonprofit: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
-  partner: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
-  organization: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
-  whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
+  pro: PRO_CORE_ENTITLEMENT_KEYS,
+  // Nonprofit + Organization are all-inclusive: Pro core unioned with every add-on's keys.
+  nonprofit: planKeysWithAddons('pro', ADDON_KEYS),
+  organization: planKeysWithAddons('pro', ADDON_KEYS),
 }
 
-/** The `spaces.entitlements` keys a plan unlocks (default map; code source of truth). PURE —
- *  returns the set of keys to flip `true` for the plan. An unknown plan returns none (default-deny). */
+/** The `spaces.entitlements.billing` keys a plan unlocks (base plan only, no add-ons; code source of
+ *  truth). PURE, returns the set of keys to flip `true`. An unknown plan returns none (default-deny). */
 export function planEntitlementKeys(plan: SpacePlan): readonly string[] {
   return PLAN_ENTITLEMENT_KEYS[plan] ?? []
 }
 
-/** The default `spaces.entitlements` jsonb a plan grants — a `{ key: true }` map for every key the
- *  plan unlocks. This is exactly the blob shape `spaceEntitlements`/`spaceHasEntitlement` read, so a
- *  Space set to a plan reads its capabilities with NO change to the entitlement readers. PURE. */
+/** The default billing `{ key: true }` map a plan grants (base plan only). The blob shape
+ *  `spaceBillingEntitlements` reads. PURE. */
 export function planEntitlements(plan: SpacePlan): Record<string, boolean> {
   const out: Record<string, boolean> = {}
   for (const key of planEntitlementKeys(plan)) out[key] = true
   return out
 }
+
+/** The CANONICAL set of every billing-managed entitlement key, the UNION of every key any plan or
+ *  add-on can grant. The migration + the resolver agree on which keys belong in the billing namespace
+ *  via this list. PURE. (crm.autonomy is NOT here: it is a per-Space dial, top-level only.) */
+export const BILLING_MANAGED_KEYS: readonly string[] = (() => {
+  const set = new Set<string>(PRO_CORE_ENTITLEMENT_KEYS)
+  for (const addon of ADDON_KEYS) for (const k of ADDON_ENTITLEMENT_KEYS[addon]) set.add(k)
+  return [...set]
+})()

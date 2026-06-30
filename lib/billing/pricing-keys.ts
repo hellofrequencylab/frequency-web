@@ -8,7 +8,7 @@
 // founding member's profiles.locked_price_id at checkout.
 
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { SPACE_PLANS, type SpacePlan } from '@/lib/pricing/plans'
+import { type SpacePlan } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
@@ -17,8 +17,11 @@ export type BillingPeriod = 'monthly' | 'annual'
 export const MEMBER_TIER_KEYS = ['crew', 'supporter'] as const
 export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]
 
-/** The space plans that are SOLD self-serve (free is never a paid key; Partner is comped/operator-
- *  assigned, so it is intentionally NOT here). */
+/** The space-plan price-catalog keys that are SOLD self-serve. NOTE (ADR-458): this is the STRIPE
+ *  CATALOG axis, frozen on the LEGACY plan/add-on key names until Phase B rewrites the catalog into
+ *  pro base + the four add-on items + the nonprofit seat. It is deliberately decoupled from the new
+ *  SPACE_PLANS (free/pro/nonprofit/organization) so Phase A can collapse the plan model without
+ *  churning the Stripe price keys. Partner is comped, so it is intentionally not here. */
 export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'nonprofit', 'organization', 'whitelabel'] as const
 export type SpacePlanKey = (typeof SPACE_PLAN_KEYS)[number]
 
@@ -75,9 +78,10 @@ export function asMemberTierKey(tier: EntitlementTier | string | null | undefine
   return (MEMBER_TIER_KEYS as readonly string[]).includes(tier ?? '') ? (tier as MemberTierKey) : null
 }
 
-/** Narrow a SpacePlan to a paid plan key, or null for 'free'/unknown (default-deny). PURE. */
+/** Narrow a plan label to a paid Stripe price-catalog key, or null for 'free'/unknown (default-deny).
+ *  PURE. Checks the catalog key list directly (the legacy key axis, see SPACE_PLAN_KEYS), so it stays
+ *  correct independent of the new SPACE_PLANS collapse until Phase B rewrites the catalog. */
 export function asSpacePlanKey(plan: SpacePlan | string | null | undefined): SpacePlanKey | null {
-  if (!(SPACE_PLANS as readonly string[]).includes(plan ?? '')) return null
   return (SPACE_PLAN_KEYS as readonly string[]).includes(plan ?? '') ? (plan as SpacePlanKey) : null
 }
 

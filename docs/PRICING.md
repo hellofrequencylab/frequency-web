@@ -1,5 +1,33 @@
 # Pricing & entitlements
 
+> ⚠️ **Superseded by the value-ladder overhaul (ADR-458).** The 7-plan model below is being collapsed
+> to **four** space plans (`free` / `pro` / `nonprofit` / `organization`) and **two** member tiers
+> (`free` / `crew`), with Pro as a strong core plus four toggle add-ons. The full target model + phased
+> build is [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md). This page is updated per phase as the
+> overhaul lands; the per-plan tables further down describe the LEGACY model until the collapse
+> migrations apply. **Everything still ships behind `billing_live` OFF.**
+>
+> ## Phase A keystone (shipped OFF · ADR-458)
+>
+> Phase A is the data-model foundation. It changes the SHAPE of entitlements without changing behavior
+> while `billing_live` is OFF (gating still grant-all, `setSpacePlan` still a no-op):
+>
+> | Change | What | Where |
+> |---|---|---|
+> | **Entitlement partition** | `spaces.entitlements` splits into TWO namespaces, read as a **union**: top-level **manual** operator grants OR-ed with a reserved **`entitlements.billing`** object the plan/add-on resolver owns (service-role only). A key is granted if either source has it. Default-deny + malformed-blob safety unchanged. `crm.autonomy` stays a top-level per-Space dial, never a billing key. | `lib/spaces/entitlements.ts` (`spaceEntitlements` union read, `spaceBillingEntitlements`, `BILLING_NAMESPACE`) |
+> | **Set-to-target resolver** | `setSpacePlan` + new `setSpaceAddons` REPLACE the billing namespace wholesale (no longer append-only). An add-on toggling OFF removes only its billing keys; a manual top-level grant of the same key survives. Still gated on `billingLive()` with the `force` escape. | `lib/pricing/space-plan.ts` |
+> | **Plan collapse (code)** | `SPACE_PLANS = ['free','pro','nonprofit','organization']`. Pro core = `['crm','crm.playbooks']` (keeps the practitioner depth, non-regressive); add-ons = Marketing (`email`/`automation`/`multi_pipeline`/`reporting`), AI Engine (`crm.resonance`/`crm.resonance_ai`), Team (`team`), Branding (`whitelabel`). Nonprofit + Organization = core ∪ all add-ons. `asSpacePlan` narrows OLD labels (`practitioner`/`business`/`partner`/`whitelabel` → `pro`) at read time during the transition. | `lib/pricing/plans.ts` |
+> | **Member-tier collapse (code)** | `deriveTier` maps the retired `supporter` → `crew` at read time (access-preserving). | `lib/core/entitlement.ts` |
+> | **Migrations (files only, NOT applied)** | `20260915000000_pricing_plan_collapse.sql` (adds `spaces.is_comped`, moves each space's current grants into `entitlements.billing`, remaps `spaces.plan`, comps former Partner). `20260915000100_pricing_member_tier.sql` (collapses `membership_tier` to free/crew, adds `profiles.is_supporter`, backfills the PWYW badge). Behavior identical pre/post because the union read sees the same effective set. | `supabase/migrations/` |
+>
+> The Stripe price-key catalog (`lib/billing/pricing-keys.ts`) + the P3 price-display rows
+> (`lib/pricing/display.ts`) stay on the LEGACY key/label names on purpose; Phase B rewrites the catalog
+> into pro base + the four add-on items + the nonprofit seat. The coarse `space_*` plan-rank gates in
+> `gates.ts` collapse to a single `pro` paid floor; the fine per-feature decision is the entitlement-key
+> union the resolver writes.
+>
+> **Decision:** [ADR-458](DECISIONS.md). Below is the legacy (pre-collapse) model, kept for reference.
+
 > **Status:** ✅ P1 shipped (the entitlements + admin-config foundation). ✅ P2 shipped (Stripe
 > products/prices + subscription checkout + the webhook → entitlements, founder lock honored). ✅
 > P3 shipped (member-facing upgrade/plan/join surfaces render the operator values, the cash-in gate
