@@ -22,6 +22,7 @@ export function BookingPicker({
   days,
   timezone,
   tzLabel,
+  sessionLabel,
 }: {
   spaceId: string
   days: SlotDay[]
@@ -29,6 +30,8 @@ export function BookingPicker({
   timezone: string
   /** A short label for that timezone, e.g. "EDT". */
   tzLabel: string
+  /** A plain-language session-length line, e.g. "30 minute sessions", or null when unknown. */
+  sessionLabel: string | null
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
@@ -91,7 +94,8 @@ export function BookingPicker({
     <div className="space-y-5">
       <p className="flex items-center gap-1.5 text-sm text-muted">
         <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        Times shown in {tzLabel}. Pick a slot to book a 1:1 session.
+        {sessionLabel ? `${sessionLabel}. ` : ''}Times shown in {tzLabel}. Pick a slot to book a 1:1
+        session.
       </p>
 
       <div className="space-y-5">
@@ -137,6 +141,10 @@ export function BookingPicker({
               day: 'numeric',
             }).format(new Date(selected.startsAt))}{' '}
             ({tzLabel})
+          </p>
+          <p className="flex items-center gap-1.5 text-xs text-muted">
+            <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {selected.slotMinutes} minute session
           </p>
           <div>
             <label htmlFor="booking-note" className="text-xs font-medium text-muted">
