@@ -27,6 +27,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { tierLabel, healthTone } from '@/lib/dashboard/verdict'
 import { ClientNotesPanel } from './client-notes-panel'
 import { SpaceContactResonance } from './space-contact-resonance'
+import { SpacePlaybookPicker } from './space-playbook-picker'
 import { relativeTime, summarizeTimeline, type TimelineEntry } from '@/lib/crm/timeline'
 
 // Channel-aware icon element for a timeline row, so an owner reads the kind of touch at a glance
@@ -76,11 +77,15 @@ const sinceFmt = new Intl.DateTimeFormat('en-US', {
 
 export async function SpaceContactDetail({
   spaceId,
+  slug,
   contactId,
   readOnly = false,
   backHref,
 }: {
   spaceId: string
+  /** The Space slug (the one-tap playbook picker's server actions re-resolve + re-gate by slug). When
+   *  omitted the picker is hidden (a staff preview / a surface that does not pass it). */
+  slug?: string
   contactId: string
   readOnly?: boolean
   /** Where the "Back to contacts" link points (the board clears ?contact). */
@@ -152,6 +157,14 @@ export async function SpaceContactDetail({
           "why" so a bare score is never shown. Fail-safe: a lead with no member profile reads the
           calm "not scored yet" line and no score row. */}
       <InsightBand insight={insight} />
+
+      {/* The one-tap next-best-action playbook picker (Altitude 3 · ADR-382). Resolved server-side
+          from this member's scores (the same registry the worklist + Today use); owner-gated through
+          the picker's server actions. Hidden for a staff preview (readOnly), a lead (no play), or a
+          surface that does not pass the slug. Suggest-by-default: the outbound leg drafts, never sends. */}
+      {!readOnly && slug && insight.nextBestPlay && (
+        <SpacePlaybookPicker slug={slug} contactId={contactId} card={insight.nextBestPlay} />
+      )}
 
       {/* About: the member's confirmed facts (interests, goals, neighborhood). Renders only when any
           are known, so a contact with no memory shows nothing rather than an empty shell. */}

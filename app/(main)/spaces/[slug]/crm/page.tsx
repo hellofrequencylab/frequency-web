@@ -119,6 +119,9 @@ export default async function SpaceCrmBoardPage({
         <Suspense fallback={<ListSkeleton />}>
           <SpaceContactDetail
             spaceId={space.id}
+            // The slug enables the one-tap next-best-action picker, but only for an editor (the picker's
+            // server actions re-gate by slug anyway; this also keeps it off a staff read-only preview).
+            slug={caps.canEditProfile ? space.slug : undefined}
             contactId={selectedContactId}
             backHref={boardHref}
           />
