@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getPublicCircles } from '@/lib/discover'
 import { CircleCard } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import {
   ZigZag,
   Statement,
@@ -125,6 +126,16 @@ export default async function DiscoverCirclesPage() {
               ))}
             </div>
           )}
+
+          {/* Inline capture: a visitor reading the rooms is a warm lead. Offer the
+              invite here, where intent is highest, instead of bouncing them to /beta. */}
+          <div className="mt-12 mx-auto max-w-2xl">
+            <InlineBetaCapture
+              source="discover_circles"
+              heading="See one you'd show up to?"
+              body="Join the beta to step inside a Circle near you, RSVP to its standing time, and meet the regulars. No spam, just an invite when a spot opens."
+            />
+          </div>
         </div>
       </section>
 
