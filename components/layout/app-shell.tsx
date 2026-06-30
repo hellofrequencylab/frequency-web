@@ -1303,6 +1303,7 @@ export default function AppShell({
   chromeOverrides,
   webRole = 'none',
   generation = 'balanced',
+  structure = 'standard',
   occasion = 'none',
   headerMenu,
   profileMenu,
@@ -1364,6 +1365,10 @@ export default function AppShell({
   webRole?: WebRole
   /** The active generation/style preset id; sets `data-generation` on the shell root. */
   generation?: string
+  /** The structural layout variant the generation maps to (lib/theme/structure.ts); sets
+   *  `data-structure` on the shell root so the composition (rhythm/measure) can flex by preset.
+   *  'standard' is the proven default (a no-op until denser/roomier blocks are authored). */
+  structure?: string
   /** The active occasion id; sets `data-occasion` on the shell root ('none' = omitted). */
   occasion?: string
   /** The resolved `header` menu (server-fetched, DB-backed). Drives the in-app header
@@ -1564,6 +1569,7 @@ export default function AppShell({
     <div
       data-skin={skin}
       data-generation={generation}
+      data-structure={structure}
       data-occasion={occasion === 'none' ? undefined : occasion}
       className="flex min-h-dvh flex-col overflow-x-clip bg-canvas"
     >

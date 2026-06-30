@@ -160,6 +160,15 @@
   --type-scale: 1;
   --ornament:   0.6;
   --tap-min:    32px;
+
+  /* ── Structure axis token (docs/THEME.md, lib/theme/structure.ts) ────────────
+     The STRUCTURE axis is the coarse COMPOSITION knob, orthogonal to the feel knobs
+     above: the resolved generation maps (via structureFor) to one of simple /
+     standard / dense, set as [data-structure] on the shell root. --structure-rhythm
+     is a unitless multiplier on the vertical rhythm BETWEEN templated sections, so
+     the calm + kids ends (simple) get a roomier flow and the bold preset (dense) a
+     tighter one, from the SAME content. 1 = the proven standard composition. */
+  --structure-rhythm: 1;
 }
 
 /* Always-light lock. The cinematic beta induction is a branded cream experience
@@ -607,6 +616,22 @@
   .animate-spin {
     animation: none !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   STRUCTURE axis — data-structure (docs/THEME.md, lib/theme/structure.ts). The coarse
+   COMPOSITION knob, orthogonal to the generation feel tokens above. The resolved
+   generation maps (structureFor) to one of three buckets; each just retunes the rhythm
+   multiplier --structure-rhythm, so the SAME content flows roomier (simple, the calm +
+   kids ends) or tighter (dense, bold) without changing what is shown. 'standard' is the
+   proven default and authors no override (it inherits the :root value of 1). Authored
+   after the generation blocks so it is unlayered + later in source order, consistent with
+   the rest of the four-axis cascade. */
+[data-structure="simple"] {
+  --structure-rhythm: 1.25; /* roomier flow — lowers density at the calm/kids ends */
+}
+[data-structure="dense"] {
+  --structure-rhythm: 0.85; /* tighter flow — more on screen at once for `bold` */
 }
 
 /* ── Tailwind wiring ────────────────────────────────────────────────────────

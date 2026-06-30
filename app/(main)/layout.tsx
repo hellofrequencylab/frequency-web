@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
@@ -10,6 +10,8 @@ import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute } from '@/lib/layout/page-chrome'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
+import { structureFor } from '@/lib/theme/structure'
+import { THEME_COOKIE, parseThemeCookie } from '@/lib/theme/cookie'
 import { loadActiveThemeCss, resolveActiveOccasionSlug } from '@/lib/theme/server/themes'
 import RightSidebar, { MobileGameStats } from '@/components/sidebar/right-sidebar'
 import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
@@ -472,8 +474,27 @@ export default async function MainLayout({
   // cookie + DB-theme reads live HERE, not in the root layout, so the public marketing/discover
   // pages stay static/prerendered (app/layout.tsx). Fail-safe throughout.
   const theme = await resolveTheme({ spaceSkin: activeSkin, spaceGeneration: activeGeneration })
+  // An EXPLICIT member occasion pin (set from Settings -> Appearance, incl. "Off" = 'none') WINS
+  // over the DB auto-schedule, per the documented precedence (docs/THEME.md §6: a member/code pin
+  // first, only then the calendar). Without this, pinning "Off" couldn't suppress an operator-
+  // scheduled occasion. resolveTheme already folds the pin into theme.occasion; this only
+  // distinguishes "pinned none" from "no pin" by re-reading the cookie. Fail-safe: any miss = no pin.
+  let occasionPinned = false
+  try {
+    const jar = await cookies()
+    occasionPinned = parseThemeCookie(jar.get(THEME_COOKIE)?.value).occ !== undefined
+  } catch {
+    /* no pin → fall through to the auto-schedule below */
+  }
   const occasion =
-    theme.occasion !== 'none' ? theme.occasion : await resolveActiveOccasionSlug(new Date())
+    occasionPinned || theme.occasion !== 'none'
+      ? theme.occasion
+      : await resolveActiveOccasionSlug(new Date())
+  // The STRUCTURE axis (docs/THEME.md): the coarse layout variant the resolved generation maps to
+  // (simple / standard / dense). The shell sets it as [data-structure] alongside [data-generation],
+  // so the calm/kids ends get a roomier composition and the bold preset a denser one. This is the
+  // real (non-test) caller structureFor() was missing (BUILD-CATALOG §A.13 #1).
+  const structure = structureFor(theme.generation)
   // The active DB skin/occasion theme as a scoped <style> (fail-safe '' until theme rows exist).
   const themeCss = await loadActiveThemeCss({ skin: theme.skin, occasion })
 
@@ -483,6 +504,7 @@ export default async function MainLayout({
     <AppShell
       skin={theme.skin}
       generation={theme.generation}
+      structure={structure}
       occasion={occasion}
       brandName={activeBrandName}
       brandLogoUrl={activeBrandLogoUrl}
