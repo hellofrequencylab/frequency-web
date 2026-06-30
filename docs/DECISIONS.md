@@ -9699,3 +9699,44 @@ so this is ~80% a repackaging, not a rebuild.
 hosting/authoring move to a server-side Crew gate (capability resolver) on each create action. Commercial
 pricing page is fully static (ISR) with `Product`/`Offer`/`FAQPage` JSON-LD + per-loadout persona landing
 pages for SEO/AIO. PRICING.md is updated per phase; this ADR + PRICING-LADDER-PLAN.md are the source of truth.
+
+---
+
+## ADR-461: Space Modes (type as operating mode, under the unified Pro plan)
+
+**Status:** Accepted (2026-06-30). Owner: Daniel. Full plan:
+[SPACE-MODES-PLAN.md](SPACE-MODES-PLAN.md). Companion to ADR-458 (pricing ladder) and the profile
+blueprints (`lib/spaces/blueprints.ts`).
+
+**Context.** The 7 space plans collapsed to 3 (Pro / Nonprofit / Organization, ADR-458), so `spaces.type`
+(practitioner / coaching / business / event_space / organization / lab) is no longer a price tier. But
+these operators run very different businesses (a coach lives in packages + scheduling; a product business
+in catalog + storefront; a service business in bookings + quotes). A single generic Pro console serves
+none of them well.
+
+**Decision.**
+- **`spaces.type` becomes an operating Mode**: a preset layer that decides which Pro modules lead, the
+  default settings, the default CRM pipeline, the lexicon, the onboarding + starter templates, the
+  dashboard, and the recommended add-ons. It already drives the public profile blueprint; this extends
+  the same data-driven pattern onto the operator console.
+- **A new Focus (sub-mode) dimension** for types that span operating models, stored as
+  `spaces.mode_variant`: Business `service`/`product`, Coaching `packages`/`cohort`, Practitioner
+  `appointments`/`programs`, Event Space `ticketed`/`membership`, Organization `donations`/`programs`.
+- **Mode never gates.** Capabilities are gated only by the entitlement engine (plan + add-ons) and the
+  space-role ladder. Mode only orders, defaults, and labels, so every Pro Space can still reach every
+  module. Mode is FREE (framing, not entitlement), so it does not wait on `billing_live`.
+- **A pure data registry** (`lib/spaces/modes.ts`, a `ModeProfile` per `(type, variant)`) extends
+  `RoleBlueprint`; the create wizard, console nav/dashboard, CRM pipeline seed, onboarding, and marketing
+  pages all read it. A new Mode/Focus is one descriptor, never a core edit.
+- **Switching Mode/Focus is non-destructive + reversible**, and operator overrides (a hand-set toggle,
+  label, or pipeline) are never clobbered by a later re-preset.
+- **Surface rework** (Phase C): create wizard "what do you run?", a console Mode settings page with a
+  switcher + a plain "what this turns on" preview + overrides; brings `coaching` onto the unified console
+  (it has a blueprint but is not yet in `CONSOLE_SPACE_TYPES`).
+- **Marketing + pricing** (Phase F): per-Mode persona landing pages with package focus + recommended
+  loadout price, and a static pricing-page table (Pro / Nonprofit / Organization with the 4 add-ons) plus
+  a "by who you are" loadout strip, all with the founding-price anchor + JSON-LD.
+
+**Consequences.** Migration adds `spaces.mode_variant` (+ optionally `spaces.preferences` for overrides),
+additive, read untyped until types regenerate (ADR-246). Implementation slots into Phase C (M1-M4) and
+Phase F (M5-M6) of the pricing overhaul. No entitlement or RLS change.
