@@ -30,17 +30,21 @@ describe('moduleIdsForScope', () => {
   it('the admin practices workspace resolves its curation blocks, in order, no leakage', () => {
     const p = moduleIdsForScope('/admin/content/practices')
     expect(p).toBe(ROUTE_MODULE_IDS['/admin/content/practices'])
-    // Default render order: stats → review queue → needs attention → faceted library → tags, then
-    // the Phase 3 "Grow" blocks appended AFTER the original five.
+    // Default render order: stats, review queue, merge duplicates, needs attention, faceted
+    // library, tags, then the Phase 3 "Grow" blocks appended AFTER the original set.
     expect(p).toEqual([
       'admin-practices-stats',
       'admin-practices-review',
+      'admin-practices-merge',
       'admin-practices-attention',
       'admin-practices-library',
       'admin-practices-tags',
       'admin-practices-remix-levers',
       'admin-practices-contributor-recognition',
     ])
+    // The merge worklist sits between the review queue and the quality panel (decide, then dedupe).
+    expect(p.indexOf('admin-practices-merge')).toBeGreaterThan(p.indexOf('admin-practices-review'))
+    expect(p.indexOf('admin-practices-merge')).toBeLessThan(p.indexOf('admin-practices-attention'))
     // The faceted library IS a module here too (reads the URL from the x-search header).
     expect(p).toContain('admin-practices-library')
     // The two Phase 3 blocks come AFTER tags (the locked append order).
