@@ -10090,3 +10090,21 @@ left unset), pipeline (the member's open `crm_deal` → `crm_stages.name`), and 
 `contact_interactions` timeline, all from EXISTING readers, fail-safe and **no N+1** (one list query; the detail
 batches a fixed handful of isolated reads for the selected member only). No schema, migration, or
 `database.types` change.
+
+## ADR-471: The entity owner consoles keep the global right rail (manage is a card grid, not a board)
+
+**Status:** Accepted (2026-06-30). Overrides the `'none'` rail ADR-441/469 gave `/{entity}/[id]/manage`;
+honors the standing owner directive (2026-06-20) that "the right rail shows on every page."
+
+**Decision.** `/spaces/<slug>/manage` (and its sibling `/circles/<slug>/manage`) were mapped to rail
+`'none'` in `lib/layout/page-chrome.ts`, inherited from the EM1-2 premise that an owner console "composes the
+admin kit edge to edge." In practice the console is a **vertical grid of section cards** with a
+`width="default"` body, so dropping the rail left a large empty right gutter (the owner reported the manage
+page "still doesn't have a right rail" three times). The console does not scroll horizontally, so it has no
+reason to suppress the rail. Fix: both entity owner-console patterns are removed from
+`DASHBOARD_NONE_PATTERNS`, so they fall through to `'global'` and the community rail fills the former gutter,
+exactly like every other member surface. The **only** member-side route that still drops the rail for width is
+the Space **CRM board** (`/spaces/<slug>/crm`), whose body is a genuine horizontal stage board that would
+fight a rail. Rule going forward: a surface belongs in `DASHBOARD_NONE_PATTERNS` only if its body truly
+scrolls sideways. Pure data + test change; no schema, RLS, or entitlement impact; the `[slug]` profile-shell
+escape (ADR-468/469) is unaffected because the rail is decided by the outer app-shell, not the child layout.
