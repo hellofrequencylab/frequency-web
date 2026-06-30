@@ -9336,7 +9336,44 @@ shared `PageHeading` header-to-body gap — `structureFor`'s first production ca
 
 ---
 
-## ADR-452: Spaces harmonization (EM1-3) — retire the 7-tab as a destination via a gated redirect, keep its sub-pages
+## ADR-452: Per-Space member management — the People module (EM2-2, Spaces slice)
+
+**Status:** Accepted · corroborated by `lib/spaces/roster.ts`, `lib/spaces/roster-actions.ts`,
+`lib/spaces/membership.ts` (`setSpaceMemberStatus`), `components/spaces/roster-manager.tsx`, and
+`app/(main)/spaces/[slug]/settings/members/page.tsx`.
+
+**Context.** The Space members surface (`/spaces/[slug]/settings/members`) listed the team and surfaced
+the existing invite flow, but had no way to MANAGE a roster: no per-member role assignment along the
+per-Space ladder, no remove, no suspend, no bulk ops. EM2-2 (ENTITY-MANAGEMENT-OVERHAUL §7) calls for a
+complete People module. The membership ladder (`viewer < editor < moderator < admin`), the
+`space_members` / `space_invites` tables, and the capability resolver (`getSpaceCapabilities`,
+`canManageMembers` = owner / admin) already existed — the gap was the management seam, not the model.
+
+**Decision.** Build the People module against the existing tables, NO schema change. A new
+`lib/spaces/roster.ts` holds the gated action implementations (pure helpers + impls, unit-testable),
+with thin `'use server'` wrappers in `lib/spaces/roster-actions.ts` (mirroring the invites split). Every
+action RE-CHECKS `getSpaceCapabilities(...).canManageMembers` server-side via a shared `requireManager`
+gate (P5 — the page gate is never trusted), and rejects acting on the Space owner (the owner holds no
+member row and is all-powerful on their own Space, so ownership can never be removed or downgraded here;
+ownership transfer is the EM1-6 platform-admin lifecycle surface, out of scope). Actions:
+`setMemberRole`, `removeMember`, `suspendMember`, `reactivateMember`, and `bulkRosterOp` (multi-select
+role / remove / suspend / reactivate, owner silently skipped, honest changed-vs-skipped tally, capped at
+200). A single new primitive `setSpaceMemberStatus` lands in `lib/spaces/membership.ts` (suspend keeps
+the row for history but strips authority, since only an ACTIVE membership confers a role). The page hands
+a manager the client `RosterManager` table; a staff janitor previewing the Space keeps a read-only
+PersonCard grid.
+
+**Consequences.**
+- No migration: `space_members.status` already carries `active` / `invited` / `suspended`; suspend is a
+  status flip, remove is the existing hard delete.
+- Bulk ops reuse the single-member guard + write per row, so a bulk op can never do what a single op
+  cannot; partial success is reported (changed vs skipped) rather than failing the whole batch.
+- Cross-entity generalization (one roster module for circle / hub / nexus / event, EM1-5) is a later
+  slice; this owns the Space People module only (practitioner + organization priority).
+- Stays clear of the parallel admin-lifecycle PR: this owns `lib/spaces/membership.ts` roster/role
+  helpers and does not touch `app/(main)/admin/spaces`.
+
+## ADR-453: Spaces harmonization (EM1-3) — retire the 7-tab as a destination via a gated redirect, keep its sub-pages
 
 **Status:** Accepted · corroborated by `app/(main)/spaces/[slug]/settings/page.tsx` (the redirect),
 `lib/spaces/types.ts` (`spaceManageHref`), and `app/(main)/spaces/[slug]/manage/page.tsx` (the console).
@@ -9359,10 +9396,10 @@ console's own section targets, so they cannot be deleted either.
   them yet, so there is nothing to redirect to).
 - Every settings sub-page is KEPT and untouched as the console's section targets (no feature loss).
 - The one management-entry rule lives in `spaceManageHref(type, slug)` (`lib/spaces/types.ts`): console
-  types → `/manage`, all others → `/settings`. Every "Manage" affordance routes through it — the space
-  profile header button, the `listManagedSpaces` launcher deep link, the entity getting-started / empty
-  CTAs, the CRM back link + locked-state CTA, the `FeatureLockedNotice` back link, the admin Spaces list
-  "Edit profile" + the admin per-Space "Manage hub" preview, and the janitor view-as-Space preview.
+  types route to `/manage`, all others to `/settings`. Every "Manage" affordance routes through it: the
+  space profile header button, the `listManagedSpaces` launcher deep link, the entity getting-started /
+  empty CTAs, the CRM back link + locked-state CTA, the `FeatureLockedNotice` back link, the admin Spaces
+  list "Edit profile" + the admin per-Space "Manage hub" preview, and the janitor view-as-Space preview.
 
 **Consequences.**
 - No schema or migration change; this is routing + navigation only.
@@ -9370,4 +9407,4 @@ console's own section targets, so they cannot be deleted either.
   (it still serves the other types and hosts the sub-pages). When the console grows to cover the rest,
   flip `CONSOLE_SPACE_TYPES` in `lib/spaces/types.ts` (kept in lockstep with the `manage/page.tsx` gate).
 - `spaceManageHref` is unit-tested (`lib/spaces/types.test.ts`); `managed.test.ts` covers both a console
-  type (→ `/manage`) and a non-console type (→ `/settings`).
+  type and a non-console type.

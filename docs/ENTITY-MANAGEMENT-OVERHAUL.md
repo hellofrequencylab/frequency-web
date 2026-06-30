@@ -167,7 +167,7 @@ is specified three layers deep (L1 catalog · L2 owner console · L3 in-page).
 |---|---|---|
 | **EM1-1** | **Entity registry** — each entity declares its manageable surfaces against the 9-category spine + capability gate per surface; one source of truth feeding L1/L2/L3. **✅ shipped** (`lib/admin/entities/registry.ts` — `surfacesFor(entity, viewerCaps)`, spine-ordered; circle Basics + Danger declared). | L1 |
 | **EM1-2** | **Entity-scoped owner console** — the shared `/{entity}/[id]/manage` Dashboard-template suite, gated by `resolveCapabilities`, identical pattern for host/guide/mentor/owner. | L2 — **🟡 first slice shipped:** `/circles/[slug]/manage` (RSC, gated on `circle.editSettings`, DashboardTemplate + registry-driven sections, rail `none`). Remaining entities (hub/nexus/event/practice/space) + People role-ladder land as follow-on slices. |
-| **EM1-3** | **Harmonize Spaces** onto the framework — wrap/retire the bespoke 7-tab so spaces use the same spine + module registry; no feature loss. **✅ shipped:** the unified `/spaces/<slug>/manage` console (#1293) serves `practitioner` + `organization`, and the legacy `/spaces/<slug>/settings` index now REDIRECTS those two types to it (after the same `resolveSpaceManageAccess` gate, so a non-manager still 404s and the route never leaks). Every settings sub-page stays in place as the console's section targets; the other types (business / event_space / lab / partner) have no console yet so they keep the legacy hub unchanged. One management-entry rule lives in `spaceManageHref()` (ADR-452). | L2 + L3 |
+| **EM1-3** | **Harmonize Spaces** onto the framework — wrap/retire the bespoke 7-tab so spaces use the same spine + module registry; no feature loss. **✅ shipped:** the unified `/spaces/<slug>/manage` console (#1293) serves `practitioner` + `organization`, and the legacy `/spaces/<slug>/settings` index now REDIRECTS those two types to it (after the same `resolveSpaceManageAccess` gate, so a non-manager still 404s and the route never leaks). Every settings sub-page stays in place as the console's section targets; the other types (business / event_space / lab / partner) have no console yet so they keep the legacy hub unchanged. One management-entry rule lives in `spaceManageHref()` (ADR-453). | L2 + L3 |
 | **EM1-4** | **Wire Hub/Nexus edit mode** into the PageAdminDock (currently unwired); bring them to circle/event parity. | L3 |
 | **EM1-5** | **Per-entity member-role ladder** — give every entity a role ladder + assignment (today circles are binary host/non-host; spaces have 4 rungs); unify the model. | L2 (People) |
 | **EM1-6** | **Platform oversight spine** — uniform lifecycle (active/suspended/archived) + ownership transfer + entitlement override for every entity type. | L1 + L2 |
@@ -182,7 +182,7 @@ platform admin can run lifecycle + ownership on all of them.
 | ID | Task | Layers |
 |---|---|---|
 | **EM2-1** | **Build the spine modules per entity** (Place&Time, Engage, Reach, Comms, Safety, Insights) — the bulk; one `AdminModule` per cell in Appendix A. | L2/L3 |
-| **EM2-2** | **Per-entity member management** — roster table + invite + role assignment + bulk ops + per-entity moderation queue, as People/Safety modules. | L2 (People/Safety) |
+| **EM2-2** | **Per-entity member management** — roster table + invite + role assignment + bulk ops + per-entity moderation queue, as People/Safety modules. **🟡 Spaces slice shipped** (ADR-452): `/spaces/[slug]/settings/members` now has the full roster table (role assignment along the per-Space ladder, remove, suspend/reactivate, bulk multi-select ops) on the existing `space_members` + invite flow, capabilities re-checked in every server action (`lib/spaces/roster.ts`). Remaining: the per-entity moderation queue (Safety) + the cross-entity generalization to circle/hub/nexus/event (rides EM1-5). | L2 (People/Safety) |
 | **EM2-3** | **Space completion (non-money)** — seed content on create (ENTITY-SPACES Epic 1.10), per-tab module editor, Lab/Partner deep features, advanced availability, multi-cohort coaching, event capacity/waitlist. | L2 |
 | **EM2-4** | **Space money, built dormant** 🔒 — Stripe on memberships/donations/enrollment/tickets behind `billing_live`, entity-tagged; ties to hardening F1. | L2 (Engage/Billing) |
 | **EM2-5** | **Persona verification completion** (EM-ROLE-2) — `/admin/personas` queue + per-persona Stripe Connect binding. | L2 (admin) |
@@ -235,7 +235,7 @@ owner and admin alike.
 1. **Owner console route shape** — `/{entity}/[id]/manage` (recommended) vs. an expanded dock-only
    model. Decide at EM1-2.
 2. **Spaces harmonization depth** — fully retire the 7-tab vs. keep it as a thin compatibility
-   wrapper over the shared spine. **Resolved (ADR-452):** a SPLIT, not a single answer. For the types
+   wrapper over the shared spine. **Resolved (ADR-453):** a SPLIT, not a single answer. For the types
    the console serves (`practitioner` + `organization`) the legacy `/settings` index becomes a thin
    REDIRECT to `/manage` (retired as a destination, not as a route file); for the types the console
    does not serve yet it stays the working hub. The settings SUB-pages are kept everywhere as the

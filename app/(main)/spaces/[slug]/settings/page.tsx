@@ -113,7 +113,7 @@ export default async function SpaceSettingsPage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  // HARMONIZATION (ADR-441 EM1-3, decided in ADR-452): the unified /spaces/<slug>/manage console serves the
+  // HARMONIZATION (ADR-441 EM1-3, decided in ADR-453): the unified /spaces/<slug>/manage console serves the
   // `practitioner` and `organization` types. Send a manager / staff previewer of those types there so
   // there is one console, not two. The gate above already ran, so a non-manager 404s before this and
   // the redirect never reveals the route. All OTHER types fall through to the legacy hub below
