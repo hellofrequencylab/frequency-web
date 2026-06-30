@@ -178,7 +178,9 @@ export default async function RootPage() {
     return (
       <>
         <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
-        <Render config={config} data={data} />
+        <main id="main">
+          <Render config={config} data={data} />
+        </main>
         <MarketingFooter menu={footerMenu} />
       </>
     )
@@ -224,6 +226,7 @@ function Splash({
         ctaLabel="Join the beta"
       />
 
+      <main id="main">
       {/* ── Manifesto hero — the third place is gone; you can be the reason it
           comes back. One primary CTA into /start. ─────────────────────────── */}
       <PhotoHero
@@ -627,6 +630,7 @@ function Splash({
           </div>
         </div>
       </section>
+      </main>
 
       <MarketingFooter menu={footerMenu} />
     </>
