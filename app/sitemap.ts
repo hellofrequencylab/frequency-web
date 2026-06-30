@@ -107,6 +107,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/calm-down-fast`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/meet-people-new-city`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${SITE_URL}/feel-less-awkward-in-groups`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    // Leader-track pillar (CONTENT-VOICE §7b.2): the activation guide for the
+    // natural connector — answer-first, HowTo + FAQ schema.
+    { url: `${SITE_URL}/how-to-start-a-circle`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     // The four Pillar landing pages (fixed taxonomy — Mind · Body · Spirit · Expression).
     ...(["mind", "body", "spirit", "expression"] as const).map((slug) => ({
       url: `${SITE_URL}/discover/practices/pillar/${slug}`,
