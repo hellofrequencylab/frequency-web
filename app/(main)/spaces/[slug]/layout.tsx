@@ -128,15 +128,23 @@ export default async function SpaceProfileLayout({
   const segs = pathname.split('/').filter(Boolean) // ['spaces', '<slug>', '<segment>'?]
   const activeSegment = segs.length >= 3 ? segs[2] : undefined
 
-  // OWNER SURFACES ESCAPE THE PROFILE CHROME. The /manage console and the legacy /settings cockpit
-  // are operator workspaces, NOT the public profile: each owns its own header (DashboardTemplate /
-  // FocusTemplate) and must not be wrapped in the profile hero + tab row. This layout sits above both
-  // (they are segments under [slug]), and a child layout cannot un-wrap its parent, so the ONLY place
-  // to drop the profile chrome for them is here: when the current path is an owner surface, return the
-  // children directly with no profile band/tabs. The rail is handled separately in
-  // lib/layout/page-chrome.ts (/manage is a full-width 'none' Dashboard like the other owner consoles;
-  // /settings keeps the global rail beside its centered Focus body).
-  if (activeSegment === 'manage' || activeSegment === 'settings') {
+  // OWNER SURFACES ESCAPE THE PROFILE CHROME. The /manage console, the legacy /settings cockpit, and
+  // the /crm board are operator workspaces, NOT the public profile: each owns its own header
+  // (DashboardTemplate / FocusTemplate) and must not be wrapped in the profile hero + tab row. This
+  // layout sits above all three (they are segments under [slug]), and a child layout cannot un-wrap its
+  // parent, so the ONLY place to drop the profile chrome for them is here: when the current path is an
+  // owner surface, return the children directly with no profile band/tabs. The rail is handled
+  // separately in lib/layout/page-chrome.ts (/manage and /crm are full-width 'none' Dashboards like the
+  // other owner consoles; /settings keeps the global rail beside its centered Focus body).
+  //
+  // /crm IS an owner surface (the paid per-Space CRM board, a full-width 'none' Dashboard in
+  // page-chrome.ts) that the manage console links to. Without this escape it rendered DOUBLE-wrapped:
+  // the public profile hero + tab row stapled on top of the board's own DashboardTemplate, with two
+  // <h1>s and a back-stack that pointed at the profile, not the console. That is the "clicking the CRM
+  // section breaks" report. Escaping it here makes the board read as the standalone operator workspace
+  // it already declares itself to be (and skips the profile-view telemetry below, which never belonged
+  // on an operator board).
+  if (activeSegment === 'manage' || activeSegment === 'settings' || activeSegment === 'crm') {
     return children
   }
 
