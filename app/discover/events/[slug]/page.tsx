@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { CalendarDays, MapPin, Lock, ChevronLeft } from 'lucide-react'
 import { getPublicEventBySlug, formatEventDateTime, hasEventEnded } from '@/lib/discover'
 import { getEventEnrichment } from '../_data'
-import { SignInCta } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { FrequencyArcs } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
 import { SITE_NAME } from '@/lib/site'
@@ -152,14 +152,19 @@ export default async function EventPage({
           </p>
         </div>
 
-        <SignInCta
-          title={hasEnded ? 'Join Frequency' : 'Sign in to RSVP'}
+        {/* Inline capture: someone reading a single event is ready to show up.
+            Offer the invite right here, where intent peaks, instead of bouncing
+            them to /sign-in. Same double-opt-in funnel as the list pages, tagged
+            for attribution and with copy that fits whether the event is upcoming
+            or already passed. */}
+        <InlineBetaCapture
+          source={hasEnded ? 'discover_event_detail_ended' : 'discover_event_detail'}
+          heading={hasEnded ? 'Catch the next one' : `Want to be at ${event.title}?`}
           body={
             hasEnded
-              ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Sign up free to find it, and be one of the faces the next person walks in and recognizes.'
-              : 'RSVP and you are expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Free to join, two words to belong.'
+              ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Join the beta to find it, and be one of the faces the next person walks in and recognizes.'
+              : 'RSVP and you are expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Join the beta to claim your spot — two words to belong.'
           }
-          action={hasEnded ? 'Get started' : 'Sign in to RSVP'}
         />
       </DetailTemplate>
     </div>
