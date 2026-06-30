@@ -10091,6 +10091,35 @@ left unset), pipeline (the member's open `crm_deal` → `crm_stages.name`), and 
 batches a fixed handful of isolated reads for the selected member only). No schema, migration, or
 `database.types` change.
 
+## ADR-472: Space tiers re-strategized to four first-class tiers (Tier × Mode), add-ons folded into depth
+
+**Status:** Accepted (2026-06-30), behind `billing_live` OFF. Refines the pricing ladder (ADR-458) + Space
+Modes (ADR-461). Full spec: `docs/PRICING-LADDER-PLAN.md` §1b.
+
+**Decision.** The Space plan axis moves from "Pro + four toggle add-ons" to a ladder of **four first-class
+tiers** — **Pro · Business · Non-profit · Organization** — each wearing a curated set of **Modes**. The model
+is two orthogonal threads: **Tier** is the commercial depth + seats axis (`spaces.plan`, drives the
+`entitlements.billing` depth set), and **Mode** is the operating layout + features-forward axis
+(`spaces.type` + `mode_variant`, the `ModeProfile` registry, free framing). A Space is one Tier × one Mode.
+
+**The best-practice principle (owner-set):** never gate the core value, gate depth + seats. Every tier can do
+**any money exchange**; you pay for DEPTH (advanced CRM, marketing automation, branding, governance) and SEATS
+(team). Pro = solo (1 seat), any monetization, **limited** depth. Business = multi-seat, **full** depth.
+Non-profit = full depth (= Business) discounted, donation/volunteer framing. Organization = **expanded +
+custom** (white-label, custom Modes, advanced governance), multi-seat, sales-assist.
+
+**The four old add-ons fold in:** Team becomes intrinsic to the multi-seat tiers (the Pro→Business jump);
+Marketing + Branding become tier DEPTH (Pro capped, Business+ full, Org custom/white-label); **AI Engine stays
+a cross-tier metered add-on** (usage-priced, honest unit economics). Modes gain curated per-tier sets + an
+Organization-only **Custom mode**.
+
+**Why it is an evolution, not a teardown:** `business` is added to `SPACE_PLANS` (the legacy `business → pro`
+remap retires for new spaces, existing rows re-map forward); the depth sets become `PLAN_ENTITLEMENT_KEYS` per
+tier; the founding-price/grandfather/annual machinery (ADR-458 §1a) and the multi-item-sub + per-seat Stripe
+build are unchanged and the four tiers ride them as-is. Ships behind `billing_live` OFF, phased, like the rest
+of the ladder. Recommended calls baked in (any can flip before build): add-ons→depth with AI metered, Pro is
+solo, curated Modes per tier.
+
 ## ADR-471: The entity owner consoles keep the global right rail (manage is a card grid, not a board)
 
 **Status:** Accepted (2026-06-30). Overrides the `'none'` rail ADR-441/469 gave `/{entity}/[id]/manage`;

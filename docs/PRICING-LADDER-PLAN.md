@@ -9,6 +9,10 @@
 
 ## 1. The target model
 
+> **Refined by §1b (2026-06-30):** the Space plan axis is now **four first-class tiers** (Pro · Business ·
+> Non-profit · Organization) with the four add-ons folded into tier depth (AI stays metered). Read §1b for
+> the live model; §1 below is kept for the axis overview + the consolidation history.
+
 Access is the **union of independent axes** (a person can hold several at once):
 
 | Axis | Values | Bought / earned |
@@ -84,6 +88,66 @@ per-subscription **locked price id** on space subscriptions (mirroring `profiles
 honor the grandfathered rate; the anchor + founding + annual display on every price surface; and the
 mission-framing copy on the pricing + upgrade pages. Folded into Phase B (Stripe + lock) and Phase F
 (anchor display + mission copy) below. Still ships behind `billing_live` OFF.
+
+## 1b. Tier × Mode re-strategization (owner direction, 2026-06-30) — SUPERSEDES the §1 add-on framing
+
+The Space plan axis moves from "**Pro + four toggle add-ons**" to a clean ladder of **four first-class
+tiers**, each wearing a curated set of **Modes**. This refines §1: the four tiers replace the
+Pro-plus-toggles table; the founding-price / grandfather / annual / mission machinery in §1a is unchanged and
+applies to every tier.
+
+### The two threads
+
+A Space is always **one Tier × one Mode**. They are orthogonal:
+
+- **Tier** is the COMMERCIAL thread: what you pay, how many seats, and how DEEP the function goes. It is the
+  `spaces.plan` value and drives the entitlement depth set (`entitlements.billing`, the `setSpacePlan`
+  machinery already shipped).
+- **Mode** is the OPERATING thread: how the Space runs, its design LAYOUT, and which features lead. It is
+  `spaces.type` + `mode_variant` (the `ModeProfile` registry, ADR-461/464). Mode is free framing, never a gate.
+
+**Best-practice principle (owner-set): never gate the core value, gate depth + seats.** Every tier can do
+**any money exchange** (bookings, payments, donations, tickets, memberships, products). What you pay for is
+DEPTH (advanced CRM, marketing automation, branding, governance) and SEATS (team). This keeps the entry tier
+genuinely useful and makes each upgrade a clear, single trigger.
+
+### The four tiers
+
+| Tier | Who | Seats | Depth of function | Modes surfaced | Price posture |
+|---|---|---|---|---|---|
+| **Pro** | Solo operator who monetizes | **1** | Any money exchange + CRM-lite + basic analytics; marketing automation / white-label / team **capped** | Practitioner · Coaching · Creator | Founding **$19** / list $29 |
+| **Business** | A team running a real operation | **Multi** (licensed) | **Full** depth: every tool, marketing automation, full CRM, team roles, custom domain | + Business · Studio · Event space (all modes) | base + per-seat |
+| **Non-profit** | Verified mission orgs | **Multi** | **Full** (= Business) + donation/volunteer/grant framing forward | Organization · Community forward, all available | discounted Business + licensed seat |
+| **Organization** | Large / complex orgs | **Multi** (high) | **Expanded + custom**: white-label, custom Modes, advanced governance/roles, SSO-grade controls | all + **Custom mode** · Lab | custom / contact, anchored floor |
+
+### Where the four old add-ons go (decision: fold into tier depth; AI stays metered)
+
+| Old add-on | New home |
+|---|---|
+| 👥 **Team** | Intrinsic to the multi-seat tiers (Business/Non-profit/Org). The Pro→Business jump IS the team jump. Not a toggle. |
+| 🎯 **Marketing** | Folds into **depth**: Pro gets basic email/broadcast; Business+ unlock automation/nurture/multi-pipeline/reporting. |
+| 🎨 **Branding** | Folds into **depth**: Pro gets accent + logo; Business gets custom domain; Organization gets full white-label + custom. |
+| 🧠 **AI Engine** | **Stays a cross-tier metered add-on** (usage-priced). AI cost scales with use, so it is honest to meter it apart from the tier base, available on every paid tier. |
+
+### How it threads with what is already built (evolution, not teardown)
+
+- **Plan values:** add `business` to `SPACE_PLANS` → `['free','pro','business','nonprofit','organization']`
+  (`lib/pricing/plans.ts`). The legacy remap (`business → pro`) is retired for NEW spaces; existing rows
+  re-map forward. The depth sets become `PLAN_ENTITLEMENT_KEYS` per tier (Pro = capped core; Business/Non-profit
+  = full; Org = full + expansions). AI keys move to a metered add-on key, not a tier toggle.
+- **Modes:** the `ModeProfile` registry gains the curated per-tier sets + an Organization-only **Custom mode**.
+  A tier exposes only its set in the create wizard + Mode settings (framing only; switching never changes a gate).
+- **Stripe:** four base products (Pro / Business / Non-profit / Organization) on the existing multi-item-sub +
+  per-seat machinery; monthly + annual per item; founding-price lock per item (§1a) unchanged. AI add-on is a
+  metered price.
+- **Commercial page:** shows the four tiers (Pro · Business · Non-profit · Organization); Crew still lives on
+  the personal upgrade page. Per-Mode marketing (Phase F) re-frames around the tier each Mode lives in.
+
+### The recommended calls baked in here (flip any)
+
+1. **Add-ons → tier depth**, with **AI Engine the one metered exception**.
+2. **Pro is solo (1 seat)**; multi-seat is the Business jump.
+3. **Curated Modes per tier** (Pro: solo modes; Business: all; Org: all + Custom).
 
 ## 2. Owner-decided open questions (locked for this build)
 
