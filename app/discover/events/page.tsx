@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { getPublicEvents } from '@/lib/discover'
 import { EventRow } from '@/components/discover/cards'
+import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import {
   ZigZag,
   Statement,
@@ -120,6 +121,16 @@ export default async function DiscoverEventsPage() {
                     <EventRow event={e} isAuthed={isAuthed} />
                   </div>
                 ))}
+              </div>
+
+              {/* Inline capture: someone scanning the calendar is ready to show up.
+                  Offer the invite here rather than bouncing them to /beta. */}
+              <div className="mt-12 mx-auto max-w-2xl">
+                <InlineBetaCapture
+                  source="discover_events"
+                  heading="Want to be at one of these?"
+                  body="Join the beta to RSVP, see the exact venue, and let a few neighbors start to know your face. No spam, just an invite when a spot opens near you."
+                />
               </div>
             </div>
           </section>
