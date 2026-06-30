@@ -10,6 +10,8 @@ import { getInitials } from '@/lib/utils'
 import { DetailTemplate } from '@/components/templates'
 import { normalizeTag, hasAnyDetails } from '@/lib/connections/normalize'
 import { DetailsEditor, DetailsView } from '@/components/connections/contact-details-fields'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ContactDetail } from '@/lib/connections/store'
 import type { TimelineEntry } from '@/lib/crm/timeline'
 import type { ContactDetails, ContactReminder, ContactStatus, Visibility } from '@/lib/connections/types'
@@ -50,6 +52,7 @@ export function Detail({
   timeline,
   timelineEntries = [],
   back,
+  crmTease,
 }: {
   initial: ContactDetail
   reminders?: ContactReminder[]
@@ -58,6 +61,8 @@ export function Detail({
   timelineEntries?: TimelineEntry[]
   /** Back-link rendered by the Detail shell above the identity band (the single back affordance). */
   back?: { href: string; label: string }
+  /** Phase E upsell-tease gate (ADR-466), resolved server-side. Renders nothing while billing is OFF. */
+  crmTease?: TeaseGate
 }) {
   const router = useRouter()
   const { contact, notes, tags, avatarUrl, cardFrontUrl, cardBackUrl, logoUrl } = initial
@@ -193,6 +198,20 @@ export function Detail({
       }
     >
     <div className="space-y-5">
+      {/* Phase E upsell tease (ADR-466): the contact is saved — the habit just paid off. Tease the CRM
+          upgrade (follow-ups, pipeline, reminders across every contact). DORMANT until billing_live ON. */}
+      {crmTease && (
+        <UpsellTease
+          target="contacts-crm"
+          live={crmTease.live}
+          locked={crmTease.locked}
+          href="/upgrade"
+          title="Keep every contact organized"
+          body="Crew turns saved contacts into a pipeline: follow-up reminders, tags, and notes that stay with you across everyone you meet."
+          cta="See what Crew adds"
+        />
+      )}
+
       {/* Details — read or edit. A calm, divided panel rather than three heavy
           boxes: one soft surface, section labels, hairline dividers between. */}
       {editing ? (

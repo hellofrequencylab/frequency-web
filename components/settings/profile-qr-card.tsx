@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { QrCode, Link2, Check, Download, Palette, Loader2 } from 'lucide-react'
 import { downloadStyledQrPng } from '@/lib/qr/client-download'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 
 // The member's personal QR generator on the Edit Profile page (linked to their
 // account — their /q/<slug> connect code → their profile). The preview SVG is
@@ -14,7 +16,18 @@ import { downloadStyledQrPng } from '@/lib/qr/client-download'
 // The PNG is rasterized ON THE CLIENT from the self-contained styled SVG (avatar inlined,
 // transparent), so it always carries the full design — no dependency on the serverless
 // resvg path. If anything in that pipeline fails, it falls back to the server PNG render.
-export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string; codeId: string }) {
+export function ProfileQrCard({
+  svg,
+  link,
+  codeId,
+  studioTease,
+}: {
+  svg: string
+  link: string
+  codeId: string
+  /** Phase E upsell-tease gate (ADR-466), resolved server-side. Renders nothing while billing is OFF. */
+  studioTease?: TeaseGate
+}) {
   const [copied, setCopied] = useState(false)
   const [pngBusy, setPngBusy] = useState(false)
   const api = `/api/qr?code=${encodeURIComponent(codeId)}`
@@ -68,6 +81,21 @@ export function ProfileQrCard({ svg, link, codeId }: { svg: string; link: string
           </div>
         </div>
       </div>
+
+      {/* Phase E upsell tease (ADR-466): once they have shared their code, tease QR Studio (multiple
+          styled codes, scan tracking). Shown only after a copy (the share moment), and only when
+          billing is live AND the caller is below Crew. DORMANT until billing_live ON. */}
+      {copied && studioTease && (
+        <UpsellTease
+          target="qr-studio"
+          live={studioTease.live}
+          locked={studioTease.locked}
+          href="/upgrade"
+          title="Make more codes in QR Studio"
+          body="Crew unlocks QR Studio: design several codes, point them anywhere, and see how many scans each one gets."
+          cta="See what Crew adds"
+        />
+      )}
     </section>
   )
 }

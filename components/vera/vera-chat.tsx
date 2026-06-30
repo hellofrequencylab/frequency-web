@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useTransition } from 'react'
 import { Check, X, Send, Bug } from 'lucide-react'
 import { conciergeTurn, confirmProposal } from '@/app/onboarding/vera-actions'
 import { openSupport } from '@/components/support/support-launcher'
+import { UpsellTease } from '@/components/upsell/upsell-tease'
+import type { TeaseGate } from '@/lib/pricing/upsell-tease'
 import type { ProposedToolCall } from '@/lib/ai/vera/concierge'
 import type { VeraMessage } from '@/lib/ai/vera/agent-claude'
 
@@ -47,8 +49,11 @@ function proposalLabel(p: ProposedToolCall): string {
   }
 }
 
-export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
+export function VeraChat({ opening, veraTease }: { opening: VeraOpeningSeed; veraTease?: TeaseGate }) {
   const [messages, setMessages] = useState<Msg[]>([{ from: 'vera', text: opening.message }])
+  // Count the member's own turns — a "depth moment" is when they have leaned on Vera a few times. The
+  // tease only ever shows once billing is live AND they are below Crew (the gate); this just paces it.
+  const [turns, setTurns] = useState(0)
   const [stage, setStage] = useState<string>(opening.stage)
   const [proposals, setProposals] = useState<ProposedToolCall[]>([])
   const [suggestions, setSuggestions] = useState<string[]>(opening.suggestions)
@@ -66,7 +71,10 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
     // Mark the chat as "unclosed" so the launcher pulses if they navigate away mid-
     // conversation (cleared when they reopen Vera).
     if (text) { try { localStorage.setItem('fq_vera_unread', '1') } catch {} }
-    if (text) setMessages((m) => [...m, { from: 'you', text }])
+    if (text) {
+      setMessages((m) => [...m, { from: 'you', text }])
+      setTurns((t) => t + 1)
+    }
     setProposals([])
     setSuggestions([])
     start(async () => {
@@ -123,6 +131,23 @@ export function VeraChat({ opening }: { opening: VeraOpeningSeed }) {
           </div>
         ))}
       </div>
+
+      {/* Phase E upsell tease (ADR-466): after the member has leaned on Vera a few times (a depth
+          moment), tease the Crew unlock past the free daily cap. Shown only when billing is live AND
+          below Crew (the gate). DORMANT until billing_live ON. */}
+      {veraTease && turns >= 3 && (
+        <div className="shrink-0 px-4">
+          <UpsellTease
+            target="vera-depth"
+            live={veraTease.live}
+            locked={veraTease.locked}
+            href="/upgrade"
+            title="Keep talking to Vera without limits"
+            body="The free tier caps how much you can ask Vera each day. Crew lifts the cap, so she is there whenever you need her."
+            cta="See what Crew adds"
+          />
+        </div>
+      )}
 
       {/* composer + chips */}
       <div className="shrink-0 space-y-2.5 border-t border-border px-4 py-3">
