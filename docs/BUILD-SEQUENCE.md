@@ -11,7 +11,7 @@
 >
 > **Status legend:** ✅ done · ⏳ in progress · 📋 planned (build-ready) · 🟡 roadmap-only (needs a
 > deep plan before build) · 🔒 dormant (behind `billing_live`).
-> **Last updated:** 2026-06-29.
+> **Last updated:** 2026-06-30.
 
 ---
 
@@ -24,6 +24,7 @@
 | [ENTITY-MANAGEMENT-OVERHAUL.md](ENTITY-MANAGEMENT-OVERHAUL.md) | Track 2 — unified per-entity + role management | 441 | `EM#-n` |
 | [GROWTH-OS-BUILD-PLAN.md](GROWTH-OS-BUILD-PLAN.md) | Track 3 — funnel/flywheel/launch layer | 440 | `GE#-n`, `G0–G5` |
 | Notion: *Community Launch Plan* (Frequency Projects DB) | Timeline overlay (P0–P4) | — | Notion tasks |
+| [BUILD-CATALOG.md](BUILD-CATALOG.md) | Reconciled master index of ALL unfinished work + orphan rescue + wave-of-agents plan | — | catalog |
 
 The three tracks are strands of one rope: they share the **G0 hardening gate** and cross-reference
 each other (Entity Management is a prerequisite for Growth OS **G3**; the money foundation **F1**
@@ -105,6 +106,8 @@ chat are filed here automatically (see the protocol below).
 | IDEA-011 | 2026-06-29 | Backlog from the audit (📋) — first pass. Shipped since: BUG-5 (`updateCircleField` removed as dead code — circles edit via Settings drawer), BUG-9 (loading.tsx skeletons), SEO-2/3/8 (per-entity OG for circles/journeys/spotlight). Remaining items folded into IDEA-013. | claude | ⏳ partly shipped; remainder → IDEA-013 | per [SITE-AUDIT-2026-06-29.md](SITE-AUDIT-2026-06-29.md) §7 |
 | IDEA-012 | 2026-06-29 | Risk-gated backlog (needs consent/migration/owner). Done since: BUG-8 capstone count+claim RPC (`claim_season_certificate`) **applied + wired** 2026-06-29; INF-3 weekly `maintenance` trigger **scheduled** (owner). Still open: BUG-7 Stripe Connect activation gate (dormant), INF-2 Auth leaked-password protection (owner config). | claude | ⏳ BUG-8 + INF-3 done; BUG-7 + INF-2 → IDEA-013 | Hardening / per [SITE-AUDIT-2026-06-29.md](SITE-AUDIT-2026-06-29.md) §6 |
 | IDEA-013 | 2026-06-29 | **Open audit backlog (fresh-thread handoff)** — everything still 📋 after this sweep, with pointers. Security: SEC-4 report-target existence check (`feed/report-actions.ts`), SEC-5 `joinRoom` per-scope membership check (`messages/rooms/actions.ts:108`, product decision — open-join vs scope-members-only), SEC-9 `event.ics` hide title/venue for hidden/cancelled (`events/[slug]/event.ics/route.ts:60`, decide intent), SEC-10 parameterize `searchMembersToLink` `.or()` → `.ilike()` (`connections/actions.ts:382`). Perf: PERF-3 batch `listCircleTasks` (`admin`/`lead/crew-tasks`), PERF-8 cap/precompute Vera `draftCardLines` concurrency (`lib/ai/vera/today.ts:436`), PERF-9 limit funnel-sequences list (`pages/sequences/page.tsx:49`), PERF-10 batch recursive menu inserts (`lib/menus/actions.ts:264`), `next/image` migration sweep. Bugs: BUG-6 `draftOfferingBlurbAction` parked (awaits an offerings editor). SEO: SEO-6 `organizationSchema.sameAs` (needs owner's real social URLs — Instagram handle TBD), SEO-9 per-pillar OG cards. Infra: INF-2 Auth leaked-password protection (owner dashboard), BUG-7 Stripe Connect activation gate (dormant — needs go-live). Also tracked separately: PD6 depth streak (IDEA-005), Vera AI fallback (IDEA-006), Effort-tier rollout (IDEA-003). | claude | Triaged | Hardening / per [SITE-AUDIT-2026-06-29.md](SITE-AUDIT-2026-06-29.md) §3–§6 |
+
+| IDEA-014 | 2026-06-30 | **Reconciled build catalog** ([BUILD-CATALOG.md](BUILD-CATALOG.md)) — six-way sweep indexed ALL unfinished work, condensed overlaps, rescued ~20 orphaned ideas (theme-switcher UI, engagement-currency engine, trust-score wiring, flyer designer, post-event recap, data-residency, gem-farm/TOCTOU, legal/compliance gates) into homed waves; path-to-completion guaranteed for every row | claude | Done (indexed) | per [BUILD-CATALOG.md](BUILD-CATALOG.md) §A.13 + Part C |
 
 > Add new ideas as `IDEA-###` rows above this line. Keep the description to one line; detail goes in
 > the track doc once scheduled.
