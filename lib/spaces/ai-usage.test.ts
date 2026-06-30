@@ -70,18 +70,18 @@ function seedRun(playbookId: string, status: string, subjectId: string, spaceId 
 }
 
 describe('plan-shaped ceilings (pure)', () => {
-  it('the free wedge has a generous starter ceiling; the all-inclusive plans are unlimited', () => {
-    // Collapsed ladder (ADR-458): free / pro / nonprofit / organization. Pro carries the generous 2000
-    // volume; the all-inclusive plans are unlimited. Legacy labels narrow through asSpacePlan first.
+  it('the free wedge has a generous starter ceiling; the full-depth tiers are unlimited', () => {
+    // Four-tier ladder (ADR-472): free / pro / business / nonprofit / organization. Pro carries the
+    // generous 2000 volume; the full-depth tiers (Business/Nonprofit/Organization) are unlimited.
     expect(playbookActionCeiling('free')).toBe(50)
     expect(playbookActionCeiling('pro')).toBe(2000)
+    expect(playbookActionCeiling('business')).toBeNull()
     expect(playbookActionCeiling('nonprofit')).toBeNull()
     expect(playbookActionCeiling('organization')).toBeNull()
-    // Legacy labels resolve to their new equivalent: practitioner/business -> pro (2000); the old
-    // whitelabel plan is now the Branding add-on on Pro, so it reads as pro (2000), not unlimited.
+    // Retired legacy labels resolve forward through asSpacePlan: practitioner -> pro (2000); the old
+    // whitelabel plan folds to the full-depth Business tier (unlimited).
     expect(playbookActionCeiling('practitioner')).toBe(2000)
-    expect(playbookActionCeiling('business')).toBe(2000)
-    expect(playbookActionCeiling('whitelabel')).toBe(2000)
+    expect(playbookActionCeiling('whitelabel')).toBeNull()
   })
 
   it('an unknown plan falls back to the free ceiling (most conservative)', () => {

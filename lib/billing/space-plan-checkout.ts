@@ -43,19 +43,21 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
   return flags[PLAN_FLAG[key]] === true
 }
 
-// PHASE B (ADR-460): the collapsed-ladder labels (pro/nonprofit/organization) map onto the existing
-// per-plan switches until Phase C adds a dedicated `plan_pro_enabled`. Pro reuses the practitioner
-// switch (Pro replaces practitioner as the entry paid plan); nonprofit/organization map 1:1. Always
-// GATED on billingLive(), so this is FALSE while billing is OFF (no live loadout checkout in Phase B).
-const LOADOUT_FLAG: Record<'pro' | 'nonprofit' | 'organization', 'plan_practitioner_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled'> = {
+// ADR-460/472: the tier labels (pro/business/nonprofit/organization) map onto the existing per-plan
+// switches until the surface PR adds dedicated `plan_pro_enabled` / `plan_business_enabled`. Pro reuses
+// the practitioner switch (Pro replaces practitioner as the entry paid tier); Business reuses the legacy
+// business switch; nonprofit/organization map 1:1. Always GATED on billingLive(), so this is FALSE while
+// billing is OFF (no live loadout checkout today).
+const LOADOUT_FLAG: Record<'pro' | 'business' | 'nonprofit' | 'organization', 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled'> = {
   pro: 'plan_practitioner_enabled',
+  business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
   organization: 'plan_organization_enabled',
 }
 
-/** Is a collapsed-ladder plan (pro/nonprofit/organization) sellable right now? billingLive() AND its
- *  mapped per-plan switch. GATED, FAIL-SAFE FALSE. The Phase B loadout checkout gates on this. */
-export async function spaceLoadoutSellable(plan: 'pro' | 'nonprofit' | 'organization'): Promise<boolean> {
+/** Is a tier (pro/business/nonprofit/organization) sellable right now? billingLive() AND its mapped
+ *  per-plan switch. GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
+export async function spaceLoadoutSellable(plan: 'pro' | 'business' | 'nonprofit' | 'organization'): Promise<boolean> {
   try {
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
@@ -140,15 +142,16 @@ export async function createSpacePlanCheckout(
 // GATED on billingLive() (the master switch). Returns null (a clean no-op) while OFF, so nothing
 // charges and no Stripe session is created. Server-only.
 
-/** The loadout the caller selects: the base plan, the active add-ons, and the seat counts. Monthly or
+/** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
  *  yearly via `interval`. */
 export interface SpaceLoadout {
-  /** The base plan the loadout is for. 'pro' = base + chosen add-ons; 'nonprofit' = the seat item;
-   *  'organization' = the org item. 'free' is not a checkout. */
-  plan: 'pro' | 'nonprofit' | 'organization'
-  /** The active Pro add-ons (ignored for nonprofit/organization, which are all-inclusive). */
+  /** The base tier the loadout is for. 'pro' = the Pro base; 'business' = the Business base (full
+   *  depth); 'nonprofit' = the seat item; 'organization' = the org item. The AI add-on layers on any
+   *  paid tier. 'free' is not a checkout. */
+  plan: 'pro' | 'business' | 'nonprofit' | 'organization'
+  /** The active metered add-ons (only AI now, ADR-472). Ignored for nonprofit/organization framing. */
   addons?: readonly (AddonKey | string)[]
-  /** Licensed seat count for seat items (Team add-on quantity / Nonprofit seat quantity). Min 1. */
+  /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
   seatQuantity?: number
   interval: BillingInterval
 }
@@ -170,18 +173,20 @@ async function resolveLoadoutPriceId(
   return resolveStripePriceId(catalogPriceKey(catalogKey, interval, false))
 }
 
-/** The catalog item keys + their seat-ness a loadout maps to. PURE. Pro -> base + the active add-on
- *  items; Nonprofit -> the seat item; Organization -> the org item. */
+/** The catalog item keys + their seat-ness a loadout maps to. PURE. Pro -> pro_base; Business ->
+ *  business_base; both plus one item per active metered add-on (only AI now). Nonprofit -> the seat item;
+ *  Organization -> the org item. (ADR-472: the Marketing/Team/Branding add-on items are gone; their
+ *  depth rides the tier base, so a paid tier is one base item plus the optional AI add-on.) */
 function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
   if (loadout.plan === 'organization') return [{ key: 'organization', perSeat: false }]
   if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: true }]
-  // Pro: the base plus one item per active add-on. Team is the per-seat add-on.
-  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'pro_base', perSeat: false }]
+  const baseKey: CatalogItemKey = loadout.plan === 'business' ? 'business_base' : 'pro_base'
+  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: baseKey, perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
     const catalogKey = asCatalogItemKey(`addon_${addon}`)
     if (!catalogKey) continue
-    out.push({ key: catalogKey, perSeat: addon === 'team' })
+    out.push({ key: catalogKey, perSeat: false }) // the AI add-on is not per-seat
   }
   return out
 }
@@ -249,7 +254,7 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'pro_base' || key === 'nonprofit_seat' || key === 'organization') return null
+      if (key === 'pro_base' || key === 'business_base' || key === 'nonprofit_seat' || key === 'organization') return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })

@@ -31,79 +31,112 @@ import {
 import { PRICING_DEFAULTS } from './settings'
 import { formatCents, priceRow, memberTierRows, spacePlanRows } from './display'
 
-describe('space plans (collapsed ladder · ADR-458)', () => {
-  it('narrows unknown / null labels to free, and OLD labels to their new equivalent (transition shim)', () => {
-    // The four new plans pass through.
+describe('space tiers (four first-class tiers · ADR-472)', () => {
+  it('SPACE_PLANS is free < pro < business < nonprofit < organization, with business inserted after pro', () => {
+    expect([...SPACE_PLANS]).toEqual(['free', 'pro', 'business', 'nonprofit', 'organization'])
+  })
+
+  it('narrows unknown / null labels to free, and OLD labels to their new tier (transition shim)', () => {
+    // The four paid tiers (+ free) pass through unchanged.
     expect(asSpacePlan('pro')).toBe('pro')
+    expect(asSpacePlan('business')).toBe('business') // business is FIRST-CLASS now, not remapped
     expect(asSpacePlan('nonprofit')).toBe('nonprofit')
     expect(asSpacePlan('organization')).toBe('organization')
     expect(asSpacePlan('free')).toBe('free')
-    // Legacy labels narrow to pro until the collapse migration runs.
+    // Retired legacy labels narrow forward: practitioner/partner -> pro; whitelabel -> business.
     expect(asSpacePlan('practitioner')).toBe('pro')
-    expect(asSpacePlan('business')).toBe('pro')
     expect(asSpacePlan('partner')).toBe('pro')
-    expect(asSpacePlan('whitelabel')).toBe('pro')
+    expect(asSpacePlan('whitelabel')).toBe('business')
     // Unknown / null -> free (default-deny).
     expect(asSpacePlan('nonsense')).toBe('free')
     expect(asSpacePlan(null)).toBe('free')
     expect(asSpacePlan(undefined)).toBe('free')
   })
 
-  it('Pro core = crm + the governed playbooks lever (non-regressive vs the old practitioner plan)', () => {
+  it('Pro is the capped core (crm + governed playbooks); NO marketing/branding/team/AI keys', () => {
     expect(planEntitlementKeys('free')).toEqual([])
     expect(planEntitlements('pro')).toEqual({ crm: true, 'crm.playbooks': true })
-    // crm.playbooks stays in Pro core so a former practitioner does not lose the depth on the collapse.
     expect(planEntitlementKeys('pro')).toContain('crm')
     expect(planEntitlementKeys('pro')).toContain('crm.playbooks')
-    // The resonance depth is the AI Engine ADD-ON, not Pro core.
+    // Pro does NOT include the folded depth keys (those are the Business jump).
+    expect(planEntitlementKeys('pro')).not.toContain('email')
+    expect(planEntitlementKeys('pro')).not.toContain('team')
+    expect(planEntitlementKeys('pro')).not.toContain('whitelabel')
+    // The resonance depth is the metered AI add-on, in NO tier base.
     expect(planEntitlementKeys('pro')).not.toContain('crm.resonance')
     expect(planEntitlementKeys('pro')).not.toContain('crm.resonance_ai')
     // The free wedge is NEVER an entitlement key (every Space gets it).
     expect(planEntitlementKeys('free')).not.toContain('crm.playbooks')
-    // crm.autonomy (Phase 3) is a per-Space DIAL, never a plan grant.
+    // crm.autonomy (Phase 3) is a per-Space DIAL, never a tier grant.
     for (const plan of SPACE_PLANS) expect(planEntitlementKeys(plan)).not.toContain('crm.autonomy')
   })
 
-  it('the add-on key sets define the Pro extras (ADR-458 §1)', () => {
-    expect(ADDON_ENTITLEMENT_KEYS.marketing).toEqual(['email', 'automation', 'multi_pipeline', 'reporting'])
-    expect(ADDON_ENTITLEMENT_KEYS.ai).toEqual(['crm.resonance', 'crm.resonance_ai'])
-    expect(ADDON_ENTITLEMENT_KEYS.team).toEqual(['team'])
-    expect(ADDON_ENTITLEMENT_KEYS.branding).toEqual(['whitelabel'])
-  })
-
-  it('planKeysWithAddons layers add-on keys onto Pro core (the set-to-target source)', () => {
-    const withMarketing = planKeysWithAddons('pro', ['marketing'])
-    expect(withMarketing).toContain('crm') // core preserved
-    expect(withMarketing).toContain('email')
-    expect(withMarketing).toContain('multi_pipeline')
-    expect(withMarketing).not.toContain('crm.resonance') // that is the AI add-on
-    expect(withMarketing).not.toContain('whitelabel') // that is the Branding add-on
-    // Unknown add-on keys are dropped (default-deny); the result is just the base.
-    expect(planKeysWithAddons('pro', ['nope' as never])).toEqual([...planEntitlementKeys('pro')])
-  })
-
-  it('Nonprofit + Organization are all-inclusive: Pro core unioned with EVERY add-on', () => {
-    const all = planKeysWithAddons('pro', ADDON_KEYS)
-    for (const plan of ['nonprofit', 'organization'] as const) {
+  it('Business / Nonprofit / Organization are FULL depth and IDENTICAL at the key level', () => {
+    const full = ['crm', 'crm.playbooks', 'email', 'automation', 'multi_pipeline', 'reporting', 'team', 'whitelabel']
+    for (const plan of ['business', 'nonprofit', 'organization'] as const) {
+      // exact set (order-independent)
+      expect([...planEntitlementKeys(plan)].sort()).toEqual([...full].sort())
       const ents = planEntitlements(plan)
-      for (const key of all) expect(ents[key]).toBe(true)
-      // including the branding key (the old whitelabel) and the full resonance depth
+      // includes the marketing, team, and branding (old whitelabel) keys
+      expect(ents.email).toBe(true)
+      expect(ents.team).toBe(true)
       expect(ents.whitelabel).toBe(true)
-      expect(ents['crm.resonance_ai']).toBe(true)
-      expect(planEntitlementKeys(plan).length).toBe(all.length)
+      // but NONE of the tiers bundle the AI resonance keys (the deliberate ADR-472 change)
+      expect(ents['crm.resonance']).toBeUndefined()
+      expect(ents['crm.resonance_ai']).toBeUndefined()
+    }
+    // The three full tiers grant the EXACT same key set.
+    expect(planEntitlementKeys('nonprofit')).toEqual(planEntitlementKeys('business'))
+    expect(planEntitlementKeys('organization')).toEqual(planEntitlementKeys('business'))
+  })
+
+  it('AI is the SOLE metered add-on; its keys are the resonance depth and are in NO tier base', () => {
+    expect([...ADDON_KEYS]).toEqual(['ai'])
+    expect(ADDON_ENTITLEMENT_KEYS.ai).toEqual(['crm.resonance', 'crm.resonance_ai'])
+    // No tier base contains the AI keys.
+    for (const plan of SPACE_PLANS) {
+      expect(planEntitlementKeys(plan)).not.toContain('crm.resonance')
+      expect(planEntitlementKeys(plan)).not.toContain('crm.resonance_ai')
     }
   })
 
-  it('BILLING_MANAGED_KEYS is the union of every plan + add-on key, and excludes the autonomy dial', () => {
+  it('planKeysWithAddons layers the AI add-on keys onto a tier base (the set-to-target source)', () => {
+    // Pro + AI: capped core PLUS the resonance keys, nothing else.
+    const proAi = planKeysWithAddons('pro', ['ai'])
+    expect(proAi).toContain('crm')
+    expect(proAi).toContain('crm.playbooks')
+    expect(proAi).toContain('crm.resonance')
+    expect(proAi).toContain('crm.resonance_ai')
+    expect(proAi).not.toContain('email') // marketing is the Business tier, not an add-on
+    // Business + AI: the full depth PLUS the resonance keys.
+    const bizAi = planKeysWithAddons('business', ['ai'])
+    expect(bizAi).toContain('email')
+    expect(bizAi).toContain('whitelabel')
+    expect(bizAi).toContain('crm.resonance_ai')
+    // Unknown add-on keys are dropped (default-deny); the result is just the tier base.
+    expect(planKeysWithAddons('pro', ['nope' as never])).toEqual([...planEntitlementKeys('pro')])
+  })
+
+  it('BILLING_MANAGED_KEYS is the union of every tier key + the AI add-on key, minus the autonomy dial', () => {
     expect(BILLING_MANAGED_KEYS).toContain('crm')
+    expect(BILLING_MANAGED_KEYS).toContain('crm.playbooks')
+    // every marketing/team/branding key (now Business depth) is still covered
     expect(BILLING_MANAGED_KEYS).toContain('email')
-    expect(BILLING_MANAGED_KEYS).toContain('crm.resonance_ai')
+    expect(BILLING_MANAGED_KEYS).toContain('automation')
+    expect(BILLING_MANAGED_KEYS).toContain('multi_pipeline')
+    expect(BILLING_MANAGED_KEYS).toContain('reporting')
+    expect(BILLING_MANAGED_KEYS).toContain('team')
     expect(BILLING_MANAGED_KEYS).toContain('whitelabel')
+    // and the AI resonance keys
+    expect(BILLING_MANAGED_KEYS).toContain('crm.resonance')
+    expect(BILLING_MANAGED_KEYS).toContain('crm.resonance_ai')
+    // the per-Space dial is never billing-managed
     expect(BILLING_MANAGED_KEYS).not.toContain('crm.autonomy')
   })
 
-  it('has a label for every plan', () => {
+  it('has a label for every tier, including Business', () => {
     for (const p of SPACE_PLANS) expect(typeof SPACE_PLAN_LABEL[p]).toBe('string')
+    expect(SPACE_PLAN_LABEL.business).toBe('Business')
   })
 })
 

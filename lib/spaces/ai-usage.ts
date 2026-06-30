@@ -34,12 +34,13 @@ export type OutcomeUnit = 'playbook_actions' | 'members_reactivated' | 'advocacy
  *  it only surfaces a tasteful "ready for more room" nudge. The free wedge gets a generous starter
  *  volume so the engine is genuinely useful before any upsell. PURE.
  *
- *  Collapsed ladder (ADR-458): free / pro / nonprofit / organization. Pro carries the generous 2000
- *  volume (the more generous of the legacy practitioner/business numbers, so no legacy Space regresses
- *  once it narrows to pro); the all-inclusive plans are unlimited. */
+ *  Four-tier ladder (ADR-472): free / pro / business / nonprofit / organization. Pro carries the
+ *  generous 2000 volume (so no legacy Space regresses once it narrows to pro); the full-depth tiers
+ *  (Business / Nonprofit / Organization) are unlimited. */
 const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   free: 50,
   pro: 2000,
+  business: null,
   nonprofit: null,
   organization: null,
 }

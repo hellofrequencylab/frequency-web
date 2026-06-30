@@ -30,23 +30,26 @@ import type { BillingInterval } from '@/lib/billing/pricing-keys'
 // intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
+// TODO(ADR-472 surfaces): rebuild this page as the four-tier ladder (Pro/Business/Nonprofit/Organization)
+// with the Business base. This pass keeps it compiling and truthful: Pro is the solo base, the higher
+// tiers carry the full depth, and the AI Engine is the only metered add-on.
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'Frequency Spaces run on one Pro plan with four add-ons you turn on as you need them. Pro is $19 a month at the founding price, with Nonprofit and Organization tiers. List anchor over a founding price, monthly or yearly.',
+    'Frequency Spaces run on a tier that fits, from the Pro base up. Pro is $19 a month at the founding price, with Business, Nonprofit, and Organization tiers. The AI Engine add-on is metered on any paid tier. List anchor over a founding price, monthly or yearly.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: one Pro plan, four add-ons',
+    title: 'Frequency pricing: a tier that fits, plus the AI Engine',
     description:
-      'One Pro plan plus four add-ons (Marketing, AI Engine, Team, Branding). Founding price under a list anchor, monthly or yearly, with Nonprofit and Organization tiers.',
+      'A tier ladder from the Pro base up: Business adds marketing automation, team roles, and your own domain, with Nonprofit and Organization tiers. The AI Engine is the only metered add-on. Founding price under a list anchor, monthly or yearly.',
     url: '/pricing',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Frequency pricing: one Pro plan, four add-ons',
+    title: 'Frequency pricing: a tier that fits, plus the AI Engine',
     description:
-      'One Pro plan plus four add-ons. Founding price under a list anchor, monthly or yearly, with Nonprofit and Organization tiers.',
+      'A tier ladder from the Pro base up, with the AI Engine as the only metered add-on. Founding price under a list anchor, monthly or yearly.',
   },
 }
 
@@ -54,7 +57,7 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'Every Space runs on one Pro plan at $19 a month, the founding price, under a $29 list anchor. On top of the Pro core you turn on four add-ons as you need them: Marketing for $20, AI Engine for $20, Team for $9 a seat, and Branding for $30. Nonprofit and Organization are separate tiers that include all four add-ons.',
+    a: 'Every Space starts on the Pro base at $19 a month, the founding price, under a $29 list anchor. Pro is the solo tier with the CRM core. Business is the full-depth tier, adding marketing automation, full CRM, team roles, and your own domain, with multi-seat. Nonprofit carries the same full depth, discounted and per licensed seat, and Organization adds custom, white-label, and governance. The AI Engine is the only metered add-on, available on any paid tier for $20 a month.',
   },
   {
     q: 'What is the founding price?',
@@ -118,11 +121,11 @@ export default function PricingPage() {
         eyebrow="Pricing for Spaces"
         title={
           <>
-            One Pro plan.
-            <br className="hidden sm:block" /> Four add-ons.
+            A tier that fits.
+            <br className="hidden sm:block" /> One AI add-on.
           </>
         }
-        subtitle="Run your business on Frequency with one plan and four add-ons you turn on as you need them. Founding price under a list anchor, monthly or yearly."
+        subtitle="Run your business on Frequency. Start on the Pro base and move up to the full-depth Business tier as you grow. The AI Engine is the only metered add-on. Founding price under a list anchor, monthly or yearly."
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -160,7 +163,7 @@ export default function PricingPage() {
         <SectionHeading
           eyebrow="By who you are"
           title="A loadout for how you work."
-          kicker="Same Pro plan underneath. The add-ons that fit your operating model, with the monthly total."
+          kicker="The Pro base, with the AI Engine add-on where it fits your operating model, and the monthly total."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {strip.map((row) => (
@@ -220,16 +223,17 @@ export default function PricingPage() {
 
       <BetaCTA
         heading="Run your Space on Frequency."
-        body="Start on the Pro base and turn on the add-ons you need. Founding price locked for as long as you stay subscribed."
+        body="Start on the Pro base, move up to Business for the full depth, and turn on the AI Engine when you need it. Founding price locked for as long as you stay subscribed."
       />
     </>
   )
 }
 
 // ── The pricing table ─────────────────────────────────────────────────────────
-// One header row of tier columns, then a labelled row per dimension (price, billing, for, core, the
-// four add-ons, take-rate, CTA). Each price cell renders BOTH intervals (month + year), each wrapped in
+// One header row of tier columns, then a labelled row per dimension (price, billing, for, core, the AI
+// Engine add-on, take-rate, CTA). Each price cell renders BOTH intervals (month + year), each wrapped in
 // a span the toggle CSS shows/hides. Semantic DAWN tokens only.
+// TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization).
 
 function PricingTable({ tiers }: { tiers: PricingTier[] }) {
   return (

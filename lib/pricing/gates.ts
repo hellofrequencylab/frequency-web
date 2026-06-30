@@ -5,8 +5,7 @@
 //
 // Two axes of entitlement live here, deliberately separate (the three-flag rule, ADR-362):
 //   * PERSONAL features rank on the membership tier (free < crew < supporter).
-//   * SPACE features rank on the space plan (free < practitioner < business < organization <
-//     whitelabel).
+//   * SPACE features rank on the space tier (free < pro < business ~ nonprofit < organization, ADR-472).
 // A feature names which ladder it sits on via `axis`. featureAllowed takes the account's tier
 // and/or plan and answers a single boolean.
 //
@@ -24,11 +23,12 @@ const TIER_RANK: Record<EntitlementTier, number> = Object.fromEntries(
   ENTITLEMENT_TIERS.map((t, i) => [t, i]),
 ) as Record<EntitlementTier, number>
 
-// Space: free < pro < nonprofit < organization (SPACE_PLANS, collapsed per ADR-458). The plan-rank
-// gate is the COARSE paid-floor check; the FINE per-feature gating is the entitlement-key UNION
-// (spaceHasEntitlement, lib/spaces/entitlements.ts) the add-on resolver writes. Add-ons are toggles
-// WITHIN Pro, so they are not a higher plan rank — a feature that needs a specific add-on gates on its
-// entitlement KEY, not on this ladder.
+// Space: free < pro < business ~ nonprofit < organization (SPACE_PLANS, four first-class tiers per
+// ADR-472; business/nonprofit are full depth, organization tops). The plan-rank gate is the COARSE
+// paid-floor check; the FINE per-feature gating is the entitlement-key UNION (spaceHasEntitlement,
+// lib/spaces/entitlements.ts) the tier/add-on resolver writes. The marketing/team/branding depth now
+// rides the Business tier and the AI add-on is metered, so a feature that needs a specific capability
+// gates on its entitlement KEY, not on this coarse ladder.
 const PLAN_RANK: Record<SpacePlan, number> = Object.fromEntries(
   SPACE_PLANS.map((p, i) => [p, i]),
 ) as Record<SpacePlan, number>

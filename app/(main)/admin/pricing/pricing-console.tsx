@@ -79,18 +79,23 @@ function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
   return (
     <AdminSection
       title="Catalog"
-      description="The Pro base, the four add-ons, the nonprofit seat, and the organization plan. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
+      description="The Pro base, the Business base, the AI Engine add-on, the nonprofit seat, and the organization plan. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
     >
       <FormSection
-        title="Pro base"
-        description="The Pro plan a space starts on. The four add-ons below layer on top of this."
+        title="Tier bases"
+        description="The Pro base (solo) and the Business base (the full-depth team tier). Marketing, team roles, and branding come with the Business tier, not as separate add-ons."
       >
-        <CatalogItemRow item={byKey.pro_base} />
+        <div className="space-y-4">
+          <CatalogItemRow item={byKey.pro_base} />
+          <CatalogItemRow item={byKey.business_base} />
+        </div>
       </FormSection>
 
+      {/* TODO(ADR-472 surfaces): the catalog editor still lists add-ons generically; only AI Engine
+          remains a metered add-on. The full Tier x Mode console rebuild lands in the surface PR. */}
       <FormSection
-        title="Add-ons"
-        description="Each add-on toggles on or off for a space. Turn one off here to hide it from the picker entirely. The Team add-on bills per seat."
+        title="AI Engine (metered add-on)"
+        description="The sole cross-tier add-on. Toggle it off here to hide it from the picker entirely. It is usage-priced and available on any paid tier."
       >
         <div className="space-y-4">
           {addonItems.map((item) => (
@@ -718,7 +723,8 @@ function KnobsRow({ vera, trial, annual }: { vera: number; trial: number; annual
 // ── Feature gates ─────────────────────────────────────────────────────────────────────
 
 const TIER_OPTIONS = ['free', 'crew', 'supporter']
-const PLAN_OPTIONS = ['free', 'practitioner', 'business', 'organization', 'whitelabel']
+// The space-tier ladder a feature gate ranks on (ADR-472): free < pro < business ~ nonprofit < org.
+const PLAN_OPTIONS = ['free', 'pro', 'business', 'nonprofit', 'organization']
 
 function FeatureGatesSection({ gates }: { gates: FeatureGateRow[] }) {
   return (

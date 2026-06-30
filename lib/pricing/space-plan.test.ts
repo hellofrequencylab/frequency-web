@@ -77,11 +77,37 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-458)', () => {
     expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true })
   })
 
-  it('narrows a legacy plan label to its new equivalent before writing', async () => {
-    const res = await setSpacePlan('space-1', 'business') // legacy -> pro
-    expect(res.plan).toBe('pro')
-    expect(lastUpdate?.plan).toBe('pro')
-    expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true })
+  it('narrows a retired legacy label to its new tier before writing (whitelabel -> business)', async () => {
+    const res = await setSpacePlan('space-1', 'whitelabel') // retired legacy -> business (full depth)
+    expect(res.plan).toBe('business')
+    expect(lastUpdate?.plan).toBe('business')
+    expect(writtenBilling()).toEqual({
+      crm: true,
+      'crm.playbooks': true,
+      email: true,
+      automation: true,
+      multi_pipeline: true,
+      reporting: true,
+      team: true,
+      whitelabel: true,
+    })
+  })
+
+  it('writes the full Business depth set for the first-class business tier (no AI keys)', async () => {
+    const res = await setSpacePlan('space-1', 'business')
+    expect(res.plan).toBe('business')
+    expect(writtenBilling()).toEqual({
+      crm: true,
+      'crm.playbooks': true,
+      email: true,
+      automation: true,
+      multi_pipeline: true,
+      reporting: true,
+      team: true,
+      whitelabel: true,
+    })
+    expect(writtenBilling()['crm.resonance']).toBeUndefined()
+    expect(writtenBilling()['crm.resonance_ai']).toBeUndefined()
   })
 
   it('LEAVES top-level manual grants untouched; only the billing object changes', async () => {
@@ -133,64 +159,78 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-458)', () => {
   })
 })
 
-describe('setSpaceAddons, toggle-off removes only billing keys (ADR-458)', () => {
-  it('writes plan core unioned with each active add-on key set', async () => {
-    const res = await setSpaceAddons('space-1', { plan: 'pro', addons: ['marketing', 'ai'] })
+describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes only its keys (ADR-472)', () => {
+  it('writes the tier depth set unioned with the active AI add-on keys', async () => {
+    const res = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] })
     expect(res.ok).toBe(true)
     expect(res.plan).toBe('pro')
     const billing = writtenBilling()
-    // core
+    // Pro core
     expect(billing.crm).toBe(true)
     expect(billing['crm.playbooks']).toBe(true)
-    // marketing
-    expect(billing.email).toBe(true)
-    expect(billing.multi_pipeline).toBe(true)
-    expect(billing.reporting).toBe(true)
-    // ai
+    // the AI add-on keys
     expect(billing['crm.resonance']).toBe(true)
     expect(billing['crm.resonance_ai']).toBe(true)
-    // team / branding NOT active
+    // marketing/team/branding are NOT in Pro (those are the Business tier, not an add-on)
+    expect(billing.email).toBeUndefined()
     expect(billing.team).toBeUndefined()
     expect(billing.whitelabel).toBeUndefined()
   })
 
-  it('toggling an add-on OFF removes ONLY its billing keys (a manual grant of the same key survives)', async () => {
-    // Start: Marketing on (billing namespace carries email) AND an operator hand-granted `reporting`.
+  it('Business + AI: the full Business depth PLUS the AI resonance keys', async () => {
+    const res = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] })
+    expect(res.plan).toBe('business')
+    const billing = writtenBilling()
+    expect(billing.email).toBe(true)
+    expect(billing.team).toBe(true)
+    expect(billing.whitelabel).toBe(true)
+    expect(billing['crm.resonance']).toBe(true)
+    expect(billing['crm.resonance_ai']).toBe(true)
+  })
+
+  it('toggling AI OFF removes ONLY its resonance keys (a manual grant of the same key survives)', async () => {
+    // Start: AI on (billing namespace carries the resonance keys) AND an operator hand-granted
+    // `crm.resonance_ai` at the top level.
     spaceRow = {
       id: 'space-1',
       entitlements: {
-        reporting: true, // manual top-level grant
-        [BILLING_NAMESPACE]: { crm: true, 'crm.playbooks': true, email: true, automation: true, multi_pipeline: true, reporting: true },
+        'crm.resonance_ai': true, // manual top-level grant
+        [BILLING_NAMESPACE]: { crm: true, 'crm.playbooks': true, 'crm.resonance': true, 'crm.resonance_ai': true },
       },
     }
-    // Recompute with Marketing toggled OFF (no add-ons active).
+    // Recompute with AI toggled OFF (no add-ons active).
     await setSpaceAddons('space-1', { plan: 'pro', addons: [] })
     const billing = writtenBilling()
-    // Marketing billing keys are gone from the namespace.
-    expect(billing.email).toBeUndefined()
-    expect(billing.automation).toBeUndefined()
-    expect(billing.multi_pipeline).toBeUndefined()
-    expect(billing.reporting).toBeUndefined()
-    // Core stays.
+    // The AI billing keys are gone from the namespace.
+    expect(billing['crm.resonance']).toBeUndefined()
+    expect(billing['crm.resonance_ai']).toBeUndefined()
+    // Pro core stays.
     expect(billing).toEqual({ crm: true, 'crm.playbooks': true })
-    // The union reader: email is GONE (only billing had it), but `reporting` SURVIVES via the manual top-level grant.
-    expect(spaceHasEntitlement(spaceRow, 'email')).toBe(false)
-    expect(spaceHasEntitlement(spaceRow, 'reporting')).toBe(true)
+    // The union reader: crm.resonance is GONE (only billing had it), but crm.resonance_ai SURVIVES via
+    // the manual top-level grant.
+    expect(spaceHasEntitlement(spaceRow, 'crm.resonance')).toBe(false)
+    expect(spaceHasEntitlement(spaceRow, 'crm.resonance_ai')).toBe(true)
   })
 
-  it('drops unknown add-on keys (default-deny) and dedups', async () => {
-    await setSpaceAddons('space-1', { plan: 'pro', addons: ['team', 'team', 'bogus' as never] })
-    expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true, team: true })
+  it('drops the retired add-on keys (marketing/team/branding) and unknowns (default-deny), dedups AI', async () => {
+    // The former add-on keys no longer narrow to an AddonKey, so they are ignored: only AI layers on.
+    await setSpaceAddons('space-1', { plan: 'pro', addons: ['team' as never, 'marketing' as never, 'ai', 'ai', 'bogus' as never] })
+    expect(writtenBilling()).toEqual({
+      crm: true,
+      'crm.playbooks': true,
+      'crm.resonance': true,
+      'crm.resonance_ai': true,
+    })
   })
 
   it('is GATED on billingLive() with the same force escape', async () => {
     billingIsLive = false
-    const off = await setSpaceAddons('space-1', { plan: 'pro', addons: ['marketing'] })
+    const off = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] })
     expect(off).toMatchObject({ ok: false, reason: 'billing_off' })
     expect(lastUpdate).toBeNull()
 
-    const forced = await setSpaceAddons('space-1', { plan: 'pro', addons: ['marketing'] }, { force: true })
+    const forced = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] }, { force: true })
     expect(forced.ok).toBe(true)
-    expect(writtenBilling().email).toBe(true)
+    expect(writtenBilling()['crm.resonance']).toBe(true)
   })
 })
