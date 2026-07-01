@@ -64,7 +64,7 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-2xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} p-6 shadow-sm ${className}`}
+      className={`rounded-3xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} p-7 shadow-2xs ${className}`}
     >
       {children}
     </div>
@@ -76,7 +76,7 @@ function InfoCard({ children, ink, className = '' }: { children: React.ReactNode
 function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: string; ink?: boolean }) {
   if (!eyebrow && !heading) return null
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       {eyebrow && (
         <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
@@ -96,10 +96,99 @@ function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: stri
 // toggle it off or override the cover/logo per surface.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const COVER_HEIGHT: Record<string, string> = {
-  short: 'h-40 sm:h-52',
-  medium: 'h-52 sm:h-64',
-  tall: 'h-64 sm:h-80',
+// Cover heights per MODE. `header` is a compact identity band (shorter than the old default);
+// `hero` is a tall, immersive cover with a taller floor. `height` re-selects within each mode.
+const HEADER_COVER_HEIGHT: Record<string, string> = {
+  short: 'h-28 sm:h-36',
+  medium: 'h-36 sm:h-44',
+  tall: 'h-48 sm:h-56',
+}
+const HERO_COVER_HEIGHT: Record<string, string> = {
+  short: 'h-72 sm:h-96',
+  medium: 'h-80 sm:h-[30rem]',
+  tall: 'h-96 sm:h-[34rem]',
+}
+
+// The logo + name + type + tagline lockup, shared by both modes. `overlay` paints it for
+// legibility on top of a hero cover image (on-ink tokens); otherwise it reads on the card surface.
+function IdentityLockup({
+  identity,
+  logo,
+  showFollow,
+  overlay,
+}: {
+  identity: SpaceIdentity
+  logo: string
+  showFollow: boolean
+  overlay?: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex min-w-0 items-end gap-4">
+        <div className={`shrink-0 ${overlay ? '' : '-mt-10 sm:-mt-12'}`}>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- operator-supplied logo URL
+            <img
+              src={logo}
+              alt=""
+              className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
+            />
+          ) : (
+            <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
+              {getInitials(identity.name)}
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 pb-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1
+              className={`min-w-0 break-words font-bold leading-tight ${
+                overlay ? 'text-3xl text-on-ink sm:text-4xl' : 'text-2xl text-text'
+              }`}
+            >
+              {identity.name}
+            </h1>
+            {identity.typeLabel && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold ${
+                  overlay ? 'bg-white/15 text-on-ink' : 'bg-primary-bg text-primary-strong'
+                }`}
+              >
+                <Building2 className="h-3 w-3" aria-hidden />
+                {identity.typeLabel}
+              </span>
+            )}
+          </div>
+          {identity.tagline && (
+            <p className={`mt-1 max-w-2xl text-sm ${overlay ? 'text-on-ink-muted' : 'text-muted'}`}>
+              {identity.tagline}
+            </p>
+          )}
+        </div>
+      </div>
+      {(identity.primaryCta || showFollow) && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 pb-1">
+          {identity.primaryCta && (
+            <Link
+              href={identity.primaryCta.href || '#'}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
+            >
+              {identity.primaryCta.label}
+            </Link>
+          )}
+          {showFollow && (
+            <span
+              className={`inline-flex items-center gap-2 rounded-2xl border px-6 py-2.5 text-sm font-bold ${
+                overlay ? 'border-white/40 text-on-ink' : 'border-border-strong text-text'
+              }`}
+            >
+              Follow
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function SpaceIdentityHeaderBlock({
@@ -109,6 +198,7 @@ export function SpaceIdentityHeaderBlock({
   focal,
   height,
   showFollow,
+  style,
 }: {
   identity: SpaceIdentity
   coverOverride?: string
@@ -116,13 +206,45 @@ export function SpaceIdentityHeaderBlock({
   focal?: string
   height?: string
   showFollow?: boolean
+  style?: string
 }) {
   const cover = coverOverride || identity.coverUrl || ''
   const logo = logoOverride || identity.logoUrl || ''
-  const h = COVER_HEIGHT[height ?? 'medium'] ?? COVER_HEIGHT.medium
+
+  // ── HERO: full-width, taller, immersive. The cover breaks the card container (no max-w, no outer
+  // border/radius) and reads edge-to-edge within the page content area, with the identity lockup
+  // anchored to the bottom over a legibility scrim.
+  if (style === 'hero') {
+    const h = HERO_COVER_HEIGHT[height ?? 'medium'] ?? HERO_COVER_HEIGHT.medium
+    return (
+      <section className="w-full">
+        <div
+          className={`relative w-full overflow-hidden ${h} ${
+            cover ? '' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'
+          }`}
+        >
+          {cover && (
+            // eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL, not a build-time asset
+            <img src={cover} alt="" className={`h-full w-full object-cover ${focalClass(focal)}`} />
+          )}
+          {/* Legibility scrim so the overlaid lockup stays readable on any cover. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0">
+            <div className="mx-auto w-full max-w-5xl px-6 pb-8">
+              <IdentityLockup identity={identity} logo={logo} showFollow={!!showFollow} overlay />
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // ── HEADER (default): the contained business-page identity card, now a compact band (shorter
+  // default cover than before), with the logo chip overlapping the cover.
+  const h = HEADER_COVER_HEIGHT[height ?? 'medium'] ?? HEADER_COVER_HEIGHT.medium
   return (
     <section className="mx-auto w-full max-w-5xl px-6 pt-8">
-      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-2xs">
         {/* Cover band. A neutral tinted fill when there is no uploaded cover, so the header still reads
             as an intentional identity card, never broken. */}
         <div className={`relative w-full ${h} ${cover ? '' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'}`}>
@@ -134,55 +256,7 @@ export function SpaceIdentityHeaderBlock({
         {/* Identity lockup: the logo chip overlaps the cover (FB business page), name + type badge +
             tagline beside it, the primary action + follow trailing. */}
         <div className="px-6 pb-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="flex min-w-0 items-end gap-4">
-              <div className="-mt-10 shrink-0 sm:-mt-12">
-                {logo ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- operator-supplied logo URL
-                  <img
-                    src={logo}
-                    alt=""
-                    className="h-20 w-20 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
-                  />
-                ) : (
-                  <span className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24">
-                    {getInitials(identity.name)}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 pb-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-text">
-                    {identity.name}
-                  </h1>
-                  {identity.typeLabel && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
-                      <Building2 className="h-3 w-3" aria-hidden />
-                      {identity.typeLabel}
-                    </span>
-                  )}
-                </div>
-                {identity.tagline && <p className="mt-1 max-w-2xl text-sm text-muted">{identity.tagline}</p>}
-              </div>
-            </div>
-            {(identity.primaryCta || showFollow) && (
-              <div className="flex shrink-0 flex-wrap items-center gap-2 pb-1">
-                {identity.primaryCta && (
-                  <Link
-                    href={identity.primaryCta.href || '#'}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-2.5 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover shadow-pop"
-                  >
-                    {identity.primaryCta.label}
-                  </Link>
-                )}
-                {showFollow && (
-                  <span className="inline-flex items-center gap-2 rounded-2xl border border-border-strong px-6 py-2.5 text-sm font-bold text-text">
-                    Follow
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+          <IdentityLockup identity={identity} logo={logo} showFollow={!!showFollow} />
         </div>
       </div>
     </section>
@@ -232,7 +306,7 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
       {shown.map((s) => (
         <div
           key={s.label}
-          className={`rounded-2xl border p-5 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} shadow-sm`}
+          className={`rounded-3xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} shadow-2xs`}
         >
           <div className={`text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{s.value.toLocaleString()}</div>
           <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
@@ -478,8 +552,8 @@ function SpaceLayoutRegion({
 }) {
   if (layout === 'stacked') {
     return (
-      <section className="mx-auto w-full max-w-5xl px-6 py-8">
-        <div className="space-y-6">
+      <section className="mx-auto w-full max-w-5xl px-6 py-10 sm:py-12">
+        <div className="space-y-8">
           <Main />
         </div>
       </section>
@@ -487,16 +561,16 @@ function SpaceLayoutRegion({
   }
   const sideFirst = layout === 'side-main'
   const asideClass = [
-    'space-y-6',
+    'space-y-8',
     sideFirst ? 'lg:order-first' : '',
     sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '',
   ]
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 py-8">
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+    <section className="mx-auto w-full max-w-5xl px-6 py-10 sm:py-12">
+      <div className="grid gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
           <Main />
         </div>
         <aside className={asideClass}>
@@ -554,6 +628,14 @@ export const profileComponents: Record<string, ComponentConfig> = {
   SpaceIdentityHeader: {
     label: 'Identity header (cover + logo)',
     fields: {
+      style: {
+        type: 'radio',
+        label: 'Style',
+        options: [
+          { label: 'Header', value: 'header' },
+          { label: 'Hero', value: 'hero' },
+        ],
+      },
       coverOverride: { ...imgField, label: 'Cover override (optional)' },
       logoOverride: { ...imgField, label: 'Logo override (optional)' },
       focal: {
@@ -584,13 +666,14 @@ export const profileComponents: Record<string, ComponentConfig> = {
       },
     },
     defaultProps: {
+      style: 'header',
       coverOverride: '',
       logoOverride: '',
       focal: 'center',
       height: 'medium',
       showFollow: 'yes',
     },
-    render: ({ coverOverride, logoOverride, focal, height, showFollow, puck }) => {
+    render: ({ style, coverOverride, logoOverride, focal, height, showFollow, puck }) => {
       const identity = identityFrom(puck)
       if (!identity) {
         return <div className="mx-auto w-full max-w-5xl px-6 pt-8"><EditorStub label="Identity header" hint="The space cover, logo, and name show on the live page" /></div>
@@ -598,6 +681,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
       return (
         <SpaceIdentityHeaderBlock
           identity={identity}
+          style={style as string}
           coverOverride={(coverOverride as string) || undefined}
           logoOverride={(logoOverride as string) || undefined}
           focal={focal as string}

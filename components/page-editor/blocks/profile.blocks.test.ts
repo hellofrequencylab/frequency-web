@@ -104,6 +104,19 @@ describe('the operator-authored list blocks expose array fields', () => {
   })
 })
 
+describe('SpaceIdentityHeader is switchable between a Header and a Hero style', () => {
+  it('exposes a style radio with header + hero options, defaulting to header', () => {
+    const block = profileComponents.SpaceIdentityHeader
+    const styleField = block.fields!.style as unknown as {
+      type: string
+      options: { value: string }[]
+    }
+    expect(styleField.type).toBe('radio')
+    expect(styleField.options.map((o) => o.value)).toEqual(['header', 'hero'])
+    expect(block.defaultProps?.style).toBe('header')
+  })
+})
+
 describe('CONTENT-VOICE: no em dashes in any default copy', () => {
   it('none of the Profile blocks seed an em dash', () => {
     for (const key of KEYS) {
