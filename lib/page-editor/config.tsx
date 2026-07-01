@@ -50,7 +50,7 @@ export const config: Config = {
     },
     sections: {
       title: 'Sections',
-      components: ['Hero', 'FeatureGrid', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
+      components: ['Hero', 'FeatureGrid', 'IllustratedFeature', 'RolePicker', 'Manifesto', 'LeadFunnel', 'Showcase', 'StatRow', 'Tiers', 'Checklist', 'Accordion', 'CallToAction'],
     },
     productStory: {
       title: 'Product story',
