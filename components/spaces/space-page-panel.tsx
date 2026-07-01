@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { type Data } from '@measured/puck'
 import {
   ArrowRight,
   ArrowDown,
@@ -36,15 +35,15 @@ import {
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
-import { SpaceEditorOverlay } from '@/components/spaces/space-editor-overlay'
+import { SpaceFullEditorButton } from '@/components/spaces/space-full-editor-button'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
 // page you are editing), then for the SELECTED page offers cover size, theme/accent, block order +
-// show/hide, and a prominent "Full page editor" button that opens the COMPLETE Puck editor as a
-// fullscreen overlay for deep editing. Every write calls a server action that RE-GATES the
-// owner/admin/editor role; this client is fast inline feedback only. DAWN semantic tokens only (no hex),
-// sentence-case copy, no em dashes (CONTENT-VOICE §10).
+// show/hide, and a prominent "Full page editor" button that NAVIGATES to the standalone /edit-page route
+// (the server-rendered, full-page Puck editor) for deep editing. Every write calls a server action that
+// RE-GATES the owner/admin/editor role; this client is fast inline feedback only. DAWN semantic tokens
+// only (no hex), sentence-case copy, no em dashes (CONTENT-VOICE §10).
 
 /** A focus choice mirroring the mode view's shape, kept LOCAL so this surface stays decoupled from the
  *  mode settings module (it only needs these fields to render the echo). */
@@ -70,7 +69,6 @@ const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
 
 export function SpacePagePanel({
   slug,
-  brandName,
   pages,
   activePageSlug,
   maxPages,
@@ -78,14 +76,10 @@ export function SpacePagePanel({
   coverScrim,
   accent,
   blocks,
-  editorData,
-  customized,
   focus,
   readOnly = false,
 }: {
   slug: string
-  /** The Space display name, for the full-editor overlay title. */
-  brandName: string
   /** The operator's ordered nav pages (Home first), for the switcher + manager. */
   pages: ProfilePage[]
   /** The page currently being edited (its blocks + full editor act on this one). */
@@ -100,10 +94,6 @@ export function SpacePagePanel({
   accent: string
   /** The TOP-LEVEL blocks of the ACTIVE page's doc (stored-or-default), in order, for the Blocks list. */
   blocks: SpaceBlockRow[]
-  /** The resolved ACTIVE page doc (hidden blocks stripped) the Full page editor overlay opens on. */
-  editorData: Data
-  /** Whether the ACTIVE page has a stored doc, so the editor shows its Reset affordance. */
-  customized: boolean
   /** The Focus switcher echo, or null to omit it. */
   focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
@@ -199,8 +189,9 @@ export function SpacePagePanel({
         )}
       </section>
 
-      {/* The prominent deep-edit entry: opens the COMPLETE Puck editor for the ACTIVE page as a
-          fullscreen overlay. The editor + Puck bundle lazy-load only when opened. */}
+      {/* The prominent deep-edit entry: NAVIGATES to the standalone /edit-page route (the server-rendered
+          full-page Puck editor) for the ACTIVE page. A real navigation always fetches the current chunk
+          hashes, so it can never hit a stale-chunk load failure after a deploy. */}
       {!readOnly && (
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -210,13 +201,7 @@ export function SpacePagePanel({
                 Open the full editor to add, edit, and arrange every block on {activeLabel}.
               </p>
             </div>
-            <SpaceEditorOverlay
-              slug={slug}
-              title={brandName}
-              data={editorData}
-              customized={customized}
-              pageSlug={activePageSlug}
-            />
+            <SpaceFullEditorButton slug={slug} pageSlug={activePageSlug} />
           </div>
         </section>
       )}

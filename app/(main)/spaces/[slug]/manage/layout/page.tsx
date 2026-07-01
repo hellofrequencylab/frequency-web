@@ -9,11 +9,10 @@ import {
   listVariantsForType,
   modeHasFocusChoice,
 } from '@/lib/spaces/modes'
-import { readBlockRows, withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
+import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import {
   readProfilePages,
   resolveSpacePageDoc,
-  readPageDoc,
   hasPage,
   HOME_SLUG,
   MAX_PROFILE_PAGES,
@@ -29,8 +28,8 @@ import {
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
 // page you are editing), then for the SELECTED page offers cover size, theme/accent, block order +
-// show/hide, and a "Full page editor" button that opens the COMPLETE Puck editor as a fullscreen overlay
-// (lazy-loaded, so this page ships no editor code). The page being edited comes from `?page=<slug>`
+// show/hide, and a "Full page editor" button that NAVIGATES to the standalone /edit-page route (the
+// server-rendered, full-page Puck editor, so this page ships no editor code). The page being edited comes from `?page=<slug>`
 // (default Home). A Server Component, gated server-side exactly like the console + mode pages: it
 // resolves the Space, gates on resolveSpaceManageAccess, and notFound()s otherwise so a non-manager
 // cannot tell the route exists. A staff previewer sees the panel read-only (every write re-gates in its
@@ -76,12 +75,10 @@ export default async function SpacePageSettingsPage({
   const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
 
   // The ACTIVE page's current doc (stored-or-default). The Blocks list reads its TOP-LEVEL blocks WITH
-  // the hidden flag intact (so the panel shows a hidden block as toggle-able); the Full page editor opens
-  // on the same doc with hidden blocks stripped (hiding lives only in the compact panel).
+  // the hidden flag intact (so the panel shows a hidden block as toggle-able). The Full page editor is a
+  // navigation to /edit-page, which resolves + strips the doc itself, so the panel no longer passes it.
   const currentDoc = resolveSpacePageDoc(space.preferences, brandName, activePageSlug)
   const blocks = readBlockRows(currentDoc)
-  const editorData = withVisibleBlocks(currentDoc)
-  const customized = readPageDoc(space.preferences, activePageSlug) !== null
 
   // The Focus echo: reuse the mode page's model (the type's variants, default first). Only when the Mode
   // has more than one Focus; otherwise omit the section.
@@ -111,7 +108,6 @@ export default async function SpacePageSettingsPage({
       )}
       <SpacePagePanel
         slug={slug}
-        brandName={brandName}
         pages={pages}
         activePageSlug={activePageSlug}
         maxPages={MAX_PROFILE_PAGES}
@@ -119,8 +115,6 @@ export default async function SpacePageSettingsPage({
         coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
         blocks={blocks}
-        editorData={editorData}
-        customized={customized}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />
