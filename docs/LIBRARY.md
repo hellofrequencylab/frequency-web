@@ -32,7 +32,10 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   `category` field) · **Collections** (custom folders — `library_collections`; an asset can be in
   many). Navigation is URL-driven and preserves the search + sort. New / rename / delete collection
   live in the rail.
-- **Grid** (right): searchable, sorted, paginated (48/page). Click a card to open the detail drawer.
+- **Header** (full width): Create-with-Vera, the active-folder heading + count, search, type, sort,
+  and a **view-mode** switch — so the rail and grid columns align vertically beneath it.
+- **Grid** (right): searchable, sorted, paginated (48/page). Three view modes — **Cards** (default),
+  **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
 - **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
   **add tags**, **archive**, or **delete** across the selection.
 - **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer — describe a

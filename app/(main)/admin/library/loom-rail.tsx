@@ -15,12 +15,13 @@ import { createCollection, renameCollection, deleteCollection } from './collecti
 export type LoomFacet = { category: string; count: number }
 
 type Active = { kind: string; category: string; collectionId: string }
-type Base = { q: string; sort: string }
+type Base = { q: string; sort: string; view: string }
 
 function buildHref(base: Base, patch: { kind?: string; category?: string; collection?: string }): string {
   const p = new URLSearchParams()
   if (base.q) p.set('q', base.q)
   if (base.sort && base.sort !== 'new') p.set('sort', base.sort)
+  if (base.view && base.view !== 'cards') p.set('view', base.view)
   if (patch.kind) p.set('kind', patch.kind)
   if (patch.category) p.set('category', patch.category)
   if (patch.collection) p.set('collection', patch.collection)
@@ -123,7 +124,7 @@ export function LoomRail({
     'invisible shrink-0 rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text group-hover/row:visible'
 
   return (
-    <aside className={`w-56 shrink-0 ${pending ? 'opacity-60' : ''}`} aria-label="Folders">
+    <aside className={`w-44 shrink-0 lg:w-48 ${pending ? 'opacity-60' : ''}`} aria-label="Folders">
       <div className="sticky top-4 space-y-0.5">
         <Row
           href={buildHref(base, {})}

@@ -105,14 +105,18 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
 // The Loom Studio grid + detail drawer. Click a card to open the drawer, edit its metadata,
 // copy its URL, open/download it, or archive/delete it. Mutations run through the janitor-gated
 // server actions, then refresh the server component.
+export type LoomView = 'cards' | 'compact' | 'list'
+
 export function LoomGrid({
   assets,
   collections,
   activeCollectionId,
+  view = 'cards',
 }: {
   assets: LibraryGalleryItem[]
   collections: LibraryCollection[]
   activeCollectionId?: string
+  view?: LoomView
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
@@ -132,6 +136,26 @@ export function LoomGrid({
   }
   const clear = () => setSel(new Set())
 
+  // The select dot, shared across views. Visible when hovered or once a selection exists.
+  const SelDot = ({ id, className = '' }: { id: string; className?: string }) => {
+    const isSel = sel.has(id)
+    return (
+      <button
+        type="button"
+        onClick={() => toggle(id)}
+        aria-pressed={isSel}
+        aria-label={isSel ? 'Deselect' : 'Select'}
+        className={`rounded-full bg-surface/90 shadow-sm transition-opacity ${
+          isSel || sel.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        } ${className}`}
+      >
+        {isSel ? <CheckCircle2 className="h-6 w-6 text-primary" /> : <Circle className="h-6 w-6 text-subtle" />}
+      </button>
+    )
+  }
+
+  const compact = view === 'compact'
+
   return (
     <>
       <BulkBar
@@ -143,46 +167,81 @@ export function LoomGrid({
         activeCollectionId={activeCollectionId}
       />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {assets.map((a) => {
-          const isSel = sel.has(a.id)
-          return (
-            <div
-              key={a.id}
-              className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
-                isSel ? 'border-primary ring-2 ring-primary' : 'border-border'
-              }`}
-            >
-              <button
-                type="button"
-                onClick={() => toggle(a.id)}
-                aria-pressed={isSel}
-                aria-label={isSel ? 'Deselect' : 'Select'}
-                className={`absolute left-2 top-2 z-10 rounded-full bg-surface/90 shadow-sm transition-opacity ${
-                  isSel || sel.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+      {view === 'list' ? (
+        <div className="overflow-hidden rounded-2xl border border-border">
+          {assets.map((a) => {
+            const isSel = sel.has(a.id)
+            return (
+              <div
+                key={a.id}
+                className={`group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 ${
+                  isSel ? 'bg-primary-bg/40' : 'hover:bg-surface-elevated'
                 }`}
               >
-                {isSel ? (
-                  <CheckCircle2 className="h-6 w-6 text-primary" />
-                ) : (
-                  <Circle className="h-6 w-6 text-subtle" />
-                )}
-              </button>
-              <button type="button" onClick={() => setOpenId(a.id)} className="block w-full text-left">
-                <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]">
-                  <Thumb asset={a} fit="cover" />
-                </span>
-                <span className="flex items-center justify-between gap-2 px-3 py-2">
-                  <span className="truncate text-sm text-text" title={a.title}>
+                <SelDot id={a.id} className="[&_svg]:h-5 [&_svg]:w-5" />
+                <button
+                  type="button"
+                  onClick={() => setOpenId(a.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
+                    <Thumb asset={a} fit="cover" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-text" title={a.title}>
                     {a.title}
                   </span>
-                  <span className="shrink-0 text-xs text-subtle">{human(a.bytes)}</span>
-                </span>
-              </button>
-            </div>
-          )
-        })}
-      </div>
+                  <span className="hidden w-20 shrink-0 truncate text-xs text-subtle sm:block">{a.kind}</span>
+                  <span className="hidden w-32 shrink-0 truncate text-xs text-subtle md:block">{a.category ?? ''}</span>
+                  <span className="w-16 shrink-0 text-right text-xs text-subtle">{human(a.bytes)}</span>
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div
+          className={
+            compact
+              ? 'grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+              : 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
+          }
+        >
+          {assets.map((a) => {
+            const isSel = sel.has(a.id)
+            return (
+              <div
+                key={a.id}
+                className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
+                  isSel ? 'border-primary ring-2 ring-primary' : 'border-border'
+                }`}
+              >
+                <SelDot id={a.id} className={`absolute left-2 top-2 z-10 ${compact ? '[&_svg]:h-5 [&_svg]:w-5' : ''}`} />
+                <button type="button" onClick={() => setOpenId(a.id)} className="block w-full text-left">
+                  <span
+                    className={`block ${
+                      compact ? 'aspect-square' : 'aspect-[4/3]'
+                    } overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]`}
+                  >
+                    <Thumb asset={a} fit="cover" />
+                  </span>
+                  {compact ? (
+                    <span className="block truncate px-2 py-1 text-2xs text-text" title={a.title}>
+                      {a.title}
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-between gap-2 px-3 py-2">
+                      <span className="truncate text-sm text-text" title={a.title}>
+                        {a.title}
+                      </span>
+                      <span className="shrink-0 text-xs text-subtle">{human(a.bytes)}</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {selected && <DetailDrawer asset={selected} onClose={() => setOpenId(null)} />}
     </>
