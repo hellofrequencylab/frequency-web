@@ -9,6 +9,7 @@ import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { isError } from '@/lib/action-result'
 import { publishSpaceLanding, resetSpaceLanding } from '@/app/(main)/spaces/[slug]/edit-page/actions'
+import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 
 // THE OPERATOR EDITOR for a Space's public LANDING (ADR-476/472, Phase 1). Reuses the
 // shared Puck config + the marketing editor's publish/baseline pattern, but writes to
@@ -125,23 +126,40 @@ export function SpaceLandingEditor({
 }) {
   const exitHref = `/spaces/${slug}`
   return (
-    <Puck
-      config={config}
-      data={data}
-      headerTitle={`Editing: ${title}`}
-      overrides={{
-        headerActions: () => (
-          <>
-            <Link
-              href={exitHref}
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-            >
-              ← Exit
-            </Link>
-            {customized && <ResetButton slug={slug} />}
-            <PublishButton slug={slug} />
-          </>
-        ),
+    <ResponsiveEditor
+      desktop={
+        <Puck
+          config={config}
+          data={data}
+          headerTitle={`Editing: ${title}`}
+          overrides={{
+            headerActions: () => (
+              <>
+                <Link
+                  href={exitHref}
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+                >
+                  ← Exit
+                </Link>
+                {customized && <ResetButton slug={slug} />}
+                <PublishButton slug={slug} />
+              </>
+            ),
+          }}
+        />
+      }
+      mobile={{
+        config,
+        data,
+        title,
+        // Space landings persist only on Publish (same model as the desktop editor), so
+        // no draft-only save. Publish re-checks the owner/admin/editor gate server-side;
+        // surface a failure by throwing so the mobile Publish shows "Retry".
+        onPublish: async (doc) => {
+          const res = await publishSpaceLanding(slug, doc)
+          if (isError(res)) throw new Error('Publish failed')
+        },
+        publishLabel: 'Publish now',
       }}
     />
   )
