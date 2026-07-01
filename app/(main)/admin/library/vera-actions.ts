@@ -140,3 +140,77 @@ export async function saveLoomCard(input: {
   revalidatePath('/admin/library')
   return { ok: true }
 }
+
+// Vera as a design assistant: given an existing SVG + an instruction, return the modified SVG.
+const EDIT_SYSTEM = withVoice(`You are Vera, a design assistant editing an existing inline SVG in Frequency's house style.
+
+You are given the CURRENT <svg> and an INSTRUCTION. Return the FULL modified <svg>, applying the instruction and preserving everything it does not mention.
+
+OUTPUT CONTRACT — follow EXACTLY:
+- Output ONLY the one modified inline <svg> element. No prose, no markdown fences, no XML declaration, no comments.
+- Keep the SAME root attributes as the input (viewBox especially; keep role/stroke defaults). Update aria-label only if the change makes the old one wrong.
+- Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. Never use text, script, style, image, use, a, or any href.
+- COLOR: keep the color APPROACH the input already uses. If it colors with DAWN token classes (fill-primary, stroke-signal, fill-signal-bg, …), keep using those classes. If it uses currentColor, keep currentColor. NEVER introduce a hex, rgb, or inline color style.
+- Preserve the flat, rounded line-art house style. Make the smallest change that satisfies the instruction; do not redraw the whole thing unless asked.`)
+
+/** Edit an existing SVG per a natural-language instruction. Returns the sanitized result. */
+export async function editLoomSvg(
+  currentSvg: string,
+  instruction: string,
+): Promise<{ svg: string } | { error: string }> {
+  const ctx = await requireAdmin('janitor')
+
+  const inbound = sanitizeSvg(currentSvg || '')
+  if (!inbound.ok) return { error: "That graphic can't be edited (it didn't pass the safety check)." }
+  const ask = (instruction || '').trim().slice(0, 400)
+  if (ask.length < 3) return { error: 'Tell Vera what to change.' }
+  if (!(await aiAvailable())) return { error: 'AI is turned off right now.' }
+  if (await featureOverBudget(FEATURE)) return { error: "Vera's design budget is used up for today." }
+
+  try {
+    const res = await completeText({
+      system: EDIT_SYSTEM,
+      messages: [{ role: 'user', content: `CURRENT SVG:\n${inbound.svg}\n\nINSTRUCTION: ${ask}` }],
+      tier: 'sonnet',
+      maxTokens: 2000,
+      cacheSystem: true,
+    })
+    after(() =>
+      recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: ctx.profileId }),
+    )
+
+    const checked = sanitizeSvg(res.text)
+    if (!checked.ok) {
+      return { error: `Vera's edit didn't pass the safety check (${checked.error}). Try rewording it.` }
+    }
+    return { svg: checked.svg }
+  } catch (e) {
+    if (e instanceof AiUnavailableError) return { error: 'AI is unavailable right now.' }
+    return { error: 'Could not make that change. Try again in a moment.' }
+  }
+}
+
+/** Persist an edited SVG onto an existing element asset (stored in config.svg). This makes a
+ *  code-drawn registry element render its edited copy instead; clearing config.svg would
+ *  restore the original. Janitor-gated. */
+export async function saveElementSvg(assetId: string, svg: string): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!assetId) return { error: 'Missing asset id.' }
+
+  const checked = sanitizeSvg(svg || '')
+  if (!checked.ok) return { error: `That SVG didn't pass the safety check (${checked.error}).` }
+
+  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
+  const dbh = createAdminClient() as unknown as SupabaseClient
+  const { data } = await dbh.from('library_assets').select('config').eq('id', assetId).maybeSingle()
+  const config = ((data as { config: Record<string, unknown> | null } | null)?.config ?? {}) as Record<string, unknown>
+
+  const { error } = await dbh
+    .from('library_assets')
+    .update({ config: { ...config, svg: checked.svg, edited: true }, updated_at: new Date().toISOString() })
+    .eq('id', assetId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/library')
+  return { ok: true }
+}

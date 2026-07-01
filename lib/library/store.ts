@@ -76,6 +76,9 @@ export type LibraryQuery = {
   spaceId: string
   q?: string
   kind?: string
+  category?: string
+  /** Filter to assets that belong to this collection. */
+  collectionId?: string
   sort?: LibrarySort
   includeArchived?: boolean
   /** 1-based page. */
@@ -85,10 +88,20 @@ export type LibraryQuery = {
 
 export type LibraryPage = { items: LibraryGalleryItem[]; total: number }
 
+/** Asset ids that belong to a collection (membership lookup for the collection filter). */
+async function collectionAssetIds(collectionId: string): Promise<string[]> {
+  const { data } = await db()
+    .from('library_collection_items')
+    .select('asset_id')
+    .eq('collection_id', collectionId)
+    .limit(5000)
+  return ((data as Array<{ asset_id: string }> | null) ?? []).map((r) => r.asset_id)
+}
+
 /** Search + filter + PAGE a space's assets. Text search is a safe substring match over
- *  title/description/category (FTS ranking + trigram is a follow-up, D7); tags/kind are
- *  exact facets. Archived assets are hidden unless asked for. Returns the page + the exact
- *  total (for pagination). */
+ *  title/description/category (FTS ranking + trigram is a follow-up, D7); kind/category are
+ *  exact facets; collectionId scopes to a folder. Archived assets are hidden unless asked
+ *  for. Returns the page + the exact total (for pagination). */
 export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPage> {
   let query = db()
     .from('library_assets')
@@ -97,6 +110,13 @@ export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPa
 
   if (!opts.includeArchived) query = query.neq('status', 'archived')
   if (opts.kind) query = query.eq('kind', opts.kind)
+  if (opts.category) query = query.eq('category', opts.category)
+
+  if (opts.collectionId) {
+    const ids = await collectionAssetIds(opts.collectionId)
+    if (ids.length === 0) return { items: [], total: 0 }
+    query = query.in('id', ids)
+  }
 
   const q = (opts.q ?? '').replace(/[,()*]/g, ' ').trim()
   if (q) {
@@ -151,4 +171,56 @@ export async function kindCounts(spaceId: string): Promise<{ total: number; byKi
   const byKind: Record<string, number> = {}
   for (const r of rows) byKind[r.kind] = (byKind[r.kind] ?? 0) + 1
   return { total: rows.length, byKind }
+}
+
+/** Category folders with live counts (excludes archived + uncategorized), busiest first. */
+export async function categoryFacets(spaceId: string): Promise<{ category: string; count: number }[]> {
+  const { data } = await db()
+    .from('library_assets')
+    .select('category')
+    .eq('space_id', spaceId)
+    .neq('status', 'archived')
+    .limit(5000)
+  const counts: Record<string, number> = {}
+  for (const r of (data as Array<{ category: string | null }> | null) ?? []) {
+    const c = r.category?.trim()
+    if (c) counts[c] = (counts[c] ?? 0) + 1
+  }
+  return Object.entries(counts)
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count || a.category.localeCompare(b.category))
+}
+
+export type LibraryCollection = {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  count: number
+}
+
+/** A space's collections (custom folders) with member counts, alphabetical. */
+export async function listCollections(spaceId: string): Promise<LibraryCollection[]> {
+  const { data: cols } = await db()
+    .from('library_collections')
+    .select('id, title, slug, description')
+    .eq('space_id', spaceId)
+    .order('title', { ascending: true })
+  const collections =
+    (cols as Array<{ id: string; title: string; slug: string; description: string | null }> | null) ?? []
+  if (collections.length === 0) return []
+
+  const { data: items } = await db()
+    .from('library_collection_items')
+    .select('collection_id')
+    .in(
+      'collection_id',
+      collections.map((c) => c.id),
+    )
+    .limit(20000)
+  const counts: Record<string, number> = {}
+  for (const it of (items as Array<{ collection_id: string }> | null) ?? []) {
+    counts[it.collection_id] = (counts[it.collection_id] ?? 0) + 1
+  }
+  return collections.map((c) => ({ ...c, count: counts[c.id] ?? 0 }))
 }
