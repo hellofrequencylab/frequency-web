@@ -7,6 +7,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { config } from '@/lib/page-editor/config'
 import { spacePuckData, readStoredSpaceDoc } from '@/lib/page-editor/templates/space'
+import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 
@@ -66,11 +67,14 @@ export default async function SpaceEditLandingPage({
   // STAFF PREVIEW: read-only. No editor runtime; render the resolved landing with the
   // staff banner so the read-only mode is unmistakable (every write also re-gates
   // server-side, so a staff viewer could never publish even if they reached the editor).
+  // Inject the live Space content (updates/reviews/faqs) so the preview matches the public
+  // landing exactly (the same metadata.space the public renderer passes).
   if (!canManage && staffViewing) {
+    const spaceContent = await getSpaceContentData(space.id)
     return (
       <div className="mx-auto max-w-5xl px-6 py-8">
         <StaffPreviewBanner spaceName={brandName} />
-        <Render config={config} data={data} />
+        <Render config={config} data={data} metadata={{ space: spaceContent }} />
       </div>
     )
   }

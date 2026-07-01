@@ -39,10 +39,11 @@ describe('the four preset generators', () => {
     }
   })
 
-  it('leads with a Hero and ends with a StatRow', () => {
+  it('leads with a Cover, then a Hero, and ends with a StatRow (Phase 2)', () => {
     for (const t of SPACE_TEMPLATES) {
       const doc = generateSpacePreset(t, 'Willow Studio')
-      expect(doc.content[0]?.type).toBe('Hero')
+      expect(doc.content[0]?.type).toBe('Cover')
+      expect(doc.content[1]?.type).toBe('Hero')
       expect(doc.content[doc.content.length - 1]?.type).toBe('StatRow')
     }
   })
@@ -135,7 +136,7 @@ describe('the four presets read visibly distinct', () => {
     for (const t of SPACE_TEMPLATES) {
       const descriptor = templateDescriptor(t)
       const doc = generateSpacePreset(t, 'Willow Studio')
-      const firstBody = doc.content[1] // after the Hero
+      const firstBody = doc.content[2] // after the Cover + Hero (Phase 2 leads with Cover)
       expect(firstBody.type).toBe(leadBlockType[descriptor.aboutLead])
     }
   })
@@ -144,8 +145,52 @@ describe('the four presets read visibly distinct', () => {
     const hub = generateSpacePreset('hub', 'Willow Studio')
     const book = generateSpacePreset('book', 'Willow Studio')
     expect(hub.content.length).toBeGreaterThan(book.content.length)
-    // Hub leads its body with the mission (entity-about -> MediaText).
-    expect(hub.content[1].type).toBe('MediaText')
+    // Hub leads its body with the mission (entity-about -> MediaText), right after the Cover + Hero.
+    expect(hub.content[2].type).toBe('MediaText')
+  })
+})
+
+describe('Phase 2 content blocks are wired into the presets (Cover leads; per-template placements)', () => {
+  const types = (t: SpaceTemplate) => generateSpacePreset(t, 'Willow Studio').content.map((b) => b.type)
+
+  it('Cover is the first block in every template', () => {
+    for (const t of SPACE_TEMPLATES) {
+      expect(generateSpacePreset(t, 'Willow Studio').content[0]?.type).toBe('Cover')
+    }
+  })
+
+  it('Book and Schedule include SpaceReviews then SpaceFAQ (proof near the CTA, FAQ lower)', () => {
+    for (const t of ['book', 'schedule'] as const) {
+      const ts = types(t)
+      expect(ts).toContain('SpaceReviews')
+      expect(ts).toContain('SpaceFAQ')
+      expect(ts.indexOf('SpaceReviews')).toBeLessThan(ts.indexOf('SpaceFAQ'))
+      expect(ts).not.toContain('SpaceUpdates') // Updates are the Hub feed, not Book/Schedule
+    }
+  })
+
+  it('Storefront keeps a Gallery, plus SpaceReviews and SpaceFAQ', () => {
+    const ts = types('storefront')
+    expect(ts).toContain('Gallery')
+    expect(ts).toContain('SpaceReviews')
+    expect(ts).toContain('SpaceFAQ')
+  })
+
+  it('Hub is the fullest: Cover, mission (MediaText), SpaceUpdates, Gallery, SpaceFAQ, community', () => {
+    const ts = types('hub')
+    expect(ts).toContain('Cover')
+    expect(ts).toContain('SpaceUpdates')
+    expect(ts).toContain('Gallery')
+    expect(ts).toContain('SpaceFAQ')
+    // The community beat is seeded as a Heading (entity-community); mission leads the body.
+    expect(ts).toContain('MediaText')
+  })
+
+  it('every seeded content block is a currently-registered block type', () => {
+    for (const t of SPACE_TEMPLATES) {
+      const doc = generateSpacePreset(t, 'Willow Studio')
+      expect(everyBlockKnown(doc)).toBe(true)
+    }
   })
 })
 
