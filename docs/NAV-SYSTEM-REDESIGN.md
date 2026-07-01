@@ -1,9 +1,16 @@
 # Navigation System Redesign: one registry, one language, many surfaces
 
-> **Status:** 🟡 PROPOSAL, pending owner approval. Supersedes the admin-only
-> `ADMIN-IA-PROPOSAL.md` and extends the member-side `IA-RESTRUCTURE.md` (owner-approved
-> 2026-06-06) into ONE site-wide model, with names drawn from `docs/NAMING.md` (the locked
-> canon wins on every name). Nothing is built until this is approved.
+> **Status:** ✅ SHIPPED (2026-07-01). Supersedes the admin-only `ADMIN-IA-PROPOSAL.md` and
+> extends the member-side `IA-RESTRUCTURE.md` (owner-approved 2026-06-06) into ONE site-wide
+> model, with names drawn from `docs/NAMING.md` (the locked canon wins on every name).
+>
+> **Delivered:** the `lib/nav` registry is the single source; every surface (rail, header,
+> footer, account menu, mobile bar, admin sub-nav, `⌘K` palette) is a projection of it through
+> one `canSee` resolver. PRs: #1365 (registry + Studio worlds + admin sub-nav), #1369 (registry
+> feeds every surface + Calm mobile bar + palette), #1371 (member condensation: `/friends` →
+> Network hub), #1373 (account menu segmented + unified). Phase 10 (this) locks it with a
+> single-source guard test (`lib/nav/registry.source.test.ts`). Member routes were found already
+> ~90% condensed; the global right rail is intentionally kept per the 2026-06-20 owner directive.
 
 **The answer in one paragraph.** The site already has the right idea half-built: `lib/menus`
 (ADR-390) resolves five surfaces from one type system. But three hand-maintained admin catalogs
