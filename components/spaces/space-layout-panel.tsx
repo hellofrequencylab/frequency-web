@@ -11,7 +11,8 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { SpaceTemplate } from '@/lib/spaces/templates'
-import { setSpaceLayoutTemplate } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import type { CoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { setSpaceLayoutTemplate, setSpaceCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 
 // SPACE LAYOUT panel — the operator surface for picking the public-page STARTING layout (ADR-472). It
@@ -37,6 +38,12 @@ export interface FocusChoiceLike {
   active: boolean
 }
 
+// The two public-header cover sizes, with a plain forward function each (CONTENT-VOICE, no em dashes).
+const COVER_SIZES: { value: CoverSize; label: string; tagline: string }[] = [
+  { value: 'header', label: 'Header', tagline: 'A compact band. Good when the page is the point.' },
+  { value: 'hero', label: 'Hero', tagline: 'A tall, immersive cover. Good for a strong first image.' },
+]
+
 export interface LayoutPreview {
   template: SpaceTemplate
   label: string
@@ -51,6 +58,7 @@ export function SpaceLayoutPanel({
   activeTemplate,
   overrideIsAuto,
   customized,
+  coverSize,
   previews,
   metadata,
   focus,
@@ -63,6 +71,8 @@ export function SpaceLayoutPanel({
   overrideIsAuto: boolean
   /** Whether a customized page (a stored puck doc) exists, so the "Reset to this layout" path shows. */
   customized: boolean
+  /** The chosen public-header cover size (Header vs Hero), for the Cover size toggle. */
+  coverSize: CoverSize
   previews: LayoutPreview[]
   /** The Render metadata (metadata.space) so previews resolve identity + highlights like the live page. */
   metadata: Record<string, unknown>
@@ -161,6 +171,40 @@ export function SpaceLayoutPanel({
               Use automatic
             </Button>
           )}
+        </div>
+      </section>
+
+      {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
+      <section>
+        <SectionHeader title="Cover size" />
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          How tall your cover image shows at the top of your public page.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {COVER_SIZES.map((c) => {
+            const active = coverSize === c.value
+            return (
+              <button
+                key={c.value}
+                type="button"
+                disabled={readOnly || pending || active}
+                onClick={() => run(() => setSpaceCoverSize(slug, c.value))}
+                aria-pressed={active}
+                className={cn(
+                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                  active
+                    ? 'border-primary bg-primary-bg'
+                    : 'border-border bg-surface hover:border-border-strong',
+                )}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-text">
+                  {c.label}
+                  {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
+                </span>
+                <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
+              </button>
+            )
+          })}
         </div>
       </section>
 

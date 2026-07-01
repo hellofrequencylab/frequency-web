@@ -120,16 +120,17 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
 ]
 
 // FULL-VIEWPORT EDITOR TAKEOVERS — the Puck-based page builders that own the ENTIRE viewport with
-// their own top bar (desktop) / control dock (mobile). On desktop they already read full-width (the
-// right rail is dropped via DASHBOARD_NONE_PATTERNS above); the extra rule here is for MOBILE, where
-// the app-shell's fixed bottom tab bar would otherwise sit ON TOP of the editor's thumb-zone control
-// dock, making it unreachable. A route in this list tells the shell to also suppress the mobile bottom
-// nav + its side drawers (and the desktop header), so the editor is the only chrome on screen — the
-// same clean takeover the practice timer / scanner get, but scoped to the editor surfaces. Pattern
-// match (exact surface only). Keep this in lockstep with the DASHBOARD_NONE_PATTERNS entries so the
-// desktop rail and the mobile nav are dropped together for one editor.
+// their own top bar (desktop) / control dock (mobile). The extra rule here (beyond dropping the right
+// rail via DASHBOARD_NONE_PATTERNS) is for MOBILE, where the app-shell's fixed bottom tab bar would
+// otherwise sit ON TOP of the editor's thumb-zone control dock, making it unreachable. A route in this
+// list tells the shell to also suppress the mobile bottom nav + its side drawers (and the desktop
+// header), so the editor is the only chrome on screen.
+//
+// NOTE: the Space landing editor (/spaces/<slug>/edit-page) is deliberately NOT here — it stays
+// IN PAGE (the site header + left nav around the Puck editor), the operator's expected surface for
+// editing their marketing page from inside the app. Only the member Spotlight builder takes the whole
+// viewport (its mobile Discord dock needs the bottom-nav clearance). Pattern match (exact surface only).
 const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = [
-  /^\/spaces\/[^/]+\/edit-page$/, // the Space landing Puck editor
   /^\/settings\/profile\/spotlight$/, // the "Build your Spotlight" Puck editor
 ]
 

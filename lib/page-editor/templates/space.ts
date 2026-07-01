@@ -13,16 +13,17 @@ import { emphasisDefault } from '@/lib/page-editor/fields'
 // this file GENERATES a Puck `Data` document for a Space's public LANDING body,
 // composed from the PROFILE-NATIVE block set (components/page-editor/blocks/profile.tsx)
 // + the Phase 2 dynamic Space blocks (SpaceUpdates / SpaceReviews / SpaceFAQ). It reads
-// like a Facebook business page: a shared cover + logo IDENTITY HEADER, then a SpaceLayout
-// region box whose main / side slots hold clean, organizable boxed info cards, NOT a
-// stack of full-width marketing bands.
+// like a Facebook business page: the profile LAYOUT owns the cover + logo IDENTITY HEADER
+// above this body, and the body is a single SpaceLayout region box whose main / side slots
+// hold clean, organizable boxed info cards, NOT a stack of full-width marketing bands.
 //
-// PHASE 4 CHANGE: the presets used to lead with the marketing display-type Hero + a
-// FeatureGrid + a marketing StatRow, which read like a landing page, not a profile. Now
-// every template LEADS with SpaceIdentityHeader (the shared cover/logo identity, uniform
-// on the space AND the Spotlight) and arranges profile info cards per focus. The
-// marketing blocks are untouched and still power the marketing pages; only the space
-// PRESETS switch to the Profile set.
+// HEADER OWNERSHIP: the identity header (cover + logo + name + CTA) is NO LONGER a Puck block
+// in the space preset. The public profile layout (app/(main)/spaces/[slug]/layout.tsx) renders
+// ONE cohesive header for every tab, so the Puck body starts directly with the SpaceLayout grid
+// (no leading SpaceIdentityHeader). The block stays registered for other surfaces; it is just not
+// seeded here, and space-landing.tsx strips it from any stored doc so it never dupes the header.
+// The marketing display-type blocks are untouched and still power the marketing pages; only the
+// space PRESETS use the Profile set.
 //
 // WHITE-LABEL (AGENTS.md D4/D6): the generated blocks carry NO chrome, NO hex, NO
 // Frequency-specific surface. They paint from semantic DAWN tokens via the block kit;
@@ -50,25 +51,12 @@ export interface SpacePresetInput extends TemplateResolverInput {
 
 type Block = { type: string; props: Record<string, unknown> }
 
-// ── The shared IDENTITY HEADER that LEADS every template's document (at the TOP level, above
-// the layout box). It reads the cover / logo / name / tagline / primary CTA off
-// `puck.metadata.space.identity` (injected by the render path), so an operator sees the real
-// header the moment the page publishes. No per-surface override by default (uniform); the
-// operator can set a cover/logo override or toggle it off in the editor.
-function identityHeader(template: SpaceTemplate): Block {
-  return {
-    type: 'SpaceIdentityHeader',
-    props: {
-      id: `sp-${template}-identity`,
-      style: 'header',
-      coverOverride: '',
-      logoOverride: '',
-      focal: 'center',
-      height: 'medium',
-      showFollow: 'yes',
-    },
-  }
-}
+// NOTE: the identity header (cover + logo + name + CTA) is NO LONGER a Puck block in the space
+// preset. The public profile LAYOUT (app/(main)/spaces/[slug]/layout.tsx) owns ONE cohesive header
+// for every tab, so the Puck body starts directly with the SpaceLayout content grid (no leading
+// SpaceIdentityHeader). The block stays REGISTERED (it may be used elsewhere, e.g. a Spotlight), it
+// is just not seeded here, and space-landing.tsx strips it from any stored doc so it never dupes the
+// layout header.
 
 // ── The card builders now return BARE profile cards (no tone/width/align/layout band props):
 // they live INSIDE the SpaceLayout box's main / side slots, rendered as clean boxed cards, so
@@ -199,8 +187,9 @@ function updates(template: SpaceTemplate): Block {
   }
 }
 
-// ── The SpaceLayout region box that holds the two card columns (main + side). The identity
-// header sits ABOVE it at the top level; the cards live INSIDE its slots as clean boxed cards.
+// ── The SpaceLayout region box that holds the two card columns (main + side). It is now the SOLE
+// top-level block in the preset (the layout owns the identity header above the Puck body); the cards
+// live INSIDE its slots as clean boxed cards.
 function spaceLayout(template: SpaceTemplate, main: Block[], side: Block[]): Block {
   return {
     type: 'SpaceLayout',
@@ -217,10 +206,10 @@ function spaceLayout(template: SpaceTemplate, main: Block[], side: Block[]): Blo
 /**
  * Generate a Puck `Data` document for a Space LANDING, for the given template. PURE +
  * total: every template yields a valid Puck document composed from the Profile block set,
- * visibly distinct per template (a different card arrangement per focus). Every template
- * LEADS with SpaceIdentityHeader (the shared cover/logo identity) at the TOP level, then a
- * single SpaceLayout region box whose main / side slots hold the profile cards, so the page
- * reads like a Facebook business page (identity header + a two-column region grid of boxed
+ * visibly distinct per template (a different card arrangement per focus). The body is a
+ * SINGLE SpaceLayout region box whose main / side slots hold the profile cards (the identity
+ * header is owned by the profile LAYOUT above the Puck body, never a block here), so the page
+ * reads like a Facebook business page (layout-owned header + a two-column region grid of boxed
  * cards):
  *   Book:       main = Offerings(book) -> CTA(Book) -> Reviews -> FAQ;  side = Highlights -> About -> Contact.
  *   Schedule:   main = Offerings(schedule) -> CTA(schedule) -> Reviews; side = Highlights -> About -> Contact.
@@ -231,7 +220,6 @@ function spaceLayout(template: SpaceTemplate, main: Block[], side: Block[]): Blo
  */
 export function generateSpacePreset(template: SpaceTemplate, name: string): Data {
   const brand = name.trim() || 'this space'
-  const id = identityHeader(template)
 
   let layout: Block
   switch (template) {
@@ -281,7 +269,7 @@ export function generateSpacePreset(template: SpaceTemplate, name: string): Data
 
   return {
     root: {},
-    content: [id, layout],
+    content: [layout],
   }
 }
 
