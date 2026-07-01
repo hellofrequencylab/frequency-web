@@ -185,6 +185,57 @@ export function withPageDoc(preferences: unknown, slug: string, doc: Data): Reco
   return next
 }
 
+/** Drop a page's stored Puck doc WITHOUT removing the page from the nav (a per-page "reset to the
+ *  starting layout": the resolver then falls back to the universal default). Also clears the legacy
+ *  single-doc `preferences.puck` when resetting Home, so a pre-model Space's Home truly reverts. A
+ *  no-op (a fresh clone) when the page had no stored doc. Immutable. */
+export function withoutPageDoc(preferences: unknown, slug: string): Record<string, unknown> {
+  const s = slug.trim().toLowerCase()
+  const next = baseRecord(preferences)
+  const docs = readPageDocs(preferences)
+  if (docs && s in docs) {
+    const nextDocs = { ...docs }
+    delete nextDocs[s]
+    next.pageDocs = nextDocs
+  }
+  // Resetting Home must also clear the legacy pre-model doc, else readPageDoc('home') would revive it.
+  if (s === HOME_SLUG && 'puck' in next) delete next.puck
+  return next
+}
+
+/** Why a proposed new page was rejected (the action maps each reason to plain member-facing copy). */
+export type AddPageReason = 'empty' | 'unsluggable' | 'reserved' | 'invalid' | 'duplicate' | 'cap'
+
+/** The outcome of planning a new page from a human LABEL: either the derived, validated slug + a clean
+ *  label to store, or the single reason it was rejected. PURE: the nav-manager guardrail logic lives here
+ *  (testable), so the server action stays a thin auth + write around it. */
+export type AddPagePlan =
+  | { ok: true; slug: string; label: string }
+  | { ok: false; reason: AddPageReason }
+
+/**
+ * Plan a new custom page from a raw label: derive its slug (slugifyLabel), then run every nav guardrail
+ * in order (non-empty -> sluggable -> not reserved -> valid -> under the cap -> not a duplicate). Returns
+ * the created slug + a clean label on success, else the first failing reason. PURE + total. `maxPages`
+ * defaults to the model cap so a caller can override it in a test.
+ */
+export function planAddPage(
+  preferences: unknown,
+  rawLabel: string,
+  maxPages: number = MAX_PROFILE_PAGES,
+): AddPagePlan {
+  const label = typeof rawLabel === 'string' ? rawLabel.trim() : ''
+  if (!label) return { ok: false, reason: 'empty' }
+  const slug = slugifyLabel(label)
+  if (!slug) return { ok: false, reason: 'unsluggable' }
+  if (isReservedSlug(slug)) return { ok: false, reason: 'reserved' }
+  if (!isValidPageSlug(slug)) return { ok: false, reason: 'invalid' }
+  const pages = readProfilePages(preferences)
+  if (pages.length >= maxPages) return { ok: false, reason: 'cap' }
+  if (pages.some((p) => p.slug === slug)) return { ok: false, reason: 'duplicate' }
+  return { ok: true, slug, label: cleanLabel(label, slug) }
+}
+
 /** Add a new custom page (validated slug, non-reserved, under the cap, no duplicate). Returns
  *  the input unchanged when the add is invalid (the action surfaces the reason separately). */
 export function addPage(preferences: unknown, slug: string, label: string): Record<string, unknown> {

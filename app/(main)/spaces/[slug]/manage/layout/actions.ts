@@ -8,8 +8,21 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isSpaceTemplate, type SpaceTemplate } from '@/lib/spaces/templates'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
-import { isRenderableSpaceDoc, spacePuckData, type SpacePresetInput } from '@/lib/page-editor/templates/space'
+import { isRenderableSpaceDoc, type SpacePresetInput } from '@/lib/page-editor/templates/space'
 import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
+import {
+  resolveSpacePageDoc,
+  withPageDoc,
+  hasPage,
+  addPage,
+  renamePage,
+  removePage,
+  reorderPages,
+  planAddPage,
+  type AddPageReason,
+  HOME_SLUG,
+  MAX_PROFILE_PAGES,
+} from '@/lib/spaces/profile-pages'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from './preferences'
 
@@ -158,15 +171,22 @@ export async function setSpaceAccent(slug: string, token: string): Promise<Actio
   return ok()
 }
 
-/** Resolve the Space's CURRENT landing doc (the stored + valid doc, else the generated preset), so a
- *  block edit operates on exactly what the panel shows. Then persist a NEW content array to the `puck`
- *  node + revalidate. Shared by the reorder + show/hide actions below. */
+/** The public path a page renders at: Home at the profile index, a custom page under its slug. */
+function pagePath(slug: string, pageSlug: string): string {
+  return pageSlug === HOME_SLUG ? `/spaces/${slug}` : `/spaces/${slug}/${pageSlug}`
+}
+
+/** Resolve a specific PAGE's CURRENT doc (the stored + valid doc for that page, else the universal
+ *  default), so a block edit operates on exactly what the panel shows for the selected page. Then
+ *  persist a NEW content array to THAT page's doc under `pageDocs` + revalidate. Shared by the reorder +
+ *  show/hide actions below. */
 async function writeBlockContent(
   slug: string,
+  pageSlug: string,
   auth: { spaceId: string; preferences: Record<string, unknown>; presetInput: SpacePresetInput },
   nextContent: unknown[],
 ): Promise<ActionResult> {
-  const current = spacePuckData(auth.presetInput)
+  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
   const nextDoc: Data = {
     root: (current.root ?? {}) as Data['root'],
     content: nextContent as Data['content'],
@@ -174,52 +194,171 @@ async function writeBlockContent(
   // Re-validate the full doc against the current config (every block a known type) before storing.
   if (!isRenderableSpaceDoc(nextDoc)) return fail('That change could not be saved. Try again.')
 
-  const preferences = { ...auth.preferences, puck: nextDoc }
+  const preferences = withPageDoc(auth.preferences, pageSlug, nextDoc)
   if (!(await writePreferences(auth.spaceId, preferences))) {
     return fail('Could not save your changes. Try again.')
   }
 
-  revalidatePath(`/spaces/${slug}`)
+  revalidatePath(pagePath(slug, pageSlug))
   revalidatePath(`/spaces/${slug}/edit-page`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }
 
 /**
- * Reorder a TOP-LEVEL block of the Space landing by one step (`dir` -1 up / +1 down), by `index` in the
- * CURRENT resolved doc. Non-destructive: it resolves the stored-or-preset doc, moves the one block, and
- * writes the new content to `preferences.puck` (so a preset the operator reorders becomes a customized
- * doc). Owner/admin/editor-gated. Returns ActionResult.
+ * Reorder a TOP-LEVEL block of a Space PAGE by one step (`dir` -1 up / +1 down), by `index` in the
+ * CURRENT resolved doc for `pageSlug` (default Home). Non-destructive: it resolves the stored-or-default
+ * doc, moves the one block, and writes the new content to `pageDocs[pageSlug]` (so a default page the
+ * operator reorders becomes a stored doc). The page must exist. Owner/admin/editor-gated. Returns
+ * ActionResult.
  */
 export async function reorderSpaceBlock(
   slug: string,
   index: number,
   dir: -1 | 1,
+  pageSlug: string = HOME_SLUG,
 ): Promise<ActionResult> {
   if (dir !== -1 && dir !== 1) return fail('That change could not be saved. Try again.')
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
+  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
 
-  const current = spacePuckData(auth.presetInput)
+  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
   const nextContent = moveBlock(current.content ?? [], index, dir)
-  return writeBlockContent(slug, auth, nextContent)
+  return writeBlockContent(slug, pageSlug, auth, nextContent)
 }
 
 /**
- * Show or hide a TOP-LEVEL block of the Space landing (`hidden` true = hide from the public page), by
- * `index` in the CURRENT resolved doc. Non-destructive: a hidden block stays in the stored doc with a
- * `hidden` flag (the public render path + full editor strip it), so it can be restored. Owner/admin/
- * editor-gated. Returns ActionResult.
+ * Show or hide a TOP-LEVEL block of a Space PAGE (`hidden` true = hide from the public page), by `index`
+ * in the CURRENT resolved doc for `pageSlug` (default Home). Non-destructive: a hidden block stays in the
+ * stored doc with a `hidden` flag (the public render path + full editor strip it), so it can be restored.
+ * The page must exist. Owner/admin/editor-gated. Returns ActionResult.
  */
 export async function setSpaceBlockHidden(
   slug: string,
   index: number,
   hidden: boolean,
+  pageSlug: string = HOME_SLUG,
 ): Promise<ActionResult> {
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
+  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
 
-  const current = spacePuckData(auth.presetInput)
+  const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)
   const nextContent = setBlockHidden(current.content ?? [], index, hidden)
-  return writeBlockContent(slug, auth, nextContent)
+  return writeBlockContent(slug, pageSlug, auth, nextContent)
+}
+
+// ── THE NAV MANAGER actions (multi-page model). Create / rename / reorder / delete the operator-defined
+// profile pages. Each calls a PURE mutator from profile-pages.ts and writes the WHOLE preferences blob
+// back, re-gating canEditProfile server-side (owner/admin/editor). Guardrails from the research: Home is
+// required + non-deletable; a reserved / invalid / duplicate slug is rejected with a plain message; the
+// nav is capped at MAX_PROFILE_PAGES. Copy is plain, sentence-case, no em dashes (CONTENT-VOICE §10).
+
+/** Revalidate the surfaces a nav change touches: the whole profile subtree (the nav renders on every
+ *  page) + the Page manager. */
+function revalidateNav(slug: string): void {
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+}
+
+/** Map a rejected AddPagePlan to plain, member-facing copy (CONTENT-VOICE §10, no em dashes). */
+function addPageError(reason: AddPageReason): string {
+  switch (reason) {
+    case 'empty':
+      return 'Give your page a name.'
+    case 'unsluggable':
+      return 'Use letters or numbers in the page name.'
+    case 'reserved':
+      return 'That name is reserved. Pick a different one.'
+    case 'invalid':
+      return 'Pick a shorter, simpler page name.'
+    case 'duplicate':
+      return 'You already have a page with that name.'
+    case 'cap':
+      return `You can have up to ${MAX_PROFILE_PAGES} pages. Delete one to add another.`
+  }
+}
+
+/**
+ * Create a new custom profile page from a human LABEL (its slug is derived + validated by the pure
+ * planAddPage guardrail). Rejects, with a plain message, an empty / reserved / invalid / duplicate slug,
+ * or a nav already at the page cap. On success returns the created slug in `ok(slug)` so the caller can
+ * switch to the new page. Owner/admin/editor-gated.
+ */
+export async function createSpacePage(slug: string, label: string): Promise<ActionResult<string>> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const plan = planAddPage(auth.preferences, label)
+  if (!plan.ok) return fail(addPageError(plan.reason))
+
+  const preferences = addPage(auth.preferences, plan.slug, plan.label)
+  if (!(await writePreferences(auth.spaceId, preferences))) {
+    return fail('Could not add the page. Try again.')
+  }
+  revalidateNav(slug)
+  return ok(plan.slug)
+}
+
+/**
+ * Rename any page's nav label (Home included). The slug (and its URL) never changes. A blank label is
+ * rejected. Owner/admin/editor-gated.
+ */
+export async function renameSpacePage(
+  slug: string,
+  pageSlug: string,
+  label: string,
+): Promise<ActionResult> {
+  const trimmed = label.trim()
+  if (!trimmed) return fail('Give your page a name.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
+
+  const preferences = renamePage(auth.preferences, pageSlug, trimmed)
+  if (!(await writePreferences(auth.spaceId, preferences))) {
+    return fail('Could not rename the page. Try again.')
+  }
+  revalidateNav(slug)
+  return ok()
+}
+
+/**
+ * Reorder the nav to the given slug order. Home is always pinned first regardless of input (the pure
+ * mutator enforces it); unknown slugs are dropped and omitted pages keep their relative order after the
+ * listed ones. Owner/admin/editor-gated.
+ */
+export async function reorderSpacePages(slug: string, order: string[]): Promise<ActionResult> {
+  if (!Array.isArray(order)) return fail('That change could not be saved. Try again.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const preferences = reorderPages(auth.preferences, order)
+  if (!(await writePreferences(auth.spaceId, preferences))) {
+    return fail('Could not reorder your pages. Try again.')
+  }
+  revalidateNav(slug)
+  return ok()
+}
+
+/**
+ * Delete a custom profile page and drop its stored doc. Home can NEVER be deleted (the required index);
+ * the request fails plainly. Owner/admin/editor-gated.
+ */
+export async function deleteSpacePage(slug: string, pageSlug: string): Promise<ActionResult> {
+  if (pageSlug.trim().toLowerCase() === HOME_SLUG) return fail('Home is your main page and cannot be deleted.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+  if (!hasPage(auth.preferences, pageSlug)) return fail('That page no longer exists.')
+
+  const preferences = removePage(auth.preferences, pageSlug)
+  if (!(await writePreferences(auth.spaceId, preferences))) {
+    return fail('Could not delete the page. Try again.')
+  }
+  revalidateNav(slug)
+  return ok()
 }

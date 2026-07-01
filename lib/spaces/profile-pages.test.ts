@@ -9,10 +9,12 @@ import {
   resolveSpacePageDoc,
   hasPage,
   withPageDoc,
+  withoutPageDoc,
   addPage,
   renamePage,
   removePage,
   reorderPages,
+  planAddPage,
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from './profile-pages'
@@ -124,5 +126,62 @@ describe('pure mutators keep pages + pageDocs consistent', () => {
     // home can never be moved off the front
     prefs = reorderPages(prefs, ['home', 'b'])
     expect(readProfilePages(prefs)[0].slug).toBe('home')
+  })
+})
+
+describe('withoutPageDoc (per-page reset)', () => {
+  it('drops a page doc, keeps the page + other docs, and is immutable', () => {
+    let prefs: unknown = addPage({}, 'classes', 'Classes')
+    prefs = withPageDoc(prefs, 'classes', DOC)
+    prefs = withPageDoc(prefs, 'home', DOC)
+    const before = JSON.parse(JSON.stringify(prefs))
+    const next = withoutPageDoc(prefs, 'classes')
+    // the page stays in the nav, only its stored doc is dropped
+    expect(hasPage(next, 'classes')).toBe(true)
+    expect(readPageDoc(next, 'classes')).toBeNull()
+    // a sibling page's doc is untouched
+    expect(readPageDoc(next, 'home')).toEqual(DOC)
+    // input untouched
+    expect(prefs).toEqual(before)
+  })
+
+  it('resetting Home also clears the legacy single doc so it never revives', () => {
+    // a pre-model Space stored one doc at preferences.puck; readPageDoc('home') falls back to it
+    const legacy = { puck: DOC }
+    expect(readPageDoc(legacy, HOME_SLUG)).toEqual(DOC)
+    const next = withoutPageDoc(legacy, HOME_SLUG)
+    expect(readPageDoc(next, HOME_SLUG)).toBeNull()
+  })
+
+  it('is a safe no-op clone when the page had no stored doc', () => {
+    const prefs = addPage({}, 'classes', 'Classes')
+    expect(readPageDoc(withoutPageDoc(prefs, 'classes'), 'classes')).toBeNull()
+    expect(hasPage(withoutPageDoc(prefs, 'classes'), 'classes')).toBe(true)
+  })
+})
+
+describe('planAddPage (nav-manager create guardrails)', () => {
+  it('derives + returns the slug for a valid new label', () => {
+    const plan = planAddPage({}, '  Our Classes  ')
+    expect(plan).toEqual({ ok: true, slug: 'our-classes', label: 'Our Classes' })
+  })
+
+  it('rejects each guardrail with a distinct reason, in order', () => {
+    expect(planAddPage({}, '   ')).toEqual({ ok: false, reason: 'empty' })
+    expect(planAddPage({}, '***')).toEqual({ ok: false, reason: 'unsluggable' })
+    expect(planAddPage({}, 'Manage')).toEqual({ ok: false, reason: 'reserved' })
+    expect(planAddPage({}, 'Book')).toEqual({ ok: false, reason: 'reserved' })
+    // a duplicate of an existing custom page
+    const withClasses = addPage({}, 'classes', 'Classes')
+    expect(planAddPage(withClasses, 'Classes')).toEqual({ ok: false, reason: 'duplicate' })
+  })
+
+  it('reports the cap once the nav is full (Home + customs = MAX_PROFILE_PAGES)', () => {
+    let prefs: unknown = {}
+    for (let i = 0; i < MAX_PROFILE_PAGES - 1; i++) prefs = addPage(prefs, `p${i}`, `P${i}`)
+    expect(readProfilePages(prefs).length).toBe(MAX_PROFILE_PAGES)
+    expect(planAddPage(prefs, 'One More')).toEqual({ ok: false, reason: 'cap' })
+    // a lower cap override reports the cap earlier (the panel warns at its own limit)
+    expect(planAddPage(addPage({}, 'a', 'A'), 'B', 2)).toEqual({ ok: false, reason: 'cap' })
   })
 })

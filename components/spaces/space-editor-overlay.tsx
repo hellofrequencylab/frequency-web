@@ -39,13 +39,16 @@ export function SpaceEditorOverlay({
   title,
   data,
   customized = false,
+  pageSlug = 'home',
 }: {
   slug: string
   title: string
-  /** The resolved landing doc (stored-or-preset, hidden blocks already stripped) the editor opens on. */
+  /** The resolved page doc (stored-or-default, hidden blocks already stripped) the editor opens on. */
   data: Data
-  /** Whether a stored doc exists (so the editor shows the Reset affordance). */
+  /** Whether a stored doc exists for this page (so the editor shows the Reset affordance). */
   customized?: boolean
+  /** Which profile page the editor edits + publishes to (default Home). */
+  pageSlug?: string
 }) {
   const [open, setOpen] = useState(false)
 
@@ -83,6 +86,7 @@ export function SpaceEditorOverlay({
             title={title}
             data={data}
             customized={customized}
+            pageSlug={pageSlug}
             onExit={() => setOpen(false)}
           />
         </div>
