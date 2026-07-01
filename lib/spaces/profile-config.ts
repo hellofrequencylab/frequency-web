@@ -63,3 +63,40 @@ export const DEFAULT_HERO_STATS: readonly string[] = ['offerings', 'practices', 
 export function defaultHeroStats(): string[] {
   return [...DEFAULT_HERO_STATS]
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVISIONABLE SPACE TYPES — the subset a member can stand up (ADR-339), re-homed here
+// when the type-driven template/blueprint registry was removed. This is the SOURCE OF
+// TRUTH for "which types the create wizard offers", the staff view-as selector, and the
+// admin per-type defaults grid. Plain data (types + labels), no blueprint/template import.
+// `root` is the platform host and is NEVER provisionable, so it is absent by construction.
+// Labels match the legacy blueprint typeLabels so every surface reads the same noun.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The provisionable Space types in canonical display order, each a `{ value, label }` choice. */
+const PROVISIONABLE_TYPES: readonly { value: SpaceType; label: string }[] = [
+  { value: 'practitioner', label: 'Practitioner' },
+  { value: 'business', label: 'Business' },
+  { value: 'organization', label: 'Organization' },
+  { value: 'coaching', label: 'Coaching' },
+  { value: 'event_space', label: 'Event Space' },
+  { value: 'lab', label: 'Lab' },
+  { value: 'partner', label: 'Partner' },
+]
+
+/** The provisionable Space types as `{ value, label }` choices, in canonical order. A fresh
+ *  array each call (no shared-reference mutation). The create wizard, the staff view-as selector,
+ *  and the admin per-type defaults grid all read this. */
+export function provisionableTypes(): { value: SpaceType; label: string }[] {
+  return PROVISIONABLE_TYPES.map((t) => ({ ...t }))
+}
+
+/** Is `type` a provisionable Space type (the subset a member can stand up)? Fails CLOSED for
+ *  `root`, an unknown type, or null/undefined, so a forged or stale value never provisions. */
+export function isProvisionableType(type: string | null | undefined): type is SpaceType {
+  return !!type && PROVISIONABLE_TYPES.some((t) => t.value === type)
+}
+
+/** The default theme skin a new Space provisions with (a curated DAWN skin). The retired
+ *  per-type blueprint set this uniformly to 'dawn'; it is a constant now, not per-type. */
+export const DEFAULT_SPACE_SKIN = 'dawn'

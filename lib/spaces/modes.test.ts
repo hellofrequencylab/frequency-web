@@ -132,10 +132,9 @@ describe('the ModeProfile defaults', () => {
       for (const noun of [m.lexicon.people, m.lexicon.person, m.lexicon.offerings, m.lexicon.offering]) {
         expect(noun.trim().length).toBeGreaterThan(0)
       }
-      // A non-empty nav emphasis + at least one next-best-action; the blueprint is the type's blueprint.
+      // A non-empty nav emphasis + at least one next-best-action.
       expect(m.navEmphasis.length).toBeGreaterThan(0)
       expect(m.nextBestActions.length).toBeGreaterThan(0)
-      expect(m.blueprint.type).toBe(m.type)
       // Labels are plain (no em dashes, CONTENT-VOICE §10).
       for (const s of [m.modeLabel, m.focusLabel, m.tagline]) {
         expect(s.includes('—')).toBe(false)

@@ -33,25 +33,23 @@ Status legend: ✅ built · ⏳ partial · 🔴 not built yet · 🅿️ parked.
   public-vs-walled axis is now the first-class `spaces.visibility` column (`network` vs `private`,
   ADR-322), distinct from the `network_connected` gamification switch in §3.
 
-> **Canonical role-type set (2026-06-20, ADR-339; Lab + Partner provisionable 2026-06-20, ADR-341).**
-> Two sources of truth had drifted: the `SpaceType` union in `lib/spaces/types.ts` listed
-> `lab`/`partner` but not `event_space`, while the blueprint registry in `lib/spaces/blueprints.ts`
-> had `event_space` but no `lab`/`partner`. They are now reconciled to one contract. The **full
-> role-type set** (every value a `spaces.type` row may hold) is: `root`, `practitioner`, `business`,
-> `organization`, `coaching`, `event_space`, `lab`, `partner`. All eight are members of `SpaceType`.
-> The **provisionable set** (a member can stand one up in the create wizard, which derives its choices
-> from the blueprint registry via `provisionableTypes` / `blueprintForType`) is the subset with a
-> registered blueprint. As of **ADMIN-05 (ADR-341)** that subset is the full **seven** member-facing
-> roles: `practitioner`, `business`, `organization`, `coaching`, `event_space`, **`lab`**, and
-> **`partner`**. `root` is the platform host (never wizard-provisioned, no member-facing blueprint).
-> Adding any future role is a descriptor in `blueprints.ts` (the §2.10 extension point), never a
-> removal from `SpaceType`.
+> **Canonical role-type set (2026-06-20, ADR-339; Lab + Partner provisionable 2026-06-20, ADR-341;
+> type-driven template/blueprint registry retired 2026-07-01, ADR-489).** The **full role-type set**
+> (every value a `spaces.type` row may hold) is: `root`, `practitioner`, `business`, `organization`,
+> `coaching`, `event_space`, `lab`, `partner`. All eight are members of `SpaceType`. The
+> **provisionable set** (a member can stand one up in the create wizard) is the subset in the canonical
+> provisionable-types helper `lib/spaces/profile-config.ts` (`provisionableTypes` / `isProvisionableType`,
+> re-homed there when `lib/spaces/blueprints.ts` was deleted). As of **ADMIN-05 (ADR-341)** that subset
+> is the full **seven** member-facing roles: `practitioner`, `business`, `organization`, `coaching`,
+> `event_space`, **`lab`**, and **`partner`**. `root` is the platform host (never wizard-provisioned,
+> never provisionable). Adding any future role is one row in `profile-config.ts`, never a removal from
+> `SpaceType`.
 >
-> **Lab + Partner blueprints (ADR-341).** A **Lab** is a physical Frequency place (entity partition
-> `labs`): it leads with what's on, invites people to **Visit**, and reads on a green accent
-> (`--color-success`). A **Partner** is a brand running a Frequency loyalty program (entity partition
-> `partner`): it leads with its brand story, surfaces **Perks**, invites members to **Join**, and
-> shares the Business brand accent (`--color-broadcast`). Both compose the **universal owner four**
+> **Lab + Partner (ADR-341).** A **Lab** is a physical Frequency place (entity partition
+> `labs`): it invites people to **Visit** and reads on a green accent (`--color-success`, the per-type
+> default in `profile-config.ts`). A **Partner** is a brand running a Frequency loyalty program (entity
+> partition `partner`): it surfaces **Perks**, invites members to **Join**, and shares the Business
+> brand accent (`--color-broadcast`). Both compose the **universal owner four**
 > (Members / QR / CRM / Email) the settings hub already gives every Space; neither adds a
 > role-specific deep owner control in v1 (a Lab runs on the shared event / circle / QR door tools; a
 > Partner's loyalty-program engine is a later, money-adjacent phase like memberships v1). The
@@ -81,7 +79,7 @@ one operator (a practitioner, a business, an org, a Lab, a Hook-style coaching b
 
 | Facet | What it carries |
 |---|---|
-| **Type** | `practitioner` · `business` · `organization` · `event_space` (venue / retreat, ADR-325) · `lab` · `partner` · `coaching` (Hook-like). Drives the default capabilities, templates, and onboarding track. |
+| **Type** | `practitioner` · `business` · `organization` · `event_space` (venue / retreat, ADR-325) · `lab` · `partner` · `coaching` (Hook-like). Drives the default capabilities, per-type profile defaults (accent / CTA / stats, `lib/spaces/profile-config.ts`), and onboarding track. |
 | **Brand / skin** | name, logo, palette, and a `skin` token set (the `[data-skin]` axis of the four-axis theme model, [`docs/THEME.md`](THEME.md)). The look is the operator's; the kit underneath is ours. |
 | **Domain** | a Frequency subpath, a subdomain, or a custom domain. Routing resolves the Space from the host/path. |
 | **Entity** | `foundation` · `labs` · `partner`: the money-partition tag (PLATFORM-VISION §1). A Space's commerce posts to `financial_transactions` under its entity; money never commingles. |

@@ -163,6 +163,14 @@ pattern). The global staff axis (`web_role`) stays separate and locked.
 
 ### 2.2 What a role blueprint consists of (the extensibility contract)
 
+> **⚠️ Superseded (2026-07-01, ADR-489).** The per-type `RoleBlueprint` registry
+> (`lib/spaces/blueprints.ts`) and the four-template layer (`lib/spaces/templates.ts`) have been
+> DELETED. The public profile is now **operator-composed feature-block pages** (Phase 5 of the profile
+> redesign); the only per-type nuances that survive are DATA in `lib/spaces/profile-config.ts` (default
+> accent / primary-CTA label / hero stat set) plus the provisionable-types helper there. "Adding a role"
+> is now: add the value to `SpaceType`, add its row to `profile-config.ts`, and (optionally) a Mode
+> descriptor in `lib/spaces/modes.ts`. The blueprint shape below is retained only as historical context.
+
 Adding a role = authoring a **blueprint descriptor** (data) + registering it. No core edit. A
 blueprint is the role-level analog of `lib/verticals/registry.ts`'s `Vertical` descriptor.
 

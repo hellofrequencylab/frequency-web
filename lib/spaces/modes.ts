@@ -1,18 +1,17 @@
-// SPACE MODES - the operator-side twin of the public-profile blueprint (ADR-461/464, the Space Modes
+// SPACE MODES - the operator-side registry for a Space's operating model (ADR-461/464, the Space Modes
 // plan §2b). A Space's `type` is its operating MODE; a finer `mode_variant` is its FOCUS sub-mode. This
 // file is a PURE, data-only registry of one `ModeProfile` per `(type, variant)`: it decides which Pro
 // modules LEAD on the console, the default settings toggles, the default CRM pipeline, the lexicon, the
 // recommended add-ons, and the dashboard next-best-actions. Everything here is a DEFAULT or an EMPHASIS,
 // NEVER a gate: a capability is gated only by the entitlement engine (plan + add-ons) and the space-role
 // ladder (lib/spaces/functions.ts). Mode is FREE (framing, not entitlement), so nothing here touches
-// billing. This EXTENDS the existing RoleBlueprint pattern (lib/spaces/blueprints.ts), reusing each
-// type's profile blueprint for the PUBLIC side and adding the OPERATOR facets here.
+// billing. The PUBLIC profile is operator-composed (feature-block pages); this file carries only the
+// OPERATOR-side facets.
 //
 // SHAPE: pure (no React / Supabase / Next imports) so the resolver + the defaults are trivially
 // unit-testable (lib/spaces/modes.test.ts) and the descriptor can be imported by the create wizard, the
 // console nav/dashboard, the CRM pipeline seed, and the onboarding seeder alike. A new Mode or Focus is
-// ONE descriptor here, never a core edit (the §2.10 extensibility contract the blueprints already
-// follow).
+// ONE descriptor here, never a core edit.
 //
 // COPY NOTE (NAMING + CONTENT-VOICE §10): every operator-facing string is a plain noun or a plain verb.
 // No em or en dashes. Lexicon nouns (clients / customers / members / supporters; offerings / classes /
@@ -21,7 +20,6 @@
 
 import type { SpaceType } from './types'
 import type { SpaceFunctionKey } from './functions'
-import { blueprintForType, type RoleBlueprint } from './blueprints'
 
 /** A Focus (sub-mode) id. Kept SMALL and meaningful per the plan §2a. The set is closed by the
  *  registry below; an unknown variant resolves to the type's default variant. */
@@ -66,8 +64,8 @@ export interface ModeAction {
   surface: string
 }
 
-/** The OPERATOR preset for one `(type, variant)`. Extends the profile RoleBlueprint (carried on
- *  `blueprint`) with the operator-side facets. EVERYTHING here is a default or an emphasis, never a lock. */
+/** The OPERATOR preset for one `(type, variant)`: the operator-side facets of a Space's operating
+ *  model. EVERYTHING here is a default or an emphasis, never a lock. */
 export interface ModeProfile {
   /** The Space type (the Mode). */
   type: SpaceType
@@ -79,9 +77,6 @@ export interface ModeProfile {
   focusLabel: string
   /** One plain line describing what this Mode/Focus is for (the picker + the preview). */
   tagline: string
-  /** The public profile blueprint this Mode reuses (tabs / CTA / hero stats / skin / accent). The Mode
-   *  does not redeclare any of that; the profile side stays the blueprint's job. */
-  blueprint: RoleBlueprint
   /** The console nav order / MODULE EMPHASIS: the SpaceFunctionKeys this Mode leads with, most
    *  prominent first. A function not listed still renders (Mode never hides a capability) but after the
    *  emphasized set, so an operator opens to the 20% they live in. */
@@ -112,25 +107,9 @@ const DEFAULT_VARIANT: Partial<Record<SpaceType, ModeVariant>> = {
 }
 
 // ── The registered ModeProfiles, keyed `${type}:${variant}` ───────────────────────────────────────
-// Each reuses its type's profile blueprint (blueprintForType) for the public side and declares the
-// operator facets here. The pipelines mirror the per-segment stage templates (lib/crm/stage-templates.ts)
-// so the Mode preview and the actual seed read the same shape; the Focus refines the labels per §2a.
-
-function bp(type: SpaceType): RoleBlueprint {
-  // Every registered Mode type has a blueprint (the create wizard derives both from the same registry).
-  // Fall back to a minimal shell only defensively, so the resolver stays total.
-  return (
-    blueprintForType(type) ?? {
-      type,
-      typeLabel: 'Space',
-      tabs: [{ id: 'about', label: 'About', modules: ['entity-about'] }],
-      primaryCta: { label: 'Open', tab: 'about' },
-      heroStats: [],
-      defaultSkin: 'dawn',
-      defaultAccent: '--color-primary',
-    }
-  )
-}
+// Each declares the operator facets here. The pipelines mirror the per-segment stage templates
+// (lib/crm/stage-templates.ts) so the Mode preview and the actual seed read the same shape; the Focus
+// refines the labels per §2a.
 
 // Business · service (default): bookings / quotes / retainers.
 const BUSINESS_SERVICE: ModeProfile = {
@@ -139,7 +118,6 @@ const BUSINESS_SERVICE: ModeProfile = {
   modeLabel: 'Service business',
   focusLabel: 'Bookings and quotes',
   tagline: 'Take bookings, send quotes, and keep repeat clients coming back.',
-  blueprint: bp('business'),
   navEmphasis: ['availability', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr', 'availability'],
   pipeline: [
@@ -164,7 +142,6 @@ const BUSINESS_PRODUCT: ModeProfile = {
   modeLabel: 'Product business',
   focusLabel: 'Catalog and storefront',
   tagline: 'List your catalog, run a storefront, and turn buyers into repeat customers.',
-  blueprint: bp('business'),
   navEmphasis: ['memberships', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [
@@ -189,7 +166,6 @@ const COACHING_PACKAGES: ModeProfile = {
   modeLabel: 'Coach',
   focusLabel: 'Packages and scheduling',
   tagline: 'Sell multi-session packages and fill your calendar with the right clients.',
-  blueprint: bp('coaching'),
   navEmphasis: ['availability', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [
@@ -215,7 +191,6 @@ const COACHING_COHORT: ModeProfile = {
   modeLabel: 'Coach',
   focusLabel: 'Programs and cohorts',
   tagline: 'Run a curriculum and enroll cohorts into your programs.',
-  blueprint: bp('coaching'),
   navEmphasis: ['crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [
@@ -241,7 +216,6 @@ const PRACTITIONER_APPOINTMENTS: ModeProfile = {
   modeLabel: 'Practitioner',
   focusLabel: '1:1 sessions',
   tagline: 'Open your calendar for 1:1 sessions and keep a private client journey.',
-  blueprint: bp('practitioner'),
   navEmphasis: ['availability', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr', 'availability'],
   pipeline: [
@@ -266,7 +240,6 @@ const PRACTITIONER_PROGRAMS: ModeProfile = {
   modeLabel: 'Practitioner',
   focusLabel: 'Paid programs',
   tagline: 'Enroll clients into paid programs and guide them through a journey.',
-  blueprint: bp('practitioner'),
   navEmphasis: ['crm', 'availability', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr', 'availability'],
   pipeline: [
@@ -291,7 +264,6 @@ const EVENT_TICKETED: ModeProfile = {
   modeLabel: 'Event space',
   focusLabel: 'Tickets and passes',
   tagline: 'Sell tickets, check attendees in, and fill the room.',
-  blueprint: bp('event_space'),
   navEmphasis: ['tickets', 'checkin', 'members', 'qr'],
   defaultToggles: ['members', 'qr', 'tickets', 'checkin'],
   pipeline: [
@@ -315,7 +287,6 @@ const EVENT_MEMBERSHIP: ModeProfile = {
   modeLabel: 'Event space',
   focusLabel: 'Recurring access',
   tagline: 'Offer recurring access and keep members coming through the door.',
-  blueprint: bp('event_space'),
   navEmphasis: ['members', 'checkin', 'qr', 'tickets'],
   defaultToggles: ['members', 'qr', 'checkin'],
   pipeline: [
@@ -339,7 +310,6 @@ const ORG_DONATIONS: ModeProfile = {
   modeLabel: 'Nonprofit',
   focusLabel: 'Donations and supporters',
   tagline: 'Raise money, grow your supporters, and tell your impact story.',
-  blueprint: bp('organization'),
   navEmphasis: ['donations', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr', 'donations'],
   pipeline: [
@@ -364,7 +334,6 @@ const ORG_PROGRAMS: ModeProfile = {
   modeLabel: 'Nonprofit',
   focusLabel: 'Programs and enrollment',
   tagline: 'Run programs, enroll participants, and report your impact.',
-  blueprint: bp('organization'),
   navEmphasis: ['enroll', 'crm', 'members', 'email', 'qr'],
   defaultToggles: ['members', 'qr', 'enroll'],
   pipeline: [
@@ -389,7 +358,6 @@ const LAB_COHORT: ModeProfile = {
   modeLabel: 'Lab',
   focusLabel: 'Experiments and cohorts',
   tagline: 'Run experiments with cohorts and gather the people in the room.',
-  blueprint: bp('lab'),
   navEmphasis: ['members', 'qr'],
   defaultToggles: ['members', 'qr'],
   pipeline: [

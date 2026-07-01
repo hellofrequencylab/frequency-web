@@ -4,13 +4,13 @@
 // create wizard (app/(main)/spaces/new) calls to stand up a brand-new entity Space and seat its
 // owner as a Space admin. The server is the authority:
 //   1. Gate on an authenticated caller (getMyProfileId).
-//   2. Validate the type against the blueprint registry (a registered blueprint must exist), the
-//      slug (isSafeSlug + uniqueness), and the name.
+//   2. Validate the type against the provisionable-types list (isProvisionableType), the slug
+//      (isSafeSlug + uniqueness), and the name.
 //   3. Resolve the ROOT space's entity_id at runtime (no hardcoded uuid) so the new Space shares
 //      the platform money partition.
-//   4. Insert the `spaces` row (status 'active', plan 'free', entitlements {}, the blueprint's
-//      default skin, owner = caller, network_connected true), then seat the caller as an 'admin'
-//      member (addSpaceMember).
+//   4. Insert the `spaces` row (status 'active', plan 'free', entitlements {}, the default DAWN
+//      skin, owner = caller, network_connected true), then seat the caller as an 'admin' member
+//      (addSpaceMember).
 // On slug collision it returns a friendly fail; on success it redirects to the owner settings
 // surface. Returns ActionResult on any path that DOESN'T redirect.
 //
@@ -22,7 +22,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { isStaff } from '@/lib/core/roles'
-import { blueprintForType } from '@/lib/spaces/blueprints'
+import { isProvisionableType, DEFAULT_SPACE_SKIN } from '@/lib/spaces/profile-config'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { isSpaceType, seedSpaceConfigFromDefaults } from '@/lib/spaces/functions'
 import { listTypeDefaultsForType } from '@/lib/spaces/type-defaults'
@@ -91,11 +91,10 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to create a space.')
 
-  // Type: only a registered blueprint may be provisioned (auto-includes every wired role; an
-  // unknown/unblueprinted type is rejected). The blueprint also supplies the default skin.
+  // Type: only a provisionable type may be provisioned (the canonical list; an unknown / non-
+  // provisionable type like `root` is rejected).
   const type = (input.type ?? '').trim()
-  const blueprint = blueprintForType(type)
-  if (!blueprint) return fail('Pick a space type from the list.')
+  if (!isProvisionableType(type)) return fail('Pick a space type from the list.')
 
   const name = (input.name ?? '').trim()
   if (!name) return fail('Give your space a name.')
@@ -138,7 +137,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   const { entitlements: seedEntitlements, featureRoles: seedFeatureRoles } =
     seedSpaceConfigFromDefaults(seedType, typeDefaults)
 
-  // Insert the Space. status active, plan free, the seeded tool config, the blueprint's default skin,
+  // Insert the Space. status active, plan free, the seeded tool config, the default DAWN skin,
   // owner = caller, ported into the network. brand_name seeds from the chosen brand/name. mode_variant
   // seeds the chosen Focus (null = the type's default Focus, resolved in code); Space Modes M3.
   let spaceId: string
@@ -150,7 +149,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
         type,
         status: 'active',
         entity_id: entityId,
-        skin: blueprint.defaultSkin,
+        skin: DEFAULT_SPACE_SKIN,
         network_connected: true,
         visibility,
         plan: 'free',

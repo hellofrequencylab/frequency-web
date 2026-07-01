@@ -3,7 +3,7 @@ import { SlidersHorizontal, ArrowLeft } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { Button } from '@/components/ui/button'
-import { provisionableTypes } from '@/lib/spaces/blueprints'
+import { provisionableTypes } from '@/lib/spaces/profile-config'
 import { functionsForType, isSpaceType, DEFAULT_FUNCTION_ROLE } from '@/lib/spaces/functions'
 import { listSpaceFunctionTypeDefaults } from '@/lib/spaces/type-defaults'
 import {
