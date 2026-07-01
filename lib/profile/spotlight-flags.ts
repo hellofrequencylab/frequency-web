@@ -197,3 +197,38 @@ export function clearSpotlightDraft(meta: unknown): Record<string, unknown> {
   delete spot.draft
   return { ...base, spotlight: spot }
 }
+
+// ── Editor seed: prefer the working draft, else the live nodes ─────────────────────────
+// The editor loads the member's WORKING copy when one exists (so reopening resumes the
+// unpublished draft), otherwise the last-published live nodes. The PUBLIC page never uses
+// this — it always reads the live nodes directly. This returns RAW values (the caller runs
+// each through its validator, the same boundary the public renderer enforces, pinning
+// layout/background to the owner), so a tampered draft node can never seed the editor with
+// an unsafe value once validated. Pure (no IO/React) so it round-trips in a unit test — and
+// it deliberately lives OUTSIDE the 'use server' actions file so importing it from a test
+// never drags server-only code into the client build.
+
+/** The raw (unvalidated) editor seed sources plus the dirty flag. */
+export interface SpotlightEditorSeed {
+  layout: unknown
+  theme: unknown
+  background: unknown
+  /** True when the seed came from a saved draft (there are edits not yet published). */
+  hasUnpublishedChanges: boolean
+}
+
+/**
+ * Choose the editor's seed sources: the saved draft (per part, when present) else the live
+ * node. A draft is only used when it actually exists (readSpotlightDraftRaw returns an
+ * object); a partial draft falls back to the live node per-field, so nothing is ever lost.
+ * `hasUnpublishedChanges` is true whenever a draft node exists.
+ */
+export function resolveSpotlightEditorSeed(meta: unknown): SpotlightEditorSeed {
+  const draft = readSpotlightDraftRaw(meta)
+  return {
+    layout: draft && 'layout' in draft ? draft.layout : readSpotlightLayoutRaw(meta),
+    theme: draft && 'theme' in draft ? draft.theme : readSpotlightThemeRaw(meta),
+    background: draft && 'background' in draft ? draft.background : readSpotlightBackgroundRaw(meta),
+    hasUnpublishedChanges: draft !== undefined,
+  }
+}

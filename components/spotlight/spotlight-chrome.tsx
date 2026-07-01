@@ -52,12 +52,17 @@ export function SpotlightBackgroundEditor({
   initial,
   value,
   onChange,
+  onCommit,
 }: {
   initial: SpotlightBackground
   /** Optional CONTROLLED mode: when the parent owns the background (so applying a saved theme can
    *  update it live), pass `value` + `onChange`. Omitted → the editor holds its own state as before. */
   value?: SpotlightBackground
   onChange?: (next: SpotlightBackground) => void
+  /** Optional: when the Puck editor passes this, the explicit Save + the remove-image flow route the
+   *  value into the shared DRAFT autosave instead of the live `saveSpotlightBackground` — so nothing
+   *  here touches the public page. Omitted (legacy standalone builder) → the live self-save is used. */
+  onCommit?: (next: SpotlightBackground) => void
 }) {
   const [internal, setInternal] = useState<SpotlightBackground>(initial)
   const controlled = value !== undefined && onChange !== undefined
@@ -79,6 +84,13 @@ export function SpotlightBackgroundEditor({
 
   function save(next: SpotlightBackground) {
     setError('')
+    // Draft path: hand the value to the parent's shared autosave, never the live background write.
+    if (onCommit) {
+      onCommit(next)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+      return
+    }
     start(async () => {
       const res = await saveSpotlightBackground(next)
       if (res?.error) { setError(res.error); return }
@@ -159,7 +171,7 @@ export function SpotlightBackgroundEditor({
           className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:bg-surface-elevated disabled:opacity-40"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : saved ? <Check className="h-3.5 w-3.5" /> : null}
-          {pending ? 'Saving…' : saved ? 'Saved' : 'Save background'}
+          {pending ? 'Saving…' : saved ? 'Saved' : onCommit ? 'Save draft' : 'Save background'}
         </button>
         {error && <span className="text-xs text-danger">{error}</span>}
       </div>

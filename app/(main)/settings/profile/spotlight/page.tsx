@@ -5,10 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
   readSpotlightEnabled,
   readSpotlightPublished,
-  readSpotlightLayoutRaw,
-  readSpotlightBackgroundRaw,
-  readSpotlightThemeRaw,
   readSpotlightThemes,
+  resolveSpotlightEditorSeed,
 } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
@@ -40,11 +38,14 @@ export default async function SpotlightEditorPage() {
   if (!readSpotlightEnabled(meta)) redirect('/settings/profile')
 
   const handle = row.handle ?? ''
-  // Validate on read (the same boundary the public renderer enforces), then bridge into Puck
-  // inside the editor via the pure converter — a migration-free load of the stored layout.
-  const layout = validateSpotlightLayout(readSpotlightLayoutRaw(meta), user.id)
-  const background = validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id)
-  const theme = validateSpotlightTheme(readSpotlightThemeRaw(meta))
+  // Load DRAFT-ELSE-LIVE: resume the member's working draft when one exists (so reopening the
+  // editor keeps their unpublished edits), otherwise seed from the last-published live nodes. The
+  // public page still reads ONLY the live nodes, so a draft never leaks. Each part is VALIDATED on
+  // read (the same boundary the public renderer enforces), then bridged into Puck by the converter.
+  const seed = resolveSpotlightEditorSeed(meta)
+  const layout = validateSpotlightLayout(seed.layout, user.id)
+  const background = validateSpotlightBackground(seed.background, user.id)
+  const theme = validateSpotlightTheme(seed.theme)
   const published = readSpotlightPublished(meta)
   // The member's saved theme slots (validated on read), for the "My themes" switcher.
   const themeSlots = readSpotlightThemes(meta, user.id)
@@ -64,6 +65,7 @@ export default async function SpotlightEditorPage() {
       initialThemeSlots={themeSlots}
       initialTopFriends={topFriends}
       friendChoices={friendChoices}
+      hasUnpublishedChanges={seed.hasUnpublishedChanges}
     />
   )
 }
