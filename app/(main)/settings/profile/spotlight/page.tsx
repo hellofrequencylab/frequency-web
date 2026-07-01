@@ -8,6 +8,7 @@ import {
   readSpotlightLayoutRaw,
   readSpotlightBackgroundRaw,
   readSpotlightThemeRaw,
+  readSpotlightThemes,
 } from '@/lib/profile/spotlight-flags'
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import { validateSpotlightTheme } from '@/lib/spotlight/theme'
@@ -45,6 +46,8 @@ export default async function SpotlightEditorPage() {
   const background = validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id)
   const theme = validateSpotlightTheme(readSpotlightThemeRaw(meta))
   const published = readSpotlightPublished(meta)
+  // The member's saved theme slots (validated on read), for the "My themes" switcher.
+  const themeSlots = readSpotlightThemes(meta, user.id)
 
   const [topFriends, friendChoices] = await Promise.all([
     getTopFriendsForOwner(row.id),
@@ -58,6 +61,7 @@ export default async function SpotlightEditorPage() {
       initialLayout={layout}
       initialTheme={theme}
       initialBackground={background}
+      initialThemeSlots={themeSlots}
       initialTopFriends={topFriends}
       friendChoices={friendChoices}
     />

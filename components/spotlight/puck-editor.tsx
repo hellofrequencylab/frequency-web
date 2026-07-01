@@ -16,8 +16,10 @@ import { saveSpotlightLayout } from '@/app/(main)/settings/profile/spotlight-act
 import { SpotlightThemeEditor } from './theme-editor'
 import { SpotlightPublishBar } from './publish-bar'
 import { SpotlightBackgroundEditor, SpotlightTopFriendsPicker } from './spotlight-chrome'
+import { SpotlightThemeSlots } from './theme-slots'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { EMPTY_SPOTLIGHT_META, type SpotlightPuckMetadata } from '@/lib/spotlight/puck/metadata'
+import type { SpotlightThemeSlot } from '@/lib/profile/spotlight-flags'
 
 // THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
 // their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
@@ -46,6 +48,9 @@ function ThemePanelContent({
   theme,
   onThemeChange,
   initialBackground,
+  background,
+  onBackgroundChange,
+  themeSlots,
   initialTopFriends,
   friendChoices,
 }: {
@@ -54,14 +59,26 @@ function ThemePanelContent({
   theme: SpotlightTheme
   onThemeChange: (t: SpotlightTheme) => void
   initialBackground: SpotlightBackground
+  /** The live background, lifted so applying a saved theme updates it too. */
+  background: SpotlightBackground
+  onBackgroundChange: (next: SpotlightBackground) => void
+  themeSlots: SpotlightThemeSlot[]
   initialTopFriends: TopFriend[]
   friendChoices: TopFriend[]
 }) {
   return (
     <div className="space-y-6">
       <SpotlightPublishBar handle={handle} initialPublished={published} />
+      {/* My themes: save the current look, apply / rename / delete a saved one (max 3). Applying a
+          slot pushes its theme + background into the live editor state below and persists it. */}
+      <SpotlightThemeSlots
+        initialSlots={themeSlots}
+        currentTheme={theme}
+        currentBackground={background}
+        onApply={(t, bg) => { onThemeChange(t); onBackgroundChange(bg) }}
+      />
       <SpotlightThemeEditor value={theme} onChange={onThemeChange} showPreview={false} />
-      <SpotlightBackgroundEditor initial={initialBackground} />
+      <SpotlightBackgroundEditor initial={initialBackground} value={background} onChange={onBackgroundChange} />
       <SpotlightTopFriendsPicker initialSelected={initialTopFriends} choices={friendChoices} />
     </div>
   )
@@ -119,6 +136,7 @@ export function SpotlightPuckEditor({
   initialLayout,
   initialTheme,
   initialBackground,
+  initialThemeSlots,
   initialTopFriends,
   friendChoices,
 }: {
@@ -127,6 +145,7 @@ export function SpotlightPuckEditor({
   initialLayout: SpotlightLayout
   initialTheme: SpotlightTheme
   initialBackground: SpotlightBackground
+  initialThemeSlots: SpotlightThemeSlot[]
   initialTopFriends: TopFriend[]
   friendChoices: TopFriend[]
 }) {
@@ -137,6 +156,9 @@ export function SpotlightPuckEditor({
 
   const [themeOpen, setThemeOpen] = useState(false)
   const [theme, setTheme] = useState<SpotlightTheme>(initialTheme)
+  // Background is lifted here (not just held inside SpotlightBackgroundEditor) so applying a saved
+  // theme slot can update the live background alongside the theme in one gesture.
+  const [background, setBackground] = useState<SpotlightBackground>(initialBackground)
 
   // The render metadata the Spotlight blocks read at edit time (the SAME channel the public
   // <Render> uses). Without it the Image/Gallery blocks resolve their URL against an empty
@@ -226,6 +248,9 @@ export function SpotlightPuckEditor({
                   theme={theme}
                   onThemeChange={setTheme}
                   initialBackground={initialBackground}
+                  background={background}
+                  onBackgroundChange={setBackground}
+                  themeSlots={initialThemeSlots}
                   initialTopFriends={initialTopFriends}
                   friendChoices={friendChoices}
                 />
@@ -260,6 +285,9 @@ export function SpotlightPuckEditor({
               theme={theme}
               onThemeChange={setTheme}
               initialBackground={initialBackground}
+              background={background}
+              onBackgroundChange={setBackground}
+              themeSlots={initialThemeSlots}
               initialTopFriends={initialTopFriends}
               friendChoices={friendChoices}
             />
