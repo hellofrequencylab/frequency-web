@@ -20,6 +20,8 @@ import { SpotlightThemeSlots } from './theme-slots'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { EMPTY_SPOTLIGHT_META, type SpotlightPuckMetadata } from '@/lib/spotlight/puck/metadata'
 import type { SpotlightThemeSlot } from '@/lib/profile/spotlight-flags'
+import { SpotlightLivePreview } from './spotlight-live-preview'
+import type { SpotlightIdentity } from './spotlight-identity'
 
 // THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
 // their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
@@ -200,6 +202,7 @@ function UnpublishedBadge({ show }: { show: boolean }) {
 export function SpotlightPuckEditor({
   handle,
   published,
+  identity,
   initialLayout,
   initialTheme,
   initialBackground,
@@ -210,6 +213,9 @@ export function SpotlightPuckEditor({
 }: {
   handle: string
   published: boolean
+  /** The owner's identity (avatar, name, role, region, bio, header image) so the mobile WYSIWYG
+   *  preview can render the FULL themed page, not just the block body. */
+  identity: SpotlightIdentity
   initialLayout: SpotlightLayout
   initialTheme: SpotlightTheme
   initialBackground: SpotlightBackground
@@ -416,31 +422,39 @@ export function SpotlightPuckEditor({
           publishLabel: 'Publish',
           publishedMessage: 'Published',
           publishBusyLabel: 'Publishing…',
-          // MOBILE: the theme lives in its own dock tab (an overlap-free bottom sheet),
-          // NOT the old `fixed inset-0` drawer. Same controls as the desktop drawer via
-          // the shared ThemePanelContent — theme/background edits route through onThemeChange/
-          // onBackgroundChange, which autosave the draft too.
-          panels: [
-            {
-              key: 'theme',
-              label: 'Theme',
-              icon: <Palette className="h-5 w-5" aria-hidden />,
-              render: () => (
-                <ThemePanelContent
-                  handle={handle}
-                  published={published}
-                  theme={theme}
-                  onThemeChange={onThemeChange}
-                  initialBackground={initialBackground}
-                  background={background}
-                  onBackgroundChange={onBackgroundChange}
-                  themeSlots={initialThemeSlots}
-                  initialTopFriends={initialTopFriends}
-                  friendChoices={friendChoices}
-                />
-              ),
-            },
-          ],
+          // MOBILE WYSIWYG: the preview IS the member's ACTUAL themed Spotlight page (identity +
+          // gradient/background + glass cards + fonts + accent), rendered from LIVE editor state
+          // and updating as they edit. Tapping a block on it opens that block's field form in a
+          // popup (onEditBlock → the tall bottom sheet), so tap-to-edit is the primary flow.
+          renderPreview: ({ data, onEditBlock }) => (
+            <SpotlightLivePreview
+              config={config}
+              data={data}
+              theme={theme}
+              background={background}
+              identity={identity}
+              metadata={spotlightMeta as unknown as Record<string, unknown>}
+              onEditBlock={onEditBlock}
+            />
+          ),
+          // The theme + background settings sit BELOW the preview in the SAME scroll, so the member
+          // scrolls down to adjust them and watches the themed preview change live. Their handlers
+          // autosave the DRAFT (onThemeChange/onBackgroundChange), so a colour or background tweak is
+          // captured exactly like a block edit.
+          settingsBelow: (
+            <ThemePanelContent
+              handle={handle}
+              published={published}
+              theme={theme}
+              onThemeChange={onThemeChange}
+              initialBackground={initialBackground}
+              background={background}
+              onBackgroundChange={onBackgroundChange}
+              themeSlots={initialThemeSlots}
+              initialTopFriends={initialTopFriends}
+              friendChoices={friendChoices}
+            />
+          ),
         }}
       />
 

@@ -81,6 +81,16 @@ export type MobileEditorProps = {
    *  derive their URL from `metadata.spotlight.publicBase`. Without it those images render
    *  against an empty base and break. Mirrors the desktop <Puck metadata=...> channel. */
   metadata?: Record<string, unknown>
+  /** OPTIONAL WYSIWYG preview override. When provided it REPLACES the default raw <Render>
+   *  preview with a custom surface (e.g. the Spotlight themed live page) and enables
+   *  TAP-TO-EDIT: calling `onEditBlock(id)` opens that block's field form in a popup. Marketing
+   *  + Space editors omit it and keep today's non-interactive raw preview. `data` is the live
+   *  document so the preview re-renders on every edit. */
+  renderPreview?: (args: { data: Data; onEditBlock: (id: string) => void }) => React.ReactNode
+  /** OPTIONAL settings slot rendered BELOW the preview in the SAME scroll (e.g. the Spotlight
+   *  theme + background controls). Only shown alongside `renderPreview`. Omitted by the other
+   *  editors, which keep their controls in the dock only. */
+  settingsBelow?: React.ReactNode
 }
 
 // A full-screen sub-form on the stack: the block's own form, or a nested object/array
@@ -105,10 +115,15 @@ export function MobileEditor({
   extraActions,
   panels = [],
   metadata,
+  renderPreview,
+  settingsBelow,
 }: MobileEditorProps) {
   const [data, setData] = useState<Data>(initialData)
   const [stack, setStack] = useState<Screen[]>([])
   const [sheet, setSheet] = useState<DockSheet>(null)
+  // WYSIWYG tap-to-edit (Spotlight): the id of the block whose field form is open in a popup.
+  // Only used when `renderPreview` is supplied; the other editors push a full-screen form instead.
+  const [editBlockId, setEditBlockId] = useState<string | null>(null)
   const [dockHidden, setDockHidden] = useState(false)
   const [reordering, setReordering] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -187,8 +202,10 @@ export function MobileEditor({
     commit(next)
     setPickerOpen(false)
     setSheet(null)
-    // Immediately push the new block's edit screen (spec).
-    setStack([{ kind: 'block', id }])
+    // Immediately open the new block's editor. In WYSIWYG mode (renderPreview) that's the
+    // tap-to-edit popup so the member stays on the themed page; otherwise a full-screen push.
+    if (renderPreview) setEditBlockId(id)
+    else setStack([{ kind: 'block', id }])
   }
 
   // ── Delete + Undo ───────────────────────────────────────────────────────────
@@ -283,15 +300,36 @@ export function MobileEditor({
         </button>
       </header>
 
-      {/* Live preview: the REAL page, re-rendering as `data` changes. Taps are swallowed
-          (pointer-events off) so preview links never fire. Scrolls independently. */}
+      {/* Live preview: the REAL page, re-rendering as `data` changes. Scrolls independently.
+          Default (marketing/space): a non-interactive raw <Render> with taps swallowed. When
+          `renderPreview` is supplied (Spotlight WYSIWYG) it OWNS the preview + tap-to-edit, and
+          the theme/background `settingsBelow` sit under it in the SAME scroll. */}
       <div className="relative min-h-0 flex-1 overflow-y-auto bg-canvas">
-        <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
-          <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
-        </div>
-        <div className="pointer-events-none">
-          <Render config={config} data={data} metadata={metadata} />
-        </div>
+        {renderPreview ? (
+          <>
+            {renderPreview({
+              data,
+              onEditBlock: (id) => {
+                setSheet(null)
+                setEditBlockId(id)
+              },
+            })}
+            {settingsBelow && (
+              <div className="mx-auto w-full max-w-lg border-t border-border bg-canvas px-4 py-6">
+                {settingsBelow}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
+              <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
+            </div>
+            <div className="pointer-events-none">
+              <Render config={config} data={data} metadata={metadata} />
+            </div>
+          </>
+        )}
         {/* Bottom breathing room so the dock never sits over the last block. */}
         <div className="h-28" aria-hidden />
       </div>
@@ -394,6 +432,25 @@ export function MobileEditor({
           {activePanel?.key === p.key ? p.render() : null}
         </BottomSheet>
       ))}
+
+      {/* WYSIWYG tap-to-edit popup (Spotlight): the tapped block's field form in a tall sheet.
+          Edits commit live (autosaving the draft) so the preview behind it updates immediately;
+          Delete uses the same confirm+undo path as the block list. */}
+      {editBlockId !== null && (
+        <BlockEditSheet
+          config={config}
+          data={data}
+          blockId={editBlockId}
+          topInsetPx={topBarH}
+          onClose={() => setEditBlockId(null)}
+          onChange={(props) => commit(updateBlockProps(latest.current, editBlockId, props))}
+          onDelete={() => {
+            const id = editBlockId
+            setEditBlockId(null)
+            performDelete(id)
+          }}
+        />
+      )}
 
       {/* Add-block picker sheet (short interaction → auto size) */}
       <BottomSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Add block" topInsetPx={topBarH}>
@@ -571,5 +628,93 @@ function FormScreen({
         </div>
       )}
     </div>
+  )
+}
+
+// ── The WYSIWYG tap-to-edit popup (Spotlight) ─────────────────────────────────
+// The tapped block's field form, in a tall bottom sheet OVER the themed live preview. Edits
+// commit live (each keystroke autosaves the draft), so the preview behind the sheet updates
+// immediately. Nested object/array fields (the tint object, the links/gallery arrays, the
+// image/gallery upload control) PUSH an inner sub-form WITHIN this same sheet (never a nested
+// sheet — we swap the sheet's body), matching the full-screen editor's stack behaviour. The
+// custom upload control (FieldForm's `custom` case) works here unchanged — it is self-contained.
+function BlockEditSheet({
+  config,
+  data,
+  blockId,
+  topInsetPx,
+  onClose,
+  onChange,
+  onDelete,
+}: {
+  config: Config
+  data: Data
+  blockId: string
+  topInsetPx: number
+  onClose: () => void
+  onChange: (props: Record<string, unknown>) => void
+  onDelete: () => void
+}) {
+  // The inner sub-form stack (object/array pushes). Empty = the block's own top-level form.
+  const [subs, setSubs] = useState<PushRequest[]>([])
+
+  const item = findBlock(data, blockId)
+  const entry = (config.components as Record<string, { label?: string; fields?: FieldsSchema }>)[
+    item?.type ?? ''
+  ]
+  // The block vanished (deleted elsewhere) — close rather than render an empty shell.
+  if (!item) {
+    return null
+  }
+
+  const blockHeading = entry?.label ?? item.type ?? 'Block'
+  const blockFields = (entry?.fields ?? {}) as FieldsSchema
+  const blockValue = (item.props as Record<string, unknown>) ?? {}
+
+  const sub = subs[subs.length - 1] ?? null
+  const heading = sub ? sub.title : blockHeading
+  const fields = sub ? sub.fields : blockFields
+  const value = sub ? sub.value : blockValue
+  const onFieldsChange = sub ? sub.onChange : onChange
+
+  return (
+    <BottomSheet
+      open
+      onClose={onClose}
+      title={heading}
+      size="tall"
+      topInsetPx={topInsetPx}
+      headerAction={
+        subs.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setSubs((s) => s.slice(0, -1))}
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg px-2 text-sm font-medium text-text hover:bg-surface-elevated"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden /> Back
+          </button>
+        ) : undefined
+      }
+    >
+      <div className="-mx-5">
+        <FieldForm
+          fields={fields}
+          value={value}
+          onChange={onFieldsChange}
+          onPushScreen={(req) => setSubs((s) => [...s, req])}
+        />
+      </div>
+      {/* Delete + Done only on the block's own top-level form (not inside a sub-form). */}
+      {subs.length === 0 && (
+        <div className="mt-4 space-y-3">
+          <Button type="button" className="w-full" onClick={onClose}>
+            Done
+          </Button>
+          <Button type="button" variant="dangerOutline" className="w-full" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" aria-hidden /> Delete block
+          </Button>
+        </div>
+      )}
+    </BottomSheet>
   )
 }
