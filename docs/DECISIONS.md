@@ -10422,3 +10422,31 @@ edit costs one extra (vision) sonnet call under the existing `loom-illustration`
 is a single pass, not an unbounded agentic loop — bounded cost, and the operator drives further
 iteration. Rejected: server-side rasterization (would add a native SVG renderer dependency, against
 ADR-011) and a fully-automatic multi-round refine loop (cost + latency; a manual button is enough).
+
+## ADR-485: Vera edits by look → understand → redraw (not path-patching), with style-fidelity guards
+
+**Status:** Accepted (2026-07-01). Refines [ADR-483](DECISIONS.md)/[484](DECISIONS.md).
+
+**Context.** The first design-assistant editor asked Vera to surgically modify SVG path data
+("make the smallest change"). Nudging path coordinates blind produced monsters — a "runner" that
+read as a flailing giraffe, and "make it human" turned a clean stick figure into a creepy alien.
+The model can't reason well about geometry by editing numbers, and it drifts off the minimal house
+style by adding realistic detail.
+
+**Decision.** Route edits through Vera's ORIGINAL creation process instead of a diff:
+(1) **Look + understand** — the client rasterizes the current render and `editLoomSvg` first makes a
+vision call (`REDRAW_PLAN_SYSTEM`) where Vera names what the illustration depicts, part by part, and
+plans the change. (2) **Redraw** — a second call (`REDRAW_SYSTEM`, which embeds the shared
+`HOUSE_STYLE` vocabulary now factored out of the create prompt) rebuilds the WHOLE illustration fresh
+from that understanding, keeping the viewBox, palette, and composition but drawing shapes from clean
+geometry rather than copying path data. (3) The existing vision **self-review** still runs after.
+All three prompts carry explicit **style-fidelity/anti-alien guards**: match the original's minimal
+abstraction, convey action through POSE, and never add faces/fingers/muscles/realistic detail —
+"when unsure, draw less."
+
+**Consequences.** Edits stay in the flat, minimal kit style and read as the intended subject far more
+reliably. Cost per edit rises to ~3 sonnet calls (plan + redraw + review), acceptable for a janitor
+design tool under the `loom-illustration` budget. The plan step needs the rendered image, so it is
+skipped (redraw-only) when rasterization is unavailable. Rejected: extended-thinking on a single call
+(config constraints; the explicit plan call is clearer and lets us keep the vision context), and
+keeping the surgical-patch editor (it was the root cause of the drift).
