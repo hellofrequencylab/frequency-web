@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Images, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Images, Search, ChevronLeft, ChevronRight, LayoutGrid, Grid2x2, List } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { LIBRARY_KINDS } from '@/lib/library/types'
@@ -13,15 +13,14 @@ import {
   type LibraryCollection,
 } from '@/lib/library/store'
 import { LibraryUploader } from './library-uploader'
-import { LoomGrid } from './loom-grid'
+import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
 import { VeraWizard } from './vera-wizard'
 
-// Loom Studio — the admin surface for The Loom asset library. A left folder rail (All / by
-// Type / by Category / Collections) drives a searchable, paginated grid with per-asset editing
-// and bulk actions (add to collection, set category, tag, archive, delete). Scope is role-aware
-// (resolveActiveScope): today staff manage the Frequency master library; per-space and personal
-// Looms plug into the same seam next (docs/BUILD-LIST.md → The Loom).
+// Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
+// context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
+// (All / Type / Category / Collections) and the asset grid, with per-asset editing + bulk actions.
+// Scope is role-aware (resolveActiveScope): staff manage the Frequency master library today.
 export const dynamic = 'force-dynamic'
 
 const SORTS: { value: LibrarySort; label: string }[] = [
@@ -29,6 +28,12 @@ const SORTS: { value: LibrarySort; label: string }[] = [
   { value: 'old', label: 'Oldest' },
   { value: 'title', label: 'Title' },
   { value: 'size', label: 'Largest' },
+]
+
+const VIEWS: { value: LoomView; label: string; Icon: typeof LayoutGrid }[] = [
+  { value: 'cards', label: 'Cards', Icon: LayoutGrid },
+  { value: 'compact', label: 'Compact', Icon: Grid2x2 },
+  { value: 'list', label: 'List', Icon: List },
 ]
 
 const PAGE_SIZE = 48
@@ -50,7 +55,15 @@ function pageWindow(current: number, total: number): (number | 'gap')[] {
 export default async function LoomStudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; kind?: string; category?: string; collection?: string; sort?: string; page?: string }>
+  searchParams: Promise<{
+    q?: string
+    kind?: string
+    category?: string
+    collection?: string
+    sort?: string
+    view?: string
+    page?: string
+  }>
 }) {
   await requireAdmin('janitor')
   const sp = await searchParams
@@ -61,6 +74,7 @@ export default async function LoomStudioPage({
   const category = (sp.category ?? '').trim()
   const collectionId = (sp.collection ?? '').trim()
   const sort = (SORTS.find((s) => s.value === sp.sort)?.value ?? 'new') as LibrarySort
+  const view = (VIEWS.find((v) => v.value === sp.view)?.value ?? 'cards') as LoomView
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
 
   const [pageResult, counts, categories, collections] = scope
@@ -91,21 +105,27 @@ export default async function LoomStudioPage({
   const currentPage = Math.min(page, totalPages)
 
   const activeCollection = collections.find((c) => c.id === collectionId) ?? null
-  const activeLabel = activeCollection
-    ? activeCollection.title
-    : category || (kind ? kind : 'All assets')
+  const activeLabel = activeCollection ? activeCollection.title : category || (kind ? kind : 'All assets')
 
-  const pageHref = (n: number) => {
+  // One param builder for every link (pagination, view toggle) — preserves the active folder + search.
+  const hrefWith = (patch: Record<string, string | number | undefined>) => {
+    const cur: Record<string, string> = {}
+    if (q) cur.q = q
+    if (kind) cur.kind = kind
+    if (category) cur.category = category
+    if (collectionId) cur.collection = collectionId
+    if (sort !== 'new') cur.sort = sort
+    if (view !== 'cards') cur.view = view
+    const merged = { ...cur, ...patch }
     const params = new URLSearchParams()
-    if (q) params.set('q', q)
-    if (kind) params.set('kind', kind)
-    if (category) params.set('category', category)
-    if (collectionId) params.set('collection', collectionId)
-    if (sort !== 'new') params.set('sort', sort)
-    if (n > 1) params.set('page', String(n))
+    for (const [k, v] of Object.entries(merged)) {
+      if (v === undefined || v === '' || v === 0) continue
+      params.set(k, String(v))
+    }
     const qs = params.toString()
     return qs ? `/admin/library?${qs}` : '/admin/library'
   }
+  const pageHref = (n: number) => hrefWith({ page: n > 1 ? n : undefined })
 
   return (
     <AdminTemplate
@@ -118,6 +138,76 @@ export default async function LoomStudioPage({
       width="wide"
     >
       <AdminSection>
+        {/* Header section — spans both columns, so the rail + grid align beneath it. */}
+        <div className="mb-6 space-y-4">
+          <VeraWizard />
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="flex items-baseline gap-2">
+              <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
+              <span className="text-sm text-subtle">
+                {pageResult.total} asset{pageResult.total === 1 ? '' : 's'}
+              </span>
+            </div>
+
+            {/* Search + type + sort (GET form). Hidden inputs preserve the active folder + view. */}
+            <form className="flex flex-1 flex-wrap items-center justify-end gap-2" action="/admin/library" method="get">
+              {category && <input type="hidden" name="category" value={category} />}
+              {collectionId && <input type="hidden" name="collection" value={collectionId} />}
+              {view !== 'cards' && <input type="hidden" name="view" value={view} />}
+              <span className="relative min-w-[180px] flex-1 sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Search title, category…"
+                  className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-sm"
+                />
+              </span>
+              <select name="kind" defaultValue={kind} aria-label="Type" className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
+                <option value="">All types</option>
+                {LIBRARY_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+              <select name="sort" defaultValue={sort} aria-label="Sort" className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-2xl border border-border-strong px-4 py-2 text-sm font-semibold text-text hover:bg-surface-elevated"
+              >
+                Apply
+              </button>
+
+              {/* View mode (links; cards is primary/default) */}
+              <div className="ml-1 flex items-center rounded-2xl border border-border p-0.5">
+                {VIEWS.map(({ value, label, Icon }) => (
+                  <Link
+                    key={value}
+                    href={hrefWith({ view: value === 'cards' ? undefined : value, page: undefined })}
+                    aria-label={`${label} view`}
+                    aria-current={view === value ? 'true' : undefined}
+                    className={`rounded-[14px] p-1.5 ${
+                      view === value ? 'bg-primary text-on-primary' : 'text-subtle hover:bg-surface-elevated'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </Link>
+                ))}
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Two columns, top-aligned under the header. */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <LoomRail
             total={counts.total}
@@ -125,66 +215,10 @@ export default async function LoomStudioPage({
             categories={categories}
             collections={collections}
             active={{ kind, category, collectionId }}
-            base={{ q, sort }}
+            base={{ q, sort, view }}
           />
 
           <div className="min-w-0 flex-1">
-            <VeraWizard />
-
-            {/* Context + search */}
-            <div className="mb-4 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <h2 className="font-display text-lg uppercase text-text">{activeLabel}</h2>
-              <span className="text-sm text-subtle">
-                {pageResult.total} asset{pageResult.total === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            {/* Search + sort (GET form; server re-renders). Hidden inputs keep the active folder. */}
-            <form className="mb-6 flex flex-wrap items-end gap-3" action="/admin/library" method="get">
-              {category && <input type="hidden" name="category" value={category} />}
-              {collectionId && <input type="hidden" name="collection" value={collectionId} />}
-              <label className="flex min-w-[220px] flex-1 flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">Search</span>
-                <span className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-                  <input
-                    type="search"
-                    name="q"
-                    defaultValue={q}
-                    placeholder="Search title, category…"
-                    className="w-full rounded-2xl border border-border bg-surface py-2 pl-9 pr-3 text-sm"
-                  />
-                </span>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">Type</span>
-                <select name="kind" defaultValue={kind} className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
-                  <option value="">All</option>
-                  {LIBRARY_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-subtle">Sort</span>
-                <select name="sort" defaultValue={sort} className="rounded-2xl border border-border bg-surface px-3 py-2 text-sm">
-                  {SORTS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="submit"
-                className="rounded-2xl border border-border-strong px-4 py-2 text-sm font-semibold text-text hover:bg-surface-elevated"
-              >
-                Apply
-              </button>
-            </form>
-
             {assets.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
                 <Images className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
@@ -199,7 +233,7 @@ export default async function LoomStudioPage({
               </div>
             ) : (
               <>
-                <LoomGrid assets={assets} collections={collections} activeCollectionId={collectionId || undefined} />
+                <LoomGrid assets={assets} collections={collections} activeCollectionId={collectionId || undefined} view={view} />
 
                 {totalPages > 1 && (
                   <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">
