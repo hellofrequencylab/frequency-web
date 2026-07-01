@@ -55,13 +55,15 @@ create table if not exists public.library_assets (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 
-  -- search (keyword now; semantic reserved)
+  -- search (keyword now; semantic reserved). Note: the FTS expression covers the text
+  -- columns only — `tags` is intentionally excluded because `array_to_string` is STABLE,
+  -- not IMMUTABLE, so it can't appear in a generated column. Tags are searched/filtered
+  -- via their own GIN index (library_assets_tags_idx) instead.
   search_tsv     tsvector generated always as (
                    to_tsvector('english',
                      coalesce(title, '') || ' ' ||
                      coalesce(description, '') || ' ' ||
-                     coalesce(category, '') || ' ' ||
-                     array_to_string(tags, ' '))
+                     coalesce(category, ''))
                  ) stored,
   embedding      vector(384),
 
