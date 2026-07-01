@@ -759,3 +759,21 @@ specialist tools.*
 | BUILD-PHASES · CHECKLIST · LAUNCH · REDESIGN-STATUS | History / runbook / done — no open items (see harvest). |
 
 *Living master list — re-rank as tracks land; update the Progress log on every ship.*
+
+## 🧵 The Loom — built-in asset library — 2026-07-01 ([ADR-478](DECISIONS.md), spec [LIBRARY.md](LIBRARY.md))
+
+The built-in, searchable asset library for the whole web editor: every entity has its own,
+Frequency shares a master set, spanning **images, themes, app assets, and Puck-droppable
+elements/templates/flows**, meant to grow for years without a deploy per asset. Search is
+Supabase-native (FTS + `pg_trgm` now, `pgvector` semantic fast-follow). Decisions locked with the
+owner: Supabase-native search · semantic as fast-follow · foundation first.
+
+| # | Scope | Status |
+|---|---|---|
+| L1 | **Catalog + storage framework.** One polymorphic `public.library_assets` table (`kind` = image·icon·element·template·flow·theme·app_asset; file payload OR parametric `config`; `space_id` null = Frequency shared, set = entity's own), generated `search_tsv` + `pg_trgm` + `tags` GIN indexes, reserved `embedding vector(384)`, service-role-only RLS, and a `library-media` bucket. Typed contract `lib/library/types.ts`. | ✅ migration `20260919000000`, ADR-478 |
+| L2 | **Seed the existing kit into the catalog.** The 17 illustration elements as `element` rows (registry ref in `config`), the LeadFunnel as a `flow` row, the theme registry as `theme` rows. Idempotent upsert by slug. | 📋 |
+| L3 | **Search + browser.** `searchAssets({ q, kinds, tags, category, scope, color, sort })` (FTS + trigram + facet counts) and a janitor `/admin/library` browser (Index template): search box + facet rail + grid + preview. | 📋 |
+| L4 | **Editor integration.** A `type:'custom'` "insert from library" picker + a Library panel in the Puck editor; `LibraryImage` / `LibraryElement` / `LibraryFlow` blocks; media blocks pick from the library. | 📋 |
+| L5 | **Tenancy + roles.** Per-space libraries + upload-to-library (extend `uploadSiteMedia`, space-scoped), client-facing RLS, capability keys (`library.view` / `library.manage`), entitlements `library.*`, feature flags. | 📋 |
+| L6 | **Semantic search (killer search+).** Populate `embedding`, hybrid FTS+vector ranking (RRF, matching the practice-library pattern), AI auto-tagging + color extraction, collections/favorites, usage-ranked results. | 📋 |
+| L7 | **The Weave composer.** Brand-token-aware element/texture designer, versioning UI, cross-tenant publishing, template marketplace. | 📋 |

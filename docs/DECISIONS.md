@@ -10224,3 +10224,30 @@ runs, and a relabel never propagates. The "Spaces" (Community, `/spaces/operatin
 menu (insert the Community item mirroring My Contacts' gating; relabel the admin item; mark `/spaces/operating`
 synced). Follow-up worth hardening: make a code nav-area change propagate to the live default menu (new items +
 default-label updates) without a manual data patch.
+
+## ADR-478: The Loom — one polymorphic `library_assets` catalog is the asset-library foundation
+
+**Status:** Accepted (2026-07-01). Foundation shipped (catalog + storage); the rest is sequenced in
+[BUILD-LIST.md → The Loom](BUILD-LIST.md) and specced in [LIBRARY.md](LIBRARY.md).
+
+**Context.** We keep hand-authoring reusable visuals (the illustration kit, the LeadFunnel flow) directly in code,
+which only engineers can grow. The product need (Notion: "The Loom", from the Carrie/Entity-Studio pilot) is a
+built-in, searchable asset library for the whole web editor: every entity has its own, Frequency shares a master
+set, and it spans images, themes, app assets, and Puck-droppable elements/templates/flows, growing for years
+without a deploy per asset.
+
+**Decision.** Lay the framework as **one polymorphic catalog table**, `public.library_assets`, plus a
+`library-media` storage bucket (migration `20260919000000`). `kind` spans
+`image · icon · element · template · flow · theme · app_asset`. File-backed kinds carry `storage_*`/`url`;
+parametric kinds carry `config jsonb` (an element registry ref, a Puck block/fragment, or a theme token set) so
+they stay theme-aware and re-colorable rather than flat images. **Scope is one nullable column:** `space_id` null =
+the Frequency shared master library, set = that entity's own. Search is **Supabase-native** — a generated
+`search_tsv` (FTS) + a `pg_trgm` index for typo tolerance now, with a reserved `embedding vector(384)` column (same
+dim as the platform's other embeddings, so it reuses the existing model/RPC pattern) for semantic search as a
+fast-follow. Phase 1 is **service-role only** (RLS enabled, no policies), matching `public.pages`.
+
+**Consequences.** A single table + typed contract (`lib/library/types.ts`) that every later phase reads from. The
+browser UI, editor picker, per-tenant client RLS + roles, seeding of the existing kit/themes/flows, semantic
+search, and the Weave composer are explicitly **deferred** to the sequenced phases, not built here. Rejected: a
+table-per-asset-type schema (harder to search/scope uniformly) and an external search vendor (Algolia/Typesense —
+avoided per ADR-011's no-new-dependency stance until Postgres is outgrown).
