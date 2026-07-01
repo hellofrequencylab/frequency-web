@@ -2,14 +2,17 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Wand2, Loader2, Wand, Eraser, Shapes, History, RotateCcw } from 'lucide-react'
+import { Wand2, Loader2, Wand, Eraser, Shapes, History, RotateCcw, Palette, Trash2 } from 'lucide-react'
 import {
   generateWithRecraft,
   recraftEditAsset,
   listAssetVersions,
   rollbackAssetVersion,
+  listBrandStyles,
+  deleteBrandStyle,
   type RecraftOp,
 } from './recraft-actions'
+import type { BrandStyle } from '@/lib/library/styles'
 
 const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-sm'
 
@@ -20,24 +23,48 @@ export function RecraftPanel({ enabled }: { enabled: boolean }) {
   const [prompt, setPrompt] = useState('')
   const [lane, setLane] = useState<'vector' | 'raster'>('vector')
   const [count, setCount] = useState(1)
+  const [styleId, setStyleId] = useState('')
+  const [styles, setStyles] = useState<BrandStyle[]>([])
   const [busy, start] = useTransition()
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
 
+  // Load the space's trained brand styles so they can be picked for a matching set.
+  useEffect(() => {
+    if (!enabled) return
+    let live = true
+    listBrandStyles().then((s) => live && setStyles(s)).catch(() => {})
+    return () => {
+      live = false
+    }
+  }, [enabled])
+
   if (!enabled) return null
+
+  // Only styles trained for the active lane apply (a vector style can't condition a raster gen).
+  const laneStyles = styles.filter((s) => s.lane === lane)
 
   function generate() {
     if (!prompt.trim()) return
     setErr(null)
     setMsg(null)
     start(async () => {
-      const res = await generateWithRecraft({ prompt, lane, count })
+      const res = await generateWithRecraft({ prompt, lane, count, styleId: styleId || undefined })
       if ('error' in res) setErr(res.error)
       else {
         setMsg(`Generated ${res.count} ${lane === 'vector' ? 'vector' : 'image'}${res.count === 1 ? '' : 's'}.`)
         setPrompt('')
         router.refresh()
       }
+    })
+  }
+
+  function forgetStyle(id: string) {
+    start(async () => {
+      await deleteBrandStyle(id)
+      const s = await listBrandStyles()
+      setStyles(s)
+      if (styleId === id) setStyleId('')
     })
   }
 
@@ -89,6 +116,22 @@ export function RecraftPanel({ enabled }: { enabled: boolean }) {
               ))}
             </select>
           </label>
+          {/* Brand style — condition the whole set on a trained house look (ADR-489). */}
+          <label className="flex items-center gap-1.5 text-sm text-muted">
+            <Palette className="h-4 w-4" aria-hidden /> Style
+            <select
+              value={styleId}
+              onChange={(e) => setStyleId(e.target.value)}
+              className="rounded-xl border border-border bg-surface px-2 py-1 text-sm"
+            >
+              <option value="">Base ({lane})</option>
+              {laneStyles.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             onClick={generate}
@@ -99,6 +142,31 @@ export function RecraftPanel({ enabled }: { enabled: boolean }) {
             {busy ? 'Generating…' : 'Generate'}
           </button>
           {msg && <span className="text-sm text-signal-strong">{msg}</span>}
+        </div>
+
+        {/* Trained styles list + how to make one. */}
+        <div className="rounded-xl border border-dashed border-border px-3 py-2 text-xs text-subtle">
+          {laneStyles.length > 0 ? (
+            <ul className="mb-1.5 flex flex-wrap gap-1.5">
+              {laneStyles.map((s) => (
+                <li key={s.id} className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2 py-0.5 text-text">
+                  <Palette className="h-3 w-3 text-primary-strong" /> {s.name}
+                  <button
+                    type="button"
+                    onClick={() => forgetStyle(s.id)}
+                    aria-label={`Forget style ${s.name}`}
+                    className="ml-0.5 text-subtle hover:text-danger"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <span>
+            <b className="font-semibold text-text">Train a house style:</b> select 1–5 {lane} images in the grid below, then use{' '}
+            <b className="font-semibold text-text">Train style</b> in the selection bar. Every generation with that style picked will match the set.
+          </span>
         </div>
         {err && <p className="text-sm text-danger">{err}</p>}
       </div>

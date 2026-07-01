@@ -10539,3 +10539,31 @@ API. Rejected/deferred: self-hosting OmniSVG/StarVector (vector) and FLUX (raste
 control but needs GPU infra; revisit per the research's phased path. Brand-style consistency
 (`createStyle` from reference images → `style_id`) is wired in the client but not yet surfaced in the UI;
 it's the next step for locking a house style across a generated set.
+
+## ADR-489: The Loom brand styles — train a house look for consistent generated sets
+
+**Status:** Accepted (2026-07-01). Extends [ADR-488](DECISIONS.md).
+
+**Context.** The image studio (ADR-488) can generate one-off images, but the owner's core need is
+consistent SETS — an icon family that looks like one family, trophies in one house look. A raw prompt
+drifts between generations. Recraft supports training a reusable **style** from a few reference images
+that returns a `style_id`; passing that id to a generation conditions every image on the learned look.
+ADR-488 wired `createStyle()` in the client but left it unsurfaced.
+
+**Decision.** Surface style training end to end. A new `library_styles` table (migration
+`20260922000000_library_styles.sql`; service-role/fail-closed like the rest of the Loom) persists each
+trained style's `recraft_style_id` + friendly name + lane (the reference images stay on Recraft).
+Operators **train a style from existing assets**: select 1–5 images in the grid → **"Train style"** in
+the selection bar → name it + pick the lane → `createBrandStyle` downloads the references, calls
+Recraft `/styles`, and saves the row. The generate panel gains a **Style** picker (filtered to the
+active lane); picking one threads `styleId` into `generateWithRecraft`, which resolves it to the
+Recraft id (space-scoped, so a style can't leak across spaces) and conditions the whole set.
+`lib/library/styles.ts` holds the data layer (`listStyles`/`recordStyle`/`resolveStyleId`/`deleteStyle`).
+Cost is billed to the existing `recraft` feature cap.
+
+**Consequences.** "Generate a matching set" becomes real: train once from a few on-brand images, then
+every future generation with that style selected stays in the family. Reference images are reused from
+the Loom itself (no separate upload), so the house style compounds as the library grows. Styles are
+per-space and forgettable (deleting our pointer doesn't touch Recraft). Deferred: auto-suggesting a
+style from a collection, and image-to-image edits conditioned on a style (edits still use the base lane
+style today).

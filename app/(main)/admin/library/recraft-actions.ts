@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { getRootSpaceId } from '@/lib/library/store'
 import { recordVersion, rollbackToVersion, listVersions, type LibraryVersion } from '@/lib/library/versions'
+import { listStyles, recordStyle, resolveStyleId, deleteStyle, type BrandStyle } from '@/lib/library/styles'
 import {
   recraftConfigured,
   generateImages,
@@ -15,6 +16,7 @@ import {
   vectorizeImage,
   imageToImage,
   removeBackground,
+  createStyle,
   type RecraftLane,
 } from '@/lib/loom/recraft'
 
@@ -70,6 +72,7 @@ export async function generateWithRecraft(input: {
   size?: string
   count?: number
   category?: string
+  styleId?: string
 }): Promise<{ ok: true; count: number } | { error: string }> {
   const g = await gate(input.lane)
   if (g.error || !g.ctx) return { error: g.error ?? 'Not available.' }
@@ -80,8 +83,11 @@ export async function generateWithRecraft(input: {
   const spaceId = await getRootSpaceId()
   if (!spaceId) return { error: 'No root space found.' }
 
+  // A picked brand style overrides the base style so the whole set matches (ADR-489).
+  const recraftStyleId = input.styleId ? (await resolveStyleId(spaceId, input.styleId)) ?? undefined : undefined
+
   try {
-    const results = await generateImages({ prompt, lane: input.lane, size: input.size, n: input.count ?? 1 })
+    const results = await generateImages({ prompt, lane: input.lane, size: input.size, n: input.count ?? 1, styleId: recraftStyleId })
     if (results.length === 0) return { error: 'Recraft returned no images.' }
 
     const cost = COST[input.lane] * results.length
@@ -107,7 +113,7 @@ export async function generateWithRecraft(input: {
         url: stored.url,
         mime: stored.mime,
         bytes: stored.bytes,
-        config: { source: 'recraft', prompt, lane: input.lane },
+        config: { source: 'recraft', prompt, lane: input.lane, ...(recraftStyleId ? { styleId: recraftStyleId } : {}) },
       })
       if (!error) n++
     }
@@ -181,6 +187,78 @@ export async function rollbackAssetVersion(assetId: string, versionId: string): 
   if (!assetId || !versionId) return { error: 'Missing asset or version.' }
   const res = await rollbackToVersion(assetId, versionId, ctx.profileId)
   if ('error' in res) return res
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
+
+// ── Brand styles (ADR-489) — train a house style from reference assets so generated sets match ────
+
+/** List the space's trained brand styles (for the generate panel's picker). */
+export async function listBrandStyles(): Promise<BrandStyle[]> {
+  await requireAdmin('janitor')
+  const spaceId = await getRootSpaceId()
+  if (!spaceId) return []
+  return listStyles(spaceId)
+}
+
+/** Train a reusable brand style from 1–5 existing file-backed assets and persist it. The reference
+ *  images teach Recraft the house look; the returned style_id then conditions every generation. */
+export async function createBrandStyle(input: {
+  name: string
+  lane: RecraftLane
+  assetIds: string[]
+}): Promise<{ ok: true; style: BrandStyle } | { error: string }> {
+  const g = await gate(input.lane)
+  if (g.error || !g.ctx) return { error: g.error ?? 'Not available.' }
+
+  const name = (input.name || '').trim().slice(0, 120)
+  if (name.length < 2) return { error: 'Name the style.' }
+  const ids = [...new Set((input.assetIds || []).filter(Boolean))].slice(0, 5)
+  if (ids.length === 0) return { error: 'Pick 1–5 reference images first.' }
+
+  const spaceId = await getRootSpaceId()
+  if (!spaceId) return { error: 'No root space found.' }
+
+  try {
+    const { data } = await dbh()
+      .from('library_assets')
+      .select('url')
+      .in('id', ids)
+      .eq('space_id', spaceId)
+    const urls = ((data as Array<{ url: string | null }> | null) ?? []).map((r) => r.url).filter((u): u is string => !!u)
+    if (urls.length === 0) return { error: 'Those references have no image files.' }
+
+    const refs = await Promise.all(urls.map(async (u) => (await downloadRecraft(u)).bytes))
+    const recraftStyleId = await createStyle(input.lane, refs)
+
+    const cost = COST[input.lane]
+    after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-style', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
+
+    const style = await recordStyle({
+      spaceId,
+      name,
+      recraftStyleId,
+      lane: input.lane,
+      baseStyle: input.lane,
+      refCount: refs.length,
+      createdBy: g.ctx.profileId,
+    })
+    if (!style) return { error: 'Trained the style but could not save it.' }
+
+    revalidatePath('/admin/library')
+    return { ok: true, style }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message.slice(0, 200) : 'Style training failed.' }
+  }
+}
+
+/** Forget a trained brand style (removes our pointer; does not delete it on Recraft). */
+export async function deleteBrandStyle(styleId: string): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!styleId) return { error: 'Missing style.' }
+  const spaceId = await getRootSpaceId()
+  if (!spaceId) return { error: 'No root space found.' }
+  await deleteStyle(spaceId, styleId)
   revalidatePath('/admin/library')
   return { ok: true }
 }
