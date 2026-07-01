@@ -42,6 +42,7 @@ import {
   roleBadgeStyle,
 } from '@/lib/community-roles'
 import { NAV_AREAS, meetsAccess, meetsStaff, type NavAccess, type NavArea } from '@/lib/nav-areas'
+import { calmSpine, canSee, type NavViewer, type SpineTab } from '@/lib/nav/registry'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
@@ -1046,18 +1047,16 @@ function MobileLeftDrawer({
 // and the long-tail nav). Keeps full content width: nothing is permanently eaten
 // from the side of an already-narrow phone screen.
 
-// The four core community destinations that earn a fixed tab. Everything else
-// (The Quest, Manage, settings…) lives one tap away under Menu. Icons come from
-// AREA_ICONS so the tab bar stays in lockstep with the rail/drawer.
-const MOBILE_TABS: { key: string; href: string; label: string }[] = [
-  { key: 'feed', href: '/feed', label: 'Feed' },
-  { key: 'circles', href: '/circles', label: 'Circles' },
-  { key: 'quest', href: '/crew', label: 'Quest' },
-  { key: 'events', href: '/events', label: 'Events' },
-]
+// The four calm spine worlds (§5a: Home · Community · The Quest · Messages), derived
+// from the ONE registry (lib/nav/registry.ts::calmSpine) — no parallel hardcoded list.
+// They flank the raised Zap center button (the action, below). Each tab carries its
+// backing calm NavNode (href · gate · icon key); icons still come from AREA_ICONS so the
+// bar stays in lockstep with the rail/drawer, and each tab gate-filters through canSee —
+// the same resolver every surface uses. Order here IS bar order (slots 1-2 · Zap · 3-4).
 
 function MobileTabBar({
   isActive,
+  viewer,
   onOpenMenu,
   onOpenStats,
   menuOpen,
@@ -1065,6 +1064,8 @@ function MobileTabBar({
   hideAppNav = false,
 }: {
   isActive: (href: string) => boolean
+  /** The gate identity the four spine tabs project through (canSee — the ONE resolver). */
+  viewer: NavViewer
   onOpenMenu: () => void
   onOpenStats: () => void
   menuOpen: boolean
@@ -1072,6 +1073,11 @@ function MobileTabBar({
   /** Stripped shells (e.g. Studio) hide the app destinations; only the menu arrow remains. */
   hideAppNav?: boolean
 }) {
+  // The four calm spine worlds from the registry (§5a), gate-filtered through canSee — the
+  // same resolver every surface uses (so a visitor never sees a member-gated tab like
+  // Messages). Split around the Zap center button below (slots 1-2 · Zap · 3-4).
+  const tabs = calmSpine().filter((t) => canSee(t.node, viewer))
+
   // Every item — the two edge buttons AND the destination tabs — is flex-1 with the same
   // icon size + stroke weight, so the row reads as one evenly-spaced, uniform set. Active is
   // shown by COLOR only (not a heavier stroke), so weights never differ across the row.
@@ -1080,11 +1086,12 @@ function MobileTabBar({
       active ? 'text-primary-strong' : 'text-muted hover:text-text'
     }`
 
-  const renderTab = (tab: { key: string; href: string; label: string }) => {
-    const Icon = AREA_ICONS[tab.key] ?? Globe
-    const active = isActive(tab.href)
+  const renderTab = (tab: SpineTab) => {
+    // Icon key is the node id (AREA_ICONS is keyed by area key, == the node id for spine nodes).
+    const Icon = AREA_ICONS[tab.node.icon] ?? Globe
+    const active = isActive(tab.node.href)
     return (
-      <Link key={tab.key} href={tab.href} aria-label={tab.label} className={tabClass(active)}>
+      <Link key={tab.node.id} href={tab.node.href} aria-label={tab.label} className={tabClass(active)}>
         <Icon className="h-[22px] w-[22px]" strokeWidth={2} />
         <span className="leading-none">{tab.label}</span>
       </Link>
@@ -1115,7 +1122,7 @@ function MobileTabBar({
         <span className="leading-none">Menu</span>
       </button>
 
-      {!hideAppNav && MOBILE_TABS.slice(0, 2).map(renderTab)}
+      {!hideAppNav && tabs.slice(0, 2).map(renderTab)}
 
       {/* Zap — the action button (ADR-230). Member-facing it's Zap; the backend
           stays Capture (the 'open-capture' event, the captures machinery): Zap is
@@ -1154,7 +1161,7 @@ function MobileTabBar({
         </button>
       )}
 
-      {!hideAppNav && MOBILE_TABS.slice(2).map(renderTab)}
+      {!hideAppNav && tabs.slice(2).map(renderTab)}
 
       {/* Right → the stats drawer (zaps · gems · streak). */}
       {!hideAppNav && (
@@ -1904,7 +1911,7 @@ export default function AppShell({
       </DockRevealProvider>
 
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={{ role: gateRole, staffRole }} />}
 
       {/* Page-specific admin now lives inline at the top of the content
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
@@ -1920,12 +1927,15 @@ export default function AppShell({
       )}
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
-      {/* Feed · Circles · Channels · Events · Menu/stats arrows. Opening one side
-          closes the other — never both drawers at once. Hidden on a full-viewport editor
-          takeover so it never sits over the editor's thumb-zone control dock. */}
+      {/* The four calm spine worlds (§5a: Home · Community · The Quest · Messages) from the
+          registry, flanking the raised Zap center action, with Menu/stats edge arrows.
+          Profile ("You") stays the top-right account avatar in the header (not a 5th tab).
+          Opening one side closes the other — never both drawers at once. Hidden on a
+          full-viewport editor takeover so it never sits over the editor's control dock. */}
       {!editorTakeover && (
         <MobileTabBar
           isActive={isActive}
+          viewer={{ role: gateRole, staffRole }}
           onOpenMenu={() => {
             setDrawerOpen((o) => !o)
             setRightOpen(false)

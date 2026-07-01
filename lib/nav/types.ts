@@ -66,4 +66,9 @@ export type NavNode = {
   gate: NavGate
   /** Optional presentation hint (ghost = muted upsell/preview). */
   display?: NavDisplay
+  /** For a member-sitemap footer link that mirrors a rail area: the NAV_AREA `key`
+   *  it shares gating with, so the footer defers to the server-resolved access matrix
+   *  (role/tier/staff/view-as) exactly as the rail does. Absent ⇒ the node's own `gate`
+   *  is authoritative. Only member `surface:'footer'` column links set this. */
+  navKey?: string
 }
