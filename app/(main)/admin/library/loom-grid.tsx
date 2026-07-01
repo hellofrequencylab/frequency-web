@@ -1,18 +1,49 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Copy, Check, ExternalLink, Archive, Trash2, ImageOff, Download } from 'lucide-react'
-import type { LibraryGalleryItem } from '@/lib/library/store'
+import {
+  X,
+  Copy,
+  Check,
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Archive,
+  Trash2,
+  ImageOff,
+  Download,
+  FolderInput,
+  FolderMinus,
+  Tag,
+  Loader2,
+  Sparkles,
+  Wand2,
+  Undo2,
+  Eye,
+  BadgeCheck,
+} from 'lucide-react'
+import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import {
   downloadElementSvg,
   downloadElementPng,
   downloadImageUrl,
+  rasterizeSvgElement,
   extForMime,
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
+import { editLoomSvg, saveElementSvg, reviewLoomSvg } from './vera-actions'
+import {
+  addAssetsToCollection,
+  removeAssetsFromCollection,
+  createCollection,
+  bulkSetCategory,
+  bulkAddTags,
+  bulkArchive,
+  bulkDelete,
+} from './collections-actions'
 
 function human(n: number | null): string {
   if (!n) return ''
@@ -74,35 +105,313 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
 // The Loom Studio grid + detail drawer. Click a card to open the drawer, edit its metadata,
 // copy its URL, open/download it, or archive/delete it. Mutations run through the janitor-gated
 // server actions, then refresh the server component.
-export function LoomGrid({ assets }: { assets: LibraryGalleryItem[] }) {
+export type LoomView = 'cards' | 'compact' | 'list'
+
+export function LoomGrid({
+  assets,
+  collections,
+  activeCollectionId,
+  view = 'cards',
+}: {
+  assets: LibraryGalleryItem[]
+  collections: LibraryCollection[]
+  activeCollectionId?: string
+  view?: LoomView
+}) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [sel, setSel] = useState<Set<string>>(new Set())
   const selected = assets.find((a) => a.id === openId) ?? null
+
+  function toggle(id: string) {
+    setSel((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const allSelected = assets.length > 0 && assets.every((a) => sel.has(a.id))
+  function toggleAll() {
+    setSel(allSelected ? new Set() : new Set(assets.map((a) => a.id)))
+  }
+  const clear = () => setSel(new Set())
+
+  // The select dot, shared across views. Visible when hovered or once a selection exists.
+  const SelDot = ({ id, className = '' }: { id: string; className?: string }) => {
+    const isSel = sel.has(id)
+    return (
+      <button
+        type="button"
+        onClick={() => toggle(id)}
+        aria-pressed={isSel}
+        aria-label={isSel ? 'Deselect' : 'Select'}
+        className={`rounded-full bg-surface/90 shadow-sm transition-opacity ${
+          isSel || sel.size > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        } ${className}`}
+      >
+        {isSel ? <CheckCircle2 className="h-6 w-6 text-primary" /> : <Circle className="h-6 w-6 text-subtle" />}
+      </button>
+    )
+  }
+
+  const compact = view === 'compact'
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {assets.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            onClick={() => setOpenId(a.id)}
-            className="group overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-sm transition-shadow hover:shadow-pop"
-          >
-            <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]">
-              <Thumb asset={a} fit="cover" />
-            </span>
-            <span className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="truncate text-sm text-text" title={a.title}>
-                {a.title}
-              </span>
-              <span className="shrink-0 text-xs text-subtle">{human(a.bytes)}</span>
-            </span>
-          </button>
-        ))}
-      </div>
+      <BulkBar
+        ids={[...sel]}
+        allSelected={allSelected}
+        onToggleAll={toggleAll}
+        onClear={clear}
+        collections={collections}
+        activeCollectionId={activeCollectionId}
+      />
+
+      {view === 'list' ? (
+        <div className="overflow-hidden rounded-2xl border border-border">
+          {assets.map((a) => {
+            const isSel = sel.has(a.id)
+            return (
+              <div
+                key={a.id}
+                className={`group flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0 ${
+                  isSel ? 'bg-primary-bg/40' : 'hover:bg-surface-elevated'
+                }`}
+              >
+                <SelDot id={a.id} className="[&_svg]:h-5 [&_svg]:w-5" />
+                <button
+                  type="button"
+                  onClick={() => setOpenId(a.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                >
+                  <span className="block h-10 w-14 shrink-0 overflow-hidden rounded-lg bg-surface-elevated">
+                    <Thumb asset={a} fit="cover" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-text" title={a.title}>
+                    {a.title}
+                  </span>
+                  <span className="hidden w-20 shrink-0 truncate text-xs text-subtle sm:block">{a.kind}</span>
+                  <span className="hidden w-32 shrink-0 truncate text-xs text-subtle md:block">{a.category ?? ''}</span>
+                  <span className="w-16 shrink-0 text-right text-xs text-subtle">{human(a.bytes)}</span>
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div
+          className={
+            compact
+              ? 'grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+              : 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
+          }
+        >
+          {assets.map((a) => {
+            const isSel = sel.has(a.id)
+            return (
+              <div
+                key={a.id}
+                className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
+                  isSel ? 'border-primary ring-2 ring-primary' : 'border-border'
+                }`}
+              >
+                <SelDot id={a.id} className={`absolute left-2 top-2 z-10 ${compact ? '[&_svg]:h-5 [&_svg]:w-5' : ''}`} />
+                <button type="button" onClick={() => setOpenId(a.id)} className="block w-full text-left">
+                  <span
+                    className={`block ${
+                      compact ? 'aspect-square' : 'aspect-[4/3]'
+                    } overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]`}
+                  >
+                    <Thumb asset={a} fit="cover" />
+                  </span>
+                  {compact ? (
+                    <span className="block truncate px-2 py-1 text-2xs text-text" title={a.title}>
+                      {a.title}
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-between gap-2 px-3 py-2">
+                      <span className="truncate text-sm text-text" title={a.title}>
+                        {a.title}
+                      </span>
+                      <span className="shrink-0 text-xs text-subtle">{human(a.bytes)}</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {selected && <DetailDrawer asset={selected} onClose={() => setOpenId(null)} />}
     </>
+  )
+}
+
+// The bulk-action toolbar above the grid: a select-all toggle + a live count, and (when
+// anything is selected) actions that run across the whole selection — add/remove from a
+// collection, set a category, add tags, archive, delete. Each runs the janitor-gated action,
+// then refreshes and clears the selection.
+function BulkBar({
+  ids,
+  allSelected,
+  onToggleAll,
+  onClear,
+  collections,
+  activeCollectionId,
+}: {
+  ids: string[]
+  allSelected: boolean
+  onToggleAll: () => void
+  onClear: () => void
+  collections: LibraryCollection[]
+  activeCollectionId?: string
+}) {
+  const router = useRouter()
+  const [pending, start] = useTransition()
+  const [menu, setMenu] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const n = ids.length
+
+  function run(fn: () => Promise<{ ok?: true; error?: string } | { error: string }>) {
+    setErr(null)
+    setMenu(false)
+    start(async () => {
+      const res = await fn()
+      if (res && 'error' in res && res.error) {
+        setErr(res.error)
+        return
+      }
+      onClear()
+      router.refresh()
+    })
+  }
+
+  const btn =
+    'inline-flex items-center gap-1.5 rounded-xl border border-border px-2.5 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-50'
+
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface-elevated/60 px-3 py-2">
+      <button
+        type="button"
+        onClick={onToggleAll}
+        className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-medium text-text hover:bg-surface-elevated"
+      >
+        {allSelected ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <Circle className="h-5 w-5 text-subtle" />}
+        {allSelected ? 'Clear page' : 'Select page'}
+      </button>
+
+      <span className="text-sm text-subtle">{n > 0 ? `${n} selected` : 'Select assets to edit in bulk'}</span>
+
+      {pending && <Loader2 className="h-4 w-4 animate-spin text-subtle" aria-label="Working" />}
+
+      {n > 0 && (
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {/* Add to collection */}
+          <div className="relative">
+            <button type="button" onClick={() => setMenu((v) => !v)} disabled={pending} className={btn}>
+              <FolderInput className="h-4 w-4" /> Add to collection
+            </button>
+            {menu && (
+              <div className="absolute right-0 z-20 mt-1 max-h-64 w-56 overflow-auto rounded-xl border border-border bg-surface p-1 shadow-pop">
+                {collections.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-subtle">No collections yet.</p>
+                )}
+                {collections.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => run(() => addAssetsToCollection(c.id, ids))}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-left text-sm text-text hover:bg-surface-elevated"
+                  >
+                    <span className="truncate">{c.title}</span>
+                    <span className="shrink-0 text-xs text-subtle">{c.count}</span>
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const title = window.prompt('New collection name')
+                    if (!title || !title.trim()) return
+                    run(async () => {
+                      const created = await createCollection(title.trim())
+                      if ('error' in created) return created
+                      return addAssetsToCollection(created.id, ids)
+                    })
+                  }}
+                  className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-3 py-1.5 text-left text-sm font-medium text-primary-strong hover:bg-surface-elevated"
+                >
+                  <FolderInput className="h-4 w-4" /> New collection…
+                </button>
+              </div>
+            )}
+          </div>
+
+          {activeCollectionId && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(() => removeAssetsFromCollection(activeCollectionId, ids))}
+              className={btn}
+            >
+              <FolderMinus className="h-4 w-4" /> Remove from folder
+            </button>
+          )}
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const cat = window.prompt('Set category (folder) for the selected assets. Leave blank to clear.')
+              if (cat === null) return
+              run(() => bulkSetCategory(ids, cat))
+            }}
+            className={btn}
+          >
+            <Tag className="h-4 w-4" /> Set category
+          </button>
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const tags = window.prompt('Add tags (comma-separated) to the selected assets')
+              if (!tags || !tags.trim()) return
+              run(() => bulkAddTags(ids, tags))
+            }}
+            className={btn}
+          >
+            <Tag className="h-4 w-4" /> Add tags
+          </button>
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (window.confirm(`Archive ${n} asset${n === 1 ? '' : 's'}? They can be restored later.`))
+                run(() => bulkArchive(ids))
+            }}
+            className={btn}
+          >
+            <Archive className="h-4 w-4" /> Archive
+          </button>
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (window.confirm(`Permanently delete ${n} asset${n === 1 ? '' : 's'}? This cannot be undone.`))
+                run(() => bulkDelete(ids))
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-danger px-2.5 py-1.5 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" /> Delete
+          </button>
+        </div>
+      )}
+
+      {err && <p className="w-full text-sm text-danger">{err}</p>}
+    </div>
   )
 }
 
@@ -168,8 +477,85 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
   const previewRef = useRef<HTMLDivElement>(null)
   const isElement = asset.kind === 'element' && (isRegistryElement(asset) || !!safeElementSvg(asset))
 
+  // Vera design assistant (SVG elements only): iterate on the graphic by instruction, and let
+  // her CHECK her work — render the result to an image, look at it (vision), and self-correct.
+  const [override, setOverride] = useState<string | null>(null)
+  const [instruction, setInstruction] = useState('')
+  const [veraErr, setVeraErr] = useState<string | null>(null)
+  const [reviewNote, setReviewNote] = useState<string | null>(null)
+  const [veraBusy, startVera] = useTransition()
+  const [reviewing, setReviewing] = useState(false)
+  const autoReview = useRef(false)
+  const safeOverride = override && sanitizeSvg(override).ok ? override : null
+
   function previewSvg(): SVGSVGElement | null {
     return previewRef.current?.querySelector('svg') ?? null
+  }
+  /** The SVG Vera should edit: the current override, else the stored svg, else the live render. */
+  function currentSvgString(): string | null {
+    if (safeOverride) return safeOverride
+    const stored = safeElementSvg(asset)
+    if (stored) return stored
+    const el = previewSvg()
+    return el ? new XMLSerializer().serializeToString(el) : null
+  }
+  function askVera() {
+    const svg = currentSvgString()
+    if (!svg || !instruction.trim()) return
+    setVeraErr(null)
+    setReviewNote(null)
+    startVera(async () => {
+      const res = await editLoomSvg(svg, instruction)
+      if ('error' in res) setVeraErr(res.error)
+      else {
+        setOverride(res.svg)
+        autoReview.current = true // she checks her work as soon as it paints
+      }
+    })
+  }
+  /** Render the current graphic and have Vera look at it, correcting if it reads wrong. */
+  async function reviewCurrent() {
+    const el = previewSvg()
+    const svgStr = currentSvgString()
+    if (!el || !svgStr) return
+    setVeraErr(null)
+    setReviewing(true)
+    try {
+      const imageBase64 = await rasterizeSvgElement(el, 512)
+      const res = await reviewLoomSvg({ svg: svgStr, instruction, imageBase64 })
+      if ('error' in res) setVeraErr(res.error)
+      else if ('svg' in res) {
+        setOverride(res.svg)
+        setReviewNote(res.note)
+      } else {
+        setReviewNote(res.note)
+      }
+    } catch {
+      setVeraErr('Could not render the graphic to check it.')
+    } finally {
+      setReviewing(false)
+    }
+  }
+  // After an edit paints, auto-run one review pass so Vera catches her own mistakes.
+  useEffect(() => {
+    if (!autoReview.current || !safeOverride) return
+    autoReview.current = false
+    const id = requestAnimationFrame(() => void reviewCurrent())
+    return () => cancelAnimationFrame(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeOverride])
+
+  function saveVera() {
+    if (!safeOverride) return
+    setVeraErr(null)
+    startVera(async () => {
+      const res = await saveElementSvg(asset.id, safeOverride)
+      if ('error' in res) setVeraErr(res.error)
+      else {
+        router.refresh()
+        onClose()
+      }
+    })
   }
   function exportSvg() {
     const svg = previewSvg()
@@ -208,8 +594,19 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
             ref={previewRef}
             className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated"
           >
-            <Thumb asset={asset} fit="contain" />
+            {safeOverride ? (
+              <div
+                className="flex h-full w-full items-center justify-center p-4 text-text [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full"
+                // Sanitized in the action AND re-checked by safeOverride before this render.
+                dangerouslySetInnerHTML={{ __html: safeOverride }}
+              />
+            ) : (
+              <Thumb asset={asset} fit="contain" />
+            )}
           </div>
+          {safeOverride && (
+            <p className="-mt-2 text-xs text-primary-strong">Vera edit preview — save to keep it, or revert.</p>
+          )}
 
           <p className="text-xs text-subtle">
             {asset.kind}
@@ -255,6 +652,73 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
               </>
             )}
           </div>
+
+          {/* Design with Vera — edit this graphic by describing the change (SVG elements only). */}
+          {isElement && (
+            <div className="rounded-2xl border border-border bg-surface-elevated/50 p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-text">
+                <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
+                Design with Vera
+              </p>
+              <textarea
+                className={inputCls}
+                rows={2}
+                value={instruction}
+                onChange={(e) => setInstruction(e.target.value)}
+                placeholder="e.g. make the arrow teal, add a second person, round the corners more"
+              />
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={askVera}
+                  disabled={veraBusy || reviewing || !instruction.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                >
+                  {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                  {veraBusy ? 'Working…' : safeOverride ? 'Refine' : 'Ask Vera'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void reviewCurrent()}
+                  disabled={veraBusy || reviewing}
+                  title="Vera renders it, looks at it, and fixes anything off"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-70"
+                >
+                  {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                  {reviewing ? 'Checking…' : 'Check her work'}
+                </button>
+                {safeOverride && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={saveVera}
+                      disabled={veraBusy || reviewing}
+                      className="rounded-2xl bg-signal px-3 py-1.5 text-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOverride(null)
+                        setVeraErr(null)
+                        setReviewNote(null)
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated"
+                    >
+                      <Undo2 className="h-4 w-4" /> Revert
+                    </button>
+                  </>
+                )}
+              </div>
+              {reviewNote && (
+                <p className="mt-2 flex items-start gap-1.5 text-sm text-signal-strong">
+                  <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {reviewNote}
+                </p>
+              )}
+              {veraErr && <p className="mt-2 text-sm text-danger">{veraErr}</p>}
+            </div>
+          )}
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Title</span>

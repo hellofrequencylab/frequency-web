@@ -24,6 +24,28 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 - **Backfill:** **everything** — existing `site-media` URLs get ingested into the catalog and
   references rewritten.
 
+## Loom Studio (`/admin/library`)
+
+The janitor-facing studio ([ADR-483](DECISIONS.md)):
+
+- **Folder rail** (left): **All** · by **Type** · by **Category** (smart folders from the
+  `category` field) · **Collections** (custom folders — `library_collections`; an asset can be in
+  many). Navigation is URL-driven and preserves the search + sort. New / rename / delete collection
+  live in the rail.
+- **Header** (full width): Create-with-Vera, the active-folder heading + count, search, type, sort,
+  and a **view-mode** switch — so the rail and grid columns align vertically beneath it.
+- **Grid** (right): searchable, sorted, paginated (48/page). Three view modes — **Cards** (default),
+  **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
+- **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
+  **add tags**, **archive**, or **delete** across the selection.
+- **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer — describe a
+  change ("make the arrow teal", "add a second person") and Vera rewrites the SVG (house style,
+  token colors preserved), preview, then save. Saved edits land in `config.svg`; clearing it restores
+  the original code render. **Vera checks her own work**: after each edit (and via "Check her work")
+  the graphic is rendered to an image and shown back to her with vision, so she can SEE the result
+  and self-correct if it reads wrong ([ADR-484](DECISIONS.md)).
+- **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) from a prompt.
+
 ## Code-drawn elements (registries)
 
 Beyond stored files, The Loom catalogues the app's hand-authored house-style SVG art as

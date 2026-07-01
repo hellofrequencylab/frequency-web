@@ -5,11 +5,11 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { completeText, AiUnavailableError } from '@/lib/ai/complete'
+import { completeText, completeRaw, AiUnavailableError } from '@/lib/ai/complete'
 import { withVoice } from '@/lib/ai/voice'
 import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { getRootSpaceId } from '@/lib/library/store'
-import { sanitizeSvg } from '@/lib/library/svg-sanitize'
+import { sanitizeSvg, extractSvg } from '@/lib/library/svg-sanitize'
 
 // Vera wizard: generate a new Loom "card" (illustration) as inline SVG in the house style,
 // then save it to the library. Janitor-gated, budget-gated, and the generated SVG is
@@ -139,4 +139,145 @@ export async function saveLoomCard(input: {
 
   revalidatePath('/admin/library')
   return { ok: true }
+}
+
+// Vera as a design assistant: given an existing SVG + an instruction, return the modified SVG.
+const EDIT_SYSTEM = withVoice(`You are Vera, a design assistant editing an existing inline SVG in Frequency's house style.
+
+You are given the CURRENT <svg> and an INSTRUCTION. Return the FULL modified <svg>, applying the instruction and preserving everything it does not mention.
+
+OUTPUT CONTRACT — follow EXACTLY:
+- Output ONLY the one modified inline <svg> element. No prose, no markdown fences, no XML declaration, no comments.
+- Keep the SAME root attributes as the input (viewBox especially; keep role/stroke defaults). Update aria-label only if the change makes the old one wrong.
+- Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. Never use text, script, style, image, use, a, or any href.
+- COLOR: keep the color APPROACH the input already uses. If it colors with DAWN token classes (fill-primary, stroke-signal, fill-signal-bg, …), keep using those classes. If it uses currentColor, keep currentColor. NEVER introduce a hex, rgb, or inline color style.
+- Preserve the flat, rounded line-art house style. Make the smallest change that satisfies the instruction; do not redraw the whole thing unless asked.`)
+
+/** Edit an existing SVG per a natural-language instruction. Returns the sanitized result. */
+export async function editLoomSvg(
+  currentSvg: string,
+  instruction: string,
+): Promise<{ svg: string } | { error: string }> {
+  const ctx = await requireAdmin('janitor')
+
+  const inbound = sanitizeSvg(currentSvg || '')
+  if (!inbound.ok) return { error: "That graphic can't be edited (it didn't pass the safety check)." }
+  const ask = (instruction || '').trim().slice(0, 400)
+  if (ask.length < 3) return { error: 'Tell Vera what to change.' }
+  if (!(await aiAvailable())) return { error: 'AI is turned off right now.' }
+  if (await featureOverBudget(FEATURE)) return { error: "Vera's design budget is used up for today." }
+
+  try {
+    const res = await completeText({
+      system: EDIT_SYSTEM,
+      messages: [{ role: 'user', content: `CURRENT SVG:\n${inbound.svg}\n\nINSTRUCTION: ${ask}` }],
+      tier: 'sonnet',
+      maxTokens: 2000,
+      cacheSystem: true,
+    })
+    after(() =>
+      recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: ctx.profileId }),
+    )
+
+    const checked = sanitizeSvg(res.text)
+    if (!checked.ok) {
+      return { error: `Vera's edit didn't pass the safety check (${checked.error}). Try rewording it.` }
+    }
+    return { svg: checked.svg }
+  } catch (e) {
+    if (e instanceof AiUnavailableError) return { error: 'AI is unavailable right now.' }
+    return { error: 'Could not make that change. Try again in a moment.' }
+  }
+}
+
+/** Persist an edited SVG onto an existing element asset (stored in config.svg). This makes a
+ *  code-drawn registry element render its edited copy instead; clearing config.svg would
+ *  restore the original. Janitor-gated. */
+export async function saveElementSvg(assetId: string, svg: string): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!assetId) return { error: 'Missing asset id.' }
+
+  const checked = sanitizeSvg(svg || '')
+  if (!checked.ok) return { error: `That SVG didn't pass the safety check (${checked.error}).` }
+
+  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
+  const dbh = createAdminClient() as unknown as SupabaseClient
+  const { data } = await dbh.from('library_assets').select('config').eq('id', assetId).maybeSingle()
+  const config = ((data as { config: Record<string, unknown> | null } | null)?.config ?? {}) as Record<string, unknown>
+
+  const { error } = await dbh
+    .from('library_assets')
+    .update({ config: { ...config, svg: checked.svg, edited: true }, updated_at: new Date().toISOString() })
+    .eq('id', assetId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
+
+// Vera checks her own work: she LOOKS at a rendered image of the SVG (vision) and judges
+// whether it satisfies the instruction and reads cleanly in the house style — fixing it if not.
+const REVIEW_SYSTEM = withVoice(`You are Vera, reviewing your own illustration work as a careful design critic.
+
+You are given: the goal (what was asked), the current inline SVG code, and a rendered PNG of exactly how that SVG looks right now. LOOK at the image and judge it honestly against the goal and the house style (flat, rounded line-art; amber primary + teal signal accents; balanced, centered, uncluttered; shapes not overlapping or clipped by the frame; nothing degenerate or blank).
+
+Decide:
+- If the rendered image is correct and clean, reply with ONE short line starting "GOOD:" and a few words why (e.g. "GOOD: the arrow is teal and the layout is balanced").
+- If it looks wrong (doesn't match the goal, broken/overlapping/clipped shapes, off-style, empty), reply with the CORRECTED full inline <svg> and NOTHING else.
+
+Correction rules (when you output an <svg>):
+- Output ONLY the one <svg> element. Keep the same viewBox and the color APPROACH already used (DAWN token classes like fill-primary/stroke-signal, OR currentColor). Never introduce hex/rgb/inline color.
+- Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. No text/script/style/image/use/a/href.
+- Make the smallest fix that makes it correct and clean.`)
+
+/** Vera looks at a rendered image of the SVG and either approves it or returns a corrected SVG.
+ *  `imageBase64` is a PNG (base64, no data-URL prefix) rasterized on the client. */
+export async function reviewLoomSvg(input: {
+  svg: string
+  instruction: string
+  imageBase64: string
+}): Promise<{ ok: true; note: string } | { svg: string; note: string } | { error: string }> {
+  const ctx = await requireAdmin('janitor')
+
+  const inbound = sanitizeSvg(input.svg || '')
+  if (!inbound.ok) return { error: "That graphic can't be reviewed (it didn't pass the safety check)." }
+  const image = (input.imageBase64 || '').trim()
+  if (!image || image.length > 8_000_000) return { error: 'Could not read the rendered image.' }
+  if (!(await aiAvailable())) return { error: 'AI is turned off right now.' }
+  if (await featureOverBudget(FEATURE)) return { error: "Vera's design budget is used up for today." }
+
+  const goal = (input.instruction || '').trim().slice(0, 400) || 'Make it a clean, on-brand illustration.'
+
+  try {
+    const res = await completeRaw({
+      system: REVIEW_SYSTEM,
+      tier: 'sonnet',
+      maxTokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: `GOAL: ${goal}\n\nCURRENT SVG:\n${inbound.svg}\n\nHere is how it renders right now:` },
+            { type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } },
+            { type: 'text', text: 'Review it per your instructions: reply "GOOD: …" or output the corrected <svg>.' },
+          ],
+        },
+      ],
+    })
+    after(() =>
+      recordAiUsage({ feature: FEATURE, model: res.tier, usage: res.usage, costUsd: res.costUsd, profileId: ctx.profileId }),
+    )
+
+    const maybeSvg = extractSvg(res.text)
+    if (maybeSvg) {
+      const checked = sanitizeSvg(maybeSvg)
+      if (!checked.ok) return { error: `Vera's fix didn't pass the safety check (${checked.error}).` }
+      return { svg: checked.svg, note: 'Vera spotted an issue and adjusted it.' }
+    }
+    const note = res.text.replace(/^GOOD:\s*/i, '').trim().slice(0, 200) || 'Looks right.'
+    return { ok: true, note }
+  } catch (e) {
+    if (e instanceof AiUnavailableError) return { error: 'AI is unavailable right now.' }
+    return { error: 'Could not review that. Try again in a moment.' }
+  }
 }

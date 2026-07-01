@@ -88,6 +88,37 @@ export async function downloadElementPng(source: SVGSVGElement, filename: string
   })
 }
 
+/** Rasterize an on-DOM element to a PNG and return the base64 payload (no data-URL prefix),
+ *  on a white field — for sending to Vera's vision review so she can SEE her own work. */
+export async function rasterizeSvgElement(source: SVGSVGElement, width = 512): Promise<string> {
+  const clone = inlineSvgStyles(source)
+  const vb = source.viewBox?.baseVal
+  const ratio = vb && vb.width ? vb.height / vb.width : 150 / 240
+  const w = width
+  const h = Math.max(1, Math.round(width * ratio))
+  clone.setAttribute('width', String(w))
+  clone.setAttribute('height', String(h))
+  const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(serialize(clone))
+
+  return await new Promise<string>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('Canvas not supported'))
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, w, h)
+      ctx.drawImage(img, 0, 0, w, h)
+      const url = canvas.toDataURL('image/png')
+      resolve(url.split(',')[1] ?? '')
+    }
+    img.onerror = () => reject(new Error('Could not rasterize the SVG'))
+    img.src = dataUrl
+  })
+}
+
 /** Download a file-backed asset by URL. Falls back to opening it if the fetch is blocked. */
 export async function downloadImageUrl(url: string, filename: string): Promise<void> {
   try {
