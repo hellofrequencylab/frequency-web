@@ -67,6 +67,11 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   (`recraftConfigured()`); it's janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08 vector)
   and called server-side only. Client: `lib/loom/recraft.ts`; actions:
   `admin/library/recraft-actions.ts`; versioning backbone: `lib/library/versions.ts`.
+- **Brand styles (matching sets)**: train a reusable **house style** so a whole generated set looks
+  like one family ([ADR-489](DECISIONS.md)). Select 1–5 on-brand images in the grid → **"Train style"**
+  in the selection bar → name it + pick the lane. The style is saved (`library_styles`, the Recraft
+  `style_id` + a name), and the studio's **Style** picker offers it when generating; every image with
+  that style selected matches. Styles are per-space and forgettable. Data layer: `lib/library/styles.ts`.
 
 ## Code-drawn elements (registries)
 
@@ -102,6 +107,7 @@ The five DAM entities (migrations `20260919000000_library_assets.sql` +
 | `library_assets` | The **master** record | `kind`, `title`, `slug`, `description`, `category`, `tags[]`, `colors[]`; `space_id` (NOT NULL; **root space = shared**); file payload (`storage_*`/`url`/`mime`/`width`/`height`/`bytes`) or parametric `config jsonb`; ingest meta (`sha256`, `alt`, `blurhash`, `focal_x/y`, `orig_width/height`); protection hooks (`is_protected`, `download_policy`, `expires_at`); `search_tsv` + `embedding vector(384)` |
 | `library_renditions` | Derived files off a master | `kind` (thumb/grid/hero/og/source/custom), `recipe jsonb` (on-the-fly transform), storage + dims |
 | `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (a full **asset snapshot** — url/storage/mime/dims/config — from any edit source: a Recraft edit, a Vera SVG save, or a Filerobot recipe), `is_current` (one per asset), `note`; see `lib/library/versions.ts` |
+| `library_styles` | Trained Recraft brand styles for matching sets ([ADR-489](DECISIONS.md)) | `name`, `recraft_style_id`, `lane` (vector/raster), `ref_count`; space-scoped, service-role/fail-closed; see `lib/library/styles.ts` |
 | `library_collections` + `_items` | Arbitrary groupings ("Q3 sales funnel"), space-scoped | `title`, `slug`; items are many-to-many with `sort` |
 | `library_usages` | Where each asset is referenced | `context` (page/space_brand/spotlight/email/other), `ref_id`, `block_id` |
 

@@ -23,6 +23,7 @@ import {
   Eye,
   BadgeCheck,
   RefreshCw,
+  Palette,
   Sparkles as SparklesIcon,
 } from 'lucide-react'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
@@ -38,6 +39,7 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
+import { createBrandStyle } from './recraft-actions'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -170,6 +172,7 @@ export function LoomGrid({
         onClear={clear}
         collections={collections}
         activeCollectionId={activeCollectionId}
+        recraftEnabled={recraftEnabled}
       />
 
       {view === 'list' ? (
@@ -267,6 +270,7 @@ function BulkBar({
   onClear,
   collections,
   activeCollectionId,
+  recraftEnabled = false,
 }: {
   ids: string[]
   allSelected: boolean
@@ -274,12 +278,34 @@ function BulkBar({
   onClear: () => void
   collections: LibraryCollection[]
   activeCollectionId?: string
+  recraftEnabled?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [menu, setMenu] = useState(false)
+  const [styleMenu, setStyleMenu] = useState(false)
+  const [styleName, setStyleName] = useState('')
+  const [styleLane, setStyleLane] = useState<'vector' | 'raster'>('vector')
   const [err, setErr] = useState<string | null>(null)
   const n = ids.length
+  // Recraft trains a style from 1–5 reference images.
+  const canTrainStyle = recraftEnabled && n >= 1 && n <= 5
+
+  function trainStyle() {
+    if (!styleName.trim()) return
+    setErr(null)
+    start(async () => {
+      const res = await createBrandStyle({ name: styleName.trim(), lane: styleLane, assetIds: ids })
+      if ('error' in res) {
+        setErr(res.error)
+        return
+      }
+      setStyleMenu(false)
+      setStyleName('')
+      onClear()
+      router.refresh()
+    })
+  }
 
   function run(fn: () => Promise<{ ok?: true; error?: string } | { error: string }>) {
     setErr(null)
@@ -354,6 +380,53 @@ function BulkBar({
               </div>
             )}
           </div>
+
+          {/* Train a brand style from the selected 1–5 images (Recraft, ADR-489). */}
+          {canTrainStyle && (
+            <div className="relative">
+              <button type="button" onClick={() => setStyleMenu((v) => !v)} disabled={pending} className={btn}>
+                <Palette className="h-4 w-4" /> Train style
+              </button>
+              {styleMenu && (
+                <div className="absolute right-0 z-20 mt-1 w-64 rounded-xl border border-border bg-surface p-3 shadow-pop">
+                  <p className="mb-2 text-xs text-subtle">
+                    Teach a house look from these {n} image{n === 1 ? '' : 's'}. Pick it later in the studio to match a whole set.
+                  </p>
+                  <input
+                    autoFocus
+                    value={styleName}
+                    onChange={(e) => setStyleName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && trainStyle()}
+                    placeholder="Style name (e.g. Warm icon set)"
+                    className="mb-2 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm"
+                  />
+                  <div className="mb-2 inline-flex rounded-xl border border-border p-0.5">
+                    {(['vector', 'raster'] as const).map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setStyleLane(l)}
+                        aria-pressed={styleLane === l}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                          styleLane === l ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated'
+                        }`}
+                      >
+                        {l === 'vector' ? 'Vector' : 'Raster'}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={trainStyle}
+                    disabled={pending || !styleName.trim()}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+                  >
+                    <Palette className="h-4 w-4" /> Train style
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {activeCollectionId && (
             <button
