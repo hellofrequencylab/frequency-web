@@ -1,21 +1,16 @@
 import Link from 'next/link'
 import {
   ArrowRight,
-  BadgeCheck,
   BarChart3,
   Briefcase,
-  CalendarClock,
   CreditCard,
-  GraduationCap,
   HandCoins,
   IdCard,
   LayoutTemplate,
   Mail,
   type LucideIcon,
   QrCode,
-  ScanLine,
   Sparkles,
-  Ticket,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -63,22 +58,14 @@ export function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/manage/mode`
     case 'space.layout':
       return `${base}/manage/layout`
-    case 'space.place':
-      return `${base}/settings/availability`
+    case 'space.offerings':
+      // The ONE adaptive commerce surface (the deeper Offerings merge): it stacks whichever of
+      // availability / memberships / donations / enrollment / tickets / check-in apply to this type.
+      return `${base}/settings/offerings`
     case 'space.people':
       return `${base}/settings/members`
     case 'space.engage.crm':
       return `${base}/crm`
-    case 'space.engage.donations':
-      return `${base}/settings/donations`
-    case 'space.engage.enroll':
-      return `${base}/settings/enroll`
-    case 'space.engage.memberships':
-      return `${base}/settings/memberships`
-    case 'space.engage.tickets':
-      return `${base}/settings/tickets`
-    case 'space.safety.checkin':
-      return `${base}/settings/checkin`
     case 'space.reach':
       return `${base}/settings/qr`
     case 'space.comms':
@@ -133,12 +120,7 @@ const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
   'space.layout': 'space',
   'space.people': 'people',
   'space.engage.crm': 'people',
-  'space.place': 'offerings',
-  'space.engage.memberships': 'offerings',
-  'space.engage.donations': 'offerings',
-  'space.engage.enroll': 'offerings',
-  'space.engage.tickets': 'offerings',
-  'space.safety.checkin': 'offerings',
+  'space.offerings': 'offerings',
   'space.comms': 'reach',
   'space.reach': 'reach',
   'space.billing': 'billing',
@@ -151,14 +133,9 @@ const ICON_FOR: Record<string, LucideIcon> = {
   'space.basics': IdCard,
   'space.mode': Sparkles,
   'space.layout': LayoutTemplate,
-  'space.place': CalendarClock,
-  'space.engage.memberships': BadgeCheck,
-  'space.engage.donations': HandCoins,
-  'space.engage.enroll': GraduationCap,
-  'space.engage.tickets': Ticket,
+  'space.offerings': HandCoins,
   'space.people': Users,
   'space.engage.crm': Briefcase,
-  'space.safety.checkin': ScanLine,
   'space.reach': QrCode,
   'space.comms': Mail,
   'space.billing': CreditCard,

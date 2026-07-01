@@ -50,6 +50,13 @@ describe('hrefForSurface (console section targets never loop)', () => {
   it('opens CRM at the standalone board, an owner surface that escapes the profile shell', () => {
     expect(hrefForSurface('space.engage.crm', slug)).toBe(`/spaces/${slug}/crm`)
   })
+
+  // The deeper Offerings merge: the ONE adaptive commerce surface opens the unified Offerings page,
+  // which stacks whichever sections apply to the space's type. It replaces the five separate targets
+  // (availability / memberships / donations / enroll / tickets / checkin).
+  it('opens the unified Offerings surface at /settings/offerings', () => {
+    expect(hrefForSurface('space.offerings', slug)).toBe(`/spaces/${slug}/settings/offerings`)
+  })
 })
 
 // Every gated surface must map to exactly one render group, and every group must be one of the known
@@ -92,9 +99,9 @@ describe('Mode is a secondary signal: Basics/identity is never demoted below mod
   it('keeps Basics + Mode in the Space group, which renders before every other group', () => {
     expect(groupForSurface('space.basics')).toBe('space')
     expect(groupForSurface('space.mode')).toBe('space')
-    // CRM lands in people, availability in offerings — both AFTER the Space group in the render spine.
+    // CRM lands in people, the unified Offerings surface in offerings — both AFTER the Space group.
     expect(groupForSurface('space.engage.crm')).toBe('people')
-    expect(groupForSurface('space.place')).toBe('offerings')
+    expect(groupForSurface('space.offerings')).toBe('offerings')
   })
 
   it('does not move Basics below an emphasized surface when ordering within the Space group', () => {
