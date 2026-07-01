@@ -22,6 +22,7 @@ import {
   Undo2,
   Eye,
   BadgeCheck,
+  RefreshCw,
 } from 'lucide-react'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
@@ -34,7 +35,7 @@ import {
   extForMime,
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
-import { editLoomSvg, saveElementSvg, reviewLoomSvg } from './vera-actions'
+import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -502,7 +503,7 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
     const el = previewSvg()
     return el ? new XMLSerializer().serializeToString(el) : null
   }
-  function askVera() {
+  function askVera(mode: LoomEditMode) {
     const svg = currentSvgString()
     if (!svg || !instruction.trim()) return
     const el = previewSvg() // capture the CURRENT render so Vera can see what she's changing
@@ -515,11 +516,13 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
       } catch {
         /* fall back to code-only if rasterization fails */
       }
-      const res = await editLoomSvg(svg, instruction, image)
+      const res = await editLoomSvg(svg, instruction, image, mode)
       if ('error' in res) setVeraErr(res.error)
       else {
         setOverride(res.svg)
-        autoReview.current = true // she checks her work as soon as it paints
+        // Only auto-check a full redraw. A tweak is meant to stay near-identical, so leave it
+        // alone (the auto-check was over-editing tweaks); "Check her work" is available manually.
+        autoReview.current = mode === 'redraw'
       }
     })
   }
@@ -675,23 +678,38 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                 rows={2}
                 value={instruction}
                 onChange={(e) => setInstruction(e.target.value)}
-                placeholder="e.g. make the arrow teal, add a second person, round the corners more"
+                placeholder="e.g. thin the stroke a little, make the center leaf translucent"
               />
+              <p className="mt-1.5 text-xs text-subtle">
+                <b className="font-semibold text-text">Tweak</b> keeps it nearly identical (small changes).{' '}
+                <b className="font-semibold text-text">Redraw</b> rebuilds it (bigger changes). Both keep the original
+                colors.
+              </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={askVera}
+                  onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
+                  title="A small, surgical change — keeps the graphic nearly identical"
                   className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                  {veraBusy ? 'Working…' : safeOverride ? 'Refine' : 'Ask Vera'}
+                  {veraBusy ? 'Working…' : 'Tweak'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => askVera('redraw')}
+                  disabled={veraBusy || reviewing || !instruction.trim()}
+                  title="Rebuild the whole graphic from scratch — for bigger changes"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
+                >
+                  <RefreshCw className="h-4 w-4" /> Redraw
                 </button>
                 <button
                   type="button"
                   onClick={() => void reviewCurrent()}
                   disabled={veraBusy || reviewing}
-                  title="Vera renders it, looks at it, and fixes anything off"
+                  title="Vera renders it, looks at it, and fixes anything clearly broken"
                   className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}

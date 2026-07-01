@@ -32,7 +32,7 @@ OUTPUT CONTRACT — follow EXACTLY:
 - COLOR IS CLASSES ONLY — never a hex, rgb, or inline style. Put color on class="…" using ONLY these DAWN tokens (append /NN for opacity, e.g. fill-primary/40):
   fills: fill-primary, fill-primary-strong, fill-primary-bg, fill-signal, fill-signal-strong, fill-signal-bg, fill-surface, fill-border, fill-border-strong, fill-on-primary, fill-on-signal
   strokes: stroke-primary, stroke-primary-strong, stroke-signal, stroke-signal-strong, stroke-surface, stroke-border, stroke-border-strong, stroke-on-signal
-- Style: flat shapes plus simple line-art. Rounded ends (stroke-linecap="round" stroke-linejoin="round"). Stroke widths 3 to 5. Amber (primary) is the lead color, teal (signal) is the accent. No gradients, filters, shadows, or photorealism.
+- DESIGN VIBE — lead with this (the "induction vibe", docs/LOOM-DESIGN-LANGUAGE.md): flat, warm, FILLED shapes — a calm, rounded, friendly product-UI feel. Build the drawing from solid filled shapes; line-art is only a supporting accent (a check, a motion line, a rule), NEVER the whole drawing. Amber (primary) is the hero, teal (signal) the accent; faint primary-bg washes + surface cards carry the warmth. Rounded ends (stroke-linecap="round" stroke-linejoin="round") + big rounded corners (rx 10-22). Stroke widths 3 to 5. No gradients, filters, shadows, or photorealism.
 - Keep the motif centered in a safe zone so it reads small. A handful of clean shapes, not dozens.
 
 DRAW WHAT IT IS — build the subject from simple, recognizable geometry, part by part, not by nudging path numbers. Match the ORIGINAL's level of abstraction: these are MINIMAL flat illustrations, so keep it minimal.
@@ -50,6 +50,9 @@ HOUSE MOTIF VOCABULARY (reach for these building blocks — they are how the kit
 - Flame (streak): teardrop <path d="M0 -16 C5 -8 9 -3 9 4 A9 9 0 1 1 -9 4 C-9 -3 -5 -8 0 -16 Z"/>.
 - Cards/lists: rounded rects with fill-surface + stroke-border; bar charts: a rising row of rounded rects.
 - Devices: a phone (tall rounded rect) or calendar (rect + a fill-primary header band) as the container for content.
+- App screen / surface (the induction signature): a rounded rect "window" — fill-surface stroke-border-strong, with an optional slim fill-primary or fill-primary-bg header band — holding faint inner cards. How the kit shows a product moment.
+- Warm inner card: <rect rx="12" class="fill-primary-bg"/> (or fill-surface stroke-border) as the content block inside a screen.
+- Avatar dot: a filled circle in fill-primary (fill-primary-bg for a muted one). Pill/chip: a rounded rect fill-primary with an fill-on-primary mark (a "joined"/count chip).
 
 STYLE EXAMPLE (match this simplicity):
 <svg viewBox="0 0 240 150" fill="none" role="img" aria-label="A booking sheet with a slot confirmed"><rect x="64" y="14" width="112" height="122" rx="14" class="fill-surface stroke-border-strong" stroke-width="3"/><path d="M64 40v-12a14 14 0 0 1 14-14h84a14 14 0 0 1 14 14v12z" class="fill-primary"/><rect x="78" y="52" width="84" height="18" rx="9" class="fill-primary-bg"/><rect x="78" y="80" width="84" height="18" rx="9" class="fill-signal"/><path d="M147 89l4 4 8-9" class="stroke-on-signal" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`
@@ -58,21 +61,22 @@ const GRAPHIC_SYSTEM = withVoice(
   `You are Vera, drawing a new spot illustration "card" for Frequency's asset library (The Loom), in the exact house style.\n\n${HOUSE_STYLE}\n\nDraw exactly what the operator asks, as literally and simply as possible.`,
 )
 
-// Small UI marks — the On Air icon-kit language (components/on-air/icons.tsx): a 24×24
-// grid, currentColor stroke, round caps, reads at 16–18px.
-const ICON_SYSTEM = withVoice(`You are Vera, drawing a small UI icon for Frequency's asset library (The Loom), in the house icon-kit language.
+// Small icons in the warm "induction vibe" (docs/LOOM-DESIGN-LANGUAGE.md): a 24×24 grid,
+// flat FILLED duotone in the DAWN palette (amber-led), rounded, reads at 16–18px.
+const ICON_SYSTEM = withVoice(`You are Vera, drawing a small icon for Frequency's asset library (The Loom), in the warm "induction vibe" (docs/LOOM-DESIGN-LANGUAGE.md).
 
 OUTPUT CONTRACT — follow EXACTLY:
 - Output ONLY one inline <svg> element. No prose, no markdown fences, no XML declaration, no comments.
-- Root must be EXACTLY: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="SHORT DESCRIPTION">…</svg>
+- Root must be: <svg viewBox="0 0 24 24" fill="none" role="img" aria-label="SHORT DESCRIPTION">…</svg>
 - Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. Never use text, script, style, image, use, a, or any href/xlink.
-- COLOR: use currentColor only. Draw with strokes; for a soft accent you may fill a shape with fill="currentColor" fill-opacity="0.18". Never a hex, rgb, class, or inline color style.
-- Style: one clean glyph, centered, 2–5 shapes max, generous 2px padding from the edges. No text, no gradients, no shadows. It must read at 16px.
+- COLOR IS CLASSES ONLY — never a hex, rgb, or inline style. A warm FILLED duotone:
+  the main shape in class="fill-primary" (amber hero); a soft accent shape in class="fill-primary-bg" behind or beside it; a small pop in class="fill-signal" (teal) when it helps; on-color marks in class="fill-on-primary". Outlines only if needed: class="stroke-primary-strong" stroke-width="2".
+- Style: one clean glyph built from FILLED, rounded shapes (not thin line-art). Centered, 2–4 shapes max, generous ~2px padding, big rounded corners. Flat — no gradients, shadows, or text. It must read at 16px.
 
-STYLE EXAMPLE (match this weight — a live "on air" dot in its ripples):
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="On air"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M8.2 8.4a5.4 5.4 0 0 0 0 7.2M15.8 8.4a5.4 5.4 0 0 1 0 7.2"/><path d="M5 5.4a9.6 9.6 0 0 0 0 13.2M19 5.4a9.6 9.6 0 0 1 0 13.2" opacity="0.55"/></svg>
+STYLE EXAMPLE (a warm filled calendar — match this feel):
+<svg viewBox="0 0 24 24" fill="none" role="img" aria-label="Calendar"><rect x="3.5" y="5" width="17" height="15.5" rx="4" class="fill-primary-bg"/><path d="M3.5 9.5a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4z" class="fill-primary"/><rect x="7" y="2.5" width="2.5" height="4" rx="1.25" class="fill-primary-strong"/><rect x="14.5" y="2.5" width="2.5" height="4" rx="1.25" class="fill-primary-strong"/><circle cx="9" cy="14" r="1.7" class="fill-primary"/><circle cx="15" cy="14" r="1.7" class="fill-signal"/></svg>
 
-Draw exactly what the operator asks, as one simple glyph.`)
+Draw exactly what the operator asks, as one simple warm-filled glyph.`)
 
 /** Generate (but do not save) a new card. Returns the sanitized SVG for preview. */
 export async function generateLoomCard(
@@ -151,38 +155,53 @@ export async function saveLoomCard(input: {
   return { ok: true }
 }
 
-// Vera as a design assistant. Editing SVG by nudging path numbers produces monsters, so instead
-// she goes through her ORIGINAL creation process: (1) LOOK at the rendered image and say what it
-// depicts, part by part, and how to change it; (2) REDRAW the whole thing cleanly from that
-// understanding, in the house style — same viewBox, palette, and composition.
+// Vera as a design assistant, with two modes. Editing NEVER imposes the warm "create" vibe — it
+// preserves the original's own look (colors, style, composition):
+//   • TWEAK (default): a surgical, minimal change — keep the graphic NEARLY IDENTICAL, alter only
+//     what's asked. For refinements ("make the center leaf translucent, thin the stroke").
+//   • REDRAW: rebuild the whole thing from an understanding of what it depicts (look → plan →
+//     redraw), for bigger conceptual changes ("make the runner clearly mid-stride").
 
-const REDRAW_PLAN_SYSTEM = withVoice(`You are Vera, a design assistant studying an illustration before you redraw it.
+const EDIT_PRINCIPLES = `PRESERVE THE ORIGINAL (this is an EDIT, not a new drawing):
+- Keep the original's EXACT visual style, weight, and COLOR APPROACH. If it uses currentColor, keep currentColor. If it uses DAWN token classes, keep the SAME classes it already uses. NEVER recolor it (do not turn a dark/monochrome icon amber, or vice-versa).
+- Keep the same viewBox, size, and overall composition/placement.
+- Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. No text/script/style/image/use/a/href. No hex, rgb, or inline color.`
 
-Look CAREFULLY at the image. Name what it depicts, part by part, in concrete shapes (e.g. "a runner: round head, torso leaning forward, two legs bent in a stride, two arms swinging, motion lines, a track line"). Note anything that reads wrong today. Then say concretely how you will redraw it to satisfy the instruction while keeping the flat house style, the same palette, and the same overall composition.
+const TWEAK_SYSTEM = withVoice(`You are Vera, making a SMALL, precise tweak to an existing icon or illustration — like a designer nudging one detail. The result MUST look nearly identical to the original, with ONLY the requested change applied.
+
+Rules:
+- Change ONLY what the instruction asks. Every other shape, path, coordinate, opacity, and color stays EXACTLY as-is. Do not redraw, re-center, re-style, re-color, or "improve" anything else.
+- Prefer editing existing paths/attributes over adding or removing shapes. Make the smallest possible change.
+- ${EDIT_PRINCIPLES}
+- If the request truly cannot be done without a redraw, make the closest faithful minimal change.
+
+Output ONLY the modified <svg>.`)
+
+const REDRAW_PLAN_SYSTEM = withVoice(`You are Vera, a design assistant studying an illustration before a bigger redraw.
+
+Look CAREFULLY at the image. Name what it depicts, part by part, in concrete shapes (e.g. "a runner: round head, torso leaning forward, two legs bent in a stride, two arms swinging"). Note anything that reads wrong. Then say concretely how you'll redraw it to satisfy the instruction while keeping the SAME style, palette, colors, and overall composition as the original.
 
 Reply in 1-4 short sentences. Do NOT output any SVG or code.`)
 
-const REDRAW_SYSTEM = withVoice(
-  `You are Vera, REDRAWING one of Frequency's existing spot illustrations so it reads clearly — not patching path numbers. You are given the ORIGINAL svg (use it only for the viewBox, the palette/token classes, and the rough layout) and a short plan describing what it depicts and the change to make.
+const REDRAW_SYSTEM = withVoice(`You are Vera, REDRAWING an existing illustration so it reads clearly — for a change bigger than a small tweak. You get the original svg and a short plan of what it depicts + the change.
 
-Rebuild the WHOLE illustration cleanly from that understanding, so the subject is instantly recognizable and the requested change is applied. Keep the same viewBox and color approach (the same DAWN token classes, or currentColor if that's what the original uses). Preserve the parts the instruction does not mention. Do NOT copy the original's path data — draw the shapes fresh from clean geometry.
+Rebuild it cleanly so the subject is instantly recognizable and the change is applied, but STAY FAITHFUL to the original:
+- ${EDIT_PRINCIPLES}
+- Match the original's level of abstraction and detail exactly. Keep figures minimal — recognizable by POSE, never adding faces, fingers, muscles, or realism the original didn't have (that turns a clean figure into a creepy "alien"). Fewer, cleaner shapes win; when unsure, draw LESS.
+- The result must look like it belongs in the same set as the original, in the SAME colors.
 
-STAY ON STYLE — this is the whole point:
-- Match the original's simplicity and level of abstraction exactly. If it was a minimal flat/stick figure, keep it a minimal flat/stick figure — just fix the pose/proportions. Do not add realism or detail the original didn't have.
-- The failure mode to avoid: adding faces, fingers, muscles, extra joints, or off proportions turns a clean figure into a creepy "alien." Fewer, cleaner strokes always win. When unsure, draw LESS.
-- The result must look like it belongs in the same set as the original kit art.
+Output ONLY the finished <svg>.`)
 
-${HOUSE_STYLE}
+export type LoomEditMode = 'tweak' | 'redraw'
 
-Output ONLY the finished <svg>.`,
-)
-
-/** Edit an existing SVG the way Vera would create it: look → understand → redraw. `imageBase64`
- *  (a PNG of the current render, from the client) lets her SEE what she's changing. */
+/** Edit an existing SVG. `mode` 'tweak' (default) makes a surgical, near-identical change; 'redraw'
+ *  rebuilds it from an understanding for bigger changes. `imageBase64` (a PNG of the current render)
+ *  lets Vera SEE what she's changing. The original's colors + style are always preserved. */
 export async function editLoomSvg(
   currentSvg: string,
   instruction: string,
   imageBase64?: string,
+  mode: LoomEditMode = 'tweak',
 ): Promise<{ svg: string } | { error: string }> {
   const ctx = await requireAdmin('janitor')
 
@@ -194,14 +213,44 @@ export async function editLoomSvg(
   if (await featureOverBudget(FEATURE)) return { error: "Vera's design budget is used up for today." }
 
   const image = (imageBase64 || '').trim()
+  const hasImage = !!image && image.length < 8_000_000
   const usage = { inputTokens: 0, outputTokens: 0 }
   let costUsd = 0
   let tier: ModelTier = 'sonnet'
 
   try {
-    // (1) Understand: look at the render and plan the redraw (skipped if we have no image).
+    if (mode === 'tweak') {
+      // Surgical: one call, keep it near-identical. Show the render so she doesn't break it.
+      const res = await completeRaw({
+        system: TWEAK_SYSTEM,
+        tier: 'sonnet',
+        maxTokens: 2200,
+        cacheSystem: true,
+        messages: [
+          {
+            role: 'user',
+            content: hasImage
+              ? [
+                  { type: 'text', text: `ORIGINAL SVG:\n${inbound.svg}\n\nHere is how it looks now. Apply ONLY this change, keeping everything else identical:\nINSTRUCTION: ${ask}` },
+                  { type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } },
+                ]
+              : `ORIGINAL SVG:\n${inbound.svg}\n\nApply ONLY this change, keeping everything else identical:\nINSTRUCTION: ${ask}`,
+          },
+        ],
+      })
+      usage.inputTokens += res.usage.inputTokens
+      usage.outputTokens += res.usage.outputTokens
+      costUsd += res.costUsd
+      tier = res.tier
+      after(() => recordAiUsage({ feature: FEATURE, model: tier, usage, costUsd, profileId: ctx.profileId }))
+      const checked = sanitizeSvg(res.text)
+      if (!checked.ok) return { error: `Vera's tweak didn't pass the safety check (${checked.error}). Try rewording it.` }
+      return { svg: checked.svg }
+    }
+
+    // REDRAW: (1) understand from the render, (2) rebuild — always in the original's colors + style.
     let plan = ''
-    if (image && image.length < 8_000_000) {
+    if (hasImage) {
       const p = await completeRaw({
         system: REDRAW_PLAN_SYSTEM,
         tier: 'sonnet',
@@ -210,7 +259,7 @@ export async function editLoomSvg(
           {
             role: 'user',
             content: [
-              { type: 'text', text: `INSTRUCTION: ${ask}\n\nHere is the illustration right now. What is it (part by part), and how will you redraw it to satisfy the instruction?` },
+              { type: 'text', text: `INSTRUCTION: ${ask}\n\nHere is the illustration now. What is it (part by part), and how will you redraw it — keeping its colors + style?` },
               { type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } },
             ],
           },
@@ -222,8 +271,6 @@ export async function editLoomSvg(
       costUsd += p.costUsd
       tier = p.tier
     }
-
-    // (2) Redraw: rebuild the whole illustration from the understanding, in the house style.
     const draw = await completeRaw({
       system: REDRAW_SYSTEM,
       tier: 'sonnet',
@@ -232,9 +279,9 @@ export async function editLoomSvg(
       messages: [
         {
           role: 'user',
-          content: `ORIGINAL SVG (viewBox, palette, and rough layout reference only):\n${inbound.svg}\n\n${
+          content: `ORIGINAL SVG (keep its viewBox, colors, and composition):\n${inbound.svg}\n\n${
             plan ? `WHAT IT DEPICTS + YOUR PLAN:\n${plan}\n\n` : ''
-          }INSTRUCTION: ${ask}\n\nRedraw the whole illustration cleanly so it clearly reads as intended.`,
+          }INSTRUCTION: ${ask}\n\nRedraw it cleanly so it reads as intended, in the SAME colors and style.`,
         },
       ],
     })
@@ -242,13 +289,9 @@ export async function editLoomSvg(
     usage.outputTokens += draw.usage.outputTokens
     costUsd += draw.costUsd
     tier = draw.tier
-
     after(() => recordAiUsage({ feature: FEATURE, model: tier, usage, costUsd, profileId: ctx.profileId }))
-
     const checked = sanitizeSvg(draw.text)
-    if (!checked.ok) {
-      return { error: `Vera's edit didn't pass the safety check (${checked.error}). Try rewording it.` }
-    }
+    if (!checked.ok) return { error: `Vera's edit didn't pass the safety check (${checked.error}). Try rewording it.` }
     return { svg: checked.svg }
   } catch (e) {
     if (e instanceof AiUnavailableError) return { error: 'AI is unavailable right now.' }
@@ -289,14 +332,16 @@ You are given: the goal (what was asked), the current inline SVG code, and a ren
 
 Watch hardest for STYLE DRIFT and creepiness: a figure that has grown a face, fingers, muscles, extra or broken joints, or bad proportions has veered into "alien" territory and is WRONG even if it technically matches the goal. The house figures are minimal (a round head + a few clean rounded strokes); the action reads from the POSE, not from detail. Anatomically-off or overly-detailed = fix it.
 
+Be CONSERVATIVE — this is a check, not a redesign. Preserve the original's colors, style, and composition; NEVER recolor or restyle it. Only intervene for a CLEAR problem: broken/overlapping/clipped shapes, a degenerate/blank result, the requested change obviously missing, or a figure that drifted into creepy realism. Cosmetic preferences are not problems. When in doubt, approve.
+
 Decide:
-- If the rendered image is correct, clean, and on-style, reply with ONE short line starting "GOOD:" and a few words why (e.g. "GOOD: a clean, minimal runner in a clear stride").
-- If it looks wrong (doesn't match the goal, broken/overlapping/clipped shapes, off proportions, added realistic detail, drifted off-style, empty), reply with the CORRECTED full inline <svg> and NOTHING else.
+- If the rendered image is fine (correct enough, clean, faithful to the original's look), reply with ONE short line starting "GOOD:" and a few words why (e.g. "GOOD: the center leaf is lighter, everything else unchanged").
+- Only if there is a clear problem, reply with the CORRECTED full inline <svg> and NOTHING else.
 
 Correction rules (when you output an <svg>):
-- Output ONLY the one <svg> element. Keep the same viewBox and the color APPROACH already used (DAWN token classes like fill-primary/stroke-signal, OR currentColor). Never introduce hex/rgb/inline color.
+- Output ONLY the one <svg> element. Keep the same viewBox and the EXACT color approach already used (the same DAWN token classes, OR currentColor). Never recolor; never introduce hex/rgb/inline color.
 - Allowed tags ONLY: svg, g, path, rect, circle, ellipse, line, polyline, polygon. No text/script/style/image/use/a/href.
-- Redraw toward SIMPLER and cleaner — fewer strokes, correct proportions, on the house style. Never add realistic detail (faces, fingers, muscles). When unsure, draw less.`)
+- Fix ONLY the specific problem, keeping the rest identical. Toward simpler + cleaner; never add realistic detail (faces, fingers, muscles).`)
 
 /** Vera looks at a rendered image of the SVG and either approves it or returns a corrected SVG.
  *  `imageBase64` is a PNG (base64, no data-URL prefix) rasterized on the client. */

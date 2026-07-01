@@ -41,14 +41,16 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
 - **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
   **add tags**, **archive**, or **delete** across the selection.
-- **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer — describe a
-  change ("make the arrow teal", "add a second person") and Vera rewrites the SVG (house style,
-  token colors preserved), preview, then save. Saved edits land in `config.svg`; clearing it restores
-  the original code render. Vera edits by **look → understand → redraw** — she sees the current
-  render, names what it depicts, and rebuilds it fresh in the minimal house style (not by patching
-  path numbers), then **checks her own work** with vision and self-corrects. Style-fidelity guards
-  keep her from drifting into realistic/"alien" detail ([ADR-484](DECISIONS.md)/[485](DECISIONS.md)).
-- **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) from a prompt.
+- **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer with two
+  modes — **Tweak** (a surgical change that keeps the graphic nearly identical; default) and
+  **Redraw** (rebuild it from an understanding of the render, for bigger changes). Both **preserve
+  the original's colors + style** — edits never impose the create-vibe. Vera can SEE the current
+  render (vision) and **checks her own work** conservatively (only fixing clear breakage: Redraw
+  auto-checks, Tweak checks on demand). Saved edits land in `config.svg`; clearing it restores the
+  original code render ([ADR-484](DECISIONS.md)/[485](DECISIONS.md)/[486](DECISIONS.md)).
+- **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) in the warm
+  **induction vibe** — flat, filled, amber-led (see
+  [`docs/LOOM-DESIGN-LANGUAGE.md`](LOOM-DESIGN-LANGUAGE.md), [ADR-486](DECISIONS.md)).
 
 ## Code-drawn elements (registries)
 
