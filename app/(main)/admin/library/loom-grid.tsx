@@ -45,7 +45,7 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
     if (raw) {
       return (
         <div
-          className="flex h-full w-full items-center justify-center p-4 [&>svg]:max-h-full [&>svg]:w-auto"
+          className="flex h-full w-full items-center justify-center p-4 [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full"
           // Sanitized at save AND re-validated by safeElementSvg above before this render.
           dangerouslySetInnerHTML={{ __html: raw }}
         />
@@ -55,7 +55,7 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
     if (el) {
       return (
         <div className="flex h-full w-full items-center justify-center p-4">
-          <Illustration name={el} className="max-h-full w-auto" />
+          <Illustration name={el} className="h-full" />
         </div>
       )
     }

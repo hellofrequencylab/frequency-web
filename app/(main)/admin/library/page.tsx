@@ -1,4 +1,5 @@
-import { Images, Search } from 'lucide-react'
+import Link from 'next/link'
+import { Images, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { LIBRARY_KINDS } from '@/lib/library/types'
@@ -21,10 +22,26 @@ const SORTS: { value: LibrarySort; label: string }[] = [
   { value: 'size', label: 'Largest' },
 ]
 
+const PAGE_SIZE = 48
+
+/** A compact page list: 1 … around-current … last. */
+function pageWindow(current: number, total: number): (number | 'gap')[] {
+  const keep = new Set<number>([1, total, current, current - 1, current + 1])
+  const sorted = [...keep].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b)
+  const out: (number | 'gap')[] = []
+  let prev = 0
+  for (const n of sorted) {
+    if (n - prev > 1) out.push('gap')
+    out.push(n)
+    prev = n
+  }
+  return out
+}
+
 export default async function LoomStudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; kind?: string; sort?: string }>
+  searchParams: Promise<{ q?: string; kind?: string; sort?: string; page?: string }>
 }) {
   await requireAdmin('janitor')
   const sp = await searchParams
@@ -33,13 +50,27 @@ export default async function LoomStudioPage({
   const q = (sp.q ?? '').trim()
   const kind = LIBRARY_KINDS.includes(sp.kind as (typeof LIBRARY_KINDS)[number]) ? sp.kind : ''
   const sort = (SORTS.find((s) => s.value === sp.sort)?.value ?? 'new') as LibrarySort
+  const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
 
-  const [assets, counts] = scope
+  const [pageResult, counts] = scope
     ? await Promise.all([
-        searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, sort }),
+        searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, sort, page, pageSize: PAGE_SIZE }),
         kindCounts(scope.spaceId),
       ])
-    : [[], { total: 0, byKind: {} as Record<string, number> }]
+    : [{ items: [], total: 0 }, { total: 0, byKind: {} as Record<string, number> }]
+
+  const assets = pageResult.items
+  const totalPages = Math.max(1, Math.ceil(pageResult.total / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const pageHref = (n: number) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (kind) params.set('kind', kind)
+    if (sort !== 'new') params.set('sort', sort)
+    if (n > 1) params.set('page', String(n))
+    const qs = params.toString()
+    return qs ? `/admin/library?${qs}` : '/admin/library'
+  }
 
   return (
     <AdminTemplate
@@ -121,7 +152,59 @@ export default async function LoomStudioPage({
             </p>
           </div>
         ) : (
-          <LoomGrid assets={assets} />
+          <>
+            <LoomGrid assets={assets} />
+
+            {totalPages > 1 && (
+              <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">
+                {currentPage > 1 ? (
+                  <Link href={pageHref(currentPage - 1)} className="rounded-xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Previous page">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                    <ChevronLeft className="h-4 w-4" />
+                  </span>
+                )}
+
+                {pageWindow(currentPage, totalPages).map((n, i) =>
+                  n === 'gap' ? (
+                    <span key={`gap-${i}`} className="px-2 text-subtle">
+                      …
+                    </span>
+                  ) : (
+                    <Link
+                      key={n}
+                      href={pageHref(n)}
+                      aria-current={n === currentPage ? 'page' : undefined}
+                      className={`min-w-[2.25rem] rounded-xl border px-3 py-1.5 text-center text-sm ${
+                        n === currentPage
+                          ? 'border-primary bg-primary text-on-primary'
+                          : 'border-border text-text hover:bg-surface-elevated'
+                      }`}
+                    >
+                      {n}
+                    </Link>
+                  ),
+                )}
+
+                {currentPage < totalPages ? (
+                  <Link href={pageHref(currentPage + 1)} className="rounded-xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated" aria-label="Next page">
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <span className="rounded-xl border border-border px-3 py-1.5 text-sm text-subtle opacity-50">
+                    <ChevronRight className="h-4 w-4" />
+                  </span>
+                )}
+              </nav>
+            )}
+
+            <p className="mt-3 text-center text-xs text-subtle">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{(currentPage - 1) * PAGE_SIZE + assets.length} of{' '}
+              {pageResult.total}
+            </p>
+          </>
         )}
       </AdminSection>
     </AdminTemplate>
