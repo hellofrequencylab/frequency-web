@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Suspense, cache } from 'react'
+import Image from 'next/image'
+import { cache } from 'react'
 import { QrCode, Pencil, LayoutTemplate } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
@@ -15,10 +16,9 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
 import { blueprintForSpace } from '@/lib/spaces/templates'
 import { resolveAccentVars } from '@/lib/spaces/accent'
-import { getInitials } from '@/lib/utils'
+import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
-import { ProfileHeroStats } from '@/components/spaces/profile-hero-stats'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -38,13 +38,15 @@ const spaceVisibility = cache(getSpaceVisibility)
 // THIS tenant's rows), paints the Space's brand ACCENT over the whole profile subtree, and OWNS the
 // ONE cohesive header for every tab (Facebook/LinkedIn business-page grammar):
 //   a full-width COVER band at the top (image or the neutral brand gradient, Header or Hero size read
-//   off preferences.coverSize) → a PROFILE INFO area overlapping the cover bottom (the logo chip, the
-//   brand name as the single <h1>, the type badge, the tagline, the live stat row, and the trailing
-//   actions: the primary CTA by type + Follow + Connect + the owner tools) → the tab menu + Settings →
-//   a hairline rule → the content.
+//   off preferences.coverSize) → a PROFILE INFO area (the logo chip, the brand name as the single <h1>,
+//   the type badge, the tagline, then a FULL-WIDTH action ROW on its own line below the name: the
+//   primary CTA by type + Follow + Connect + the owner tools) → the tab menu + Settings → a hairline
+//   rule → the content. In the Hero size the logo + name + action row sit OVERLAID on the bottom of the
+//   cover image itself (LinkedIn/FB cover-hero grammar) over a gradient that fades to the page canvas.
 // The tab BODY (children) is each tab page's <PageModules>; the landing body is the Puck content grid
 // (identity is layout-owned now, never a Puck block). Server Components throughout; the identity paints
-// instantly, the stats row streams behind its own <Suspense> with a matched skeleton (D5).
+// instantly. The richer live stat set lives in the body/About, not this band (a lone member count read
+// as noise here).
 //
 // ACCENT (D4 "the accent is a guest"): the Space's validated `brand_accent` token (or the blueprint's
 // per-role default) is remapped onto the `--color-primary*` family by a SCOPED inline override on the
@@ -85,6 +87,25 @@ function typePhrase(type: string): string {
   const noun = spaceTypeLabel(type).toLowerCase()
   const article = /^[aeiou]/.test(noun) ? 'an' : 'a'
   return `${article} ${noun}`
+}
+
+// The action-row button GEOMETRY, matched to `buttonClasses(_, 'md')` (BASE + SIZE.md) so the on-cover
+// (Hero overlay) affordances share the exact height/radius/gap of the in-flow (Header) ones. Only the
+// COLOR differs: on a photo, a bordered translucent-white chip over a backdrop blur reads legibly on
+// any cover (the gradient scrim guarantees the ≥4.5:1 floor), while off-cover uses the canonical
+// secondary token. Tokens only — no hardcoded hex; the translucent whites are legibility scrims.
+const MD_BUTTON_GEOMETRY =
+  'inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors'
+const onInkSecondaryClasses = cn(
+  MD_BUTTON_GEOMETRY,
+  'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
+)
+
+// The owner tools' button tokens: the quietest affordance in the action row. Off-cover it is the
+// canonical bordered secondary; on-cover (Hero) it is the translucent on-ink chip, so it still reads
+// as the quietest of the on-photo row while sharing the row's height + radius.
+function ownerToolClasses(onInk: boolean): string {
+  return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'md')
 }
 
 // ── PROFILE METADATA + INDEXABILITY (SEO/AIO flagship) ──────────────────────────────────────────
@@ -256,102 +277,165 @@ export default async function SpaceProfileLayout({
   // compact Header band for an un-migrated Space (preferences.ts).
   const coverSize = readCoverSize(space.preferences)
 
-  // The owner tools (Edit profile · Customize page): tertiary affordances that trail the identity
-  // actions for a manager, never shown to a visitor. `secondary` size sm so they read quieter than
-  // the primary CTA + Follow.
-  const ownerTools = canSeeAsOwner ? (
-    <>
-      <Link href={manageHref} className={buttonClasses('secondary', 'sm')}>
-        <Pencil className="h-3.5 w-3.5" aria-hidden />
-        {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
-      </Link>
-      <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'sm')}>
-        <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
-        Customize page
-      </Link>
-    </>
-  ) : null
+  // The owner tools (Edit profile · Customize page): the quietest affordances in the action row for a
+  // manager, never shown to a visitor. Same `md` height/radius as every other action so the row reads
+  // as one aligned band; the `secondary` (bordered) variant keeps them visually quieter than the solid
+  // primary CTA. `onInk` renders the on-cover variant used by the Hero overlay for legibility.
+  const ownerTools = (onInk = false) =>
+    canSeeAsOwner ? (
+      <>
+        <Link href={manageHref} className={ownerToolClasses(onInk)}>
+          <Pencil className="h-4 w-4" aria-hidden />
+          {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
+        </Link>
+        <Link href={`${base}/edit-page`} className={ownerToolClasses(onInk)}>
+          <LayoutTemplate className="h-4 w-4" aria-hidden />
+          Customize page
+        </Link>
+      </>
+    ) : null
 
-  // The identity ACTIONS lockup (the trailing right cluster of the profile info area): the one
-  // emphasized primary CTA, then Follow + Connect (secondary), then the owner tools (tertiary). It
-  // wraps below the name on mobile so nothing crushes the title.
-  const identityActions = (
+  // The identity ACTION ROW: one aligned, wrapping row of same-height (`md`) buttons — the emphasized
+  // primary CTA (kept visually dominant, solid accent), then Follow + Connect (secondary/bordered),
+  // then the owner tools (quietest). It sits on its OWN full-width line BELOW the name lockup at every
+  // breakpoint, so the title never shares a line with the buttons. `onInk` swaps the secondary/owner
+  // affordances to on-cover styling for the Hero overlay while the primary CTA stays the same accent.
+  const identityActions = (onInk = false) => (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
         {ctaLabel}
       </Link>
-      {viewerProfileId && (
-        <FollowSpaceButton spaceId={space.id} spaceName={brandName} initialFollowing={viewerFollows} />
-      )}
+      {viewerProfileId &&
+        (onInk ? (
+          <FollowSpaceButton
+            spaceId={space.id}
+            spaceName={brandName}
+            initialFollowing={viewerFollows}
+            className={onInkSecondaryClasses}
+          />
+        ) : (
+          <FollowSpaceButton spaceId={space.id} spaceName={brandName} initialFollowing={viewerFollows} />
+        ))}
       <Link
         href="/codes"
         aria-label={`Connect with ${brandName}`}
         title="Connect"
-        className={buttonClasses('secondary', 'md', 'px-2.5')}
+        className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'md', 'px-2.5')}
       >
         <QrCode className="h-4 w-4" aria-hidden />
       </Link>
-      {ownerTools}
+      {ownerTools(onInk)}
     </div>
   )
 
-  // ── THE COVER (hero slot) ──────────────────────────────────────────────────────────────────────
-  // A full content-column cover band at the very top. A real uploaded cover always wins; when a Space
-  // has NONE, we fall back to a calm SITE stock photo (deterministically chosen per space id so
-  // different Spaces vary but each is stable) under a legibility scrim, so the header always reads as
-  // an intentional identity band rather than a flat gradient. Two sizes read off preferences (compact
-  // Header vs tall Hero). No back link here: the shell breadcrumb (Spaces › <name>) is the single
-  // wayfinding affordance (no redundant "‹ Spaces").
-  const coverH = coverSize === 'hero' ? 'h-64 sm:h-80' : 'h-40 sm:h-52'
+  // ── THE COVER + IDENTITY ─────────────────────────────────────────────────────────────────────────
+  // A full content-column cover at the very top. A real uploaded cover always wins; when a Space has
+  // NONE, we fall back to a calm SITE stock photo (deterministically chosen per space id so different
+  // Spaces vary but each is stable), so the header always reads as an intentional identity band rather
+  // than a flat gradient. The image is a next/image with `fill` + `preload` (not a plain <img>): on a
+  // soft client-side navigation a bare <img> inside an overflow-hidden box could paint BLANK until a
+  // hard refresh (a paint/layout race); the optimizer element resolves with the RSC payload and preloads
+  // for LCP, so the cover paints on the FIRST navigation. No back link here: the shell
+  // breadcrumb (Spaces › <name>) is the single wayfinding affordance.
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
-  const coverNode = (
-    <div>
-      <div className={`relative w-full overflow-hidden rounded-xl bg-surface-elevated ${coverH}`}>
-        {/* eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL OR a hosted site placeholder, not a build-time-imported asset (matches SpaceCard / the Puck cover block) */}
-        <img src={coverSrc} alt="" className="h-full w-full object-cover" />
-        {/* A soft accent scrim keeps any overlapping chrome legible and unifies the varied stock
-            photos with the brand accent. Kept subtle so a real uploaded cover still reads true. */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
+  const isHero = coverSize === 'hero'
+
+  // Header: a compact band, image only. The logo chip + name + action row sit in normal flow BELOW it
+  // (via infoBand). Hero: a taller band that also CARRIES the identity overlaid on its bottom edge over
+  // a gradient that fades to the page canvas. Both bleed the cover to the content column and round it.
+  const coverH = isHero ? 'h-72 sm:h-[22rem]' : 'h-40 sm:h-52'
+  const coverImage = (
+    <Image
+      src={coverSrc}
+      alt=""
+      fill
+      sizes="(max-width: 1024px) 100vw, 1024px"
+      preload
+      className="object-cover"
+    />
+  )
+
+  // The name + type badge + tagline lockup. `onInk` paints it for legibility over a Hero cover photo
+  // (on-ink tokens, over the canvas-fade gradient); otherwise it reads on the page surface. The <h1> is
+  // the single page heading in both.
+  const nameLockup = (onInk = false) => (
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1
+          className={cn(
+            'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+            onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
+          )}
+        >
+          {brandName}
+        </h1>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold',
+            onInk ? 'bg-white/15 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong',
+          )}
+        >
+          {typeLabel}
+        </span>
       </div>
+      {tagline && (
+        <p className={cn('mt-1.5 max-w-2xl text-sm', onInk ? 'text-on-ink-muted' : 'text-muted')}>{tagline}</p>
+      )}
     </div>
   )
 
-  // ── THE PROFILE INFO AREA (band slot) ──────────────────────────────────────────────────────────
-  // FB-business-page grammar: the logo chip overlaps the cover bottom, the name (the single page
-  // <h1>), the type badge + tagline beside it, the actions trailing right (wrapping on mobile), and
-  // the live stat row tucked below the lockup. The menu (tabs) + Settings then sit under this area
-  // (rendered by DetailTemplate right below the band), closed by the hairline rule.
-  const infoBand = (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex min-w-0 items-end gap-4">
-          {/* Only the logo chip overlaps the cover bottom (FB business page); the name + actions stay
-              in normal flow below it so nothing floats over the cover image. */}
-          <div className="-mt-12 shrink-0 sm:-mt-14">
+  // HERO cover node: the image + a gradient that fades from the PAGE CANVAS token at the bottom up to
+  // transparent (so the photo blends seamlessly into the page and the overlaid text stays legible on
+  // any photo, WCAG-safe), with the logo chip + name lockup + action row anchored to the bottom.
+  const heroCoverNode = (
+    <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+      {coverImage}
+      {/* Canvas-fade: opaque canvas at the floor → transparent at ~two-thirds up. Uses the --color-canvas
+          token (the `from-canvas` / `via-canvas` utilities) so the fade matches whatever theme the page
+          renders in, never a hardcoded black. This seats the overlaid identity legibly on any photo. */}
+      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+        <div className="flex items-end gap-4">
+          <div className="shrink-0">
             <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
           </div>
-          <div className="min-w-0 pb-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-text sm:text-3xl">
-                {brandName}
-              </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
-                {typeLabel}
-              </span>
-            </div>
-            {tagline && <p className="mt-1 max-w-2xl text-sm text-muted">{tagline}</p>}
-          </div>
+          <div className="min-w-0 pb-1">{nameLockup(true)}</div>
         </div>
-        <div className="sm:shrink-0 sm:pb-1">{identityActions}</div>
+        <div className="mt-4">{identityActions(true)}</div>
       </div>
+    </div>
+  )
 
-      {/* The live numbers row, tucked below the lockup (not a heavy separate card). Streams behind
-          its own <Suspense>; a brand-new Space with no numbers renders nothing (empty:mt-0). */}
-      <div className="mt-6 empty:mt-0">
-        <Suspense fallback={<HeroStatsSkeleton />}>
-          <ProfileHeroStats spaceId={space.id} input={templateInput} />
-        </Suspense>
+  // HEADER cover node: the compact image band alone (logo + name + actions live in the infoBand below).
+  const headerCoverNode = (
+    <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+      {coverImage}
+    </div>
+  )
+
+  const coverNode = isHero ? heroCoverNode : headerCoverNode
+
+  // ── THE PROFILE INFO AREA (band slot) ──────────────────────────────────────────────────────────
+  // HEADER size: FB-business-page grammar — the logo chip overlaps the cover bottom, then the name +
+  // type badge + tagline, then a FULL-WIDTH action ROW on its OWN line below the lockup (never sharing a
+  // line with the name). The menu (tabs) + Settings sit under this area (rendered by DetailTemplate),
+  // closed by the hairline rule. HERO size: the identity is already overlaid on the cover, so the band
+  // is empty (a fragment, so DetailTemplate skips its default title lockup and renders straight to the
+  // tabs). The stat row is gone from the band entirely (a lone member count read as noise); the richer
+  // counts live in the body/About.
+  const infoBand = isHero ? (
+    <></>
+  ) : (
+    <div>
+      <div className="flex items-end gap-4">
+        {/* The logo chip overlaps the cover bottom (FB business page). */}
+        <div className="-mt-12 shrink-0 sm:-mt-14">
+          <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+        </div>
+        <div className="min-w-0 pb-1">{nameLockup(false)}</div>
       </div>
+      {/* The action row on its OWN full-width line below the name lockup, at every breakpoint. */}
+      <div className="mt-5">{identityActions(false)}</div>
     </div>
   )
 
@@ -379,8 +463,9 @@ export default async function SpaceProfileLayout({
         />
       )}
       <DetailTemplate
-        // The cover is the custom `hero` (it carries the back link on top); the profile info lockup is
-        // the `band` (overlapping the cover, owning the single <h1>); the tab row + Settings follow.
+        // The cover is the custom `hero`; the profile info lockup is the `band` (owning the single
+        // <h1>) for the Header size, or empty for the Hero size (identity overlaid on the cover). The
+        // tab row + Settings follow below.
         title={brandName}
         hero={coverNode}
         band={infoBand}
@@ -430,16 +515,5 @@ function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }
     >
       {getInitials(name)}
     </span>
-  )
-}
-
-// Dimension-matched skeleton for the streamed hero stats row (no CLS, PAGE-FRAMEWORK §5.4).
-function HeroStatsSkeleton() {
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-hero-stat animate-pulse rounded-xl bg-surface-elevated/60" />
-      ))}
-    </div>
   )
 }

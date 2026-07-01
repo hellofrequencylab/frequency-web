@@ -21,10 +21,14 @@ export function FollowSpaceButton({
   spaceId,
   spaceName,
   initialFollowing = false,
+  className,
 }: {
   spaceId: string
   spaceName: string
   initialFollowing?: boolean
+  /** Override the default `secondary md` button tokens — e.g. the on-cover styling the Hero overlay
+   *  passes so Follow stays legible on a photo. Falls back to the standard secondary token string. */
+  className?: string
 }) {
   const [following, setFollowing] = useState(initialFollowing)
   const [isPending, startTransition] = useTransition()
@@ -46,7 +50,7 @@ export function FollowSpaceButton({
       disabled={isPending}
       aria-pressed={following}
       aria-label={following ? `Following ${spaceName}` : `Follow ${spaceName}`}
-      className={buttonClasses('secondary', 'md')}
+      className={className ?? buttonClasses('secondary', 'md')}
     >
       {following ? (
         <>
