@@ -46,6 +46,11 @@ export type NavArea = {
    *  permission view (none/limited/full per the owner sheet). Documentation + the seam
    *  for matrix-driven nav gating; `defaultAccess` is the live visibility gate today. */
   surface?: string
+  /** DATA predicate (not a role gate): show this item ONLY to a viewer who OWNS or RUNS at least
+   *  one Space. The shell computes that one boolean once per request (lib/spaces/operated
+   *  hasOperatedSpaces) and threads it in; the gate honors it on top of the role/staff axes. Used
+   *  by the "My Spaces" operator entry so it appears only for people who actually run a Space. */
+  requiresOperatedSpaces?: boolean
 }
 
 // Order here IS the render order down the rail. FIVE worlds (IA plan, 2026-06-06):
@@ -84,13 +89,12 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
   // /connections redirects there. Surfaced here so members reach their connections from the rail.
   { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people' },
-  // Spaces (the USER admin) — a member's OWN spaces, each opening that Space's /manage console
-  // (ADR-474, the operator hub at /spaces/operating). This is the user-side space admin: "full
-  // management of any space you run", distinct from the janitor "All Spaces" board under Admin
-  // (/admin/spaces, platform-wide). Sits right under My Contacts so a member's people + their
-  // spaces live together in Community. Empty state guides to create a Space, so it is useful even
-  // before you run one. Each Space is effectively its own (future white-label) profile.
-  { key: 'my-spaces',     href: '/spaces/operating', label: 'Spaces',     section: 'Community', defaultAccess: 'member', surface: 'people' },
+  // All Spaces — the member-facing CATALOG of every networked Space (practitioners, businesses,
+  // organizations, coaching academies, event spaces). The primary browse index at /spaces/directory,
+  // with type pills, search, a Following toggle, and a sort control. Sits under My Contacts so a
+  // member's people + the Spaces they can join live together in Community. Distinct from "My Spaces"
+  // (the Admin-section operator hub for Spaces you run) and "Manage Spaces" (the platform board).
+  { key: 'my-spaces',     href: '/spaces/directory', label: 'All Spaces', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
@@ -123,13 +127,19 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
   { key: 'admin-library',    href: '/admin/library',    label: 'Loom Studio', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'marketing', surface: 'platformManage' },
-  // All Spaces — the PLATFORM-WIDE operator board (the janitor space admin): every Space on the
+  // My Spaces — the operator's hub for the Spaces THEY run (/spaces/operating): own or active-admin
+  // Spaces, each opening that Space's /manage console. A DATA gate, not a role gate: shown ONLY to a
+  // viewer who operates at least one Space (requiresOperatedSpaces, resolved once per request via
+  // lib/spaces/operated hasOperatedSpaces). No `surface` so the matrix leaves it 'full' and the data
+  // predicate alone decides visibility; it telescopes with the rest of Admin (hidden, not ghosted).
+  { key: 'operated-spaces',  href: '/spaces/operating', label: 'My Spaces',  section: 'Admin', defaultAccess: 'member', requiresOperatedSpaces: true },
+  // Manage Spaces — the PLATFORM-WIDE operator board (the janitor space admin): every Space on the
   // platform with its health bucket + per-Space management (branding, manage console, view-as).
-  // Labeled "All Spaces" to read distinctly from the member "Spaces" (their own) under Community.
-  // Gated EXACTLY like QR Studio above: community admin/janitor (defaultAccess 'admin' = the top of
-  // the ladder) OR platform-capable staff (staffDomain 'platform'), so only Admin + Janitor see it.
-  // Telescopes like the rest of the Admin section (hidden, not ghosted, for everyone below).
-  { key: 'admin-spaces',     href: '/admin/spaces',     label: 'All Spaces', section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
+  // Labeled "Manage Spaces" so it reads distinctly from the member "All Spaces" catalog (Community)
+  // and the operator "My Spaces" hub above. Gated EXACTLY like QR Studio: community admin/janitor
+  // (defaultAccess 'admin' = the top of the ladder) OR platform-capable staff (staffDomain
+  // 'platform'), so only Admin + Janitor see it. Telescopes like the rest of the Admin section.
+  { key: 'admin-spaces',     href: '/admin/spaces',     label: 'Manage Spaces', section: 'Admin', defaultAccess: 'admin',   staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-marketplace', href: '/admin/marketplace', label: 'Marketplace', section: 'Admin', defaultAccess: 'admin', staffDomain: 'platform', surface: 'platformManage' },
   // Personal Settings is NOT an admin tool — every logged-in member reaches it from the
   // profile card (bottom-left) + /settings. It deliberately no longer sits under "Admin".

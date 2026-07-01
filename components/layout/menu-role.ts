@@ -133,11 +133,18 @@ export type GateElement = {
   minAccess?: MenuAccess
   staffDomain?: StaffDomain
   staffLevel?: Access
+  /** DATA predicate (operator-scoped nav): when true, the element is shown ONLY to a viewer who
+   *  operates at least one Space. The shell resolves that boolean once per request and passes it as
+   *  `MenuViewer.operatesSpaces`; the gate ANDs it on top of the role/staff axes. Absent = no data
+   *  requirement (the usual role/staff gate alone). */
+  requiresOperatedSpaces?: boolean
 }
 
 /** The viewer, both axes: the collapsed MenuAccess token (community ladder + web_role)
- *  AND the fine-grained staff role (team_members, ADR-127). */
-export type MenuViewer = { viewerRole: MenuAccess; staffRole?: StaffRole | null }
+ *  AND the fine-grained staff role (team_members, ADR-127). Plus the coarse DATA predicate
+ *  `operatesSpaces` (does the viewer own/run a Space?), resolved once per request and honored by
+ *  any element that opts in via `requiresOperatedSpaces`. */
+export type MenuViewer = { viewerRole: MenuAccess; staffRole?: StaffRole | null; operatesSpaces?: boolean }
 
 /** Default staff level required to SEE an element via the staff axis. A leaf link
  *  needs its own staffLevel (default 'write', matching canUseLink); a section/category
@@ -150,8 +157,19 @@ function passesStaffAxis(el: GateElement, viewer: MenuViewer, kind: 'item' | 'ca
   return !!el.staffDomain && staffCan(viewer.staffRole ?? null, el.staffDomain, staffLevelFor(el, kind))
 }
 
-/** Does the viewer see this LEAF item? Union of the menu-access path and the staff axis. */
+/** The DATA gate: an element that `requiresOperatedSpaces` is HIDDEN unless the viewer operates a
+ *  Space. This is a hard AND (a hidden veto), unlike the role/staff axes which UNION to reveal — a
+ *  viewer who fails it is hidden even if their role would otherwise show the item. An element with
+ *  no such requirement passes unconditionally. PURE. */
+function passesDataPredicate(el: GateElement, viewer: MenuViewer): boolean {
+  if (!el.requiresOperatedSpaces) return true
+  return viewer.operatesSpaces === true
+}
+
+/** Does the viewer see this LEAF item? Union of the menu-access path and the staff axis, THEN the
+ *  data predicate (requiresOperatedSpaces) applied as a hard veto on top. */
 export function canSeeMenuItem(item: ResolvedItem, viewer: MenuViewer): boolean {
+  if (!passesDataPredicate(item, viewer)) return false
   if (passesStaffAxis(item, viewer, 'item')) return true
   return effectiveMode(item, viewer.viewerRole) !== 'hidden'
 }

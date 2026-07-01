@@ -91,6 +91,9 @@ type MainNavItem = {
   preview?: boolean
   /** Staff capability domain (team_members) that also unlocks this item. */
   staffDomain?: StaffDomain
+  /** DATA gate (not a role gate): show this item ONLY to a viewer who operates a Space. The shell
+   *  resolves that boolean once (operatesSpaces) and threads it into itemAccess. */
+  requiresOperatedSpaces?: boolean
   /** DB-menu mode for this item (lib/menus). Present ONLY when the rail is DB-driven:
    *  the menu reader + effectiveMode already resolved active/ghost (hidden was dropped),
    *  so NavLinkList renders by this mode and SKIPS the legacy itemAccess/telescope gating
@@ -122,6 +125,7 @@ function buildSections(areas: typeof NAV_AREAS[number][]): NavSectionGroup[] {
       defaultAccess: area.defaultAccess,
       preview: area.previewBelowAccess,
       staffDomain: area.staffDomain,
+      requiresOperatedSpaces: area.requiresOperatedSpaces,
     }
     const existing = byLabel.get(area.section)
     if (existing) existing.items.push(item)
@@ -278,7 +282,12 @@ function itemAccess(
   staffRole: StaffRole | null,
   permissions: Record<string, NavAccess> | undefined,
   navAccess: Record<string, AccessLevel> | undefined,
+  operatesSpaces: boolean,
 ): AccessLevel {
+  // DATA predicate first, as a hard veto: an item that requires an operated Space is fully hidden
+  // for a viewer who runs none — before the matrix/role/staff axes can reveal it (its matrix key
+  // resolves to 'full' since it names no surface, so the veto must win).
+  if (item.requiresOperatedSpaces && !operatesSpaces) return 'none'
   if (navAccess && item.key in navAccess) return navAccess[item.key]
   return meetsAccess(effectiveAccess(item, permissions), role) || meetsStaff(item, staffRole) ? 'full' : 'none'
 }
@@ -700,6 +709,7 @@ function NavLinkList({
   permissions,
   navAccess,
   staffRole = null,
+  operatesSpaces = false,
   sections = NAV_SECTIONS,
   compact = false,
   menuDriven = false,
@@ -716,6 +726,8 @@ function NavLinkList({
   navAccess?: Record<string, AccessLevel>
   /** Viewer's staff role (team_members axis); unlocks Studio independent of trust. */
   staffRole?: StaffRole | null
+  /** Does the viewer own/run at least one Space? Gates any item with requiresOperatedSpaces. */
+  operatesSpaces?: boolean
   /** Which area sections to render. Defaults to the full rail (NAV_SECTIONS). */
   sections?: NavSectionGroup[]
   /** Icon-only column (the micro edge menu): no labels, no section headers. */
@@ -753,7 +765,7 @@ function NavLinkList({
         // dropped, empty groups dropped upstream), so the menu's minAccess + role modes own it.
         const adminSection = !menuDriven && TELESCOPE_SECTIONS.has(section.label ?? '')
         const visibleItems = adminSection
-          ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess) === 'full')
+          ? section.items.filter((it) => itemAccess(it, role, staffRole, permissions, navAccess, operatesSpaces) === 'full')
           : section.items
         if (visibleItems.length === 0) return null
         return (
@@ -832,7 +844,7 @@ function NavLinkList({
             // a muted "ghost" preview that still clicks through to the gated page (e.g. a
             // visitor on Practices/Library); none → a disabled, non-clickable ghost. Admin
             // sections were pre-filtered to full-access items above.
-            const access = itemAccess(item, role, staffRole, permissions, navAccess)
+            const access = itemAccess(item, role, staffRole, permissions, navAccess, operatesSpaces)
             const reachable = access !== 'none'
 
             // Icon-only column (micro edge menu): one square per area, tooltip-labelled.
@@ -974,6 +986,7 @@ function MobileLeftDrawer({
   permissions,
   navAccess,
   staffRole = null,
+  operatesSpaces = false,
   sections = NAV_SECTIONS,
   menuDriven = false,
 }: {
@@ -990,6 +1003,8 @@ function MobileLeftDrawer({
   permissions?: Record<string, NavAccess>
   navAccess?: Record<string, AccessLevel>
   staffRole?: StaffRole | null
+  /** Does the viewer own/run at least one Space? Forwarded to NavLinkList for the data gate. */
+  operatesSpaces?: boolean
   /** The rail sections (DB-backed left_rail menu, else the legacy/code fallback). */
   sections?: NavSectionGroup[]
   /** Sections are DB-driven (mode-per-item); forwarded to NavLinkList. */
@@ -1087,7 +1102,7 @@ function MobileLeftDrawer({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={sections} menuDriven={menuDriven} />
+          <NavLinkList isActive={isActive} role={role} onNavigate={onClose} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={sections} menuDriven={menuDriven} />
         </nav>
 
         {/* Bottom close. Sits in the thumb zone */}
@@ -1368,6 +1383,7 @@ export default function AppShell({
   leftMenu,
   navAccess,
   staffRole = null,
+  operatesSpaces = false,
   demoMode = false,
   demoHidden = false,
   hasDemoContent = true,
@@ -1424,6 +1440,10 @@ export default function AppShell({
   navAccess?: Record<string, AccessLevel>
   /** Viewer's staff role (team_members axis); unlocks Studio. Null under view-as. */
   staffRole?: StaffRole | null
+  /** Does the viewer own/run at least one Space? Resolved once per request (lib/spaces/operated
+   *  hasOperatedSpaces) and threaded to the rail so the operator "My Spaces" item shows only for
+   *  people who actually run a Space. Suppressed to false under a downgrade / visitor preview. */
+  operatesSpaces?: boolean
   /** Global demo_mode is on (seeded beta content exists) → show the Beta toggle. */
   demoMode?: boolean
   /** This viewer has hidden beta content for themselves (drives the toggle state). */
@@ -1483,7 +1503,7 @@ export default function AppShell({
   // control stays unchanged until an operator seeds it from /admin/menu.
   const dbRailSections =
     leftMenu && !leftMenu.isDefault
-      ? menuToSections(leftMenu, { viewerRole: menuViewerRole, staffRole })
+      ? menuToSections(leftMenu, { viewerRole: menuViewerRole, staffRole, operatesSpaces })
       : []
   const menuDriven = dbRailSections.length > 0
   const navSections = menuDriven
@@ -1836,7 +1856,7 @@ export default function AppShell({
                     to the column edge — matching the right rail's cards, so the outer margin reads
                     the same on both sides. */}
                 <nav className="flex-1 py-3 space-y-1">
-                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} sections={navSections} menuDriven={menuDriven} />
+                  <NavLinkList isActive={isActive} role={gateRole} extraSections={extraSections} hideAppNav={hideAppNav} permissions={permissions} navAccess={navAccess} staffRole={staffRole} operatesSpaces={operatesSpaces} sections={navSections} menuDriven={menuDriven} />
                 </nav>
                 {/* Mirrors the right rail's stats dock: sticky to the column bottom, rises
                     on scroll, no longer fixed to the viewport. */}
@@ -1977,7 +1997,7 @@ export default function AppShell({
       </DockRevealProvider>
 
       {/* ── Live search overlay (⌘K or the header search) ─────────────────── */}
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={{ role: gateRole, staffRole }} />}
+      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} viewer={{ role: gateRole, staffRole, operatesSpaces }} />}
 
       {/* Page-specific admin now lives inline at the top of the content
           (PageAdminBar in <main>), replacing the old right-edge admin drawer. */}
@@ -2001,7 +2021,7 @@ export default function AppShell({
       {!editorTakeover && (
         <MobileTabBar
           isActive={isActive}
-          viewer={{ role: gateRole, staffRole }}
+          viewer={{ role: gateRole, staffRole, operatesSpaces }}
           onOpenMenu={() => {
             setDrawerOpen((o) => !o)
             setRightOpen(false)
@@ -2031,6 +2051,7 @@ export default function AppShell({
           permissions={permissions}
           navAccess={navAccess}
           staffRole={staffRole}
+          operatesSpaces={operatesSpaces}
           sections={navSections}
           menuDriven={menuDriven}
         />

@@ -41,6 +41,7 @@ function nodeFromArea(area: NavArea): NavNode {
     gate: {
       minAccess: area.defaultAccess as MenuAccess,
       ...(area.staffDomain ? { staffDomain: area.staffDomain } : {}),
+      ...(area.requiresOperatedSpaces ? { requiresOperatedSpaces: true } : {}),
     },
     ...(area.previewBelowAccess ? { display: 'ghost' as const } : {}),
   }
@@ -429,6 +430,9 @@ export type NavViewer = {
   /** The coarse web_role floor (reserved for Studio nodes; unused by calm gating today). */
   webRole?: 'none' | 'admin' | 'janitor' | null
   staffRole: StaffRole | null
+  /** Does the viewer own/run at least one Space? Honored by a node that opts into
+   *  gate.requiresOperatedSpaces (the operator "My Spaces" entry). Absent = treated as false. */
+  operatesSpaces?: boolean
 }
 
 /**
@@ -439,6 +443,9 @@ export type NavViewer = {
  * future node demand write. Moving where a gate lives, never what it permits.
  */
 export function canSee(node: NavNode, viewer: NavViewer): boolean {
+  // DATA predicate first, as a hard veto: a node that requires an operated Space is hidden for a
+  // viewer who runs none, before the role/staff axes below can reveal it.
+  if (node.gate.requiresOperatedSpaces && viewer.operatesSpaces !== true) return false
   const floor = meetsAccess(node.gate.minAccess, viewer.role)
   const staff = meetsStaff(
     { staffDomain: node.gate.staffDomain },

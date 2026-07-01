@@ -64,6 +64,10 @@ export type ResolvedItem = {
   staffDomain?: StaffDomain
   /** Capability level the staff domain needs (default 'write' for a leaf link). */
   staffLevel?: Access
+  /** DATA predicate: show this link ONLY to a viewer who operates at least one Space. Honored by
+   *  canSeeMenuItem (components/layout/menu-role) via the request-resolved `operatesSpaces` flag.
+   *  Absent = no data requirement. */
+  requiresOperatedSpaces?: boolean
   ghostTier?: string
   ghostMessage?: string
 }

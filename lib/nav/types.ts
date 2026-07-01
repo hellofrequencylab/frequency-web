@@ -35,6 +35,11 @@ export type NavGate = {
   /** Capability level the staff domain needs (default 'read' — reading is enough to
    *  SURFACE a nav item, matching meetsStaff in lib/nav-areas.ts). */
   staffLevel?: Access
+  /** DATA predicate (not a role/staff axis): when true, the node is shown ONLY to a viewer who
+   *  operates at least one Space. Unlike the role/staff axes (which UNION to reveal), this is a
+   *  hard AND — a viewer who fails it is hidden even if their role would show the node. Resolved
+   *  once per request as NavViewer.operatesSpaces. Absent = no data requirement. */
+  requiresOperatedSpaces?: boolean
 }
 
 /** How a node presents for a viewer once gating resolves. `ghost` = shown muted
