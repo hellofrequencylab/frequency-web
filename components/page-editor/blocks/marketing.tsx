@@ -46,6 +46,11 @@ import {
   illustrationNames,
   type IllustrationName,
 } from '@/components/marketing/illustrations'
+import {
+  LeadFunnelFlow,
+  LEAD_FUNNEL_STEPS,
+  type LeadFunnelOrientation,
+} from '@/components/marketing/lead-funnel-flow'
 
 // Shared editor select: every block that picks art offers the full kit. Labels
 // are sentence case, matching the editor's other selects.
@@ -254,6 +259,73 @@ export function ManifestoBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 4. LeadFunnel, the coach lead funnel composed from the kit elements
+// ─────────────────────────────────────────────────────────────────────────────
+
+// An editor step: illustration key + editable label/caption. Kept loose (all
+// optional) because the array editor can hand back partial rows mid-edit.
+type LeadFunnelStepInput = {
+  illustration?: string
+  label?: string
+  caption?: string
+}
+
+export function LeadFunnelBlock({
+  eyebrow,
+  title,
+  titleAccent,
+  steps,
+  orientation,
+  showNumbers,
+  footnote,
+  ink,
+  emphasis,
+}: {
+  eyebrow?: string
+  title?: string
+  titleAccent?: string
+  steps?: LeadFunnelStepInput[]
+  orientation?: LeadFunnelOrientation
+  showNumbers?: boolean
+  footnote?: string
+  ink?: boolean
+  emphasis?: EmphasisValue
+}) {
+  // Normalise editor rows to the flow's shape; drop blank rows and fall back to
+  // the canonical five if the operator cleared them all.
+  const cleaned = (steps || [])
+    .filter((s) => s && (s.illustration || s.label || s.caption))
+    .map((s) => ({
+      illustration: asIllustration(s.illustration),
+      label: s.label || '',
+      caption: s.caption || '',
+    }))
+  const list = cleaned.length ? cleaned : undefined
+  const { scale, accent } = emphasisClasses(emphasis)
+
+  return (
+    <div>
+      {(eyebrow || title) && (
+        <div className="mb-10 text-center">
+          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
+          {title && (
+            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+              {accentize(title, titleAccent)}
+            </h2>
+          )}
+        </div>
+      )}
+      <LeadFunnelFlow steps={list} orientation={orientation} showNumbers={showNumbers} />
+      {footnote && (
+        <p className={`mx-auto mt-8 max-w-2xl text-center text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          {footnote}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ComponentConfig map, exported as marketingComponents
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -409,6 +481,73 @@ export const marketingComponents: Record<string, ComponentConfig> = {
         tone={(tone === 'none' ? 'surface' : tone) as string}
         layout={layout as LayoutValue}
       />
+    ),
+  },
+
+  // ── LeadFunnel ───────────────────────────────────────────────────────────────
+  LeadFunnel: {
+    label: 'Lead funnel',
+    fields: {
+      eyebrow: { type: 'textarea', label: 'Eyebrow (optional)' },
+      title: { type: 'textarea', label: 'Heading (optional)' },
+      titleAccent: { type: 'text', label: 'Accent word (optional)' },
+      orientation: {
+        type: 'radio',
+        label: 'Direction',
+        options: [
+          { label: 'Horizontal', value: 'horizontal' },
+          { label: 'Vertical', value: 'vertical' },
+        ],
+      },
+      showNumbers: {
+        type: 'radio',
+        label: 'Step numbers',
+        options: [
+          { label: 'Show', value: true },
+          { label: 'Hide', value: false },
+        ],
+      },
+      steps: {
+        type: 'array',
+        label: 'Steps',
+        arrayFields: {
+          illustration: illustrationField,
+          label: { type: 'textarea', label: 'Label' },
+          caption: { type: 'textarea', label: 'Caption' },
+        },
+        getItemSummary: (item: LeadFunnelStepInput) => item.label || 'Step',
+      },
+      footnote: { type: 'textarea', label: 'Footnote (optional)' },
+      emphasis: emphasisField,
+      ...blockFields(),
+    },
+    defaultProps: {
+      eyebrow: 'How it works',
+      title: 'The coach lead funnel',
+      titleAccent: 'lead funnel',
+      orientation: 'horizontal',
+      showNumbers: true,
+      steps: LEAD_FUNNEL_STEPS.map((s) => ({ ...s })),
+      footnote:
+        'Found on your Spotlight page, booked online, saved to your CRM, followed up automatically, and tracked to booked.',
+      emphasis: emphasisDefault,
+      ...blockLayoutDefaults,
+      align: 'center',
+    },
+    render: ({ eyebrow, title, titleAccent, orientation, showNumbers, steps, footnote, emphasis, tone, width, align, layout }) => (
+      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
+        <LeadFunnelBlock
+          eyebrow={(eyebrow as string) || undefined}
+          title={(title as string) || undefined}
+          titleAccent={(titleAccent as string) || undefined}
+          orientation={orientation as LeadFunnelOrientation}
+          showNumbers={showNumbers as boolean}
+          steps={steps as LeadFunnelStepInput[]}
+          footnote={(footnote as string) || undefined}
+          ink={isInk(tone as string)}
+          emphasis={emphasis as EmphasisValue}
+        />
+      </Band>
     ),
   },
 }
