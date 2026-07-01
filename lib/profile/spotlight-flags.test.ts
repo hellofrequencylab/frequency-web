@@ -12,6 +12,7 @@ import {
   readSpotlightDraftRaw,
   withSpotlightDraft,
   clearSpotlightDraft,
+  resolveSpotlightEditorSeed,
   type SpotlightThemeSlot,
 } from './spotlight-flags'
 
@@ -158,5 +159,56 @@ describe('spotlight draft node (working copy, never the live nodes)', () => {
     const cleared = clearSpotlightDraft(meta)
     expect(readSpotlightDraftRaw(cleared)).toBeUndefined()
     expect(readSpotlightPublished(cleared)).toBe(true)
+  })
+})
+
+describe('resolveSpotlightEditorSeed (prefer draft, else live)', () => {
+  const LIVE = {
+    spotlight: {
+      published: true,
+      layout: { version: 1, blocks: [{ id: 'live' }] },
+      theme: { accent: '#111111' },
+      background: { assetPath: 'live/spotlight/a.png' },
+    },
+  }
+
+  it('seeds from the LIVE nodes when no draft exists (hasUnpublishedChanges=false)', () => {
+    const seed = resolveSpotlightEditorSeed(LIVE)
+    expect(seed.layout).toEqual({ version: 1, blocks: [{ id: 'live' }] })
+    expect(seed.theme).toEqual({ accent: '#111111' })
+    expect(seed.background).toEqual({ assetPath: 'live/spotlight/a.png' })
+    expect(seed.hasUnpublishedChanges).toBe(false)
+  })
+
+  it('prefers the DRAFT over the live nodes when a draft exists (hasUnpublishedChanges=true)', () => {
+    const draft = {
+      layout: { version: 1, blocks: [{ id: 'draft' }] },
+      theme: { accent: '#222222' },
+      background: { assetPath: 'draft/spotlight/b.png' },
+    }
+    const meta = withSpotlightDraft(LIVE, draft)
+    const seed = resolveSpotlightEditorSeed(meta)
+    expect(seed.layout).toEqual(draft.layout)
+    expect(seed.theme).toEqual(draft.theme)
+    expect(seed.background).toEqual(draft.background)
+    expect(seed.hasUnpublishedChanges).toBe(true)
+  })
+
+  it('falls back per-field to the live node for any part the draft omits (never loses data)', () => {
+    // A partial draft with only a layout: theme + background fall back to live.
+    const meta = { spotlight: { ...LIVE.spotlight, draft: { layout: { version: 1, blocks: [{ id: 'draft' }] } } } }
+    const seed = resolveSpotlightEditorSeed(meta)
+    expect(seed.layout).toEqual({ version: 1, blocks: [{ id: 'draft' }] })
+    expect(seed.theme).toEqual({ accent: '#111111' }) // from live
+    expect(seed.background).toEqual({ assetPath: 'live/spotlight/a.png' }) // from live
+    expect(seed.hasUnpublishedChanges).toBe(true) // a draft node still exists
+  })
+
+  it('returns all-undefined sources + clean flag for empty meta', () => {
+    const seed = resolveSpotlightEditorSeed({})
+    expect(seed.layout).toBeUndefined()
+    expect(seed.theme).toBeUndefined()
+    expect(seed.background).toBeUndefined()
+    expect(seed.hasUnpublishedChanges).toBe(false)
   })
 })

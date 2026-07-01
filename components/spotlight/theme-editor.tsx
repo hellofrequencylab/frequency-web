@@ -64,11 +64,18 @@ function ColorField({
 // they happen. The Save button persists the current value. `showPreview` keeps the compact
 // inline swatch preview for the standalone (non-split) layout; the builder hides it since it
 // renders the full page live.
+//
+// `onCommit` OVERRIDES where the explicit Save button writes: when the Puck editor passes it,
+// Save routes the value into the shared DRAFT autosave (via onCommit) instead of the live
+// `saveSpotlightTheme` — so nothing here touches the public page directly. When omitted (the
+// legacy standalone builder), Save keeps writing the live theme node as before.
 export function SpotlightThemeEditor({
-  value, onChange, showPreview = true,
+  value, onChange, onCommit, showPreview = true,
 }: {
   value: SpotlightTheme
   onChange: (t: SpotlightTheme) => void
+  /** Optional: route the explicit Save to the parent (draft path) instead of the live theme write. */
+  onCommit?: (t: SpotlightTheme) => void
   showPreview?: boolean
 }) {
   const [saved, setSaved] = useState(false)
@@ -84,6 +91,13 @@ export function SpotlightThemeEditor({
 
   function save() {
     setError('')
+    // Draft path: hand the value to the parent's shared autosave, never the live theme write.
+    if (onCommit) {
+      onCommit(value)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+      return
+    }
     start(async () => {
       const res = await saveSpotlightTheme(value)
       if (res?.error) { setError(res.error); return }
@@ -377,7 +391,7 @@ export function SpotlightThemeEditor({
         className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
-        {pending ? 'Saving…' : saved ? 'Saved' : 'Save theme'}
+        {pending ? 'Saving…' : saved ? 'Saved' : onCommit ? 'Save draft' : 'Save theme'}
       </button>
     </div>
   )

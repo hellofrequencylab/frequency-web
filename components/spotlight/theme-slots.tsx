@@ -49,6 +49,7 @@ export function SpotlightThemeSlots({
   currentTheme,
   currentBackground,
   onApply,
+  applyToDraftOnly = false,
 }: {
   initialSlots: SpotlightThemeSlot[]
   /** The live editor theme — what "Save current as a theme" captures. */
@@ -57,6 +58,10 @@ export function SpotlightThemeSlots({
   currentBackground: SpotlightBackground
   /** Push an applied slot's theme (+ background) back into the live editor state. */
   onApply: (theme: SpotlightTheme, background: SpotlightBackground) => void
+  /** When true (the draft→publish editor), "Apply" only pushes into editor state (→ the draft
+   *  autosave) and does NOT call the live `applySpotlightThemeSlot`, so applying a saved look never
+   *  touches the public page until Publish. Omitted → the legacy live-apply behaviour. */
+  applyToDraftOnly?: boolean
 }) {
   const [slots, setSlots] = useState<SpotlightThemeSlot[]>(initialSlots)
   const [error, setError] = useState('')
@@ -89,6 +94,12 @@ export function SpotlightThemeSlots({
 
   function apply(slot: SpotlightThemeSlot) {
     setError('')
+    // Draft→publish editor: apply into editor state only (the parent autosaves it into the draft),
+    // never the live theme/background nodes — so the public page is untouched until Publish.
+    if (applyToDraftOnly) {
+      onApply(slot.theme, slot.background)
+      return
+    }
     setBusyId(slot.id)
     start(async () => {
       const res = await applySpotlightThemeSlot(slot.id)
