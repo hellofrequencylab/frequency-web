@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { Bug } from 'lucide-react'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { meetsAccess, meetsStaff, NAV_AREA_DEFAULTS, type NavAccess } from '@/lib/nav-areas'
+import { footerColumns } from '@/lib/nav/registry'
+import type { NavNode } from '@/lib/nav/types'
 import type { CommunityRole } from '@/lib/community-roles'
-import type { StaffRole, StaffDomain } from '@/lib/staff'
+import type { StaffRole } from '@/lib/staff'
 import type { AccessLevel } from '@/lib/core/access-matrix'
 import { SITE_TAGLINE, ORG_LEGAL_NAME } from '@/lib/site'
 
@@ -16,98 +18,26 @@ import { SITE_TAGLINE, ORG_LEGAL_NAME } from '@/lib/site'
 // the admin one navigates the operator workspace; this one is the member's map of
 // the community + the wider site.
 //
+// ONE SOURCE: the columns + links come from the unified nav registry (lib/nav), the
+// column-grouped `surface:'footer'` nodes (footerColumns()), so the member sitemap and
+// the rail can never drift. The bug-report row is render-time chrome (an event button,
+// not a navigable destination), injected into the Support column below.
+//
 // ROLE-AWARE: every link is gated with the SAME logic the left rail uses
-// (lib/nav-areas.ts). For a link that maps to a NAV_AREA key, the server-resolved
-// `navAccess` matrix is authoritative (it already folds in role/tier/staff, and the
-// view-as preview); links without a nav key fall back to the role/staff ladder. A
-// surface the viewer resolves to 'none' on is dropped, and a column left empty is
-// dropped whole. So a logged-out visitor never sees a member-only destination, and
-// the footer never links anyone to a surface they can't use.
+// (lib/nav-areas.ts). For a link that mirrors a NAV_AREA (`node.navKey`), the
+// server-resolved `navAccess` matrix is authoritative (it already folds in role/tier/
+// staff, and the view-as preview); links without a nav key fall back to the role/staff
+// ladder (== the registry canSee union). A surface the viewer resolves to 'none' on is
+// dropped, and a column left empty is dropped whole. So a logged-out visitor never sees a
+// member-only destination, and the footer never links anyone to a surface they can't use.
 
-// A footer link. `navKey` ties it to a NAV_AREA (so it shares the rail's gating);
-// `access`/`staffDomain` gate the extras that have no nav key (e.g. People, Support).
-type FootLink = {
-  href: string
-  label: string
-  /** NAV_AREA key — gating reuses the rail's matrix/ladder for this surface. */
-  navKey?: string
-  /** Ladder gate for a link with no nav key. Defaults to 'visitor' (everyone). */
-  access?: NavAccess
-  /** Staff capability that also unlocks the link (unioned with the ladder). */
-  staffDomain?: StaffDomain
-  /** Fire the shared support sheet instead of navigating (Report a bug). */
-  onClickEvent?: { name: string; detail?: unknown }
-}
-
-type FootColumn = { title: string; links: FootLink[] }
-
-// The columns. Order here IS the render order. Public/company columns sit to the
-// right of the in-app ones. A link's reachability is decided at render (below);
-// authoring stays declarative.
-const COLUMNS: FootColumn[] = [
-  {
-    title: 'Explore',
-    links: [
-      { href: '/feed', label: 'Feed', navKey: 'feed' },
-      { href: '/circles', label: 'Circles', navKey: 'circles' },
-      { href: '/channels', label: 'Channels', navKey: 'channels' },
-      { href: '/events', label: 'Events', navKey: 'events' },
-      { href: '/market', label: 'Marketplace', navKey: 'market' },
-      { href: '/marketplace/housing', label: 'Housing', navKey: 'housing' },
-      { href: '/marketplace/makers', label: 'Makers', navKey: 'maker' },
-      { href: '/shop', label: 'Shop', navKey: 'shop' },
-      { href: '/network', label: 'Community', navKey: 'people' },
-    ],
-  },
-  {
-    title: 'The Quest',
-    links: [
-      { href: '/crew', label: 'Dashboard', navKey: 'quest' },
-      { href: '/journeys', label: 'Journeys', navKey: 'journeys' },
-      { href: '/practices', label: 'Practices', navKey: 'practices' },
-      { href: '/library', label: 'Library', navKey: 'library' },
-      { href: '/crew/leaderboard', label: 'Leaderboard', access: 'member' },
-      { href: '/crew/store', label: 'The Vault', navKey: 'vault' },
-    ],
-  },
-  {
-    title: 'Connect',
-    links: [
-      { href: '/people', label: 'People', access: 'member' },
-      { href: '/partners', label: 'Partners', access: 'member' },
-      { href: '/messages', label: 'Message Boards', navKey: 'messageBoards' },
-    ],
-  },
-  {
-    title: 'Support',
-    links: [
-      { href: '/help', label: 'Help' },
-      {
-        href: '/help',
-        label: 'Report a bug',
-        onClickEvent: { name: 'open-support', detail: { type: 'bug' } },
-      },
-      { href: '/support', label: 'Support', access: 'member' },
-    ],
-  },
-  {
-    title: 'Frequency',
-    links: [
-      { href: '/about', label: 'About' },
-      { href: '/the-lab', label: 'The Lab' },
-      { href: '/the-community', label: 'The Community' },
-      { href: '/the-quest', label: 'The Quest' },
-      { href: '/pricing', label: 'Pricing' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { href: '/privacy', label: 'Privacy' },
-      { href: '/terms', label: 'Terms' },
-    ],
-  },
-]
+// The Support column injects a "Report a bug" event button (fires the shared support
+// sheet) directly after its Help link — chrome, not a registry destination.
+const BUG_REPORT = {
+  label: 'Report a bug',
+  event: { name: 'open-support', detail: { type: 'bug' } as unknown },
+  afterHref: '/help',
+} as const
 
 export interface MemberFooterProps {
   /** Viewer's gating role (null = visitor / view-as-visitor preview). */
@@ -120,26 +50,36 @@ export interface MemberFooterProps {
 
 // Can the viewer reach a link? For a nav-keyed link, defer to the rail's logic:
 // the matrix wins when present, else the default-access ladder unioned with staff.
-// For a keyless link, gate on its own `access` ladder unioned with staff.
+// For a keyless link, gate on its own `gate` (minAccess ladder unioned with staff).
+// This mirrors the registry canSee union exactly, plus the matrix short-circuit the
+// rail uses, so the member footer stays byte-identical to its previous output.
 function reachable(
-  link: FootLink,
+  node: NavNode,
   role: CommunityRole | null,
   staffRole: StaffRole | null,
   navAccess: Record<string, AccessLevel> | undefined,
 ): boolean {
-  if (link.navKey) {
-    if (navAccess && link.navKey in navAccess) return navAccess[link.navKey] !== 'none'
-    const access = NAV_AREA_DEFAULTS[link.navKey] ?? 'visitor'
-    return meetsAccess(access, role) || meetsStaff(link, staffRole)
+  if (node.navKey) {
+    if (navAccess && node.navKey in navAccess) return navAccess[node.navKey] !== 'none'
+    const access = NAV_AREA_DEFAULTS[node.navKey] ?? 'visitor'
+    return (
+      meetsAccess(access, role) ||
+      meetsStaff({ staffDomain: node.gate.staffDomain }, staffRole)
+    )
   }
-  return meetsAccess(link.access ?? 'visitor', role) || meetsStaff(link, staffRole)
+  return (
+    meetsAccess((node.gate.minAccess as NavAccess) ?? 'visitor', role) ||
+    meetsStaff({ staffDomain: node.gate.staffDomain }, staffRole)
+  )
 }
 
 export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooterProps) {
-  const columns = COLUMNS.map((col) => ({
-    ...col,
-    links: col.links.filter((l) => reachable(l, role, staffRole, navAccess)),
-  })).filter((col) => col.links.length > 0)
+  const columns = footerColumns()
+    .map((col) => ({
+      ...col,
+      links: col.links.filter((l) => reachable(l, role, staffRole, navAccess)),
+    }))
+    .filter((col) => col.links.length > 0)
 
   // Stable across the SSR → hydrate boundary (the year doesn't change mid-render),
   // so there's no hydration drift.
@@ -159,28 +99,29 @@ export function MemberFooter({ role, staffRole = null, navAccess }: MemberFooter
             <ul className="space-y-2">
               {col.links.map((link) => (
                 <li key={`${col.title}-${link.label}-${link.href}`}>
-                  {link.onClickEvent ? (
+                  <Link
+                    href={link.href}
+                    className="text-sm text-muted transition-colors hover:text-text"
+                  >
+                    {link.label}
+                  </Link>
+                  {/* Report-a-bug chrome: injected directly after the Help link, so the
+                      Support column reads Help · Report a bug · Support as before. */}
+                  {link.href === BUG_REPORT.afterHref && (
                     <button
                       type="button"
                       onClick={() =>
                         window.dispatchEvent(
-                          new CustomEvent(link.onClickEvent!.name, {
-                            detail: link.onClickEvent!.detail,
+                          new CustomEvent(BUG_REPORT.event.name, {
+                            detail: BUG_REPORT.event.detail,
                           }),
                         )
                       }
-                      className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
+                      className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-text"
                     >
                       <Bug className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
-                      {link.label}
+                      {BUG_REPORT.label}
                     </button>
-                  ) : (
-                    <Link
-                      href={link.href}
-                      className="text-sm text-muted transition-colors hover:text-text"
-                    >
-                      {link.label}
-                    </Link>
                   )}
                 </li>
               ))}

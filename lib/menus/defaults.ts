@@ -8,8 +8,8 @@
 // so React keys are stable across renders of the fallback. colSpan defaults to 1,
 // mode to 'active', roleModes to {}. Framework independent (no React / Supabase).
 
-import { PUBLIC_MEGA_NAV, MARKETING_NAV, type MegaNavGroup } from '@/lib/site'
 import { NAV_AREAS } from '@/lib/nav-areas'
+import { headerTriggers, marketingFooterLinks, nodesForSurface } from '@/lib/nav/registry'
 import { ADMIN_NAV, type AdminNavSection } from '@/lib/admin/nav'
 import type {
   MenuAccess,
@@ -142,44 +142,31 @@ function category(
   }
 }
 
-// ── header, from PUBLIC_MEGA_NAV (the six primary pages as mega-menu triggers) ──
+// ── header, from the registry's surface:'header' nodes (the six primary pages) ──
 // One header menu whose TOP-LEVEL categories are the triggers (MegaBar at
-// triggerLevel='category'). Each PUBLIC_MEGA_NAV panel becomes a top-level category:
-//   - a panel with `sections` -> a disclosure trigger whose CHILD categories are the
-//     dropdown columns (a multi-column mega panel);
-//   - a panel with `items` -> a disclosure trigger whose own items are a single
+// triggerLevel='category'). Each header TRIGGER node (headerTriggers()) becomes a
+// top-level category:
+//   - a trigger WITH sub-links -> a disclosure trigger whose own items are a single
 //     dropdown column of sub-pages (MegaBar shows a category with >1 item as a panel);
-//   - a panel with only `href` -> a category with one landing item, which MegaBar
-//     renders as a plain nav link (hasPanel === false).
-// The panel's `featured` tile is dropped: rail cards are menu-level, so a per-panel
-// featured card has no clean home under one merged menu.
+//   - a trigger with NO sub-links (a plain link) -> a category with one landing item,
+//     carrying the trigger's href, which MegaBar renders as a plain nav link.
+// (The old PUBLIC_MEGA_NAV `sections` multi-column branch is unused by the current
+// catalog; the registry seeds only plain-link + single-column triggers, matching the
+// live header exactly.) The synthetic ids stay `default:header:cat:${pi}:item:${ii}` so
+// React keys + the /admin/menu editor rows are unchanged.
 function headerMenu(): ResolvedMenu {
-  const categories: ResolvedCategory[] = PUBLIC_MEGA_NAV.map((panel, pi) => {
-    const label = panel?.label ?? `Menu ${pi + 1}`
-    const sections = panel?.sections ?? []
-    const directItems = panel?.items ?? []
-    // Multi-column dropdown: each section group becomes a child column.
-    if (sections.length > 0) {
-      const children: ResolvedCategory[] = sections.map((group: MegaNavGroup, gi: number) => {
-        const items = group.items.map((it, ii) =>
-          item(`default:header:cat:${pi}:child:${gi}:item:${ii}`, it.label, it.href, ii, {
-            subheading: it.desc,
-          }),
-        )
-        return category(`default:header:cat:${pi}:child:${gi}`, group.heading, gi, items)
-      })
-      return category(`default:header:cat:${pi}`, label, pi, [], children)
-    }
+  const categories: ResolvedCategory[] = headerTriggers().map(({ node, items: subLinks }, pi) => {
+    const label = node.label
     // Single-column dropdown: sub-pages ride directly on the top category. MegaBar
     // renders a category with >1 item as a panel; the first item is its own landing page.
-    if (directItems.length > 0) {
-      const items = directItems.map((it, ii) =>
-        item(`default:header:cat:${pi}:item:${ii}`, it.label, it.href, ii, { subheading: it.desc }),
+    if (subLinks.length > 0) {
+      const items = subLinks.map((it, ii) =>
+        item(`default:header:cat:${pi}:item:${ii}`, it.label, it.href, ii, { subheading: it.blurb }),
       )
       return category(`default:header:cat:${pi}`, label, pi, items)
     }
     // Plain link: a single landing item carries the href; MegaBar renders it as a link.
-    const landing = item(`default:header:cat:${pi}:item:0`, label, panel?.href ?? '#', 0)
+    const landing = item(`default:header:cat:${pi}:item:0`, label, node.href, 0)
     return category(`default:header:cat:${pi}`, label, pi, [landing])
   })
 
@@ -264,12 +251,14 @@ function leftMenu(): ResolvedMenu {
   }
 }
 
-// ── footer, from MARKETING_NAV ───────────────────────────────────────────────
-// A flat list of links, no grouping, so they map straight to rootItems.
+// ── footer, from the registry's FLAT marketing surface:'footer' nodes ─────────
+// A flat list of links, no grouping, so they map straight to rootItems. Scoped to the
+// parentless marketing pages (marketingFooterLinks) so the member sitemap footer columns
+// — also surface:'footer' — never leak into the editable marketing footer seed.
 function footerMenu(): ResolvedMenu {
-  const rootItems = MARKETING_NAV.map((link, i) =>
-    item(`default:footer:root:item:${i}`, link.label, link.href, i, {
-      subheading: link.desc,
+  const rootItems = marketingFooterLinks().map((node, i) =>
+    item(`default:footer:root:item:${i}`, node.label, node.href, i, {
+      subheading: node.blurb,
     }),
   )
   return {
@@ -337,25 +326,31 @@ function adminHeaderMenu(): ResolvedMenu {
 // between — the standard account links by default, each editable / movable / re-gated,
 // and operators can add any page here. Entry points is crew+ (minAccess), matching the
 // previous hardcoded gate.
+// The synthetic ids the account menu (and the /admin/menu editor rows + any DB seed) has
+// always used, keyed by the registry profile node's id-suffix (the part after 'profile:').
+// These ids are load-bearing (stable React keys, editor identity), so they are pinned here
+// verbatim while the labels / hrefs / icons / gates now come from the registry node.
+const PROFILE_MENU_IDS: Record<string, string> = {
+  friends: 'default:profile:root:item:0',
+  orders: 'default:profile:root:item:orders',
+  storefront: 'default:profile:root:item:storefront',
+  settings: 'default:profile:root:item:1',
+  billing: 'default:profile:root:item:2',
+  notifications: 'default:profile:root:item:3',
+  codes: 'default:profile:root:item:4',
+  'entry-points': 'default:profile:root:item:5',
+  support: 'default:profile:root:item:6',
+  help: 'default:profile:root:item:7',
+}
+
 function profileMenu(): ResolvedMenu {
-  const rootItems = [
-    item('default:profile:root:item:0', 'Friends', '/friends', 0, { icon: 'UserPlus' }),
-    item('default:profile:root:item:orders', 'My orders', '/orders', 1, { icon: 'Receipt', minAccess: 'member' }),
-    item('default:profile:root:item:storefront', 'My storefront', '/marketplace/makers/manage', 2, {
-      icon: 'Store',
-      minAccess: 'member',
-    }),
-    item('default:profile:root:item:1', 'Settings', '/settings', 3, { icon: 'SlidersHorizontal' }),
-    item('default:profile:root:item:2', 'Billing & Plans', '/settings/billing', 4, { icon: 'CreditCard' }),
-    item('default:profile:root:item:3', 'Notifications', '/settings/notifications', 5, { icon: 'BellRing' }),
-    item('default:profile:root:item:4', 'My code', '/codes', 6, { icon: 'QrCode' }),
-    item('default:profile:root:item:5', 'Entry points', '/entry-points', 7, {
-      icon: 'Megaphone',
-      minAccess: 'crew',
-    }),
-    item('default:profile:root:item:6', 'Support tickets', '/support', 8, { icon: 'LifeBuoy' }),
-    item('default:profile:root:item:7', 'Help', '/help', 9, { icon: 'HelpCircle' }),
-  ]
+  const rootItems = nodesForSurface('profile').map((node, i) => {
+    const key = node.id.replace(/^profile:/, '')
+    return item(PROFILE_MENU_IDS[key] ?? `default:profile:root:item:${key}`, node.label, node.href, i, {
+      icon: node.icon,
+      minAccess: node.gate.minAccess,
+    })
+  })
   return {
     surfaceKey: 'profile',
     label: surfaceLabel('profile'),
