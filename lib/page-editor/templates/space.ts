@@ -1,279 +1,187 @@
 import type { Data } from '@measured/puck'
 import { config } from '@/lib/page-editor/config'
 import {
-  templateDescriptor,
   templateForSpace,
   type SpaceTemplate,
-  type SpaceTemplateDescriptor,
   type TemplateResolverInput,
 } from '@/lib/spaces/templates'
-import type { HeroStat } from '@/lib/spaces/blueprints'
 import { emphasisDefault } from '@/lib/page-editor/fields'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SPACE LANDING -> PUCK PRESET (ADR-476/472, Phase 1 of unifying every builder
-// onto Puck). For each of the four public-page layout templates (Book · Schedule
-// · Storefront · Hub) this file GENERATES a Puck `Data` document for a Space's
-// public LANDING body, composed ONLY from blocks already registered in
-// lib/page-editor/config.tsx (Hero, Heading, Text, StatRow, Gallery,
-// CallToAction, Accordion, MediaText). No new block types are invented here.
+// SPACE LANDING -> PUCK PRESET (Phase 4 of unifying every builder onto Puck). For
+// each of the four public-page layout templates (Book · Schedule · Storefront · Hub)
+// this file GENERATES a Puck `Data` document for a Space's public LANDING body,
+// composed from the PROFILE-NATIVE block set (components/page-editor/blocks/profile.tsx)
+// + the Phase 2 dynamic Space blocks (SpaceUpdates / SpaceReviews / SpaceFAQ) + the
+// registered Gallery. It reads like a Facebook business page: a shared cover + logo
+// IDENTITY HEADER, then clean, organizable info cards, NOT a marketing landing page.
 //
-// WHY DESCRIPTOR-DRIVEN: the SpaceTemplateDescriptor (lib/spaces/templates.ts)
-// already names the hero CTA, the ordered hero stats, the headline emphasis, and
-// the About body lead order per template. We read THAT descriptor so the four
-// presets are not four hand-authored documents but four projections of the same
-// canonical layer the rest of the profile already resolves through. The result:
-// each template yields a visibly different starting document (different hero copy,
-// a different stat set, a different lead block order), and a single edit to the
-// descriptor flows through to the preset.
+// PHASE 4 CHANGE: the presets used to lead with the marketing display-type Hero + a
+// FeatureGrid + a marketing StatRow, which read like a landing page, not a profile. Now
+// every template LEADS with SpaceIdentityHeader (the shared cover/logo identity, uniform
+// on the space AND the Spotlight) and arranges profile info cards per focus. The
+// marketing blocks are untouched and still power the marketing pages; only the space
+// PRESETS switch to the Profile set.
 //
 // WHITE-LABEL (AGENTS.md D4/D6): the generated blocks carry NO chrome, NO hex, NO
-// Frequency-specific surface. They paint from semantic DAWN tokens via the block
-// kit; the Space's brand accent themes the page at the render layer (AccentScope
-// in the profile layout). The copy uses the Space's OWN name, never a Frequency
-// product line, so a published landing reads as the operator's site.
+// Frequency-specific surface. They paint from semantic DAWN tokens via the block kit;
+// the Space's brand accent themes the page at the render layer (AccentScope in the
+// profile layout). The copy uses the Space's OWN name, never a Frequency product line.
 //
-// PURE: no Supabase / Next / server-only imports beyond the pure descriptor +
-// config. Trivially unit-testable, and safe to import from the server resolver and
-// the client editor alike (the classic client -> server-only build failure is
-// avoided because `config` and `templates.ts` are both already shared/pure).
+// PURE: no Supabase / Next / server-only imports beyond the pure config + templates.
+// Trivially unit-testable, and safe to import from the server resolver and the client
+// editor alike (config + templates.ts are both shared/pure).
 //
-// COPY (NAMING + CONTENT-VOICE §10): plain sentences, sentence-case headings,
-// plain-verb CTAs sourced from the descriptor, contractions, no em dashes, never
-// narrating the reader's feelings. The copy is honest at day zero: a brand-new
-// Space's landing reads as an intentional, designed start point, not a fake.
+// COPY (NAMING + CONTENT-VOICE §10): plain sentences, sentence-case headings, plain-verb
+// CTAs, contractions, no em dashes, never narrating the reader's feelings. Honest at day
+// zero: a brand-new Space's landing reads as an intentional, designed start point, and
+// the dynamic + identity-driven blocks render nothing until there is real data.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** The shape the generators read off a Space. Tolerant + minimal: only the brand
- *  name is needed for copy, the rest feeds the descriptor resolver (which is itself
- *  total). Mirrors the fields the profile layout already passes to templateForSpace. */
+ *  name is needed for copy, the rest feeds the template resolver (which is itself total).
+ *  Mirrors the fields the profile layout already passes to templateForSpace. */
 export interface SpacePresetInput extends TemplateResolverInput {
   /** The Space's display name (brand name preferred, else the plain name). Drives the
-   *  hero + CTA copy so the landing reads as the operator's own site. */
+   *  copy so the landing reads as the operator's own site. */
   name: string
 }
 
 const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
 
-type HeroEmphasis = SpaceTemplateDescriptor['hero']['emphasis']
+type Block = { type: string; props: Record<string, unknown> }
 
-// A plain placeholder image per emphasis, so the hero is never broken on a Space
-// that hasn't uploaded its own art yet. These are existing hosted site assets (the
-// same set the marketing presets draw from); an operator swaps them in the editor.
-// No hex, no chrome — just a neutral, warm photo to anchor the hero band.
-const EMPHASIS_IMAGE: Record<HeroEmphasis, string> = {
-  'who-you-help': '/images/site/outdoor-group.jpg',
-  identity: '/images/site/hula-hoop-beach.jpg',
-  brand: '/images/site/lab-lounge.jpg',
-  mission: '/images/site/sunset.jpg',
+// Alternate the band tone (surface -> cream -> surface ...) so the body reads with rhythm.
+function tone(index: number): 'surface' | 'canvas' {
+  return index % 2 === 0 ? 'surface' : 'canvas'
 }
 
-// ── Per-emphasis hero copy. The descriptor's `emphasis` hint says which promise the
-// hero leads with; we map it to a plain headline + subtitle frame, filled with the
-// Space's own name. Sentence case, no em dashes, never narrating feelings. The CTA
-// label + the route come straight from the descriptor (descriptor.hero.primaryCta).
-function heroCopy(
-  name: string,
-  emphasis: HeroEmphasis,
-): { eyebrow: string; title: string; subtitle: string } {
-  switch (emphasis) {
-    case 'who-you-help':
-      return {
-        eyebrow: 'Work with me',
-        title: `Book time with ${name}.`,
-        subtitle: `See what ${name} offers and pick a time that works for you.`,
-      }
-    case 'identity':
-      return {
-        eyebrow: 'What is on',
-        title: `The ${name} schedule.`,
-        subtitle: `Find a class or session at ${name} and save your spot.`,
-      }
-    case 'brand':
-      return {
-        eyebrow: 'The catalog',
-        title: `Everything from ${name}.`,
-        subtitle: `Browse what ${name} makes and find the right fit.`,
-      }
-    case 'mission':
-      return {
-        eyebrow: 'Our mission',
-        title: `Get involved with ${name}.`,
-        subtitle: `See the work ${name} is doing and find your way in.`,
-      }
-  }
-}
-
-// ── A plain-noun StatRow value placeholder per metric. The hero band already shows
-// the LIVE numbers (profile-hero-stats); this body StatRow is a designed, editable
-// start point an operator fills with their own proof, so we seed plain labels and a
-// neutral hyphen value (no invented counts, no em dash, honest at day zero). The
-// descriptor's ordered heroStats drive WHICH stats appear and in what order, so the
-// four templates lead with different stat sets.
-function statItems(stats: readonly HeroStat[]): { value: string; label: string }[] {
-  return stats.slice(0, 4).map((s) => ({ value: '-', label: s.label }))
-}
-
-// ── Per-About-lead-module body section. The descriptor's `aboutModules` order
-// (minus the brand-new-Space empty) drives the BODY block order, so each template
-// opens on a distinct section. We map each entity module id to a designed,
-// EXISTING Puck block seeded with plain, on-brand copy. `entity-getting-started`
-// is the brand-new-Space empty in the live profile and has no public landing
-// section, so it is skipped here (the preset is the designed start point itself).
-function bodyBlockForModule(
-  module: string,
-  name: string,
-  descriptor: SpaceTemplateDescriptor,
-  index: number,
-): { type: string; props: Record<string, unknown> } | null {
-  const id = `sp-${descriptor.template}-${module}-${index}`
-  // Alternate the tone beat (canvas -> surface -> canvas ...) so the body reads
-  // with rhythm, exactly like the marketing presets.
-  const tone = index % 2 === 0 ? 'canvas' : 'surface'
-
-  switch (module) {
-    case 'entity-getting-started':
-      // The composite empty for a brand-new Space; no public landing section.
-      return null
-
-    case 'entity-offerings':
-      // What the Space offers, framed by the template (classes / catalog / programs
-      // / sessions). A Heading the operator pairs with their own offerings list.
-      return {
-        type: 'Heading',
-        props: {
-          id,
-          eyebrow: 'What we offer',
-          title: offeringsHeading(descriptor.template),
-          titleAccent: '',
-          kicker: '',
-          emphasis: emphasisDefault,
-          tone,
-          width: 'default',
-          align: 'left',
-          layout: L,
-        },
-      }
-
-    case 'entity-about':
-      // The story / mission, framed as a MediaText so the operator pairs a photo
-      // with prose. Leads the Hub template (mission first).
-      return {
-        type: 'MediaText',
-        props: {
-          id,
-          image: EMPHASIS_IMAGE[descriptor.hero.emphasis],
-          alt: '',
-          eyebrow: 'About',
-          title: `About ${name}.`,
-          titleAccent: '',
-          kicker: '',
-          body: `Tell people who you are and why this matters. Share what brought ${name} here and what someone can expect.`,
-          side: index % 2 === 0 ? 'left' : 'right',
-          imgAspect: 'landscape',
-          focal: 'center',
-          ctaLabel: '',
-          ctaHref: '',
-          tone,
-          width: 'default',
-          align: 'left',
-          layout: L,
-        },
-      }
-
-    case 'entity-cta':
-      // The primary ask, framed by the template's own CTA (Book / Get involved /
-      // browse). The descriptor's primaryCta label + tab drive the copy + route.
-      return {
-        type: 'CallToAction',
-        props: {
-          id,
-          eyebrow: '',
-          heading: ctaHeading(descriptor.template),
-          headingAccent: '',
-          body: ctaBody(name, descriptor.template),
-          ctaPrimaryLabel: descriptor.hero.primaryCta.label,
-          ctaPrimaryHref: ctaHref(descriptor),
-          ctaSecondaryLabel: '',
-          ctaSecondaryHref: '',
-          emphasis: emphasisDefault,
-          tone: 'surface',
-          width: 'default',
-          align: 'center',
-          layout: L,
-        },
-      }
-
-    case 'entity-community':
-      // The community / stories beat: a plain Heading the operator fills with member
-      // voices. Honest at day zero (no fake testimonials seeded).
-      return {
-        type: 'Heading',
-        props: {
-          id,
-          eyebrow: 'Community',
-          title: 'The people who show up.',
-          titleAccent: '',
-          kicker: 'Share what your community looks like and who belongs here.',
-          emphasis: emphasisDefault,
-          tone,
-          width: 'default',
-          align: 'left',
-          layout: L,
-        },
-      }
-
-    case 'entity-team':
-      // The team behind the Space: a Heading the operator pairs with the people.
-      return {
-        type: 'Heading',
-        props: {
-          id,
-          eyebrow: 'Team',
-          title: 'Who runs the room.',
-          titleAccent: '',
-          kicker: 'Introduce the people behind this work.',
-          emphasis: emphasisDefault,
-          tone,
-          width: 'default',
-          align: 'left',
-          layout: L,
-        },
-      }
-
-    default:
-      return null
-  }
-}
-
-// ── New Space content blocks (Puck content blocks, Phase 2). Each is composed from a REGISTERED
-// block (Cover / SpaceReviews / SpaceFAQ / SpaceUpdates / Gallery), seeded with plain on-brand copy,
-// and left fully operator-movable/removable (nothing locked). The dynamic ones render nothing until
-// the operator adds real rows (fail-safe), so seeding them is honest at day zero: they are a
-// designed placement, not a fake. Copy is CONTENT-VOICE (plain, no em dashes, no invented counts).
-
-// The Cover banner that LEADS every template's document. Neutral placeholder image (same hosted
-// asset set the hero draws from) the operator swaps in the editor; no overlay copy by default so the
-// hero below owns the headline.
-function coverBlock(template: SpaceTemplate, emphasis: HeroEmphasis): { type: string; props: Record<string, unknown> } {
+// ── The shared IDENTITY HEADER that LEADS every template's document. It reads the cover /
+// logo / name / tagline / primary CTA off `puck.metadata.space.identity` (injected by the
+// render path), so an operator sees the real header the moment the page publishes. No
+// per-surface override by default (uniform); the operator can set a cover/logo override or
+// toggle it off in the editor.
+function identityHeader(template: SpaceTemplate): Block {
   return {
-    type: 'Cover',
+    type: 'SpaceIdentityHeader',
     props: {
-      id: `sp-${template}-cover`,
-      image: EMPHASIS_IMAGE[emphasis],
-      alt: '',
+      id: `sp-${template}-identity`,
+      coverOverride: '',
+      logoOverride: '',
       focal: 'center',
       height: 'medium',
-      eyebrow: '',
-      title: '',
+      showFollow: 'yes',
+    },
+  }
+}
+
+// ── The live HIGHLIGHTS strip (members / offerings / ...). Reads the live counts off
+// metadata; renders nothing until the Space has positive counts (honest at day zero).
+function highlights(template: SpaceTemplate): Block {
+  return {
+    type: 'SpaceHighlights',
+    props: { id: `sp-${template}-highlights`, tone: 'surface', width: 'wide', align: 'center', layout: L },
+  }
+}
+
+// ── The OFFERINGS grid. Operator authored (empty by default, so it shows a designed
+// placeholder in the editor and nothing on the live page until the operator adds cards).
+// The eyebrow + heading are framed by the template's own voice.
+function offerings(template: SpaceTemplate, heading: string, index: number): Block {
+  return {
+    type: 'SpaceOfferings',
+    props: {
+      id: `sp-${template}-offerings`,
+      eyebrow: 'What we offer',
+      heading,
+      items: [],
+      tone: tone(index),
+      width: 'wide',
+      align: 'left',
       layout: L,
     },
   }
 }
 
-// A member-proof Reviews block, placed near the CTA on Book/Schedule/Storefront. Renders nothing
-// until members leave reviews, so the seed is a designed slot, not a fake average.
-function reviewsBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+// ── The ABOUT / story card.
+function about(template: SpaceTemplate, name: string, heading: string, index: number): Block {
+  return {
+    type: 'SpaceAbout',
+    props: {
+      id: `sp-${template}-about`,
+      eyebrow: 'About',
+      heading,
+      body: `Tell people who you are and why this matters. Share what brought ${name} here and what someone can expect.`,
+      tone: tone(index),
+      width: 'default',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// ── The tasteful CTA card (a headline + one button), NOT a full-bleed marketing hero.
+function cta(template: SpaceTemplate, heading: string, body: string, label: string, index: number): Block {
+  return {
+    type: 'SpaceCTA',
+    props: {
+      id: `sp-${template}-cta`,
+      heading,
+      body,
+      ctaLabel: label,
+      ctaHref: '#',
+      tone: tone(index),
+      width: 'default',
+      align: 'center',
+      layout: L,
+    },
+  }
+}
+
+// ── The CONTACT + hours info card. Empty by default (placeholder in the editor).
+function contact(template: SpaceTemplate, index: number): Block {
+  return {
+    type: 'SpaceContact',
+    props: {
+      id: `sp-${template}-contact`,
+      eyebrow: 'Find us',
+      heading: 'Contact',
+      address: '',
+      hours: '',
+      phone: '',
+      email: '',
+      linkLabel: '',
+      linkHref: '',
+      tone: tone(index),
+      width: 'default',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// ── The TEAM avatar cards. Empty by default (placeholder in the editor).
+function team(template: SpaceTemplate, index: number): Block {
+  return {
+    type: 'SpaceTeam',
+    props: {
+      id: `sp-${template}-team`,
+      eyebrow: 'The people',
+      heading: 'Meet the team',
+      members: [],
+      tone: tone(index),
+      width: 'wide',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// ── The Phase 2 dynamic blocks (Reviews / FAQ / Updates) + the registered Gallery, reused
+// here (never rebuilt). Each renders nothing until the operator adds real rows / photos, so
+// seeding them is a designed placement, not a fake.
+
+function reviews(template: SpaceTemplate): Block {
   return {
     type: 'SpaceReviews',
     props: {
@@ -289,9 +197,7 @@ function reviewsBlock(template: SpaceTemplate): { type: string; props: Record<st
   }
 }
 
-// An operator FAQ accordion, placed LOWER on the page. Renders nothing until the operator adds
-// questions.
-function faqBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+function faq(template: SpaceTemplate): Block {
   return {
     type: 'SpaceFAQ',
     props: {
@@ -308,9 +214,7 @@ function faqBlock(template: SpaceTemplate): { type: string; props: Record<string
   }
 }
 
-// The brand Updates feed, used on the Hub (the fullest template). Renders nothing until the operator
-// publishes an update.
-function updatesBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+function updates(template: SpaceTemplate): Block {
   return {
     type: 'SpaceUpdates',
     props: {
@@ -327,9 +231,7 @@ function updatesBlock(template: SpaceTemplate): { type: string; props: Record<st
   }
 }
 
-// A Gallery placement (Storefront + Hub keep a gallery). Empty items by default (no fake photos);
-// the operator uploads their own. Uses the registered Gallery block.
-function galleryBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+function gallery(template: SpaceTemplate): Block {
   return {
     type: 'Gallery',
     props: {
@@ -350,154 +252,79 @@ function galleryBlock(template: SpaceTemplate): { type: string; props: Record<st
   }
 }
 
-// Per-template offerings heading, so the same module reads with the template's voice.
-function offeringsHeading(template: SpaceTemplate): string {
-  switch (template) {
-    case 'book':
-      return 'What you can book.'
-    case 'schedule':
-      return 'The schedule.'
-    case 'storefront':
-      return 'The catalog.'
-    case 'hub':
-      return 'Our programs.'
-  }
-}
-
-function ctaHeading(template: SpaceTemplate): string {
-  switch (template) {
-    case 'book':
-      return 'Ready when you are.'
-    case 'schedule':
-      return 'Save your spot.'
-    case 'storefront':
-      return 'Find your fit.'
-    case 'hub':
-      return 'Join the work.'
-  }
-}
-
-function ctaBody(name: string, template: SpaceTemplate): string {
-  switch (template) {
-    case 'book':
-      return `Pick a time and ${name} will take it from there.`
-    case 'schedule':
-      return `See what is coming up at ${name} and reserve your place.`
-    case 'storefront':
-      return `Browse what ${name} makes and take the next step.`
-    case 'hub':
-      return `There is a place for you at ${name}. Here is how to start.`
-  }
-}
-
-// The primary CTA route for the landing: the descriptor names a wired tab id; the
-// landing lives at the profile index, so the CTA points at that tab as a relative
-// anchor. The public render layer (the Space page) can rewrite this to the Space's
-// own slug; seeding a relative tab anchor means a published preset never 404s.
-function ctaHref(descriptor: SpaceTemplateDescriptor): string {
-  const tab = descriptor.hero.primaryCta.tab
-  return tab === 'about' ? '#' : `#${tab}`
-}
-
 /**
- * Generate a Puck `Data` document for a Space LANDING, from the descriptor of the
- * given template. PURE + total: every template yields a valid Puck document
- * composed only from registered blocks, visibly distinct per template (different
- * hero emphasis copy, stat set, and lead body order).
- *
- * The block order follows the descriptor's `aboutModules` (the same lead-first
- * order the live About body uses), so the four templates open on four different
- * sections. The hero leads, then the descriptor's body modules, then a StatRow of
- * the descriptor's hero stats as an editable proof band.
+ * Generate a Puck `Data` document for a Space LANDING, for the given template. PURE +
+ * total: every template yields a valid Puck document composed from the Profile block set,
+ * visibly distinct per template (a different card arrangement per focus). Every template
+ * LEADS with SpaceIdentityHeader (the shared cover/logo identity), then arranges the info
+ * cards:
+ *   Book:       Identity -> Highlights -> Offerings(bookable) -> CTA(Book) -> Reviews -> FAQ -> About -> Contact.
+ *   Schedule:   Identity -> Offerings(schedule) -> CTA(See the schedule) -> Highlights -> Reviews -> About -> Contact.
+ *   Storefront: Identity -> Offerings(catalog) -> Gallery -> Reviews -> About -> Contact.
+ *   Hub:        Identity -> About(mission) -> CTA(Get involved) -> Updates -> Offerings(programs) -> Gallery -> Team -> FAQ -> Contact.
+ * Nothing is locked: the operator reorders / toggles any of it in the editor.
  */
 export function generateSpacePreset(template: SpaceTemplate, name: string): Data {
-  const descriptor = templateDescriptor(template)
   const brand = name.trim() || 'this space'
-  const copy = heroCopy(brand, descriptor.hero.emphasis)
+  const id = identityHeader(template)
 
-  const hero = {
-    type: 'Hero',
-    props: {
-      id: `sp-${template}-hero`,
-      variant: 'image',
-      eyebrow: copy.eyebrow,
-      title: copy.title,
-      titleAccent: '',
-      subtitle: copy.subtitle,
-      image: EMPHASIS_IMAGE[descriptor.hero.emphasis],
-      focal: 'center',
-      minHeight: 'screen',
-      ctaPrimaryLabel: descriptor.hero.primaryCta.label,
-      ctaPrimaryHref: ctaHref(descriptor),
-      ctaSecondaryLabel: '',
-      ctaSecondaryHref: '',
-      note: '',
-      tone: 'surface',
-      width: 'default',
-      align: 'center',
-      layout: L,
-    },
-  }
-
-  // The descriptor's About body order drives the body section order (skipping the
-  // brand-new-Space empty), so each template opens on a distinct lead block.
-  const body = descriptor.aboutModules
-    .map((module, i) => bodyBlockForModule(module, brand, descriptor, i))
-    .filter((b): b is { type: string; props: Record<string, unknown> } => b !== null)
-
-  // An editable proof band of the descriptor's ordered hero stats. Honest at day
-  // zero (neutral values), distinct per template (the stat SET differs).
-  const stats = {
-    type: 'StatRow',
-    props: {
-      id: `sp-${template}-stats`,
-      eyebrow: '',
-      title: 'By the numbers',
-      titleAccent: '',
-      columns: String(Math.min(4, Math.max(2, descriptor.hero.heroStats.length))),
-      items: statItems(descriptor.hero.heroStats),
-      emphasis: emphasisDefault,
-      tone: 'surface',
-      width: 'default',
-      align: 'center',
-      layout: L,
-    },
-  }
-
-  // ── The new Space content blocks, placed per template (Puck content blocks, Phase 2). Cover LEADS
-  // every document (the banner). Book/Schedule/Storefront add member-proof Reviews near the CTA and a
-  // FAQ lower; Storefront also keeps a Gallery. Hub is the fullest: Cover, mission (already the body
-  // lead), Updates, Gallery, FAQ, community. Everything is operator-movable/removable; nothing locked.
-  const cover = coverBlock(template, descriptor.hero.emphasis)
-
-  let extras: { type: string; props: Record<string, unknown> }[]
+  let body: Block[]
   switch (template) {
     case 'book':
+      body = [
+        highlights(template),
+        offerings(template, 'What you can book', 1),
+        cta(template, 'Ready when you are', `Pick a time and ${brand} will take it from there.`, 'Book a session', 2),
+        reviews(template),
+        faq(template),
+        about(template, brand, `About ${brand}`, 3),
+        contact(template, 4),
+      ]
+      break
     case 'schedule':
-      // Reviews as proof near the ask (after the body's CTA), then the FAQ lower, then the stat band.
-      extras = [reviewsBlock(template), faqBlock(template)]
+      body = [
+        offerings(template, 'The schedule', 1),
+        cta(template, 'Save your spot', `See what is coming up at ${brand} and reserve your place.`, 'See the schedule', 2),
+        highlights(template),
+        reviews(template),
+        about(template, brand, `About ${brand}`, 3),
+        contact(template, 4),
+      ]
       break
     case 'storefront':
-      // Storefront keeps a Gallery (the catalog look), plus Reviews proof and a FAQ.
-      extras = [galleryBlock(template), reviewsBlock(template), faqBlock(template)]
+      body = [
+        offerings(template, 'The catalog', 1),
+        gallery(template),
+        reviews(template),
+        about(template, brand, `About ${brand}`, 3),
+        contact(template, 4),
+      ]
       break
     case 'hub':
-      // The fullest body: brand Updates + a Gallery + a FAQ, layered onto the mission-led body.
-      extras = [updatesBlock(template), galleryBlock(template), faqBlock(template)]
+      body = [
+        about(template, brand, 'Our mission', 1),
+        cta(template, 'Get involved', `There is a place for you at ${brand}. Here is how to start.`, 'Get involved', 2),
+        updates(template),
+        offerings(template, 'Our programs', 3),
+        gallery(template),
+        team(template, 4),
+        faq(template),
+        contact(template, 5),
+      ]
       break
   }
 
   return {
     root: {},
-    content: [cover, hero, ...body, ...extras, stats],
+    content: [id, ...body],
   }
 }
 
-/** Generate the Puck preset for a Space by RESOLVING its template from the
- *  descriptor layer (templateForSpace), then generating from that descriptor. PURE
- *  + total — the resolver always returns one of the four templates, so this always
- *  returns a valid, distinct document. The server resolver (spacePuckData) calls
- *  this as its fail-safe when no stored doc is present or valid. */
+/** Generate the Puck preset for a Space by RESOLVING its template from the descriptor
+ *  layer (templateForSpace), then generating from that template. PURE + total -- the
+ *  resolver always returns one of the four templates, so this always returns a valid,
+ *  distinct document. The server resolver (spacePuckData) calls this as its fail-safe when
+ *  no stored doc is present or valid. */
 export function generateSpacePresetForSpace(input: SpacePresetInput): Data {
   const template = templateForSpace({
     type: input.type,
@@ -544,7 +371,7 @@ export function readStoredSpaceDoc(preferences: unknown): Data | null {
  * Resolve the Puck `Data` document for a Space's LANDING body. The stored,
  * VALID document (`preferences.puck`) wins; otherwise the generated preset for the
  * Space's resolved template. FAIL-SAFE: a missing, malformed, or stale-block stored
- * doc all fall through to the preset, so the landing always renders. PURE — the
+ * doc all fall through to the preset, so the landing always renders. PURE -- the
  * server caller reads the Space and hands the fields in.
  */
 export function spacePuckData(input: SpacePresetInput): Data {

@@ -19,8 +19,38 @@
 // server-only, so the shared Puck config stays client-safe (the classic build trap).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveProfileStats } from '@/lib/spaces/profile-stats'
+import { spaceTypeLabel } from '@/components/spaces/space-type'
+import type { TemplateResolverInput } from '@/lib/spaces/templates'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
+
+/** The shared IDENTITY a Space presents on BOTH its landing page AND its Spotlight (Phase 4). The
+ *  Profile blocks (SpaceIdentityHeader, SpaceHighlights, SpaceOfferings, SpaceContact, SpaceTeam,
+ *  SpaceCTA) read this off `metadata.space.identity`, injected by the RSC render paths
+ *  (components/spaces/space-landing.tsx + the Spotlight render bridge). Every field is optional so a
+ *  block on a page WITHOUT identity metadata (a stray copy, a member Spotlight) degrades to a
+ *  placeholder in the editor and to nothing on the live render, never a crash. */
+export type SpaceIdentity = {
+  /** The display brand name (brand name preferred, else the plain Space name). */
+  name: string
+  /** The plain type badge label ("Practitioner", "Event Space"). */
+  typeLabel: string
+  /** The operator's brand logo URL (an arbitrary https / same-origin URL), or null. */
+  logoUrl: string | null
+  /** The operator's uploaded cover banner (spaces.cover_image_url), or null. */
+  coverUrl: string | null
+  /** The one-line tagline under the name, or null. */
+  tagline: string | null
+  /** The primary action the identity header surfaces: a plain-verb label + the tab-relative href
+   *  the resolved template names (e.g. "Book a session" -> the /book tab). */
+  primaryCta: { label: string; href: string } | null
+}
+
+/** One resolved highlight tile for the SpaceHighlights strip: a plain-noun label + a live count from
+ *  the Space's own rows. Only positive counts are carried, so a brand-new Space shows nothing (honest
+ *  at day zero, no invented numbers). */
+export type SpaceHighlight = { label: string; value: number }
 
 export type SpaceUpdateItem = {
   id: string
@@ -60,6 +90,12 @@ export type SpaceContentData = {
   updates: SpaceUpdateItem[]
   reviews: SpaceReviewsData
   faqs: SpaceFaqItem[]
+  /** The shared cover + logo + name identity (Phase 4). Present on the Space landing + a brand/space
+   *  Spotlight; undefined in the editor canvas + a member Spotlight (the Profile blocks fall back). */
+  identity?: SpaceIdentity
+  /** The live highlight counts (members / offerings / ...) the SpaceHighlights strip reads, template
+   *  ordered, only the positive ones. Empty for a brand-new Space (the strip renders nothing). */
+  highlights?: SpaceHighlight[]
 }
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
@@ -169,14 +205,65 @@ export async function getSpaceFaqs(spaceId: string): Promise<SpaceFaqItem[]> {
   }
 }
 
-/** Assemble every Space content block's data in one pass (three bounded, parallel reads). Injected
- *  into <Render> as `metadata.space`. FAIL-SAFE throughout: any miss yields empty, so the landing
- *  never throws. */
-export async function getSpaceContentData(spaceId: string): Promise<SpaceContentData> {
-  const [updates, reviews, faqs] = await Promise.all([
+/** The identity + highlight inputs a render path hands to getSpaceContentData so the Profile blocks
+ *  (Phase 4) can read the shared cover/logo/name off `metadata.space`. All raw + tolerant: the reader
+ *  builds the SpaceIdentity + resolves the live highlight counts. Omit it (the pre-Phase-4 call) and
+ *  the Profile blocks fall back to their editor placeholders, so this is fully additive. */
+export interface SpaceContentInput {
+  /** The display brand name (brand name preferred, else the plain Space name). */
+  name: string
+  /** The raw `spaces.type` value, turned into a plain badge label. */
+  type: string
+  /** The operator's brand logo URL, or null. */
+  logoUrl?: string | null
+  /** The operator's uploaded cover banner (spaces.cover_image_url), or null. */
+  coverUrl?: string | null
+  /** The one-line tagline, or null. */
+  tagline?: string | null
+  /** The primary CTA the identity header surfaces (label + tab-relative href), or null. */
+  primaryCta?: { label: string; href: string } | null
+  /** The template resolver input, so the live highlight counts match the page's resolved template. */
+  statsInput?: TemplateResolverInput
+}
+
+/** Assemble every Space content block's data in one pass. The three content reads (updates / reviews
+ *  / faqs) plus, when `input` is given (Phase 4), the shared identity + the live highlight counts.
+ *  Injected into <Render> as `metadata.space`. FAIL-SAFE throughout: any miss yields empty, so the
+ *  landing never throws; the highlight resolve degrades to [] on any error. */
+export async function getSpaceContentData(
+  spaceId: string,
+  input?: SpaceContentInput,
+): Promise<SpaceContentData> {
+  const [updates, reviews, faqs, highlights] = await Promise.all([
     getSpaceUpdates(spaceId),
     getSpaceReviews(spaceId),
     getSpaceFaqs(spaceId),
+    input?.statsInput ? getSpaceHighlights(spaceId, input.statsInput) : Promise.resolve([]),
   ])
-  return { spaceId, updates, reviews, faqs }
+  const identity: SpaceIdentity | undefined = input
+    ? {
+        name: input.name,
+        typeLabel: spaceTypeLabel(input.type),
+        logoUrl: input.logoUrl ?? null,
+        coverUrl: input.coverUrl ?? null,
+        tagline: input.tagline?.trim() ? input.tagline.trim() : null,
+        primaryCta: input.primaryCta ?? null,
+      }
+    : undefined
+  return { spaceId, updates, reviews, faqs, identity, highlights }
+}
+
+/** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
+ *  resolver the hero stats + the entity-stats module read, so the strip never disagrees with the hero.
+ *  Only the positive counts ride through (honest at day zero). FAIL-SAFE to []. */
+export async function getSpaceHighlights(
+  spaceId: string,
+  input: TemplateResolverInput,
+): Promise<SpaceHighlight[]> {
+  try {
+    const stats = await resolveProfileStats(spaceId, input)
+    return stats.filter((s) => s.value > 0).map((s) => ({ label: s.label, value: s.value }))
+  } catch {
+    return []
+  }
 }

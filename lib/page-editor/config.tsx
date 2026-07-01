@@ -21,6 +21,7 @@ import { productStoryComponents } from '@/components/page-editor/blocks/product-
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
 import { spacesComponents } from '@/components/page-editor/blocks/spaces'
+import { profileComponents } from '@/components/page-editor/blocks/profile'
 
 export const config: Config = {
   components: {
@@ -35,6 +36,7 @@ export const config: Config = {
     ...circlesComponents,
     ...linktreeComponents,
     ...spacesComponents,
+    ...profileComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -61,6 +63,21 @@ export const config: Config = {
     dynamic: {
       title: 'Dynamic',
       components: ['LiveStats', 'LiveEvents', 'LivePosts'],
+    },
+    // The profile-native block set (Phase 4): FB-business-page info cards, painted from the app's own
+    // DAWN design system. The space + spotlight PRESETS lead with these; marketing pages keep the
+    // marketing blocks (the Profile set is ADDITIVE).
+    profile: {
+      title: 'Profile',
+      components: [
+        'SpaceIdentityHeader',
+        'SpaceAbout',
+        'SpaceHighlights',
+        'SpaceOfferings',
+        'SpaceContact',
+        'SpaceTeam',
+        'SpaceCTA',
+      ],
     },
     spaceContent: {
       title: 'Space content',
