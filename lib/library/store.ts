@@ -78,14 +78,22 @@ export type LibraryQuery = {
   kind?: string
   sort?: LibrarySort
   includeArchived?: boolean
-  limit?: number
+  /** 1-based page. */
+  page?: number
+  pageSize?: number
 }
 
-/** Search + filter a space's assets. Text search is a safe substring match over
+export type LibraryPage = { items: LibraryGalleryItem[]; total: number }
+
+/** Search + filter + PAGE a space's assets. Text search is a safe substring match over
  *  title/description/category (FTS ranking + trigram is a follow-up, D7); tags/kind are
- *  exact facets. Archived assets are hidden unless asked for. */
-export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryGalleryItem[]> {
-  let query = db().from('library_assets').select(SELECT).eq('space_id', opts.spaceId)
+ *  exact facets. Archived assets are hidden unless asked for. Returns the page + the exact
+ *  total (for pagination). */
+export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPage> {
+  let query = db()
+    .from('library_assets')
+    .select(SELECT, { count: 'exact' })
+    .eq('space_id', opts.spaceId)
 
   if (!opts.includeArchived) query = query.neq('status', 'archived')
   if (opts.kind) query = query.eq('kind', opts.kind)
@@ -109,8 +117,15 @@ export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryGa
       query = query.order('created_at', { ascending: false })
   }
 
-  const { data } = await query.limit(opts.limit ?? 200)
-  return ((data as Array<Record<string, unknown>> | null) ?? []).map(toItem)
+  const pageSize = Math.min(Math.max(opts.pageSize ?? 48, 1), 200)
+  const page = Math.max(opts.page ?? 1, 1)
+  const from = (page - 1) * pageSize
+  const { data, count } = await query.range(from, from + pageSize - 1)
+
+  return {
+    items: ((data as Array<Record<string, unknown>> | null) ?? []).map(toItem),
+    total: count ?? 0,
+  }
 }
 
 /** One asset by id (any status), scoped to a space. */

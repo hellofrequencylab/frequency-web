@@ -103,10 +103,10 @@ export function VeraWizard() {
         </div>
 
         <div className="space-y-3">
-          <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface [&>svg]:max-h-full [&>svg]:w-auto">
+          <div className="flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface">
             {safeSvg ? (
               <div
-                className="flex h-full w-full items-center justify-center p-3 [&>svg]:max-h-full [&>svg]:w-auto"
+                className="flex h-full w-full items-center justify-center p-3 [&>svg]:h-full [&>svg]:w-auto [&>svg]:max-w-full"
                 // Sanitized server-side and re-validated above before this render.
                 dangerouslySetInnerHTML={{ __html: safeSvg }}
               />
