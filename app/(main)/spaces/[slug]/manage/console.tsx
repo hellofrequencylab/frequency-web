@@ -9,6 +9,7 @@ import {
   GraduationCap,
   HandCoins,
   IdCard,
+  LayoutTemplate,
   Mail,
   type LucideIcon,
   QrCode,
@@ -60,6 +61,8 @@ export function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/settings/basics`
     case 'space.mode':
       return `${base}/manage/mode`
+    case 'space.layout':
+      return `${base}/manage/layout`
     case 'space.place':
       return `${base}/settings/availability`
     case 'space.people':
@@ -123,6 +126,7 @@ const CONSOLE_GROUPS: readonly ConsoleGroup[] = [
 const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
   'space.basics': 'identity',
   'space.mode': 'identity',
+  'space.layout': 'identity',
   'space.place': 'offerings',
   'space.engage.memberships': 'offerings',
   'space.engage.donations': 'offerings',
@@ -142,6 +146,7 @@ const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
 const ICON_FOR: Record<string, LucideIcon> = {
   'space.basics': IdCard,
   'space.mode': Sparkles,
+  'space.layout': LayoutTemplate,
   'space.place': CalendarClock,
   'space.engage.memberships': BadgeCheck,
   'space.engage.donations': HandCoins,

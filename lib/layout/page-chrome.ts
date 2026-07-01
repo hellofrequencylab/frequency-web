@@ -234,6 +234,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // console manage root is full-width 'none', but its /manage/mode sub-page is a Focus form that keeps
   // the global rail beside its centered body); this catalog entry makes it an explicitly managed surface.
   { route: '/spaces/_/manage/mode', label: 'Space mode and focus', area: 'Focus surfaces' },
+  // The Layout settings page (ADR-472): a centered Focus surface (the public-page layout picker + preview
+  // gallery) inside the unified console. Like /manage/mode it falls through to 'global' in railFor (a
+  // Focus form that keeps the global rail beside its centered body); this catalog entry makes it an
+  // explicitly managed surface an operator can reframe.
+  { route: '/spaces/_/manage/layout', label: 'Space layout', area: 'Focus surfaces' },
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },

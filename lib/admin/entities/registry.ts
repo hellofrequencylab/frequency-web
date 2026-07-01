@@ -289,6 +289,17 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: null,
     types: ['*'],
   },
+  // Layout (ADR-472) — the public-page layout the landing starts from (Book · Schedule · Storefront ·
+  // Hub, or automatic), with a preview of each. Always present for a manager (no per-tool function): the
+  // layout is a FREE start point, never a gate, so it sits alongside Basics + Mode for every console type.
+  {
+    id: 'space.layout',
+    slot: 'layout',
+    label: 'Layout',
+    desc: 'Pick the page layout and preview each one.',
+    requiredFunction: null,
+    types: ['*'],
+  },
   // Place & Time — the practitioner's weekly booking windows + upcoming bookings.
   {
     id: 'space.place',
