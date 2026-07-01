@@ -460,11 +460,6 @@ export function nodesForSurface(surface: NavSurface): NavNode[] {
   return NAV_REGISTRY.filter((n) => n.surfaces.includes(surface))
 }
 
-/** Nodes belonging to `mode`'s spine (calm = member app, studio = operator workspace). */
-export function nodesForMode(mode: NavMode): NavNode[] {
-  return NAV_REGISTRY.filter((n) => n.mode === mode)
-}
-
 /** Direct children of a `parent` (section label), in registry order. A null/undefined
  *  parent returns the headerless home-anchor nodes (section-less spine). */
 export function childrenOf(parent: string | null | undefined): NavNode[] {
