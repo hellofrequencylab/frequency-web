@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Copy, Check, ExternalLink, Archive, Trash2, ImageOff, Download } from 'lucide-react'
 import type { LibraryGalleryItem } from '@/lib/library/store'
-import { Illustration, illustrationNames, type IllustrationName } from '@/components/marketing/illustrations'
+import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import {
   downloadElementSvg,
@@ -21,12 +21,9 @@ function human(n: number | null): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** The illustration-registry name for an `element` asset, if valid. */
-function elementName(asset: LibraryGalleryItem): IllustrationName | null {
-  const n = asset.config?.name
-  return typeof n === 'string' && (illustrationNames as readonly string[]).includes(n)
-    ? (n as IllustrationName)
-    : null
+/** True when an `element` asset resolves to a drawable code element (any registry). */
+function isRegistryElement(asset: LibraryGalleryItem): boolean {
+  return asset.kind === 'element' && isRenderableElement(asset.config?.registry, asset.config?.name)
 }
 
 /** A Vera-generated card stores its SVG string in config.svg. Re-validate before render. */
@@ -37,7 +34,7 @@ function safeElementSvg(asset: LibraryGalleryItem): string | null {
   return c.ok ? c.svg : null
 }
 
-/** Renders an asset's visual: a Vera-drawn SVG, a registry element via <Illustration>, a
+/** Renders an asset's visual: a Vera-drawn SVG, a code element via its registry, a
  *  file via <img>, or a placeholder. `fit` picks cover (grid tiles) vs contain (preview). */
 function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'contain' }) {
   if (asset.kind === 'element') {
@@ -51,13 +48,9 @@ function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'cont
         />
       )
     }
-    const el = elementName(asset)
-    if (el) {
-      return (
-        <div className="flex h-full w-full items-center justify-center p-4">
-          <Illustration name={el} className="h-full" />
-        </div>
-      )
+    const drawn = renderRegistryElement(asset.config?.registry, asset.config?.name, asset.config?.pillar)
+    if (drawn) {
+      return <div className="flex h-full w-full items-center justify-center p-4">{drawn}</div>
     }
   }
   if (asset.url) {
@@ -173,7 +166,7 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
   }
 
   const previewRef = useRef<HTMLDivElement>(null)
-  const isElement = asset.kind === 'element' && (!!elementName(asset) || !!safeElementSvg(asset))
+  const isElement = asset.kind === 'element' && (isRegistryElement(asset) || !!safeElementSvg(asset))
 
   function previewSvg(): SVGSVGElement | null {
     return previewRef.current?.querySelector('svg') ?? null
