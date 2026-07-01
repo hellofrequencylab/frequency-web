@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { LayoutGrid, Check } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
 import { DIRECTORY_TYPES } from './space-type'
+import { SpacesSort } from './spaces-sort'
 
 // The command bar for the Spaces directory — the same standard the Circles/People directories use:
 // a debounced free-text search (DirectorySearch) plus a low-cardinality TYPE filter as a pill row
@@ -75,6 +76,13 @@ export function SpacesToolbar() {
           >
             <Check className="h-3.5 w-3.5" /> Following
           </button>
+        </div>
+
+        {/* Sort (URL `?sort=`) — name (A–Z, default) / newest / most members. Pushed to the right
+            edge of the command bar so it reads as the catalog's ordering control, distinct from the
+            type/following filters to its left. */}
+        <div className="ml-auto shrink-0 pl-2">
+          <SpacesSort />
         </div>
       </div>
     </div>

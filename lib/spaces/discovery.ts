@@ -33,6 +33,10 @@ export interface NetworkedSpace {
   memberCount: number | null
 }
 
+/** How the catalog is ordered. `name` (A–Z) is the default; `newest` is most-recently created
+ *  first; `members` is most members first. An unknown/absent value falls back to `name`. */
+export type SpaceSort = 'name' | 'newest' | 'members'
+
 /** The filters the directory passes in. All optional; absent = unfiltered. */
 export interface DiscoveryFilters {
   /** Narrow to one entity type (practitioner / business / organization / coaching / event_space). */
@@ -45,11 +49,20 @@ export interface DiscoveryFilters {
   /** Narrow the result to the Spaces `followerProfileId` follows (the "Following" pill). Ignored
    *  when no `followerProfileId` is given (a signed-out viewer follows nothing). */
   onlyFollowed?: boolean
+  /** Catalog ordering: name (A–Z, default) / newest (created_at desc) / members (member count desc). */
+  sort?: SpaceSort
+}
+
+/** Coerce an arbitrary `?sort=` value to a known SpaceSort, defaulting to 'name'. Kept here so the
+ *  page + the query share one definition of the valid set (no drift). PURE. */
+export function normalizeSpaceSort(value: string | null | undefined): SpaceSort {
+  return value === 'newest' || value === 'members' ? value : 'name'
 }
 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
-// is reached through the untyped client below, so it never hits the typed-row overload.
-const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, tagline'
+// is reached through the untyped client below, so it never hits the typed-row overload. `created_at`
+// backs the "Newest" sort.
+const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, tagline, created_at'
 
 // `spaces.visibility` / `spaces.brand_*` aren't fully in the generated DB types, so reach the table
 // through an untyped `from` accessor (ADR-246) and type the builder loosely here — the same shape
@@ -63,6 +76,7 @@ type SpaceDiscoveryRow = {
   brand_name: string | null
   brand_logo_url: string | null
   tagline: string | null
+  created_at: string | null
 }
 
 type SpacesQuery = {
@@ -136,10 +150,12 @@ async function memberCountsFor(spaceIds: string[]): Promise<Map<string, number>>
  * List the NETWORKED entity Spaces for the in-app directory. Returns Spaces where
  * `visibility = 'network'` and `status = 'active'`, excluding the root space, optionally narrowed by
  * `type` and a free-text `q` over name/brand/slug. Each row carries its brand anchor, type, tagline,
- * and a cheap active-member count. Ordered by name. FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
+ * and a cheap active-member count. Ordered by `sort`: name (A–Z, default) / newest (created_at desc)
+ * in the DB; members (member count desc) after the grouped count read (counts arrive separately, so
+ * that ordering is applied in app code). FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
-  async ({ type, q, followerProfileId, onlyFollowed }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
+  async ({ type, q, followerProfileId, onlyFollowed, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
     try {
       // The "Following" filter: resolve the viewer's followed Space ids up front. A signed-out viewer
       // (no profile) follows nothing, so the filtered directory is correctly empty. Fail-safe to an
@@ -164,9 +180,18 @@ export const listNetworkedSpaces = cache(
         query = query.or(`name.ilike.${like},brand_name.ilike.${like},slug.ilike.${like}`)
       }
 
-      const result = (await query
-        .order('name', { ascending: true })
-        .limit(DISCOVERY_FETCH_LIMIT)) as { data: SpaceDiscoveryRow[] | null; error: unknown }
+      // DB ordering: name (A–Z) is the default; newest sorts by created_at desc. "Most members"
+      // rides the DB in name order here and is re-sorted by count below (counts arrive separately).
+      const wantSort = normalizeSpaceSort(sort)
+      const ordered =
+        wantSort === 'newest'
+          ? query.order('created_at', { ascending: false })
+          : query.order('name', { ascending: true })
+
+      const result = (await ordered.limit(DISCOVERY_FETCH_LIMIT)) as {
+        data: SpaceDiscoveryRow[] | null
+        error: unknown
+      }
 
       if (result.error || !result.data) return []
       // The "Following" filter intersects the networked set with the viewer's follows (computed
@@ -176,7 +201,7 @@ export const listNetworkedSpaces = cache(
       // One grouped member-count read over just the matched ids (cheap; fail-safe to no counts).
       const counts = await memberCountsFor(rows.map((r) => r.id))
 
-      return rows.map((r) => ({
+      const spaces = rows.map((r) => ({
         id: r.id,
         slug: r.slug,
         name: r.brand_name?.trim() || r.name,
@@ -185,6 +210,15 @@ export const listNetworkedSpaces = cache(
         logoUrl: r.brand_logo_url,
         memberCount: counts.get(r.id) ?? null,
       }))
+
+      // "Most members" orders by the resolved active-member count (desc); a Space with no count
+      // sinks to the bottom, ties fall back to name so the order stays stable. Name/Newest keep the
+      // DB order above.
+      if (wantSort === 'members') {
+        spaces.sort((a, b) => (b.memberCount ?? -1) - (a.memberCount ?? -1) || a.name.localeCompare(b.name))
+      }
+
+      return spaces
     } catch {
       return []
     }

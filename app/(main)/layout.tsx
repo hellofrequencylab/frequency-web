@@ -3,6 +3,7 @@ import { headers, cookies } from 'next/headers'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { resolveSpaceForHost, activeVerticalsForSpace } from '@/lib/spaces'
+import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
@@ -287,6 +288,12 @@ export default async function MainLayout({
   const previewingDown = previewVisitor || effectiveRole !== realRole
   const staffRole = previewingDown ? null : (staffMember?.role ?? null)
 
+  // Data gate for the operator "My Spaces" rail item (nav-areas requiresOperatedSpaces): does this
+  // person OWN or actively ADMIN at least one Space? One cheap request-cached EXISTS probe, resolved
+  // once here and threaded into the shell (never per-item). Suppressed under a downgrade / visitor
+  // preview so a steward's "view as" faithfully drops the operator entry too, matching staffRole.
+  const operatesSpaces = previewingDown ? false : await hasOperatedSpaces(profile.id)
+
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
   // steward's "view as" faithfully hides operator chrome, matching staffRole above.
@@ -543,6 +550,7 @@ export default async function MainLayout({
       leftMenu={leftMenu}
       navAccess={navAccess}
       staffRole={staffRole}
+      operatesSpaces={operatesSpaces}
       demoMode={demoMode}
       demoHidden={demoHidden}
       hasDemoContent={hasDemoContent}

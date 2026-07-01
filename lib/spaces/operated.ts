@@ -47,6 +47,7 @@ type MembersQuery = {
   select: (cols: string) => MembersQuery
   eq: (col: string, val: string) => MembersQuery
   in: (col: string, vals: string[]) => MembersQuery
+  limit: (n: number) => MembersQuery
   then: (resolve: (r: { data: AdminMemberRow[] | null; error: unknown }) => unknown) => Promise<unknown>
 }
 
@@ -60,6 +61,7 @@ type OwnedSpaceRow = { id: string }
 type SpacesQuery = {
   select: (cols: string) => SpacesQuery
   eq: (col: string, val: string) => SpacesQuery
+  limit: (n: number) => SpacesQuery
   then: (resolve: (r: { data: OwnedSpaceRow[] | null; error: unknown }) => unknown) => Promise<unknown>
 }
 
@@ -159,6 +161,40 @@ export const listOperatedSpaces = cache(
       return out
     } catch {
       return []
+    }
+  },
+)
+
+/**
+ * Cheap EXISTS check: does this profile OWN or actively ADMIN at least one Space? Powers the nav
+ * gate for the "My Spaces" operator item (shown only to people who run a Space) without resolving
+ * the full operated set. Two `limit(1)` probes in parallel — a networked round-trip a fraction the
+ * cost of listOperatedSpaces (no per-Space resolution, no member counts). Note: this does NOT
+ * exclude the platform `root` Space or a suspended/archived one, so it can over-report for the rare
+ * account that owns ONLY those; the hub itself re-derives the real, filtered set. FAIL-SAFE: `false`
+ * on any error (or a missing profile). REQUEST-CACHED, keyed on the profile id.
+ */
+export const hasOperatedSpaces = cache(
+  async (profileId: string | null | undefined): Promise<boolean> => {
+    if (!profileId) return false
+    try {
+      const [ownedRes, adminRes] = (await Promise.all([
+        spacesTable().select('id').eq('owner_profile_id', profileId).limit(1),
+        membersTable()
+          .select('space_id')
+          .eq('profile_id', profileId)
+          .eq('role', 'admin')
+          .eq('status', 'active')
+          .limit(1),
+      ])) as [
+        { data: OwnedSpaceRow[] | null; error: unknown },
+        { data: AdminMemberRow[] | null; error: unknown },
+      ]
+      const ownsOne = !ownedRes.error && (ownedRes.data?.length ?? 0) > 0
+      const adminsOne = !adminRes.error && (adminRes.data?.length ?? 0) > 0
+      return ownsOne || adminsOne
+    } catch {
+      return false
     }
   },
 )

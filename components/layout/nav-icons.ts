@@ -43,6 +43,7 @@ import {
   HelpCircle,
   User,
   Receipt,
+  Blocks,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -94,6 +95,7 @@ export const AREA_ICONS: Record<string, ElementType> = {
   crm: Contact,
   connections: ContactRound,
   'my-spaces': Building2,
+  'operated-spaces': Blocks,
   journal: NotebookPen,
   marketing: Briefcase,
   outreach: Send,
@@ -153,6 +155,7 @@ const LUCIDE_BY_NAME: Record<string, ElementType> = {
   HelpCircle,
   User,
   Receipt,
+  Blocks,
 }
 
 // Resolve a menu item's stored `icon` string to an icon component, for the DB-backed

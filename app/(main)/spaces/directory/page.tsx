@@ -6,7 +6,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getMyProfileId } from '@/lib/auth'
-import { listNetworkedSpaces } from '@/lib/spaces/discovery'
+import { listNetworkedSpaces, normalizeSpaceSort, type SpaceSort } from '@/lib/spaces/discovery'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { SpaceCard } from '@/components/spaces/space-card'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
@@ -20,9 +20,9 @@ import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
 // discovery read (D5 / PAGE-FRAMEWORK §5).
 
 export const metadata = {
-  title: 'Spaces',
+  title: 'All Spaces',
   description:
-    'Browse the practitioners, businesses, organizations, coaching academies, and event spaces in the Frequency network.',
+    'Browse every practitioner, business, organization, coaching academy, and event space in the Frequency network.',
 }
 
 // A dimension-matched skeleton grid — same shape/spacing as the real card grid, so the streamed
@@ -41,11 +41,13 @@ async function SpacesGrid({
   type,
   q,
   following,
+  sort,
   viewerProfileId,
 }: {
   type?: string
   q?: string
   following: boolean
+  sort: SpaceSort
   viewerProfileId: string | null
 }) {
   const spaces = await listNetworkedSpaces({
@@ -53,6 +55,7 @@ async function SpacesGrid({
     q,
     followerProfileId: viewerProfileId,
     onlyFollowed: following,
+    sort,
   })
 
   if (spaces.length === 0) {
@@ -98,10 +101,11 @@ async function SpacesGrid({
 export default async function SpacesDirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; q?: string; following?: string }>
+  searchParams: Promise<{ type?: string; q?: string; following?: string; sort?: string }>
 }) {
-  const { type, q, following: followingParam } = await searchParams
+  const { type, q, following: followingParam, sort: sortParam } = await searchParams
   const following = followingParam === '1'
+  const sort = normalizeSpaceSort(sortParam)
 
   // The "Create a space" affordance is for signed-in members (the create action re-checks auth).
   // The viewer id also feeds the "Following" filter (a signed-out viewer follows nothing).
@@ -109,8 +113,8 @@ export default async function SpacesDirectoryPage({
 
   return (
     <IndexTemplate
-      title="Spaces"
-      description="The practitioners, businesses, and organizations in the Frequency network. Find one, see what they offer, and connect."
+      title="All Spaces"
+      description="Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect."
       action={
         viewerProfileId ? (
           <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
@@ -121,10 +125,10 @@ export default async function SpacesDirectoryPage({
       }
       toolbar={<SpacesToolbar />}
     >
-      {/* Keyed on the filters so a new search remounts the boundary and shows the skeleton while the
-          next result set streams in. */}
-      <Suspense key={`${type ?? ''}:${q ?? ''}:${following ? '1' : ''}`} fallback={<GridSkeleton />}>
-        <SpacesGrid type={type} q={q} following={following} viewerProfileId={viewerProfileId} />
+      {/* Keyed on the filters + sort so a new query remounts the boundary and shows the skeleton
+          while the next result set streams in. */}
+      <Suspense key={`${type ?? ''}:${q ?? ''}:${following ? '1' : ''}:${sort}`} fallback={<GridSkeleton />}>
+        <SpacesGrid type={type} q={q} following={following} sort={sort} viewerProfileId={viewerProfileId} />
       </Suspense>
     </IndexTemplate>
   )
