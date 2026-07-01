@@ -9,9 +9,12 @@ import {
   kindCounts,
   categoryFacets,
   listCollections,
+  getLibraryAsset,
   type LibrarySort,
   type LibraryCollection,
+  type LibraryGalleryItem,
 } from '@/lib/library/store'
+import { matchLibraryAssets, similarLibraryAssets } from '@/lib/library/embeddings'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
@@ -29,6 +32,7 @@ const SORTS: { value: LibrarySort; label: string }[] = [
   { value: 'old', label: 'Oldest' },
   { value: 'title', label: 'Title' },
   { value: 'size', label: 'Largest' },
+  { value: 'relevant', label: 'Most relevant' },
 ]
 
 const VIEWS: { value: LoomView; label: string; Icon: typeof LayoutGrid }[] = [
@@ -64,9 +68,10 @@ export default async function LoomStudioPage({
     sort?: string
     view?: string
     page?: string
+    similar?: string
   }>
 }) {
-  await requireAdmin('janitor')
+  const ctx = await requireAdmin('janitor')
   const sp = await searchParams
   const scope = await resolveActiveScope()
 
@@ -74,39 +79,75 @@ export default async function LoomStudioPage({
   const kind = LIBRARY_KINDS.includes(sp.kind as (typeof LIBRARY_KINDS)[number]) ? sp.kind! : ''
   const category = (sp.category ?? '').trim()
   const collectionId = (sp.collection ?? '').trim()
+  const similarId = (sp.similar ?? '').trim()
   const sort = (SORTS.find((s) => s.value === sp.sort)?.value ?? 'new') as LibrarySort
   const view = (VIEWS.find((v) => v.value === sp.view)?.value ?? 'cards') as LoomView
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
 
-  const [pageResult, counts, categories, collections] = scope
-    ? await Promise.all([
-        searchLibraryAssets({
-          spaceId: scope.spaceId,
-          q,
-          kind: kind || undefined,
-          category: category || undefined,
-          collectionId: collectionId || undefined,
-          sort,
-          page,
-          pageSize: PAGE_SIZE,
-        }),
-        kindCounts(scope.spaceId),
-        categoryFacets(scope.spaceId),
-        listCollections(scope.spaceId),
-      ])
+  const [counts, categories, collections] = scope
+    ? await Promise.all([kindCounts(scope.spaceId), categoryFacets(scope.spaceId), listCollections(scope.spaceId)])
     : [
-        { items: [], total: 0 },
         { total: 0, byKind: {} as Record<string, number> },
         [] as { category: string; count: number }[],
         [] as LibraryCollection[],
       ]
 
-  const assets = pageResult.items
-  const totalPages = Math.max(1, Math.ceil(pageResult.total / PAGE_SIZE))
+  // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (semantic
+  // ranked by the query), or the normal paginated keyword/facet browse. Semantic modes are a
+  // single page and fall back to the keyword path when AI is off / nothing is embedded yet.
+  let assets: LibraryGalleryItem[] = []
+  let total = 0
+  let paginated = false
+  let similarOf: LibraryGalleryItem | null = null
+
+  if (scope) {
+    if (similarId) {
+      ;[assets, similarOf] = await Promise.all([
+        similarLibraryAssets(scope.spaceId, similarId, PAGE_SIZE),
+        getLibraryAsset(scope.spaceId, similarId),
+      ])
+      total = assets.length
+    } else if (sort === 'relevant' && q) {
+      assets = await matchLibraryAssets(scope.spaceId, q, {
+        kind: kind || undefined,
+        limit: PAGE_SIZE,
+        profileId: ctx.profileId,
+      })
+      total = assets.length
+      if (assets.length === 0) {
+        // AI off or nothing embedded → graceful keyword fallback.
+        const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, category: category || undefined, collectionId: collectionId || undefined, page, pageSize: PAGE_SIZE })
+        assets = r.items
+        total = r.total
+        paginated = true
+      }
+    } else {
+      const r = await searchLibraryAssets({
+        spaceId: scope.spaceId,
+        q,
+        kind: kind || undefined,
+        category: category || undefined,
+        collectionId: collectionId || undefined,
+        sort,
+        page,
+        pageSize: PAGE_SIZE,
+      })
+      assets = r.items
+      total = r.total
+      paginated = true
+    }
+  }
+
+  const pageResult = { items: assets, total }
+  const totalPages = paginated ? Math.max(1, Math.ceil(total / PAGE_SIZE)) : 1
   const currentPage = Math.min(page, totalPages)
 
   const activeCollection = collections.find((c) => c.id === collectionId) ?? null
-  const activeLabel = activeCollection ? activeCollection.title : category || (kind ? kind : 'All assets')
+  const activeLabel = similarOf
+    ? `Similar to "${similarOf.title}"`
+    : activeCollection
+      ? activeCollection.title
+      : category || (kind ? kind : 'All assets')
 
   // One param builder for every link (pagination, view toggle) — preserves the active folder + search.
   const hrefWith = (patch: Record<string, string | number | undefined>) => {
@@ -149,6 +190,11 @@ export default async function LoomStudioPage({
               <span className="text-sm text-subtle">
                 {pageResult.total} asset{pageResult.total === 1 ? '' : 's'}
               </span>
+              {similarOf && (
+                <Link href="/admin/library" className="text-sm font-medium text-primary-strong hover:underline">
+                  Clear
+                </Link>
+              )}
             </div>
 
             {/* Search + type + sort (GET form). Hidden inputs preserve the active folder + view. */}

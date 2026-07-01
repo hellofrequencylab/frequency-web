@@ -70,7 +70,7 @@ function toItem(r: Record<string, unknown>): LibraryGalleryItem {
   }
 }
 
-export type LibrarySort = 'new' | 'old' | 'title' | 'size'
+export type LibrarySort = 'new' | 'old' | 'title' | 'size' | 'relevant'
 
 export type LibraryQuery = {
   spaceId: string
@@ -146,6 +146,15 @@ export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPa
     items: ((data as Array<Record<string, unknown>> | null) ?? []).map(toItem),
     total: count ?? 0,
   }
+}
+
+/** Hydrate a list of asset ids into gallery items, PRESERVING the given order (e.g. a
+ *  similarity ranking from a match RPC). Archived rows are included only if present in `ids`. */
+export async function fetchLibraryItemsByIds(spaceId: string, ids: string[]): Promise<LibraryGalleryItem[]> {
+  if (ids.length === 0) return []
+  const { data } = await db().from('library_assets').select(SELECT).eq('space_id', spaceId).in('id', ids)
+  const byId = new Map(((data as Array<Record<string, unknown>> | null) ?? []).map((r) => [String(r.id), toItem(r)]))
+  return ids.map((id) => byId.get(id)).filter((x): x is LibraryGalleryItem => !!x)
 }
 
 /** One asset by id (any status), scoped to a space. */
