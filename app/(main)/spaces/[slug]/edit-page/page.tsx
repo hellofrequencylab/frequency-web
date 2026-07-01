@@ -17,10 +17,12 @@ import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 // janitor previewing a Space they do not manage gets a READ-ONLY preview (no editor
 // runtime, no write affordances); everyone else 404s so the route never leaks.
 //
-// CHROME: this is a full-viewport editor surface (its own header), so the profile
-// layout escapes its hero + tab chrome for the `edit-page` segment, and page-chrome.ts
-// drops the right rail. The editor runtime ships ONLY here; the public landing renders
-// <Render> with no editor code.
+// CHROME: this is an IN-PAGE editor surface with its own Puck header, so the profile
+// layout escapes its hero + tab chrome for the `edit-page` segment. It is NOT a
+// full-viewport takeover: it keeps the GLOBAL community right rail like the rest of the
+// app (page-chrome.ts), and the Puck side panels are shrunk (puck-theme.css) so the canvas
+// still breathes beside the rail. The editor runtime ships ONLY here; the public landing
+// renders <Render> with no editor code.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {

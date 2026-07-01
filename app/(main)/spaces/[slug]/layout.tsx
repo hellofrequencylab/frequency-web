@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense, cache } from 'react'
-import { QrCode, Pencil, LayoutTemplate, ChevronLeft } from 'lucide-react'
+import { QrCode, Pencil, LayoutTemplate } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -54,6 +54,28 @@ const spaceVisibility = cache(getSpaceVisibility)
 // CHROME: the profile (/spaces/<slug> + tabs) keeps the GLOBAL community rail (lib/layout/page-chrome.ts):
 // the context band is an in-body hero CARD, not a shell rail, so it reads as a normal Detail page beside
 // the site's Quest rail (operator request). The owner settings sub-surfaces stay Focus (no rail).
+
+// A small curated set of calm, warm, neutral SITE stock photos used as the cover-band
+// PLACEHOLDER when a Space has not uploaded its own cover, so the header always reads as an
+// intentional identity band rather than a flat gradient. Hosted build-time assets under
+// public/images/site (matching the marketing blocks). A real uploaded cover always wins.
+const COVER_PLACEHOLDERS = [
+  '/images/site/outdoor-group.jpg',
+  '/images/site/sunset.jpg',
+  '/images/site/lab-lounge.jpg',
+  '/images/site/nature-viewing-sunset.jpg',
+  '/images/site/community-dinner.jpg',
+  '/images/site/meditation-circle-outdoor.jpg',
+] as const
+
+// Deterministically pick ONE placeholder from the curated set for a Space, keyed off its id, so
+// the same Space always shows the same photo and different Spaces vary (no Math.random, stable
+// across renders). A simple sum-of-char-codes hash over the id is enough spread for a 6-item list.
+function coverPlaceholderFor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash + id.charCodeAt(i)) % COVER_PLACEHOLDERS.length
+  return COVER_PLACEHOLDERS[hash]
+}
 
 // The lowercase, article-prefixed role phrase for the meta description ("a practitioner",
 // "an event space"). spaceTypeLabel returns a title-cased badge ("Event Space"); the description
@@ -274,28 +296,22 @@ export default async function SpaceProfileLayout({
   )
 
   // ── THE COVER (hero slot) ──────────────────────────────────────────────────────────────────────
-  // A full content-column cover band at the very top: the Space's cover image, or the neutral brand
-  // gradient when none. Two sizes read off preferences (compact Header vs tall Hero). The back link
-  // sits above it, so the crawlable/back affordance stays without stacking a second identity band.
+  // A full content-column cover band at the very top. A real uploaded cover always wins; when a Space
+  // has NONE, we fall back to a calm SITE stock photo (deterministically chosen per space id so
+  // different Spaces vary but each is stable) under a legibility scrim, so the header always reads as
+  // an intentional identity band rather than a flat gradient. Two sizes read off preferences (compact
+  // Header vs tall Hero). No back link here: the shell breadcrumb (Spaces › <name>) is the single
+  // wayfinding affordance (no redundant "‹ Spaces").
   const coverH = coverSize === 'hero' ? 'h-64 sm:h-80' : 'h-40 sm:h-52'
+  const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
   const coverNode = (
     <div>
-      <Link
-        href={viewerProfileId ? '/spaces/directory' : '/spaces'}
-        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
-      >
-        <ChevronLeft className="h-4 w-4" aria-hidden />
-        Spaces
-      </Link>
-      <div
-        className={`relative w-full overflow-hidden rounded-2xl ${coverH} ${
-          space.coverImageUrl ? 'bg-surface-elevated' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'
-        }`}
-      >
-        {space.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL, not a build-time asset (matches SpaceCard / the Puck cover block)
-          <img src={space.coverImageUrl} alt="" className="h-full w-full object-cover" />
-        )}
+      <div className={`relative w-full overflow-hidden rounded-xl bg-surface-elevated ${coverH}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL OR a hosted site placeholder, not a build-time-imported asset (matches SpaceCard / the Puck cover block) */}
+        <img src={coverSrc} alt="" className="h-full w-full object-cover" />
+        {/* A soft accent scrim keeps any overlapping chrome legible and unifies the varied stock
+            photos with the brand accent. Kept subtle so a real uploaded cover still reads true. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
       </div>
     </div>
   )
@@ -331,7 +347,7 @@ export default async function SpaceProfileLayout({
 
       {/* The live numbers row, tucked below the lockup (not a heavy separate card). Streams behind
           its own <Suspense>; a brand-new Space with no numbers renders nothing (empty:mt-0). */}
-      <div className="mt-5 empty:mt-0">
+      <div className="mt-6 empty:mt-0">
         <Suspense fallback={<HeroStatsSkeleton />}>
           <ProfileHeroStats spaceId={space.id} input={templateInput} />
         </Suspense>
@@ -420,9 +436,9 @@ function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }
 // Dimension-matched skeleton for the streamed hero stats row (no CLS, PAGE-FRAMEWORK §5.4).
 function HeroStatsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-hero-stat animate-pulse rounded-2xl bg-surface-elevated/60" />
+        <div key={i} className="h-hero-stat animate-pulse rounded-xl bg-surface-elevated/60" />
       ))}
     </div>
   )
