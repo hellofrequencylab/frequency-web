@@ -1,0 +1,163 @@
+'use client'
+
+import { useState } from 'react'
+import { Puck, usePuck, type Data } from '@measured/puck'
+import '@measured/puck/puck.css'
+import Link from 'next/link'
+import { Check, Palette, X } from 'lucide-react'
+import { config } from '@/lib/page-editor/config'
+import { spotlightLayoutToPuck, puckToSpotlightLayout } from '@/lib/spotlight/puck/convert'
+import { linktreePreset } from '@/lib/page-editor/templates/linktree'
+import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
+import type { SpotlightTheme } from '@/lib/spotlight/theme'
+import type { TopFriend } from '@/lib/spotlight/top-friends.types'
+import { saveSpotlightLayout } from '@/app/(main)/settings/profile/spotlight-actions'
+import { SpotlightThemeEditor } from './theme-editor'
+import { SpotlightPublishBar } from './publish-bar'
+import { SpotlightBackgroundEditor, SpotlightTopFriendsPicker } from './spotlight-chrome'
+
+// THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
+// their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
+// the marketing/Space editor pattern (components/page-editor/editor.tsx): full-screen Puck,
+// live state read via usePuck(), a Publish button that persists through a server action.
+//
+// SAVE PATH (migration-free bridge): on Save the Puck document is lowered back into the
+// stored SpotlightLayout schema by the pure converter (puckToSpotlightLayout), then handed
+// to the UNCHANGED, owner-gated saveSpotlightLayout server action, which VALIDATES it
+// against the same allowlist as before (asset paths pinned to the owner, hex clamped, embed
+// refs re-checked). No new write path, no schema change, no loss of the privacy boundary.
+//
+// The THEME editor is kept (a drawer behind the header's "Theme" button); it saves itself
+// through saveSpotlightTheme, exactly as before. The identity header + theme live outside
+// the Puck body, so the editor only composes the block body.
+
+// Publish button: converts the live Puck document to a SpotlightLayout and saves it. Dirty
+// tracking mirrors the marketing editor (baseline captured after Puck's own init).
+function SaveButton() {
+  const { appState } = usePuck()
+  const current = JSON.stringify(appState.data)
+  const [baseline, setBaseline] = useState(current)
+  const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
+
+  const dirty = current !== baseline
+
+  async function handleSave() {
+    if (!dirty || status === 'saving') return
+    setStatus('saving')
+    try {
+      const layout: SpotlightLayout = puckToSpotlightLayout(appState.data)
+      const res = await saveSpotlightLayout(layout)
+      if (res.error) {
+        setStatus('error')
+        return
+      }
+      setBaseline(JSON.stringify(appState.data))
+      setStatus('idle')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  const label = status === 'saving' ? 'Saving…' : status === 'error' ? 'Retry save' : dirty ? 'Save' : 'Saved'
+  const active = dirty || status === 'error'
+
+  return (
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={!active || status === 'saving'}
+      title={dirty ? 'Save your Spotlight blocks' : 'No changes to save'}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
+        active ? 'bg-primary text-on-primary shadow-sm hover:bg-primary-hover' : 'bg-surface-elevated text-subtle cursor-default'
+      } ${status === 'saving' ? 'opacity-70' : ''}`}
+    >
+      {!dirty && status === 'idle' && <Check className="h-4 w-4" />}
+      {label}
+    </button>
+  )
+}
+
+export function SpotlightPuckEditor({
+  handle,
+  published,
+  initialLayout,
+  initialTheme,
+  initialBackground,
+  initialTopFriends,
+  friendChoices,
+}: {
+  handle: string
+  published: boolean
+  initialLayout: SpotlightLayout
+  initialTheme: SpotlightTheme
+  initialBackground: SpotlightBackground
+  initialTopFriends: TopFriend[]
+  friendChoices: TopFriend[]
+}) {
+  // Seed the editor from the member's saved layout, bridged into a Puck document. An empty
+  // layout starts from the designed link-tree preset, so a new Spotlight opens on a page.
+  const initialData: Data =
+    initialLayout.blocks.length > 0 ? spotlightLayoutToPuck(initialLayout) : linktreePreset()
+
+  const [themeOpen, setThemeOpen] = useState(false)
+  const [theme, setTheme] = useState<SpotlightTheme>(initialTheme)
+
+  return (
+    <div className="relative">
+      <Puck
+        config={config}
+        data={initialData}
+        headerTitle="Build your Spotlight"
+        overrides={{
+          headerActions: () => (
+            <>
+              <Link
+                href="/settings/profile"
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+              >
+                ← Exit
+              </Link>
+              <button
+                type="button"
+                onClick={() => setThemeOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+              >
+                <Palette className="h-4 w-4" /> Theme
+              </button>
+              <SaveButton />
+            </>
+          ),
+        }}
+      />
+
+      {/* Theme drawer: the kept theme editor + the publish bar. It saves itself through its
+          own server actions, independent of the block Save. */}
+      {themeOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={() => setThemeOpen(false)}>
+          <div
+            className="h-full w-full max-w-md overflow-y-auto bg-canvas p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-subtle">Theme &amp; publish</h2>
+              <button
+                type="button"
+                onClick={() => setThemeOpen(false)}
+                className="rounded-lg p-1 text-muted hover:bg-surface-elevated hover:text-text"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-6">
+              <SpotlightPublishBar handle={handle} initialPublished={published} />
+              <SpotlightThemeEditor value={theme} onChange={setTheme} showPreview={false} />
+              <SpotlightBackgroundEditor initial={initialBackground} />
+              <SpotlightTopFriendsPicker initialSelected={initialTopFriends} choices={friendChoices} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

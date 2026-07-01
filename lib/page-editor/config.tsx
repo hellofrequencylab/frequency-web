@@ -19,6 +19,7 @@ import { dynamicComponents } from '@/components/page-editor/blocks/dynamic'
 import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
+import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
 import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 
 export const config: Config = {
@@ -32,6 +33,7 @@ export const config: Config = {
     ...productStoryComponents,
     ...dynamicComponents,
     ...circlesComponents,
+    ...linktreeComponents,
     ...spacesComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
@@ -74,6 +76,11 @@ export const config: Config = {
         'CirclesGrid',
         'CirclesBrowse',
       ],
+    },
+    // The member Spotlight (link-tree) blocks, shared with brand Spaces (Phase 3).
+    linkTree: {
+      title: 'Link tree',
+      components: [...LINKTREE_CATEGORY_COMPONENTS],
     },
   },
 }
