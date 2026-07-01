@@ -10275,3 +10275,33 @@ path (`space-landing.tsx`) and the full-editor loader both apply `withVisibleBlo
 strips the flag off survivors, so a parked block never renders publicly and never dupes in the editor. Reorder/hide
 persist to `preferences.puck` (a preset the operator reorders becomes a customized doc); every write re-gates
 `canEditProfile` server-side (the client is UX only). No schema change.
+
+## ADR-480: The Loom becomes a full DAM — renditions, versions, collections, usage index; every asset space-scoped
+
+**Status:** Accepted (2026-07-01). Extends [ADR-478](DECISIONS.md) (the `library_assets` catalog). Spine shipping;
+functional phases D1–D7 sequenced in [BUILD-LIST.md → The Loom](BUILD-LIST.md), spec [LIBRARY.md](LIBRARY.md).
+
+**Context.** The Loom is the built-in asset library for the whole web editor. To be a real
+digital-asset-management system (host every image, protect it, edit + version it, call it from every Puck upload
+point, per-entity plus a Frequency master), the single catalog table isn't enough. Owner decisions (2026-07-01):
+Filerobot in-browser editor · on-the-fly transforms · **editing saves a new version** · every asset space-scoped ·
+**backfill everything** · a full privacy system but built later.
+
+**Decision.** Grow the catalog into five DAM entities (migration `20260920000000`): `library_renditions` (derived
+files off one master; `recipe jsonb` = on-the-fly transform), `library_versions` (non-destructive edit history,
+one `is_current` per asset — the original is never overwritten), `library_collections` (+ items; arbitrary
+groupings), and `library_usages` (where each asset is referenced → "used on N pages", archive-not-destroy, global
+swap). Enrich `library_assets` with ingest metadata (`sha256` dedupe, `alt`, `blurhash`, focal point, original
+dims) and **protection hooks** (`is_protected`, `download_policy`, `expires_at`). **`space_id` becomes NOT NULL:
+Frequency's shared/master library is the ROOT space's Loom**, so a child space's effective library = its own ∪
+root's. Architecture principles: blocks store an **asset reference** (not a raw URL) resolved to a CDN rendition at
+render; one master → many renditions; every upload ingests (validate → checksum/dedupe → EXIF strip → extract
+dims/colors/blurhash → rendition set → row). Typed contract `lib/library/types.ts`; presets
+`lib/library/renditions.ts`.
+
+**Consequences.** The full spine exists before any UI, so D1 (ingest + `/admin/library` gallery), D2 (the unified
+`AssetField` + reference storage + `site-media` backfill), and D3 (Filerobot editor + version-on-edit) each build
+on real tables. Still **service-role only**; the per-space client RLS and the **full privacy system** (private
+bucket, signed URLs, storage RLS, download gating, watermarks — columns are the hooks) are deferred to D5/D6.
+Rejected: raw-URL blocks (no versioning/usage/swap), destructive edits, and a nullable `space_id` "shared = null"
+model (the root-space-as-shared scheme keeps every asset uniformly scoped).
