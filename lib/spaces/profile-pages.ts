@@ -47,6 +47,7 @@ export const RESERVED_PAGE_SLUGS: ReadonlySet<string> = new Set([
   'settings',
   'crm',
   'edit-page',
+  'book', // the reserved action page (the single primary CTA's live transactional surface)
   'api',
 ])
 

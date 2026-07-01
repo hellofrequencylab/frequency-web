@@ -9,9 +9,9 @@ import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
-import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { blueprintForSpace } from '@/lib/spaces/templates'
+import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -102,23 +102,12 @@ export default async function SpaceProfileChromeLayout({
   // React.cache. This lives HERE (only the public profile), so owner-surface visits are never counted.
   void trackSpaceProfileViewOnce(space.id, viewerProfileId)
 
-  // The EFFECTIVE blueprint is the per-type composition RE-FRAMED by the resolved public-page TEMPLATE
-  // (Book / Schedule / Storefront / Hub, ADR-472). Pure + total; a null blueprint (unknown type) still
-  // fails closed to About-only below.
-  const baseBlueprint = blueprintForType(space.type)
-  const templateInput = {
-    type: space.type,
-    variant: space.modeVariant,
-    plan: space.plan,
-    preferences: space.preferences,
-  }
-  const blueprint = blueprintForSpace(baseBlueprint, templateInput)
   const brandName = space.brandName ?? space.name
   const typeLabel = spaceTypeLabel(space.type)
 
   // The brand accent override (§1 KEYSTONE): the Space's own validated `brand_accent` token wins, else
-  // the blueprint's per-role default, else null (the host amber). Only validated tokens, never a hex.
-  const accentVars = resolveAccentVars(space.brandAccent, blueprint?.defaultAccent)
+  // the per-type default (profile-config, re-homed off the retired blueprint). Only tokens, never a hex.
+  const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
 
   // The hero's remaining inputs are independent, so resolve them in ONE round-trip (site-audit PERF-4).
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private).
@@ -138,16 +127,19 @@ export default async function SpaceProfileChromeLayout({
   const manageHref =
     space.type === 'practitioner' || space.type === 'organization' ? `${base}/manage` : `${base}/settings`
 
-  // The public tabs, as {href, label} for the client tab bar (active state resolved via usePathname,
-  // never a server signal — see SpaceProfileTabs). About targets the profile index.
-  const tabs: SpaceProfileTab[] = (blueprint?.tabs ?? [{ id: 'about', label: 'About', modules: [] }]).map(
-    (t) => ({ href: t.id === 'about' ? base : `${base}/${t.id}`, label: t.label }),
-  )
+  // The nav is now OPERATOR-DEFINED (feature-block model): the ordered pages off preferences (Home +
+  // any custom pages the operator created), as {href, label} for the client tab bar (active state via
+  // usePathname, never a server signal — see SpaceProfileTabs). Home targets the profile index.
+  const tabs: SpaceProfileTab[] = readProfilePages(space.preferences).map((p) => ({
+    href: p.slug === HOME_SLUG ? base : `${base}/${p.slug}`,
+    label: p.label,
+  }))
 
-  // The dynamic primary CTA by type (§A.4): a plain verb routing to the action tab.
-  const ctaTab = blueprint ? tabForSegment(blueprint, blueprint.primaryCta.tab) : null
-  const ctaHref = ctaTab ? `${base}/${ctaTab.id}` : base
-  const ctaLabel = blueprint?.primaryCta.label ?? 'Book'
+  // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
+  // page, which renders the Space's live transactional surface (booking / join / donate / enroll /
+  // tickets, branched by type). The label is the per-type default (profile-config), operator-overridable.
+  const ctaHref = `${base}/book`
+  const ctaLabel = defaultPrimaryCtaLabel(space.type)
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
