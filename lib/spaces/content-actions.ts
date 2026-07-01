@@ -5,32 +5,37 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE CONTENT write actions (Puck content blocks, Phase 2, ADR-476/472). The operator authors
 // brand Updates + FAQ; a member submits a review. Mirrors the edit-page actions posture exactly:
 // EVERY action RE-RESOLVES the Space from the slug and RE-GATES server-side, so the route/UI gate is
 // only UX and this is the authority. Writes go through the service-role admin client (RLS bypass), so
-// the gate MUST be enforced here in app code. Reactions + comments on an Update are NOT handled here:
-// they reuse the existing feed system (toggleReaction / createReply) against the Update's anchor post.
+// the gate MUST be enforced here in app code.
+//
+// INTERACTION ON UPDATES (owner decision 2026-07-01): ANY signed-in member (free members included)
+// may react + comment on a Space Update. The community feed's Crew+ gate must NOT apply, so these
+// actions do NOT call the feed's toggleReaction / createReply (those carry the crew + circle-scope +
+// gamification rules). Instead we REUSE the existing reactions/comments TABLES directly (an Update
+// anchors to a public.posts row; reactions ride public.post_reactions, comments ride posts.parent_id),
+// gated here at member level and scoped to the Update's own anchor post. The companion migration
+// 20260918000300 grants the matching member-level RLS, tightly guarded on post_type = 'space_update'.
 //
 // The space_* tables are not in the generated DB types yet (ADR-246), so the admin client is reached
 // untyped per-write (the same seam the edit-page actions use for spaces.preferences).
 
 // ── Untyped admin seams (ADR-246) ────────────────────────────────────────────────────────────────
+// The space_* tables + the space_update interaction path reach public.posts / public.post_reactions,
+// none of which the space content actions have generated types for here, so the admin client is used
+// through a permissive builder shape. Each call site keeps its own precise result cast.
 type Row = Record<string, unknown>
-type InsertResult = { data: { id: string } | null; error: unknown }
 
-function db() {
-  return createAdminClient() as unknown as {
-    from: (t: string) => {
-      insert: (v: Row) => { select: (c: string) => { single: () => Promise<InsertResult> } }
-      update: (v: Row) => { eq: (c: string, val: string) => { eq: (c: string, val: string) => Promise<{ error: unknown }> } }
-      delete: () => { eq: (c: string, val: string) => { eq: (c: string, val: string) => Promise<{ error: unknown }> } }
-      upsert: (v: Row, opts: { onConflict: string }) => Promise<{ error: unknown }>
-    }
-  }
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function db(): { from: (t: string) => any } {
+  return createAdminClient() as unknown as { from: (t: string) => any }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 /** Authorize the caller as an EDITOR (owner / admin / editor) of `slug`'s Space; returns the Space id
  *  and the caller's profile id, or null on any miss. Mirrors the edit-page authorizeEditor gate. */
@@ -85,8 +90,47 @@ export async function createSpaceUpdate(slug: string, input: UpdateInput): Promi
     .single()
   if (error || !data) return fail('Could not post that update. Try again.')
 
+  // Create the interaction ANCHOR post so members can react + comment on this Update through the
+  // existing reactions/comments tables. The anchor is a public.posts row with post_type =
+  // 'space_update' (which the member-interaction RLS in 20260918000300 keys off), scoped to the
+  // Space id and public. Best-effort: if the anchor fails, the Update still exists (interaction is
+  // simply unavailable until an anchor is created), so the write is never lost.
+  const anchorId = await ensureUpdateAnchor(auth.spaceId, auth.profileId, data.id, `${title}\n\n${body}`.trim())
+  if (anchorId) {
+    await db().from('space_updates').update({ post_id: anchorId }).eq('id', data.id).eq('space_id', auth.spaceId)
+  }
+
   revalidateLanding(slug)
   return ok({ id: data.id })
+}
+
+/** Create (idempotently) the interaction ANCHOR public.posts row for a Space Update and return its
+ *  id, or null on failure. The anchor carries post_type = 'space_update' (the value the
+ *  member-interaction RLS keys off), scope_id = the Space id, visibility public. Best-effort: any
+ *  error returns null so the Update write is never blocked on the anchor. */
+async function ensureUpdateAnchor(
+  spaceId: string,
+  authorProfileId: string,
+  updateId: string,
+  body: string,
+): Promise<string | null> {
+  try {
+    const { data, error } = await db()
+      .from('posts')
+      .insert({
+        author_id: authorProfileId,
+        body: body.slice(0, 20000),
+        scope_id: spaceId,
+        visibility: 'public',
+        post_type: 'space_update',
+      })
+      .select('id')
+      .single()
+    if (error || !data) return null
+    return (data as { id: string }).id
+  } catch {
+    return null
+  }
 }
 
 /** Edit a brand Update. Owner/admin/editor-gated (double-scoped: the update must belong to the
@@ -256,4 +300,116 @@ export async function hideSpaceReview(slug: string, id: string): Promise<ActionR
 
   revalidateLanding(slug)
   return ok()
+}
+
+// ── Member interaction on a Space Update (owner decision 2026-07-01) ──────────────────────────────
+// ANY signed-in member (free members included) may react + comment on a Space Update. These actions
+// gate ONLY on "a real signed-in profile" (get_my_profile_id present) and on the target post
+// belonging to a space_update thread, then write directly to the existing post_reactions / posts
+// tables through the admin client. They deliberately do NOT call the feed's toggleReaction /
+// createReply, which carry the Crew+ + circle-scope + gamification rules the owner said must not
+// apply here. The community feed's own gate is untouched.
+
+/** Walk a post up to its root to confirm it belongs to a space_update thread. Returns the resolved
+ *  { rootId, isSpaceUpdate } or null when the post is missing. Bounded walk (Update threads are 2
+ *  levels; capped at 10 defensively). Mirrors the DB helper is_space_update_post so the app gate and
+ *  the RLS gate agree. */
+async function isSpaceUpdateThread(postId: string): Promise<boolean> {
+  let current: string | null = postId
+  for (let i = 0; i < 10 && current; i++) {
+    const { data } = await db()
+      .from('posts')
+      .select('id, parent_id, post_type')
+      .eq('id', current)
+      .maybeSingle()
+    const row = data as { id: string; parent_id: string | null; post_type: string } | null
+    if (!row) return false
+    if (row.post_type === 'space_update') return true
+    current = row.parent_id
+  }
+  return false
+}
+
+/**
+ * Toggle the caller's reaction on a Space Update (or a comment in its thread). Member-gated: a real
+ * signed-in profile, and the target must belong to a space_update thread. `activate` is the direction
+ * the client applied (true = add, false = remove), so this is ONE idempotent write, mirroring the
+ * feed reaction contract WITHOUT its Crew+ gate. `reactionType` must be one of the curated emoji set.
+ * Returns { active } so the client can reconcile.
+ */
+export async function reactToSpaceUpdate(
+  postId: string,
+  reactionType: string,
+  activate: boolean,
+): Promise<ActionResult<{ active: boolean }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to react.')
+  if (!isReactionKey(reactionType)) return fail('That reaction is not available.')
+  if (!(await isSpaceUpdateThread(postId))) return fail('That update is not available.')
+
+  if (activate) {
+    // Idempotent add: upsert on the (post, profile, reaction) unique key so a double-tap is a no-op.
+    const { error } = await db()
+      .from('post_reactions')
+      .upsert(
+        { post_id: postId, profile_id: profileId, reaction_type: reactionType },
+        { onConflict: 'post_id,profile_id,reaction_type' },
+      )
+    if (error) return fail('Could not save your reaction. Try again.')
+    return ok({ active: true })
+  }
+
+  const { error } = await db()
+    .from('post_reactions')
+    .delete()
+    .eq('post_id', postId)
+    .eq('profile_id', profileId)
+    .eq('reaction_type', reactionType)
+  if (error) return fail('Could not remove your reaction. Try again.')
+  return ok({ active: false })
+}
+
+/**
+ * Add a member comment on a Space Update. Member-gated: a real signed-in profile, and the parent must
+ * belong to a space_update thread. Inserts a public.posts reply (parent_id set, post_type 'feed',
+ * scope + visibility inherited from the parent) through the admin client, WITHOUT the feed's Crew+
+ * comment gate or gamification. Returns the new comment id.
+ */
+export async function commentOnSpaceUpdate(
+  slug: string,
+  parentPostId: string,
+  body: string,
+): Promise<ActionResult<{ id: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to comment.')
+
+  const trimmed = body.trim().slice(0, 5000)
+  if (!trimmed) return fail('Write something first.')
+  if (!(await isSpaceUpdateThread(parentPostId))) return fail('That update is not available.')
+
+  // Inherit scope + visibility from the parent so the reply sits in the same thread.
+  const { data: parent } = await db()
+    .from('posts')
+    .select('scope_id, visibility')
+    .eq('id', parentPostId)
+    .maybeSingle()
+  const p = parent as { scope_id: string | null; visibility: string | null } | null
+  if (!p) return fail('That update is not available.')
+
+  const { data, error } = await db()
+    .from('posts')
+    .insert({
+      author_id: profileId,
+      body: trimmed,
+      scope_id: p.scope_id,
+      visibility: p.visibility ?? 'public',
+      post_type: 'feed',
+      parent_id: parentPostId,
+    })
+    .select('id')
+    .single()
+  if (error || !data) return fail('Could not post your comment. Try again.')
+
+  revalidateLanding(slug)
+  return ok({ id: (data as { id: string }).id })
 }
