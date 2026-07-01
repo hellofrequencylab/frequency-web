@@ -60,6 +60,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'vera-dispatch': 2,          // Journey/prompt dispatch copy (Haiku; per-send, budget-gated)
   'studio': 2,                 // Studio recommendation drafting (Haiku; operator-facing)
   'studio-winback': 1,         // lapsed-member win-back draft (Haiku; low-volume, human-approved)
+  'loom-illustration': 3,      // Vera draws a new Loom card as inline SVG (Sonnet; operator-facing, one-shot)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

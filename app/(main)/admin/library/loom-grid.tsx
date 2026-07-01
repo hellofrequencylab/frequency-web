@@ -1,10 +1,17 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Copy, Check, ExternalLink, Archive, Trash2, ImageOff } from 'lucide-react'
+import { X, Copy, Check, ExternalLink, Archive, Trash2, ImageOff, Download } from 'lucide-react'
 import type { LibraryGalleryItem } from '@/lib/library/store'
 import { Illustration, illustrationNames, type IllustrationName } from '@/components/marketing/illustrations'
+import { sanitizeSvg } from '@/lib/library/svg-sanitize'
+import {
+  downloadElementSvg,
+  downloadElementPng,
+  downloadImageUrl,
+  extForMime,
+} from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 
 function human(n: number | null): string {
@@ -22,16 +29,36 @@ function elementName(asset: LibraryGalleryItem): IllustrationName | null {
     : null
 }
 
-/** Renders an asset's visual: a code-drawn element via <Illustration>, a file via <img>,
- *  or a placeholder. `fit` picks cover (grid tiles) vs contain (drawer preview). */
+/** A Vera-generated card stores its SVG string in config.svg. Re-validate before render. */
+function safeElementSvg(asset: LibraryGalleryItem): string | null {
+  const raw = asset.config?.svg
+  if (typeof raw !== 'string' || !raw) return null
+  const c = sanitizeSvg(raw)
+  return c.ok ? c.svg : null
+}
+
+/** Renders an asset's visual: a Vera-drawn SVG, a registry element via <Illustration>, a
+ *  file via <img>, or a placeholder. `fit` picks cover (grid tiles) vs contain (preview). */
 function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'contain' }) {
-  const el = asset.kind === 'element' ? elementName(asset) : null
-  if (el) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-4">
-        <Illustration name={el} className="max-h-full w-auto" />
-      </div>
-    )
+  if (asset.kind === 'element') {
+    const raw = safeElementSvg(asset)
+    if (raw) {
+      return (
+        <div
+          className="flex h-full w-full items-center justify-center p-4 [&>svg]:max-h-full [&>svg]:w-auto"
+          // Sanitized at save AND re-validated by safeElementSvg above before this render.
+          dangerouslySetInnerHTML={{ __html: raw }}
+        />
+      )
+    }
+    const el = elementName(asset)
+    if (el) {
+      return (
+        <div className="flex h-full w-full items-center justify-center p-4">
+          <Illustration name={el} className="max-h-full w-auto" />
+        </div>
+      )
+    }
   }
   if (asset.url) {
     return (
@@ -145,7 +172,27 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
     }
   }
 
+  const previewRef = useRef<HTMLDivElement>(null)
+  const isElement = asset.kind === 'element' && (!!elementName(asset) || !!safeElementSvg(asset))
+
+  function previewSvg(): SVGSVGElement | null {
+    return previewRef.current?.querySelector('svg') ?? null
+  }
+  function exportSvg() {
+    const svg = previewSvg()
+    if (svg) downloadElementSvg(svg, `${asset.slug || 'card'}.svg`)
+  }
+  function exportPng() {
+    const svg = previewSvg()
+    if (svg) void downloadElementPng(svg, `${asset.slug || 'card'}.png`)
+  }
+  function downloadFile() {
+    if (asset.url) void downloadImageUrl(asset.url, `${asset.slug || 'image'}.${extForMime(asset.mime)}`)
+  }
+
   const inputCls = 'w-full rounded-2xl border border-border bg-surface px-3 py-2 text-sm'
+  const chipCls =
+    'inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated'
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Asset details">
@@ -164,7 +211,10 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
         </div>
 
         <div className="space-y-4 p-5">
-          <div className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated">
+          <div
+            ref={previewRef}
+            className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated"
+          >
             <Thumb asset={asset} fit="contain" />
           </div>
 
@@ -191,10 +241,25 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                 href={asset.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                className={chipCls}
               >
                 <ExternalLink className="h-4 w-4" /> Open
               </a>
+            )}
+            {asset.url && (
+              <button type="button" onClick={downloadFile} className={chipCls}>
+                <Download className="h-4 w-4" /> Download
+              </button>
+            )}
+            {isElement && (
+              <>
+                <button type="button" onClick={exportSvg} className={chipCls}>
+                  <Download className="h-4 w-4" /> SVG
+                </button>
+                <button type="button" onClick={exportPng} className={chipCls}>
+                  <Download className="h-4 w-4" /> PNG
+                </button>
+              </>
             )}
           </div>
 
