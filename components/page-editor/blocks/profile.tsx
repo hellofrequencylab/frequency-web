@@ -347,15 +347,20 @@ export function SpaceAboutBlock({
 export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHighlight[]; ink?: boolean }) {
   if (highlights.length === 0) return null
   const shown = highlights.slice(0, 4)
+  // Social proof reads STRONGER when the strip fills its row: fan to the item count from `sm` up
+  // instead of staying locked at two columns on wide viewports (mobile-first single-column pair).
+  const cols = shown.length >= 4 ? 'sm:grid-cols-4' : shown.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className={`grid grid-cols-2 gap-4 ${cols}`}>
       {shown.map((s) => (
         <div
           key={s.label}
           className={`rounded-xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
         >
-          <div className={`text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{s.value.toLocaleString()}</div>
-          <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          <div className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
+            {s.value.toLocaleString()}
+          </div>
+          <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
             {s.label}
           </div>
         </div>
@@ -434,13 +439,15 @@ export function SpaceStatsBlock({
             key={s.metric}
             className={`rounded-xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
           >
-            <span className={`inline-flex ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+            <span
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
+            >
               {STAT_METRIC_META[s.metric]?.icon}
             </span>
-            <div className={`mt-2 text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+            <div className={`mt-3 text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
               {s.value.toLocaleString()}
             </div>
-            <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+            <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
               {s.label}
             </div>
           </div>
@@ -546,7 +553,9 @@ export function SpaceEventsBlock({
               <Link
                 href={`/events/${e.slug}`}
                 className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
-                  ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+                  ink
+                    ? 'border-white/10 bg-white/5 hover:bg-white/10'
+                    : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
                 }`}
               >
                 <span
@@ -586,7 +595,9 @@ function PracticeRow({ item, hrefBase, fallbackEmoji, ink }: { item: SpacePracti
       <Link
         href={`/${hrefBase}/${item.slug}`}
         className={`flex items-start gap-4 rounded-xl border px-4 py-3 transition-colors ${
-          ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+          ink
+            ? 'border-white/10 bg-white/5 hover:bg-white/10'
+            : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
         }`}
       >
         <span
@@ -696,7 +707,9 @@ export function SpaceCommunityBlock({
             <Link
               href={`/circles/${c.slug}`}
               className={`flex h-full flex-col rounded-xl border px-4 py-3 transition-colors ${
-                ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+                ink
+                  ? 'border-white/10 bg-white/5 hover:bg-white/10'
+                  : 'border-border/60 bg-surface/60 hover:border-primary/40 hover:bg-primary-bg/20'
               }`}
             >
               <span className={`truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{c.name}</span>
