@@ -23,7 +23,12 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { nextCoverSizePreferences, type CoverSize } from './preferences'
+import {
+  nextCoverSizePreferences,
+  nextCoverScrimPreferences,
+  type CoverSize,
+  type CoverScrim,
+} from './preferences'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
 // manages their Space's public pages (cover size, brand accent, block order + show/hide, and the
@@ -89,6 +94,26 @@ export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<
   const next = nextCoverSizePreferences(auth.preferences, size)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not update the cover size. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set the Hero cover SCRIM treatment ('shade' dark scrim vs 'blend' fade-to-canvas). Owner/admin/
+ * editor-gated (staff preview fails closed). Only affects the Hero cover size. Returns ActionResult.
+ */
+export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promise<ActionResult> {
+  if (scrim !== 'shade' && scrim !== 'blend') return fail('Pick a cover style.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextCoverScrimPreferences(auth.preferences, scrim)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the cover style. Try again.')
   }
 
   revalidatePath(`/spaces/${slug}`)

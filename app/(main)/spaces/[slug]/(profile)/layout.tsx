@@ -14,7 +14,7 @@ import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
-import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -153,6 +153,10 @@ export default async function SpaceProfileChromeLayout({
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
+  // The Hero scrim treatment (only relevant to the Hero size): 'shade' = a dark ink scrim under the
+  // overlaid identity (WCAG-safe on any photo, on-ink text); 'blend' = the photo fades to the page
+  // canvas and the identity uses the theme's own text tokens. Default-safe to 'shade'.
+  const heroOnInk = readCoverScrim(space.preferences) === 'shade'
 
   // The owner tools (Edit profile · Customize page): the quietest affordances in the action row, never
   // shown to a visitor. "Customize page" leads to the Manage > Page quick-edit panel for console types;
@@ -246,18 +250,21 @@ export default async function SpaceProfileChromeLayout({
   // to transparent) so the overlaid on-ink identity clears the WCAG ≥4.5:1 floor on ANY cover photo,
   // while the top of the image stays crisp. The logo chip + name + action row anchor to the bottom over
   // the scrim. Tokens only (ink), no hardcoded hex.
+  const heroScrimGradient = heroOnInk
+    ? 'from-ink/80 via-ink/30 to-transparent'
+    : 'from-canvas via-canvas/40 to-transparent'
   const heroCoverNode = (
     <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
       {coverImage}
-      <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/30 to-transparent" />
+      <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
         <div className="flex items-end gap-4">
           <div className="shrink-0">
             <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
           </div>
-          <div className="min-w-0 pb-1">{nameLockup(true)}</div>
+          <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
         </div>
-        <div className="mt-4">{identityActions(true)}</div>
+        <div className="mt-4">{identityActions(heroOnInk)}</div>
       </div>
     </div>
   )

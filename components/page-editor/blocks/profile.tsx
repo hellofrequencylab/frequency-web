@@ -956,6 +956,44 @@ export function SpaceCTABlock({
   )
 }
 
+// ── SpaceAction: the PLACEABLE ACTION HOOK. A block that surfaces the Space's PRIMARY action (book /
+// join / donate / enroll / tickets, by type) as a prominent CTA the operator can drop on ANY page. It
+// reads the live primary CTA off metadata (`identity.primaryCta` — the label by type + the reserved
+// /book action page href), so it always points at the real transactional surface without importing any
+// server/transactional code into the block (build-trap-safe). The operator can override the heading /
+// body / button label; unset falls back to the type's default action label.
+export function SpaceActionBlock({
+  eyebrow,
+  heading,
+  body,
+  ctaLabel,
+  href,
+  ink,
+  accent,
+}: {
+  eyebrow?: string
+  heading?: string
+  body?: string
+  ctaLabel: string
+  href: string
+  ink?: boolean
+  accent?: boolean
+}) {
+  return (
+    <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      {body && (
+        <p className={`mx-auto mt-2 max-w-xl text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>
+          {body}
+        </p>
+      )}
+      <div className="mt-5 flex justify-center">
+        <CtaButton href={href} label={ctaLabel} variant="primary" onInk={ink} withArrow />
+      </div>
+    </InfoCard>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared field atoms for the operator-authored list blocks.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1541,5 +1579,56 @@ export const profileComponents: Record<string, ComponentConfig> = {
         accent={accent === 'yes'}
       />
     ),
+  },
+
+  // The PLACEABLE ACTION HOOK: surfaces the Space's primary action (book / join / donate / enroll /
+  // tickets, by type) anywhere the operator drops it. Reads the live primary CTA off metadata, so it
+  // always links to the reserved /book transactional surface with the right per-type label.
+  SpaceAction: {
+    label: 'Action button',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading' },
+      body: { type: 'textarea', label: 'Body (optional)' },
+      ctaLabel: { type: 'text', label: 'Button label (optional, defaults to your action)' },
+      accent: {
+        type: 'radio',
+        label: 'Accent surface',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
+    },
+    defaultProps: {
+      eyebrow: '',
+      heading: 'Ready when you are',
+      body: '',
+      ctaLabel: '',
+      accent: 'yes',
+    },
+    render: ({ eyebrow, heading, body, ctaLabel, accent, puck }) => {
+      const identity = identityFrom(puck)
+      // Editor (no metadata) shows a placeholder; the live page renders the primary action CTA.
+      if (!identity) {
+        return (
+          <EditorStub
+            label="Action"
+            hint="Shows your primary action button (book, join, donate) anywhere you place it"
+          />
+        )
+      }
+      const cta = identity.primaryCta
+      return (
+        <SpaceActionBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          body={(body as string) || undefined}
+          ctaLabel={(ctaLabel as string) || cta?.label || 'Get started'}
+          href={cta?.href || '#'}
+          accent={accent === 'yes'}
+        />
+      )
+    },
   },
 }

@@ -18,7 +18,7 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
@@ -67,6 +67,7 @@ export default async function SpacePageSettingsPage({
 
   const brandName = space.brandName?.trim() || space.name
   const coverSize = readCoverSize(space.preferences)
+  const coverScrim = readCoverScrim(space.preferences)
 
   // The operator's ordered nav pages, and which one is being edited (`?page=`, default Home). A stale /
   // unknown slug (e.g. a just-deleted page) clamps to Home rather than erroring.
@@ -115,6 +116,7 @@ export default async function SpacePageSettingsPage({
         activePageSlug={activePageSlug}
         maxPages={MAX_PROFILE_PAGES}
         coverSize={coverSize}
+        coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
         blocks={blocks}
         editorData={editorData}

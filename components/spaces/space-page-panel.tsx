@@ -22,9 +22,10 @@ import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { SpaceBlockRow } from '@/lib/page-editor/templates/space-blocks'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
-import type { CoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
   setSpaceCoverSize,
+  setSpaceCoverScrim,
   setSpaceAccent,
   reorderSpaceBlock,
   setSpaceBlockHidden,
@@ -60,6 +61,13 @@ const COVER_SIZES: { value: CoverSize; label: string; tagline: string }[] = [
   { value: 'hero', label: 'Hero', tagline: 'A tall, immersive cover. Good for a strong first image.' },
 ]
 
+// The two Hero scrim treatments (only shown for the Hero cover size, where the identity overlays the
+// image). Plain forward taglines, no em dashes (CONTENT-VOICE).
+const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
+  { value: 'shade', label: 'Shade', tagline: 'A soft dark fade so your name stays readable on any photo.' },
+  { value: 'blend', label: 'Blend', tagline: 'The photo melts into the page. Best with a calm image.' },
+]
+
 export function SpacePagePanel({
   slug,
   brandName,
@@ -67,6 +75,7 @@ export function SpacePagePanel({
   activePageSlug,
   maxPages,
   coverSize,
+  coverScrim,
   accent,
   blocks,
   editorData,
@@ -85,6 +94,8 @@ export function SpacePagePanel({
   maxPages: number
   /** The chosen public-header cover size (Header vs Hero), for the Cover size toggle. */
   coverSize: CoverSize
+  /** The chosen Hero scrim treatment (Shade vs Blend), for the Cover style toggle (Hero only). */
+  coverScrim: CoverScrim
   /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
   accent: string
   /** The TOP-LEVEL blocks of the ACTIVE page's doc (stored-or-default), in order, for the Blocks list. */
@@ -344,6 +355,43 @@ export function SpacePagePanel({
           })}
         </div>
       </section>
+
+      {/* Cover style (scrim): only meaningful for the Hero size, where the identity overlays the image.
+          Shade keeps text legible on any photo; Blend fades the photo into the page. */}
+      {coverSize === 'hero' && (
+        <section>
+          <SectionHeader title="Cover style" />
+          <p className="-mt-2 mb-3 text-sm text-muted">
+            How your name and buttons sit on the Hero cover image.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {COVER_SCRIMS.map((c) => {
+              const active = coverScrim === c.value
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  disabled={readOnly || pending || active}
+                  onClick={() => run(() => setSpaceCoverScrim(slug, c.value))}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active
+                      ? 'border-primary bg-primary-bg'
+                      : 'border-border bg-surface hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-semibold text-text">
+                    {c.label}
+                    {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
+                  </span>
+                  <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Theme / accent: the curated brand accent that paints the page (tokens only, never a hex). */}
       <section>
