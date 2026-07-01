@@ -23,9 +23,34 @@ const KNOWN_BLOCKS = new Set(Object.keys(config.components))
 // marketing pages; the Profile set is additive, only the space PRESETS switched).
 const MARKETING_BLOCKS = ['Hero', 'FeatureGrid', 'StatRow', 'MediaText', 'CallToAction'] as const
 
-// Every block in a doc is a currently-registered block type.
+type SlotBlock = { type: string; props: Record<string, unknown> }
+
+// The layout box's two slots hold the cards INLINE (Puck 0.20 slot arrays in props).
+function layoutOf(t: SpaceTemplate): { main: string[]; side: string[] } {
+  const layout = generateSpacePreset(t, 'Willow Studio').content.find((b) => b.type === 'SpaceLayout')!
+  const read = (arr: unknown): string[] => ((arr as SlotBlock[] | undefined) ?? []).map((b) => b.type)
+  return { main: read(layout.props.main), side: read(layout.props.side) }
+}
+
+// Flatten every block type in a doc: top-level content + any SpaceLayout main/side slots.
+function allTypes(data: Data): string[] {
+  const out: string[] = []
+  for (const b of data.content ?? []) {
+    out.push(b.type)
+    if (b.type === 'SpaceLayout') {
+      for (const key of ['main', 'side'] as const) {
+        for (const child of ((b.props as Record<string, unknown>)[key] as SlotBlock[] | undefined) ?? []) {
+          out.push(child.type)
+        }
+      }
+    }
+  }
+  return out
+}
+
+// Every block in a doc (top-level AND SpaceLayout slot children) is a registered block type.
 function everyBlockKnown(data: Data): boolean {
-  return (data.content ?? []).every((b) => typeof b?.type === 'string' && KNOWN_BLOCKS.has(b.type))
+  return allTypes(data).every((t) => KNOWN_BLOCKS.has(t))
 }
 
 const types = (t: SpaceTemplate) => generateSpacePreset(t, 'Willow Studio').content.map((b) => b.type)
@@ -40,24 +65,32 @@ describe('the four preset generators', () => {
     }
   })
 
-  it('composes ONLY from registered blocks (no invented block types)', () => {
+  it('composes ONLY from registered blocks (top-level AND slot children)', () => {
     for (const t of SPACE_TEMPLATES) {
       expect(everyBlockKnown(generateSpacePreset(t, 'Willow Studio'))).toBe(true)
     }
   })
 
-  it('LEADS every template with SpaceIdentityHeader (the shared cover/logo identity)', () => {
+  it('is a two-block top level: SpaceIdentityHeader then the SpaceLayout region box', () => {
     for (const t of SPACE_TEMPLATES) {
-      expect(generateSpacePreset(t, 'Willow Studio').content[0]?.type).toBe('SpaceIdentityHeader')
+      const ts = types(t)
+      expect(ts[0]).toBe('SpaceIdentityHeader')
+      expect(ts[1]).toBe('SpaceLayout')
     }
   })
 
-  it('never seeds any marketing display-type block (they read like a landing page, not a profile)', () => {
+  it('never seeds any marketing display-type block anywhere (top-level or slots)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const ts = types(t)
+      const ts = allTypes(generateSpacePreset(t, 'Willow Studio'))
       for (const marketing of MARKETING_BLOCKS) {
         expect(ts, `${t} must not include ${marketing}`).not.toContain(marketing)
       }
+    }
+  })
+
+  it('drops the Gallery block from the profile presets', () => {
+    for (const t of SPACE_TEMPLATES) {
+      expect(allTypes(generateSpacePreset(t, 'Willow Studio'))).not.toContain('Gallery')
     }
   })
 
@@ -80,8 +113,11 @@ describe('the four preset generators', () => {
 })
 
 describe('the four presets read visibly distinct (per-template arrangement)', () => {
+  // Fingerprint = identity + main + side types, so a distinct arrangement (even with the same
+  // top-level shape) reads as a different preset.
   function fingerprint(t: SpaceTemplate): string {
-    return types(t).join(',')
+    const { main, side } = layoutOf(t)
+    return ['SpaceIdentityHeader', ...main, '|', ...side].join(',')
   }
 
   it('produces four different fingerprints', () => {
@@ -89,73 +125,63 @@ describe('the four presets read visibly distinct (per-template arrangement)', ()
     expect(new Set(prints).size).toBe(SPACE_TEMPLATES.length)
   })
 
-  it('Book: Identity -> Highlights -> Offerings -> CTA -> Reviews -> FAQ -> About -> Contact', () => {
-    expect(types('book')).toEqual([
-      'SpaceIdentityHeader',
-      'SpaceHighlights',
-      'SpaceOfferings',
-      'SpaceCTA',
-      'SpaceReviews',
-      'SpaceFAQ',
-      'SpaceAbout',
-      'SpaceContact',
-    ])
+  it('Book: main = Offerings -> CTA -> Reviews -> FAQ; side = Highlights -> About -> Contact', () => {
+    expect(layoutOf('book')).toEqual({
+      main: ['SpaceOfferings', 'SpaceCTA', 'SpaceReviews', 'SpaceFAQ'],
+      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
+    })
   })
 
-  it('Schedule: Identity -> Offerings -> CTA -> Highlights -> Reviews -> About -> Contact', () => {
-    expect(types('schedule')).toEqual([
-      'SpaceIdentityHeader',
-      'SpaceOfferings',
-      'SpaceCTA',
-      'SpaceHighlights',
-      'SpaceReviews',
-      'SpaceAbout',
-      'SpaceContact',
-    ])
+  it('Schedule: main = Offerings -> CTA -> Reviews; side = Highlights -> About -> Contact', () => {
+    expect(layoutOf('schedule')).toEqual({
+      main: ['SpaceOfferings', 'SpaceCTA', 'SpaceReviews'],
+      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
+    })
   })
 
-  it('Storefront: Identity -> Offerings -> Gallery -> Reviews -> About -> Contact', () => {
-    expect(types('storefront')).toEqual([
-      'SpaceIdentityHeader',
-      'SpaceOfferings',
-      'Gallery',
-      'SpaceReviews',
-      'SpaceAbout',
-      'SpaceContact',
-    ])
+  it('Storefront: main = Offerings -> Reviews; side = Highlights -> About -> Contact', () => {
+    expect(layoutOf('storefront')).toEqual({
+      main: ['SpaceOfferings', 'SpaceReviews'],
+      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
+    })
   })
 
-  it('Hub is the fullest: Identity -> About -> CTA -> Updates -> Offerings -> Gallery -> Team -> FAQ -> Contact', () => {
-    expect(types('hub')).toEqual([
-      'SpaceIdentityHeader',
-      'SpaceAbout',
-      'SpaceCTA',
-      'SpaceUpdates',
-      'SpaceOfferings',
-      'Gallery',
-      'SpaceTeam',
-      'SpaceFAQ',
-      'SpaceContact',
-    ])
-    // Hub is the fullest of the four.
+  it('Hub is the fullest: main = About -> Updates -> Offerings -> Team; side = Highlights -> CTA -> Contact -> FAQ', () => {
+    expect(layoutOf('hub')).toEqual({
+      main: ['SpaceAbout', 'SpaceUpdates', 'SpaceOfferings', 'SpaceTeam'],
+      side: ['SpaceHighlights', 'SpaceCTA', 'SpaceContact', 'SpaceFAQ'],
+    })
+    // Hub is the fullest of the four (most cards across both slots).
+    const cardCount = (t: SpaceTemplate) => {
+      const { main, side } = layoutOf(t)
+      return main.length + side.length
+    }
     for (const t of ['book', 'schedule', 'storefront'] as const) {
-      expect(types('hub').length).toBeGreaterThan(types(t).length)
+      expect(cardCount('hub')).toBeGreaterThan(cardCount(t))
     }
   })
 
-  it('reuses the Phase 2 dynamic blocks + Gallery (never rebuilds them)', () => {
-    expect(types('hub')).toContain('SpaceUpdates')
-    expect(types('storefront')).toContain('Gallery')
+  it('reuses the Phase 2 dynamic blocks (never rebuilds them)', () => {
+    expect(allTypes(generateSpacePreset('hub', 'Willow Studio'))).toContain('SpaceUpdates')
     for (const t of ['book', 'schedule', 'storefront'] as const) {
-      expect(types(t)).toContain('SpaceReviews')
+      expect(allTypes(generateSpacePreset(t, 'Willow Studio'))).toContain('SpaceReviews')
     }
   })
 })
 
 describe('generateSpacePresetForSpace resolves the template from the descriptor layer', () => {
-  // The primary CTA copy still threads through: Book seeds a "Book a session" SpaceCTA.
+  // The primary CTA copy still threads through, now inside the SpaceLayout slots.
   function ctaLabels(doc: Data): string[] {
-    return doc.content.filter((b) => b.type === 'SpaceCTA').map((b) => String(b.props.ctaLabel))
+    const labels: string[] = []
+    for (const b of doc.content) {
+      if (b.type !== 'SpaceLayout') continue
+      for (const key of ['main', 'side'] as const) {
+        for (const child of ((b.props as Record<string, unknown>)[key] as SlotBlock[] | undefined) ?? []) {
+          if (child.type === 'SpaceCTA') labels.push(String(child.props.ctaLabel))
+        }
+      }
+    }
+    return labels
   }
 
   it('a practitioner resolves to the Book preset (a bookable CTA)', () => {
@@ -166,7 +192,7 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
 
   it('a Nonprofit/Organization tier forces the Hub preset (the fullest arrangement)', () => {
     const doc = generateSpacePresetForSpace({ name: 'Rivers Fund', type: 'business', plan: 'organization' })
-    expect(doc.content.map((b) => b.type)).toContain('SpaceTeam') // Team rides only on Hub
+    expect(allTypes(doc)).toContain('SpaceTeam') // Team rides only on Hub (in its main slot)
     expect(ctaLabels(doc)).toContain(templateDescriptor('hub').hero.primaryCta.label)
   })
 
@@ -177,9 +203,10 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
       variant: 'service',
       preferences: { template: 'schedule' },
     })
-    // Schedule's arrangement leads Offerings before Highlights.
-    const ts = doc.content.map((b) => b.type)
-    expect(ts.indexOf('SpaceOfferings')).toBeLessThan(ts.indexOf('SpaceHighlights'))
+    // Schedule leads its main slot with Offerings (its distinctive arrangement).
+    const layout = doc.content.find((b) => b.type === 'SpaceLayout')!
+    const main = ((layout.props.main as SlotBlock[] | undefined) ?? []).map((b) => b.type)
+    expect(main[0]).toBe('SpaceOfferings')
   })
 
   it('an unknown type is default-safe (Book), never blank', () => {

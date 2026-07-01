@@ -8,13 +8,9 @@ import { FaqList } from '@/components/marketing/marketing-ui'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import {
-  Band,
   Eyebrow,
   accentize,
-  isInk,
   emphasisClasses,
-  blockFields,
-  blockLayoutDefaults,
   visClass,
   type LayoutValue,
   type EmphasisValue,
@@ -367,34 +363,25 @@ export const spacesComponents: Record<string, ComponentConfig> = {
         ],
       },
       viewAllHref: { type: 'text', label: 'View-all link (optional)' },
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'Latest',
       heading: 'From the team',
       limit: '3',
       viewAllHref: '',
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, limit, viewAllHref, tone, width, align, layout, puck }) => {
+    render: ({ eyebrow, heading, limit, viewAllHref, puck }) => {
       const d = spaceFrom(puck)
-      const ink = isInk(tone)
-      const content = d ? (
+      return d ? (
         <SpaceUpdatesBlock
           eyebrow={(eyebrow as string) || undefined}
           heading={(heading as string) || undefined}
           updates={d.updates}
           limit={Number(limit) || 3}
           viewAllHref={(viewAllHref as string) || undefined}
-          ink={ink}
         />
       ) : (
         <EditorStub label="Space updates" hint="Your published updates show on the live page" />
-      )
-      return (
-        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-          {content}
-        </Band>
       )
     },
   },
@@ -413,32 +400,23 @@ export const spacesComponents: Record<string, ComponentConfig> = {
           { label: '6', value: '6' },
         ],
       },
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'What members say',
       heading: 'Reviews',
       limit: '4',
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, limit, tone, width, align, layout, puck }) => {
+    render: ({ eyebrow, heading, limit, puck }) => {
       const d = spaceFrom(puck)
-      const ink = isInk(tone)
-      const content = d ? (
+      return d ? (
         <SpaceReviewsBlock
           eyebrow={(eyebrow as string) || undefined}
           heading={(heading as string) || undefined}
           reviews={d.reviews}
           limit={Number(limit) || 4}
-          ink={ink}
         />
       ) : (
         <EditorStub label="Space reviews" hint="Member reviews show on the live page" />
-      )
-      return (
-        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-          {content}
-        </Band>
       )
     },
   },
@@ -450,33 +428,24 @@ export const spacesComponents: Record<string, ComponentConfig> = {
       heading: { type: 'textarea', label: 'Heading (optional)' },
       titleAccent: { type: 'text', label: 'Accent word (optional)' },
       emphasis: emphasisField,
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'FAQ',
       heading: 'Common questions',
       titleAccent: '',
       emphasis: emphasisDefault,
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, titleAccent, emphasis, tone, width, align, layout, puck }) => {
+    render: ({ eyebrow, heading, titleAccent, emphasis, puck }) => {
       const d = spaceFrom(puck)
-      const ink = isInk(tone)
-      const content = d ? (
+      return d ? (
         <SpaceFaqBlock
           eyebrow={(eyebrow as string) || undefined}
           heading={heading ? accentize(heading as string, titleAccent as string) : undefined}
           faqs={d.faqs}
-          ink={ink}
           emphasis={emphasis as EmphasisValue}
         />
       ) : (
         <EditorStub label="Space FAQ" hint="Your questions show on the live page" />
-      )
-      return (
-        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-          {content}
-        </Band>
       )
     },
   },

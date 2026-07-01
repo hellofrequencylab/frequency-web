@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Puck, usePuck, type Data } from '@measured/puck'
 import '@measured/puck/puck.css'
 import Link from 'next/link'
@@ -16,6 +16,7 @@ import { SpotlightThemeEditor } from './theme-editor'
 import { SpotlightPublishBar } from './publish-bar'
 import { SpotlightBackgroundEditor, SpotlightTopFriendsPicker } from './spotlight-chrome'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
+import { EMPTY_SPOTLIGHT_META, type SpotlightPuckMetadata } from '@/lib/spotlight/puck/metadata'
 
 // THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
 // their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
@@ -103,6 +104,22 @@ export function SpotlightPuckEditor({
   const [themeOpen, setThemeOpen] = useState(false)
   const [theme, setTheme] = useState<SpotlightTheme>(initialTheme)
 
+  // The render metadata the Spotlight blocks read at edit time (the SAME channel the public
+  // <Render> uses). Without it the Image/Gallery blocks resolve their URL against an empty
+  // base and render broken — the bug behind "my images disappeared". `publicBase` is the
+  // public avatars bucket (client-safe env, matching components/spotlight/blocks/render.tsx);
+  // Top Friends are the owner's resolved list; live Stat numbers stay on the public page.
+  const spotlightMeta: SpotlightPuckMetadata = useMemo(
+    () => ({
+      spotlight: {
+        ...EMPTY_SPOTLIGHT_META,
+        publicBase: `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`,
+        topFriends: initialTopFriends,
+      },
+    }),
+    [initialTopFriends],
+  )
+
   // The Theme button opens the kept drawer. Shared by the desktop header and the mobile
   // top bar, so the theme + publish flow is identical on both.
   const themeButton = (
@@ -122,6 +139,7 @@ export function SpotlightPuckEditor({
           <Puck
             config={config}
             data={initialData}
+            metadata={spotlightMeta}
             headerTitle="Build your Spotlight"
             overrides={{
               headerActions: () => (
@@ -142,6 +160,7 @@ export function SpotlightPuckEditor({
         mobile={{
           config,
           data: initialData,
+          metadata: spotlightMeta as unknown as Record<string, unknown>,
           title: 'Build your Spotlight',
           // Spotlight persists its blocks through saveSpotlightLayout (the SAME converter +
           // owner-gated, validating action the desktop SaveButton uses). That IS the live

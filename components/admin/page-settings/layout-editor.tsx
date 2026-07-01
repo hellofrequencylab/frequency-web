@@ -229,7 +229,10 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
               draws the layout's actual block arrangement; the chosen one is ringed + tinted. */}
           <div>
             <p className="mb-1.5 text-2xs font-medium uppercase tracking-wide text-subtle">Template</p>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            {/* Flex by the CONTAINER's width, not the viewport: auto-fit + a min tile width lets the
+                tiles reflow to fit however wide the panel is (3-up in the narrow settings drawer, more
+                in a full-width editor), instead of a fixed viewport breakpoint that overflows the drawer. */}
+            <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]">
               {TEMPLATES.map((t) => {
                 const isActive = t.id === template
                 return (

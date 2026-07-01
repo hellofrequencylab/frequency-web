@@ -70,6 +70,7 @@ export const config: Config = {
     profile: {
       title: 'Profile',
       components: [
+        'SpaceLayout',
         'SpaceIdentityHeader',
         'SpaceAbout',
         'SpaceHighlights',

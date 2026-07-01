@@ -21,11 +21,14 @@ type Item = Data['content'][number]
 
 // Render ONE block in isolation as a low-fi preview, by handing <Render> a
 // single-item document. Non-interactive (pointer-events off) so taps hit the row.
-function BlockPreview({ config, item }: { config: Config; item: Item }) {
+// `metadata` is threaded through so asset-backed blocks (e.g. the Spotlight image /
+// gallery, which derive their URL from `metadata.spotlight.publicBase`) resolve here
+// instead of rendering broken images against an empty base.
+function BlockPreview({ config, item, metadata }: { config: Config; item: Item; metadata?: Record<string, unknown> }) {
   const doc: Data = { root: {}, content: [item] }
   return (
     <div className="pointer-events-none max-h-40 overflow-hidden [zoom:0.5]" aria-hidden>
-      <Render config={config} data={doc} />
+      <Render config={config} data={doc} metadata={metadata} />
     </div>
   )
 }
@@ -84,6 +87,7 @@ function SwipeRow({
 export function BlockList({
   config,
   data,
+  metadata,
   reordering,
   onOpen,
   onDelete,
@@ -91,6 +95,8 @@ export function BlockList({
 }: {
   config: Config
   data: Data
+  /** Puck render metadata, threaded to each block's low-fi preview (see BlockPreview). */
+  metadata?: Record<string, unknown>
   reordering: boolean
   onOpen: (id: string) => void
   onDelete: (id: string) => void
@@ -205,7 +211,7 @@ export function BlockList({
                     <span className="mt-0.5 block truncate text-xs text-muted">{blockSummary(item)}</span>
                   )}
                   <span className="mt-2 block rounded-lg border border-border bg-surface">
-                    <BlockPreview config={config} item={item} />
+                    <BlockPreview config={config} item={item} metadata={metadata} />
                   </span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 self-start text-subtle" aria-hidden />

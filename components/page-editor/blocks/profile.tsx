@@ -4,14 +4,7 @@ import type { ComponentConfig } from '@measured/puck'
 
 import { getInitials } from '@/lib/utils'
 import { focalClass } from '@/lib/page-editor/image-controls'
-import {
-  Band,
-  isInk,
-  blockFields,
-  blockLayoutDefaults,
-  CtaButton,
-  type LayoutValue,
-} from '@/components/page-editor/blocks/kit'
+import { CtaButton } from '@/components/page-editor/blocks/kit'
 import { imgField } from '@/lib/page-editor/fields'
 // TYPE-ONLY import: erased at build, so this NEVER drags the server reader (createAdminClient) into
 // the client editor bundle. The Profile blocks read the shared identity + live counts off
@@ -235,7 +228,7 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
   if (highlights.length === 0) return null
   const shown = highlights.slice(0, 4)
   return (
-    <div className={`grid gap-3 ${shown.length >= 4 ? 'grid-cols-2 sm:grid-cols-4' : shown.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+    <div className="grid grid-cols-2 gap-3">
       {shown.map((s) => (
         <div
           key={s.label}
@@ -414,16 +407,18 @@ export function SpaceCTABlock({
   ctaLabel,
   ctaHref,
   ink,
+  accent,
 }: {
   heading?: string
   body?: string
   ctaLabel?: string
   ctaHref?: string
   ink?: boolean
+  accent?: boolean
 }) {
   if (!heading && !ctaLabel) return null
   return (
-    <InfoCard ink={ink} className="text-center">
+    <InfoCard ink={ink} className={`text-center${accent ? ' border-primary/30 bg-primary-bg/30' : ''}`}>
       {heading && <h2 className={`text-xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
       {body && <p className={`mx-auto mt-2 max-w-xl text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
       {ctaLabel && (
@@ -461,10 +456,101 @@ const teamArrayField = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SpaceLayout -- the FB-business-page region shell. Two slots (main + side) laid out
+// as a boxed two-column grid (or a single stacked column), so the profile reads like a
+// Facebook business page: an identity header on top, then clean boxed cards arranged in
+// a main column with a narrow side rail. Pure presentation; the operator drags the card
+// blocks into the slots. On mobile the grid collapses to one column.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type SlotComponent = React.ComponentType<Record<string, never>>
+
+function SpaceLayoutRegion({
+  layout,
+  sideSticky,
+  Main,
+  Side,
+}: {
+  layout: string
+  sideSticky: boolean
+  Main: SlotComponent
+  Side: SlotComponent
+}) {
+  if (layout === 'stacked') {
+    return (
+      <section className="mx-auto w-full max-w-5xl px-6 py-8">
+        <div className="space-y-6">
+          <Main />
+        </div>
+      </section>
+    )
+  }
+  const sideFirst = layout === 'side-main'
+  const asideClass = [
+    'space-y-6',
+    sideFirst ? 'lg:order-first' : '',
+    sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return (
+    <section className="mx-auto w-full max-w-5xl px-6 py-8">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Main />
+        </div>
+        <aside className={asideClass}>
+          <Side />
+        </aside>
+      </div>
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ComponentConfig map -- exported as profileComponents
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const profileComponents: Record<string, ComponentConfig> = {
+  SpaceLayout: {
+    label: 'Layout box (main + side)',
+    fields: {
+      layout: {
+        type: 'select',
+        label: 'Layout',
+        options: [
+          { label: 'Main + side', value: 'main-side' },
+          { label: 'Side + main', value: 'side-main' },
+          { label: 'Single column', value: 'stacked' },
+        ],
+      },
+      sideSticky: {
+        type: 'radio',
+        label: 'Sticky side',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
+      main: { type: 'slot' },
+      side: { type: 'slot' },
+    },
+    defaultProps: {
+      layout: 'main-side',
+      sideSticky: 'no',
+      main: [],
+      side: [],
+    },
+    render: ({ layout, sideSticky, main: Main, side: Side }) => (
+      <SpaceLayoutRegion
+        layout={layout as string}
+        sideSticky={sideSticky === 'yes'}
+        Main={Main as SlotComponent}
+        Side={Side as SlotComponent}
+      />
+    ),
+  },
+
   SpaceIdentityHeader: {
     label: 'Identity header (cover + logo)',
     fields: {
@@ -528,43 +614,31 @@ export const profileComponents: Record<string, ComponentConfig> = {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading' },
       body: { type: 'textarea', label: 'Story' },
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'About',
       heading: 'Our story',
       body: 'Tell people who you are and what to expect.',
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, body, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <SpaceAboutBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          body={(body as string) || undefined}
-          ink={isInk(tone)}
-        />
-      </Band>
+    render: ({ eyebrow, heading, body }) => (
+      <SpaceAboutBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        body={(body as string) || undefined}
+      />
     ),
   },
 
   SpaceHighlights: {
     label: 'Highlights (live)',
-    fields: {
-      ...blockFields(),
-    },
-    defaultProps: {
-      ...blockLayoutDefaults,
-    },
-    render: ({ tone, width, align, layout, puck }) => {
+    fields: {},
+    defaultProps: {},
+    render: ({ puck }) => {
       const highlights = highlightsFrom(puck)
-      const content = highlights.length > 0
-        ? <SpaceHighlightsBlock highlights={highlights} ink={isInk(tone)} />
-        : <EditorStub label="Highlights" hint="Your live counts show on the live page" />
-      return (
-        <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-          {content}
-        </Band>
+      return highlights.length > 0 ? (
+        <SpaceHighlightsBlock highlights={highlights} />
+      ) : (
+        <EditorStub label="Highlights" hint="Your live counts show on the live page" />
       )
     },
   },
@@ -575,23 +649,18 @@ export const profileComponents: Record<string, ComponentConfig> = {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading' },
       items: offeringArrayField,
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'What we offer',
       heading: 'Offerings',
       items: [],
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, items, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <SpaceOfferingsBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          items={(items as OfferingItem[]) ?? []}
-          ink={isInk(tone)}
-        />
-      </Band>
+    render: ({ eyebrow, heading, items }) => (
+      <SpaceOfferingsBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        items={(items as OfferingItem[]) ?? []}
+      />
     ),
   },
 
@@ -606,7 +675,6 @@ export const profileComponents: Record<string, ComponentConfig> = {
       email: { type: 'text', label: 'Email' },
       linkLabel: { type: 'text', label: 'Link label' },
       linkHref: { type: 'text', label: 'Link URL' },
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'Find us',
@@ -617,22 +685,18 @@ export const profileComponents: Record<string, ComponentConfig> = {
       email: '',
       linkLabel: '',
       linkHref: '',
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <SpaceContactBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          address={(address as string) || undefined}
-          hours={(hours as string) || undefined}
-          phone={(phone as string) || undefined}
-          email={(email as string) || undefined}
-          linkLabel={(linkLabel as string) || undefined}
-          linkHref={(linkHref as string) || undefined}
-          ink={isInk(tone)}
-        />
-      </Band>
+    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref }) => (
+      <SpaceContactBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        address={(address as string) || undefined}
+        hours={(hours as string) || undefined}
+        phone={(phone as string) || undefined}
+        email={(email as string) || undefined}
+        linkLabel={(linkLabel as string) || undefined}
+        linkHref={(linkHref as string) || undefined}
+      />
     ),
   },
 
@@ -642,23 +706,18 @@ export const profileComponents: Record<string, ComponentConfig> = {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading' },
       members: teamArrayField,
-      ...blockFields(),
     },
     defaultProps: {
       eyebrow: 'The people',
       heading: 'Meet the team',
       members: [],
-      ...blockLayoutDefaults,
     },
-    render: ({ eyebrow, heading, members, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <SpaceTeamBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          members={(members as TeamMember[]) ?? []}
-          ink={isInk(tone)}
-        />
-      </Band>
+    render: ({ eyebrow, heading, members }) => (
+      <SpaceTeamBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        members={(members as TeamMember[]) ?? []}
+      />
     ),
   },
 
@@ -669,25 +728,30 @@ export const profileComponents: Record<string, ComponentConfig> = {
       body: { type: 'textarea', label: 'Body (optional)' },
       ctaLabel: { type: 'text', label: 'Button label' },
       ctaHref: { type: 'text', label: 'Button link' },
-      ...blockFields(),
+      accent: {
+        type: 'radio',
+        label: 'Accent surface',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
     },
     defaultProps: {
       heading: 'Ready when you are',
       body: '',
       ctaLabel: 'Get started',
       ctaHref: '#',
-      ...blockLayoutDefaults,
+      accent: 'no',
     },
-    render: ({ heading, body, ctaLabel, ctaHref, tone, width, align, layout }) => (
-      <Band tone={tone} width={width} align={align} layout={layout as LayoutValue}>
-        <SpaceCTABlock
-          heading={(heading as string) || undefined}
-          body={(body as string) || undefined}
-          ctaLabel={(ctaLabel as string) || undefined}
-          ctaHref={(ctaHref as string) || undefined}
-          ink={isInk(tone)}
-        />
-      </Band>
+    render: ({ heading, body, ctaLabel, ctaHref, accent }) => (
+      <SpaceCTABlock
+        heading={(heading as string) || undefined}
+        body={(body as string) || undefined}
+        ctaLabel={(ctaLabel as string) || undefined}
+        ctaHref={(ctaHref as string) || undefined}
+        accent={accent === 'yes'}
+      />
     ),
   },
 }

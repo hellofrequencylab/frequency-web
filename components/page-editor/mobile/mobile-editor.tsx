@@ -59,6 +59,11 @@ export type MobileEditorProps = {
   publishBusyLabel?: string
   /** Optional extra chrome for the top bar (e.g. the Spotlight theme button). */
   extraActions?: React.ReactNode
+  /** Puck render metadata, threaded to every <Render> (preview + per-block previews) so
+   *  dynamic/asset-backed blocks resolve correctly — e.g. the Spotlight image/gallery blocks
+   *  derive their URL from `metadata.spotlight.publicBase`. Without it those images render
+   *  against an empty base and break. Mirrors the desktop <Puck metadata=...> channel. */
+  metadata?: Record<string, unknown>
 }
 
 // A full-screen sub-form on the stack: the block's own form, or a nested object/array
@@ -77,6 +82,7 @@ export function MobileEditor({
   publishedMessage = 'Published',
   publishBusyLabel = 'Publishing…',
   extraActions,
+  metadata,
 }: MobileEditorProps) {
   const [data, setData] = useState<Data>(initialData)
   const [stack, setStack] = useState<Screen[]>([])
@@ -196,7 +202,7 @@ export function MobileEditor({
           </Button>
         </TopBar>
         <div className="pointer-events-none">
-          <Render config={config} data={data} />
+          <Render config={config} data={data} metadata={metadata} />
         </div>
       </div>
     )
@@ -273,6 +279,7 @@ export function MobileEditor({
       <BlockList
         config={config}
         data={data}
+        metadata={metadata}
         reordering={reordering}
         onOpen={(id) => setStack([{ kind: 'block', id }])}
         onDelete={performDelete}
