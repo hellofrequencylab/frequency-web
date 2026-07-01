@@ -24,6 +24,30 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 - **Backfill:** **everything** — existing `site-media` URLs get ingested into the catalog and
   references rewritten.
 
+## Code-drawn elements (registries)
+
+Beyond stored files, The Loom catalogues the app's hand-authored house-style SVG art as
+`kind='element'` rows. Each stores `config = { registry, name }` (plus `pillar` for circle
+templates). The registry tells the renderer which live source component to draw from, so the
+catalogue never drifts into stale copies ([ADR-482](DECISIONS.md)):
+
+| `registry` | Source | What | viewBox |
+| --- | --- | --- | --- |
+| `illustration` | `components/marketing/illustrations` | Marketing spot art (kit, lead funnel, onboarding, On Air reveal) | 240×150 |
+| `icon` | `components/on-air/icons.tsx` | On Air control icon kit (currentColor) | 24×24 |
+| `spot` | `components/feed/zap-menu-art.tsx` | Zap-menu / On Air row tiles | 120×80 |
+| `circle-template` | `components/circles/template-art.tsx` | The twelve Starter Circle scenes | 240×110 |
+| `texture` | `components/marketing/vector-art.tsx` | Abstract brand textures | various |
+
+- **Single source:** `lib/library/element-catalog.ts` (plain data — titles/categories/tags/pillar,
+  used for seeding + validation) and `lib/library/element-registry.tsx` (client resolver —
+  `renderRegistryElement`/`isRenderableElement`). Add art to a source component, add a catalog entry,
+  seed a row: it appears (and sorts) in Loom Studio, with SVG/PNG export.
+- **Vera** (`vera-actions.ts`) draws NEW elements in either mode — a `graphic` (240×150 spot art) or
+  an `icon` (24×24 line mark) — saved with the SVG in `config.svg` under "Vera cards" / "Vera icons".
+- **Not catalogued:** data-driven visuals (admin charts, the frequency-signature radar, season/breath
+  gauges, mockup frames, one-off UI marks) are dynamic components, not reusable assets.
+
 ## Data model
 
 The five DAM entities (migrations `20260919000000_library_assets.sql` +
