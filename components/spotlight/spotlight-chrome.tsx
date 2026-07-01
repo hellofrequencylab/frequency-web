@@ -48,8 +48,25 @@ function Slider({
 
 // ── Background image editor (page chrome) ───────────────────────────────────────
 
-export function SpotlightBackgroundEditor({ initial }: { initial: SpotlightBackground }) {
-  const [background, setBackground] = useState<SpotlightBackground>(initial)
+export function SpotlightBackgroundEditor({
+  initial,
+  value,
+  onChange,
+}: {
+  initial: SpotlightBackground
+  /** Optional CONTROLLED mode: when the parent owns the background (so applying a saved theme can
+   *  update it live), pass `value` + `onChange`. Omitted → the editor holds its own state as before. */
+  value?: SpotlightBackground
+  onChange?: (next: SpotlightBackground) => void
+}) {
+  const [internal, setInternal] = useState<SpotlightBackground>(initial)
+  const controlled = value !== undefined && onChange !== undefined
+  const background = controlled ? value : internal
+  const setBackground = (updater: SpotlightBackground | ((b: SpotlightBackground) => SpotlightBackground)) => {
+    const next = typeof updater === 'function' ? (updater as (b: SpotlightBackground) => SpotlightBackground)(background) : updater
+    if (controlled) onChange!(next)
+    else setInternal(next)
+  }
   const [pending, start] = useTransition()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')

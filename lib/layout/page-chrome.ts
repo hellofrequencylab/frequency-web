@@ -112,7 +112,33 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // The Space LANDING editor (ADR-476/472): a full-viewport Puck editor that owns the whole surface
   // (its own header + side bars), so it drops the member right rail like every other editor takeover.
   /^\/spaces\/[^/]+\/edit-page$/,
+  // The "Build your Spotlight" Puck editor (/settings/profile/spotlight): the same full-viewport
+  // editor takeover. Its desktop <Puck> owns the surface and its mobile control dock needs the whole
+  // viewport, so it drops the member right rail here (and the mobile bottom nav via
+  // FULL_VIEWPORT_EDITOR_PATTERNS below, so the dock sits in the thumb zone with nothing over it).
+  /^\/settings\/profile\/spotlight$/,
 ]
+
+// FULL-VIEWPORT EDITOR TAKEOVERS — the Puck-based page builders that own the ENTIRE viewport with
+// their own top bar (desktop) / control dock (mobile). On desktop they already read full-width (the
+// right rail is dropped via DASHBOARD_NONE_PATTERNS above); the extra rule here is for MOBILE, where
+// the app-shell's fixed bottom tab bar would otherwise sit ON TOP of the editor's thumb-zone control
+// dock, making it unreachable. A route in this list tells the shell to also suppress the mobile bottom
+// nav + its side drawers (and the desktop header), so the editor is the only chrome on screen — the
+// same clean takeover the practice timer / scanner get, but scoped to the editor surfaces. Pattern
+// match (exact surface only). Keep this in lockstep with the DASHBOARD_NONE_PATTERNS entries so the
+// desktop rail and the mobile nav are dropped together for one editor.
+const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = [
+  /^\/spaces\/[^/]+\/edit-page$/, // the Space landing Puck editor
+  /^\/settings\/profile\/spotlight$/, // the "Build your Spotlight" Puck editor
+]
+
+/** Whether `pathname` is a full-viewport Puck EDITOR takeover — the shell hides the mobile bottom
+ *  nav + drawers (and the desktop header) so the editor's own top bar / thumb-zone dock owns the
+ *  whole viewport with nothing over it. Pure + client-safe like railFor. */
+export function isFullViewportEditor(pathname: string): boolean {
+  return FULL_VIEWPORT_EDITOR_PATTERNS.some((re) => re.test(pathname))
+}
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
 // Do NOT suppress the rail for /events/<slug> (a past change set it to 'none' to dodge a

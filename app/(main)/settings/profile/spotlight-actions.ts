@@ -8,6 +8,13 @@ import {
   withSpotlightLayout,
   withSpotlightBackground,
   withSpotlightTheme,
+  readSpotlightThemes,
+  withSpotlightThemes,
+  clampSpotlightThemeName,
+  withSpotlightDraft,
+  clearSpotlightDraft,
+  MAX_SPOTLIGHT_THEMES,
+  type SpotlightThemeSlot,
 } from '@/lib/profile/spotlight-flags'
 import {
   validateSpotlightLayout,
@@ -302,4 +309,224 @@ export async function removeTopFriend(
 
   revalidateSpotlight(owner.handle)
   return { count: rows.length }
+}
+
+// ── Saved theme slots (create / apply / rename / delete, max 3) ────────────────────────
+// A member keeps up to three of their OWN looks and switches between them. Every action is
+// owner-only and SESSION-DERIVED (no target id, like the other Spotlight writes): the auth
+// user id comes from the session, so a caller can only edit their own row. Each slot bundles a
+// full theme + background, VALIDATED on write by withSpotlightThemes (the same allowlist the
+// public renderer enforces). Requires Spotlight enabled. `crypto.randomUUID()` is available in
+// the server runtime (already used by uploadSpotlightImage above).
+
+/** Resolve the session caller's auth user + handle + meta for a Spotlight write, or an error.
+ *  Auth-user-id scoped (the authz guard) and Spotlight-enabled gated, like the theme/background
+ *  writers. Returns `authUserId` (the id backgrounds pin to) alongside handle + meta. */
+async function getSpotlightWriteOwner(): Promise<
+  { authUserId: string; handle: string | null; meta: unknown } | { error: string }
+> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+  const row = me as { handle: string | null; meta: unknown }
+  if (!readSpotlightEnabled(row.meta)) {
+    return { error: 'Your Spotlight page is not turned on yet.' }
+  }
+  return { authUserId: user.id, handle: row.handle, meta: row.meta }
+}
+
+/** Persist a validated theme-slot list to the session owner's meta and revalidate. */
+async function persistThemeSlots(
+  authUserId: string,
+  handle: string | null,
+  meta: unknown,
+  next: SpotlightThemeSlot[],
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const nextMeta = withSpotlightThemes(meta, next, authUserId)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', authUserId)
+  if (error) return { error: error.message }
+  revalidateSpotlight(handle)
+  return {}
+}
+
+/**
+ * Save the CURRENT theme + background as a named slot, or update an existing slot. Enforces the
+ * max of three (a create at the cap is rejected with a plain message); the name is clamped. Both
+ * theme + background are re-validated on write by withSpotlightThemes.
+ */
+export async function saveSpotlightThemeSlot(
+  name: unknown,
+  theme: unknown,
+  background: unknown,
+  slotId?: unknown,
+): Promise<{ error?: string; id?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const current = readSpotlightThemes(owner.meta, owner.authUserId)
+  const safeName = clampSpotlightThemeName(name)
+  const safeTheme = validateSpotlightTheme(theme)
+  const safeBackground = validateSpotlightBackground(background, owner.authUserId)
+
+  const existingId = typeof slotId === 'string' && slotId.trim() ? slotId.trim() : null
+  let next: SpotlightThemeSlot[]
+  let id: string
+
+  if (existingId && current.some((s) => s.id === existingId)) {
+    // Update in place (keeps position).
+    id = existingId
+    next = current.map((s) =>
+      s.id === id ? { id, name: safeName, theme: safeTheme, background: safeBackground } : s,
+    )
+  } else {
+    // Create a new slot — enforce the cap.
+    if (current.length >= MAX_SPOTLIGHT_THEMES) {
+      return { error: `You can keep up to ${MAX_SPOTLIGHT_THEMES} themes. Delete one to save another.` }
+    }
+    id = crypto.randomUUID()
+    next = [...current, { id, name: safeName, theme: safeTheme, background: safeBackground }]
+  }
+
+  const res = await persistThemeSlots(owner.authUserId, owner.handle, owner.meta, next)
+  if (res.error) return { error: res.error }
+  return { id }
+}
+
+/**
+ * Apply a saved slot: set the CURRENT live theme + background to that slot's values (through the
+ * existing theme + background writers, so the same validation + revalidation runs). Leaves the
+ * saved slots untouched. Errors if the id isn't one of the member's slots.
+ */
+export async function applySpotlightThemeSlot(slotId: unknown): Promise<{ error?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const id = typeof slotId === 'string' ? slotId.trim() : ''
+  const slot = readSpotlightThemes(owner.meta, owner.authUserId).find((s) => s.id === id)
+  if (!slot) return { error: 'That theme is no longer saved.' }
+
+  // Write the live theme + background in one meta update (both validated by their writers).
+  const supabase = await createClient()
+  const withTheme = withSpotlightTheme(owner.meta, slot.theme)
+  const nextMeta = withSpotlightBackground(withTheme, slot.background)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', owner.authUserId)
+  if (error) return { error: error.message }
+
+  revalidateSpotlight(owner.handle)
+  return {}
+}
+
+/** Rename a saved slot (name clamped). No-op error if the id isn't a saved slot. */
+export async function renameSpotlightThemeSlot(
+  slotId: unknown,
+  name: unknown,
+): Promise<{ error?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const id = typeof slotId === 'string' ? slotId.trim() : ''
+  const current = readSpotlightThemes(owner.meta, owner.authUserId)
+  if (!current.some((s) => s.id === id)) return { error: 'That theme is no longer saved.' }
+
+  const safeName = clampSpotlightThemeName(name)
+  const next = current.map((s) => (s.id === id ? { ...s, name: safeName } : s))
+  return persistThemeSlots(owner.authUserId, owner.handle, owner.meta, next)
+}
+
+/** Delete a saved slot. */
+export async function deleteSpotlightThemeSlot(slotId: unknown): Promise<{ error?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const id = typeof slotId === 'string' ? slotId.trim() : ''
+  const current = readSpotlightThemes(owner.meta, owner.authUserId)
+  const next = current.filter((s) => s.id !== id)
+  if (next.length === current.length) return { error: 'That theme is no longer saved.' }
+  return persistThemeSlots(owner.authUserId, owner.handle, owner.meta, next)
+}
+
+// ── Draft vs Publish (the working copy) ────────────────────────────────────────────────
+// The editor autosaves into meta.spotlight.draft (never the live nodes), so edits don't hit the
+// public page until a deliberate Publish promotes them. The public renderer reads ONLY the live
+// nodes (layout/theme/background + published), so a draft never leaks. Owner-only + session-derived.
+
+/**
+ * Save the working DRAFT (layout + theme + background) WITHOUT touching the live/published nodes.
+ * Each part is validated before persist (layout + background pinned to the owner). This is what the
+ * editor's autosave (mobile onSaveDraft, desktop Save) calls.
+ */
+export async function saveSpotlightDraft(
+  rawLayout: unknown,
+  rawTheme: unknown,
+  rawBackground: unknown,
+): Promise<{ error?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const draft = {
+    layout: validateSpotlightLayout(rawLayout, owner.authUserId),
+    theme: validateSpotlightTheme(rawTheme),
+    background: validateSpotlightBackground(rawBackground, owner.authUserId),
+  }
+  const supabase = await createClient()
+  const nextMeta = withSpotlightDraft(owner.meta, draft)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', owner.authUserId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings/profile/spotlight')
+  return {}
+}
+
+/**
+ * PUBLISH: promote the given working copy (layout + theme + background) to the LIVE nodes, mark
+ * the page published, and clear the draft. Everything is validated before persist. This is the ONE
+ * write that changes what the public page renders. Keeps the existing live writers' shape so the
+ * public read path is unchanged.
+ */
+export async function publishSpotlightDraft(
+  rawLayout: unknown,
+  rawTheme: unknown,
+  rawBackground: unknown,
+): Promise<{ error?: string }> {
+  const owner = await getSpotlightWriteOwner()
+  if ('error' in owner) return { error: owner.error }
+
+  const safeLayout = validateSpotlightLayout(rawLayout, owner.authUserId)
+  const safeTheme = validateSpotlightTheme(rawTheme)
+  const safeBackground = validateSpotlightBackground(rawBackground, owner.authUserId)
+
+  // Promote all three live nodes, mark published, and clear the working draft — in one update.
+  let nextMeta: Record<string, unknown> = withSpotlightLayout(owner.meta, safeLayout)
+  nextMeta = withSpotlightTheme(nextMeta, safeTheme)
+  nextMeta = withSpotlightBackground(nextMeta, safeBackground)
+  nextMeta = { ...nextMeta, spotlight: { ...(nextMeta.spotlight as Record<string, unknown>), published: true } }
+  nextMeta = clearSpotlightDraft(nextMeta)
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', owner.authUserId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/settings/profile')
+  revalidateSpotlight(owner.handle)
+  return {}
 }
