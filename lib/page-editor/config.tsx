@@ -80,6 +80,7 @@ export const config: Config = {
         'SpacePractices',
         'SpaceCommunity',
         'SpaceBooking',
+        'SpaceAction',
         'SpaceOfferings',
         'SpaceContact',
         'SpaceTeam',
