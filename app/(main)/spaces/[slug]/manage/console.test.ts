@@ -53,11 +53,12 @@ describe('hrefForSurface (console section targets never loop)', () => {
 })
 
 // Every gated surface must map to exactly one render group, and every group must be one of the known
-// clusters. A new surface with no group assignment falls back to 'identity' (defensive) — this test
+// clusters. A new surface with no group assignment falls back to 'space' (defensive) — this test
 // makes that fallback VISIBLE so a future surface gets a real home instead of silently landing in
-// Identity.
+// the Space group. The compressed IA: five tight sections (Space · People · Offerings · Reach ·
+// Billing and insights) plus Danger.
 describe('groupForSurface (every surface clusters into a known group)', () => {
-  const KNOWN_GROUPS = ['identity', 'offerings', 'people', 'reach', 'money', 'insights', 'danger']
+  const KNOWN_GROUPS = ['space', 'people', 'offerings', 'reach', 'billing', 'danger']
 
   it('assigns every declared surface to a known group', () => {
     for (const surface of SPACE_SURFACES) {
@@ -65,10 +66,15 @@ describe('groupForSurface (every surface clusters into a known group)', () => {
     }
   })
 
-  it('keeps identity-defining surfaces (Basics, Mode) in the identity group, Danger in danger', () => {
-    expect(groupForSurface('space.basics')).toBe('identity')
-    expect(groupForSurface('space.mode')).toBe('identity')
+  it('keeps identity-defining surfaces (Basics, Mode) in the Space group, Danger in danger', () => {
+    expect(groupForSurface('space.basics')).toBe('space')
+    expect(groupForSurface('space.mode')).toBe('space')
     expect(groupForSurface('space.danger')).toBe('danger')
+  })
+
+  it('folds Money + Insights into the single Billing and insights group', () => {
+    expect(groupForSurface('space.billing')).toBe('billing')
+    expect(groupForSurface('space.insights')).toBe('billing')
   })
 })
 
@@ -83,16 +89,16 @@ describe('Mode is a secondary signal: Basics/identity is never demoted below mod
   // An emphasis that loudly promotes CRM + bookings, the exact shape that used to bury Basics.
   const emphasis: SpaceFunctionKey[] = ['crm', 'availability', 'email']
 
-  it('keeps Basics + Mode in the identity group, which renders before every other group', () => {
-    expect(groupForSurface('space.basics')).toBe('identity')
-    expect(groupForSurface('space.mode')).toBe('identity')
-    // CRM lands in people, availability in offerings — both AFTER identity in the render spine.
+  it('keeps Basics + Mode in the Space group, which renders before every other group', () => {
+    expect(groupForSurface('space.basics')).toBe('space')
+    expect(groupForSurface('space.mode')).toBe('space')
+    // CRM lands in people, availability in offerings — both AFTER the Space group in the render spine.
     expect(groupForSurface('space.engage.crm')).toBe('people')
     expect(groupForSurface('space.place')).toBe('offerings')
   })
 
-  it('does not move Basics below an emphasized surface when ordering within the identity group', () => {
-    const identityGroup = practitionerSurfaces.filter((s) => groupForSurface(s.id) === 'identity')
+  it('does not move Basics below an emphasized surface when ordering within the Space group', () => {
+    const identityGroup = practitionerSurfaces.filter((s) => groupForSurface(s.id) === 'space')
     const ordered = orderWithinGroupByEmphasis(identityGroup, emphasis)
     const basicsIdx = ordered.findIndex((s) => s.id === 'space.basics')
     const modeIdx = ordered.findIndex((s) => s.id === 'space.mode')
