@@ -10597,3 +10597,33 @@ prompts lower the blank-page cost and keep output on-brand. The panel is compact
 `<details>`) and has no dead "which version do I use" ambiguity. Adding a new output type is a one-row
 change to the `TYPES` map. Rejected: a fully automatic engine pick with no toggle (operators want cost
 control on the cheap icon path), and keeping the two panels (the explicit ask was to unify).
+
+## ADR-491: Studio generation is preview-first — Draft → Publish, not auto-save
+
+**Status:** Accepted (2026-07-01). Refines [ADR-488](DECISIONS.md)/[ADR-490](DECISIONS.md).
+
+**Context.** The Image Studio's generate path inserted results **straight into the library as
+`approved`** and showed only a "Added N" line. In practice the operator generated a trophy, saw the
+confirmation, and couldn't tell anything happened (the asset was real and approved, just never
+surfaced as a preview) — the flow gave no chance to look before committing, and no clean way to keep a
+work-in-progress. The owner asked for a **preview with style controls** and explicit **Save Draft /
+Publish** modes, where only published assets live in the Loom.
+
+**Decision.** Studio generation is now **preview-first**. `generateStudioDraft` stores results as
+`status='draft'` (hidden from the published Loom) and returns them; `CreateStudio` renders a **preview
+strip** with the style/count controls still in reach (change them and **Regenerate**, which replaces
+the current drafts). From the preview the operator chooses **Publish** (`publishAssets` → `approved`,
+enters the Loom), **Save draft** (keep under a new **Drafts** folder in the rail), or **Discard**
+(`discardDrafts` deletes the rows + storage files); a per-item ✕ drops one. Drafts are excluded from
+the default browse, the type/category facet counts, and semantic search, and get their own rail entry
+with a live count (`countDrafts`). The detail drawer shows a **Publish** banner on any draft, so a
+saved draft can be published later. Vera's line-mark path already previewed before saving, so it is
+unchanged; the two engines now share one "review before it's in the library" model.
+
+**Consequences.** Nothing enters the Loom without the operator seeing it first, which fixes the
+"nothing happened" confusion and makes generation feel deliberate. Drafts are a real holding area, not
+a void, so "Save draft" has a home and cost isn't wasted on discarded rolls (they're deletable).
+Publishing is one click from the preview or the drawer. The change is UI + status semantics only — no
+schema change (reuses the existing `status` column). Rejected: keeping auto-save with a toast (the
+core ask was review-before-commit), and holding previews only client-side (drafts must persist so
+"Save draft" survives a reload).

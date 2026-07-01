@@ -65,15 +65,19 @@ async function gate(lane: RecraftLane) {
   return { error: null as string | null, ctx, lane }
 }
 
-/** Generate one or more assets with Recraft and store them in the Loom. */
-export async function generateWithRecraft(input: {
+/** A freshly-generated draft image awaiting review (preview + publish). */
+export type StudioDraft = { id: string; url: string | null; title: string; mime: string | null }
+
+/** Generate one or more images with Recraft and store them as DRAFTS (status='draft', hidden from
+ *  the published Loom until publishAssets). Returns the drafts so the studio can preview them. */
+export async function generateStudioDraft(input: {
   prompt: string
   lane: RecraftLane
   size?: string
   count?: number
   category?: string
   styleId?: string
-}): Promise<{ ok: true; count: number } | { error: string }> {
+}): Promise<{ ok: true; drafts: StudioDraft[] } | { error: string }> {
   const g = await gate(input.lane)
   if (g.error || !g.ctx) return { error: g.error ?? 'Not available.' }
 
@@ -93,35 +97,92 @@ export async function generateWithRecraft(input: {
     const cost = COST[input.lane] * results.length
     after(() => recordAiUsage({ feature: FEATURE, model: 'recraft-v3', usage: { inputTokens: 0, outputTokens: 0 }, costUsd: cost, profileId: g.ctx!.profileId }))
 
-    let n = 0
+    const drafts: StudioDraft[] = []
     for (const [i, r] of results.entries()) {
       const { bytes, contentType } = await downloadRecraft(r.url)
       const stored = await store(spaceId, bytes, contentType, prompt)
       const title = results.length > 1 ? `${prompt.slice(0, 60)} ${i + 1}` : prompt.slice(0, 80)
       const slug = `recraft-${slugify(title)}-${Date.now().toString(36)}-${i}`
-      const { error } = await dbh().from('library_assets').insert({
-        space_id: spaceId,
-        kind: 'image',
-        title,
-        slug,
-        category: input.category || (input.lane === 'vector' ? 'Recraft vectors' : 'Recraft images'),
-        tags: ['recraft', 'generated', input.lane],
-        status: 'approved',
-        visibility: 'public',
-        storage_bucket: stored.bucket,
-        storage_path: stored.path,
-        url: stored.url,
-        mime: stored.mime,
-        bytes: stored.bytes,
-        config: { source: 'recraft', prompt, lane: input.lane, ...(recraftStyleId ? { styleId: recraftStyleId } : {}) },
-      })
-      if (!error) n++
+      const { data, error } = await dbh()
+        .from('library_assets')
+        .insert({
+          space_id: spaceId,
+          kind: 'image',
+          title,
+          slug,
+          category: input.category || (input.lane === 'vector' ? 'Recraft vectors' : 'Recraft images'),
+          tags: ['recraft', 'generated', input.lane],
+          status: 'draft',
+          visibility: 'public',
+          storage_bucket: stored.bucket,
+          storage_path: stored.path,
+          url: stored.url,
+          mime: stored.mime,
+          bytes: stored.bytes,
+          config: { source: 'recraft', prompt, lane: input.lane, ...(recraftStyleId ? { styleId: recraftStyleId } : {}) },
+        })
+        .select('id, title, url, mime')
+        .maybeSingle()
+      if (!error && data) {
+        const row = data as Record<string, unknown>
+        drafts.push({ id: String(row.id), title: String(row.title ?? title), url: (row.url as string | null) ?? stored.url, mime: (row.mime as string | null) ?? stored.mime })
+      }
     }
+    if (drafts.length === 0) return { error: 'Generated, but could not save the drafts.' }
     revalidatePath('/admin/library')
-    return { ok: true, count: n }
+    return { ok: true, drafts }
   } catch (e) {
     return { error: e instanceof Error ? e.message.slice(0, 200) : 'Recraft generation failed.' }
   }
+}
+
+/** Publish drafts into the live Loom (status → approved). Scoped to the root space. */
+export async function publishAssets(ids: string[]): Promise<{ ok: true; count: number } | { error: string }> {
+  await requireAdmin('janitor')
+  const spaceId = await getRootSpaceId()
+  if (!spaceId) return { error: 'No root space found.' }
+  const clean = [...new Set((ids || []).filter(Boolean))]
+  if (clean.length === 0) return { error: 'Nothing to publish.' }
+  const { error } = await dbh()
+    .from('library_assets')
+    .update({ status: 'approved', updated_at: new Date().toISOString() })
+    .in('id', clean)
+    .eq('space_id', spaceId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/library')
+  return { ok: true, count: clean.length }
+}
+
+/** Discard drafts (deletes the rows + their storage files). Only ever removes status='draft'. */
+export async function discardDrafts(ids: string[]): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  const spaceId = await getRootSpaceId()
+  if (!spaceId) return { error: 'No root space found.' }
+  const clean = [...new Set((ids || []).filter(Boolean))]
+  if (clean.length === 0) return { ok: true }
+
+  const { data } = await dbh()
+    .from('library_assets')
+    .select('id, storage_bucket, storage_path')
+    .in('id', clean)
+    .eq('space_id', spaceId)
+    .eq('status', 'draft')
+  const rows = (data as Array<{ id: string; storage_bucket: string | null; storage_path: string | null }> | null) ?? []
+  if (rows.length === 0) return { ok: true }
+
+  const admin = createAdminClient()
+  for (const r of rows) {
+    if (r.storage_bucket && r.storage_path) {
+      try {
+        await admin.storage.from(r.storage_bucket).remove([r.storage_path])
+      } catch {
+        /* best-effort file cleanup */
+      }
+    }
+  }
+  await dbh().from('library_assets').delete().in('id', rows.map((r) => r.id))
+  revalidatePath('/admin/library')
+  return { ok: true }
 }
 
 export type RecraftOp = 'vectorize' | 'remove-bg' | 'variation'

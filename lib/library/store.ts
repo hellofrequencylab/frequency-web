@@ -81,6 +81,8 @@ export type LibraryQuery = {
   collectionId?: string
   sort?: LibrarySort
   includeArchived?: boolean
+  /** Show ONLY unpublished drafts (the Drafts view). Off = the published Loom (drafts hidden). */
+  draftsOnly?: boolean
   /** 1-based page. */
   page?: number
   pageSize?: number
@@ -109,6 +111,9 @@ export async function searchLibraryAssets(opts: LibraryQuery): Promise<LibraryPa
     .eq('space_id', opts.spaceId)
 
   if (!opts.includeArchived) query = query.neq('status', 'archived')
+  // Drafts are held out of the published Loom; the Drafts view asks for them explicitly.
+  if (opts.draftsOnly) query = query.eq('status', 'draft')
+  else query = query.neq('status', 'draft')
   if (opts.kind) query = query.eq('kind', opts.kind)
   if (opts.category) query = query.eq('category', opts.category)
 
@@ -242,13 +247,14 @@ export async function insertSpaceLibraryImage(input: {
   return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
 }
 
-/** Counts by kind (excludes archived), for the Studio stat row. */
+/** Counts by kind (excludes archived + drafts), for the Studio stat row. */
 export async function kindCounts(spaceId: string): Promise<{ total: number; byKind: Record<string, number> }> {
   const { data } = await db()
     .from('library_assets')
     .select('kind')
     .eq('space_id', spaceId)
     .neq('status', 'archived')
+    .neq('status', 'draft')
     .limit(5000)
   const rows = (data as Array<{ kind: string }> | null) ?? []
   const byKind: Record<string, number> = {}
@@ -256,13 +262,24 @@ export async function kindCounts(spaceId: string): Promise<{ total: number; byKi
   return { total: rows.length, byKind }
 }
 
-/** Category folders with live counts (excludes archived + uncategorized), busiest first. */
+/** How many unpublished drafts a space has (for the Drafts folder badge). */
+export async function countDrafts(spaceId: string): Promise<number> {
+  const { count } = await db()
+    .from('library_assets')
+    .select('id', { count: 'exact', head: true })
+    .eq('space_id', spaceId)
+    .eq('status', 'draft')
+  return count ?? 0
+}
+
+/** Category folders with live counts (excludes archived + drafts + uncategorized), busiest first. */
 export async function categoryFacets(spaceId: string): Promise<{ category: string; count: number }[]> {
   const { data } = await db()
     .from('library_assets')
     .select('category')
     .eq('space_id', spaceId)
     .neq('status', 'archived')
+    .neq('status', 'draft')
     .limit(5000)
   const counts: Record<string, number> = {}
   for (const r of (data as Array<{ category: string | null }> | null) ?? []) {

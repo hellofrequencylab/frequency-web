@@ -8,6 +8,7 @@ import {
   searchLibraryAssets,
   kindCounts,
   categoryFacets,
+  countDrafts,
   listCollections,
   getLibraryAsset,
   type LibrarySort,
@@ -70,6 +71,7 @@ export default async function LoomStudioPage({
     view?: string
     page?: string
     similar?: string
+    drafts?: string
   }>
 }) {
   const ctx = await requireAdmin('janitor')
@@ -82,16 +84,18 @@ export default async function LoomStudioPage({
   const category = (sp.category ?? '').trim()
   const collectionId = (sp.collection ?? '').trim()
   const similarId = (sp.similar ?? '').trim()
+  const draftsView = sp.drafts === '1'
   const sort = (SORTS.find((s) => s.value === sp.sort)?.value ?? 'new') as LibrarySort
   const view = (VIEWS.find((v) => v.value === sp.view)?.value ?? 'cards') as LoomView
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
 
-  const [counts, categories, collections] = scope
-    ? await Promise.all([kindCounts(scope.spaceId), categoryFacets(scope.spaceId), listCollections(scope.spaceId)])
+  const [counts, categories, collections, draftCount] = scope
+    ? await Promise.all([kindCounts(scope.spaceId), categoryFacets(scope.spaceId), listCollections(scope.spaceId), countDrafts(scope.spaceId)])
     : [
         { total: 0, byKind: {} as Record<string, number> },
         [] as { category: string; count: number }[],
         [] as LibraryCollection[],
+        0,
       ]
 
   // Main result. Three modes: "similar to X" (semantic neighbours), "most relevant" (semantic
@@ -103,7 +107,13 @@ export default async function LoomStudioPage({
   let similarOf: LibraryGalleryItem | null = null
 
   if (scope) {
-    if (similarId) {
+    if (draftsView) {
+      // Unpublished drafts awaiting review — hidden from the published Loom until published.
+      const r = await searchLibraryAssets({ spaceId: scope.spaceId, q, kind: kind || undefined, draftsOnly: true, sort, page, pageSize: PAGE_SIZE })
+      assets = r.items
+      total = r.total
+      paginated = true
+    } else if (similarId) {
       ;[assets, similarOf] = await Promise.all([
         similarLibraryAssets(scope.spaceId, similarId, PAGE_SIZE),
         getLibraryAsset(scope.spaceId, similarId),
@@ -145,11 +155,13 @@ export default async function LoomStudioPage({
   const currentPage = Math.min(page, totalPages)
 
   const activeCollection = collections.find((c) => c.id === collectionId) ?? null
-  const activeLabel = similarOf
-    ? `Similar to "${similarOf.title}"`
-    : activeCollection
-      ? activeCollection.title
-      : category || (kind ? kind : 'All assets')
+  const activeLabel = draftsView
+    ? 'Drafts'
+    : similarOf
+      ? `Similar to "${similarOf.title}"`
+      : activeCollection
+        ? activeCollection.title
+        : category || (kind ? kind : 'All assets')
 
   // One param builder for every link (pagination, view toggle) — preserves the active folder + search.
   const hrefWith = (patch: Record<string, string | number | undefined>) => {
@@ -266,6 +278,8 @@ export default async function LoomStudioPage({
               collections={collections}
               active={{ kind, category, collectionId }}
               base={{ q, sort, view }}
+              draftCount={draftCount}
+              draftsActive={draftsView}
             />
           }
         >

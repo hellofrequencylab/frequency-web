@@ -39,7 +39,7 @@ import {
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
 import { RecraftEditRow, AssetVersions } from './recraft-studio'
-import { createBrandStyle } from './recraft-actions'
+import { createBrandStyle, publishAssets } from './recraft-actions'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -540,6 +540,18 @@ function DetailDrawer({
     })
   }
 
+  function publish() {
+    setErr(null)
+    start(async () => {
+      const res = await publishAssets([asset.id])
+      if ('error' in res) setErr(res.error)
+      else {
+        router.refresh()
+        onClose()
+      }
+    })
+  }
+
   function remove() {
     setErr(null)
     start(async () => {
@@ -704,6 +716,23 @@ function DetailDrawer({
           </div>
           {safeOverride && (
             <p className="-mt-2 text-xs text-primary-strong">Vera edit preview — save to keep it, or revert.</p>
+          )}
+
+          {/* Draft: not yet in the published Loom — publish to make it live. */}
+          {asset.status === 'draft' && (
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-primary bg-primary-bg/40 px-3 py-2">
+              <span className="text-sm text-text">
+                <b className="font-semibold">Draft</b> — not in the library yet.
+              </span>
+              <button
+                type="button"
+                onClick={publish}
+                disabled={pending}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+              >
+                <BadgeCheck className="h-4 w-4" /> Publish
+              </button>
+            </div>
           )}
 
           <p className="text-xs text-subtle">

@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag } from 'lucide-react'
+import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, FileClock } from 'lucide-react'
 import type { LibraryCollection } from '@/lib/library/store'
 import { createCollection, renameCollection, deleteCollection } from './collections-actions'
 
@@ -75,6 +75,8 @@ export function LoomRail({
   collections,
   active,
   base,
+  draftCount = 0,
+  draftsActive = false,
 }: {
   total: number
   byKind: Record<string, number>
@@ -82,11 +84,13 @@ export function LoomRail({
   collections: LibraryCollection[]
   active: Active
   base: Base
+  draftCount?: number
+  draftsActive?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
 
-  const noFilter = !active.kind && !active.category && !active.collectionId
+  const noFilter = !draftsActive && !active.kind && !active.category && !active.collectionId
 
   function newCollection() {
     const title = window.prompt('New collection name')
@@ -132,6 +136,15 @@ export function LoomRail({
         label="All assets"
         count={total}
       />
+      {draftCount > 0 && (
+        <Row
+          href="/admin/library?drafts=1"
+          active={draftsActive}
+          icon={<FileClock className="h-4 w-4" />}
+          label="Drafts"
+          count={draftCount}
+        />
+      )}
 
         <SectionLabel>Type</SectionLabel>
         {Object.entries(byKind)

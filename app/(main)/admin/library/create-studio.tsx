@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2 } from 'lucide-react'
+import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2, BadgeCheck, X, ImageOff } from 'lucide-react'
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
-import { generateWithRecraft, listBrandStyles } from './recraft-actions'
+import { generateStudioDraft, publishAssets, discardDrafts, listBrandStyles, type StudioDraft } from './recraft-actions'
 import type { BrandStyle } from '@/lib/library/styles'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
@@ -97,6 +97,9 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
   const [svg, setSvg] = useState<string | null>(null)
   const [title, setTitle] = useState('')
 
+  // Studio preview state: freshly-generated drafts awaiting Publish / Save draft / Discard.
+  const [drafts, setDrafts] = useState<StudioDraft[]>([])
+
   const [busy, start] = useTransition()
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -133,6 +136,7 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
 
   function reset() {
     setSvg(null)
+    setDrafts([])
     setErr(null)
     setMsg(null)
   }
@@ -153,16 +157,64 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
         }
       })
     } else {
+      const stale = drafts.map((d) => d.id)
       start(async () => {
-        const res = await generateWithRecraft({ prompt, lane: cfg.lane, count, styleId: styleId || undefined })
+        if (stale.length > 0) await discardDrafts(stale) // regenerate replaces the current previews
+        const res = await generateStudioDraft({ prompt, lane: cfg.lane, count, styleId: styleId || undefined })
         if ('error' in res) setErr(res.error)
         else {
-          setMsg(`Added ${res.count} to the library.`)
-          setPrompt('')
-          router.refresh()
+          setDrafts(res.drafts)
+          setMsg(null)
         }
       })
     }
+  }
+
+  // Publish the current drafts into the live Loom.
+  function publishDrafts() {
+    if (drafts.length === 0) return
+    setErr(null)
+    start(async () => {
+      const res = await publishAssets(drafts.map((d) => d.id))
+      if ('error' in res) setErr(res.error)
+      else {
+        setDrafts([])
+        setPrompt('')
+        setMsg(`Published ${res.count} to the library.`)
+        router.refresh()
+      }
+    })
+  }
+
+  // Keep the drafts (they live under Drafts) without publishing.
+  function keepDrafts() {
+    const n = drafts.length
+    setDrafts([])
+    setPrompt('')
+    setMsg(n > 0 ? `Saved ${n} to Drafts.` : null)
+    router.refresh()
+  }
+
+  // Throw the current drafts away (deletes the rows + files).
+  function discardAll() {
+    if (drafts.length === 0) return
+    const ids = drafts.map((d) => d.id)
+    setDrafts([])
+    setErr(null)
+    setMsg(null)
+    start(async () => {
+      await discardDrafts(ids)
+      router.refresh()
+    })
+  }
+
+  // Drop a single draft from the preview.
+  function removeOne(id: string) {
+    setDrafts((prev) => prev.filter((d) => d.id !== id))
+    start(async () => {
+      await discardDrafts([id])
+      router.refresh()
+    })
   }
 
   function saveVera() {
@@ -189,7 +241,9 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
       ? svg
         ? 'Redraw'
         : 'Draw it'
-      : 'Generate'
+      : drafts.length > 0
+        ? 'Regenerate'
+        : 'Generate'
 
   return (
     <details className="mb-6 rounded-2xl border border-border bg-surface-elevated/50 p-4" open>
@@ -369,10 +423,69 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
           </div>
         )}
 
+        {/* Studio preview — review before it enters the Loom. Publish, keep as a draft, or discard.
+            Change the style/count above and Regenerate to try again. */}
+        {engine === 'studio' && drafts.length > 0 && (
+          <div className="space-y-3 rounded-2xl border border-border bg-surface p-3">
+            <p className="text-xs text-subtle">
+              Preview — nothing is in the library yet. Publish to add {drafts.length === 1 ? 'it' : 'them'}, keep as a
+              draft, or discard. Adjust the style/count above and Regenerate to try again.
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {drafts.map((d) => (
+                <div key={d.id} className="group relative overflow-hidden rounded-xl border border-border bg-surface-elevated">
+                  <button
+                    type="button"
+                    onClick={() => removeOne(d.id)}
+                    aria-label="Discard this one"
+                    className="absolute right-1 top-1 z-10 rounded-full bg-surface/90 p-1 text-subtle shadow-sm hover:text-danger"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <span className="flex aspect-square items-center justify-center overflow-hidden">
+                    {d.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={d.url} alt={d.title} className="h-full w-full object-contain" />
+                    ) : (
+                      <ImageOff className="h-6 w-6 text-subtle" aria-hidden />
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={publishDrafts}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-signal px-4 py-2 text-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
+              >
+                <BadgeCheck className="h-4 w-4" /> Publish {drafts.length > 1 ? `all ${drafts.length}` : ''}
+              </button>
+              <button
+                type="button"
+                onClick={keepDrafts}
+                disabled={busy}
+                className="rounded-2xl border border-border-strong px-3 py-2 text-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
+              >
+                Save draft
+              </button>
+              <button
+                type="button"
+                onClick={discardAll}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-2 text-sm text-muted hover:bg-surface-elevated disabled:opacity-70"
+              >
+                <RotateCcw className="h-4 w-4" /> Discard
+              </button>
+            </div>
+          </div>
+        )}
+
         <p className="text-xs text-subtle">
           {engine === 'vera'
             ? 'Vera draws a clean, on-brand line mark you review before saving. Instant, no cost.'
-            : `The Image Studio generates ${cfg.lane === 'vector' ? 'vector' : 'raster'} art and adds it straight to the library.`}
+            : `The Image Studio generates ${cfg.lane === 'vector' ? 'vector' : 'raster'} art as a preview — you publish it into the library.`}
         </p>
         {err && <p className="text-sm text-danger">{err}</p>}
       </div>
