@@ -243,7 +243,7 @@ export function SpaceIdentityHeaderBlock({
   // default cover than before), with the logo chip overlapping the cover.
   const h = HEADER_COVER_HEIGHT[height ?? 'medium'] ?? HEADER_COVER_HEIGHT.medium
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 pt-8">
+    <section className="w-full pt-4">
       <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-2xs">
         {/* Cover band. A neutral tinted fill when there is no uploaded cover, so the header still reads
             as an intentional identity card, never broken. */}
@@ -552,7 +552,7 @@ function SpaceLayoutRegion({
 }) {
   if (layout === 'stacked') {
     return (
-      <section className="mx-auto w-full max-w-5xl px-6 py-10 sm:py-12">
+      <section className="w-full py-8 sm:py-10">
         <div className="space-y-8">
           <Main />
         </div>
@@ -568,7 +568,7 @@ function SpaceLayoutRegion({
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 py-10 sm:py-12">
+    <section className="w-full py-8 sm:py-10">
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
           <Main />
@@ -676,7 +676,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
     render: ({ style, coverOverride, logoOverride, focal, height, showFollow, puck }) => {
       const identity = identityFrom(puck)
       if (!identity) {
-        return <div className="mx-auto w-full max-w-5xl px-6 pt-8"><EditorStub label="Identity header" hint="The space cover, logo, and name show on the live page" /></div>
+        return <div className="w-full pt-4"><EditorStub label="Identity header" hint="The space cover, logo, and name show on the live page" /></div>
       }
       return (
         <SpaceIdentityHeaderBlock
