@@ -224,6 +224,70 @@ export default async function SpaceProfileLayout({
   const ctaHref = ctaTab ? `${base}/${ctaTab.id}` : base
   const ctaLabel = blueprint?.primaryCta.label ?? 'Book'
 
+  // The LANDING (About index) now renders its OWN header — the Puck SpaceIdentityHeader block
+  // (cover + logo + name + CTA, with a Header/Hero style option). So on the landing we DROP the
+  // profile hero CARD to avoid a duplicate identity band stacked above the cover ("remove the
+  // above-the-header stuff"): a visitor sees just the tabs + the Puck header, and a manager sees
+  // only the owner tools (Edit / Customize) as a slim right-aligned row. The interior tabs
+  // (Offerings / Community / Book) have no Puck header, so they KEEP the full hero card.
+  const isLanding = !activeSegment
+
+  const ownerTools = canSeeAsOwner ? (
+    <>
+      <Link href={manageHref} className={buttonClasses('secondary', 'md')}>
+        <Pencil className="h-3.5 w-3.5" aria-hidden />
+        {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
+      </Link>
+      <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'md')}>
+        <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
+        Customize page
+      </Link>
+    </>
+  ) : null
+
+  const heroCard = (
+    <ProfileHeroCard
+      name={brandName}
+      logoUrl={space.brandLogoUrl}
+      typeLabel={typeLabel}
+      tagline={tagline}
+      stats={
+        <Suspense fallback={<HeroStatsSkeleton />}>
+          <ProfileHeroStats spaceId={space.id} input={templateInput} />
+        </Suspense>
+      }
+      actions={
+        <>
+          <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
+            {ctaLabel}
+          </Link>
+          {viewerProfileId && (
+            <FollowSpaceButton
+              spaceId={space.id}
+              spaceName={brandName}
+              initialFollowing={viewerFollows}
+            />
+          )}
+          <Link
+            href="/codes"
+            aria-label={`Connect with ${brandName}`}
+            title="Connect"
+            className={buttonClasses('secondary', 'md', 'px-2.5')}
+          >
+            <QrCode className="h-4 w-4" aria-hidden />
+          </Link>
+          {ownerTools}
+        </>
+      }
+    />
+  )
+
+  const bandNode = isLanding
+    ? canSeeAsOwner
+      ? <div className="flex flex-wrap items-center justify-end gap-2">{ownerTools}</div>
+      : <></>
+    : heroCard
+
   return (
     <AccentScope vars={accentVars}>
       {/* Per-type structured data for the PUBLIC profile (Person / LocalBusiness / Organization by
@@ -252,55 +316,7 @@ export default async function SpaceProfileLayout({
         // crawlable view) returns to the public /spaces page, which they can actually reach.
         back={{ href: viewerProfileId ? '/spaces/directory' : '/spaces', label: 'Spaces' }}
         title={brandName}
-        band={
-          <ProfileHeroCard
-            name={brandName}
-            logoUrl={space.brandLogoUrl}
-            typeLabel={typeLabel}
-            tagline={tagline}
-            stats={
-              <Suspense fallback={<HeroStatsSkeleton />}>
-                <ProfileHeroStats spaceId={space.id} input={templateInput} />
-              </Suspense>
-            }
-            actions={
-              <>
-                <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
-                  {ctaLabel}
-                </Link>
-                {viewerProfileId && (
-                  <FollowSpaceButton
-                    spaceId={space.id}
-                    spaceName={brandName}
-                    initialFollowing={viewerFollows}
-                  />
-                )}
-                <Link
-                  href="/codes"
-                  aria-label={`Connect with ${brandName}`}
-                  title="Connect"
-                  className={buttonClasses('secondary', 'md', 'px-2.5')}
-                >
-                  <QrCode className="h-4 w-4" aria-hidden />
-                </Link>
-                {canSeeAsOwner && (
-                  <Link href={manageHref} className={buttonClasses('secondary', 'md')}>
-                    <Pencil className="h-3.5 w-3.5" aria-hidden />
-                    {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
-                  </Link>
-                )}
-                {/* Customize page (ADR-476/472): opens the Puck landing editor for a manager. A staff
-                    previewer gets the same entry as a read-only preview (the editor route gates writes). */}
-                {canSeeAsOwner && (
-                  <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'md')}>
-                    <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
-                    Customize page
-                  </Link>
-                )}
-              </>
-            }
-          />
-        }
+        band={bandNode}
         tabs={tabs}
       >
         {children}

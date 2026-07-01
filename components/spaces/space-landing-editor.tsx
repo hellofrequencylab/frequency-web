@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Puck, usePuck, type Data } from '@measured/puck'
 import '@measured/puck/puck.css'
+import '@/components/page-editor/puck-theme.css'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { isError } from '@/lib/action-result'
 import { publishSpaceLanding, resetSpaceLanding } from '@/app/(main)/spaces/[slug]/edit-page/actions'
+import { setSpaceLayoutTemplate } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { SPACE_TEMPLATES, SPACE_TEMPLATE_LABEL, type SpaceTemplate } from '@/lib/spaces/templates'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 
 // THE OPERATOR EDITOR for a Space's public LANDING (ADR-476/472, Phase 1). Reuses the
@@ -110,6 +113,47 @@ function ResetButton({ slug }: { slug: string }) {
   )
 }
 
+// A compact quick-switch for the STARTING layout (ADR-472). Setting a template (or Auto) writes
+// preferences.template and reloads the editor, so an UNCUSTOMIZED landing re-opens onto the new
+// template's preset. (A customized landing keeps its saved doc; the full reset-to-layout path lives in
+// the Manage > Layout gallery.) Unobtrusive: a plain select beside Exit/Publish.
+function LayoutSelect({ slug }: { slug: string }) {
+  const router = useRouter()
+  const [value, setValue] = useState<SpaceTemplate | 'auto'>('auto')
+  const [busy, setBusy] = useState(false)
+
+  async function handleChange(next: SpaceTemplate | 'auto') {
+    setValue(next)
+    setBusy(true)
+    const result = await setSpaceLayoutTemplate(slug, next)
+    setBusy(false)
+    if (isError(result)) return
+    router.refresh()
+  }
+
+  return (
+    <label
+      className="inline-flex items-center gap-1.5 text-sm text-muted"
+      title="Set your starting layout. Reloads your starting layout for an uncustomized page"
+    >
+      <span className="hidden sm:inline">Layout</span>
+      <select
+        value={value}
+        disabled={busy}
+        onChange={(e) => handleChange(e.target.value as SpaceTemplate | 'auto')}
+        className="rounded-lg border border-border bg-surface px-2 py-1 text-sm font-medium text-text disabled:opacity-60"
+      >
+        <option value="auto">Auto</option>
+        {SPACE_TEMPLATES.map((t) => (
+          <option key={t} value={t}>
+            {SPACE_TEMPLATE_LABEL[t]}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 // Full-screen Puck editor for a Space landing. Owner/admin/editor-gated at the route;
 // the editor runtime loads only here, never on the public profile.
 export function SpaceLandingEditor({
@@ -141,6 +185,7 @@ export function SpaceLandingEditor({
                 >
                   ← Exit
                 </Link>
+                <LayoutSelect slug={slug} />
                 {customized && <ResetButton slug={slug} />}
                 <PublishButton slug={slug} />
               </>

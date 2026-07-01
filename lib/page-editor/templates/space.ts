@@ -60,6 +60,7 @@ function identityHeader(template: SpaceTemplate): Block {
     type: 'SpaceIdentityHeader',
     props: {
       id: `sp-${template}-identity`,
+      style: 'header',
       coverOverride: '',
       logoOverride: '',
       focal: 'center',

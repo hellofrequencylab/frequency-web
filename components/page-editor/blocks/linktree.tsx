@@ -41,6 +41,7 @@ import {
 import { buildEmbedSrc, embedHeight, EMBED_PROVIDERS, type EmbedProvider } from '@/lib/spotlight/embeds'
 import type { SpotlightPuckMetadata, SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
 import { EMPTY_SPOTLIGHT_META } from '@/lib/spotlight/puck/metadata'
+import { spotlightAssetField, spotlightGalleryImageField } from '@/lib/page-editor/spotlight-asset-field'
 
 // ── Shared helpers ──────────────────────────────────────────────────────────────
 
@@ -420,7 +421,7 @@ export const linktreeComponents: Record<string, ComponentConfig> = {
   SpotlightImage: {
     label: 'Image',
     fields: {
-      assetPath: { type: 'text', label: 'Image (uploaded)' },
+      assetPath: spotlightAssetField,
       alt: { type: 'text', label: 'Alt text' },
       focusX: { type: 'number', label: 'Focus X (0-100)', min: 0, max: 100 },
       focusY: { type: 'number', label: 'Focus Y (0-100)', min: 0, max: 100 },
@@ -448,7 +449,7 @@ export const linktreeComponents: Record<string, ComponentConfig> = {
         type: 'array',
         label: `Images (up to ${MAX_GALLERY_IMAGES})`,
         arrayFields: {
-          assetPath: { type: 'text', label: 'Image (uploaded)' },
+          assetPath: spotlightGalleryImageField,
           alt: { type: 'text', label: 'Alt text' },
           focusX: { type: 'number', label: 'Focus X', min: 0, max: 100 },
           focusY: { type: 'number', label: 'Focus Y', min: 0, max: 100 },

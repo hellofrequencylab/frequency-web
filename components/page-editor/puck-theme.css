@@ -1,0 +1,57 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   PUCK EDITOR CHROME → FREQUENCY DESIGN SYSTEM
+
+   Puck ships its look through --puck-* CSS custom properties declared on :root
+   (a cold Inter typeface + a blue "azure" accent + a neutral grey ramp). We remap
+   those variables to the app's OWN theme-aware semantic tokens (the same ones the
+   left rail + menu use), so the builder chrome reads as part of Frequency — warm,
+   rounded Nunito, amber accent — instead of a generic third-party panel.
+
+   Only the --puck-* namespace is touched, so nothing outside the editor is affected,
+   and because the targets are the theme tokens (--color-*), the chrome follows the
+   member's light/dark theme automatically. `!important` guards the remap against CSS
+   import-order nondeterminism (this file and puck.css both declare on :root). The
+   canvas preview renders inside Puck's own iframe and is already site-styled by the
+   block components; this warms the surrounding chrome (header, block list, field panel).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Type: the rounded site sans (Nunito), sized down to the 14px menu/rail scale
+     (Puck's base is 16px). Everything in the chrome inherits --puck-font-family. */
+  --puck-font-family: var(--font-sans), 'Nunito', system-ui, sans-serif !important;
+  --puck-font-size-xs-unitless: 14 !important; /* base text: 16 -> 14, matches the rail */
+  --puck-font-size-s-unitless: 15 !important;
+
+  /* Neutrals: Puck's grey ramp (01 = darkest text ... 12 = lightest surface) mapped
+     onto the warm site tokens end to end, so no cold grey survives. */
+  --puck-color-grey-01: var(--color-text) !important;
+  --puck-color-grey-02: var(--color-text) !important;
+  --puck-color-grey-03: var(--color-text) !important;
+  --puck-color-grey-04: var(--color-text-muted) !important;
+  --puck-color-grey-05: var(--color-text-muted) !important;
+  --puck-color-grey-06: var(--color-text-subtle) !important;
+  --puck-color-grey-07: var(--color-text-subtle) !important;
+  --puck-color-grey-08: var(--color-border-strong) !important;
+  --puck-color-grey-09: var(--color-border) !important;
+  --puck-color-grey-10: var(--color-border) !important;
+  --puck-color-grey-11: var(--color-surface-elevated) !important;
+  --puck-color-grey-12: var(--color-canvas) !important;
+  --puck-color-white: var(--color-surface) !important;
+  --puck-color-black: var(--color-text) !important;
+
+  /* Accent: Puck's azure (blue) mapped to the site's warm amber primary — buttons,
+     the selected-block outline, focus rings, and the selected-toggle tint all warm up.
+     azure 01/02 = darkest (accent text) ... 11/12 = lightest (accent tint background). */
+  --puck-color-azure-01: var(--color-primary-strong) !important;
+  --puck-color-azure-02: var(--color-primary-strong) !important;
+  --puck-color-azure-03: var(--color-primary-strong) !important;
+  --puck-color-azure-04: var(--color-primary) !important;
+  --puck-color-azure-05: var(--color-primary-hover) !important;
+  --puck-color-azure-06: var(--color-primary-hover) !important;
+  --puck-color-azure-07: var(--color-primary) !important;
+  --puck-color-azure-08: var(--color-primary) !important;
+  --puck-color-azure-09: var(--color-primary-bg) !important;
+  --puck-color-azure-10: var(--color-primary-bg) !important;
+  --puck-color-azure-11: var(--color-primary-bg) !important;
+  --puck-color-azure-12: var(--color-primary-bg) !important;
+}

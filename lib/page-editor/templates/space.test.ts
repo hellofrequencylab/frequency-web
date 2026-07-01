@@ -79,6 +79,13 @@ describe('the four preset generators', () => {
     }
   })
 
+  it('seeds the leading identity header in the default Header style', () => {
+    for (const t of SPACE_TEMPLATES) {
+      const id = generateSpacePreset(t, 'Willow Studio').content.find((b) => b.type === 'SpaceIdentityHeader')!
+      expect((id.props as Record<string, unknown>).style).toBe('header')
+    }
+  })
+
   it('never seeds any marketing display-type block anywhere (top-level or slots)', () => {
     for (const t of SPACE_TEMPLATES) {
       const ts = allTypes(generateSpacePreset(t, 'Willow Studio'))

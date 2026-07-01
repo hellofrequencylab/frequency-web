@@ -107,13 +107,14 @@ describe('entity registry · spaceSurfacesFor', () => {
   // A canUse predicate that denies every tool (no plan / a low role): only the null-gated surfaces.
   const deny = (): boolean => false
 
-  it('gives a practitioner the full spine in order: basics, mode, place, people, engage, reach, comms, insights, danger', () => {
+  it('gives a practitioner the full spine in order: basics, mode, place, people, layout, engage, reach, comms, insights, danger', () => {
     const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
       'space.mode',
       'space.place',
       'space.people',
+      'space.layout',
       'space.engage.crm',
       'space.reach',
       'space.comms',
@@ -128,6 +129,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.basics',
       'space.mode',
       'space.people',
+      'space.layout',
       'space.engage.donations',
       'space.engage.enroll',
       'space.reach',
@@ -149,6 +151,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.basics',
       'space.mode',
       'space.people',
+      'space.layout',
       'space.engage.crm',
       'space.engage.memberships',
       'space.reach',
@@ -168,6 +171,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.basics',
       'space.mode',
       'space.people',
+      'space.layout',
       'space.engage.tickets',
       'space.reach',
       'space.safety.checkin',
@@ -187,6 +191,7 @@ describe('entity registry · spaceSurfacesFor', () => {
         'space.basics',
         'space.mode',
         'space.people',
+        'space.layout',
         'space.reach',
         'space.insights',
         'space.billing',
@@ -199,13 +204,14 @@ describe('entity registry · spaceSurfacesFor', () => {
     }
   })
 
-  it('falls back to only the always-on Basics + Mode + Danger when the viewer can use no tool', () => {
-    // Mode and focus is null-gated (Mode is FREE framing, never a per-tool gate), so it renders for a
-    // manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3).
+  it('falls back to only the always-on Basics + Mode + Layout + Danger when the viewer can use no tool', () => {
+    // Mode and focus + Layout are both null-gated (FREE framing, never a per-tool gate), so they render
+    // for a manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3 / ADR-472).
     for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
       expect(spaceSurfacesFor(type, deny).map((s) => s.id)).toEqual([
         'space.basics',
         'space.mode',
+        'space.layout',
         'space.danger',
       ])
     }
@@ -229,7 +235,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(ids).toContain('space.danger') // always-on
   })
 
-  it('gives coaching the console spine with CRM (Space Modes M3): basics, mode, people, CRM, reach, insights, billing, danger', () => {
+  it('gives coaching the console spine with CRM (Space Modes M3): basics, mode, people, layout, CRM, reach, insights, billing, danger', () => {
     // Coaching joined the console with Space Modes M3 (ADR-461/464). Its `crm` function lists coaching, so
     // the CRM surface shows; it carries the universal Members / QR / Insights / Billing + the always-on
     // Mode surface. It does NOT get the other types' role-specific engage tools or email (the email
@@ -239,6 +245,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.basics',
       'space.mode',
       'space.people',
+      'space.layout',
       'space.engage.crm',
       'space.reach',
       'space.insights',
