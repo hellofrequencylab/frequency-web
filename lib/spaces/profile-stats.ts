@@ -1,39 +1,54 @@
 // Profile STAT counts for the entity hero + the in-body Highlights module (ENTITY-SPACES-BUILD
-// §A.4 / §B.3). One place computes a Space's live numbers from its OWN rows so the hero strip
+// §A.4). One place computes a Space's live numbers from its OWN rows so the hero strip
 // (ProfileHeroStats) and the `entity-stats` module never drift. Each read is space_id-filtered +
 // fail-safe, so a brand-new Space resolves to zeros (the empties carry the page).
 //
+// The stat SET is universal now (the type-driven template system is retired): every Space reads the
+// same default hero stat order (lib/spaces/profile-config.ts DEFAULT_HERO_STATS), and any metric that
+// resolves to 0 is dropped at render. No per-type / per-template stat framing.
+//
 // Proof over claims (CONTENT-VOICE §6f): honest first-party counts, plain-noun labels (no "points").
 
-import { type HeroStat } from './blueprints'
-import { templateDescriptorForSpace, type TemplateResolverInput } from './templates'
+import { defaultHeroStats } from './profile-config'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { listSpaceMembers } from './membership'
 
-/** One resolved hero stat: the template's label + the live value from the Space's own rows. */
+/** The stat metrics resolveProfileStats can compute a live value for. */
+export type StatMetric = 'offerings' | 'sessions' | 'practices' | 'circles' | 'members' | 'clients' | 'standing'
+
+/** One resolved hero stat: a plain-noun label + the live value from the Space's own rows. */
 export interface ResolvedStat {
-  metric: HeroStat['metric']
+  metric: StatMetric
   label: string
   value: number
 }
 
-/** Compute the public-page TEMPLATE's hero stats (up to four) for a Space from its own rows (ADR-472):
- *  the ordered stat set is now driven by the resolved layout template, not the per-type blueprint, so the
- *  four templates (Book / Schedule / Storefront / Hub) show distinct, template-framed numbers. FAIL-SAFE:
- *  every underlying read degrades to 0, and the hero drops any stat that resolves to 0. The legacy
- *  `(spaceId, type)` call site keeps working: a bare `type` string resolves through the template layer
- *  with no variant/plan/preferences (the per-type fallback template), so the resolver stays total. */
-export async function resolveProfileStats(
-  spaceId: string,
-  input: string | TemplateResolverInput,
-): Promise<ResolvedStat[]> {
-  const resolverInput: TemplateResolverInput =
-    typeof input === 'string' ? { type: input as TemplateResolverInput['type'] } : input
-  const descriptor = templateDescriptorForSpace(resolverInput)
+/** The plain-noun label for each stat metric (sentence case, no "points", no em dashes). */
+const STAT_LABEL: Record<StatMetric, string> = {
+  offerings: 'Offerings',
+  sessions: 'Sessions',
+  practices: 'Practices',
+  circles: 'Circles',
+  members: 'Members',
+  clients: 'Clients',
+  standing: 'Standing',
+}
 
+/** Is `metric` a known stat metric we can compute + label? (Guards the default stat set, which is a
+ *  plain `string[]`, before it reaches valueFor.) */
+function isStatMetric(metric: string): metric is StatMetric {
+  return metric in STAT_LABEL
+}
+
+/** Compute the profile's hero stats (up to four) for a Space from its own rows. The stat SET is the
+ *  universal default order (profile-config.DEFAULT_HERO_STATS); every metric is computed from the
+ *  Space's first-party rows, and the hero/Highlights drop any that resolve to 0. FAIL-SAFE: every
+ *  underlying read degrades to 0. PURE per Space (the caller passes just the space id now that stats
+ *  no longer depend on type/variant/plan). */
+export async function resolveProfileStats(spaceId: string): Promise<ResolvedStat[]> {
   const [events, practices, journeys, circles, members] = await Promise.all([
     listEventsForSpace(spaceId, { limit: 200 }),
     listPracticesForSpace(spaceId, 200),
@@ -47,7 +62,7 @@ export async function resolveProfileStats(
   const activeCircles = circles.filter((c) => c.status === 'active').length
   const activeMembers = members.filter((m) => m.status === 'active').length
 
-  const valueFor = (metric: HeroStat['metric']): number => {
+  const valueFor = (metric: StatMetric): number => {
     switch (metric) {
       case 'sessions':
         return upcoming
@@ -58,12 +73,11 @@ export async function resolveProfileStats(
       case 'circles':
         return activeCircles
       case 'members':
-        // The lead "people" stat: active space_members (Members / Supporters / People supported,
-        // labeled by the template).
+        // The lead "people" stat: active space_members.
         return activeMembers
       case 'clients':
-        // The Book / Storefront templates frame the same active members as "Clients" (proof over
-        // claims: the same honest first-party count, a client-facing label). No separate source.
+        // The same active members, a client-facing label (proof over claims: one honest first-party
+        // count, no separate source).
         return activeMembers
       // `standing` has no honest live source yet, so it resolves to 0 and is dropped by the hero
       // (which shows only non-zero stats). Never an invented number (CONTENT-VOICE §6f).
@@ -72,7 +86,8 @@ export async function resolveProfileStats(
     }
   }
 
-  return descriptor.hero.heroStats
+  return defaultHeroStats()
+    .filter(isStatMetric)
     .slice(0, 4)
-    .map((s) => ({ metric: s.metric, label: s.label, value: valueFor(s.metric) }))
+    .map((metric) => ({ metric, label: STAT_LABEL[metric], value: valueFor(metric) }))
 }

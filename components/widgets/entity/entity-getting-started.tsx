@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Sprout, ArrowRight } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { spaceManageHref } from '@/lib/spaces/types'
-import { blueprintForType } from '@/lib/spaces/blueprints'
+import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { spaceProfileIsEmpty, viewerCanEditActiveSpace } from '@/lib/spaces/profile-presence'
 import { buttonClasses } from '@/components/ui/button'
 
@@ -39,8 +39,7 @@ export async function EntityGettingStarted() {
   if (!(await spaceProfileIsEmpty())) return null
 
   const name = space.brandName ?? space.name
-  const blueprint = blueprintForType(space.type)
-  const typeLabel = (blueprint?.typeLabel ?? 'space').toLowerCase()
+  const typeLabel = spaceTypeLabel(space.type).toLowerCase()
   const coming = COMING[space.type] ?? DEFAULT_COMING
   const canEdit = await viewerCanEditActiveSpace()
   // The management entry (ADR-441 EM1-3): the unified /manage console for the console types, the

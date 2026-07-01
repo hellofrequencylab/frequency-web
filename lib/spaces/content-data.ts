@@ -25,7 +25,6 @@ import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
-import type { TemplateResolverInput } from '@/lib/spaces/templates'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
 
@@ -293,8 +292,6 @@ export interface SpaceContentInput {
   tagline?: string | null
   /** The primary CTA the identity header surfaces (label + tab-relative href), or null. */
   primaryCta?: { label: string; href: string } | null
-  /** The template resolver input, so the live highlight counts match the page's resolved template. */
-  statsInput?: TemplateResolverInput
   /** The Space slug, so the events + booking blocks can build slug-relative hrefs. */
   slug?: string
 }
@@ -312,8 +309,8 @@ export async function getSpaceContentData(
     getSpaceUpdates(spaceId),
     getSpaceReviews(spaceId),
     getSpaceFaqs(spaceId),
-    input?.statsInput ? getSpaceHighlights(spaceId, input.statsInput) : Promise.resolve([]),
-    input?.statsInput ? getSpaceStats(spaceId, input.statsInput) : Promise.resolve([]),
+    input ? getSpaceHighlights(spaceId) : Promise.resolve([]),
+    input ? getSpaceStats(spaceId) : Promise.resolve([]),
     input ? getSpaceUpcomingEvents(spaceId) : Promise.resolve([]),
     input ? getSpaceBookingInfo(spaceId, slug) : Promise.resolve<SpaceBookingInfo>({ enabled: false, href: null }),
     input ? getSpacePractices(spaceId) : Promise.resolve<SpacePracticesData>({ practices: [], journeys: [] }),
@@ -335,12 +332,9 @@ export async function getSpaceContentData(
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
  *  resolver the hero stats + the entity-stats module read, so the strip never disagrees with the hero.
  *  Only the positive counts ride through (honest at day zero). FAIL-SAFE to []. */
-export async function getSpaceHighlights(
-  spaceId: string,
-  input: TemplateResolverInput,
-): Promise<SpaceHighlight[]> {
+export async function getSpaceHighlights(spaceId: string): Promise<SpaceHighlight[]> {
   try {
-    const stats = await resolveProfileStats(spaceId, input)
+    const stats = await resolveProfileStats(spaceId)
     return stats.filter((s) => s.value > 0).map((s) => ({ label: s.label, value: s.value }))
   } catch {
     return []
@@ -351,12 +345,9 @@ export async function getSpaceHighlights(
  *  operator-configurable SpaceStats block, from the SAME resolver as the hero/highlights, so the two
  *  never disagree. The block selects WHICH metrics to show + hides any that resolve to zero, so this
  *  carries the whole set (including zeros) but never invents a number. FAIL-SAFE to []. */
-export async function getSpaceStats(
-  spaceId: string,
-  input: TemplateResolverInput,
-): Promise<SpaceStat[]> {
+export async function getSpaceStats(spaceId: string): Promise<SpaceStat[]> {
   try {
-    const stats = await resolveProfileStats(spaceId, input)
+    const stats = await resolveProfileStats(spaceId)
     return stats.map((s) => ({ metric: s.metric, label: s.label, value: s.value }))
   } catch {
     return []

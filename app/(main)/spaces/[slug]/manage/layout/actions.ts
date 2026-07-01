@@ -6,9 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { isSpaceTemplate, type SpaceTemplate } from '@/lib/spaces/templates'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
-import { isRenderableSpaceDoc, type SpacePresetInput } from '@/lib/page-editor/templates/space'
+import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
 import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
 import {
   resolveSpacePageDoc,
@@ -24,26 +23,17 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from './preferences'
+import { nextCoverSizePreferences, type CoverSize } from './preferences'
 
-// SPACE LAYOUT actions (ADR-472, the public-page layout layer). An operator picks the STARTING layout
-// their Space's public landing renders through (one of the four templates Book · Schedule · Storefront ·
-// Hub, or 'auto' to derive it from the type + Focus) from /spaces/<slug>/manage/layout. EVERY action
-// RE-RESOLVES the space from the slug and RE-GATES caps.canEditProfile server-side, so a non-editor can
-// never rewrite another space's layout (the route gate is UX; this is the authority). Staff preview (a
-// janitor who is not an editor) is read-only: it has no canEditProfile, so every write below fails closed.
+// SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
+// manages their Space's public pages (cover size, brand accent, block order + show/hide, and the
+// nav's pages) from /spaces/<slug>/manage/layout. EVERY action RE-RESOLVES the space from the slug and
+// RE-GATES caps.canEditProfile server-side, so a non-editor can never rewrite another space's pages
+// (the route gate is UX; this is the authority). Staff preview (a janitor who is not an editor) is
+// read-only: it has no canEditProfile, so every write below fails closed.
 //
-// SEMANTICS (important):
-//   • preferences.template = the operator's CHOSEN starting layout (overrides the auto-derived one).
-//     'auto' clears the override so the layout derives from the Space's type + Focus again.
-//   • preferences.puck = the CUSTOMIZED doc; it WINS over any preset. So setting `template` alone does
-//     NOT visibly change a customized space's landing — the reset path (opts.reset) also clears `puck`
-//     so the new layout's preset actually shows.
-//
-// NON-DESTRUCTIVE by default: setting the template only writes the `template` node of preferences,
-// preserving every other key (the puck doc, the mode overrides). A `reset` additionally clears the one
-// `puck` node (the resolver then falls back to the new template's preset). Modelled on the edit-page
-// publish/reset actions; deliberately NOT coupled to that file. No em dashes (owner copy, CONTENT-VOICE).
+// NON-DESTRUCTIVE: each write touches only the one preferences node it owns (coverSize / a page's
+// pageDoc / the pages nav), preserving every other key. No em dashes (owner copy, CONTENT-VOICE).
 
 /** Authorize the caller as an EDITOR (owner / admin / editor) of `slug`'s space; returns the resolved
  *  space id + its current preferences blob, or null on any miss. Mirrors edit-page/actions.ts's shape
@@ -51,9 +41,9 @@ import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from 
 async function authorizeEditor(slug: string): Promise<{
   spaceId: string
   preferences: Record<string, unknown>
-  /** The fields the preset resolver needs, so the block panel can resolve the CURRENT doc
-   *  (stored-or-preset) server-side before it reorders / toggles a block. */
-  presetInput: SpacePresetInput
+  /** The Space's display name, so a block edit can resolve the CURRENT page doc (stored-or-default)
+   *  server-side before it reorders / toggles a block. */
+  presetInput: { name: string }
 } | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -66,13 +56,7 @@ async function authorizeEditor(slug: string): Promise<{
   return {
     spaceId: space.id,
     preferences: asRecord(space.preferences),
-    presetInput: {
-      name: space.brandName?.trim() || space.name,
-      type: space.type,
-      variant: space.modeVariant,
-      plan: space.plan,
-      preferences: space.preferences,
-    },
+    presetInput: { name: space.brandName?.trim() || space.name },
   }
 }
 
@@ -88,35 +72,6 @@ async function writePreferences(
   }
   const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
   return !error
-}
-
-/**
- * Set the Space's public-page STARTING layout. `template` is one of the four template ids, or 'auto' to
- * clear the override and derive the layout from the Space's type + Focus. NON-DESTRUCTIVE by default:
- * only the `template` node is written; the customized `puck` doc + mode overrides are preserved. Pass
- * `opts.reset` to ALSO clear the customized `puck` doc, so the new layout's preset renders instead of the
- * saved page (the caller confirms this replaces the customized page). Owner/admin/editor-gated. Returns
- * ActionResult.
- */
-export async function setSpaceLayoutTemplate(
-  slug: string,
-  template: SpaceTemplate | 'auto',
-  opts?: { reset?: boolean },
-): Promise<ActionResult> {
-  if (template !== 'auto' && !isSpaceTemplate(template)) return fail('Pick a layout from the list.')
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const next = nextLayoutPreferences(auth.preferences, template, opts)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update the layout. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`)
-  revalidatePath(`/spaces/${slug}/edit-page`)
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
 }
 
 /**
@@ -183,7 +138,7 @@ function pagePath(slug: string, pageSlug: string): string {
 async function writeBlockContent(
   slug: string,
   pageSlug: string,
-  auth: { spaceId: string; preferences: Record<string, unknown>; presetInput: SpacePresetInput },
+  auth: { spaceId: string; preferences: Record<string, unknown>; presetInput: { name: string } },
   nextContent: unknown[],
 ): Promise<ActionResult> {
   const current = resolveSpacePageDoc(auth.preferences, auth.presetInput.name, pageSlug)

@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
-import { blueprintForType } from '@/lib/spaces/blueprints'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { listEventsForSpace } from '@/lib/events/store'
 import { ModuleCard } from '@/components/modules/module-card'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -53,13 +53,13 @@ import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 //
 // NULL only when there is no active Space.
 //
-// COPY: the CTA is a plain verb from the blueprint; the empty names the situation + next step; no
-// em/en dashes, no narrated feelings (CONTENT-VOICE section 10).
+// COPY: the CTA is the per-type default primary-CTA label (profile-config, operator-overridable);
+// the empty names the situation + next step; no em/en dashes, no narrated feelings (CONTENT-VOICE
+// section 10).
 export async function EntityCta() {
   const space = getActiveSpace()
   if (!space) return null
-  const blueprint = blueprintForType(space.type)
-  const ctaLabel = blueprint?.primaryCta.label ?? 'Book'
+  const ctaLabel = defaultPrimaryCtaLabel(space.type)
 
   // Practitioner is the role whose deep feature is real 1:1 booking (the "Book" CTA). Render the
   // live booking surface for it; every other role keeps the placeholder session list below.

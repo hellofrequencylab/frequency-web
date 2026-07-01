@@ -1,10 +1,18 @@
 # Space Mode Templates — research + the four layouts
 
-> **What this is.** The best-practice research behind a Space's public page, distilled into **four layout
-> templates** (Book · Schedule · Storefront · Hub) that are live as of ADR-476, plus the content-blocks +
-> Spotlight direction that builds on them. Templates are FREE framing (never a gate), like Modes: a start
-> point an operator can switch, reorder, or override. Tie-in: ADR-461 (Modes), ADR-472 (Tier × Mode),
-> ADR-476 (templates).
+> **⚠️ RETIRED (2026-07-01, ADR-489).** The type-driven **four-template** system this doc describes
+> (Book · Schedule · Storefront · Hub, `lib/spaces/templates.ts` + `lib/spaces/blueprints.ts`) has been
+> DELETED. A Space profile is now **operator-composed feature-block pages** (`preferences.pages` +
+> `preferences.pageDocs`), each seeded from ONE universal default (`generateDefaultSpacePage`) and
+> resolved per page (`lib/spaces/profile-pages.ts`). The only per-type defaults that survive live in
+> `lib/spaces/profile-config.ts` (accent / primary-CTA label / hero stat set / provisionable types).
+> This doc is kept for the **research** (§below) that still informs block design; treat the four-layout
+> mechanism as historical.
+
+> **What this was.** The best-practice research behind a Space's public page, distilled into **four layout
+> templates** (Book · Schedule · Storefront · Hub) that were live from ADR-476 to ADR-489, plus the
+> content-blocks + Spotlight direction that built on them. Tie-in: ADR-461 (Modes), ADR-472 (Tier × Mode),
+> ADR-476 (templates), ADR-489 (retirement).
 
 ## 1. The model: two threads, one of four layouts
 

@@ -5,7 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { listSpaceMembers } from '@/lib/spaces/membership'
-import { blueprintForType } from '@/lib/spaces/blueprints'
+import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
@@ -93,7 +93,7 @@ export default async function SpaceManagePage({
   const canDelete = caps.isOwner || isStaff(caller?.webRole)
 
   const brandName = space.brandName ?? space.name
-  const typeLabel = blueprintForType(space.type)?.typeLabel ?? 'Space'
+  const typeLabel = spaceTypeLabel(space.type)
   const planLabel = SPACE_PLAN_LABEL[asSpacePlan(space.plan)]
   // The Mode + Focus label for the stat row (falls back to the type label when a Space has no Mode).
   const modeLabel = mode ? `${mode.modeLabel}: ${mode.focusLabel}` : typeLabel

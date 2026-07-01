@@ -28,12 +28,11 @@ function stripIdentityHeader(data: Data): Data {
   return { ...data, content }
 }
 
-// THE SPACE LANDING BODY, RENDERED THROUGH PUCK (ADR-476/472, Phase 1). The profile
-// INDEX tab (/spaces/<slug>) body is now a Puck document: the stored, published doc
-// (spaces.preferences.puck) when present + valid, else the generated preset for the
-// Space's resolved layout template (Book / Schedule / Storefront / Hub). The
-// resolver (spacePuckData) is fail-safe — a brand-new Space with no stored doc still
-// renders its preset, so the landing never goes blank.
+// THE SPACE LANDING BODY, RENDERED THROUGH PUCK. A profile page (Home or a custom page)
+// body is a Puck document: this page's stored, published doc when present + valid, else
+// the ONE universal default page (resolveSpacePageDoc, lib/spaces/profile-pages.ts). The
+// resolver is fail-safe — a brand-new Space with no stored doc still renders the universal
+// default, so the landing never goes blank.
 //
 // The hero context band, the tab row, the rail (page-chrome), and the brand accent
 // all stay where they were: this component only replaces the About tab BODY. It sits
@@ -53,12 +52,6 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
   setActiveSpace(space)
 
   const brandName = space.brandName?.trim() || space.name
-  const templateInput = {
-    type: space.type,
-    variant: space.modeVariant,
-    plan: space.plan,
-    preferences: space.preferences,
-  }
   // Resolve THIS page's doc (Home or a custom page), drop any block the Page panel hid (and strip the
   // flag off survivors), then strip the legacy identity header. The resolver is fail-safe: a page with
   // no stored doc renders the one universal default, so it never goes blank.
@@ -85,7 +78,6 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     coverUrl: space.coverImageUrl,
     tagline: space.tagline,
     primaryCta,
-    statsInput: templateInput,
     slug: space.slug,
   })
 
