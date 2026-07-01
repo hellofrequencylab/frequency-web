@@ -6,17 +6,18 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { config } from '@/lib/page-editor/config'
-import { spacePuckData, readStoredSpaceDoc } from '@/lib/page-editor/templates/space'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
+import { resolveSpacePageDoc, readPageDoc, hasPage, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 
-// THE SPACE LANDING EDITOR ROUTE (ADR-476/472, Phase 1). An owner / admin / editor edits
-// their Space's public landing through Puck here; the published doc is stored to
-// spaces.preferences.puck and the public /spaces/<slug> index renders it. A platform
-// janitor previewing a Space they do not manage gets a READ-ONLY preview (no editor
-// runtime, no write affordances); everyone else 404s so the route never leaks.
+// THE SPACE PAGE EDITOR ROUTE (multi-page model). An owner / admin / editor edits ONE profile
+// page through Puck here; the page is chosen with `?page=<slug>` (default Home). The published
+// doc is stored to spaces.preferences.pageDocs[pageSlug] and the matching public route renders
+// it. A platform janitor previewing a Space they do not manage gets a READ-ONLY preview (no
+// editor runtime, no write affordances); everyone else 404s so the route never leaks. A `?page`
+// that is not a real page 404s too, so the editor never opens onto a page that does not exist.
 //
 // CHROME: this is an IN-PAGE editor surface with its own Puck header, so the profile
 // layout escapes its hero + tab chrome for the `edit-page` segment. It is NOT a
@@ -33,10 +34,13 @@ export const metadata: Metadata = {
 
 export default async function SpaceEditLandingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
   const { slug } = await params
+  const { page } = await searchParams
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
 
@@ -44,6 +48,11 @@ export default async function SpaceEditLandingPage({
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
   setActiveSpace(space)
+
+  // Which PAGE this editor targets: `?page=<slug>` (default Home). A page that is not in the nav
+  // 404s, so the editor never opens onto a page that does not exist.
+  const pageSlug = (page ?? HOME_SLUG).trim().toLowerCase() || HOME_SLUG
+  if (!hasPage(space.preferences, pageSlug)) notFound()
 
   // GATE: only a manager (owner / admin / editor) edits; a platform janitor previews
   // read-only. notFound (not a redirect) for everyone else: we never reveal the route.
@@ -55,19 +64,12 @@ export default async function SpaceEditLandingPage({
   if (!canManage && !staffViewing) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const presetInput = {
-    name: brandName,
-    type: space.type,
-    variant: space.modeVariant,
-    plan: space.plan,
-    preferences: space.preferences,
-  }
-  // The doc the editor loads: the stored doc when present + valid, else the generated
-  // preset (so a first-time operator opens onto their template's designed start point).
-  // Drop any block the Page quick-panel hid (and strip the flag), so the full editor never
-  // shows a parked block; hiding lives only in the compact Page panel.
-  const data = withVisibleBlocks(spacePuckData(presetInput))
-  const customized = readStoredSpaceDoc(space.preferences) !== null
+  // The doc the editor loads: this page's stored doc when present + valid, else the universal
+  // default page (so a first-time operator opens onto a designed start point). Drop any block the
+  // Page quick-panel hid (and strip the flag), so the full editor never shows a parked block;
+  // hiding lives only in the compact Page panel.
+  const data = withVisibleBlocks(resolveSpacePageDoc(space.preferences, brandName, pageSlug))
+  const customized = readPageDoc(space.preferences, pageSlug) !== null
 
   // STAFF PREVIEW: read-only. No editor runtime; render the resolved landing with the
   // staff banner so the read-only mode is unmistakable (every write also re-gates
@@ -85,6 +87,12 @@ export default async function SpaceEditLandingPage({
   }
 
   return (
-    <SpaceLandingEditor slug={slug} title={brandName} data={data} customized={customized} />
+    <SpaceLandingEditor
+      slug={slug}
+      title={brandName}
+      data={data}
+      customized={customized}
+      pageSlug={pageSlug}
+    />
   )
 }
