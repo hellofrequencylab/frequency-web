@@ -109,6 +109,9 @@ export function isSafeRoute(pathname: string): boolean {
 // surface whose body truly scrolls sideways belongs in this list.
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated) — horizontal stage board
+  // The Space LANDING editor (ADR-476/472): a full-viewport Puck editor that owns the whole surface
+  // (its own header + side bars), so it drops the member right rail like every other editor takeover.
+  /^\/spaces\/[^/]+\/edit-page$/,
 ]
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️

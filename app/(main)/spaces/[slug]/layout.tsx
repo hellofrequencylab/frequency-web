@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense, cache } from 'react'
-import { Building2, QrCode, Pencil } from 'lucide-react'
+import { Building2, QrCode, Pencil, LayoutTemplate } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -145,7 +145,15 @@ export default async function SpaceProfileLayout({
   // section breaks" report. Escaping it here makes the board read as the standalone operator workspace
   // it already declares itself to be (and skips the profile-view telemetry below, which never belonged
   // on an operator board).
-  if (activeSegment === 'manage' || activeSegment === 'settings' || activeSegment === 'crm') {
+  // `edit-page` is the full-viewport Puck LANDING editor (ADR-476/472): it owns its own header (the
+  // Puck chrome) and must not be wrapped in the profile hero + tab row, exactly like the other owner
+  // surfaces. Its rail is dropped in page-chrome.ts.
+  if (
+    activeSegment === 'manage' ||
+    activeSegment === 'settings' ||
+    activeSegment === 'crm' ||
+    activeSegment === 'edit-page'
+  ) {
     return children
   }
 
@@ -279,6 +287,14 @@ export default async function SpaceProfileLayout({
                   <Link href={manageHref} className={buttonClasses('secondary', 'md')}>
                     <Pencil className="h-3.5 w-3.5" aria-hidden />
                     {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
+                  </Link>
+                )}
+                {/* Customize page (ADR-476/472): opens the Puck landing editor for a manager. A staff
+                    previewer gets the same entry as a read-only preview (the editor route gates writes). */}
+                {canSeeAsOwner && (
+                  <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'md')}>
+                    <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
+                    Customize page
                   </Link>
                 )}
               </>
