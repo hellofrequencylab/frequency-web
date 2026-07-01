@@ -1,3 +1,5 @@
+import { headerTriggers, marketingFooterLinks } from "@/lib/nav/registry";
+
 // Canonical site URL. Override per-environment with NEXT_PUBLIC_SITE_URL;
 // falls back to the production apex so canonical/sitemap/OG stay correct even if
 // the env var is missing in a deploy.
@@ -31,18 +33,17 @@ export const DISCOVER_NAV: NavLink[] = [
 ];
 
 // The six PRIMARY marketing pages, in nav order: Home, The Community, The Quest,
-// The Lab, Spaces, About. This is the single source for the public header tabs
-// (PUBLIC_MEGA_NAV, below) and the footer (MARKETING_NAV). Build / Practice /
-// Spread were FOLDED into these six (their routes 308-redirect here), and the SEO
-// articles (loneliness, friendship-as-an-adult, …) + /help stay off the nav.
-export const PRIMARY_NAV: NavLink[] = [
-  { label: "Home", href: "/" },
-  { label: "The Community", href: "/the-community" },
-  { label: "The Quest", href: "/the-quest" },
-  { label: "The Lab", href: "/the-lab" },
-  { label: "Spaces", href: "/spaces" },
-  { label: "About", href: "/about" },
-];
+// The Lab, Spaces, About. DERIVED from the ONE nav registry (lib/nav) — the public
+// header TRIGGER nodes, in order — so this list, the header tabs (PUBLIC_MEGA_NAV),
+// and the footer (MARKETING_NAV) all project a single source and cannot drift. Build /
+// Practice / Spread were FOLDED into these six (their routes 308-redirect here), and the
+// SEO articles (loneliness, friendship-as-an-adult, …) + /help stay off the nav.
+// Each trigger node's `href` is its canonical tab landing (the same page these six tabs
+// have always pointed at), so the mapping is a straight projection.
+export const PRIMARY_NAV: NavLink[] = headerTriggers().map(({ node }) => ({
+  label: node.label,
+  href: node.href,
+}));
 
 // The mission / splash pages — shown as flat tabs beside the Discover dropdown,
 // to VISITORS only. These are marketing/educational surfaces (the story, the
@@ -79,56 +80,34 @@ export type PublicMegaMenu = {
 };
 
 // The six primaries as mega-menu triggers, in nav order. Home + The Lab are plain
-// links; the rest open a dropdown of sub-pages. Mirrors the DB `header` seed so the
-// fallback and the live menu match; operators grow this in /admin/menu.
-export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = [
-  { label: "Home", href: "/" },
-  {
-    label: "The Community",
-    items: [
-      { label: "The Community", href: "/the-community", desc: "Who's here and how it works" },
-      { label: "Discover", href: "/discover", desc: "Everything happening near you" },
-      { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
-      { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
-      { label: "Marketplace", href: "/market", desc: "Goods, housing, and makers nearby" },
-      { label: "Partners", href: "/discover/partners", desc: "The studios and hosts we work with" },
-    ],
-  },
-  {
-    label: "The Quest",
-    items: [
-      { label: "The Quest", href: "/the-quest", desc: "The practice game: streaks, Zaps, and the Vault" },
-      { label: "Journeys", href: "/discover/journeys", desc: "Guided practices for a season" },
-      { label: "Practices", href: "/discover/practices", desc: "Browse the practices you can run" },
-      { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
-    ],
-  },
-  { label: "The Lab", href: "/the-lab" },
-  {
-    label: "Spaces",
-    items: [
-      { label: "Spaces", href: "/spaces", desc: "Bring your people. They join free" },
-      { label: "Pricing", href: "/pricing", desc: "One Pro plan, four add-ons" },
-      { label: "For coaches", href: "/for/coaches", desc: "Packages, scheduling, and a client CRM" },
-      { label: "For service businesses", href: "/for/service-businesses", desc: "Bookings, quotes, and repeat clients" },
-      { label: "For product businesses", href: "/for/product-businesses", desc: "A catalog, a storefront, your own domain" },
-      { label: "For nonprofits", href: "/for/nonprofits", desc: "Donations, supporters, and programs" },
-    ],
-  },
-  {
-    label: "About",
-    items: [
-      { label: "What is Frequency", href: "/what-is-frequency", desc: "The short version: what it is, how it works, why it exists" },
-      { label: "About", href: "/about", desc: "The mission and the people building it" },
-      { label: "Help center", href: "/help", desc: "Answers, guides, and support" },
-      { label: "Privacy", href: "/privacy", desc: "How we handle your data" },
-      { label: "Terms", href: "/terms", desc: "The rules of the road" },
-    ],
-  },
-];
+// links; the rest open a dropdown of sub-pages. DERIVED from the ONE nav registry
+// (lib/nav → surface:'header' nodes: each parentless trigger + its parented sub-links),
+// so this fallback, the DB `header` seed, and the live menu all project a single source
+// and cannot drift. A trigger with sub-links becomes a dropdown panel (its `items`); a
+// trigger with none stays a plain link carrying its href. Operators grow this in
+// /admin/menu (that edits the same registry via the DB override layer).
+export const PUBLIC_MEGA_NAV: PublicMegaMenu[] = headerTriggers().map(({ node, items }) =>
+  items.length > 0
+    ? {
+        label: node.label,
+        items: items.map((it) => ({
+          label: it.label,
+          href: it.href,
+          ...(it.blurb ? { desc: it.blurb } : {}),
+        })),
+      }
+    : { label: node.label, href: node.href },
+);
 
-// Flat list for the marketing footer — the same six primary pages, same order.
-export const MARKETING_NAV: NavLink[] = PRIMARY_NAV;
+// Flat list for the marketing footer — DERIVED from the registry's FLAT marketing
+// surface:'footer' nodes (the six primary pages, same order), so the footer projects one
+// source. (The member sitemap footer is a separate, column-grouped set of footer nodes;
+// marketingFooterLinks() scopes this to the parentless marketing pages only.)
+export const MARKETING_NAV: NavLink[] = marketingFooterLinks().map((node) => ({
+  label: node.label,
+  href: node.href,
+  ...(node.blurb ? { desc: node.blurb } : {}),
+}));
 
 // Primary acquisition CTA. The label is builder-framed ("Start a Circle") to speak
 // to the Latent Leader, the reader the whole growth model runs on (CONTENT-VOICE

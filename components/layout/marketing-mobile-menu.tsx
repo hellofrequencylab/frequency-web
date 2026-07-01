@@ -3,12 +3,19 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
-import { SITE_NAV, DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { DISCOVER_NAV, BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
+import { headerTriggers } from '@/lib/nav/registry'
 
 // Mobile nav for the public marketing header. The desktop PrimaryNav is
 // `hidden md:flex`, so phones had no way to reach How-it-works / The Lab /
 // Pricing / About / Discover — only the Join CTA. This hamburger opens a
 // full-width sheet with the full splash nav + Discover links + sign-in/join.
+//
+// ONE SOURCE: the top-level tabs come from the SAME registry 'header' nodes the
+// desktop mega (PUBLIC_MEGA_NAV) projects — headerTriggers(), the parentless
+// surface:'header' trigger nodes — so desktop and mobile marketing nav can never
+// diverge. Rendered flat here (label + canonical landing href) to match the sheet's
+// current shape; the Discover section is the shared community core (DISCOVER_NAV).
 export function MarketingMobileMenu({ light }: { light: boolean }) {
   const [open, setOpen] = useState(false)
   const titleId = useId()
@@ -87,14 +94,14 @@ export function MarketingMobileMenu({ light }: { light: boolean }) {
             </div>
 
             <nav className="flex flex-col" aria-label="Site">
-              {SITE_NAV.map((item) => (
+              {headerTriggers().map(({ node }) => (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={node.href}
+                  href={node.href}
                   onClick={() => setOpen(false)}
                   className="border-b border-border py-3 text-base font-semibold text-text"
                 >
-                  {item.label}
+                  {node.label}
                 </Link>
               ))}
               <p className="pb-1 pt-4 text-2xs font-bold uppercase tracking-wider text-subtle">
