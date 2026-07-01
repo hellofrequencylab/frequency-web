@@ -107,84 +107,90 @@ describe('entity registry · spaceSurfacesFor', () => {
   // A canUse predicate that denies every tool (no plan / a low role): only the null-gated surfaces.
   const deny = (): boolean => false
 
-  it('gives a practitioner the full spine in order: basics, mode, place, people, layout, engage, reach, comms, insights, danger', () => {
+  // THE DEEPER OFFERINGS MERGE: the five separate commerce surfaces (place / memberships / donations /
+  // enroll / tickets / checkin) collapsed into the ONE adaptive `space.offerings` surface (engage slot).
+  // It shows only when the type has an offering the viewer can use, and it sorts in the engage slot
+  // BEFORE CRM (declaration order within the shared slot).
+
+  it('gives a practitioner the full spine in order: basics, mode, people, layout, offerings, CRM, reach, comms, insights, danger', () => {
     const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
       'space.mode',
-      'space.place',
       'space.people',
       'space.layout',
+      'space.offerings',
       'space.engage.crm',
       'space.reach',
       'space.comms',
       'space.insights',
       'space.danger',
     ])
+    // The old individual commerce surface ids are gone; Offerings carries them now.
+    expect(ids).not.toContain('space.place')
   })
 
-  it('gives an organization the donation/enrollment + billing spine, never the practitioner-only place/CRM', () => {
+  it('gives an organization the Offerings (donations + enrollment) + billing spine, never the practitioner-only CRM', () => {
     const ids = spaceSurfacesFor('organization', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
       'space.mode',
       'space.people',
       'space.layout',
-      'space.engage.donations',
-      'space.engage.enroll',
+      'space.offerings',
       'space.reach',
       'space.comms',
       'space.insights',
       'space.billing',
       'space.danger',
     ])
-    // The practitioner-only surfaces never leak onto an organization.
-    expect(ids).not.toContain('space.place')
+    // CRM is not an organization surface, and the old individual commerce ids are gone.
     expect(ids).not.toContain('space.engage.crm')
+    expect(ids).not.toContain('space.engage.donations')
+    expect(ids).not.toContain('space.engage.enroll')
     // And billing is an organization-spine surface this slice does not give the practitioner.
     expect(spaceSurfacesFor('practitioner', allow).map((s) => s.id)).not.toContain('space.billing')
   })
 
-  it('gives a business the memberships + CRM + email + billing spine, never the practitioner-only place or the org-only donations', () => {
+  it('gives a business the Offerings (memberships) + CRM + email + billing spine, never the org-only enroll', () => {
     const ids = spaceSurfacesFor('business', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
       'space.mode',
       'space.people',
       'space.layout',
+      'space.offerings',
       'space.engage.crm',
-      'space.engage.memberships',
       'space.reach',
       'space.comms',
       'space.insights',
       'space.billing',
       'space.danger',
     ])
-    expect(ids).not.toContain('space.place')
-    expect(ids).not.toContain('space.engage.donations')
-    expect(ids).not.toContain('space.engage.tickets')
+    expect(ids).not.toContain('space.engage.memberships')
+    expect(ids).not.toContain('space.engage.enroll')
   })
 
-  it('gives an event_space the tickets (engage) + check-in (safety) + billing spine, never CRM/email/memberships', () => {
+  it('gives an event_space the Offerings (tickets + check-in) + billing spine, never CRM/email', () => {
     const ids = spaceSurfacesFor('event_space', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
       'space.mode',
       'space.people',
       'space.layout',
-      'space.engage.tickets',
+      'space.offerings',
       'space.reach',
-      'space.safety.checkin',
       'space.insights',
       'space.billing',
       'space.danger',
     ])
     expect(ids).not.toContain('space.engage.crm')
-    expect(ids).not.toContain('space.engage.memberships')
+    expect(ids).not.toContain('space.engage.tickets')
+    expect(ids).not.toContain('space.safety.checkin')
     expect(ids).not.toContain('space.comms')
   })
 
-  it('gives lab + partner the universal four spine: members, QR, insights, billing (no role-specific engage)', () => {
+  it('gives lab + partner the universal four spine: members, QR, insights, billing (no Offerings, no role-specific engage)', () => {
     for (const type of ['lab', 'partner'] as const) {
       const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
       expect(ids).toEqual([
@@ -197,8 +203,8 @@ describe('entity registry · spaceSurfacesFor', () => {
         'space.billing',
         'space.danger',
       ])
-      // No engage / comms / place surface leaks onto a lab or partner.
-      expect(ids).not.toContain('space.place')
+      // No Offerings (lab/partner have zero commerce functions), no engage / comms surface.
+      expect(ids).not.toContain('space.offerings')
       expect(ids).not.toContain('space.comms')
       expect(ids.some((id) => id.startsWith('space.engage'))).toBe(false)
     }
@@ -252,17 +258,46 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.billing',
       'space.danger',
     ])
-    expect(ids).not.toContain('space.place')
-    expect(ids).not.toContain('space.engage.donations')
-    expect(ids).not.toContain('space.engage.enroll')
-    expect(ids).not.toContain('space.engage.memberships')
-    expect(ids).not.toContain('space.engage.tickets')
-    expect(ids).not.toContain('space.safety.checkin')
+    // Coaching has zero commerce functions, so no Offerings surface, and no email (email omits coaching).
+    expect(ids).not.toContain('space.offerings')
     expect(ids).not.toContain('space.comms')
   })
 
   it('has unique Space surface ids', () => {
     const ids = SPACE_SURFACES.map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // THE OFFERINGS VISIBILITY GATE (the deeper Offerings merge): space.offerings is null-gated (it
+  // adapts) but must NOT show as an always-on surface — a type with zero commerce functions never
+  // opens an empty Offerings card. It shows only when the type has an offering the viewer can use.
+  describe('the adaptive Offerings surface visibility gate', () => {
+    it('shows Offerings for a type with a usable commerce function (practitioner/business/org/event_space)', () => {
+      for (const type of ['practitioner', 'business', 'organization', 'event_space'] as const) {
+        expect(spaceSurfacesFor(type, allow).map((s) => s.id)).toContain('space.offerings')
+      }
+    })
+
+    it('hides Offerings for a type with zero commerce functions (coaching/lab/partner)', () => {
+      for (const type of ['coaching', 'lab', 'partner'] as const) {
+        expect(spaceSurfacesFor(type, allow).map((s) => s.id)).not.toContain('space.offerings')
+      }
+    })
+
+    it('hides Offerings when the viewer can use NO commerce function, even on a type that has one', () => {
+      // An event_space carries tickets + checkin, but a viewer who can use neither sees no Offerings card
+      // (it would open empty). Every non-commerce tool stays usable; only the offering functions are denied.
+      const noOfferings = (fn: SpaceFunctionKey): boolean => fn !== 'tickets' && fn !== 'checkin'
+      const ids = spaceSurfacesFor('event_space', noOfferings).map((s) => s.id)
+      expect(ids).not.toContain('space.offerings')
+      expect(ids).toContain('space.people') // a non-commerce surface still shows
+    })
+
+    it('shows Offerings when at least ONE of the type\'s offering functions is usable', () => {
+      // An event_space where only check-in is usable (tickets denied) still shows Offerings — its
+      // Check-in section renders, the Tickets section shows its own locked state inside the page.
+      const onlyCheckin = (fn: SpaceFunctionKey): boolean => fn === 'checkin'
+      expect(spaceSurfacesFor('event_space', onlyCheckin).map((s) => s.id)).toContain('space.offerings')
+    })
   })
 })

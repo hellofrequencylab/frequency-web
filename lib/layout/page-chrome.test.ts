@@ -107,6 +107,9 @@ describe('railFor — the single source of truth for page chrome', () => {
     expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/availability')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/memberships')).toBe('global')
+    // The unified Offerings surface (the deeper Offerings merge) is a centered Focus body that keeps
+    // the global rail beside it, like its sibling settings sub-pages.
+    expect(railFor('/spaces/demo-practitioner/settings/offerings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/crm')).toBe('global')

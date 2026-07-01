@@ -22,6 +22,7 @@ import type { AdminSlot } from '@/lib/admin/modules/registry'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { SpaceType } from '@/lib/spaces/types'
+import { offeringFunctionsForType } from '@/lib/spaces/offerings'
 
 /** The entity types the framework manages. Pass 1 ships `circle`; the rest are the
  *  same shape and land as their surfaces are declared (Pass 1 EM1-3..EM1-5, Pass 2). */
@@ -300,14 +301,21 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: null,
     types: ['*'],
   },
-  // Place & Time — the practitioner's weekly booking windows + upcoming bookings.
+  // Offerings (the deeper Offerings merge) — the ONE adaptive commerce surface. It replaces the five
+  // separate type-gated surfaces (availability / memberships / donations / enrollment / tickets / check
+  // in): the unified /settings/offerings page stacks whichever of those sections apply to THIS space's
+  // type (practitioner -> availability; business -> memberships; organization -> donations + enrollment;
+  // event_space -> tickets + check in). It carries `requiredFunction: null` because it ADAPTS (each
+  // section re-checks its own per-tool gate); `types: ['*']` because any type may declare it. Its console
+  // VISIBILITY is gated separately in spaceSurfacesFor on "the type has an offering the viewer can use",
+  // so a type with zero commerce functions (lab / partner / coaching / root) never shows an empty card.
   {
-    id: 'space.place',
-    slot: 'place',
-    label: 'Availability and bookings',
-    desc: 'Set the weekly times members can book, and see who is on your calendar.',
-    requiredFunction: 'availability',
-    types: ['practitioner'],
+    id: 'space.offerings',
+    slot: 'engage',
+    label: 'Offerings',
+    desc: 'Everything people can book, join, support, or attend, in one place.',
+    requiredFunction: null,
+    types: ['*'],
   },
   // People — the team roster and the role each member holds. Every type.
   {
@@ -329,51 +337,12 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'crm',
     types: ['practitioner', 'business', 'coaching'],
   },
-  // Engage — the studio's membership tiers and who has joined (business only; money dormant in v1).
-  {
-    id: 'space.engage.memberships',
-    slot: 'engage',
-    label: 'Memberships',
-    desc: 'Define the tiers members can join, and see who has joined.',
-    requiredFunction: 'memberships',
-    types: ['business'],
-  },
-  // Engage — the nonprofit's hosted donation asks (money dormant in v1; the Donate CTA reads this).
-  {
-    id: 'space.engage.donations',
-    slot: 'engage',
-    label: 'Donations',
-    desc: "Set up your fund, a short description, and the amounts supporters can pick.",
-    requiredFunction: 'donations',
-    types: ['organization'],
-  },
-  // Engage — the nonprofit's hosted program enrollment (money dormant in v1).
-  {
-    id: 'space.engage.enroll',
-    slot: 'engage',
-    label: 'Enrollment',
-    desc: 'Define your program and see who has enrolled.',
-    requiredFunction: 'enroll',
-    types: ['organization'],
-  },
-  // Engage — the venue's ticket tiers and reservations (event_space only; money dormant in v1).
-  {
-    id: 'space.engage.tickets',
-    slot: 'engage',
-    label: 'Tickets',
-    desc: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
-    requiredFunction: 'tickets',
-    types: ['event_space'],
-  },
-  // Safety — the venue's door code and the people who have checked in (event_space only).
-  {
-    id: 'space.safety.checkin',
-    slot: 'safety',
-    label: 'Check in',
-    desc: 'Show the door code and see who has checked in.',
-    requiredFunction: 'checkin',
-    types: ['event_space'],
-  },
+  // NOTE (the deeper Offerings merge): the five separate commerce surfaces that used to live here
+  // (space.engage.memberships / donations / enroll / tickets and space.safety.checkin) plus the Place &
+  // Time surface (space.place) collapsed into the ONE `space.offerings` surface declared above. Their
+  // section BODIES still exist (each settings sub-page's ./section.tsx) and are composed as stacked
+  // sections on /settings/offerings; the old routes redirect there anchored to their section.
+
   // Reach — QR codes for the space and the landing pages they open to. Every type.
   {
     id: 'space.reach',
@@ -443,16 +412,27 @@ function spaceSurfaceAppliesToType(surface: SpaceSurface, type: SpaceType): bool
  *
  * A viewer who can use none of a type's surfaces still gets Basics + Danger (manage access is the
  * floor); the page gates the route itself on resolveSpaceManageAccess before calling this.
+ *
+ * THE OFFERINGS EXCEPTION (the deeper Offerings merge): `space.offerings` carries `requiredFunction:
+ * null` because the surface itself ADAPTS (each of its stacked sections re-checks its own per-tool
+ * gate). But it must NOT show as an always-on surface like Basics/Danger: a type with zero commerce
+ * functions (lab / partner / coaching / root) would then open an empty Offerings surface. So it is
+ * gated on "this type has an offering the viewer can use" — it shows only when `canUse(fn)` is true for
+ * at least one of the type's offering functions.
  */
 export function spaceSurfacesFor(
   type: SpaceType,
   canUse: (fn: SpaceFunctionKey) => boolean,
 ): SpaceSurface[] {
-  return SPACE_SURFACES.filter(
-    (s) =>
-      spaceSurfaceAppliesToType(s, type) &&
-      (s.requiredFunction === null || canUse(s.requiredFunction)),
-  ).sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
+  const offeringFns = offeringFunctionsForType(type)
+  const canUseAnyOffering = offeringFns.some((fn) => canUse(fn))
+  return SPACE_SURFACES.filter((s) => {
+    if (!spaceSurfaceAppliesToType(s, type)) return false
+    // The Offerings surface shows only when the type has a commerce section the viewer can use.
+    if (s.id === 'space.offerings') return canUseAnyOffering
+    // Every other surface: an always-on (null) surface always shows; a functioned one when usable.
+    return s.requiredFunction === null || canUse(s.requiredFunction)
+  }).sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
 }
 
 /**

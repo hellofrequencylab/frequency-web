@@ -552,10 +552,17 @@ function SpaceLayoutRegion({
   Main: SlotComponent
   Side: SlotComponent
 }) {
+  // ONE standardized vertical rhythm for the profile blocks so the page breathes evenly:
+  //  - `py-12 sm:py-16` seats the block region generously below the layout-owned header and above the
+  //    page foot.
+  //  - `SPACE_STACK` (space-y-12) is the SINGLE inter-block margin, used identically in the stacked
+  //    column, the main column, and the side rail, so no two gaps disagree.
+  //  - the two-column grid gap MATCHES that rhythm (gap-12) so the cross-axis and main-axis read even.
+  const SPACE_STACK = 'space-y-12'
   if (layout === 'stacked') {
     return (
-      <section className="w-full py-10 sm:py-12">
-        <div className="space-y-10">
+      <section className="w-full py-12 sm:py-16">
+        <div className={SPACE_STACK}>
           <Main />
         </div>
       </section>
@@ -563,16 +570,16 @@ function SpaceLayoutRegion({
   }
   const sideFirst = layout === 'side-main'
   const asideClass = [
-    'space-y-10',
+    SPACE_STACK,
     sideFirst ? 'lg:order-first' : '',
     sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '',
   ]
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="w-full py-10 sm:py-12">
-      <div className="grid gap-8 lg:grid-cols-3 lg:gap-10">
-        <div className="space-y-10 lg:col-span-2">
+    <section className="w-full py-12 sm:py-16">
+      <div className="grid gap-12 lg:grid-cols-3">
+        <div className={`${SPACE_STACK} lg:col-span-2`}>
           <Main />
         </div>
         <aside className={asideClass}>
