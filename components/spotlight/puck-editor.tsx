@@ -29,9 +29,42 @@ import { EMPTY_SPOTLIGHT_META, type SpotlightPuckMetadata } from '@/lib/spotligh
 // against the same allowlist as before (asset paths pinned to the owner, hex clamped, embed
 // refs re-checked). No new write path, no schema change, no loss of the privacy boundary.
 //
-// The THEME editor is kept (a drawer behind the header's "Theme" button); it saves itself
-// through saveSpotlightTheme, exactly as before. The identity header + theme live outside
-// the Puck body, so the editor only composes the block body.
+// The THEME editor is kept. On DESKTOP it lives in a drawer behind the header's "Theme"
+// button (unchanged). On MOBILE the same controls ship as a Theme tab in the editor's
+// control dock — an overlap-free bottom sheet rather than a `fixed inset-0` drawer that
+// covered the top bar. Both surfaces render one shared `ThemePanelContent`, so the theme
+// + publish flow is identical either way. It saves itself through its own server actions,
+// independent of the block Save. The identity header + theme live outside the Puck body,
+// so the editor only composes the block body.
+
+// The shared theme + publish controls, rendered identically in the desktop drawer and the
+// mobile Theme panel. Kept as a single component so the two surfaces never drift.
+function ThemePanelContent({
+  handle,
+  published,
+  theme,
+  onThemeChange,
+  initialBackground,
+  initialTopFriends,
+  friendChoices,
+}: {
+  handle: string
+  published: boolean
+  theme: SpotlightTheme
+  onThemeChange: (t: SpotlightTheme) => void
+  initialBackground: SpotlightBackground
+  initialTopFriends: TopFriend[]
+  friendChoices: TopFriend[]
+}) {
+  return (
+    <div className="space-y-6">
+      <SpotlightPublishBar handle={handle} initialPublished={published} />
+      <SpotlightThemeEditor value={theme} onChange={onThemeChange} showPreview={false} />
+      <SpotlightBackgroundEditor initial={initialBackground} />
+      <SpotlightTopFriendsPicker initialSelected={initialTopFriends} choices={friendChoices} />
+    </div>
+  )
+}
 
 // Publish button: converts the live Puck document to a SpotlightLayout and saves it. Dirty
 // tracking mirrors the marketing editor (baseline captured after Puck's own init).
@@ -177,7 +210,27 @@ export function SpotlightPuckEditor({
           publishLabel: 'Save',
           publishedMessage: 'Saved',
           publishBusyLabel: 'Saving…',
-          extraActions: themeButton,
+          // MOBILE: the theme lives in its own dock tab (an overlap-free bottom sheet),
+          // NOT the old `fixed inset-0` drawer. Same controls as the desktop drawer via
+          // the shared ThemePanelContent.
+          panels: [
+            {
+              key: 'theme',
+              label: 'Theme',
+              icon: <Palette className="h-5 w-5" aria-hidden />,
+              render: () => (
+                <ThemePanelContent
+                  handle={handle}
+                  published={published}
+                  theme={theme}
+                  onThemeChange={setTheme}
+                  initialBackground={initialBackground}
+                  initialTopFriends={initialTopFriends}
+                  friendChoices={friendChoices}
+                />
+              ),
+            },
+          ],
         }}
       />
 
@@ -200,12 +253,15 @@ export function SpotlightPuckEditor({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-6">
-              <SpotlightPublishBar handle={handle} initialPublished={published} />
-              <SpotlightThemeEditor value={theme} onChange={setTheme} showPreview={false} />
-              <SpotlightBackgroundEditor initial={initialBackground} />
-              <SpotlightTopFriendsPicker initialSelected={initialTopFriends} choices={friendChoices} />
-            </div>
+            <ThemePanelContent
+              handle={handle}
+              published={published}
+              theme={theme}
+              onThemeChange={setTheme}
+              initialBackground={initialBackground}
+              initialTopFriends={initialTopFriends}
+              friendChoices={friendChoices}
+            />
           </div>
         </div>
       )}

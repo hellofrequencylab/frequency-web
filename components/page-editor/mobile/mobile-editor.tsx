@@ -1,23 +1,24 @@
 'use client'
 
 // THE MOBILE EDITOR — a phone-native replacement for Puck's 3-panel desktop editor,
-// modelled on Discord's mobile settings: the BLOCK LIST is the home screen, and every
-// edit is a pushed full-screen sub-screen with a back-chevron. Sheets are used only
-// for the add-block picker and the delete confirm (short interactions); long forms
-// are always full screens, never nested sheets.
+// modelled on Discord's mobile settings. The screen is a persistent LIVE PREVIEW of the
+// real page with a floating, elevated CONTROL DOCK pinned to the thumb zone. Every dock
+// tab opens an expandable bottom sheet that rises ABOVE the preview but never over the
+// editor's own top bar (no `fixed inset-0` blackout). Editing one block still pushes a
+// full-screen form with a back-chevron.
 //
 // It operates on the SAME Puck `Data` document + the SAME `config` (fields schemas +
 // block render) the desktop <Puck> uses, so both editors read/write one document and
-// one block library. It never imports server-only code: save + publish arrive as
-// props (the editors pass down their existing 'use server' actions), and the preview
-// uses Puck's client <Render>.
+// one block library. It never imports server-only code: save + publish arrive as props
+// (the editors pass down their existing 'use server' actions), and the preview uses
+// Puck's client <Render>.
 //
 // AUTOSAVE: every edit updates local state immediately and schedules a debounced write
 // through `onSaveDraft` (the same draft-save each editor already owns). A quiet
 // "Draft saved" status confirms it. PUBLISH is a separate deliberate action.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ChevronLeft, Eye, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ChevronLeft, Eye, EyeOff, Layers, Plus, Trash2 } from 'lucide-react'
 import type { Config, Data } from '@measured/puck'
 import { Render } from '@measured/puck'
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,16 @@ import { FieldForm, type FieldsSchema, type PushRequest } from './field-form'
 import { BlockList } from './block-list'
 import { BottomSheet } from './bottom-sheet'
 import { Snackbar, type SnackbarState } from './snackbar'
+
+/** An extra control surface injected into the dock (e.g. Spotlight's Theme). Each panel
+ *  becomes its own dock tab that opens `render()` inside the expandable bottom sheet —
+ *  the overlap-free replacement for a `fixed inset-0` drawer. */
+export type EditorPanel = {
+  key: string
+  label: string
+  icon?: React.ReactNode
+  render: () => React.ReactNode
+}
 
 export type MobileEditorProps = {
   config: Config
@@ -57,8 +68,14 @@ export type MobileEditorProps = {
   publishedMessage?: string
   /** Button label while the action runs. Defaults to "Publishing…". */
   publishBusyLabel?: string
-  /** Optional extra chrome for the top bar (e.g. the Spotlight theme button). */
+  /** Optional small extra chrome for the top bar. NOTE: on mobile the Spotlight theme
+   *  drawer is NOT wired here anymore — it ships as a `panels` tab (see below), which
+   *  opens in the overlap-free bottom sheet instead of a full-screen drawer. Kept for
+   *  any other small top-bar extras. */
   extraActions?: React.ReactNode
+  /** Extra control surfaces injected as dock tabs (e.g. Spotlight's Theme). The other
+   *  editors pass none, so their dock shows just Blocks + the preview toggle. */
+  panels?: EditorPanel[]
   /** Puck render metadata, threaded to every <Render> (preview + per-block previews) so
    *  dynamic/asset-backed blocks resolve correctly — e.g. the Spotlight image/gallery blocks
    *  derive their URL from `metadata.spotlight.publicBase`. Without it those images render
@@ -72,6 +89,10 @@ type Screen =
   | { kind: 'block'; id: string }
   | { kind: 'sub'; req: PushRequest }
 
+// Which dock sheet is open. 'blocks' = the block list + add; a panel key = an injected
+// panel; null = dock only, full-bleed preview.
+type DockSheet = { kind: 'blocks' } | { kind: 'panel'; key: string } | null
+
 export function MobileEditor({
   config,
   data: initialData,
@@ -82,17 +103,33 @@ export function MobileEditor({
   publishedMessage = 'Published',
   publishBusyLabel = 'Publishing…',
   extraActions,
+  panels = [],
   metadata,
 }: MobileEditorProps) {
   const [data, setData] = useState<Data>(initialData)
   const [stack, setStack] = useState<Screen[]>([])
-  const [preview, setPreview] = useState(false)
+  const [sheet, setSheet] = useState<DockSheet>(null)
+  const [dockHidden, setDockHidden] = useState(false)
   const [reordering, setReordering] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState<SnackbarState>(null)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [publishState, setPublishState] = useState<'idle' | 'publishing' | 'error'>('idle')
+
+  // The top bar height, measured so the dock sheets can start just below it (they must
+  // NOT cover the top bar). Falls back to a sane default before the first measure.
+  const topBarRef = useRef<HTMLElement>(null)
+  const [topBarH, setTopBarH] = useState(48)
+  useEffect(() => {
+    const el = topBarRef.current
+    if (!el) return
+    const measure = () => setTopBarH(el.offsetHeight)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   // The published baseline: dirty tracking mirrors the desktop editors (captured once,
   // updated on publish), so "Publish" dims when the live doc matches the draft.
@@ -149,6 +186,7 @@ export function MobileEditor({
     const { data: next, id } = addBlock(data, config, type)
     commit(next)
     setPickerOpen(false)
+    setSheet(null)
     // Immediately push the new block's edit screen (spec).
     setStack([{ kind: 'block', id }])
   }
@@ -156,14 +194,14 @@ export function MobileEditor({
   // ── Delete + Undo ───────────────────────────────────────────────────────────
   function performDelete(id: string) {
     const item = findBlock(data, id)
-    const title = item ? blockTitle(config, item) : 'Block'
+    const label = item ? blockTitle(config, item) : 'Block'
     const { data: next, removed, index } = removeBlock(data, id)
     if (!removed) return
     commit(next)
     setSnackbar({
       kind: 'undo',
       key: Date.now(),
-      message: `${title} deleted`,
+      message: `${label} deleted`,
       onUndo: () => commit(insertBlockAt(latest.current, removed, index)),
     })
   }
@@ -192,23 +230,7 @@ export function MobileEditor({
 
   const top = stack[stack.length - 1] ?? null
 
-  // ── Render: preview mode ─────────────────────────────────────────────────────
-  if (preview) {
-    return (
-      <div className="min-h-[100dvh] bg-canvas">
-        <TopBar title={title}>
-          <Button type="button" variant="secondary" onClick={() => setPreview(false)}>
-            <Pencil className="h-4 w-4" aria-hidden /> Done editing
-          </Button>
-        </TopBar>
-        <div className="pointer-events-none">
-          <Render config={config} data={data} metadata={metadata} />
-        </div>
-      </div>
-    )
-  }
-
-  // ── Render: a pushed full-screen form ────────────────────────────────────────
+  // ── Render: a pushed full-screen form (covers the preview while editing one block) ──
   if (top) {
     return (
       <FormScreen
@@ -225,20 +247,21 @@ export function MobileEditor({
     )
   }
 
-  // ── Render: home (block list) ────────────────────────────────────────────────
   const pickerGroups = derivePickerGroups(config)
+  const activePanel = sheet?.kind === 'panel' ? panels.find((p) => p.key === sheet.key) ?? null : null
 
+  // ── Render: home — live preview + control dock ───────────────────────────────
   return (
-    <div className="min-h-[100dvh] bg-canvas">
-      <TopBar title={title} status={statusLabel(saveState)}>
-        <button
-          type="button"
-          aria-label="Preview page"
-          onClick={() => setPreview(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface-elevated hover:text-text"
-        >
-          <Eye className="h-5 w-5" aria-hidden />
-        </button>
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden overscroll-none bg-canvas">
+      {/* Compact top bar (~48px): title, autosave status, deliberate Publish. */}
+      <header
+        ref={topBarRef}
+        className="sticky top-0 z-[55] flex shrink-0 items-center gap-2 border-b border-border bg-canvas/95 px-3 py-2 backdrop-blur"
+      >
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-sm font-semibold text-text">{title}</h1>
+          {statusLabel(saveState) && <p className="text-xs text-muted">{statusLabel(saveState)}</p>}
+        </div>
         {extraActions}
         <button
           type="button"
@@ -258,48 +281,122 @@ export function MobileEditor({
                 ? publishLabel
                 : publishedMessage}
         </button>
-      </TopBar>
+      </header>
 
-      {/* Reorder toolbar toggle */}
-      {data.content.length > 1 && (
-        <div className="flex items-center justify-between border-b border-border bg-canvas px-4 py-2">
-          <span className="text-xs text-muted">
-            {reordering ? 'Drag the handles to reorder.' : `${data.content.length} blocks`}
-          </span>
-          <button
-            type="button"
-            onClick={() => setReordering((v) => !v)}
-            className="min-h-[36px] rounded-lg px-3 text-sm font-medium text-text hover:bg-surface-elevated"
-          >
-            {reordering ? 'Done' : 'Reorder'}
-          </button>
+      {/* Live preview: the REAL page, re-rendering as `data` changes. Taps are swallowed
+          (pointer-events off) so preview links never fire. Scrolls independently. */}
+      <div className="relative min-h-0 flex-1 overflow-y-auto bg-canvas">
+        <div className="sticky top-0 z-10 flex items-center justify-center border-b border-border/60 bg-canvas/80 py-1 backdrop-blur">
+          <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
         </div>
-      )}
+        <div className="pointer-events-none">
+          <Render config={config} data={data} metadata={metadata} />
+        </div>
+        {/* Bottom breathing room so the dock never sits over the last block. */}
+        <div className="h-28" aria-hidden />
+      </div>
 
-      <BlockList
-        config={config}
-        data={data}
-        metadata={metadata}
-        reordering={reordering}
-        onOpen={(id) => setStack([{ kind: 'block', id }])}
-        onDelete={performDelete}
-        onMove={handleMove}
-      />
-
-      {/* FAB: add a block. Pinned in the bottom thumb zone. */}
-      {!reordering && (
+      {/* Control dock: a floating, elevated segmented bar in the thumb zone. */}
+      {!dockHidden ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[60] flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <nav
+            aria-label="Editor controls"
+            className="pointer-events-auto flex w-full max-w-lg items-center gap-1 rounded-2xl border border-border bg-surface-elevated p-1.5 shadow-xl"
+          >
+            <DockTab
+              label="Blocks"
+              icon={<Layers className="h-5 w-5" aria-hidden />}
+              active={sheet?.kind === 'blocks'}
+              onClick={() => setSheet((s) => (s?.kind === 'blocks' ? null : { kind: 'blocks' }))}
+            />
+            {panels.map((p) => (
+              <DockTab
+                key={p.key}
+                label={p.label}
+                icon={p.icon}
+                active={sheet?.kind === 'panel' && sheet.key === p.key}
+                onClick={() =>
+                  setSheet((s) => (s?.kind === 'panel' && s.key === p.key ? null : { kind: 'panel', key: p.key }))
+                }
+              />
+            ))}
+            <DockTab
+              label="Hide"
+              icon={<EyeOff className="h-5 w-5" aria-hidden />}
+              onClick={() => {
+                setSheet(null)
+                setDockHidden(true)
+              }}
+            />
+          </nav>
+        </div>
+      ) : (
+        // Full-bleed preview: a single always-visible control brings the dock back.
         <button
           type="button"
-          aria-label="Add block"
-          onClick={() => setPickerOpen(true)}
-          className="fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-colors hover:bg-primary-hover"
+          aria-label="Show editor controls"
+          onClick={() => setDockHidden(false)}
+          className="absolute bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] right-4 z-[60] flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated text-text shadow-xl"
         >
-          <Plus className="h-7 w-7" aria-hidden />
+          <Eye className="h-5 w-5" aria-hidden />
         </button>
       )}
 
-      {/* Add-block picker sheet */}
-      <BottomSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Add block">
+      {/* Blocks sheet: the block list + a prominent Add block. Expandable, capped at
+          85dvh, starts below the top bar (never overlaps it). */}
+      <BottomSheet
+        open={sheet?.kind === 'blocks'}
+        onClose={() => setSheet(null)}
+        title="Blocks"
+        size="tall"
+        topInsetPx={topBarH}
+        headerAction={
+          data.content.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setReordering((v) => !v)}
+              className="min-h-[36px] rounded-lg px-3 text-sm font-medium text-text hover:bg-surface"
+            >
+              {reordering ? 'Done' : 'Reorder'}
+            </button>
+          ) : undefined
+        }
+      >
+        <div className="-mx-5">
+          <BlockList
+            config={config}
+            data={data}
+            metadata={metadata}
+            reordering={reordering}
+            onOpen={(id) => {
+              setSheet(null)
+              setStack([{ kind: 'block', id }])
+            }}
+            onDelete={performDelete}
+            onMove={handleMove}
+          />
+        </div>
+        <Button type="button" className="mt-4 w-full" onClick={() => setPickerOpen(true)}>
+          <Plus className="h-4 w-4" aria-hidden /> Add block
+        </Button>
+      </BottomSheet>
+
+      {/* Injected panel sheets (e.g. Spotlight Theme). Same expandable, overlap-free sheet. */}
+      {panels.map((p) => (
+        <BottomSheet
+          key={p.key}
+          open={activePanel?.key === p.key}
+          onClose={() => setSheet(null)}
+          title={p.label}
+          size="tall"
+          topInsetPx={topBarH}
+        >
+          {activePanel?.key === p.key ? p.render() : null}
+        </BottomSheet>
+      ))}
+
+      {/* Add-block picker sheet (short interaction → auto size) */}
+      <BottomSheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Add block" topInsetPx={topBarH}>
         <div className="space-y-5">
           {pickerGroups.map((group) => (
             <div key={group.key}>
@@ -341,7 +438,7 @@ export function MobileEditor({
             onClick={() => {
               const id = confirmDelete!
               setConfirmDelete(null)
-              setStack([]) // back to the list
+              setStack([]) // back to the preview + dock
               performDelete(id)
             }}
           >
@@ -362,25 +459,30 @@ function statusLabel(s: 'idle' | 'saving' | 'saved' | 'error'): string | undefin
   return undefined
 }
 
-// The top bar: nav/status only (title, status, and the action slot). Primary actions
-// live at the BOTTOM (FAB); this bar holds nav + status per the thumb-zone rule.
-function TopBar({
-  title,
-  status,
-  children,
+// One dock tab: an icon over a tiny label, >=48px target, active = elevated pill.
+function DockTab({
+  label,
+  icon,
+  active = false,
+  onClick,
 }: {
-  title: string
-  status?: string
-  children: React.ReactNode
+  label: string
+  icon?: React.ReactNode
+  active?: boolean
+  onClick: () => void
 }) {
   return (
-    <header className="sticky top-0 z-[55] flex items-center gap-2 border-b border-border bg-canvas/95 px-3 py-2 backdrop-blur">
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate text-sm font-semibold text-text">{title}</h1>
-        {status && <p className="text-xs text-muted">{status}</p>}
-      </div>
-      {children}
-    </header>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 py-1.5 text-xs font-medium transition-colors ${
+        active ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface hover:text-text'
+      }`}
+    >
+      {icon}
+      <span className="truncate">{label}</span>
+    </button>
   )
 }
 
