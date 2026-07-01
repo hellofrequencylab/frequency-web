@@ -1,21 +1,23 @@
 import { Suspense } from 'react'
-import { ProfileTabBody } from '@/components/spaces/profile-tab-body'
+import { SpaceLanding } from '@/components/spaces/space-landing'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 
-// The entity profile's INDEX tab = About (ENTITY-SPACES-BUILD §B.1). Renders the blueprint's About
-// module set via space-scoped <PageModules>. The Detail band + tabs are the layout; this is the
-// body (children). Each module streams behind its own <Suspense> (PageModules), so the band never
-// blocks on a slow section (D5).
+// The entity profile's INDEX tab = the public LANDING, now rendered through Puck
+// (ADR-476/472, Phase 1 of unifying every builder onto Puck). The landing BODY is a
+// Puck document: the operator's published doc (spaces.preferences.puck) when present
+// + valid, else the generated preset for the Space's resolved layout template. The
+// Detail band + tab row + rail are the layout (app/(main)/spaces/[slug]/layout.tsx);
+// this is just the body (children). The OTHER tabs (offerings/practices/community/
+// book) still render their blueprint module sets via ProfileTabBody — they converge
+// to Puck in a later phase.
 //
-// The body is wrapped here in its OWN <Suspense> with the shared profile-body skeleton (rather than
-// a [slug]/loading.tsx, which would also become the fallback for the out-of-scope /settings routes):
-// the About tab body paints a card-shaped placeholder while it resolves, matching the other tabs'
-// loading.tsx, without touching settings.
-export default async function SpaceAboutPage({ params }: { params: Promise<{ slug: string }> }) {
+// The body is wrapped in its OWN <Suspense> with the shared profile-body skeleton, so
+// the band never blocks on the Space read while the landing resolves (D5).
+export default async function SpaceLandingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   return (
     <Suspense fallback={<ProfileBodySkeleton />}>
-      <ProfileTabBody slug={slug} tabId="about" />
+      <SpaceLanding slug={slug} />
     </Suspense>
   )
 }
