@@ -367,7 +367,7 @@ const PROFILE_LINK_SEEDS: readonly {
   icon: string
   minAccess?: MenuAccess
 }[] = [
-  { id: 'friends', label: 'Friends', href: '/friends', icon: 'UserPlus' },
+  { id: 'friends', label: 'Friends', href: '/network/friends', icon: 'UserPlus' },
   { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', minAccess: 'member' },
   { id: 'storefront', label: 'My storefront', href: '/marketplace/makers/manage', icon: 'Store', minAccess: 'member' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal' },

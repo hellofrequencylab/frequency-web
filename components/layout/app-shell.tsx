@@ -1674,10 +1674,10 @@ export default function AppShell({
             {/* Community actions: mindless · friends · messages · notifications · daily streak. */}
             {/* Mindless — the global practice timer overlay, openable from anywhere. */}
             <MindlessLaunch />
-            {/* Friends — all sizes (mobile reaches Messages via the button on /friends). */}
+            {/* Friends — all sizes (mobile reaches Messages via the button on /network/friends). */}
             <HoverTip label="Friends">
               <Link
-                href="/friends"
+                href="/network/friends"
                 aria-label="Friends"
                 className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full text-muted hover:text-text hover:bg-surface-elevated transition-colors"
               >

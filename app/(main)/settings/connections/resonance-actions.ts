@@ -22,7 +22,7 @@ export async function setResonanceMatching(optedIn: boolean): Promise<{ ok: bool
   const r = await setMatchingConsent(me, optedIn)
   if (r.ok) {
     revalidatePath('/settings/connections')
-    revalidatePath('/friends')
+    revalidatePath('/network/friends')
   }
   return r
 }
@@ -43,6 +43,6 @@ export async function acceptResonanceIntro(
   const me = await getMyProfileId()
   if (!me) return { ok: false, bothOptedIn: false, error: 'Sign in to accept an intro.' }
   const r = await recordMatchOptIn(me, otherProfileId)
-  if (r.ok) revalidatePath('/friends')
+  if (r.ok) revalidatePath('/network/friends')
   return r
 }

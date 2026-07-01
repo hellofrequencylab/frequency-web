@@ -32,6 +32,7 @@ import type { ProximityBand } from '@/lib/connections/location'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getInitials } from '@/lib/utils'
 import { ConnectionsPulse } from '@/components/connections/connections-pulse'
+import { NetworkTabs } from '@/components/people/network-tabs'
 
 type Profile = ProfileIdentity & {
   id: string
@@ -375,6 +376,8 @@ export default async function CommunityPage({
 
   return (
     <div>
+      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. */}
+      <NetworkTabs active="/network" />
       {/* Header: globe + operator-editable title/description, Invite on the right. */}
       <PageHeading
         title={

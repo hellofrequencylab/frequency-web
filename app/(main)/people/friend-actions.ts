@@ -73,7 +73,7 @@ export async function sendFriendRequest(
     })
   }
 
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   revalidatePath(`/people/${targetProfileId}`)
   return ok()
 }
@@ -106,7 +106,7 @@ export async function acceptFriendRequest(requesterProfileId: string): Promise<A
     body:         `${me.display_name} accepted your friend request`,
   })
 
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   revalidatePath(`/people/${requesterProfileId}`)
   return ok()
 }
@@ -125,7 +125,7 @@ export async function declineFriendRequest(requesterProfileId: string): Promise<
     .match({ ...pair, status: 'pending', requested_by: requesterProfileId })
 
   if (error) return fail(error.message)
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   return ok()
 }
 
@@ -143,7 +143,7 @@ export async function cancelFriendRequest(addresseeProfileId: string): Promise<A
     .match({ ...pair, status: 'pending', requested_by: me.id })
 
   if (error) return fail(error.message)
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   revalidatePath(`/people/${addresseeProfileId}`)
   return ok()
 }
@@ -162,7 +162,7 @@ export async function unfriend(otherProfileId: string): Promise<ActionResult> {
     .match({ ...pair, status: 'accepted' })
 
   if (error) return fail(error.message)
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   revalidatePath(`/people/${otherProfileId}`)
   return ok()
 }
