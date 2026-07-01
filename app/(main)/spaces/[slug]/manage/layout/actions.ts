@@ -7,7 +7,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isSpaceTemplate, type SpaceTemplate } from '@/lib/spaces/templates'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { nextLayoutPreferences } from './preferences'
+import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from './preferences'
 
 // SPACE LAYOUT actions (ADR-472, the public-page layout layer). An operator picks the STARTING layout
 // their Space's public landing renders through (one of the four templates Book · Schedule · Storefront ·
@@ -85,6 +85,28 @@ export async function setSpaceLayoutTemplate(
 
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/edit-page`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set the public Space header's COVER SIZE: 'header' (a compact identity band) or 'hero' (a tall,
+ * immersive cover). Read by the profile layout off preferences.coverSize. NON-DESTRUCTIVE: only the
+ * `coverSize` node is written, every other preferences key preserved. Owner/admin/editor-gated
+ * (staff preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<ActionResult> {
+  if (size !== 'header' && size !== 'hero') return fail('Pick a cover size.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextCoverSizePreferences(auth.preferences, size)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the cover size. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

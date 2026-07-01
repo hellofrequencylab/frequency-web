@@ -60,11 +60,13 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
 }
 
 // One consistent card shell every Profile info card composes, so the set reads as ONE kit (matched
-// radius, border, surface, padding). `ink` swaps to the dark-band treatment for legibility.
+// radius, surface, padding). LIGHTENED: a barely-there surface with a hairline border and no shadow,
+// so cards read as gentle groupings that blend into the page rather than hard boxes. `ink` swaps to
+// the dark-band treatment for legibility. One radius/spacing/elevation rhythm across the whole set.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-3xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} p-7 shadow-2xs ${className}`}
+      className={`rounded-3xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'} p-7 ${className}`}
     >
       {children}
     </div>
@@ -306,7 +308,7 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
       {shown.map((s) => (
         <div
           key={s.label}
-          className={`rounded-3xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'} shadow-2xs`}
+          className={`rounded-3xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
         >
           <div className={`text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{s.value.toLocaleString()}</div>
           <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>

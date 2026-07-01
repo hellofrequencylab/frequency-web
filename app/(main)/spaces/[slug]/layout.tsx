@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense, cache } from 'react'
-import { Building2, QrCode, Pencil, LayoutTemplate } from 'lucide-react'
+import { QrCode, Pencil, LayoutTemplate, ChevronLeft } from 'lucide-react'
 import { headers } from 'next/headers'
 import { DetailTemplate, type DetailTab } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
@@ -15,6 +15,8 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
 import { blueprintForSpace } from '@/lib/spaces/templates'
 import { resolveAccentVars } from '@/lib/spaces/accent'
+import { getInitials } from '@/lib/utils'
+import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { ProfileHeroStats } from '@/components/spaces/profile-hero-stats'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
@@ -30,15 +32,19 @@ import { SITE_NAME } from '@/lib/site'
 const spaceVisibility = cache(getSpaceVisibility)
 
 // ── THE NETWORKED ENTITY PROFILE (ENTITY-SPACES-BUILD §A.4 / §B.1) ──────────────────────────────
-// A profile is NOT a new layout: it is the DETAIL template (context band + tabs) composed from
+// A profile is NOT a new layout: it is the DETAIL template (cover + info band + tabs) composed from
 // registered entity modules, typed by `spaces.type` via a blueprint (§A.1). This layout resolves
 // the Space, stamps it into the request-scoped active-space context (so every entity module reads
-// THIS tenant's rows), paints the Space's brand ACCENT over the whole profile subtree, and renders
-// the context band as a real HERO CARD (the My Quest hero quality bar, §A.3):
-//   logo chip + brand name (h1) + type badge · tagline · live StatCard row · the dynamic primary
-//   CTA by type + Follow + Connect/QR. The blueprint's tab row sits on the plain canvas below.
-// The tab BODY (children) is each tab page's <PageModules>. Server Components throughout; the hero
-// identity paints instantly, the stats row streams behind its own <Suspense> with a matched skeleton (D5).
+// THIS tenant's rows), paints the Space's brand ACCENT over the whole profile subtree, and OWNS the
+// ONE cohesive header for every tab (Facebook/LinkedIn business-page grammar):
+//   a full-width COVER band at the top (image or the neutral brand gradient, Header or Hero size read
+//   off preferences.coverSize) → a PROFILE INFO area overlapping the cover bottom (the logo chip, the
+//   brand name as the single <h1>, the type badge, the tagline, the live stat row, and the trailing
+//   actions: the primary CTA by type + Follow + Connect + the owner tools) → the tab menu + Settings →
+//   a hairline rule → the content.
+// The tab BODY (children) is each tab page's <PageModules>; the landing body is the Puck content grid
+// (identity is layout-owned now, never a Puck block). Server Components throughout; the identity paints
+// instantly, the stats row streams behind its own <Suspense> with a matched skeleton (D5).
 //
 // ACCENT (D4 "the accent is a guest"): the Space's validated `brand_accent` token (or the blueprint's
 // per-role default) is remapped onto the `--color-primary*` family by a SCOPED inline override on the
@@ -224,69 +230,114 @@ export default async function SpaceProfileLayout({
   const ctaHref = ctaTab ? `${base}/${ctaTab.id}` : base
   const ctaLabel = blueprint?.primaryCta.label ?? 'Book'
 
-  // The LANDING (About index) now renders its OWN header — the Puck SpaceIdentityHeader block
-  // (cover + logo + name + CTA, with a Header/Hero style option). So on the landing we DROP the
-  // profile hero CARD to avoid a duplicate identity band stacked above the cover ("remove the
-  // above-the-header stuff"): a visitor sees just the tabs + the Puck header, and a manager sees
-  // only the owner tools (Edit / Customize) as a slim right-aligned row. The interior tabs
-  // (Offerings / Community / Book) have no Puck header, so they KEEP the full hero card.
-  const isLanding = !activeSegment
+  // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to the
+  // compact Header band for an un-migrated Space (preferences.ts).
+  const coverSize = readCoverSize(space.preferences)
 
+  // The owner tools (Edit profile · Customize page): tertiary affordances that trail the identity
+  // actions for a manager, never shown to a visitor. `secondary` size sm so they read quieter than
+  // the primary CTA + Follow.
   const ownerTools = canSeeAsOwner ? (
     <>
-      <Link href={manageHref} className={buttonClasses('secondary', 'md')}>
+      <Link href={manageHref} className={buttonClasses('secondary', 'sm')}>
         <Pencil className="h-3.5 w-3.5" aria-hidden />
         {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
       </Link>
-      <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'md')}>
+      <Link href={`${base}/edit-page`} className={buttonClasses('secondary', 'sm')}>
         <LayoutTemplate className="h-3.5 w-3.5" aria-hidden />
         Customize page
       </Link>
     </>
   ) : null
 
-  const heroCard = (
-    <ProfileHeroCard
-      name={brandName}
-      logoUrl={space.brandLogoUrl}
-      typeLabel={typeLabel}
-      tagline={tagline}
-      stats={
+  // The identity ACTIONS lockup (the trailing right cluster of the profile info area): the one
+  // emphasized primary CTA, then Follow + Connect (secondary), then the owner tools (tertiary). It
+  // wraps below the name on mobile so nothing crushes the title.
+  const identityActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
+        {ctaLabel}
+      </Link>
+      {viewerProfileId && (
+        <FollowSpaceButton spaceId={space.id} spaceName={brandName} initialFollowing={viewerFollows} />
+      )}
+      <Link
+        href="/codes"
+        aria-label={`Connect with ${brandName}`}
+        title="Connect"
+        className={buttonClasses('secondary', 'md', 'px-2.5')}
+      >
+        <QrCode className="h-4 w-4" aria-hidden />
+      </Link>
+      {ownerTools}
+    </div>
+  )
+
+  // ── THE COVER (hero slot) ──────────────────────────────────────────────────────────────────────
+  // A full content-column cover band at the very top: the Space's cover image, or the neutral brand
+  // gradient when none. Two sizes read off preferences (compact Header vs tall Hero). The back link
+  // sits above it, so the crawlable/back affordance stays without stacking a second identity band.
+  const coverH = coverSize === 'hero' ? 'h-64 sm:h-80' : 'h-40 sm:h-52'
+  const coverNode = (
+    <div>
+      <Link
+        href={viewerProfileId ? '/spaces/directory' : '/spaces'}
+        className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Spaces
+      </Link>
+      <div
+        className={`relative w-full overflow-hidden rounded-2xl ${coverH} ${
+          space.coverImageUrl ? 'bg-surface-elevated' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'
+        }`}
+      >
+        {space.coverImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL, not a build-time asset (matches SpaceCard / the Puck cover block)
+          <img src={space.coverImageUrl} alt="" className="h-full w-full object-cover" />
+        )}
+      </div>
+    </div>
+  )
+
+  // ── THE PROFILE INFO AREA (band slot) ──────────────────────────────────────────────────────────
+  // FB-business-page grammar: the logo chip overlaps the cover bottom, the name (the single page
+  // <h1>), the type badge + tagline beside it, the actions trailing right (wrapping on mobile), and
+  // the live stat row tucked below the lockup. The menu (tabs) + Settings then sit under this area
+  // (rendered by DetailTemplate right below the band), closed by the hairline rule.
+  const infoBand = (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex min-w-0 items-end gap-4">
+          {/* Only the logo chip overlaps the cover bottom (FB business page); the name + actions stay
+              in normal flow below it so nothing floats over the cover image. */}
+          <div className="-mt-12 shrink-0 sm:-mt-14">
+            <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+          </div>
+          <div className="min-w-0 pb-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-text sm:text-3xl">
+                {brandName}
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
+                {typeLabel}
+              </span>
+            </div>
+            {tagline && <p className="mt-1 max-w-2xl text-sm text-muted">{tagline}</p>}
+          </div>
+        </div>
+        <div className="sm:shrink-0 sm:pb-1">{identityActions}</div>
+      </div>
+
+      {/* The live numbers row, tucked below the lockup (not a heavy separate card). Streams behind
+          its own <Suspense>; a brand-new Space with no numbers renders nothing (empty:mt-0). */}
+      <div className="mt-5 empty:mt-0">
         <Suspense fallback={<HeroStatsSkeleton />}>
           <ProfileHeroStats spaceId={space.id} input={templateInput} />
         </Suspense>
-      }
-      actions={
-        <>
-          <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
-            {ctaLabel}
-          </Link>
-          {viewerProfileId && (
-            <FollowSpaceButton
-              spaceId={space.id}
-              spaceName={brandName}
-              initialFollowing={viewerFollows}
-            />
-          )}
-          <Link
-            href="/codes"
-            aria-label={`Connect with ${brandName}`}
-            title="Connect"
-            className={buttonClasses('secondary', 'md', 'px-2.5')}
-          >
-            <QrCode className="h-4 w-4" aria-hidden />
-          </Link>
-          {ownerTools}
-        </>
-      }
-    />
+      </div>
+    </div>
   )
-
-  const bandNode = isLanding
-    ? canSeeAsOwner
-      ? <div className="flex flex-wrap items-center justify-end gap-2">{ownerTools}</div>
-      : <></>
-    : heroCard
 
   return (
     <AccentScope vars={accentVars}>
@@ -304,7 +355,7 @@ export default async function SpaceProfileLayout({
             }),
             breadcrumbSchema([
               // The crawlable breadcrumb parent is the PUBLIC /spaces page, not the in-app
-              // /spaces/directory (which the back link below uses for signed-in navigation).
+              // /spaces/directory (which the back link above uses for signed-in navigation).
               { name: 'Spaces', path: '/spaces' },
               { name: brandName, path: `/spaces/${space.slug}` },
             ]),
@@ -312,66 +363,16 @@ export default async function SpaceProfileLayout({
         />
       )}
       <DetailTemplate
-        // A signed-in member returns to the in-app directory; a logged-out visitor (the public
-        // crawlable view) returns to the public /spaces page, which they can actually reach.
-        back={{ href: viewerProfileId ? '/spaces/directory' : '/spaces', label: 'Spaces' }}
+        // The cover is the custom `hero` (it carries the back link on top); the profile info lockup is
+        // the `band` (overlapping the cover, owning the single <h1>); the tab row + Settings follow.
         title={brandName}
-        band={bandNode}
+        hero={coverNode}
+        band={infoBand}
         tabs={tabs}
       >
         {children}
       </DetailTemplate>
     </AccentScope>
-  )
-}
-
-// ── The hero CARD — the entity context band, lifted to the My Quest hero quality bar (§2, §A.3) ──
-// A self-contained `rounded-3xl` card on a soft accent gradient: the identity lockup (logo chip
-// inline beside the name + type badge), the tagline, a full-width live stats row, then the CTAs.
-// It owns the single page <h1>. The gradient + badge read the (accent-overridden) `--color-primary*`
-// family, so the card tints to the Space's brand without a hex (D4/D6). Stays calm: a tinted card on
-// the neutral canvas, never a full-page repaint.
-function ProfileHeroCard({
-  name,
-  logoUrl,
-  typeLabel,
-  tagline,
-  stats,
-  actions,
-}: {
-  name: string
-  logoUrl: string | null
-  typeLabel: string
-  tagline: string | null
-  stats: React.ReactNode
-  actions: React.ReactNode
-}) {
-  return (
-    <section className="rounded-3xl border border-border bg-gradient-to-br from-primary-bg/25 via-surface to-surface p-6 shadow-sm">
-      {/* Identity row: the logo anchor chip inline in the title lockup (§A.4), the name as the page
-          <h1>, the accent-tinted type badge, and the CTAs (which wrap below on mobile). */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-center gap-4">
-          <BrandAnchor name={name} logoUrl={logoUrl} />
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="min-w-0 break-words text-xl font-bold leading-tight text-text sm:text-2xl">
-                {name}
-              </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-bg px-2.5 py-0.5 text-2xs font-semibold text-primary-strong">
-                {typeLabel}
-              </span>
-            </div>
-            {tagline && <p className="mt-1 max-w-2xl text-sm text-muted">{tagline}</p>}
-          </div>
-        </div>
-        {actions && <div className="flex flex-wrap items-center gap-2 sm:shrink-0">{actions}</div>}
-      </div>
-
-      {/* The live numbers band, promoted to its own full-width row (§2). Empty for a brand-new Space
-          (renders nothing), so the card stays tidy without it. */}
-      <div className="mt-5 empty:mt-0">{stats}</div>
-    </section>
   )
 }
 
@@ -392,27 +393,26 @@ const readTagline = cache(async (spaceId: string): Promise<string | null> => {
   }
 })
 
-// The brand anchor chip in the hero lockup: the operator's logo (a plain <img>, an arbitrary
-// operator URL like BrandMark), or a neutral icon chip. Decorative (alt=""): the <h1> carries the
-// name. Sized as an inline chip beside the title (§A.4), not a loose floating block.
+// The brand LOGO chip in the profile info lockup: the operator's logo (a plain <img>, an arbitrary
+// operator URL like BrandMark), or a neutral initials chip. Decorative (alt=""): the <h1> carries the
+// name. Bordered in the surface color so it reads as a chip overlapping the cover (FB business page).
 function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }) {
-  void name
   if (logoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- operator-supplied Space logo URL, not a build-time asset (matches BrandMark / SpaceCard)
       <img
         src={logoUrl}
         alt=""
-        className="h-14 w-14 shrink-0 rounded-2xl border border-border bg-surface object-contain sm:h-16 sm:w-16"
+        className="h-20 w-20 shrink-0 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
       />
     )
   }
   return (
     <span
-      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface-elevated text-subtle sm:h-16 sm:w-16"
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24"
       aria-hidden
     >
-      <Building2 className="h-7 w-7" />
+      {getInitials(name)}
     </span>
   )
 }

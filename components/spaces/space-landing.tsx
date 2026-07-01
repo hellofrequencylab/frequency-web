@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { Render } from '@measured/puck/rsc'
+import type { Data } from '@measured/puck'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -7,6 +8,24 @@ import { config } from '@/lib/page-editor/config'
 import { spacePuckData } from '@/lib/page-editor/templates/space'
 import { templateDescriptorForSpace } from '@/lib/spaces/templates'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
+
+// The profile LAYOUT now owns the identity header (cover + logo + name + CTA) for every tab, so the
+// landing body must NEVER render a SpaceIdentityHeader block or it would duplicate the layout header.
+// The generated presets no longer seed it, but a STORED (customized) doc from before the change may
+// still carry one. Strip it from the top-level content AND from any SpaceLayout main / side slot
+// before <Render>. PURE + tolerant: unknown shapes pass through untouched.
+function stripIdentityHeader(data: Data): Data {
+  const isIdentity = (b: unknown): boolean =>
+    typeof (b as { type?: unknown })?.type === 'string' && (b as { type: string }).type === 'SpaceIdentityHeader'
+  const cleanSlot = (arr: unknown): unknown =>
+    Array.isArray(arr) ? arr.filter((b) => !isIdentity(b)) : arr
+  const content = (data.content ?? []).filter((b) => !isIdentity(b)).map((b) => {
+    if (b.type !== 'SpaceLayout') return b
+    const props = b.props as Record<string, unknown>
+    return { ...b, props: { ...props, main: cleanSlot(props.main), side: cleanSlot(props.side) } }
+  })
+  return { ...data, content }
+}
 
 // THE SPACE LANDING BODY, RENDERED THROUGH PUCK (ADR-476/472, Phase 1). The profile
 // INDEX tab (/spaces/<slug>) body is now a Puck document: the stored, published doc
@@ -39,7 +58,7 @@ export async function SpaceLanding({ slug }: { slug: string }) {
     plan: space.plan,
     preferences: space.preferences,
   }
-  const data = spacePuckData({ name: brandName, ...templateInput })
+  const data = stripIdentityHeader(spacePuckData({ name: brandName, ...templateInput }))
 
   // The resolved template names the primary action (a plain verb + the tab it routes to). The landing
   // lives at the profile index; the CTA points at that tab as a slug-relative link so it never 404s.

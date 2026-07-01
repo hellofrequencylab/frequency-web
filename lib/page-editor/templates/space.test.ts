@@ -10,12 +10,12 @@ import {
 import { config } from '@/lib/page-editor/config'
 import { SPACE_TEMPLATES, templateDescriptor, type SpaceTemplate } from '@/lib/spaces/templates'
 
-// SPACE LANDING PUCK PRESET + RESOLVER contract (Phase 4, profile-native block set). Pure, no IO.
-// Locks: the four presets are valid Puck documents composed only from registered blocks, every
-// template LEADS with SpaceIdentityHeader (the shared cover/logo identity), the arrangement is
-// distinct per template (Book / Schedule / Storefront / Hub), NONE of the marketing display-type
-// blocks (Hero / FeatureGrid / StatRow / MediaText / CallToAction) remain in the space presets, and
-// the resolver prefers a stored valid doc, else the preset, fail-safe throughout.
+// SPACE LANDING PUCK PRESET + RESOLVER contract (profile-native block set). Pure, no IO.
+// Locks: the four presets are valid Puck documents composed only from registered blocks, the body is
+// the single SpaceLayout content grid (the identity header is owned by the profile LAYOUT now, never a
+// block in the preset), the arrangement is distinct per template (Book / Schedule / Storefront / Hub),
+// NONE of the marketing display-type blocks (Hero / FeatureGrid / StatRow / MediaText / CallToAction)
+// remain in the space presets, and the resolver prefers a stored valid doc, else the preset, fail-safe.
 
 const KNOWN_BLOCKS = new Set(Object.keys(config.components))
 
@@ -71,18 +71,16 @@ describe('the four preset generators', () => {
     }
   })
 
-  it('is a two-block top level: SpaceIdentityHeader then the SpaceLayout region box', () => {
+  it('is a single-block top level: the SpaceLayout region box (identity header is layout-owned)', () => {
     for (const t of SPACE_TEMPLATES) {
       const ts = types(t)
-      expect(ts[0]).toBe('SpaceIdentityHeader')
-      expect(ts[1]).toBe('SpaceLayout')
+      expect(ts).toEqual(['SpaceLayout'])
     }
   })
 
-  it('seeds the leading identity header in the default Header style', () => {
+  it('never seeds the identity header in the preset (the profile LAYOUT owns it now)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const id = generateSpacePreset(t, 'Willow Studio').content.find((b) => b.type === 'SpaceIdentityHeader')!
-      expect((id.props as Record<string, unknown>).style).toBe('header')
+      expect(allTypes(generateSpacePreset(t, 'Willow Studio'))).not.toContain('SpaceIdentityHeader')
     }
   })
 
@@ -120,11 +118,11 @@ describe('the four preset generators', () => {
 })
 
 describe('the four presets read visibly distinct (per-template arrangement)', () => {
-  // Fingerprint = identity + main + side types, so a distinct arrangement (even with the same
-  // top-level shape) reads as a different preset.
+  // Fingerprint = main + side types, so a distinct arrangement (even with the same top-level shape)
+  // reads as a different preset.
   function fingerprint(t: SpaceTemplate): string {
     const { main, side } = layoutOf(t)
-    return ['SpaceIdentityHeader', ...main, '|', ...side].join(',')
+    return [...main, '|', ...side].join(',')
   }
 
   it('produces four different fingerprints', () => {
@@ -193,7 +191,7 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
 
   it('a practitioner resolves to the Book preset (a bookable CTA)', () => {
     const doc = generateSpacePresetForSpace({ name: 'Ana Coaching', type: 'practitioner', variant: 'appointments' })
-    expect(doc.content[0]?.type).toBe('SpaceIdentityHeader')
+    expect(doc.content[0]?.type).toBe('SpaceLayout')
     expect(ctaLabels(doc)).toContain(templateDescriptor('book').hero.primaryCta.label)
   })
 
@@ -219,7 +217,7 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
   it('an unknown type is default-safe (Book), never blank', () => {
     const doc = generateSpacePresetForSpace({ name: 'Mystery', type: undefined })
     expect(doc.content.length).toBeGreaterThan(0)
-    expect(doc.content[0]?.type).toBe('SpaceIdentityHeader')
+    expect(doc.content[0]?.type).toBe('SpaceLayout')
   })
 })
 
