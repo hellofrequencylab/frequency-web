@@ -5,9 +5,9 @@ import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
-import { spacePuckData } from '@/lib/page-editor/templates/space'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
-import { templateDescriptorForSpace } from '@/lib/spaces/templates'
+import { resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 
 // The profile LAYOUT now owns the identity header (cover + logo + name + CTA) for every tab, so the
@@ -44,7 +44,7 @@ function stripIdentityHeader(data: Data): Data {
 // `<Render>` from `@measured/puck/rsc` is the server-friendly renderer the public
 // marketing pages already use (app/page.tsx), so the public landing ships no editor
 // runtime. Server Component throughout; static-friendly.
-export async function SpaceLanding({ slug }: { slug: string }) {
+export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: string; pageSlug?: string }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows, exactly as ProfileTabBody does.
   const viewerProfileId = await getMyProfileId()
@@ -59,19 +59,18 @@ export async function SpaceLanding({ slug }: { slug: string }) {
     plan: space.plan,
     preferences: space.preferences,
   }
-  // Resolve the doc, drop any block the Page panel hid (and strip the flag off survivors), then strip
-  // the legacy identity header. So a hidden top-level block never renders on the public landing.
+  // Resolve THIS page's doc (Home or a custom page), drop any block the Page panel hid (and strip the
+  // flag off survivors), then strip the legacy identity header. The resolver is fail-safe: a page with
+  // no stored doc renders the one universal default, so it never goes blank.
   const data = stripIdentityHeader(
-    withVisibleBlocks(spacePuckData({ name: brandName, ...templateInput })),
+    withVisibleBlocks(resolveSpacePageDoc(space.preferences, brandName, pageSlug)),
   )
 
-  // The resolved template names the primary action (a plain verb + the tab it routes to). The landing
-  // lives at the profile index; the CTA points at that tab as a slug-relative link so it never 404s.
-  const descriptor = templateDescriptorForSpace(templateInput)
-  const ctaTab = descriptor.hero.primaryCta.tab
+  // The single primary CTA (best practice) routes to the reserved /book action page (the live
+  // transactional surface, branched by type). Label is the per-type default (operator-overridable).
   const primaryCta = {
-    label: descriptor.hero.primaryCta.label,
-    href: ctaTab === 'about' ? `/spaces/${space.slug}` : `/spaces/${space.slug}/${ctaTab}`,
+    label: defaultPrimaryCtaLabel(space.type),
+    href: `/spaces/${space.slug}/book`,
   }
 
   // The live rows the dynamic Space content blocks read off `puck.metadata.space` (the same
