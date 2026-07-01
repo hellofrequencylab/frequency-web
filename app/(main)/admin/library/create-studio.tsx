@@ -6,6 +6,7 @@ import { Sparkles, Wand2, RotateCcw, Palette, Zap, Loader2, BadgeCheck, X, Image
 import { sanitizeSvg } from '@/lib/library/svg-sanitize'
 import { generateLoomCard, saveLoomCard, type LoomCardMode } from './vera-actions'
 import { generateStudioDraft, publishAssets, discardDrafts, listBrandStyles, type StudioDraft } from './recraft-actions'
+import { BadgeComposer } from './badge-composer-ui'
 import type { BrandStyle } from '@/lib/library/styles'
 
 // One smart "Create" surface for the whole Loom. You pick WHAT you're making; the studio picks the
@@ -56,12 +57,12 @@ const TYPES: Record<CreateType, TypeCfg> = {
     suggestions: ['a set of flat icons: compass, book, flame — warm amber, minimal', 'a cozy reading nook, flat vector, warm palette', 'a mountain trail scene, flat, amber and sage'],
   },
   trophy: {
-    label: 'Trophy / reward',
-    hint: 'A polished reward image (PNG).',
+    label: 'Trophy / badge',
+    hint: 'A house-style badge, composed from brand tokens (no AI).',
     lane: 'raster',
     defaultEngine: 'studio',
-    placeholder: 'e.g. a warm flat gold trophy badge with a laurel, soft shadows',
-    suggestions: ['a warm flat gold trophy badge with a laurel, soft shadows', 'a glowing streak-flame medal, amber, flat', 'a first-place ribbon badge, warm palette'],
+    placeholder: '',
+    suggestions: [],
   },
   card: {
     label: 'Card',
@@ -257,7 +258,9 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
         {/* What are you making? — the type drives engine, lane + suggestions. */}
         <div className="flex flex-wrap gap-1.5">
           {ORDER.map((t) => {
-            const disabled = !TYPES[t].veraMode && !recraftEnabled // studio-only + no key
+            // Trophy uses the deterministic composer (no key). Only the AI-only types need Recraft.
+            const studioOnly = t === 'illustration' || t === 'card' || t === 'texture'
+            const disabled = studioOnly && !recraftEnabled
             const active = t === type
             return (
               <button
@@ -279,6 +282,10 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
           })}
         </div>
 
+        {type === 'trophy' ? (
+          <BadgeComposer />
+        ) : (
+          <>
         <textarea
           className={inputCls}
           rows={2}
@@ -488,6 +495,8 @@ export function CreateStudio({ recraftEnabled }: { recraftEnabled: boolean }) {
             : `The Image Studio generates ${cfg.lane === 'vector' ? 'vector' : 'raster'} art as a preview — you publish it into the library.`}
         </p>
         {err && <p className="text-sm text-danger">{err}</p>}
+          </>
+        )}
       </div>
     </details>
   )

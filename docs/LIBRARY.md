@@ -68,6 +68,12 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   is janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08 vector) and called server-side only.
   Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions: `vera-actions.ts` + `recraft-actions.ts`
   (`generateStudioDraft`/`publishAssets`/`discardDrafts`).
+- **Trophy / badge composer (no AI)**: the **Trophy / badge** create type is a **deterministic
+  composer** ([ADR-492](DECISIONS.md)), not Recraft — AI can't hold strict style. Pick a **shape**
+  (medallion · ribbon · seal · shield), a **house glyph**, a **brand palette** (amber/sage/slate/sky),
+  and two labels; a live preview composes the same flat, on-brand SVG every time. Save rasterizes it to
+  a PNG (draft or published). On-brand by construction, needs no API key. Engine: `lib/loom/badge-composer.ts`
+  (pure, unit-tested); UI `badge-composer-ui.tsx`; action `composer-actions.ts` (`saveComposedBadge`).
 - **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or
   **Variation** — each **non-destructive** (snapshots the current state to `library_versions` first). A
   **Versions** list restores any prior state with one click (rollback snapshots current first, so it's

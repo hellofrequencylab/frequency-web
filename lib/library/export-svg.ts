@@ -119,6 +119,37 @@ export async function rasterizeSvgElement(source: SVGSVGElement, width = 512): P
   })
 }
 
+/** Rasterize a self-contained SVG STRING (explicit colors, no app CSS) to a PNG, returning the
+ *  base64 payload (no data-URL prefix). Transparent field by default. Used by the badge composer,
+ *  whose SVG already carries hex fills, so no style-inlining is needed. */
+export async function rasterizeSvgString(svg: string, size = 512, background?: string): Promise<string> {
+  const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg)
+  return await new Promise<string>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('Canvas not supported'))
+      if (background) {
+        ctx.fillStyle = background
+        ctx.fillRect(0, 0, size, size)
+      }
+      // Contain the (400×440) badge within the square, centered.
+      const iw = img.width || 400
+      const ih = img.height || 440
+      const scale = Math.min(size / iw, size / ih)
+      const w = iw * scale
+      const h = ih * scale
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+      resolve(canvas.toDataURL('image/png').split(',')[1] ?? '')
+    }
+    img.onerror = () => reject(new Error('Could not rasterize the SVG'))
+    img.src = dataUrl
+  })
+}
+
 /** Download a file-backed asset by URL. Falls back to opening it if the fetch is blocked. */
 export async function downloadImageUrl(url: string, filename: string): Promise<void> {
   try {
