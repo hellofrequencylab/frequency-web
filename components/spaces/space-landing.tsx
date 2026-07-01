@@ -45,7 +45,7 @@ function stripIdentityHeader(data: Data): Data {
 // runtime. Server Component throughout; static-friendly.
 export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: string; pageSlug?: string }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
-  // Space so any dynamic block reads THIS tenant's rows, exactly as ProfileTabBody does.
+  // Space so any dynamic block reads THIS tenant's rows.
   const viewerProfileId = await getMyProfileId()
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
