@@ -26,18 +26,44 @@ export default async function SpotlightEditorPage() {
   if (!user) notFound()
 
   const admin = createAdminClient()
+  // Read the owner's identity alongside the editor seed so the mobile WYSIWYG preview can render
+  // the FULL themed page (avatar, name, role, region, bio, header image) — the SAME fields the
+  // public page shows (SpotlightRow). Owner-only route, so reading them here is safe.
   const { data: me } = await admin
     .from('profiles')
-    .select('id, handle, meta')
+    .select(
+      'id, handle, meta, display_name, avatar_url, header_image_url, bio, community_role, nexus_regions!nexus_region_id ( name )',
+    )
     .eq('auth_user_id', user.id)
     .maybeSingle()
   if (!me) notFound()
 
-  const row = me as { id: string; handle: string | null; meta: unknown }
+  const row = me as {
+    id: string
+    handle: string | null
+    meta: unknown
+    display_name: string | null
+    avatar_url: string | null
+    header_image_url: string | null
+    bio: string | null
+    community_role: string | null
+    nexus_regions: { name: string | null } | null
+  }
   const meta = row.meta
   if (!readSpotlightEnabled(meta)) redirect('/settings/profile')
 
   const handle = row.handle ?? ''
+  // The profile identity the mobile WYSIWYG preview renders (avatar/name/@handle/role/region/bio),
+  // so the editor preview reads identical to the live page.
+  const identity = {
+    displayName: row.display_name,
+    handle,
+    avatarUrl: row.avatar_url,
+    headerImageUrl: row.header_image_url,
+    bio: row.bio,
+    communityRole: row.community_role,
+    regionName: row.nexus_regions?.name ?? null,
+  }
   // Load DRAFT-ELSE-LIVE: resume the member's working draft when one exists (so reopening the
   // editor keeps their unpublished edits), otherwise seed from the last-published live nodes. The
   // public page still reads ONLY the live nodes, so a draft never leaks. Each part is VALIDATED on
@@ -59,6 +85,7 @@ export default async function SpotlightEditorPage() {
     <SpotlightPuckEditor
       handle={handle}
       published={published}
+      identity={identity}
       initialLayout={layout}
       initialTheme={theme}
       initialBackground={background}
