@@ -48,17 +48,6 @@ describe('the new blocks are registered + categorised in the shared config', () 
   })
 })
 
-describe('the dynamic blocks carry the universal adjust controls (tone/width/align/layout)', () => {
-  for (const key of ['SpaceUpdates', 'SpaceReviews', 'SpaceFAQ'] as const) {
-    it(`${key} exposes the standard adjust fields`, () => {
-      const fields = spacesComponents[key].fields ?? {}
-      for (const adjust of ['tone', 'width', 'align', 'layout']) {
-        expect(fields[adjust]).toBeTruthy()
-      }
-    })
-  }
-})
-
 describe('CONTENT-VOICE: no em dashes in any default copy', () => {
   it('none of the new blocks seed an em dash', () => {
     for (const key of KEYS) {

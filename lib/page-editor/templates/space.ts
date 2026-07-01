@@ -12,9 +12,10 @@ import { emphasisDefault } from '@/lib/page-editor/fields'
 // each of the four public-page layout templates (Book · Schedule · Storefront · Hub)
 // this file GENERATES a Puck `Data` document for a Space's public LANDING body,
 // composed from the PROFILE-NATIVE block set (components/page-editor/blocks/profile.tsx)
-// + the Phase 2 dynamic Space blocks (SpaceUpdates / SpaceReviews / SpaceFAQ) + the
-// registered Gallery. It reads like a Facebook business page: a shared cover + logo
-// IDENTITY HEADER, then clean, organizable info cards, NOT a marketing landing page.
+// + the Phase 2 dynamic Space blocks (SpaceUpdates / SpaceReviews / SpaceFAQ). It reads
+// like a Facebook business page: a shared cover + logo IDENTITY HEADER, then a SpaceLayout
+// region box whose main / side slots hold clean, organizable boxed info cards, NOT a
+// stack of full-width marketing bands.
 //
 // PHASE 4 CHANGE: the presets used to lead with the marketing display-type Hero + a
 // FeatureGrid + a marketing StatRow, which read like a landing page, not a profile. Now
@@ -47,20 +48,13 @@ export interface SpacePresetInput extends TemplateResolverInput {
   name: string
 }
 
-const L = { spaceTop: 'default', spaceBottom: 'default', visibility: 'all' } as const
-
 type Block = { type: string; props: Record<string, unknown> }
 
-// Alternate the band tone (surface -> cream -> surface ...) so the body reads with rhythm.
-function tone(index: number): 'surface' | 'canvas' {
-  return index % 2 === 0 ? 'surface' : 'canvas'
-}
-
-// ── The shared IDENTITY HEADER that LEADS every template's document. It reads the cover /
-// logo / name / tagline / primary CTA off `puck.metadata.space.identity` (injected by the
-// render path), so an operator sees the real header the moment the page publishes. No
-// per-surface override by default (uniform); the operator can set a cover/logo override or
-// toggle it off in the editor.
+// ── The shared IDENTITY HEADER that LEADS every template's document (at the TOP level, above
+// the layout box). It reads the cover / logo / name / tagline / primary CTA off
+// `puck.metadata.space.identity` (injected by the render path), so an operator sees the real
+// header the moment the page publishes. No per-surface override by default (uniform); the
+// operator can set a cover/logo override or toggle it off in the editor.
 function identityHeader(template: SpaceTemplate): Block {
   return {
     type: 'SpaceIdentityHeader',
@@ -75,19 +69,23 @@ function identityHeader(template: SpaceTemplate): Block {
   }
 }
 
+// ── The card builders now return BARE profile cards (no tone/width/align/layout band props):
+// they live INSIDE the SpaceLayout box's main / side slots, rendered as clean boxed cards, so
+// the page reads like a Facebook business page rather than a stack of full-width bands.
+
 // ── The live HIGHLIGHTS strip (members / offerings / ...). Reads the live counts off
 // metadata; renders nothing until the Space has positive counts (honest at day zero).
 function highlights(template: SpaceTemplate): Block {
   return {
     type: 'SpaceHighlights',
-    props: { id: `sp-${template}-highlights`, tone: 'surface', width: 'wide', align: 'center', layout: L },
+    props: { id: `sp-${template}-highlights` },
   }
 }
 
 // ── The OFFERINGS grid. Operator authored (empty by default, so it shows a designed
 // placeholder in the editor and nothing on the live page until the operator adds cards).
 // The eyebrow + heading are framed by the template's own voice.
-function offerings(template: SpaceTemplate, heading: string, index: number): Block {
+function offerings(template: SpaceTemplate, heading: string): Block {
   return {
     type: 'SpaceOfferings',
     props: {
@@ -95,16 +93,12 @@ function offerings(template: SpaceTemplate, heading: string, index: number): Blo
       eyebrow: 'What we offer',
       heading,
       items: [],
-      tone: tone(index),
-      width: 'wide',
-      align: 'left',
-      layout: L,
     },
   }
 }
 
 // ── The ABOUT / story card.
-function about(template: SpaceTemplate, name: string, heading: string, index: number): Block {
+function about(template: SpaceTemplate, name: string, heading: string): Block {
   return {
     type: 'SpaceAbout',
     props: {
@@ -112,16 +106,12 @@ function about(template: SpaceTemplate, name: string, heading: string, index: nu
       eyebrow: 'About',
       heading,
       body: `Tell people who you are and why this matters. Share what brought ${name} here and what someone can expect.`,
-      tone: tone(index),
-      width: 'default',
-      align: 'left',
-      layout: L,
     },
   }
 }
 
 // ── The tasteful CTA card (a headline + one button), NOT a full-bleed marketing hero.
-function cta(template: SpaceTemplate, heading: string, body: string, label: string, index: number): Block {
+function cta(template: SpaceTemplate, heading: string, body: string, label: string): Block {
   return {
     type: 'SpaceCTA',
     props: {
@@ -130,16 +120,13 @@ function cta(template: SpaceTemplate, heading: string, body: string, label: stri
       body,
       ctaLabel: label,
       ctaHref: '#',
-      tone: tone(index),
-      width: 'default',
-      align: 'center',
-      layout: L,
+      accent: 'no',
     },
   }
 }
 
 // ── The CONTACT + hours info card. Empty by default (placeholder in the editor).
-function contact(template: SpaceTemplate, index: number): Block {
+function contact(template: SpaceTemplate): Block {
   return {
     type: 'SpaceContact',
     props: {
@@ -152,16 +139,12 @@ function contact(template: SpaceTemplate, index: number): Block {
       email: '',
       linkLabel: '',
       linkHref: '',
-      tone: tone(index),
-      width: 'default',
-      align: 'left',
-      layout: L,
     },
   }
 }
 
 // ── The TEAM avatar cards. Empty by default (placeholder in the editor).
-function team(template: SpaceTemplate, index: number): Block {
+function team(template: SpaceTemplate): Block {
   return {
     type: 'SpaceTeam',
     props: {
@@ -169,17 +152,13 @@ function team(template: SpaceTemplate, index: number): Block {
       eyebrow: 'The people',
       heading: 'Meet the team',
       members: [],
-      tone: tone(index),
-      width: 'wide',
-      align: 'left',
-      layout: L,
     },
   }
 }
 
-// ── The Phase 2 dynamic blocks (Reviews / FAQ / Updates) + the registered Gallery, reused
-// here (never rebuilt). Each renders nothing until the operator adds real rows / photos, so
-// seeding them is a designed placement, not a fake.
+// ── The Phase 2 dynamic blocks (Reviews / FAQ / Updates), reused here (never rebuilt). Each
+// renders nothing until the operator adds real rows, so seeding them is a designed placement,
+// not a fake.
 
 function reviews(template: SpaceTemplate): Block {
   return {
@@ -189,10 +168,6 @@ function reviews(template: SpaceTemplate): Block {
       eyebrow: 'What members say',
       heading: 'Reviews',
       limit: '4',
-      tone: 'canvas',
-      width: 'wide',
-      align: 'left',
-      layout: L,
     },
   }
 }
@@ -206,10 +181,6 @@ function faq(template: SpaceTemplate): Block {
       heading: 'Common questions',
       titleAccent: '',
       emphasis: emphasisDefault,
-      tone: 'surface',
-      width: 'default',
-      align: 'left',
-      layout: L,
     },
   }
 }
@@ -223,31 +194,21 @@ function updates(template: SpaceTemplate): Block {
       heading: 'From the team',
       limit: '3',
       viewAllHref: '',
-      tone: 'surface',
-      width: 'wide',
-      align: 'left',
-      layout: L,
     },
   }
 }
 
-function gallery(template: SpaceTemplate): Block {
+// ── The SpaceLayout region box that holds the two card columns (main + side). The identity
+// header sits ABOVE it at the top level; the cards live INSIDE its slots as clean boxed cards.
+function spaceLayout(template: SpaceTemplate, main: Block[], side: Block[]): Block {
   return {
-    type: 'Gallery',
+    type: 'SpaceLayout',
     props: {
-      id: `sp-${template}-gallery`,
-      eyebrow: 'Gallery',
-      heading: 'A look inside',
-      items: [],
-      columns: '3',
-      tileAspect: '16/10',
-      emphasis: emphasisDefault,
-      cardStyle: { style: 'border', radius: 'md' },
-      density: { spacing: 'cozy' },
-      tone: 'canvas',
-      width: 'wide',
-      align: 'left',
-      layout: L,
+      id: `sp-${template}-layout`,
+      layout: 'main-side',
+      sideSticky: 'no',
+      main,
+      side,
     },
   }
 }
@@ -256,67 +217,70 @@ function gallery(template: SpaceTemplate): Block {
  * Generate a Puck `Data` document for a Space LANDING, for the given template. PURE +
  * total: every template yields a valid Puck document composed from the Profile block set,
  * visibly distinct per template (a different card arrangement per focus). Every template
- * LEADS with SpaceIdentityHeader (the shared cover/logo identity), then arranges the info
- * cards:
- *   Book:       Identity -> Highlights -> Offerings(bookable) -> CTA(Book) -> Reviews -> FAQ -> About -> Contact.
- *   Schedule:   Identity -> Offerings(schedule) -> CTA(See the schedule) -> Highlights -> Reviews -> About -> Contact.
- *   Storefront: Identity -> Offerings(catalog) -> Gallery -> Reviews -> About -> Contact.
- *   Hub:        Identity -> About(mission) -> CTA(Get involved) -> Updates -> Offerings(programs) -> Gallery -> Team -> FAQ -> Contact.
+ * LEADS with SpaceIdentityHeader (the shared cover/logo identity) at the TOP level, then a
+ * single SpaceLayout region box whose main / side slots hold the profile cards, so the page
+ * reads like a Facebook business page (identity header + a two-column region grid of boxed
+ * cards):
+ *   Book:       main = Offerings(book) -> CTA(Book) -> Reviews -> FAQ;  side = Highlights -> About -> Contact.
+ *   Schedule:   main = Offerings(schedule) -> CTA(schedule) -> Reviews; side = Highlights -> About -> Contact.
+ *   Storefront: main = Offerings(catalog) -> Reviews;                   side = Highlights -> About -> Contact.
+ *   Hub:        main = About(mission) -> Updates -> Offerings(programs) -> Team;
+ *               side = Highlights -> CTA(Get involved) -> Contact -> FAQ.
  * Nothing is locked: the operator reorders / toggles any of it in the editor.
  */
 export function generateSpacePreset(template: SpaceTemplate, name: string): Data {
   const brand = name.trim() || 'this space'
   const id = identityHeader(template)
 
-  let body: Block[]
+  let layout: Block
   switch (template) {
     case 'book':
-      body = [
-        highlights(template),
-        offerings(template, 'What you can book', 1),
-        cta(template, 'Ready when you are', `Pick a time and ${brand} will take it from there.`, 'Book a session', 2),
-        reviews(template),
-        faq(template),
-        about(template, brand, `About ${brand}`, 3),
-        contact(template, 4),
-      ]
+      layout = spaceLayout(
+        template,
+        [
+          offerings(template, 'What you can book'),
+          cta(template, 'Ready when you are', `Pick a time and ${brand} will take it from there.`, 'Book a session'),
+          reviews(template),
+          faq(template),
+        ],
+        [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
+      )
       break
     case 'schedule':
-      body = [
-        offerings(template, 'The schedule', 1),
-        cta(template, 'Save your spot', `See what is coming up at ${brand} and reserve your place.`, 'See the schedule', 2),
-        highlights(template),
-        reviews(template),
-        about(template, brand, `About ${brand}`, 3),
-        contact(template, 4),
-      ]
+      layout = spaceLayout(
+        template,
+        [
+          offerings(template, 'The schedule'),
+          cta(template, 'Save your spot', `See what is coming up at ${brand} and reserve your place.`, 'See the schedule'),
+          reviews(template),
+        ],
+        [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
+      )
       break
     case 'storefront':
-      body = [
-        offerings(template, 'The catalog', 1),
-        gallery(template),
-        reviews(template),
-        about(template, brand, `About ${brand}`, 3),
-        contact(template, 4),
-      ]
+      layout = spaceLayout(
+        template,
+        [offerings(template, 'The catalog'), reviews(template)],
+        [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
+      )
       break
     case 'hub':
-      body = [
-        about(template, brand, 'Our mission', 1),
-        cta(template, 'Get involved', `There is a place for you at ${brand}. Here is how to start.`, 'Get involved', 2),
-        updates(template),
-        offerings(template, 'Our programs', 3),
-        gallery(template),
-        team(template, 4),
-        faq(template),
-        contact(template, 5),
-      ]
+      layout = spaceLayout(
+        template,
+        [about(template, brand, 'Our mission'), updates(template), offerings(template, 'Our programs'), team(template)],
+        [
+          highlights(template),
+          cta(template, 'Get involved', `There is a place for you at ${brand}. Here is how to start.`, 'Get involved'),
+          contact(template),
+          faq(template),
+        ],
+      )
       break
   }
 
   return {
     root: {},
-    content: [id, ...body],
+    content: [id, layout],
   }
 }
 

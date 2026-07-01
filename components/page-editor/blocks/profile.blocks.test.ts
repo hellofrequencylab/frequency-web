@@ -47,12 +47,13 @@ describe('the Profile blocks are registered + categorised in the shared config',
     }
   })
 
-  it('all seven are grouped under the Profile category, identity header first', () => {
+  it('all seven cards + the SpaceLayout box are grouped under the Profile category, layout box first', () => {
     const profile = config.categories?.profile?.components ?? []
     for (const key of KEYS) {
       expect(profile).toContain(key)
     }
-    expect(profile[0]).toBe('SpaceIdentityHeader')
+    expect(profile).toContain('SpaceLayout')
+    expect(profile[0]).toBe('SpaceLayout')
   })
 
   it('does NOT remove the marketing blocks (the Profile set is additive)', () => {
@@ -62,16 +63,31 @@ describe('the Profile blocks are registered + categorised in the shared config',
   })
 })
 
-describe('the card blocks carry the universal adjust controls (tone/width/align/layout)', () => {
-  // The identity header is a full-bleed banner and owns its own layout, so it is exempt.
-  for (const key of ['SpaceAbout', 'SpaceHighlights', 'SpaceOfferings', 'SpaceContact', 'SpaceTeam', 'SpaceCTA'] as const) {
-    it(`${key} exposes the standard adjust fields`, () => {
-      const fields = profileComponents[key].fields ?? {}
-      for (const adjust of ['tone', 'width', 'align', 'layout']) {
-        expect(fields[adjust], `${key}.${adjust}`).toBeTruthy()
-      }
-    })
-  }
+describe('the SpaceLayout region box is a well-formed slot shell', () => {
+  it('is a well-formed ComponentConfig (fields + defaultProps + render)', () => {
+    const block = profileComponents.SpaceLayout
+    expect(block).toBeTruthy()
+    expect(typeof block.render).toBe('function')
+    expect(block.fields).toBeTruthy()
+    expect(block.defaultProps).toBeTruthy()
+  })
+
+  it('declares a main slot and a side slot', () => {
+    const fields = profileComponents.SpaceLayout.fields ?? {}
+    expect((fields.main as { type?: string } | undefined)?.type).toBe('slot')
+    expect((fields.side as { type?: string } | undefined)?.type).toBe('slot')
+  })
+
+  it('defaults both slots to empty arrays (no orphan defaults)', () => {
+    const block = profileComponents.SpaceLayout
+    const fieldKeys = new Set(Object.keys(block.fields ?? {}))
+    for (const propKey of Object.keys(block.defaultProps ?? {})) {
+      if (propKey === 'id') continue
+      expect(fieldKeys.has(propKey), `SpaceLayout.${propKey}`).toBe(true)
+    }
+    expect(block.defaultProps?.main).toEqual([])
+    expect(block.defaultProps?.side).toEqual([])
+  })
 })
 
 describe('the operator-authored list blocks expose array fields', () => {
