@@ -165,7 +165,11 @@ function composeNavAreas(): NavArea[] {
   return areas
 }
 
-/** The full nav (base + vertical-contributed), the single source the shell + grid read. */
+/** The full nav (base + vertical-contributed), the single source the shell + grid read.
+ *  STRANGLER-FIG (NAV-SYSTEM-REDESIGN §3, phase 1): this composed list is the ONE
+ *  underlying source of truth; lib/nav/registry.ts::NAV_REGISTRY is BUILT FROM it, projecting
+ *  each area into a `mode:'calm'` NavNode. New surfaces read the registry; this export (and
+ *  meetsAccess/meetsStaff below) stays intact so every current importer compiles unchanged. */
 export const NAV_AREAS: readonly NavArea[] = composeNavAreas()
 
 /** Quick lookup of an area's baseline access by key. */
