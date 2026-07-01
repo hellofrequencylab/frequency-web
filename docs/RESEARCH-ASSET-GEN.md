@@ -45,7 +45,13 @@ diffusion — hence the split.
 
 ## Phased adoption path
 
-### Phase 1 — Smart sort + semantic search (no GPU, reuse existing infra) ✅ lowest risk
+### Phase 1 — Smart sort + semantic search (no GPU, reuse existing infra) ✅ SHIPPED
+Implemented: migration `20260921000000_library_embeddings.sql` (embedding_hash + HNSW +
+`match_library_assets`/`similar_library_assets` RPCs), `lib/library/embeddings.ts`
+(`reindexLibraryEmbeddings`/`matchLibraryAssets`/`similarLibraryAssets`), the `embed-library` cron,
+and UI ("Most relevant" sort + "Find similar"). Embeddings backfill on the first cron run; search
+degrades to keyword until then. Original plan below.
+
 Populate the reserved `embedding` column from each asset's text (title + description + category +
 tags) via the existing `embedText()`, then search by meaning.
 1. **Backfill + keep‑in‑sync:** a `reindexLibraryEmbeddings()` (mirror `lib/ai/help-index.ts`) that embeds assets whose text changed (content‑hash gated), plus an `embed-library` cron (mirror `app/api/cron/embed-help/route.ts`). A DB trigger on insert/update of a version marks the asset dirty.
