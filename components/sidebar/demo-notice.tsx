@@ -12,7 +12,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 const ACTIONS = [
   { label: 'Log a practice', href: '/practices', zaps: ZAP_AMOUNTS.practice_logged },
   { label: 'Start a circle', href: '/circles', zaps: ZAP_AMOUNTS.circle_start },
-  { label: 'Invite a friend', href: '/friends', zaps: ZAP_AMOUNTS.invite_accepted },
+  { label: 'Invite a friend', href: '/network/friends', zaps: ZAP_AMOUNTS.invite_accepted },
   { label: 'Show up to an event', href: '/events', zaps: ZAP_AMOUNTS.event_attend },
 ] as const
 

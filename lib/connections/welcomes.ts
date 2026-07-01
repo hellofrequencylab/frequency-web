@@ -100,7 +100,7 @@ export async function recordWelcome(newcomerId: string): Promise<WelcomeResult> 
     reason: 'welcome',
     newcomer: newcomerId,
   })
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   revalidatePath('/network')
   return { awarded: r.awarded, gems: r.amount, error: null }
 }

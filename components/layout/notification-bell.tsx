@@ -21,9 +21,9 @@ const TYPE_ICON: Record<string, string> = {
 }
 
 function notifHref(n: NotificationItem): string {
-  if (n.type === 'friend_request') return '/friends'
+  if (n.type === 'friend_request') return '/network/friends'
   if (n.type === 'friend_accepted' && n.reference_type === 'profile' && n.reference_id) {
-    return '/friends'
+    return '/network/friends'
   }
   if (n.reference_type === 'post' && n.reference_id) return `/feed`
   if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`

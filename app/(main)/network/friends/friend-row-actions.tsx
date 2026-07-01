@@ -9,7 +9,7 @@ import {
   declineFriendRequest,
   cancelFriendRequest,
   unfriend,
-} from '../people/friend-actions'
+} from '../../people/friend-actions'
 
 export function AcceptDeclineButtons({ requesterId }: { requesterId: string }) {
   const [isPending, startTransition] = useTransition()

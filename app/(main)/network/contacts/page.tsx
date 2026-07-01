@@ -16,6 +16,7 @@ import { ReachOutList } from '@/components/connections/reach-out-list'
 import { SpaceCrmPrompt } from '@/components/connections/space-crm-prompt'
 import { ContactSort, type ContactSortValue } from '@/components/connections/contact-sort'
 import { GoogleImportBanner, type GoogleImportOutcome } from '@/components/connections/google-import-banner'
+import { NetworkTabs } from '@/components/people/network-tabs'
 import type { NetworkContactListItem } from '@/lib/connections/types'
 
 const IMPORT_OUTCOMES = ['done', 'cancelled', 'error', 'unavailable'] as const
@@ -97,6 +98,8 @@ export default async function ConnectionsPage({
 
   return (
     <div className="mx-auto max-w-5xl">
+      {/* Hub tab strip — Community · Friends · Contacts read as one Network hub. */}
+      <NetworkTabs active="/network/contacts" />
       {/* Mobile header is COMPACT: the H1 drops the icon and the description
           shrinks to one line to save vertical space. sm+ keeps the full header. */}
       <IndexTemplate

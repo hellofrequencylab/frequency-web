@@ -72,7 +72,7 @@ export async function createIntroduction(
   })
   // Unique index → you've already introduced this pair.
   if (error) return fail(/duplicate|unique/i.test(error.message) ? 'You’ve already introduced them.' : error.message)
-  revalidatePath('/friends')
+  revalidatePath('/network/friends')
   return ok()
 }
 
@@ -130,7 +130,7 @@ export async function claimIntroductionRewards(): Promise<IntroductionRewardResu
       }
     }
   }
-  if (rewarded) revalidatePath('/friends')
+  if (rewarded) revalidatePath('/network/friends')
   return { rewarded, gems }
 }
 
