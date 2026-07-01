@@ -109,9 +109,10 @@ export function isSafeRoute(pathname: string): boolean {
 // surface whose body truly scrolls sideways belongs in this list.
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated) — horizontal stage board
-  // The Space LANDING editor (ADR-476/472): a full-viewport Puck editor that owns the whole surface
-  // (its own header + side bars), so it drops the member right rail like every other editor takeover.
-  /^\/spaces\/[^/]+\/edit-page$/,
+  // NOTE: the Space LANDING editor (/spaces/<slug>/edit-page, ADR-476/472) is NO LONGER here (chrome
+  // pass, 2026-06): it is an IN-PAGE editor, not a full-viewport takeover, so it keeps the GLOBAL
+  // community right rail like the rest of the app. Its Puck side panels are shrunk (puck-theme.css) so
+  // the canvas still breathes beside the rail. Only a surface that truly owns the viewport belongs here.
   // The "Build your Spotlight" Puck editor (/settings/profile/spotlight): the same full-viewport
   // editor takeover. Its desktop <Puck> owns the surface and its mobile control dock needs the whole
   // viewport, so it drops the member right rail here (and the mobile bottom nav via

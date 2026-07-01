@@ -52,7 +52,7 @@ function highlightsFrom(puck: PuckArg): SpaceHighlight[] {
 // Shown in the editor canvas (no live data) so a section stays visible + draggable there.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
+    <div className="rounded-xl border border-dashed border-border bg-surface/60 px-4 py-10 text-center text-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
     </div>
@@ -66,7 +66,7 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-3xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'} p-7 ${className}`}
+      className={`rounded-xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'} p-6 sm:p-7 ${className}`}
     >
       {children}
     </div>
@@ -246,7 +246,7 @@ export function SpaceIdentityHeaderBlock({
   const h = HEADER_COVER_HEIGHT[height ?? 'medium'] ?? HEADER_COVER_HEIGHT.medium
   return (
     <section className="w-full pt-4">
-      <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-2xs">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-2xs">
         {/* Cover band. A neutral tinted fill when there is no uploaded cover, so the header still reads
             as an intentional identity card, never broken. */}
         <div className={`relative w-full ${h} ${cover ? '' : 'bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface'}`}>
@@ -304,11 +304,11 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
   if (highlights.length === 0) return null
   const shown = highlights.slice(0, 4)
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-4">
       {shown.map((s) => (
         <div
           key={s.label}
-          className={`rounded-3xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
+          className={`rounded-xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
         >
           <div className={`text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{s.value.toLocaleString()}</div>
           <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
@@ -345,7 +345,7 @@ export function SpaceOfferingsBlock({
       {shown.length === 0 ? (
         <EditorStub label="Offerings" hint="Add the services this space provides" />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2">
           {shown.map((o, i) => (
             <InfoCard key={i} ink={ink}>
               {o.title && <h3 className={`text-base font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>}
@@ -451,7 +451,7 @@ export function SpaceTeamBlock({
       {shown.length === 0 ? (
         <EditorStub label="Team" hint="Introduce the people behind this space" />
       ) : (
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-5 grid-cols-2 sm:grid-cols-3">
           {shown.map((m, i) => (
             <InfoCard key={i} ink={ink} className="text-center">
               {m.avatar ? (
@@ -554,8 +554,8 @@ function SpaceLayoutRegion({
 }) {
   if (layout === 'stacked') {
     return (
-      <section className="w-full py-8 sm:py-10">
-        <div className="space-y-8">
+      <section className="w-full py-10 sm:py-12">
+        <div className="space-y-10">
           <Main />
         </div>
       </section>
@@ -563,16 +563,16 @@ function SpaceLayoutRegion({
   }
   const sideFirst = layout === 'side-main'
   const asideClass = [
-    'space-y-8',
+    'space-y-10',
     sideFirst ? 'lg:order-first' : '',
     sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '',
   ]
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="w-full py-8 sm:py-10">
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-2">
+    <section className="w-full py-10 sm:py-12">
+      <div className="grid gap-8 lg:grid-cols-3 lg:gap-10">
+        <div className="space-y-10 lg:col-span-2">
           <Main />
         </div>
         <aside className={asideClass}>

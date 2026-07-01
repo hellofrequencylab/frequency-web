@@ -17,7 +17,7 @@ export async function ProfileHeroStats({ spaceId, input }: { spaceId: string; in
   if (stats.length === 0) return null
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {stats.map((s) => (
         <StatCard key={s.metric} size="sm" label={s.label} value={s.value.toLocaleString()} />
       ))}

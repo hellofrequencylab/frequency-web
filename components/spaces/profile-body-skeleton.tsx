@@ -27,9 +27,9 @@ function ProfileSectionSkeleton({ cards = 4 }: { cards?: number }) {
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-5 w-8 rounded-full" />
       </div>
-      <div className="grid gap-4 @lg:grid-cols-2">
+      <div className="grid gap-5 @lg:grid-cols-2">
         {Array.from({ length: cards }).map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-2xl" />
+          <Skeleton key={i} className="h-32 rounded-xl" />
         ))}
       </div>
     </div>

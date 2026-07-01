@@ -54,4 +54,50 @@
   --puck-color-azure-10: var(--color-primary-bg) !important;
   --puck-color-azure-11: var(--color-primary-bg) !important;
   --puck-color-azure-12: var(--color-primary-bg) !important;
+
+  /* ── SKINNIER SIDEBARS ──────────────────────────────────────────────────────
+     Puck's default side-bar width scales from 186px up to 320px on wide screens.
+     Now that the editor keeps the global community right rail (page-chrome.ts), that
+     was too wide and crowded the canvas. Puck exposes a clean, supported override:
+     --puck-user-left-side-bar-width / --puck-user-right-side-bar-width win over the
+     internal --puck-side-bar-width at every breakpoint. Pin both to a compact 220px so
+     the Components (left) + Page (right) panels stay legible but reclaim canvas width. */
+  --puck-user-left-side-bar-width: 220px !important;
+  --puck-user-right-side-bar-width: 220px !important;
+}
+
+/* ── COMPACT PUCK CONTROLS (scoped to the editor chrome) ─────────────────────────────
+   Tighter row padding, a tighter section rhythm, and a slimmer toolbar so the builder
+   reads dense-but-legible (targets stay >=32px). The Puck class hashes are matched to the
+   pinned @measured/puck version; if a future bump rehashes them these rules simply no-op
+   (a safe degrade back to Puck's defaults), so they never break the editor. */
+
+/* Component-list drawer rows: slimmer padding + a set min-height keeps a comfortable
+   >=32px drag target while trimming the bulk. */
+[class*='_DrawerItem-draggable_'] {
+  padding: 7px 10px !important;
+  min-height: 34px !important;
+  border-radius: 6px !important;
+}
+
+/* Sidebar section headers + bodies: tighter than the default 16px so the panels feel
+   compact and more content fits above the fold. */
+[class*='_SidebarSection-title_'] {
+  padding: 10px 12px !important;
+}
+[class*='_SidebarSection-content_'] {
+  padding: 10px 12px !important;
+}
+
+/* Field rows in the Page (right) panel: trim the generous default field padding. */
+[class*='_PuckFields-field_'] {
+  padding: 10px 12px !important;
+}
+
+/* Slimmer top toolbar: shrink the header's internal padding + gap (driven by
+   --puck-space-px, default 16px) so the toolbar row is tighter. Scoped to the header
+   grid so only the toolbar tightens, not the whole editor's spacing scale. */
+[class*='_PuckHeader-inner_'] {
+  --puck-space-px: 10px;
+  padding: 8px 12px !important;
 }
