@@ -246,6 +246,110 @@ function bodyBlockForModule(
   }
 }
 
+// ── New Space content blocks (Puck content blocks, Phase 2). Each is composed from a REGISTERED
+// block (Cover / SpaceReviews / SpaceFAQ / SpaceUpdates / Gallery), seeded with plain on-brand copy,
+// and left fully operator-movable/removable (nothing locked). The dynamic ones render nothing until
+// the operator adds real rows (fail-safe), so seeding them is honest at day zero: they are a
+// designed placement, not a fake. Copy is CONTENT-VOICE (plain, no em dashes, no invented counts).
+
+// The Cover banner that LEADS every template's document. Neutral placeholder image (same hosted
+// asset set the hero draws from) the operator swaps in the editor; no overlay copy by default so the
+// hero below owns the headline.
+function coverBlock(template: SpaceTemplate, emphasis: HeroEmphasis): { type: string; props: Record<string, unknown> } {
+  return {
+    type: 'Cover',
+    props: {
+      id: `sp-${template}-cover`,
+      image: EMPHASIS_IMAGE[emphasis],
+      alt: '',
+      focal: 'center',
+      height: 'medium',
+      eyebrow: '',
+      title: '',
+      layout: L,
+    },
+  }
+}
+
+// A member-proof Reviews block, placed near the CTA on Book/Schedule/Storefront. Renders nothing
+// until members leave reviews, so the seed is a designed slot, not a fake average.
+function reviewsBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+  return {
+    type: 'SpaceReviews',
+    props: {
+      id: `sp-${template}-reviews`,
+      eyebrow: 'What members say',
+      heading: 'Reviews',
+      limit: '4',
+      tone: 'canvas',
+      width: 'wide',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// An operator FAQ accordion, placed LOWER on the page. Renders nothing until the operator adds
+// questions.
+function faqBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+  return {
+    type: 'SpaceFAQ',
+    props: {
+      id: `sp-${template}-faq`,
+      eyebrow: 'FAQ',
+      heading: 'Common questions',
+      titleAccent: '',
+      emphasis: emphasisDefault,
+      tone: 'surface',
+      width: 'default',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// The brand Updates feed, used on the Hub (the fullest template). Renders nothing until the operator
+// publishes an update.
+function updatesBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+  return {
+    type: 'SpaceUpdates',
+    props: {
+      id: `sp-${template}-updates`,
+      eyebrow: 'Latest',
+      heading: 'From the team',
+      limit: '3',
+      viewAllHref: '',
+      tone: 'surface',
+      width: 'wide',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
+// A Gallery placement (Storefront + Hub keep a gallery). Empty items by default (no fake photos);
+// the operator uploads their own. Uses the registered Gallery block.
+function galleryBlock(template: SpaceTemplate): { type: string; props: Record<string, unknown> } {
+  return {
+    type: 'Gallery',
+    props: {
+      id: `sp-${template}-gallery`,
+      eyebrow: 'Gallery',
+      heading: 'A look inside',
+      items: [],
+      columns: '3',
+      tileAspect: '16/10',
+      emphasis: emphasisDefault,
+      cardStyle: { style: 'border', radius: 'md' },
+      density: { spacing: 'cozy' },
+      tone: 'canvas',
+      width: 'wide',
+      align: 'left',
+      layout: L,
+    },
+  }
+}
+
 // Per-template offerings heading, so the same module reads with the template's voice.
 function offeringsHeading(template: SpaceTemplate): string {
   switch (template) {
@@ -360,9 +464,32 @@ export function generateSpacePreset(template: SpaceTemplate, name: string): Data
     },
   }
 
+  // ── The new Space content blocks, placed per template (Puck content blocks, Phase 2). Cover LEADS
+  // every document (the banner). Book/Schedule/Storefront add member-proof Reviews near the CTA and a
+  // FAQ lower; Storefront also keeps a Gallery. Hub is the fullest: Cover, mission (already the body
+  // lead), Updates, Gallery, FAQ, community. Everything is operator-movable/removable; nothing locked.
+  const cover = coverBlock(template, descriptor.hero.emphasis)
+
+  let extras: { type: string; props: Record<string, unknown> }[]
+  switch (template) {
+    case 'book':
+    case 'schedule':
+      // Reviews as proof near the ask (after the body's CTA), then the FAQ lower, then the stat band.
+      extras = [reviewsBlock(template), faqBlock(template)]
+      break
+    case 'storefront':
+      // Storefront keeps a Gallery (the catalog look), plus Reviews proof and a FAQ.
+      extras = [galleryBlock(template), reviewsBlock(template), faqBlock(template)]
+      break
+    case 'hub':
+      // The fullest body: brand Updates + a Gallery + a FAQ, layered onto the mission-led body.
+      extras = [updatesBlock(template), galleryBlock(template), faqBlock(template)]
+      break
+  }
+
   return {
     root: {},
-    content: [hero, ...body, stats],
+    content: [cover, hero, ...body, ...extras, stats],
   }
 }
 

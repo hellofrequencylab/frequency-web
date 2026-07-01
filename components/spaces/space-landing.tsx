@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
 import { spacePuckData } from '@/lib/page-editor/templates/space'
+import { getSpaceContentData } from '@/lib/spaces/content-data'
 
 // THE SPACE LANDING BODY, RENDERED THROUGH PUCK (ADR-476/472, Phase 1). The profile
 // INDEX tab (/spaces/<slug>) body is now a Puck document: the stored, published doc
@@ -38,5 +39,11 @@ export async function SpaceLanding({ slug }: { slug: string }) {
     preferences: space.preferences,
   })
 
-  return <Render config={config} data={data} />
+  // The live rows the dynamic Space content blocks (SpaceUpdates / SpaceReviews / SpaceFAQ)
+  // read off `puck.metadata.space` -- the same metadata-injection pattern LiveStats + the
+  // Circles index blocks use. FAIL-SAFE: the reader defaults to empty, so a brand-new Space
+  // simply renders nothing for a block with no rows and the landing never throws.
+  const spaceContent = await getSpaceContentData(space.id)
+
+  return <Render config={config} data={data} metadata={{ space: spaceContent }} />
 }
