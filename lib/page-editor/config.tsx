@@ -20,6 +20,7 @@ import { marketingComponents } from '@/components/page-editor/blocks/marketing'
 import { productStoryComponents } from '@/components/page-editor/blocks/product-story'
 import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
+import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 
 export const config: Config = {
   components: {
@@ -33,6 +34,7 @@ export const config: Config = {
     ...dynamicComponents,
     ...circlesComponents,
     ...linktreeComponents,
+    ...spacesComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
@@ -54,11 +56,15 @@ export const config: Config = {
     },
     media: {
       title: 'Media',
-      components: ['Image', 'Gallery', 'MediaText', 'Marquee'],
+      components: ['Cover', 'Image', 'Gallery', 'MediaText', 'Marquee'],
     },
     dynamic: {
       title: 'Dynamic',
       components: ['LiveStats', 'LiveEvents', 'LivePosts'],
+    },
+    spaceContent: {
+      title: 'Space content',
+      components: ['SpaceUpdates', 'SpaceReviews', 'SpaceFAQ'],
     },
     circles: {
       title: 'Circles index',
