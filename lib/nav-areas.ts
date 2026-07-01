@@ -122,6 +122,7 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-vera-ai',    href: '/admin/vera-ai',    label: 'Vera AI',    section: 'Admin', defaultAccess: 'janitor', staffDomain: 'insights',  surface: 'platformManage' },
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
+  { key: 'admin-library',    href: '/admin/library',    label: 'Loom Studio', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'marketing', surface: 'platformManage' },
   // All Spaces — the PLATFORM-WIDE operator board (the janitor space admin): every Space on the
   // platform with its health bucket + per-Space management (branding, manage console, view-as).
   // Labeled "All Spaces" to read distinctly from the member "Spaces" (their own) under Community.

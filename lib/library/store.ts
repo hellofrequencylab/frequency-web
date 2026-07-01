@@ -40,11 +40,13 @@ export type LibraryGalleryItem = {
   width: number | null
   height: number | null
   storagePath: string | null
+  /** Parametric payload for non-file kinds (e.g. element → {registry,name}). */
+  config: Record<string, unknown> | null
   createdAt: string
 }
 
 const SELECT =
-  'id, kind, status, title, alt, category, tags, url, mime, bytes, width, height, storage_path, created_at'
+  'id, kind, status, title, alt, category, tags, url, mime, bytes, width, height, storage_path, config, created_at'
 
 function toItem(r: Record<string, unknown>): LibraryGalleryItem {
   return {
@@ -61,6 +63,7 @@ function toItem(r: Record<string, unknown>): LibraryGalleryItem {
     width: (r.width as number | null) ?? null,
     height: (r.height as number | null) ?? null,
     storagePath: (r.storage_path as string | null) ?? null,
+    config: (r.config as Record<string, unknown> | null) ?? null,
     createdAt: String(r.created_at ?? ''),
   }
 }
