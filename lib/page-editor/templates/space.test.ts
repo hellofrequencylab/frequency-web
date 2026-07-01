@@ -130,31 +130,31 @@ describe('the four presets read visibly distinct (per-template arrangement)', ()
     expect(new Set(prints).size).toBe(SPACE_TEMPLATES.length)
   })
 
-  it('Book: main = Offerings -> CTA -> Reviews -> FAQ; side = Highlights -> About -> Contact', () => {
+  it('Book: main = Offerings -> Booking -> Events -> Reviews -> FAQ; side = Highlights -> About -> QuickLinks -> Contact', () => {
     expect(layoutOf('book')).toEqual({
-      main: ['SpaceOfferings', 'SpaceCTA', 'SpaceReviews', 'SpaceFAQ'],
-      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
+      main: ['SpaceOfferings', 'SpaceBooking', 'SpaceEvents', 'SpaceReviews', 'SpaceFAQ'],
+      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceQuickLinks', 'SpaceContact'],
     })
   })
 
-  it('Schedule: main = Offerings -> CTA -> Reviews; side = Highlights -> About -> Contact', () => {
+  it('Schedule: main = Offerings -> Events -> Reviews; side = Highlights -> About -> Contact', () => {
     expect(layoutOf('schedule')).toEqual({
-      main: ['SpaceOfferings', 'SpaceCTA', 'SpaceReviews'],
+      main: ['SpaceOfferings', 'SpaceEvents', 'SpaceReviews'],
       side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
     })
   })
 
-  it('Storefront: main = Offerings -> Reviews; side = Highlights -> About -> Contact', () => {
+  it('Storefront: main = Offerings -> Reviews; side = Highlights -> About -> QuickLinks -> Contact', () => {
     expect(layoutOf('storefront')).toEqual({
       main: ['SpaceOfferings', 'SpaceReviews'],
-      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceContact'],
+      side: ['SpaceHighlights', 'SpaceAbout', 'SpaceQuickLinks', 'SpaceContact'],
     })
   })
 
-  it('Hub is the fullest: main = About -> Updates -> Offerings -> Team; side = Highlights -> CTA -> Contact -> FAQ', () => {
+  it('Hub is the fullest: main = About -> Updates -> Events -> Offerings -> Team; side = Highlights -> CTA -> QuickLinks -> Contact -> FAQ', () => {
     expect(layoutOf('hub')).toEqual({
-      main: ['SpaceAbout', 'SpaceUpdates', 'SpaceOfferings', 'SpaceTeam'],
-      side: ['SpaceHighlights', 'SpaceCTA', 'SpaceContact', 'SpaceFAQ'],
+      main: ['SpaceAbout', 'SpaceUpdates', 'SpaceEvents', 'SpaceOfferings', 'SpaceTeam'],
+      side: ['SpaceHighlights', 'SpaceCTA', 'SpaceQuickLinks', 'SpaceContact', 'SpaceFAQ'],
     })
     // Hub is the fullest of the four (most cards across both slots).
     const cardCount = (t: SpaceTemplate) => {
@@ -189,10 +189,11 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
     return labels
   }
 
-  it('a practitioner resolves to the Book preset (a bookable CTA)', () => {
+  it('a practitioner resolves to the Book preset (seeds the live Booking entry)', () => {
     const doc = generateSpacePresetForSpace({ name: 'Ana Coaching', type: 'practitioner', variant: 'appointments' })
     expect(doc.content[0]?.type).toBe('SpaceLayout')
-    expect(ctaLabels(doc)).toContain(templateDescriptor('book').hero.primaryCta.label)
+    // The Book preset leads with the bookable Offerings + a live Booking call-to-action.
+    expect(allTypes(doc)).toContain('SpaceBooking')
   })
 
   it('a Nonprofit/Organization tier forces the Hub preset (the fullest arrangement)', () => {

@@ -87,6 +87,7 @@ export async function SpaceLanding({ slug }: { slug: string }) {
     tagline: space.tagline,
     primaryCta,
     statsInput: templateInput,
+    slug: space.slug,
   })
 
   return <Render config={config} data={data} metadata={{ space: spaceContent }} />

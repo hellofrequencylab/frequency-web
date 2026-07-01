@@ -19,8 +19,9 @@
 // server-only, so the shared Puck config stays client-safe (the classic build trap).
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveProfileStats } from '@/lib/spaces/profile-stats'
+import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
+import { listEventsForSpace } from '@/lib/events/store'
 import type { TemplateResolverInput } from '@/lib/spaces/templates'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
@@ -51,6 +52,26 @@ export type SpaceIdentity = {
  *  the Space's own rows. Only positive counts are carried, so a brand-new Space shows nothing (honest
  *  at day zero, no invented numbers). */
 export type SpaceHighlight = { label: string; value: number }
+
+/** The FULL resolved stat set (every template metric with its live count, positive or not), so the
+ *  operator-configurable SpaceStats block can select WHICH metrics to show by `metric` key and still
+ *  hide any that resolve to zero (honest at day zero). Carries the metric key so a label override in
+ *  the block maps to the right stat. */
+export type SpaceStat = { metric: ResolvedStat['metric']; label: string; value: number }
+
+/** One upcoming event the SpaceEvents block lists, from the Space's own events (soonest first, live
+ *  only). Plain shape so the block imports nothing server-only. */
+export type SpaceEventItem = {
+  id: string
+  slug: string
+  title: string
+  startsAt: string
+}
+
+/** Whether the Space is currently taking bookings, for the SpaceBooking block. Honest: `enabled` is
+ *  true only when the Space actually publishes availability windows, so the block is a real entry, not
+ *  an empty promise. `href` is the slug-relative booking tab. */
+export type SpaceBookingInfo = { enabled: boolean; href: string | null }
 
 export type SpaceUpdateItem = {
   id: string
@@ -96,6 +117,14 @@ export type SpaceContentData = {
   /** The live highlight counts (members / offerings / ...) the SpaceHighlights strip reads, template
    *  ordered, only the positive ones. Empty for a brand-new Space (the strip renders nothing). */
   highlights?: SpaceHighlight[]
+  /** The FULL resolved stat set the operator-configurable SpaceStats block reads (every metric with
+   *  its live count, so the block picks by metric key + hides zero ones). Empty in the editor / a
+   *  member Spotlight. */
+  stats?: SpaceStat[]
+  /** The Space's upcoming events the SpaceEvents block lists (soonest first). Empty when none. */
+  events?: SpaceEventItem[]
+  /** Whether the Space is taking bookings + the booking tab href, for the SpaceBooking block. */
+  booking?: SpaceBookingInfo
 }
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
@@ -224,6 +253,8 @@ export interface SpaceContentInput {
   primaryCta?: { label: string; href: string } | null
   /** The template resolver input, so the live highlight counts match the page's resolved template. */
   statsInput?: TemplateResolverInput
+  /** The Space slug, so the events + booking blocks can build slug-relative hrefs. */
+  slug?: string
 }
 
 /** Assemble every Space content block's data in one pass. The three content reads (updates / reviews
@@ -234,11 +265,15 @@ export async function getSpaceContentData(
   spaceId: string,
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
-  const [updates, reviews, faqs, highlights] = await Promise.all([
+  const slug = input?.slug?.trim() || null
+  const [updates, reviews, faqs, highlights, stats, events, booking] = await Promise.all([
     getSpaceUpdates(spaceId),
     getSpaceReviews(spaceId),
     getSpaceFaqs(spaceId),
     input?.statsInput ? getSpaceHighlights(spaceId, input.statsInput) : Promise.resolve([]),
+    input?.statsInput ? getSpaceStats(spaceId, input.statsInput) : Promise.resolve([]),
+    input ? getSpaceUpcomingEvents(spaceId) : Promise.resolve([]),
+    input ? getSpaceBookingInfo(spaceId, slug) : Promise.resolve<SpaceBookingInfo>({ enabled: false, href: null }),
   ])
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -250,7 +285,7 @@ export async function getSpaceContentData(
         primaryCta: input.primaryCta ?? null,
       }
     : undefined
-  return { spaceId, updates, reviews, faqs, identity, highlights }
+  return { spaceId, updates, reviews, faqs, identity, highlights, stats, events, booking }
 }
 
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
@@ -265,5 +300,62 @@ export async function getSpaceHighlights(
     return stats.filter((s) => s.value > 0).map((s) => ({ label: s.label, value: s.value }))
   } catch {
     return []
+  }
+}
+
+/** The FULL resolved stat set (every template metric with its live count, positive or not) for the
+ *  operator-configurable SpaceStats block, from the SAME resolver as the hero/highlights, so the two
+ *  never disagree. The block selects WHICH metrics to show + hides any that resolve to zero, so this
+ *  carries the whole set (including zeros) but never invents a number. FAIL-SAFE to []. */
+export async function getSpaceStats(
+  spaceId: string,
+  input: TemplateResolverInput,
+): Promise<SpaceStat[]> {
+  try {
+    const stats = await resolveProfileStats(spaceId, input)
+    return stats.map((s) => ({ metric: s.metric, label: s.label, value: s.value }))
+  } catch {
+    return []
+  }
+}
+
+/** The Space's UPCOMING events (soonest first, cancelled dropped), for the SpaceEvents block. Reuses
+ *  listEventsForSpace (never re-queries events raw). FAIL-SAFE to []. */
+export async function getSpaceUpcomingEvents(spaceId: string): Promise<SpaceEventItem[]> {
+  try {
+    const events = await listEventsForSpace(spaceId, { limit: 24, upcomingOnly: true })
+    return events
+      .filter((e) => !e.is_cancelled)
+      .map((e) => ({ id: e.id, slug: e.slug, title: e.title, startsAt: e.starts_at }))
+  } catch {
+    return []
+  }
+}
+
+/** Whether the Space is currently taking bookings + the booking tab href, for the SpaceBooking block.
+ *  HONEST: `enabled` is true only when the Space actually publishes at least one availability window
+ *  (space_availability row), so the block is a real entry, never an empty promise. Reads the count via
+ *  the untyped admin handle (the table is not in the generated types yet, ADR-246). FAIL-SAFE to a
+ *  disabled state. */
+export async function getSpaceBookingInfo(
+  spaceId: string,
+  slug: string | null,
+): Promise<SpaceBookingInfo> {
+  const href = slug ? `/spaces/${slug}/book` : null
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (cols: string, opts: { count: 'exact'; head: true }) => {
+          eq: (c: string, v: string) => Promise<{ count: number | null }>
+        }
+      }
+    }
+    const { count } = await admin
+      .from('space_availability')
+      .select('id', { count: 'exact', head: true })
+      .eq('space_id', spaceId)
+    return { enabled: (count ?? 0) > 0, href }
+  } catch {
+    return { enabled: false, href }
   }
 }

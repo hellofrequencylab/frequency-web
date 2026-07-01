@@ -1,17 +1,37 @@
 import Link from 'next/link'
-import { Building2, MapPin, Clock, Phone, Mail, Link2 } from 'lucide-react'
+import {
+  Building2,
+  MapPin,
+  Clock,
+  Phone,
+  Mail,
+  Link2,
+  Calendar,
+  CalendarCheck,
+  ArrowUpRight,
+  Users,
+  Sparkles,
+  CalendarDays,
+  Package,
+} from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
 
 import { getInitials } from '@/lib/utils'
 import { focalClass } from '@/lib/page-editor/image-controls'
 import { CtaButton } from '@/components/page-editor/blocks/kit'
-import { imgField } from '@/lib/page-editor/fields'
+import { loomImageField, loomSquareImageField } from '@/lib/page-editor/loom-image-field'
 // TYPE-ONLY import: erased at build, so this NEVER drags the server reader (createAdminClient) into
 // the client editor bundle. The Profile blocks read the shared identity + live counts off
 // `puck.metadata.space`, injected by the RSC render paths (components/spaces/space-landing.tsx +
 // the Spotlight render bridge). This is the build-trap boundary: a Profile block imports NOTHING
 // server-only.
-import type { SpaceIdentity, SpaceHighlight } from '@/lib/spaces/content-data'
+import type {
+  SpaceIdentity,
+  SpaceHighlight,
+  SpaceStat,
+  SpaceEventItem,
+  SpaceBookingInfo,
+} from '@/lib/spaces/content-data'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILE BLOCKS (Puck content blocks, Phase 4). A profile-native block set styled
@@ -47,6 +67,18 @@ function identityFrom(puck: PuckArg): SpaceIdentity | undefined {
 function highlightsFrom(puck: PuckArg): SpaceHighlight[] {
   const space = puck?.metadata?.space as { highlights?: SpaceHighlight[] } | undefined
   return space?.highlights ?? []
+}
+function statsFrom(puck: PuckArg): SpaceStat[] {
+  const space = puck?.metadata?.space as { stats?: SpaceStat[] } | undefined
+  return space?.stats ?? []
+}
+function eventsFrom(puck: PuckArg): SpaceEventItem[] {
+  const space = puck?.metadata?.space as { events?: SpaceEventItem[] } | undefined
+  return space?.events ?? []
+}
+function bookingFrom(puck: PuckArg): SpaceBookingInfo | undefined {
+  const space = puck?.metadata?.space as { booking?: SpaceBookingInfo } | undefined
+  return space?.booking
 }
 
 // Shown in the editor canvas (no live data) so a section stays visible + draggable there.
@@ -321,6 +353,255 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 3b. SpaceStats -- the operator-CONFIGURABLE live stat band. Richer than the calm
+// SpaceHighlights strip: the operator chooses WHICH metrics to show (from the resolved
+// set) and can override each label. Still HONEST -- a metric that resolves to zero (or is
+// absent from the resolved set) is dropped, never invented. Reads the full resolved stat
+// set off metadata; renders nothing when nothing selected resolves to a positive count.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One operator-chosen metric row: which metric + an optional label override. */
+type StatChoice = { metric?: string; label?: string }
+
+// The metrics the operator can surface, matching the resolver's metric keys. Icons + a plain default
+// label; the block still hides any that resolve to zero (honest at day zero).
+const STAT_METRIC_META: Record<string, { label: string; icon: React.ReactNode }> = {
+  members: { label: 'Members', icon: <Users className="h-4 w-4" aria-hidden /> },
+  clients: { label: 'Clients', icon: <Users className="h-4 w-4" aria-hidden /> },
+  offerings: { label: 'Offerings', icon: <Package className="h-4 w-4" aria-hidden /> },
+  sessions: { label: 'Upcoming sessions', icon: <CalendarDays className="h-4 w-4" aria-hidden /> },
+  practices: { label: 'Practices', icon: <Sparkles className="h-4 w-4" aria-hidden /> },
+  circles: { label: 'Circles', icon: <Users className="h-4 w-4" aria-hidden /> },
+}
+
+/** One resolved stat tile the SpaceStats block renders. PURE selection output (no JSX). */
+export type SelectedStat = { metric: string; label: string; value: number }
+
+/**
+ * The operator's chosen metrics, resolved to their live values, in the operator's order. HONEST:
+ * a metric that is not in the resolved set, or resolves to zero (or less), is DROPPED, so a
+ * brand-new Space never shows an invented number. A blank label override falls back to the resolved
+ * label, then the metric's default label, then the metric key. Pure + unit-testable.
+ */
+export function selectSpaceStats(choices: StatChoice[], stats: SpaceStat[]): SelectedStat[] {
+  const byMetric = new Map(stats.map((s) => [s.metric, s]))
+  const out: SelectedStat[] = []
+  for (const c of choices) {
+    const metric = c.metric
+    if (!metric) continue
+    const resolved = byMetric.get(metric as SpaceStat['metric'])
+    if (!resolved || resolved.value <= 0) continue
+    const label = c.label?.trim() || resolved.label || STAT_METRIC_META[metric]?.label || metric
+    out.push({ metric, label, value: resolved.value })
+  }
+  return out
+}
+
+export function SpaceStatsBlock({
+  eyebrow,
+  heading,
+  choices,
+  stats,
+  ink,
+}: {
+  eyebrow?: string
+  heading?: string
+  choices: StatChoice[]
+  stats: SpaceStat[]
+  ink?: boolean
+}) {
+  const shown = selectSpaceStats(choices, stats)
+  if (shown.length === 0) return null
+  const cols = shown.length >= 4 ? 'sm:grid-cols-4' : shown.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+  return (
+    <div>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      <div className={`grid grid-cols-2 gap-4 ${cols}`}>
+        {shown.map((s) => (
+          <div
+            key={s.metric}
+            className={`rounded-xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
+          >
+            <span className={`inline-flex ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+              {STAT_METRIC_META[s.metric]?.icon}
+            </span>
+            <div className={`mt-2 text-2xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+              {s.value.toLocaleString()}
+            </div>
+            <div className={`mt-0.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3c. SpaceQuickLinks -- an operator-authored list of labeled jump links (book, menu,
+// socials, ...). Pure operator content; empty rows are dropped, and the block renders
+// nothing on the live page when there are no valid links.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type QuickLink = { label?: string; href?: string }
+
+export function SpaceQuickLinksBlock({
+  eyebrow,
+  heading,
+  links,
+  ink,
+}: {
+  eyebrow?: string
+  heading?: string
+  links: QuickLink[]
+  ink?: boolean
+}) {
+  const shown = links.filter((l) => (l.label || '').trim() && (l.href || '').trim())
+  if (shown.length === 0) {
+    return (
+      <div>
+        <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+        <EditorStub label="Quick links" hint="Add labeled links to booking, menus, or socials" />
+      </div>
+    )
+  }
+  const external = (href: string) => /^https?:\/\//i.test(href)
+  return (
+    <InfoCard ink={ink}>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {shown.map((l, i) => {
+          const href = (l.href as string).trim()
+          const isExt = external(href)
+          return (
+            <li key={i}>
+              <a
+                href={href}
+                {...(isExt ? { target: '_blank', rel: 'noreferrer' } : {})}
+                className={`group flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
+                  ink
+                    ? 'border-white/10 bg-white/5 text-on-ink hover:bg-white/10'
+                    : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'
+                }`}
+              >
+                <span className="min-w-0 truncate">{(l.label as string).trim()}</span>
+                <ArrowUpRight
+                  className={`h-4 w-4 shrink-0 ${ink ? 'text-primary' : 'text-primary-strong'}`}
+                  aria-hidden
+                />
+              </a>
+            </li>
+          )
+        })}
+      </ul>
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3d. SpaceEvents -- the Space's UPCOMING events, live off metadata (listEventsForSpace).
+// Operator sets a title + a max count; HONEST-empty when the Space has no upcoming events
+// (renders nothing on the live page, a placeholder in the editor).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SpaceEventsBlock({
+  eyebrow,
+  heading,
+  events,
+  max,
+  ink,
+}: {
+  eyebrow?: string
+  heading?: string
+  events: SpaceEventItem[]
+  max: number
+  ink?: boolean
+}) {
+  const shown = events.slice(0, Math.max(1, max))
+  if (shown.length === 0) return null
+  return (
+    <InfoCard ink={ink}>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      <ul className="space-y-3">
+        {shown.map((e) => {
+          const d = new Date(e.startsAt)
+          const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+          const day = d.getDate()
+          const when = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+          return (
+            <li key={e.id}>
+              <Link
+                href={`/events/${e.slug}`}
+                className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
+                  ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+                }`}
+              >
+                <span
+                  className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl ${
+                    ink ? 'bg-white/10' : 'bg-primary-bg'
+                  }`}
+                >
+                  <span className={`text-3xs font-bold leading-none ${ink ? 'text-primary' : 'text-primary-strong'}`}>{month}</span>
+                  <span className={`text-base font-bold leading-tight ${ink ? 'text-on-ink' : 'text-primary-strong'}`}>{day}</span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`block truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{e.title}</span>
+                  <span className={`block text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{when}</span>
+                </span>
+                <Calendar className={`h-4 w-4 shrink-0 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3e. SpaceBooking -- a booking entry card. Reads the Space's booking capability off
+// metadata: when the Space publishes availability it surfaces a plain "book a time" CTA to
+// the book tab; when booking is off it renders NOTHING on the live page (honest, never an
+// empty promise). The editor shows a placeholder either way so the operator can place it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SpaceBookingBlock({
+  heading,
+  body,
+  ctaLabel,
+  booking,
+  ink,
+  accent,
+}: {
+  heading?: string
+  body?: string
+  ctaLabel?: string
+  booking?: SpaceBookingInfo
+  ink?: boolean
+  accent?: boolean
+}) {
+  // Honest: without a live booking capability (availability published), render nothing on the page.
+  if (!booking?.enabled || !booking.href) return null
+  return (
+    <InfoCard ink={ink} className={accent && !ink ? 'border-primary/30 bg-primary-bg/30' : ''}>
+      <div className="flex items-start gap-4">
+        <span className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
+          <CalendarCheck className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          {heading && <h2 className={`text-lg font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
+          {body && <p className={`mt-1 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
+          <div className="mt-4">
+            <CtaButton href={booking.href} label={ctaLabel || 'Book a time'} variant="primary" onInk={ink} withArrow />
+          </div>
+        </div>
+      </div>
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 4. SpaceOfferings -- the services the space provides, as a card grid. Operator
 // authored (title + blurb per card); the editor placeholder shows when empty.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -526,9 +807,44 @@ const teamArrayField = {
   arrayFields: {
     name: { type: 'text' as const, label: 'Name' },
     role: { type: 'text' as const, label: 'Role' },
-    avatar: imgField,
+    // Loom-backed: an avatar is picked from (or uploaded into) the shared Loom, so it is catalogued
+    // and resolves through the Loom the same way everywhere.
+    avatar: loomSquareImageField,
   },
   defaultItemProps: { name: '', role: '', avatar: '' },
+}
+
+// The operator-authored stat picker: an ordered list of chosen metrics + optional label overrides.
+const statChoiceArrayField = {
+  type: 'array' as const,
+  label: 'Metrics',
+  arrayFields: {
+    metric: {
+      type: 'select' as const,
+      label: 'Metric',
+      options: [
+        { label: 'Members', value: 'members' },
+        { label: 'Clients', value: 'clients' },
+        { label: 'Offerings', value: 'offerings' },
+        { label: 'Upcoming sessions', value: 'sessions' },
+        { label: 'Practices', value: 'practices' },
+        { label: 'Circles', value: 'circles' },
+      ],
+    },
+    label: { type: 'text' as const, label: 'Label override (optional)' },
+  },
+  defaultItemProps: { metric: 'members', label: '' },
+}
+
+// The operator-authored quick-links list (label + href per row).
+const quickLinkArrayField = {
+  type: 'array' as const,
+  label: 'Links',
+  arrayFields: {
+    label: { type: 'text' as const, label: 'Label' },
+    href: { type: 'text' as const, label: 'URL' },
+  },
+  defaultItemProps: { label: '', href: '' },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -645,8 +961,8 @@ export const profileComponents: Record<string, ComponentConfig> = {
           { label: 'Hero', value: 'hero' },
         ],
       },
-      coverOverride: { ...imgField, label: 'Cover override (optional)' },
-      logoOverride: { ...imgField, label: 'Logo override (optional)' },
+      coverOverride: { ...loomImageField, label: 'Cover override (optional)' },
+      logoOverride: { ...loomSquareImageField, label: 'Logo override (optional)' },
       focal: {
         type: 'select',
         label: 'Cover focal point',
@@ -732,6 +1048,148 @@ export const profileComponents: Record<string, ComponentConfig> = {
         <SpaceHighlightsBlock highlights={highlights} />
       ) : (
         <EditorStub label="Highlights" hint="Your live counts show on the live page" />
+      )
+    },
+  },
+
+  SpaceStats: {
+    label: 'Stats (live, choose metrics)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading (optional)' },
+      metrics: statChoiceArrayField,
+    },
+    defaultProps: {
+      eyebrow: '',
+      heading: 'By the numbers',
+      metrics: [
+        { metric: 'members', label: '' },
+        { metric: 'offerings', label: '' },
+        { metric: 'sessions', label: '' },
+      ],
+    },
+    render: ({ eyebrow, heading, metrics, puck }) => {
+      const stats = statsFrom(puck)
+      const choices = (metrics as StatChoice[]) ?? []
+      // In the editor (no metadata) show a placeholder; on the live page render the honest, resolved set.
+      if (stats.length === 0) {
+        return (
+          <div>
+            <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
+            <EditorStub label="Stats" hint="Your chosen live counts show on the live page" />
+          </div>
+        )
+      }
+      return (
+        <SpaceStatsBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          choices={choices}
+          stats={stats}
+        />
+      )
+    },
+  },
+
+  SpaceQuickLinks: {
+    label: 'Quick links',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading (optional)' },
+      links: quickLinkArrayField,
+    },
+    defaultProps: {
+      eyebrow: '',
+      heading: 'Quick links',
+      links: [],
+    },
+    render: ({ eyebrow, heading, links }) => (
+      <SpaceQuickLinksBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        links={(links as QuickLink[]) ?? []}
+      />
+    ),
+  },
+
+  SpaceEvents: {
+    label: 'Upcoming events (live)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading' },
+      max: {
+        type: 'select',
+        label: 'How many to show',
+        options: [
+          { label: 'Up to 3', value: '3' },
+          { label: 'Up to 5', value: '5' },
+          { label: 'Up to 8', value: '8' },
+        ],
+      },
+    },
+    defaultProps: {
+      eyebrow: 'On the calendar',
+      heading: 'Upcoming events',
+      max: '5',
+    },
+    render: ({ eyebrow, heading, max, puck }) => {
+      const events = eventsFrom(puck)
+      if (events.length === 0) {
+        return (
+          <div>
+            <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
+            <EditorStub label="Upcoming events" hint="Your upcoming events show on the live page" />
+          </div>
+        )
+      }
+      return (
+        <SpaceEventsBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          events={events}
+          max={Number(max) || 5}
+        />
+      )
+    },
+  },
+
+  SpaceBooking: {
+    label: 'Booking call to action',
+    fields: {
+      heading: { type: 'text', label: 'Heading' },
+      body: { type: 'textarea', label: 'Body (optional)' },
+      ctaLabel: { type: 'text', label: 'Button label' },
+      accent: {
+        type: 'radio',
+        label: 'Accent surface',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
+    },
+    defaultProps: {
+      heading: 'Book a time',
+      body: 'Pick a slot that works for you and reserve it in a couple of taps.',
+      ctaLabel: 'Book a time',
+      accent: 'yes',
+    },
+    render: ({ heading, body, ctaLabel, accent, puck }) => {
+      const booking = bookingFrom(puck)
+      // Editor (no metadata) shows a placeholder; the live page renders nothing when booking is off.
+      if (!booking) {
+        return (
+          <EditorStub label="Booking" hint="Shows a booking button when this space is taking bookings" />
+        )
+      }
+      return (
+        <SpaceBookingBlock
+          heading={(heading as string) || undefined}
+          body={(body as string) || undefined}
+          ctaLabel={(ctaLabel as string) || undefined}
+          booking={booking}
+          accent={accent === 'yes'}
+        />
       )
     },
   },

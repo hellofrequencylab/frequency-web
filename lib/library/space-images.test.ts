@@ -1,0 +1,87 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// The SPACE-SCOPED Loom image reader/writer behind the operator's Loom-backed Puck image field.
+// Locks the two correctness properties the coordinator called out:
+//   1. SEARCH scope = the space's OWN images UNIONED with the shared/public library, never another
+//      space's private assets (the `.or(space_id.eq.<id>,visibility.eq.public)` filter).
+//   2. WRITE scope = the SPACE'S OWN library (space_id = this space, visibility = 'space'), NEVER the
+//      shared root/public library.
+
+const SPACE_A = 'aaaaaaaa-0000-4000-a000-00000000000a'
+
+type Call = { table: string; ors: string[]; insert?: Record<string, unknown> }
+const calls: Call[] = []
+
+function builder(table: string) {
+  const call: Call = { table, ors: [] }
+  calls.push(call)
+  const api: Record<string, unknown> = {
+    select: () => api,
+    eq: () => api,
+    neq: () => api,
+    or: (expr: string) => {
+      call.ors.push(expr)
+      return api
+    },
+    order: () => api,
+    limit: async () => ({ data: [], error: null }),
+    insert: (row: Record<string, unknown>) => {
+      call.insert = row
+      return api
+    },
+    maybeSingle: async () => ({ data: { id: 'new-asset' }, error: null }),
+  }
+  return api
+}
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: (t: string) => builder(t) }),
+}))
+
+import { searchSpaceLibraryImages, insertSpaceLibraryImage } from './store'
+
+beforeEach(() => {
+  calls.length = 0
+})
+
+describe('searchSpaceLibraryImages scopes to the space + the shared/public library', () => {
+  it('filters by (space_id = thisSpace) OR (visibility = public), never another space', async () => {
+    await searchSpaceLibraryImages(SPACE_A)
+    const search = calls.find((c) => c.table === 'library_assets')!
+    // The space-scope OR must include this space and the public shared library, and nothing else.
+    expect(search.ors.some((o) => o.includes(`space_id.eq.${SPACE_A}`) && o.includes('visibility.eq.public'))).toBe(true)
+  })
+
+  it('adds a text-search OR when a query is given (title/description/category)', async () => {
+    await searchSpaceLibraryImages(SPACE_A, 'logo')
+    const search = calls.find((c) => c.table === 'library_assets')!
+    expect(search.ors.some((o) => o.includes('title.ilike.%logo%'))).toBe(true)
+  })
+
+  it('only returns file-backed images with a resolvable URL', async () => {
+    // No rows configured -> empty, and never throws (fail-safe).
+    expect(await searchSpaceLibraryImages(SPACE_A)).toEqual([])
+  })
+})
+
+describe('insertSpaceLibraryImage writes to the SPACE, not root/public', () => {
+  it('sets space_id = thisSpace and visibility = space', async () => {
+    const id = await insertSpaceLibraryImage({
+      spaceId: SPACE_A,
+      title: 'A logo',
+      slug: 'a-logo-1',
+      storageBucket: 'library-media',
+      storagePath: `${SPACE_A}/x.png`,
+      url: 'https://cdn/x.png',
+      mime: 'image/png',
+      bytes: 10,
+    })
+    expect(id).toBe('new-asset')
+    const ins = calls.find((c) => c.insert)!.insert!
+    expect(ins.space_id).toBe(SPACE_A)
+    expect(ins.visibility).toBe('space')
+    expect(ins.kind).toBe('image')
+    // Never public / never root-shared.
+    expect(ins.visibility).not.toBe('public')
+  })
+})

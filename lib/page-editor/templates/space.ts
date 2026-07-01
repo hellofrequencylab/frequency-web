@@ -114,6 +114,50 @@ function cta(template: SpaceTemplate, heading: string, body: string, label: stri
   }
 }
 
+// ── The BOOKING call-to-action card. Reads the Space's live booking capability off metadata: it
+// surfaces a "book a time" button when the Space publishes availability, and renders NOTHING on the
+// live page when booking is off (honest, never an empty promise). Seeded on the Book template.
+function booking(template: SpaceTemplate, brand: string): Block {
+  return {
+    type: 'SpaceBooking',
+    props: {
+      id: `sp-${template}-booking`,
+      heading: 'Book a time',
+      body: `Pick a slot that works for you and ${brand} will take it from there.`,
+      ctaLabel: 'Book a time',
+      accent: 'yes',
+    },
+  }
+}
+
+// ── The UPCOMING EVENTS list. Reads the Space's own upcoming events off metadata (listEventsForSpace);
+// renders nothing until the Space has an upcoming event (honest at day zero).
+function events(template: SpaceTemplate): Block {
+  return {
+    type: 'SpaceEvents',
+    props: {
+      id: `sp-${template}-events`,
+      eyebrow: 'On the calendar',
+      heading: 'Upcoming events',
+      max: '5',
+    },
+  }
+}
+
+// ── The QUICK LINKS card. Operator authored (empty by default, so it shows a designed placeholder in
+// the editor and nothing on the live page until the operator adds links).
+function quickLinks(template: SpaceTemplate): Block {
+  return {
+    type: 'SpaceQuickLinks',
+    props: {
+      id: `sp-${template}-quicklinks`,
+      eyebrow: '',
+      heading: 'Quick links',
+      links: [],
+    },
+  }
+}
+
 // ── The CONTACT + hours info card. Empty by default (placeholder in the editor).
 function contact(template: SpaceTemplate): Block {
   return {
@@ -211,12 +255,15 @@ function spaceLayout(template: SpaceTemplate, main: Block[], side: Block[]): Blo
  * header is owned by the profile LAYOUT above the Puck body, never a block here), so the page
  * reads like a Facebook business page (layout-owned header + a two-column region grid of boxed
  * cards):
- *   Book:       main = Offerings(book) -> CTA(Book) -> Reviews -> FAQ;  side = Highlights -> About -> Contact.
- *   Schedule:   main = Offerings(schedule) -> CTA(schedule) -> Reviews; side = Highlights -> About -> Contact.
- *   Storefront: main = Offerings(catalog) -> Reviews;                   side = Highlights -> About -> Contact.
- *   Hub:        main = About(mission) -> Updates -> Offerings(programs) -> Team;
- *               side = Highlights -> CTA(Get involved) -> Contact -> FAQ.
- * Nothing is locked: the operator reorders / toggles any of it in the editor.
+ *   Book:       main = Offerings(book) -> Booking -> Events -> Reviews -> FAQ;
+ *               side = Highlights -> About -> QuickLinks -> Contact.
+ *   Schedule:   main = Offerings(schedule) -> Events -> Reviews; side = Highlights -> About -> Contact.
+ *   Storefront: main = Offerings(catalog) -> Reviews;           side = Highlights -> About -> QuickLinks -> Contact.
+ *   Hub:        main = About(mission) -> Updates -> Events -> Offerings(programs) -> Team;
+ *               side = Highlights -> CTA(Get involved) -> QuickLinks -> Contact -> FAQ.
+ * The live Booking + Events cards render nothing until the Space has real availability / upcoming
+ * events; QuickLinks is empty until the operator adds links. Nothing is locked: the operator
+ * reorders / toggles any of it in the editor.
  */
 export function generateSpacePreset(template: SpaceTemplate, name: string): Data {
   const brand = name.trim() || 'this space'
@@ -228,11 +275,12 @@ export function generateSpacePreset(template: SpaceTemplate, name: string): Data
         template,
         [
           offerings(template, 'What you can book'),
-          cta(template, 'Ready when you are', `Pick a time and ${brand} will take it from there.`, 'Book a session'),
+          booking(template, brand),
+          events(template),
           reviews(template),
           faq(template),
         ],
-        [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
+        [highlights(template), about(template, brand, `About ${brand}`), quickLinks(template), contact(template)],
       )
       break
     case 'schedule':
@@ -240,7 +288,7 @@ export function generateSpacePreset(template: SpaceTemplate, name: string): Data
         template,
         [
           offerings(template, 'The schedule'),
-          cta(template, 'Save your spot', `See what is coming up at ${brand} and reserve your place.`, 'See the schedule'),
+          events(template),
           reviews(template),
         ],
         [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
@@ -250,16 +298,17 @@ export function generateSpacePreset(template: SpaceTemplate, name: string): Data
       layout = spaceLayout(
         template,
         [offerings(template, 'The catalog'), reviews(template)],
-        [highlights(template), about(template, brand, `About ${brand}`), contact(template)],
+        [highlights(template), about(template, brand, `About ${brand}`), quickLinks(template), contact(template)],
       )
       break
     case 'hub':
       layout = spaceLayout(
         template,
-        [about(template, brand, 'Our mission'), updates(template), offerings(template, 'Our programs'), team(template)],
+        [about(template, brand, 'Our mission'), updates(template), events(template), offerings(template, 'Our programs'), team(template)],
         [
           highlights(template),
           cta(template, 'Get involved', `There is a place for you at ${brand}. Here is how to start.`, 'Get involved'),
+          quickLinks(template),
           contact(template),
           faq(template),
         ],

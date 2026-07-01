@@ -168,6 +168,80 @@ export async function getLibraryAsset(spaceId: string, id: string): Promise<Libr
   return data ? toItem(data as Record<string, unknown>) : null
 }
 
+/** A pickable image for the Loom-backed Puck image field. */
+export type LibraryImagePick = { id: string; title: string; url: string; alt: string | null }
+
+/** Search IMAGE assets a SPACE OPERATOR may reuse: the space's OWN images (any visibility) UNIONED
+ *  with the shared/public library (the root space's public images), newest first. NEVER widens into
+ *  another space's private assets: the OR is (space_id = thisSpace) OR (visibility = 'public'). Text
+ *  search is a safe substring over title/description/category. Only file-backed images with a
+ *  resolvable URL ride through. FAIL-SAFE to [] on any error. */
+export async function searchSpaceLibraryImages(
+  spaceId: string,
+  q?: string,
+  limit = 60,
+): Promise<LibraryImagePick[]> {
+  try {
+    let query = db()
+      .from('library_assets')
+      .select('id, title, url, alt, space_id, visibility')
+      .eq('kind', 'image')
+      .neq('status', 'archived')
+      // The space's own assets OR any public shared-library asset. A PostgREST `or` with an
+      // `and(...)` group keeps the public branch scoped to visibility='public'.
+      .or(`space_id.eq.${spaceId},visibility.eq.public`)
+
+    const text = (q ?? '').replace(/[,()*]/g, ' ').trim()
+    if (text) query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%,category.ilike.%${text}%`)
+
+    const { data } = await query.order('created_at', { ascending: false }).limit(limit)
+    return ((data as Array<Record<string, unknown>> | null) ?? [])
+      .filter((r) => typeof r.url === 'string' && (r.url as string).length > 0)
+      .map((r) => ({
+        id: String(r.id),
+        title: String(r.title ?? '') || 'Untitled',
+        url: r.url as string,
+        alt: (r.alt as string | null) ?? null,
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** Insert a newly-uploaded image into a SPACE'S OWN Loom (space_id = thisSpace, visibility='space',
+ *  NEVER the shared root/public library). Returns the new asset id, or null on error. The caller has
+ *  already gated on per-space edit permission and uploaded the file. */
+export async function insertSpaceLibraryImage(input: {
+  spaceId: string
+  title: string
+  slug: string
+  storageBucket: string
+  storagePath: string
+  url: string
+  mime: string
+  bytes: number
+}): Promise<string | null> {
+  const { data, error } = await db()
+    .from('library_assets')
+    .insert({
+      space_id: input.spaceId,
+      kind: 'image',
+      title: input.title,
+      slug: input.slug,
+      status: 'approved',
+      visibility: 'space',
+      storage_bucket: input.storageBucket,
+      storage_path: input.storagePath,
+      url: input.url,
+      mime: input.mime,
+      bytes: input.bytes,
+    })
+    .select('id')
+    .maybeSingle()
+  if (error) return null
+  return (data as { id?: unknown } | null)?.id ? String((data as { id: unknown }).id) : null
+}
+
 /** Counts by kind (excludes archived), for the Studio stat row. */
 export async function kindCounts(spaceId: string): Promise<{ total: number; byKind: Record<string, number> }> {
   const { data } = await db()

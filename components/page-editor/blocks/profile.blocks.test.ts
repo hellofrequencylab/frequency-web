@@ -1,25 +1,31 @@
 import { describe, it, expect } from 'vitest'
-import { profileComponents } from './profile'
+import { profileComponents, selectSpaceStats } from './profile'
 import { config } from '@/lib/page-editor/config'
+import type { SpaceStat } from '@/lib/spaces/content-data'
 
-// PROFILE block set field schemas (Puck content blocks, Phase 4). Pure, no IO. Locks: the seven
+// PROFILE block set field schemas (Puck content blocks, Phase 4). Pure, no IO. Locks: the
 // profile-native blocks are well-formed ComponentConfigs (fields + defaultProps + render), every
 // default prop has a matching field, they are registered + categorised in the shared config, and no
 // default copy carries an em dash. Importing profileComponents ALSO proves the module is client-safe
 // (it must load without dragging in a server-only import, or this import throws) -- the build-trap
-// boundary: a Profile block imports NOTHING server-only.
+// boundary: a Profile block imports NOTHING server-only. The business-profile set now also carries the
+// operator-configurable SpaceStats, SpaceQuickLinks, SpaceEvents (live), and SpaceBooking (live) blocks.
 
 const KEYS = [
   'SpaceIdentityHeader',
   'SpaceAbout',
   'SpaceHighlights',
+  'SpaceStats',
+  'SpaceQuickLinks',
+  'SpaceEvents',
+  'SpaceBooking',
   'SpaceOfferings',
   'SpaceContact',
   'SpaceTeam',
   'SpaceCTA',
 ] as const
 
-describe('the seven Profile blocks are well-formed ComponentConfigs', () => {
+describe('the Profile blocks are well-formed ComponentConfigs', () => {
   for (const key of KEYS) {
     it(`${key} has fields, defaultProps, and a render`, () => {
       const block = profileComponents[key]
@@ -47,7 +53,7 @@ describe('the Profile blocks are registered + categorised in the shared config',
     }
   })
 
-  it('all seven cards + the SpaceLayout box are grouped under the Profile category, layout box first', () => {
+  it('all the cards + the SpaceLayout box are grouped under the Profile category, layout box first', () => {
     const profile = config.categories?.profile?.components ?? []
     for (const key of KEYS) {
       expect(profile).toContain(key)
@@ -114,6 +120,76 @@ describe('SpaceIdentityHeader is switchable between a Header and a Hero style', 
     expect(styleField.type).toBe('radio')
     expect(styleField.options.map((o) => o.value)).toEqual(['header', 'hero'])
     expect(block.defaultProps?.style).toBe('header')
+  })
+})
+
+describe('the new business-profile blocks expose clean, operator-editable fields', () => {
+  it('SpaceStats has a metric-choice array (metric + label override), defaulting to real metrics', () => {
+    const f = profileComponents.SpaceStats.fields!.metrics as unknown as {
+      type: string
+      arrayFields: Record<string, unknown>
+    }
+    expect(f.type).toBe('array')
+    expect(Object.keys(f.arrayFields)).toEqual(['metric', 'label'])
+    const defaults = profileComponents.SpaceStats.defaultProps?.metrics as { metric: string }[]
+    expect(defaults.length).toBeGreaterThan(0)
+  })
+
+  it('SpaceQuickLinks has a links array (label + href), empty by default (honest)', () => {
+    const f = profileComponents.SpaceQuickLinks.fields!.links as unknown as {
+      type: string
+      arrayFields: Record<string, unknown>
+    }
+    expect(f.type).toBe('array')
+    expect(Object.keys(f.arrayFields)).toEqual(['label', 'href'])
+    expect(profileComponents.SpaceQuickLinks.defaultProps?.links).toEqual([])
+  })
+
+  it('SpaceEvents lets the operator set a title + a max count', () => {
+    const fields = profileComponents.SpaceEvents.fields ?? {}
+    expect((fields.heading as { type?: string } | undefined)?.type).toBe('text')
+    expect((fields.max as { type?: string } | undefined)?.type).toBe('select')
+  })
+
+  it('SpaceBooking exposes a heading, body, button label, and accent toggle', () => {
+    const fields = profileComponents.SpaceBooking.fields ?? {}
+    for (const k of ['heading', 'body', 'ctaLabel', 'accent']) {
+      expect(Object.keys(fields)).toContain(k)
+    }
+  })
+})
+
+describe('selectSpaceStats is honest: chosen order, no invented / zero numbers', () => {
+  const stats: SpaceStat[] = [
+    { metric: 'members', label: 'Members', value: 12 },
+    { metric: 'offerings', label: 'Offerings', value: 4 },
+    { metric: 'sessions', label: 'Upcoming sessions', value: 0 },
+  ]
+
+  it('keeps the operator order and resolves live values', () => {
+    const out = selectSpaceStats([{ metric: 'offerings' }, { metric: 'members' }], stats)
+    expect(out.map((s) => s.metric)).toEqual(['offerings', 'members'])
+    expect(out.map((s) => s.value)).toEqual([4, 12])
+  })
+
+  it('drops a metric that resolves to zero (honest at day zero)', () => {
+    const out = selectSpaceStats([{ metric: 'sessions' }, { metric: 'members' }], stats)
+    expect(out.map((s) => s.metric)).toEqual(['members'])
+  })
+
+  it('drops a metric that is absent from the resolved set (never invents a number)', () => {
+    const out = selectSpaceStats([{ metric: 'circles' }], stats)
+    expect(out).toEqual([])
+  })
+
+  it('applies a label override, else falls back to the resolved label', () => {
+    const out = selectSpaceStats([{ metric: 'members', label: 'People' }, { metric: 'offerings' }], stats)
+    expect(out[0].label).toBe('People')
+    expect(out[1].label).toBe('Offerings')
+  })
+
+  it('renders nothing when no metadata (empty resolved set)', () => {
+    expect(selectSpaceStats([{ metric: 'members' }], [])).toEqual([])
   })
 })
 
