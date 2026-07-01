@@ -12,6 +12,7 @@ import {
   type LibrarySort,
   type LibraryCollection,
 } from '@/lib/library/store'
+import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
@@ -207,18 +208,20 @@ export default async function LoomStudioPage({
           </div>
         </div>
 
-        {/* Two columns, top-aligned under the header. */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          <LoomRail
-            total={counts.total}
-            byKind={counts.byKind}
-            categories={categories}
-            collections={collections}
-            active={{ kind, category, collectionId }}
-            base={{ q, sort, view }}
-          />
-
-          <div className="min-w-0 flex-1">
+        {/* Mini menu (left) + card grid (right) — the shared RailGrid pattern, mobile-first. */}
+        <RailGrid
+          menu={
+            <LoomRail
+              total={counts.total}
+              byKind={counts.byKind}
+              categories={categories}
+              collections={collections}
+              active={{ kind, category, collectionId }}
+              base={{ q, sort, view }}
+            />
+          }
+        >
+          <div>
             {assets.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
                 <Images className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
@@ -287,7 +290,7 @@ export default async function LoomStudioPage({
               </>
             )}
           </div>
-        </div>
+        </RailGrid>
       </AdminSection>
     </AdminTemplate>
   )

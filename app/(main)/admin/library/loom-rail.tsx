@@ -49,13 +49,13 @@ function Row({
       <Link
         href={href}
         aria-current={active ? 'true' : undefined}
-        className={`flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm transition-colors ${
+        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs transition-colors sm:gap-2 sm:px-2.5 sm:text-sm ${
           active ? 'bg-primary-bg font-semibold text-primary-strong' : 'text-muted hover:bg-surface-elevated'
         }`}
       >
         <span className="shrink-0 text-subtle">{icon}</span>
         <span className="min-w-0 flex-1 truncate">{label}</span>
-        {count !== undefined && <span className="shrink-0 text-xs text-subtle">{count}</span>}
+        {count !== undefined && <span className="hidden shrink-0 text-xs text-subtle sm:inline">{count}</span>}
       </Link>
       {children}
     </div>
@@ -124,15 +124,14 @@ export function LoomRail({
     'invisible shrink-0 rounded-lg p-1 text-subtle hover:bg-surface-elevated hover:text-text group-hover/row:visible'
 
   return (
-    <aside className={`w-44 shrink-0 lg:w-48 ${pending ? 'opacity-60' : ''}`} aria-label="Folders">
-      <div className="sticky top-4 space-y-0.5">
-        <Row
-          href={buildHref(base, {})}
-          active={noFilter}
-          icon={<Images className="h-4 w-4" />}
-          label="All assets"
-          count={total}
-        />
+    <nav className={`space-y-0.5 ${pending ? 'opacity-60' : ''}`} aria-label="Folders">
+      <Row
+        href={buildHref(base, {})}
+        active={noFilter}
+        icon={<Images className="h-4 w-4" />}
+        label="All assets"
+        count={total}
+      />
 
         <SectionLabel>Type</SectionLabel>
         {Object.entries(byKind)
@@ -206,7 +205,6 @@ export function LoomRail({
             </Row>
           ))
         )}
-      </div>
-    </aside>
+    </nav>
   )
 }
