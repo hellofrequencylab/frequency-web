@@ -74,6 +74,12 @@ export const illustrationNames = [
   'streak',
   'stats',
   'dispatch',
+  // The rest of Vera's welcome deck (components/onboarding/welcome-art.tsx) — the deck's
+  // own take on these, distinct from the kit versions above, so the whole set is catalogued.
+  'deck-feed',
+  'deck-circles',
+  'deck-practices',
+  'deck-events',
 ] as const
 
 export type IllustrationName = (typeof illustrationNames)[number]
@@ -521,6 +527,77 @@ const ART: Record<IllustrationName, ReactNode> = {
         <path d="M176 73 l-5 -5 M185 70 v-7 M194 73 l5 -5" />
       </g>
       <Person x={185} y={90} className="fill-signal" />
+    </Svg>
+  ),
+
+  // ── Welcome deck (the deck's own versions) ────────────────────────────────
+  // Ported verbatim from components/onboarding/welcome-art.tsx so the full deck a
+  // Founder sees at beta onboarding is catalogued in The Loom.
+
+  // Feed, a phone with a little stack of posts (deck version).
+  'deck-feed': (
+    <Svg label="A phone showing a short feed of posts">
+      <rect x="78" y="10" width="84" height="130" rx="16" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      {[28, 64, 100].map((y) => (
+        <g key={y}>
+          <circle cx="98" cy={y + 8} r="7" className="fill-primary" />
+          <rect x="112" y={y + 2} width="38" height="6" rx="3" className="fill-border-strong" />
+          <rect x="112" y={y + 12} width="26" height="5" rx="2.5" className="fill-border" />
+        </g>
+      ))}
+    </Svg>
+  ),
+
+  // Circles, three overlapping groups, each with a couple of people-dots (deck version).
+  'deck-circles': (
+    <Svg label="Three overlapping circles of people">
+      <circle cx="96" cy="72" r="34" className="stroke-primary" strokeWidth="4" />
+      <circle cx="146" cy="72" r="34" className="stroke-signal" strokeWidth="4" />
+      <circle cx="121" cy="98" r="34" className="stroke-primary-strong" strokeWidth="4" />
+      <g className="fill-primary">
+        <circle cx="88" cy="66" r="6" />
+        <circle cx="104" cy="70" r="6" />
+      </g>
+      <g className="fill-signal">
+        <circle cx="142" cy="64" r="6" />
+        <circle cx="154" cy="74" r="6" />
+      </g>
+      <g className="fill-primary-strong">
+        <circle cx="114" cy="104" r="6" />
+        <circle cx="130" cy="100" r="6" />
+      </g>
+    </Svg>
+  ),
+
+  // Practices, a checklist with a streak flame (deck version).
+  'deck-practices': (
+    <Svg label="A checklist of daily practices with a streak flame">
+      <rect x="54" y="22" width="118" height="106" rx="14" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      {[44, 72, 100].map((y, i) => (
+        <g key={y}>
+          <circle cx="76" cy={y} r="9" className={i < 2 ? 'fill-primary' : 'fill-surface stroke-border-strong'} strokeWidth="2.5" />
+          {i < 2 && <path d={`M72 ${y} l3 3 5-6`} className="stroke-on-primary" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+          <rect x="92" y={y - 4} width="62" height="8" rx="4" className="fill-border" />
+        </g>
+      ))}
+      <path d="M180 44c8 6 11 14 6 22 9-2 9-12 4-20 10 5 15 19 6 30-8 9-24 7-28-4-3-9 2-20 12-28z" className="fill-primary" />
+    </Svg>
+  ),
+
+  // Events, a calendar with a location pin (deck version).
+  'deck-events': (
+    <Svg label="A calendar with a location pin">
+      <rect x="56" y="26" width="104" height="98" rx="12" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <path d="M56 50v-12a12 12 0 0 1 12-12h80a12 12 0 0 1 12 12v12z" className="fill-primary" />
+      <g className="fill-border">
+        <circle cx="78" cy="72" r="5" />
+        <circle cx="100" cy="72" r="5" />
+        <circle cx="122" cy="72" r="5" />
+        <circle cx="78" cy="94" r="5" />
+      </g>
+      <circle cx="122" cy="94" r="5" className="fill-primary" />
+      <path d="M168 60a22 22 0 0 0-44 0c0 16 22 36 22 36s22-20 22-36z" className="fill-signal" />
+      <circle cx="146" cy="60" r="8" className="fill-surface" />
     </Svg>
   ),
 }

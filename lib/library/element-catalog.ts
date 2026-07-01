@@ -32,6 +32,11 @@ const ONBOARDING_ILLUSTRATIONS: ElementDef[] = [
   { registry: 'illustration', name: 'welcome', title: 'Welcome sunrise', category: 'Onboarding', tags: ['onboarding', 'welcome', 'vera-deck'] },
   { registry: 'illustration', name: 'zaps', title: 'Zaps and rewards', category: 'Onboarding', tags: ['onboarding', 'zaps', 'rewards', 'vera-deck'] },
   { registry: 'illustration', name: 'vera', title: 'Vera sparkle mark', category: 'Onboarding', tags: ['onboarding', 'vera', 'brand', 'vera-deck'] },
+  // The rest of the welcome deck (the deck's own versions, distinct from the kit).
+  { registry: 'illustration', name: 'deck-feed', title: 'Feed (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'feed', 'vera-deck'] },
+  { registry: 'illustration', name: 'deck-circles', title: 'Circles (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'circles', 'vera-deck'] },
+  { registry: 'illustration', name: 'deck-practices', title: 'Practices (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'practices', 'vera-deck'] },
+  { registry: 'illustration', name: 'deck-events', title: 'Events (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'events', 'vera-deck'] },
 ]
 
 const ON_AIR_ILLUSTRATIONS: ElementDef[] = [
