@@ -10305,3 +10305,27 @@ on real tables. Still **service-role only**; the per-space client RLS and the **
 bucket, signed URLs, storage RLS, download gating, watermarks — columns are the hooks) are deferred to D5/D6.
 Rejected: raw-URL blocks (no versioning/usage/swap), destructive edits, and a nullable `space_id` "shared = null"
 model (the root-space-as-shared scheme keeps every asset uniformly scoped).
+
+## ADR-481: Loom file export (client color-inlining) + a Vera "draw a card" wizard with an allowlist SVG sanitizer
+
+**Status:** Accepted (2026-07-01). Extends [ADR-478](DECISIONS.md)/[480](DECISIONS.md).
+
+**Context.** The code-drawn illustration cards render with DAWN token classes that only resolve against the app's
+CSS, so they had no downloadable file. We also want operators to create NEW cards in the house style without an
+engineer.
+
+**Decision.** (1) **File export runs client-side** (`lib/library/export-svg.ts`): clone the on-DOM SVG, read each
+element's COMPUTED fill/stroke/etc. and inline them, then serialize to a standalone `.svg` (or rasterize to `.png`
+via canvas). This captures live theme colors and needs no server render or stored file. File-backed assets download
+by fetching the URL as a blob. (2) A **Vera wizard** (`app/(main)/admin/library/vera-actions.ts` + `vera-wizard.tsx`)
+generates a card as inline SVG via `completeText` (tier `sonnet`, feature `loom-illustration`, gated by
+`aiAvailable()` + `featureOverBudget()` + `withVoice`), previews it, and saves it as a `kind='element'` asset with
+the SVG in `config.svg`. (3) Because generated SVG is semi-trusted and renders via `dangerouslySetInnerHTML`, a
+**fail-closed allowlist sanitizer** (`lib/library/svg-sanitize.ts`) validates it at generate, at save, AND at render:
+only shape/structure tags, no script/style/href/event-handlers/foreignObject/`url()`/entities, size-capped. Any
+violation rejects the whole SVG (the repo had no DOMPurify; this avoids adding a dep, matching ADR-011).
+
+**Consequences.** Every card is downloadable (SVG/PNG for elements, blob for photos), and operators can grow the kit
+with Vera. Rejected: a general HTML-sanitizer dependency (allowlist validation is enough for the narrow SVG shape),
+and storing generated art as a hardcoded React component (data-in-`config.svg` scales without deploys). The house
+style forbids `<text>`, so the sanitizer also drops it.

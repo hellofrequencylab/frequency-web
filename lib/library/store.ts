@@ -31,6 +31,7 @@ export type LibraryGalleryItem = {
   kind: string
   status: string
   title: string
+  slug: string
   alt: string | null
   category: string | null
   tags: string[]
@@ -46,7 +47,7 @@ export type LibraryGalleryItem = {
 }
 
 const SELECT =
-  'id, kind, status, title, alt, category, tags, url, mime, bytes, width, height, storage_path, config, created_at'
+  'id, kind, status, title, slug, alt, category, tags, url, mime, bytes, width, height, storage_path, config, created_at'
 
 function toItem(r: Record<string, unknown>): LibraryGalleryItem {
   return {
@@ -54,6 +55,7 @@ function toItem(r: Record<string, unknown>): LibraryGalleryItem {
     kind: String(r.kind),
     status: String(r.status ?? 'approved'),
     title: String(r.title ?? ''),
+    slug: String(r.slug ?? ''),
     alt: (r.alt as string | null) ?? null,
     category: (r.category as string | null) ?? null,
     tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],

@@ -6,6 +6,7 @@ import { resolveActiveScope } from '@/lib/library/scope'
 import { searchLibraryAssets, kindCounts, type LibrarySort } from '@/lib/library/store'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid } from './loom-grid'
+import { VeraWizard } from './vera-wizard'
 
 // Loom Studio — the admin surface for The Loom asset library. Search + filter + a stat row +
 // a per-asset detail drawer (view / edit metadata / copy / download / archive / delete).
@@ -51,6 +52,8 @@ export default async function LoomStudioPage({
       width="wide"
     >
       <AdminSection>
+        <VeraWizard />
+
         {/* Stat row */}
         <div className="mb-6 flex flex-wrap gap-2">
           <span className="rounded-full bg-primary-bg px-3 py-1 text-sm font-semibold text-primary-strong">
