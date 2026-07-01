@@ -64,7 +64,7 @@ import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, type ChromeOverrides } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -1526,6 +1526,15 @@ export default function AppShell({
   const effectiveRail = mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname)
   const showSidebar = !!sidebar && effectiveRail === 'global'
 
+  // Full-viewport EDITOR takeover (the Puck page builders: the Space landing editor, the Spotlight
+  // editor). These own the whole viewport with their OWN top bar (desktop) + thumb-zone control dock
+  // (mobile). The shell hides its desktop header AND its mobile bottom tab bar + side drawers here, so
+  // the editor's dock sits in the thumb zone with nothing over it (the "dock is unreachable" bug on
+  // /settings/profile/spotlight was the fixed bottom nav covering it). The right rail is already
+  // dropped for these via page-chrome (effectiveRail 'none'); this is the MOBILE-nav twin of that.
+  // Declared in one place (page-chrome.ts) so the shell never path-sniffs.
+  const editorTakeover = isFullViewportEditor(pathname)
+
   // Mini rail (immersive build surfaces — the Journey course builder). The GLOBAL rail is
   // still mounted (never removed), but on these routes it STARTS collapsed to a thin strip
   // so the builder gets the full center width; a foot toggle expands/collapses it. The
@@ -1542,7 +1551,9 @@ export default function AppShell({
   // which mount their OWN left nav in their layout (the admin sidebar). Suppressing
   // the member rail here is what prevents a double left rail. Governed declaratively
   // by page-chrome.ts (leftRailFor) — the shell never path-sniffs.
-  const showLeftRail = leftRailFor(pathname) === 'global'
+  // A full-viewport editor takeover also drops the LEFT nav (the editor owns the whole viewport with
+  // its own top bar), so the desktop <Puck> reads truly full-screen like the mobile dock does.
+  const showLeftRail = leftRailFor(pathname) === 'global' && !editorTakeover
 
   // The member sitemap footer (canvas, end of the center column, scrolls with the
   // page). Shown only on real MEMBER content pages: skip stripped shells
@@ -1607,6 +1618,9 @@ export default function AppShell({
       {/* In iOS standalone PWA the webview extends under the status bar (viewport-fit=cover +
           black-translucent). Pad the bar by env(safe-area-inset-top) and grow its height to
           match, so its bg-surface/90 fills behind the status bar and the buttons clear the notch. */}
+      {/* Hidden on a full-viewport editor takeover: the editor mounts its OWN top bar and owns the
+          whole viewport (the Space landing + Spotlight builders), so the site header is dropped. */}
+      {!editorTakeover && (
       <header
         className="sticky top-0 shrink-0 flex items-stretch bg-surface/90 backdrop-blur-sm border-b border-border z-30"
         style={{ height: 'calc(3.5rem + env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
@@ -1737,6 +1751,7 @@ export default function AppShell({
           </div>
         </div>
       </header>
+      )}
 
       {/* ── Admin contextual sub-header (ADR-390) ───────────── */}
       {/* On /admin*, a second full-width bar opens below the main header showing ONLY the
@@ -1779,13 +1794,17 @@ export default function AppShell({
       <div className="flex min-w-0 flex-1 px-safe">
         <div
           data-feed-scroll
-          className="min-w-0 flex-1 pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0"
+          className={`min-w-0 flex-1 ${editorTakeover ? '' : 'pb-[calc(3.5rem_+_env(safe-area-inset-bottom))] md:pb-0'}`}
         >
           {/* The page-admin context wraps the whole content row (not just <main>) so the
               settings drawer — mounted in the right-rail slot — can read the viewer's
               role / staffRole / webRole gates alongside the page body. */}
           <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]">
+          {/* A full-viewport editor takeover drops the max-width, gutters, and min-height so the
+              editor (which owns its own top bar + full-height layout) sits truly edge-to-edge. */}
+          <div className={editorTakeover
+            ? 'flex w-full items-stretch'
+            : 'mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]'}>
 
             {/* Left nav — NEVER scrolls out of view. Pinned under the header
                 (sticky top-14) with its window ending exactly where the fixed
@@ -1827,8 +1846,10 @@ export default function AppShell({
                   rails. The page-admin "Settings" bar now renders INSIDE each page
                   template's header (on the divider under the title), fed by this
                   provider — not floating above the page. */}
-              <main className="flex-1 min-w-0 py-6" data-tour-anchor="content">
-                <Breadcrumbs />
+              {/* A full-viewport editor takeover drops the page padding + breadcrumbs so the editor
+                  (its own top bar / thumb-zone dock) fills the column edge to edge. */}
+              <main className={`flex-1 min-w-0 ${editorTakeover ? '' : 'py-6'}`} data-tour-anchor="content">
+                {!editorTakeover && <Breadcrumbs />}
                 {children}
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />
@@ -1949,7 +1970,9 @@ export default function AppShell({
 
       {/* ── Mobile right drawer — The Quest (stats / streaks / gamification),
             opened only from the tab bar's gem. Mirrors the left drawer. ── */}
-      {!hideAppNav && statsPanel && (
+      {/* Dropped on a full-viewport editor takeover: the editor owns the whole viewport (its own
+          thumb-zone dock), so the site's mobile nav + its drawers are suppressed here. */}
+      {!hideAppNav && !editorTakeover && statsPanel && (
         <MobileRightDrawer open={rightOpen} onClose={closeEdges}>
           {statsPanel}
         </MobileRightDrawer>
@@ -1957,39 +1980,44 @@ export default function AppShell({
 
       {/* ── Mobile bottom tab bar ─────────────────────────── */}
       {/* Feed · Circles · Channels · Events · Menu/stats arrows. Opening one side
-          closes the other — never both drawers at once. */}
-      <MobileTabBar
-        isActive={isActive}
-        onOpenMenu={() => {
-          setDrawerOpen((o) => !o)
-          setRightOpen(false)
-        }}
-        onOpenStats={() => {
-          setRightOpen((o) => !o)
-          setDrawerOpen(false)
-        }}
-        menuOpen={drawerOpen}
-        statsOpen={rightOpen}
-        hideAppNav={hideAppNav}
-      />
+          closes the other — never both drawers at once. Hidden on a full-viewport editor
+          takeover so it never sits over the editor's thumb-zone control dock. */}
+      {!editorTakeover && (
+        <MobileTabBar
+          isActive={isActive}
+          onOpenMenu={() => {
+            setDrawerOpen((o) => !o)
+            setRightOpen(false)
+          }}
+          onOpenStats={() => {
+            setRightOpen((o) => !o)
+            setDrawerOpen(false)
+          }}
+          menuOpen={drawerOpen}
+          statsOpen={rightOpen}
+          hideAppNav={hideAppNav}
+        />
+      )}
 
       {/* ── Mobile left drawer (the full menu) ────────────── */}
-      <MobileLeftDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        role={gateRole}
-        identityRole={role}
-        profile={profile}
-        profileHref={profileHref}
-        isActive={isActive}
-        extraSections={extraSections}
-        hideAppNav={hideAppNav}
-        permissions={permissions}
-        navAccess={navAccess}
-        staffRole={staffRole}
-        sections={navSections}
-        menuDriven={menuDriven}
-      />
+      {!editorTakeover && (
+        <MobileLeftDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          role={gateRole}
+          identityRole={role}
+          profile={profile}
+          profileHref={profileHref}
+          isActive={isActive}
+          extraSections={extraSections}
+          hideAppNav={hideAppNav}
+          permissions={permissions}
+          navAccess={navAccess}
+          staffRole={staffRole}
+          sections={navSections}
+          menuDriven={menuDriven}
+        />
+      )}
 
     </div>
     </MovementProvider>
