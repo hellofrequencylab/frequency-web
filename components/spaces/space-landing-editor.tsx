@@ -113,16 +113,14 @@ function ResetButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
 }
 
 // Full-screen Puck editor for a Space page. Owner/admin/editor-gated at the route;
-// the editor runtime loads only here, never on the public profile. When `onExit` is
-// passed (the Manage overlay path), Exit CLOSES the overlay instead of navigating; when
-// it is absent (the standalone /edit-page route), Exit is a Link back to the profile.
+// the editor runtime loads only here, never on the public profile. Exit is a Link back
+// to the public profile (the standalone /edit-page route is the only entry).
 export function SpaceLandingEditor({
   slug,
   title,
   data,
   customized = false,
   pageSlug = 'home',
-  onExit,
 }: {
   slug: string
   title: string
@@ -131,19 +129,9 @@ export function SpaceLandingEditor({
   customized?: boolean
   /** Which profile page this editor edits + publishes to (default Home). */
   pageSlug?: string
-  /** When set, Exit calls this (closes the overlay) rather than navigating to the profile. */
-  onExit?: () => void
 }) {
   const exitHref = `/spaces/${slug}`
-  const exitControl = onExit ? (
-    <button
-      type="button"
-      onClick={onExit}
-      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-    >
-      ← Exit
-    </button>
-  ) : (
+  const exitControl = (
     <Link
       href={exitHref}
       className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
@@ -182,18 +170,6 @@ export function SpaceLandingEditor({
           if (isError(res)) throw new Error('Publish failed')
         },
         publishLabel: 'Publish now',
-        // In the overlay path, a Close chevron beside Publish shuts the overlay (matching the
-        // desktop Exit). Omitted on the standalone route (the back nav is the app chrome).
-        extraActions: onExit ? (
-          <button
-            type="button"
-            onClick={onExit}
-            aria-label="Close the editor"
-            className="inline-flex min-h-[44px] items-center px-3 text-sm font-medium text-muted hover:text-text"
-          >
-            Close
-          </button>
-        ) : undefined,
       }}
     />
     </SpaceEditorProvider>
