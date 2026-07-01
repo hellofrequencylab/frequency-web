@@ -502,10 +502,17 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
   function askVera() {
     const svg = currentSvgString()
     if (!svg || !instruction.trim()) return
+    const el = previewSvg() // capture the CURRENT render so Vera can see what she's changing
     setVeraErr(null)
     setReviewNote(null)
     startVera(async () => {
-      const res = await editLoomSvg(svg, instruction)
+      let image = ''
+      try {
+        if (el) image = await rasterizeSvgElement(el, 512)
+      } catch {
+        /* fall back to code-only if rasterization fails */
+      }
+      const res = await editLoomSvg(svg, instruction, image)
       if ('error' in res) setVeraErr(res.error)
       else {
         setOverride(res.svg)
