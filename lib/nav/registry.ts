@@ -359,24 +359,38 @@ function footerNodes(): NavNode[] {
 /** The account-dropdown links as `surface:'profile'` nodes. Each keeps its EXACT icon
  *  and `minAccess` (visitor / member / crew) from the old hardcoded profileMenu(). Order
  *  verbatim so the account menu renders identically; the renderer adds the Profile /
- *  Invite / theme / Sign-out chrome around this editable list. */
+ *  Invite / theme / Sign-out chrome around this editable list.
+ *
+ *  Each link carries a `section` (its member-facing group label, NAMING.md governed): the
+ *  four sections — Account · Commerce · Community · Support — segment the account menu into
+ *  labeled groups. The seed order below IS both the section order AND the item order within
+ *  each section, so `profileSections()` (and the derived `profileMenu()`) read top-to-bottom
+ *  like the rendered menu. ("Community" over "Connect": the latter collides with the Zap
+ *  Connect tile.) */
+type ProfileSectionLabel = 'Account' | 'Commerce' | 'Community' | 'Support'
+
 const PROFILE_LINK_SEEDS: readonly {
   id: string
   label: string
   href: string
   icon: string
+  section: ProfileSectionLabel
   minAccess?: MenuAccess
 }[] = [
-  { id: 'friends', label: 'Friends', href: '/network/friends', icon: 'UserPlus' },
-  { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', minAccess: 'member' },
-  { id: 'storefront', label: 'My storefront', href: '/marketplace/makers/manage', icon: 'Store', minAccess: 'member' },
-  { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal' },
-  { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard' },
-  { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing' },
-  { id: 'codes', label: 'My code', href: '/codes', icon: 'QrCode' },
-  { id: 'entry-points', label: 'Entry points', href: '/entry-points', icon: 'Megaphone', minAccess: 'crew' },
-  { id: 'support', label: 'Support tickets', href: '/support', icon: 'LifeBuoy' },
-  { id: 'help', label: 'Help', href: '/help', icon: 'HelpCircle' },
+  // Account
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'SlidersHorizontal', section: 'Account' },
+  { id: 'notifications', label: 'Notifications', href: '/settings/notifications', icon: 'BellRing', section: 'Account' },
+  { id: 'billing', label: 'Billing & Plans', href: '/settings/billing', icon: 'CreditCard', section: 'Account' },
+  // Commerce
+  { id: 'orders', label: 'My orders', href: '/orders', icon: 'Receipt', section: 'Commerce', minAccess: 'member' },
+  { id: 'storefront', label: 'My storefront', href: '/marketplace/makers/manage', icon: 'Store', section: 'Commerce', minAccess: 'member' },
+  // Community
+  { id: 'friends', label: 'Friends', href: '/network/friends', icon: 'UserPlus', section: 'Community' },
+  { id: 'codes', label: 'My code', href: '/codes', icon: 'QrCode', section: 'Community' },
+  { id: 'entry-points', label: 'Entry points', href: '/entry-points', icon: 'Megaphone', section: 'Community', minAccess: 'crew' },
+  // Support
+  { id: 'support', label: 'Support tickets', href: '/support', icon: 'LifeBuoy', section: 'Support' },
+  { id: 'help', label: 'Help', href: '/help', icon: 'HelpCircle', section: 'Support' },
 ] as const
 
 function profileNodes(): NavNode[] {
@@ -385,6 +399,9 @@ function profileNodes(): NavNode[] {
     label: l.label,
     href: l.href,
     icon: l.icon,
+    // The section label is the node's `parent`, so the account menu segments the SAME
+    // way every other grouped surface does (childrenOf / the /admin/menu editor).
+    parent: l.section,
     mode: 'calm' as const,
     surfaces: ['profile'] as NavSurface[],
     gate: { minAccess: (l.minAccess ?? 'visitor') as MenuAccess },
@@ -616,4 +633,35 @@ export function footerColumns(): FooterColumn[] {
     byColumn.get(title)!.push(node)
   }
   return order.map((title) => ({ title, links: byColumn.get(title)! }))
+}
+
+// ── Profile projection (§3: the account / user menu, now segmented) ──────────────────
+// The account menu is a two-level tree: SECTION labels (each a `parent`) each carrying
+// the profile nodes under it. This helper hands callers that shape so lib/menus/defaults.ts
+// (profileMenu) rebuilds a category per section from ONE source, and both account surfaces
+// (the top-right dropdown + the bottom-left card) read the same grouping.
+
+/** One labeled account-menu section: its label + the profile nodes under it, in order. */
+export type ProfileSection = {
+  label: string
+  nodes: NavNode[]
+}
+
+/** The account menu as ordered, labeled sections. Sections are the distinct `parent`
+ *  labels of the `surface:'profile'` nodes, in first-appearance (registry) order; each
+ *  carries its nodes in registry order. Preserves BOTH the section order AND the item
+ *  order within each section. The renderer gate-filters (canSee / canSeeMenuItem). */
+export function profileSections(): ProfileSection[] {
+  const nodes = nodesForSurface('profile')
+  const order: string[] = []
+  const bySection = new Map<string, NavNode[]>()
+  for (const node of nodes) {
+    const label = (node.parent ?? '') as string
+    if (!bySection.has(label)) {
+      bySection.set(label, [])
+      order.push(label)
+    }
+    bySection.get(label)!.push(node)
+  }
+  return order.map((label) => ({ label, nodes: bySection.get(label)! }))
 }
