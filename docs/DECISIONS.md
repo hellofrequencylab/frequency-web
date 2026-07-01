@@ -10450,3 +10450,32 @@ design tool under the `loom-illustration` budget. The plan step needs the render
 skipped (redraw-only) when rasterization is unavailable. Rejected: extended-thinking on a single call
 (config constraints; the explicit plan call is clearer and lets us keep the vision context), and
 keeping the surgical-patch editor (it was the root cause of the drift).
+
+## ADR-486: Vera edit modes (Tweak vs Redraw) + the induction "design vibe" for new art
+
+**Status:** Accepted (2026-07-01). Refines [ADR-485](DECISIONS.md).
+
+**Context.** Two problems surfaced from use. (1) The single edit path always **redrew** the whole
+graphic, so a small refinement ("thin the stroke, make the center leaf translucent") on a clean
+monochrome lotus came back as a fully-redrawn, recolored (amber) icon — the redraw prompt also
+embedded the create-time house style, which imposed the warm palette onto edits, and the auto-review
+over-corrected. (2) The owner wants new art to follow the beta-induction render aesthetic (flat,
+warm, filled, amber-led, product-UI feel).
+
+**Decision.** (1) **Two edit modes.** `editLoomSvg(..., mode)`: **Tweak** (default) is a single
+surgical call (`TWEAK_SYSTEM`) that changes only what's asked and keeps everything else identical;
+**Redraw** keeps the look→plan→redraw flow for bigger changes. Both share `EDIT_PRINCIPLES` which
+**preserve the original's exact colors + style** (currentColor stays currentColor; token classes stay
+the same) — the create-vibe is NEVER imposed on an edit. The redraw prompt no longer embeds the warm
+house style. The **auto-review is conservative** (only fixes clear breakage, never recolors/restyles)
+and now runs automatically **only for Redraw**; Tweak checks on demand. The drawer exposes **Tweak /
+Redraw** buttons. (2) **Design vibe.** A new spec [`docs/LOOM-DESIGN-LANGUAGE.md`](LOOM-DESIGN-LANGUAGE.md)
+distills the induction renders' aesthetic (flat filled shapes, amber-led warm DAWN palette, screen/
+card motifs) — wired into the **create** prompts (`GRAPHIC_SYSTEM`, `ICON_SYSTEM`; icons shift from
+line-art to warm filled duotone). It steers NEW output only; existing art and edits are untouched.
+
+**Consequences.** Small edits stay faithful (near-identical, same colors); big changes still get a
+clean rebuild; new creations carry the warm induction feel. The induction renders themselves are
+hand-coded (ADR-068, no prompts existed) — the vibe was reconstructed from the code into the spec.
+Rejected: one universal edit prompt (the root cause), and restyling the existing icon kit (the owner
+chose non-destructive: new output only).
