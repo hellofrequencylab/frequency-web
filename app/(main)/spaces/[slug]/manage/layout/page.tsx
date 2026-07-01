@@ -16,6 +16,7 @@ import {
   readTemplateOverride,
 } from '@/lib/spaces/templates'
 import { generateSpacePreset, readStoredSpaceDoc } from '@/lib/page-editor/templates/space'
+import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -76,6 +77,7 @@ export default async function SpaceLayoutPage({
   const activeTemplate = templateForSpace(resolverInput)
   const overrideIsAuto = readTemplateOverride(space.preferences) === null
   const customized = readStoredSpaceDoc(space.preferences) !== null
+  const coverSize = readCoverSize(space.preferences)
 
   // The four layout previews (generated presets), each named by its forward function.
   const previews: LayoutPreview[] = SPACE_TEMPLATES.map((template) => ({
@@ -127,6 +129,7 @@ export default async function SpaceLayoutPage({
         activeTemplate={activeTemplate}
         overrideIsAuto={overrideIsAuto}
         customized={customized}
+        coverSize={coverSize}
         previews={previews}
         metadata={{ space: spaceContent }}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
