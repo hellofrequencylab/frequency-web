@@ -184,6 +184,36 @@ export const data: Data = {
       },
     },
 
+    // ── Get found, get booked ── the practitioner's own toolkit, shown as one flow
+    // from the house illustration kit (the LeadFunnel block). This is about the
+    // builder's paid work, not the free community: how a new person finds your
+    // Spotlight page and turns into a booked session you can track. Grouped with the
+    // surface "what you get" beat above; full width so the five steps breathe. ────
+    {
+      type: 'LeadFunnel',
+      props: {
+        id: 'sp-lead-funnel',
+        eyebrow: 'Get found, get booked',
+        title: 'Turn your Spotlight page into booked sessions.',
+        titleAccent: 'booked sessions',
+        orientation: 'horizontal',
+        showNumbers: true,
+        steps: [
+          { illustration: 'spotlight', label: 'Your Spotlight page', caption: 'Someone finds you and taps a link.' },
+          { illustration: 'book', label: 'They book online', caption: 'They pick a time. No back-and-forth.' },
+          { illustration: 'capture', label: 'Saved to your CRM', caption: 'The contact lands in your list.' },
+          { illustration: 'nurture', label: 'Follow-up runs itself', caption: 'A friendly sequence goes out on time.' },
+          { illustration: 'pipeline', label: 'Into your pipeline', caption: 'You watch each lead move toward booked.' },
+        ],
+        footnote:
+          'Found on your Spotlight page, booked online, saved to your CRM, followed up automatically, and tracked to booked.',
+        tone: 'surface',
+        width: 'full',
+        align: 'center',
+        layout: { spaceTop: 'none', spaceBottom: 'default', visibility: 'all' },
+      },
+    },
+
     // ── How it works ── the simple deal said plainly: members free, you cover the
     // room. NOT the full table; /pricing is the quiet door. ──────────────────────
     {

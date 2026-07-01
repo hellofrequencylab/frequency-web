@@ -37,13 +37,24 @@ export default function LeadFunnelKitPage() {
         subtitle="Five vector elements, one per feature, drawn in the house style. Reusable on their own, or brought together into the flow below."
       />
 
-      {/* The composed infographic — full flow, wider than the reading column. */}
+      {/* The composed infographic — horizontal flow, wider than the reading column. */}
       <section className="bg-marketing-canvas px-6 py-14 sm:py-20">
         <div className="mx-auto max-w-6xl">
-          <LeadFunnelFlow />
+          <LeadFunnelFlow orientation="horizontal" />
           <p className="mt-8 text-center text-sm text-subtle">
             Found on your Spotlight page, booked online, saved to your CRM, followed up automatically, and tracked to booked.
           </p>
+        </div>
+      </section>
+
+      {/* Same flow, vertical — for a narrow column or a tall panel. Both ship as the
+          one "Lead funnel" Puck block (Sections), with a Direction toggle. */}
+      <section className="bg-surface px-6 py-14 sm:py-20">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="mb-9 text-center font-display text-[clamp(1.5rem,4vw,2.25rem)] uppercase text-text">
+            Vertical layout
+          </h2>
+          <LeadFunnelFlow orientation="vertical" />
         </div>
       </section>
 
