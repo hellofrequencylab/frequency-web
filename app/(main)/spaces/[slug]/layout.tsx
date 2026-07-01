@@ -14,6 +14,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { blueprintForType, tabForSegment } from '@/lib/spaces/blueprints'
+import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { blueprintForSpace } from '@/lib/spaces/templates'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
@@ -281,6 +282,10 @@ export default async function SpaceProfileLayout({
   // manager, never shown to a visitor. Same `md` height/radius as every other action so the row reads
   // as one aligned band; the `secondary` (bordered) variant keeps them visually quieter than the solid
   // primary CTA. `onInk` renders the on-cover variant used by the Hero overlay for legibility.
+  // "Customize page" leads to the Manage > Page quick-edit panel (whose Full page editor button opens
+  // the complete Puck editor as an overlay), the primary deep-edit entry. Only console types have that
+  // panel; the never-provisioned `root` host keeps the standalone /edit-page route.
+  const customizeHref = isConsoleSpaceType(space.type) ? `${base}/manage/layout` : `${base}/edit-page`
   const ownerTools = (onInk = false) =>
     canSeeAsOwner ? (
       <>
@@ -288,7 +293,7 @@ export default async function SpaceProfileLayout({
           <Pencil className="h-4 w-4" aria-hidden />
           {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
         </Link>
-        <Link href={`${base}/edit-page`} className={ownerToolClasses(onInk)}>
+        <Link href={customizeHref} className={ownerToolClasses(onInk)}>
           <LayoutTemplate className="h-4 w-4" aria-hidden />
           Customize page
         </Link>

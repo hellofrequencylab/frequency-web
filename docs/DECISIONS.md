@@ -10251,3 +10251,27 @@ browser UI, editor picker, per-tenant client RLS + roles, seeding of the existin
 search, and the Weave composer are explicitly **deferred** to the sequenced phases, not built here. Rejected: a
 table-per-asset-type schema (harder to search/scope uniformly) and an external search vendor (Algolia/Typesense —
 avoided per ADR-011's no-new-dependency stance until Postgres is outgrown).
+
+## ADR-479: The Space page editor is a compact Manage "Page" panel + a lazy full Puck overlay
+
+**Status:** Accepted (2026-07-01). Builds on ADR-472/476 (public-page layout) and ADR-476's landing editor.
+
+**Decision.** The Space public-page editing entry is split into two surfaces. (1) The Manage **"Page"** quick-edit
+panel (the former "Layout" surface, `space.layout` id kept for spine stability; label + desc changed to "Page") is a
+compact, NO-Puck-runtime surface for fast tweaks: the layout switch, cover size, **theme/accent** (writes the
+validated `brand_accent` token via a new `setSpaceAccent` action, reusing `space-form.ts` ACCENT_TOKENS + the theme
+allowlist), and a **Blocks** list that reorders + shows/hides the landing's TOP-LEVEL Puck blocks. (2) A prominent
+**"Full page editor"** button opens the COMPLETE Puck editor as a fullscreen inset-0 overlay OVER the Manage page,
+**lazy-loaded via `next/dynamic({ ssr:false })`** so `@measured/puck`'s editor + dnd-kit ship only when opened —
+never on the Manage page's initial load, never on the public profile (which renders `@measured/puck/rsc` `Render`
+only). The standalone `/spaces/[slug]/edit-page` route keeps working; the profile's "Customize page" owner tool now
+points console types at the Manage Page panel. Mobile falls back to the existing `ResponsiveEditor` WYSIWYG.
+
+**The hidden flag (block show/hide).** A hidden top-level block carries a sibling `hidden: true` on the block object
+(peer of `type`+`props`, never inside `props`, so it can't collide with a Puck field). Pure helpers
+(`lib/page-editor/templates/space-blocks.ts`: `readBlockRows` / `moveBlock` / `setBlockHidden` / `withVisibleBlocks`)
+own the logic (unit-tested; kept out of the `'use server'` file per the async-only build trap). The public render
+path (`space-landing.tsx`) and the full-editor loader both apply `withVisibleBlocks`, which drops hidden blocks AND
+strips the flag off survivors, so a parked block never renders publicly and never dupes in the editor. Reorder/hide
+persist to `preferences.puck` (a preset the operator reorders becomes a customized doc); every write re-gates
+`canEditProfile` server-side (the client is UX only). No schema change.

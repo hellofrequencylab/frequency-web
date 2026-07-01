@@ -7,6 +7,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { config } from '@/lib/page-editor/config'
 import { spacePuckData, readStoredSpaceDoc } from '@/lib/page-editor/templates/space'
+import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
@@ -63,7 +64,9 @@ export default async function SpaceEditLandingPage({
   }
   // The doc the editor loads: the stored doc when present + valid, else the generated
   // preset (so a first-time operator opens onto their template's designed start point).
-  const data = spacePuckData(presetInput)
+  // Drop any block the Page quick-panel hid (and strip the flag), so the full editor never
+  // shows a parked block; hiding lives only in the compact Page panel.
+  const data = withVisibleBlocks(spacePuckData(presetInput))
   const customized = readStoredSpaceDoc(space.preferences) !== null
 
   // STAFF PREVIEW: read-only. No editor runtime; render the resolved landing with the

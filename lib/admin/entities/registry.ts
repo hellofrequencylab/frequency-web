@@ -290,14 +290,16 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: null,
     types: ['*'],
   },
-  // Layout (ADR-472) — the public-page layout the landing starts from (Book · Schedule · Storefront ·
-  // Hub, or automatic), with a preview of each. Always present for a manager (no per-tool function): the
-  // layout is a FREE start point, never a gate, so it sits alongside Basics + Mode for every console type.
+  // Page (ADR-472) — the public-page quick-edit surface: layout (Book · Schedule · Storefront · Hub, or
+  // automatic), cover size, theme/accent, and block order + show/hide, plus a Full page editor button
+  // that opens the complete Puck editor as an overlay. Always present for a manager (no per-tool
+  // function): the page is a FREE start point, never a gate, so it sits alongside Basics + Mode for every
+  // console type. (The stable id stays `space.layout` so the spine order + console binding are unchanged.)
   {
     id: 'space.layout',
     slot: 'layout',
-    label: 'Layout',
-    desc: 'Pick the page layout and preview each one.',
+    label: 'Page',
+    desc: 'Set your layout, cover, accent, and block order, or open the full editor.',
     requiredFunction: null,
     types: ['*'],
   },

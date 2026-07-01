@@ -1,11 +1,15 @@
 'use server'
 
+import type { Data } from '@measured/puck'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isSpaceTemplate, type SpaceTemplate } from '@/lib/spaces/templates'
+import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
+import { isRenderableSpaceDoc, spacePuckData, type SpacePresetInput } from '@/lib/page-editor/templates/space'
+import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from './preferences'
 
@@ -34,6 +38,9 @@ import { nextLayoutPreferences, nextCoverSizePreferences, type CoverSize } from 
 async function authorizeEditor(slug: string): Promise<{
   spaceId: string
   preferences: Record<string, unknown>
+  /** The fields the preset resolver needs, so the block panel can resolve the CURRENT doc
+   *  (stored-or-preset) server-side before it reorders / toggles a block. */
+  presetInput: SpacePresetInput
 } | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -43,7 +50,17 @@ async function authorizeEditor(slug: string): Promise<{
   if (!caps.canEditProfile) return null // owner / admin / editor (the write authority)
   const asRecord = (v: unknown): Record<string, unknown> =>
     v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
-  return { spaceId: space.id, preferences: asRecord(space.preferences) }
+  return {
+    spaceId: space.id,
+    preferences: asRecord(space.preferences),
+    presetInput: {
+      name: space.brandName?.trim() || space.name,
+      type: space.type,
+      variant: space.modeVariant,
+      plan: space.plan,
+      preferences: space.preferences,
+    },
+  }
 }
 
 /** Untyped scoped update of the space's preferences column (ADR-246), bound to the id. */
@@ -109,4 +126,100 @@ export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
+}
+
+/**
+ * Set (or clear) the Space's BRAND ACCENT: a curated DAWN token NAME the profile shell paints as the
+ * `--color-primary*` family (lib/spaces/accent.ts). An empty string CLEARS the accent (back to the
+ * per-role default). The token is re-validated against the theme allowlist server-side, so only an
+ * on-system token is ever stored (never a raw hex, D4/D6). Written to the `brand_accent` COLUMN (not
+ * preferences); mirrors the basics form's accent write. Owner/admin/editor-gated. Returns ActionResult.
+ */
+export async function setSpaceAccent(slug: string, token: string): Promise<ActionResult> {
+  const trimmed = token.trim()
+  if (trimmed && !TOKEN_ALLOWLIST.has(trimmed)) return fail('Pick an accent from the list.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { error } = await db
+    .from('spaces')
+    .update({ brand_accent: trimmed || null })
+    .eq('id', auth.spaceId)
+  if (error) return fail('Could not update the accent. Try again.')
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/** Resolve the Space's CURRENT landing doc (the stored + valid doc, else the generated preset), so a
+ *  block edit operates on exactly what the panel shows. Then persist a NEW content array to the `puck`
+ *  node + revalidate. Shared by the reorder + show/hide actions below. */
+async function writeBlockContent(
+  slug: string,
+  auth: { spaceId: string; preferences: Record<string, unknown>; presetInput: SpacePresetInput },
+  nextContent: unknown[],
+): Promise<ActionResult> {
+  const current = spacePuckData(auth.presetInput)
+  const nextDoc: Data = {
+    root: (current.root ?? {}) as Data['root'],
+    content: nextContent as Data['content'],
+  }
+  // Re-validate the full doc against the current config (every block a known type) before storing.
+  if (!isRenderableSpaceDoc(nextDoc)) return fail('That change could not be saved. Try again.')
+
+  const preferences = { ...auth.preferences, puck: nextDoc }
+  if (!(await writePreferences(auth.spaceId, preferences))) {
+    return fail('Could not save your changes. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/edit-page`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Reorder a TOP-LEVEL block of the Space landing by one step (`dir` -1 up / +1 down), by `index` in the
+ * CURRENT resolved doc. Non-destructive: it resolves the stored-or-preset doc, moves the one block, and
+ * writes the new content to `preferences.puck` (so a preset the operator reorders becomes a customized
+ * doc). Owner/admin/editor-gated. Returns ActionResult.
+ */
+export async function reorderSpaceBlock(
+  slug: string,
+  index: number,
+  dir: -1 | 1,
+): Promise<ActionResult> {
+  if (dir !== -1 && dir !== 1) return fail('That change could not be saved. Try again.')
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const current = spacePuckData(auth.presetInput)
+  const nextContent = moveBlock(current.content ?? [], index, dir)
+  return writeBlockContent(slug, auth, nextContent)
+}
+
+/**
+ * Show or hide a TOP-LEVEL block of the Space landing (`hidden` true = hide from the public page), by
+ * `index` in the CURRENT resolved doc. Non-destructive: a hidden block stays in the stored doc with a
+ * `hidden` flag (the public render path + full editor strip it), so it can be restored. Owner/admin/
+ * editor-gated. Returns ActionResult.
+ */
+export async function setSpaceBlockHidden(
+  slug: string,
+  index: number,
+  hidden: boolean,
+): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const current = spacePuckData(auth.presetInput)
+  const nextContent = setBlockHidden(current.content ?? [], index, hidden)
+  return writeBlockContent(slug, auth, nextContent)
 }
