@@ -7,6 +7,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isSpaceTemplate, type SpaceTemplate } from '@/lib/spaces/templates'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { nextLayoutPreferences } from './preferences'
 
 // SPACE LAYOUT actions (ADR-472, the public-page layout layer). An operator picks the STARTING layout
 // their Space's public landing renders through (one of the four templates Book · Schedule · Storefront ·
@@ -57,23 +58,6 @@ async function writePreferences(
   }
   const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
   return !error
-}
-
-/** Compute the next preferences blob for a layout change. PURE + exported for the unit test:
- *   - 'auto'  -> delete the `template` override (derive from type + Focus).
- *   - a template id -> set `template` to it.
- *   - opts.reset -> also delete the `puck` doc (so the new layout's preset actually shows).
- *  Every other preferences key is preserved (non-destructive merge). */
-export function nextLayoutPreferences(
-  current: Record<string, unknown>,
-  template: SpaceTemplate | 'auto',
-  opts?: { reset?: boolean },
-): Record<string, unknown> {
-  const next = { ...current }
-  if (template === 'auto') delete next.template
-  else next.template = template
-  if (opts?.reset) delete next.puck
-  return next
 }
 
 /**

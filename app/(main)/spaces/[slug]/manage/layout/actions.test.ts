@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nextLayoutPreferences } from './actions'
+import { nextLayoutPreferences } from './preferences'
 
 // The pure preference-merge for a layout change (ADR-472). The action itself re-gates + writes; this
 // locks the merge SEMANTICS so a future edit can't silently break the non-destructive guarantee:
