@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { publishPage, unpublishPage } from '@/app/edit/actions'
+import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 
 // Dynamic publish button: full-colour "Publish now" when there are unpublished
 // edits, dim "Published" (with a check) when the live page matches the editor.
@@ -118,23 +119,36 @@ export function PageEditor({
   published?: boolean
 }) {
   return (
-    <Puck
-      config={config}
-      data={data}
-      headerTitle={`Editing: ${title}`}
-      overrides={{
-        headerActions: () => (
-          <>
-            <Link
-              href="/pages"
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-            >
-              ← Exit
-            </Link>
-            {published && <UnpublishButton slug={slug} />}
-            <PublishButton slug={slug} />
-          </>
-        ),
+    <ResponsiveEditor
+      desktop={
+        <Puck
+          config={config}
+          data={data}
+          headerTitle={`Editing: ${title}`}
+          overrides={{
+            headerActions: () => (
+              <>
+                <Link
+                  href="/pages"
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+                >
+                  ← Exit
+                </Link>
+                {published && <UnpublishButton slug={slug} />}
+                <PublishButton slug={slug} />
+              </>
+            ),
+          }}
+        />
+      }
+      mobile={{
+        config,
+        data,
+        title,
+        // Marketing pages have no draft-only path: like the desktop <Puck>, edits
+        // persist only on Publish (which writes both draft + live). So no onSaveDraft.
+        onPublish: (doc) => publishPage(slug, doc),
+        publishLabel: 'Publish now',
       }}
     />
   )

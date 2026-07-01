@@ -15,6 +15,7 @@ import { saveSpotlightLayout } from '@/app/(main)/settings/profile/spotlight-act
 import { SpotlightThemeEditor } from './theme-editor'
 import { SpotlightPublishBar } from './publish-bar'
 import { SpotlightBackgroundEditor, SpotlightTopFriendsPicker } from './spotlight-chrome'
+import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 
 // THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
 // their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
@@ -102,31 +103,62 @@ export function SpotlightPuckEditor({
   const [themeOpen, setThemeOpen] = useState(false)
   const [theme, setTheme] = useState<SpotlightTheme>(initialTheme)
 
+  // The Theme button opens the kept drawer. Shared by the desktop header and the mobile
+  // top bar, so the theme + publish flow is identical on both.
+  const themeButton = (
+    <button
+      type="button"
+      onClick={() => setThemeOpen((v) => !v)}
+      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
+    >
+      <Palette className="h-4 w-4" aria-hidden /> Theme
+    </button>
+  )
+
   return (
     <div className="relative">
-      <Puck
-        config={config}
-        data={initialData}
-        headerTitle="Build your Spotlight"
-        overrides={{
-          headerActions: () => (
-            <>
-              <Link
-                href="/settings/profile"
-                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-              >
-                ← Exit
-              </Link>
-              <button
-                type="button"
-                onClick={() => setThemeOpen((v) => !v)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Palette className="h-4 w-4" /> Theme
-              </button>
-              <SaveButton />
-            </>
-          ),
+      <ResponsiveEditor
+        desktop={
+          <Puck
+            config={config}
+            data={initialData}
+            headerTitle="Build your Spotlight"
+            overrides={{
+              headerActions: () => (
+                <>
+                  <Link
+                    href="/settings/profile"
+                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+                  >
+                    ← Exit
+                  </Link>
+                  {themeButton}
+                  <SaveButton />
+                </>
+              ),
+            }}
+          />
+        }
+        mobile={{
+          config,
+          data: initialData,
+          title: 'Build your Spotlight',
+          // Spotlight persists its blocks through saveSpotlightLayout (the SAME converter +
+          // owner-gated, validating action the desktop SaveButton uses). That IS the live
+          // write for an enabled Spotlight, so autosave and the deliberate action both call
+          // it; on/off "publish" stays in the theme drawer's SpotlightPublishBar.
+          onSaveDraft: async (doc) => {
+            const res = await saveSpotlightLayout(puckToSpotlightLayout(doc))
+            if (res.error) throw new Error(res.error)
+          },
+          onPublish: async (doc) => {
+            const res = await saveSpotlightLayout(puckToSpotlightLayout(doc))
+            if (res.error) throw new Error(res.error)
+          },
+          publishLabel: 'Save',
+          publishedMessage: 'Saved',
+          publishBusyLabel: 'Saving…',
+          extraActions: themeButton,
         }}
       />
 
