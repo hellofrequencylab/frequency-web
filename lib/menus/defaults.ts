@@ -9,7 +9,7 @@
 // mode to 'active', roleModes to {}. Framework independent (no React / Supabase).
 
 import { NAV_AREAS } from '@/lib/nav-areas'
-import { headerTriggers, marketingFooterLinks, nodesForSurface } from '@/lib/nav/registry'
+import { headerTriggers, marketingFooterLinks, profileSections } from '@/lib/nav/registry'
 import { ADMIN_NAV, type AdminNavSection } from '@/lib/admin/nav'
 import type {
   MenuAccess,
@@ -319,17 +319,22 @@ function adminHeaderMenu(): ResolvedMenu {
   }
 }
 
-// ── profile, the account dropdown's editable links ───────────────────────────
+// ── profile, the account dropdown's editable links, SEGMENTED into sections ──────
 // The renderer FRAMES this menu with Profile (the dynamic /people/<handle> link) and
 // Invite at the top, and Report-a-bug / theme / Sign out at the bottom, as fixed chrome
 // (event buttons + a form, not plain links). THIS surface is the editable link list in
 // between — the standard account links by default, each editable / movable / re-gated,
 // and operators can add any page here. Entry points is crew+ (minAccess), matching the
 // previous hardcoded gate.
-// The synthetic ids the account menu (and the /admin/menu editor rows + any DB seed) has
-// always used, keyed by the registry profile node's id-suffix (the part after 'profile:').
-// These ids are load-bearing (stable React keys, editor identity), so they are pinned here
-// verbatim while the labels / hrefs / icons / gates now come from the registry node.
+//
+// The links now group into labeled SECTIONS (Account · Commerce · Community · Support),
+// one ResolvedCategory each (profileSections()), so both account surfaces render the same
+// grouping and /admin/menu can edit each section. The synthetic item ids the account menu
+// (+ the /admin/menu editor rows + any DB seed) have always used stay pinned verbatim,
+// keyed by the registry profile node's id-suffix (the part after 'profile:'): they are
+// load-bearing (stable React keys, editor identity), so labels / hrefs / icons / gates now
+// come from the registry node while the id is preserved. Category ids are stable +
+// deterministic (`default:profile:cat:${sectionIndex}`).
 const PROFILE_MENU_IDS: Record<string, string> = {
   friends: 'default:profile:root:item:0',
   orders: 'default:profile:root:item:orders',
@@ -344,19 +349,25 @@ const PROFILE_MENU_IDS: Record<string, string> = {
 }
 
 function profileMenu(): ResolvedMenu {
-  const rootItems = nodesForSurface('profile').map((node, i) => {
-    const key = node.id.replace(/^profile:/, '')
-    return item(PROFILE_MENU_IDS[key] ?? `default:profile:root:item:${key}`, node.label, node.href, i, {
-      icon: node.icon,
-      minAccess: node.gate.minAccess,
+  const categories: ResolvedCategory[] = profileSections().map((section, si) => {
+    const items = section.nodes.map((node, ii) => {
+      const key = node.id.replace(/^profile:/, '')
+      return item(
+        PROFILE_MENU_IDS[key] ?? `default:profile:cat:${si}:item:${ii}`,
+        node.label,
+        node.href,
+        ii,
+        { icon: node.icon, minAccess: node.gate.minAccess },
+      )
     })
+    return category(`default:profile:cat:${si}`, section.label, si, items)
   })
   return {
     surfaceKey: 'profile',
     label: surfaceLabel('profile'),
     columns: 1,
-    categories: [],
-    rootItems,
+    categories,
+    rootItems: [],
     railCards: [],
     isDefault: true,
   }

@@ -7,9 +7,9 @@ import { User, LogOut, ChevronDown } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { defaultMenu } from '@/lib/menus/defaults'
-import { effectiveMode } from '@/components/layout/menu-role'
+import { canSeeMenuItem } from '@/components/layout/menu-role'
 import { railIconFor } from '@/components/layout/nav-icons'
-import type { MenuAccess, ResolvedMenu } from '@/lib/menus/types'
+import type { MenuAccess, ResolvedItem, ResolvedMenu } from '@/lib/menus/types'
 
 export type UserMenuProfile = {
   display_name: string
@@ -62,9 +62,29 @@ export function UserMenu({
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const items = (menu ?? defaultMenu('profile')).rootItems.filter(
-    (it) => effectiveMode(it, viewerRole) !== 'hidden',
-  )
+  const resolved = menu ?? defaultMenu('profile')
+  const viewer = { viewerRole }
+  // Each account section (category) → a muted section header + its gated items. Leftover
+  // ungrouped rootItems still render (for safety when an operator moved links out of a
+  // section). Gate via canSeeMenuItem (the shared two-axis union).
+  const sections = resolved.categories
+    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, viewer)) }))
+    .filter((s) => s.items.length > 0)
+  const looseItems = resolved.rootItems.filter((it) => canSeeMenuItem(it, viewer))
+  const renderItem = (it: ResolvedItem) => {
+    const Icon = railIconFor(it.icon)
+    return (
+      <Link
+        key={it.id}
+        href={it.href}
+        onClick={() => setOpen(false)}
+        className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
+      >
+        <Icon className="w-4 h-4 text-subtle" />
+        {it.label}
+      </Link>
+    )
+  }
 
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
@@ -113,7 +133,7 @@ export function UserMenu({
             <p className="text-xs text-subtle truncate">@{profile.handle}</p>
           </div>
 
-          {/* Profile (fixed, dynamic href) + the editable profile-menu items */}
+          {/* Profile (fixed, dynamic href) */}
           <div className="py-1">
             <Link
               href={`/people/${profile.handle}`}
@@ -123,21 +143,20 @@ export function UserMenu({
               <User className="w-4 h-4 text-subtle" />
               Profile
             </Link>
-            {items.map((it) => {
-              const Icon = railIconFor(it.icon)
-              return (
-                <Link
-                  key={it.id}
-                  href={it.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface transition-colors"
-                >
-                  <Icon className="w-4 h-4 text-subtle" />
-                  {it.label}
-                </Link>
-              )
-            })}
+            {looseItems.map(renderItem)}
           </div>
+
+          {/* The editable profile menu, segmented into labeled sections. */}
+          {sections.map((s) => (
+            <div key={s.label ?? 'section'} className="border-t border-border py-1">
+              {s.label ? (
+                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                  {s.label}
+                </p>
+              ) : null}
+              {s.items.map(renderItem)}
+            </div>
+          ))}
 
           {/* Sign out */}
           <div className="border-t border-border py-1">

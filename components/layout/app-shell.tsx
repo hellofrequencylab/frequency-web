@@ -10,7 +10,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  Settings,
   Zap,
   Search,
   Users,
@@ -356,6 +355,9 @@ function ProfileCard({
   previewVisitor = false,
   operatorContext,
   availableContexts = [],
+  menu,
+  viewerRole = 'visitor',
+  staffRole = null,
 }: {
   profile: Profile
   role: CommunityRole
@@ -369,9 +371,37 @@ function ProfileCard({
   operatorContext?: OperatorContext
   /** The contexts the caller may switch into (server-derived from real authority). */
   availableContexts?: AvailableContext[]
+  /** The resolved `profile` menu — the SAME source the top-right AccountDropdown reads, so
+   *  the two account surfaces can never drift. Falls back to the code default. */
+  menu?: ResolvedMenu
+  /** Viewer token for gating each account link. */
+  viewerRole?: MenuAccess
+  /** Fine-grained staff role — the second axis canSeeMenuItem unions in. */
+  staffRole?: StaffRole | null
 }) {
   // The effective context for the chip's framing — personal when none was resolved.
   const context: OperatorContext = operatorContext ?? { kind: 'personal' }
+  // The account links, from the SAME resolved `profile` menu as the top-right dropdown —
+  // grouped into labeled sections; leftover ungrouped rootItems render too (safety).
+  const profileResolved = menu ?? defaultMenu('profile')
+  const profileViewer: MenuViewer = { viewerRole, staffRole }
+  const profileSectionsResolved = profileResolved.categories
+    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, profileViewer)) }))
+    .filter((s) => s.items.length > 0)
+  const profileLooseLinks = profileResolved.rootItems.filter((it) => canSeeMenuItem(it, profileViewer))
+  const renderCardLink = (it: ResolvedItem) => {
+    const Icon = railIconFor(it.icon)
+    return (
+      <Link
+        key={it.id}
+        href={it.href}
+        className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
+      >
+        <Icon className="w-4 h-4 text-muted shrink-0" />
+        {it.label}
+      </Link>
+    )
+  }
   // Pinned at the bottom of the (non-scrolling) left rail, so it stays put on a
   // long scroll. The quick-actions panel opens ONLY on tapping the chevron — it
   // never rises on scroll or hover (that was disorienting); it stays put until the
@@ -455,13 +485,21 @@ function ProfileCard({
               <User className="w-4 h-4 text-muted shrink-0" />
               View profile
             </Link>
-            <Link
-              href="/settings"
-              className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium text-text hover:bg-surface-elevated transition-colors"
-            >
-              <Settings className="w-4 h-4 text-muted shrink-0" />
-              Settings
-            </Link>
+            {/* The editable `profile` menu — the SAME source as the top-right dropdown, so
+                the account links never drift. Grouped into labeled sections; scrolls if long. */}
+            <div className="max-h-64 overflow-y-auto">
+              {profileLooseLinks.map(renderCardLink)}
+              {profileSectionsResolved.map((s) => (
+                <div key={s.label ?? 'section'} className="pt-1">
+                  {s.label ? (
+                    <p className="px-2 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                      {s.label}
+                    </p>
+                  ) : null}
+                  {s.items.map(renderCardLink)}
+                </div>
+              ))}
+            </div>
             <form action="/auth/signout" method="POST">
               <button
                 type="submit"
@@ -490,6 +528,7 @@ function AccountDropdown({
   cycleTheme,
   menu,
   viewerRole,
+  staffRole = null,
 }: {
   profile: Profile
   profileHref: string
@@ -497,11 +536,13 @@ function AccountDropdown({
   ThemeIcon: React.ElementType
   cycleTheme: () => void
   /** The resolved `profile` menu (lib/menus); its active items render as the editable
-   *  account links between the fixed Profile/Invite top and the Report/theme/Sign out
-   *  bottom. Falls back to the code default. */
+   *  account links (grouped into labeled sections) between the fixed Profile/Invite top
+   *  and the Report/theme/Sign out bottom. Falls back to the code default. */
   menu?: ResolvedMenu
   /** Viewer token for resolving each item's mode + gate. */
   viewerRole: MenuAccess
+  /** Fine-grained staff role — the second axis canSeeMenuItem unions in. */
+  staffRole?: StaffRole | null
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -514,9 +555,29 @@ function AccountDropdown({
     return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
-  const accountLinks = (menu ?? defaultMenu('profile')).rootItems.filter(
-    (it) => effectiveMode(it, viewerRole) !== 'hidden',
-  )
+  const resolvedMenu = menu ?? defaultMenu('profile')
+  const menuViewer: MenuViewer = { viewerRole, staffRole }
+  // Each account section (category) → a muted section header + its gated items; any
+  // leftover ungrouped rootItems still render (safety). canSeeMenuItem is the shared
+  // two-axis union gate — no permission gate changes, only where the list is grouped.
+  const accountSections = resolvedMenu.categories
+    .map((cat) => ({ label: cat.label, items: cat.items.filter((it) => canSeeMenuItem(it, menuViewer)) }))
+    .filter((s) => s.items.length > 0)
+  const looseAccountLinks = resolvedMenu.rootItems.filter((it) => canSeeMenuItem(it, menuViewer))
+  const renderAccountLink = (it: ResolvedItem) => {
+    const Icon = railIconFor(it.icon)
+    return (
+      <Link
+        key={it.id}
+        href={it.href}
+        onClick={() => setOpen(false)}
+        className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
+      >
+        <Icon className="w-4 h-4 text-subtle" />
+        {it.label}
+      </Link>
+    )
+  }
 
   return (
     <div ref={ref} className="relative">
@@ -563,23 +624,27 @@ function AccountDropdown({
             </button>
           </div>
 
-          {/* Account links — the editable `profile` menu (ADR-390). Operators add / move /
-              re-gate these in /admin/menu; Report a bug stays a fixed event button. */}
+          {/* Account links — the editable `profile` menu (ADR-390), grouped into labeled
+              sections (Account · Commerce · Community · Support). Operators add / move /
+              re-gate these in /admin/menu. Any ungrouped rootItems render first for safety. */}
+          {looseAccountLinks.length > 0 && (
+            <div className="border-t border-border py-1">
+              {looseAccountLinks.map(renderAccountLink)}
+            </div>
+          )}
+          {accountSections.map((s) => (
+            <div key={s.label ?? 'section'} className="border-t border-border py-1">
+              {s.label ? (
+                <p className="px-3 pt-1 pb-0.5 text-3xs font-semibold uppercase tracking-wider text-subtle">
+                  {s.label}
+                </p>
+              ) : null}
+              {s.items.map(renderAccountLink)}
+            </div>
+          ))}
+
+          {/* Report a bug stays a fixed event button. */}
           <div className="border-t border-border py-1">
-            {accountLinks.map((it) => {
-              const Icon = railIconFor(it.icon)
-              return (
-                <Link
-                  key={it.id}
-                  href={it.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-sm text-text hover:bg-surface-elevated transition-colors"
-                >
-                  <Icon className="w-4 h-4 text-subtle" />
-                  {it.label}
-                </Link>
-              )
-            })}
             <button
               type="button"
               onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('open-support', { detail: { type: 'bug' } })) }}
@@ -1717,6 +1782,7 @@ export default function AppShell({
                 cycleTheme={cycleTheme}
                 menu={profileMenu}
                 viewerRole={menuViewerRole}
+                staffRole={staffRole}
               />
             </div>
           </div>
@@ -1779,7 +1845,7 @@ export default function AppShell({
                     stats dock. Mirrors components/admin/admin-profile-card.tsx's wrapper. */}
                 <div className="sticky bottom-0 z-10 rounded-t-2xl border-x border-t border-border/70 bg-[var(--color-canvas)]/95 px-1.5 pt-1 backdrop-blur-sm">
                   {!hideAppNav && role === 'member' && <UpgradeCrew />}
-                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} />
+                  <ProfileCard profile={profile} role={role} realRole={effectiveRealRole} profileHref={profileHref} previewVisitor={previewVisitor} operatorContext={operatorContext} availableContexts={availableContexts} menu={profileMenu} viewerRole={menuViewerRole} staffRole={staffRole} />
                 </div>
               </aside>
             )}
