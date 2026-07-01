@@ -78,6 +78,16 @@ const onInkSecondaryClasses = cn(
   'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
 )
 
+// The ONE dominant primary CTA (best practice: a single, visually superior primary action). It is
+// deliberately TALLER + bolder than the `md` secondary affordances beside it (py-2.5 vs py-2,
+// font-bold vs semibold) and carries `shadow-pop`, so it reads as the clear hero action while Follow /
+// Connect / owner tools stay subordinate. The accent stays the same over a photo (Hero) or in flow
+// (Header); only the secondary chips swap to on-ink. Tokens only, no hardcoded hex.
+const primaryCtaClasses = cn(
+  'inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold transition-colors',
+  'bg-primary text-on-primary shadow-pop hover:bg-primary-hover',
+)
+
 function ownerToolClasses(onInk: boolean): string {
   return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'md')
 }
@@ -168,7 +178,7 @@ export default async function SpaceProfileChromeLayout({
   // affordances to on-cover styling for the Hero overlay while the primary CTA stays the same accent.
   const identityActions = (onInk = false) => (
     <div className="flex flex-wrap items-center gap-2">
-      <Link href={ctaHref} className={buttonClasses('primary', 'md')}>
+      <Link href={ctaHref} className={primaryCtaClasses}>
         {ctaLabel}
       </Link>
       {viewerProfileId &&
@@ -232,13 +242,14 @@ export default async function SpaceProfileChromeLayout({
     </div>
   )
 
-  // HERO cover node: image + a gradient fading from the PAGE CANVAS token up to transparent (blends the
-  // photo into the page + keeps overlaid text WCAG-legible on any photo), with the logo chip + name +
-  // action row anchored to the bottom.
+  // HERO cover node: image + a legibility SCRIM anchored at the bottom (a dark `ink` gradient fading up
+  // to transparent) so the overlaid on-ink identity clears the WCAG ≥4.5:1 floor on ANY cover photo,
+  // while the top of the image stays crisp. The logo chip + name + action row anchor to the bottom over
+  // the scrim. Tokens only (ink), no hardcoded hex.
   const heroCoverNode = (
     <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
       {coverImage}
-      <div className="absolute inset-0 bg-gradient-to-t from-canvas via-canvas/40 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/30 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
         <div className="flex items-end gap-4">
           <div className="shrink-0">
