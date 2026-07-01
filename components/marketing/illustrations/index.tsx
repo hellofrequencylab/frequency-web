@@ -31,6 +31,17 @@ function Person({ x, y, s = 1, className }: { x: number; y: number; s?: number; 
   )
 }
 
+// A small teardrop flame, for streak runs (shared with the On Air reveal art).
+function Flame({ x, y, s = 1, className }: { x: number; y: number; s?: number; className: string }) {
+  return (
+    <path
+      transform={`translate(${x} ${y}) scale(${s})`}
+      d="M0 -16 C5 -8 9 -3 9 4 A9 9 0 1 1 -9 4 C-9 -3 -5 -8 0 -16 Z"
+      className={className}
+    />
+  )
+}
+
 // ── The set ───────────────────────────────────────────────────────────────────
 
 export const illustrationNames = [
@@ -53,6 +64,16 @@ export const illustrationNames = [
   'capture',
   'nurture',
   'pipeline',
+  // Onboarding + On Air house-style spot art, brought into the shared kit so The
+  // Loom holds one canonical copy (welcome deck: components/onboarding/welcome-art.tsx;
+  // reveal panels: components/on-air/reveal-art.tsx).
+  'welcome',
+  'zaps',
+  'vera',
+  'rewards',
+  'streak',
+  'stats',
+  'dispatch',
 ] as const
 
 export type IllustrationName = (typeof illustrationNames)[number]
@@ -365,6 +386,141 @@ const ART: Record<IllustrationName, ReactNode> = {
         <path d="M81 100h6m0 0l-4-4m4 4l-4 4" />
         <path d="M152 100h6m0 0l-4-4m4 4l-4 4" />
       </g>
+    </Svg>
+  ),
+
+  // ── Onboarding welcome deck + On Air reveal ───────────────────────────────
+  // Ported from the Vera welcome deck and the On Air reveal panels so the kit
+  // holds one canonical copy of each (those surfaces keep their own inline art).
+
+  // Welcome, a warm sunrise over a few gathered people.
+  welcome: (
+    <Svg label="A warm sunrise over a few gathered people">
+      <rect x="12" y="12" width="216" height="126" rx="22" className="fill-primary-bg" />
+      <g className="stroke-primary" strokeWidth="4" strokeLinecap="round">
+        <path d="M120 26v14M88 34l7 12M152 34l-7 12M64 58l13 6M176 58l-13 6" />
+      </g>
+      <circle cx="120" cy="86" r="26" className="fill-primary" />
+      <Person x={74} y={84} className="fill-signal" />
+      <Person x={120} y={78} s={1.15} className="fill-primary-strong" />
+      <Person x={166} y={84} className="fill-signal" />
+      <rect x="12" y="120" width="216" height="18" className="fill-primary/20" />
+    </Svg>
+  ),
+
+  // Zaps, a lightning bolt rising over a climbing bar chart, with a gem.
+  zaps: (
+    <Svg label="A lightning bolt rising over a climbing bar chart">
+      <g>
+        <rect x="58" y="96" width="22" height="34" rx="4" className="fill-primary-bg" />
+        <rect x="88" y="78" width="22" height="52" rx="4" className="fill-primary-bg" />
+        <rect x="118" y="58" width="22" height="72" rx="4" className="fill-primary/40" />
+      </g>
+      <path d="M150 22l-26 44h18l-8 40 34-50h-20z" className="fill-primary" />
+      <g className="fill-signal">
+        <path d="M176 96l10 12-10 16-10-16z" />
+        <path d="M166 108h20l-10 16z" className="fill-signal-strong/70" />
+      </g>
+    </Svg>
+  ),
+
+  // Vera, her sparkle-orb mark.
+  vera: (
+    <Svg label="Vera's sparkle orb mark">
+      <circle cx="120" cy="78" r="48" className="fill-primary-bg" />
+      <path d="M120 36c5 30 8 34 38 38-30 4-33 8-38 38-5-30-8-34-38-38 30-4 33-8 38-38z" className="fill-primary" />
+      <path d="M174 50c2 9 3 10 12 12-9 2-10 3-12 12-2-9-3-10-12-12 9-2 10-3 12-12z" className="fill-signal" />
+      <path d="M76 104c1.5 6 2 7 8 8-6 1.5-6.5 2-8 8-1.5-6-2-6.5-8-8 6-1 6.5-2 8-8z" className="fill-signal-strong" />
+    </Svg>
+  ),
+
+  // Rewards, arcs radiating over a small gathered scene, a zap riding the crest.
+  rewards: (
+    <Svg label="Rewards radiating over a small gathered group">
+      <rect x="12" y="10" width="216" height="130" rx="22" className="fill-primary-bg/60" />
+      <g className="stroke-primary" strokeWidth="3" strokeLinecap="round">
+        <path d="M90 124 A30 30 0 0 1 150 124" opacity="0.85" />
+        <path d="M68 124 A52 52 0 0 1 172 124" opacity="0.6" />
+        <path d="M46 124 A74 74 0 0 1 194 124" opacity="0.4" />
+        <path d="M24 124 A96 96 0 0 1 216 124" opacity="0.25" />
+      </g>
+      <path d="M120 30 l-13 23 h10 l-6 24 19 -28 h-11 z" className="fill-primary" />
+      <Person x={84} y={100} s={0.85} className="fill-signal" />
+      <Person x={120} y={94} className="fill-primary-strong" />
+      <Person x={156} y={100} s={0.85} className="fill-signal" />
+    </Svg>
+  ),
+
+  // Streak, a rising run of flames, one per day, the members keeping it lit.
+  streak: (
+    <Svg label="A rising run of daily streak flames">
+      <path
+        d="M44 102 C 84 98, 144 84, 198 50"
+        className="stroke-signal"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray="0.5 9"
+        opacity="0.55"
+      />
+      <Flame x={48} y={100} s={0.6} className="fill-primary/30" />
+      <Flame x={84} y={92} s={0.72} className="fill-primary/45" />
+      <Flame x={120} y={82} s={0.85} className="fill-primary/65" />
+      <Flame x={156} y={68} s={1} className="fill-primary/85" />
+      <Flame x={196} y={50} s={1.2} className="fill-primary" />
+      <Person x={70} y={101} s={0.62} className="fill-signal" />
+      <Person x={112} y={99} s={0.7} className="fill-primary-strong" />
+      <Person x={154} y={101} s={0.62} className="fill-signal" />
+      <rect x="24" y="120" width="192" height="5" rx="2.5" className="fill-border" />
+    </Svg>
+  ),
+
+  // Stats, a constellation climbing gently, the latest node lit and ringed.
+  stats: (
+    <Svg label="A gently climbing constellation of stats">
+      <rect x="12" y="10" width="216" height="130" rx="22" className="fill-signal-bg/50" />
+      <g className="stroke-border-strong" strokeWidth="1.5" strokeLinecap="round" opacity="0.4">
+        <path d="M32 112 h176 M32 84 h176 M32 56 h176" strokeDasharray="2 6" />
+      </g>
+      <g className="fill-border-strong" opacity="0.7">
+        <circle cx="58" cy="36" r="2.5" />
+        <circle cx="110" cy="28" r="2" />
+        <circle cx="166" cy="30" r="2.5" />
+      </g>
+      <path
+        d="M40 114 L78 100 L114 104 L152 82 L196 56"
+        className="stroke-signal-strong"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.55"
+      />
+      <circle cx="40" cy="114" r="5" className="fill-signal" />
+      <circle cx="78" cy="100" r="6" className="fill-signal" />
+      <circle cx="114" cy="104" r="5" className="fill-signal" />
+      <circle cx="152" cy="82" r="6" className="fill-signal" />
+      <circle cx="196" cy="56" r="13" className="stroke-primary/60" strokeWidth="2.5" fill="none" />
+      <circle cx="196" cy="56" r="7" className="fill-primary" />
+    </Svg>
+  ),
+
+  // Dispatch, a radio mast on the air, arcs reaching a small listening figure.
+  dispatch: (
+    <Svg label="A radio mast broadcasting to a listener">
+      <rect x="20" y="118" width="200" height="4" rx="2" className="fill-border" />
+      <g className="stroke-primary-strong" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M58 118 L70 40 L82 118" />
+        <path d="M66 70 h8 M63 90 h14 M60 110 h20" />
+      </g>
+      <circle cx="70" cy="40" r="5" className="fill-primary" />
+      <g className="stroke-primary" strokeWidth="3" strokeLinecap="round">
+        <path d="M84.1 25.9 A20 20 0 0 1 84.1 54.1" opacity="0.9" />
+        <path d="M96.2 13.8 A37 37 0 0 1 96.2 66.2" opacity="0.6" />
+        <path d="M108.2 1.8 A54 54 0 0 1 108.2 78.2" opacity="0.35" />
+      </g>
+      <g className="stroke-primary" strokeWidth="2.5" strokeLinecap="round">
+        <path d="M176 73 l-5 -5 M185 70 v-7 M194 73 l5 -5" />
+      </g>
+      <Person x={185} y={90} className="fill-signal" />
     </Svg>
   ),
 }

@@ -10329,3 +10329,39 @@ violation rejects the whole SVG (the repo had no DOMPurify; this avoids adding a
 with Vera. Rejected: a general HTML-sanitizer dependency (allowlist validation is enough for the narrow SVG shape),
 and storing generated art as a hardcoded React component (data-in-`config.svg` scales without deploys). The house
 style forbids `<text>`, so the sanitizer also drops it.
+
+## ADR-482: Consolidate all house-style code-drawn art into Loom element registries + a Vera icon mode
+
+**Status:** Accepted (2026-07-01). Extends [ADR-481](DECISIONS.md).
+
+**Context.** House-style inline-SVG art had grown up in several places besides the marketing
+illustration kit: the onboarding welcome deck (`components/onboarding/welcome-art.tsx`), the On Air
+reveal panels (`components/on-air/reveal-art.tsx`), the On Air control icon kit
+(`components/on-air/icons.tsx`), the zap-menu spot art (`components/feed/zap-menu-art.tsx`), the
+twelve Starter Circle template scenes (`components/circles/template-art.tsx`), and the abstract brand
+textures (`components/marketing/vector-art.tsx`). None of it was catalogued in The Loom, so it was
+neither discoverable nor reusable. The Loom could only render `kind='element'` rows two ways: the
+marketing registry via `<Illustration>`, or a raw `config.svg` string (Vera cards).
+
+**Decision.** (1) **Fold the genuinely-new onboarding/reveal pieces into the marketing kit** so the
+kit holds one canonical copy (registry grew from 17→24: `welcome`, `zaps`, `vera`, `rewards`,
+`streak`, `stats`, `dispatch`). The source surfaces keep their own inline copies. (2) **Introduce a
+multi-registry element model.** A `library_assets` element row stores `config = { registry, name }`
+(plus `pillar` for templates). `registry ∈ {illustration, icon, spot, circle-template, texture}`. A
+plain-data catalog (`lib/library/element-catalog.ts`) is the single source for seeding + validation;
+a client resolver (`lib/library/element-registry.tsx`) maps `{registry, name}` to the **live source
+component** so the kit never drifts into stale SVG copies. The Loom grid renders any registry
+element and its client-side SVG/PNG export works uniformly (every branch renders a real `<svg>`).
+(3) **Vera gains an icon mode** (`generateLoomCard(prompt, 'icon'|'graphic')`): a second system prompt
+draws a 24×24 currentColor line mark in the On Air icon language, saved under "Vera icons". The
+richer graphic prompt now documents the shared motif vocabulary (frame, person, ripple, rays, check,
+flame, cards, devices). (4) **Seed 38 rows** into the root space, sorted into eight categories
+(Illustration kit, Lead funnel, Onboarding, On Air, On Air icons, Spot art, Circle templates,
+Textures) — 55 code-drawn elements total.
+
+**Consequences.** Every reusable house-style graphic/icon is now catalogued, searchable, sorted, and
+exportable in Loom Studio, and Vera can draw both graphics and icons. Data-driven visuals (charts,
+the frequency-signature radar, season/breath gauges, mockup frames, one-off UI marks) are
+deliberately **not** catalogued — they are dynamic components, not library assets. Rejected: baking
+static SVG strings for each set (would duplicate + drift from the source components); a separate
+icon table (the polymorphic `registry` field on the existing element kind is enough).
