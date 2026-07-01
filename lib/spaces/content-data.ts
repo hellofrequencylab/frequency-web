@@ -22,6 +22,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace } from '@/lib/events/store'
+import { listPracticesForSpace } from '@/lib/practices'
+import { listJourneyPlansForSpace } from '@/lib/journey-plans'
+import { listCirclesForSpace } from '@/lib/circles/store'
 import type { TemplateResolverInput } from '@/lib/spaces/templates'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
@@ -72,6 +75,39 @@ export type SpaceEventItem = {
  *  true only when the Space actually publishes availability windows, so the block is a real entry, not
  *  an empty promise. `href` is the slug-relative booking tab. */
 export type SpaceBookingInfo = { enabled: boolean; href: string | null }
+
+/** One live practice OR journey the SpacePractices block lists, from the Space's OWN rows (the same
+ *  readers the entity-practices module uses: listPracticesForSpace + listJourneyPlansForSpace). Plain
+ *  shape so the block imports nothing server-only. `kind` splits the two groups the block renders. */
+export type SpacePracticeItem = {
+  kind: 'practice' | 'journey'
+  id: string
+  slug: string
+  title: string
+  summary: string | null
+  /** The emoji face (a practice icon or a journey emoji), or null. */
+  emoji: string | null
+  /** Live adoption count for a journey (0 for a practice), only surfaced when positive. */
+  adoptCount: number
+}
+
+/** The live practices + journeys the SpacePractices block reads. Split so the block can render the two
+ *  labelled groups (entity-practices' "Practices to start" / "Journeys to begin") without re-filtering. */
+export type SpacePracticesData = {
+  practices: SpacePracticeItem[]
+  journeys: SpacePracticeItem[]
+}
+
+/** One live Circle the SpaceCommunity block lists, from the Space's OWN active circles (the same
+ *  reader the entity-community module uses: listCirclesForSpace). Plain shape so the block imports
+ *  nothing server-only. */
+export type SpaceCircleItem = {
+  id: string
+  slug: string
+  name: string
+  about: string | null
+  memberCount: number
+}
 
 export type SpaceUpdateItem = {
   id: string
@@ -125,6 +161,12 @@ export type SpaceContentData = {
   events?: SpaceEventItem[]
   /** Whether the Space is taking bookings + the booking tab href, for the SpaceBooking block. */
   booking?: SpaceBookingInfo
+  /** The Space's live practices + journeys the SpacePractices block lists (both empty for a brand-new
+   *  Space). Undefined in the editor / a member Spotlight (the block falls back to its placeholder). */
+  practices?: SpacePracticesData
+  /** The Space's live active Circles the SpaceCommunity block lists. Empty when none; undefined in the
+   *  editor / a member Spotlight. */
+  community?: SpaceCircleItem[]
 }
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
@@ -266,7 +308,7 @@ export async function getSpaceContentData(
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const [updates, reviews, faqs, highlights, stats, events, booking] = await Promise.all([
+  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community] = await Promise.all([
     getSpaceUpdates(spaceId),
     getSpaceReviews(spaceId),
     getSpaceFaqs(spaceId),
@@ -274,6 +316,8 @@ export async function getSpaceContentData(
     input?.statsInput ? getSpaceStats(spaceId, input.statsInput) : Promise.resolve([]),
     input ? getSpaceUpcomingEvents(spaceId) : Promise.resolve([]),
     input ? getSpaceBookingInfo(spaceId, slug) : Promise.resolve<SpaceBookingInfo>({ enabled: false, href: null }),
+    input ? getSpacePractices(spaceId) : Promise.resolve<SpacePracticesData>({ practices: [], journeys: [] }),
+    input ? getSpaceCommunity(spaceId) : Promise.resolve<SpaceCircleItem[]>([]),
   ])
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -285,7 +329,7 @@ export async function getSpaceContentData(
         primaryCta: input.primaryCta ?? null,
       }
     : undefined
-  return { spaceId, updates, reviews, faqs, identity, highlights, stats, events, booking }
+  return { spaceId, updates, reviews, faqs, identity, highlights, stats, events, booking, practices, community }
 }
 
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same
@@ -357,5 +401,65 @@ export async function getSpaceBookingInfo(
     return { enabled: (count ?? 0) > 0, href }
   } catch {
     return { enabled: false, href }
+  }
+}
+
+// How many practices / journeys / circles a Profile block surfaces. Generous relative to what a
+// card grid shows; the block slices to its own cap.
+const PRACTICES_CAP = 6
+const JOURNEYS_CAP = 6
+const CIRCLES_CAP = 6
+
+/** The Space's live practices + journeys for the SpacePractices block, from the SAME readers the
+ *  entity-practices module uses (listPracticesForSpace + listJourneyPlansForSpace, both space_id-
+ *  filtered + fail-safe), shaped to the plain block item. No new raw query. FAIL-SAFE to empty groups. */
+export async function getSpacePractices(spaceId: string): Promise<SpacePracticesData> {
+  try {
+    const [practices, journeys] = await Promise.all([
+      listPracticesForSpace(spaceId, PRACTICES_CAP),
+      listJourneyPlansForSpace(spaceId, JOURNEYS_CAP),
+    ])
+    return {
+      practices: practices.map((p) => ({
+        kind: 'practice' as const,
+        id: p.id,
+        slug: p.slug || p.id,
+        title: p.title,
+        summary: p.summary ?? p.description ?? null,
+        emoji: p.icon ?? null,
+        adoptCount: 0,
+      })),
+      journeys: journeys.map((j) => ({
+        kind: 'journey' as const,
+        id: j.id,
+        slug: j.slug,
+        title: j.title,
+        summary: j.summary ?? null,
+        emoji: j.emoji ?? null,
+        adoptCount: j.adopt_count > 0 ? j.adopt_count : 0,
+      })),
+    }
+  } catch {
+    return { practices: [], journeys: [] }
+  }
+}
+
+/** The Space's live active Circles for the SpaceCommunity block, from the SAME reader the
+ *  entity-community module uses (listCirclesForSpace, space_id-filtered + fail-safe), keeping only
+ *  active circles and shaping to the plain block item. No new raw query. FAIL-SAFE to []. */
+export async function getSpaceCommunity(spaceId: string): Promise<SpaceCircleItem[]> {
+  try {
+    const circles = await listCirclesForSpace(spaceId, CIRCLES_CAP)
+    return circles
+      .filter((c) => c.status === 'active')
+      .map((c) => ({
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        about: c.about ?? null,
+        memberCount: c.member_count ?? 0,
+      }))
+  } catch {
+    return []
   }
 }

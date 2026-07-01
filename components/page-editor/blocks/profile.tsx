@@ -13,6 +13,7 @@ import {
   Sparkles,
   CalendarDays,
   Package,
+  Route,
 } from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
 
@@ -31,6 +32,9 @@ import type {
   SpaceStat,
   SpaceEventItem,
   SpaceBookingInfo,
+  SpacePracticesData,
+  SpacePracticeItem,
+  SpaceCircleItem,
 } from '@/lib/spaces/content-data'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +83,14 @@ function eventsFrom(puck: PuckArg): SpaceEventItem[] {
 function bookingFrom(puck: PuckArg): SpaceBookingInfo | undefined {
   const space = puck?.metadata?.space as { booking?: SpaceBookingInfo } | undefined
   return space?.booking
+}
+function practicesFrom(puck: PuckArg): SpacePracticesData | undefined {
+  const space = puck?.metadata?.space as { practices?: SpacePracticesData } | undefined
+  return space?.practices
+}
+function communityFrom(puck: PuckArg): SpaceCircleItem[] | undefined {
+  const space = puck?.metadata?.space as { community?: SpaceCircleItem[] } | undefined
+  return space?.community
 }
 
 // Shown in the editor canvas (no live data) so a section stays visible + draggable there.
@@ -554,6 +566,150 @@ export function SpaceEventsBlock({
             </li>
           )
         })}
+      </ul>
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3f. SpacePractices -- the Space's LIVE practices + journeys (block parity with the
+// entity-practices module). Reads both lists off metadata (listPracticesForSpace +
+// listJourneyPlansForSpace); renders "Practices to start" and "Journeys to begin" as
+// linked card rows. HONEST-empty: a group with no rows is dropped, and the whole block
+// renders nothing on the live page when the Space has neither.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One linked practice/journey row: an emoji chip, the title + summary, and an optional adopted count. */
+function PracticeRow({ item, hrefBase, fallbackEmoji, ink }: { item: SpacePracticeItem; hrefBase: string; fallbackEmoji: string; ink?: boolean }) {
+  return (
+    <li>
+      <Link
+        href={`/${hrefBase}/${item.slug}`}
+        className={`flex items-start gap-4 rounded-xl border px-4 py-3 transition-colors ${
+          ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+        }`}
+      >
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${ink ? 'bg-white/10' : 'bg-primary-bg'}`}
+          aria-hidden
+        >
+          {item.emoji || fallbackEmoji}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{item.title}</span>
+          {item.summary && (
+            <span className={`mt-0.5 block line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{item.summary}</span>
+          )}
+          {item.adoptCount > 0 && (
+            <span className={`mt-1 block text-3xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+              {item.adoptCount.toLocaleString()} adopted
+            </span>
+          )}
+        </span>
+      </Link>
+    </li>
+  )
+}
+
+export function SpacePracticesBlock({
+  eyebrow,
+  heading,
+  practicesHeading,
+  journeysHeading,
+  data,
+  ink,
+}: {
+  eyebrow?: string
+  heading?: string
+  practicesHeading?: string
+  journeysHeading?: string
+  data: SpacePracticesData
+  ink?: boolean
+}) {
+  const practices = data.practices ?? []
+  const journeys = data.journeys ?? []
+  if (practices.length === 0 && journeys.length === 0) return null
+  return (
+    <InfoCard ink={ink}>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      <div className="space-y-6">
+        {practices.length > 0 && (
+          <div>
+            {practicesHeading && (
+              <h3 className={`mb-3 inline-flex items-center gap-2 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+                <Sparkles className={`h-4 w-4 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
+                {practicesHeading}
+              </h3>
+            )}
+            <ul className="space-y-3">
+              {practices.map((p) => (
+                <PracticeRow key={p.id} item={p} hrefBase="practices" fallbackEmoji="🌀" ink={ink} />
+              ))}
+            </ul>
+          </div>
+        )}
+        {journeys.length > 0 && (
+          <div>
+            {journeysHeading && (
+              <h3 className={`mb-3 inline-flex items-center gap-2 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>
+                <Route className={`h-4 w-4 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
+                {journeysHeading}
+              </h3>
+            )}
+            <ul className="space-y-3">
+              {journeys.map((j) => (
+                <PracticeRow key={j.id} item={j} hrefBase="journeys" fallbackEmoji="🧭" ink={ink} />
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3g. SpaceCommunity -- the Space's LIVE Circles (block parity with the entity-community
+// module). Reads the active circles off metadata (listCirclesForSpace); renders each as a
+// linked card with its member count. HONEST-empty: nothing on the live page when the Space
+// runs no active circles.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SpaceCommunityBlock({
+  eyebrow,
+  heading,
+  circles,
+  ink,
+}: {
+  eyebrow?: string
+  heading?: string
+  circles: SpaceCircleItem[]
+  ink?: boolean
+}) {
+  if (circles.length === 0) return null
+  return (
+    <InfoCard ink={ink}>
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {circles.map((c) => (
+          <li key={c.id}>
+            <Link
+              href={`/circles/${c.slug}`}
+              className={`flex h-full flex-col rounded-xl border px-4 py-3 transition-colors ${
+                ink ? 'border-white/10 bg-white/5 hover:bg-white/10' : 'border-border/60 bg-surface/60 hover:border-primary/40'
+              }`}
+            >
+              <span className={`truncate text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{c.name}</span>
+              {c.about && (
+                <span className={`mt-1 line-clamp-2 text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{c.about}</span>
+              )}
+              <span className={`mt-2 inline-flex items-center gap-1.5 text-2xs font-semibold ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+                <Users className={`h-3.5 w-3.5 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
+                {c.memberCount.toLocaleString()} {c.memberCount === 1 ? 'member' : 'members'}
+              </span>
+            </Link>
+          </li>
+        ))}
       </ul>
     </InfoCard>
   )
@@ -1148,6 +1304,74 @@ export const profileComponents: Record<string, ComponentConfig> = {
           heading={(heading as string) || undefined}
           events={events}
           max={Number(max) || 5}
+        />
+      )
+    },
+  },
+
+  SpacePractices: {
+    label: 'Practices + journeys (live)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading (optional)' },
+      practicesHeading: { type: 'text', label: 'Practices label' },
+      journeysHeading: { type: 'text', label: 'Journeys label' },
+    },
+    defaultProps: {
+      eyebrow: 'Start here',
+      heading: 'Practices and journeys',
+      practicesHeading: 'Practices to start',
+      journeysHeading: 'Journeys to begin',
+    },
+    render: ({ eyebrow, heading, practicesHeading, journeysHeading, puck }) => {
+      const data = practicesFrom(puck)
+      // Editor (no metadata) shows a placeholder; the live page renders nothing when there are none.
+      if (!data) {
+        return (
+          <div>
+            <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
+            <EditorStub label="Practices and journeys" hint="This space's practices and journeys show on the live page" />
+          </div>
+        )
+      }
+      return (
+        <SpacePracticesBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          practicesHeading={(practicesHeading as string) || undefined}
+          journeysHeading={(journeysHeading as string) || undefined}
+          data={data}
+        />
+      )
+    },
+  },
+
+  SpaceCommunity: {
+    label: 'Circles (live)',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading (optional)' },
+    },
+    defaultProps: {
+      eyebrow: 'Community',
+      heading: 'Circles',
+    },
+    render: ({ eyebrow, heading, puck }) => {
+      const circles = communityFrom(puck)
+      // Editor (no metadata) shows a placeholder; the live page renders nothing when there are none.
+      if (!circles) {
+        return (
+          <div>
+            <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
+            <EditorStub label="Circles" hint="This space's circles show on the live page" />
+          </div>
+        )
+      }
+      return (
+        <SpaceCommunityBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          circles={circles}
         />
       )
     },

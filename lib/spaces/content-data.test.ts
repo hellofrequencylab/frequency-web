@@ -28,10 +28,30 @@ function makeAdmin(result: { data: unknown[] | null }, opts: { throws?: boolean 
 let currentAdmin: ReturnType<typeof makeAdmin>
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => currentAdmin }))
 
-import { getSpaceUpdates, getSpaceReviews, getSpaceFaqs, getSpaceContentData } from './content-data'
+// The live SpacePractices / SpaceCommunity readers reuse the existing space readers; mock those so
+// the shaping logic (kind, slug fallback, positive-adopt gate, active-only filter) is exercised
+// without touching the DB.
+const listPracticesForSpace = vi.fn()
+const listJourneyPlansForSpace = vi.fn()
+const listCirclesForSpace = vi.fn()
+vi.mock('@/lib/practices', () => ({ listPracticesForSpace: (...a: unknown[]) => listPracticesForSpace(...a) }))
+vi.mock('@/lib/journey-plans', () => ({ listJourneyPlansForSpace: (...a: unknown[]) => listJourneyPlansForSpace(...a) }))
+vi.mock('@/lib/circles/store', () => ({ listCirclesForSpace: (...a: unknown[]) => listCirclesForSpace(...a) }))
+
+import {
+  getSpaceUpdates,
+  getSpaceReviews,
+  getSpaceFaqs,
+  getSpaceContentData,
+  getSpacePractices,
+  getSpaceCommunity,
+} from './content-data'
 
 beforeEach(() => {
   currentAdmin = makeAdmin({ data: [] })
+  listPracticesForSpace.mockReset().mockResolvedValue([])
+  listJourneyPlansForSpace.mockReset().mockResolvedValue([])
+  listCirclesForSpace.mockReset().mockResolvedValue([])
 })
 
 describe('getSpaceUpdates', () => {
@@ -127,5 +147,56 @@ describe('getSpaceContentData', () => {
     expect(out.updates).toEqual([])
     expect(out.reviews).toEqual({ average: null, count: 0, latest: [] })
     expect(out.faqs).toEqual([])
+  })
+
+  it('omits the live practices + community reads without an input (pre-Phase-3 call)', async () => {
+    await getSpaceContentData('space-9')
+    expect(listPracticesForSpace).not.toHaveBeenCalled()
+    expect(listCirclesForSpace).not.toHaveBeenCalled()
+  })
+})
+
+describe('getSpacePractices', () => {
+  it('shapes practices + journeys, falling back a null practice slug to its id and gating adopt count', async () => {
+    listPracticesForSpace.mockResolvedValue([
+      { id: 'p1', slug: 'breath', title: 'Breath', summary: 'Calm', description: null, icon: '🌬️' },
+      { id: 'p2', slug: null, title: 'Sit', summary: null, description: 'Just sit', icon: null },
+    ])
+    listJourneyPlansForSpace.mockResolvedValue([
+      { id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adopt_count: 3 },
+      { id: 'j2', slug: 'grow', title: 'Grow', summary: null, emoji: null, adopt_count: 0 },
+    ])
+    const out = await getSpacePractices('space-1')
+    expect(out.practices).toEqual([
+      { kind: 'practice', id: 'p1', slug: 'breath', title: 'Breath', summary: 'Calm', emoji: '🌬️', adoptCount: 0 },
+      { kind: 'practice', id: 'p2', slug: 'p2', title: 'Sit', summary: 'Just sit', emoji: null, adoptCount: 0 },
+    ])
+    expect(out.journeys[0]).toEqual({ kind: 'journey', id: 'j1', slug: 'reset', title: 'Reset', summary: 'A week', emoji: '🧭', adoptCount: 3 })
+    expect(out.journeys[1].adoptCount).toBe(0)
+  })
+
+  it('fails safe to empty groups when a reader throws', async () => {
+    listPracticesForSpace.mockRejectedValue(new Error('boom'))
+    expect(await getSpacePractices('space-1')).toEqual({ practices: [], journeys: [] })
+  })
+})
+
+describe('getSpaceCommunity', () => {
+  it('keeps only active circles and shapes them (member count defaulted)', async () => {
+    listCirclesForSpace.mockResolvedValue([
+      { id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', status: 'active', member_count: 5 },
+      { id: 'c2', slug: 'b', name: 'Beta', about: null, status: 'archived', member_count: 2 },
+      { id: 'c3', slug: 'c', name: 'Gamma', about: null, status: 'active', member_count: null },
+    ])
+    const out = await getSpaceCommunity('space-1')
+    expect(out).toEqual([
+      { id: 'c1', slug: 'a', name: 'Alpha', about: 'About A', memberCount: 5 },
+      { id: 'c3', slug: 'c', name: 'Gamma', about: null, memberCount: 0 },
+    ])
+  })
+
+  it('fails safe to [] when the reader throws', async () => {
+    listCirclesForSpace.mockRejectedValue(new Error('boom'))
+    expect(await getSpaceCommunity('space-1')).toEqual([])
   })
 })
