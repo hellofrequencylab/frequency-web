@@ -65,6 +65,7 @@ import {
   Palette,
   LayoutPanelLeft,
   Workflow,
+  Images,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
@@ -249,6 +250,7 @@ export const ADMIN_GROUPS: readonly AdminGroup[] = [
     links: [
       // ── Entry points ──
       { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
+      { href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', Icon: Images, min: 'janitor', section: 'Assets' },
       { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Entry points' },
       { href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', Icon: Share2, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
       // ── Waitlist & Applications (Growth OS Engine 3) ──

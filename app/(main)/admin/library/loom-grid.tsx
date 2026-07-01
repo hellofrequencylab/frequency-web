@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Copy, Check, ExternalLink, Archive, Trash2 } from 'lucide-react'
+import { X, Copy, Check, ExternalLink, Archive, Trash2, ImageOff } from 'lucide-react'
 import type { LibraryGalleryItem } from '@/lib/library/store'
+import { Illustration, illustrationNames, type IllustrationName } from '@/components/marketing/illustrations'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 
 function human(n: number | null): string {
@@ -11,6 +12,43 @@ function human(n: number | null): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** The illustration-registry name for an `element` asset, if valid. */
+function elementName(asset: LibraryGalleryItem): IllustrationName | null {
+  const n = asset.config?.name
+  return typeof n === 'string' && (illustrationNames as readonly string[]).includes(n)
+    ? (n as IllustrationName)
+    : null
+}
+
+/** Renders an asset's visual: a code-drawn element via <Illustration>, a file via <img>,
+ *  or a placeholder. `fit` picks cover (grid tiles) vs contain (drawer preview). */
+function Thumb({ asset, fit }: { asset: LibraryGalleryItem; fit: 'cover' | 'contain' }) {
+  const el = asset.kind === 'element' ? elementName(asset) : null
+  if (el) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-4">
+        <Illustration name={el} className="max-h-full w-auto" />
+      </div>
+    )
+  }
+  if (asset.url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={asset.url}
+        alt={asset.alt || asset.title}
+        loading="lazy"
+        className={`h-full w-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`}
+      />
+    )
+  }
+  return (
+    <div className="flex h-full w-full items-center justify-center text-subtle">
+      <ImageOff className="h-6 w-6" aria-hidden />
+    </div>
+  )
 }
 
 // The Loom Studio grid + detail drawer. Click a card to open the drawer, edit its metadata,
@@ -30,16 +68,8 @@ export function LoomGrid({ assets }: { assets: LibraryGalleryItem[] }) {
             onClick={() => setOpenId(a.id)}
             className="group overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-sm transition-shadow hover:shadow-pop"
           >
-            <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated">
-              {a.url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={a.url}
-                  alt={a.alt || a.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                />
-              )}
+            <span className="block aspect-[4/3] overflow-hidden bg-surface-elevated transition-transform duration-200 group-hover:scale-[1.02]">
+              <Thumb asset={a} fit="cover" />
             </span>
             <span className="flex items-center justify-between gap-2 px-3 py-2">
               <span className="truncate text-sm text-text" title={a.title}>
@@ -134,11 +164,8 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
         </div>
 
         <div className="space-y-4 p-5">
-          <div className="overflow-hidden rounded-2xl border border-border bg-surface-elevated">
-            {asset.url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={asset.url} alt={asset.alt || asset.title} className="max-h-72 w-full object-contain" />
-            )}
+          <div className="flex h-64 items-center justify-center overflow-hidden rounded-2xl border border-border bg-surface-elevated">
+            <Thumb asset={asset} fit="contain" />
           </div>
 
           <p className="text-xs text-subtle">
@@ -149,14 +176,16 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
           </p>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={copyUrl}
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
-            >
-              {copied ? <Check className="h-4 w-4 text-signal" /> : <Copy className="h-4 w-4" />}
-              {copied ? 'Copied' : 'Copy URL'}
-            </button>
+            {asset.url && (
+              <button
+                type="button"
+                onClick={copyUrl}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+              >
+                {copied ? <Check className="h-4 w-4 text-signal" /> : <Copy className="h-4 w-4" />}
+                {copied ? 'Copied' : 'Copy URL'}
+              </button>
+            )}
             {asset.url && (
               <a
                 href={asset.url}
