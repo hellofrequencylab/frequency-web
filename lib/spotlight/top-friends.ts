@@ -1,6 +1,12 @@
 import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { MAX_TOP_FRIENDS } from './blocks/schema'
+import type { TopFriend } from './top-friends.types'
+
+// The TopFriend shape lives in the client-safe ./top-friends.types module (so the
+// Puck blocks can import it without this server-only file). Re-exported here so every
+// existing importer of `TopFriend` from '@/lib/spotlight/top-friends' keeps working.
+export type { TopFriend } from './top-friends.types'
 
 // Spotlight Top Friends (the "Top 8"): the server-side source of truth for which
 // friends a member features, in order, on their Spotlight. The picks live in the
@@ -14,15 +20,6 @@ import { MAX_TOP_FRIENDS } from './blocks/schema'
 //   • IO (read the ordered grid, joined to each friend's PUBLIC profile fields).
 // The server actions (app/(main)/settings/profile/spotlight-actions.ts) own auth +
 // the friendship check + the writes; this module owns the shape + the read.
-
-/** One featured friend, with the already-public identity fields the grid renders.
- *  Mirrors the SpotlightRow privacy boundary: handle/name/avatar only, never contact. */
-export interface TopFriend {
-  profileId: string
-  handle: string
-  displayName: string | null
-  avatarUrl: string | null
-}
 
 // ── The untyped admin-client seam (spotlight_top_friends not in the generated DB types
 // yet, ADR-246). Mirrors lib/spaces/segments.ts. The `profiles` / `friendships` reads
