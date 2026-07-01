@@ -10567,3 +10567,33 @@ the Loom itself (no separate upload), so the house style compounds as the librar
 per-space and forgettable (deleting our pointer doesn't touch Recraft). Deferred: auto-suggesting a
 style from a collection, and image-to-image edits conditioned on a style (edits still use the base lane
 style today).
+
+## ADR-490: The Loom's unified Create panel — one smart wizard over two engines
+
+**Status:** Accepted (2026-07-01). Consolidates [ADR-486](DECISIONS.md) (Create with Vera) +
+[ADR-488](DECISIONS.md)/[ADR-489](DECISIONS.md) (Image Studio).
+
+**Context.** The Loom grew two separate create surfaces stacked on the page: **"Create with Vera"**
+(an LLM drawing house-style line SVG — a graphic/icon mode) and **"Generate with the Image Studio"**
+(Recraft vector/raster generation + brand styles). Two panels, two mental models, overlapping jobs —
+the operator had to know which engine to reach for. The owner asked to condense them into one compact,
+smart system with smart prompts.
+
+**Decision.** Replace both panels with a single `CreateStudio` component keyed on **what you're
+making**, not which engine. Six type chips — **Icon · Spot art · Illustration · Trophy/reward · Card ·
+Texture** — each carry a config (engine default, Studio lane, placeholder, and a set of house-voice
+**smart-prompt** chips that one-tap fill the box). The engine is chosen automatically and only exposed
+where there's a real choice: Icon/Spot art show a **Quick (Vera) / Rich (Studio)** toggle (Vera is the
+instant, no-cost default); Illustration/Trophy/Card/Texture always route to the Studio. Vera keeps its
+preview→title→save step; the Studio auto-saves and refreshes. Studio-only types are disabled (with a
+hint) when `RECRAFT_API_KEY` is unset, so the panel degrades gracefully to just the Vera types. The
+trained-brand-style picker (ADR-489) folds into the Studio path's controls. `vera-wizard.tsx` and the
+old `RecraftPanel` are deleted; the underlying actions (`generateLoomCard`/`saveLoomCard`,
+`generateWithRecraft`, brand styles) are unchanged.
+
+**Consequences.** One surface, one decision for the operator ("what am I making?"), with the
+engine tradeoff (instant/free line vs paid/rich generation) surfaced only where it matters. Smart
+prompts lower the blank-page cost and keep output on-brand. The panel is compact (a single collapsible
+`<details>`) and has no dead "which version do I use" ambiguity. Adding a new output type is a one-row
+change to the `TYPES` map. Rejected: a fully automatic engine pick with no toggle (operators want cost
+control on the cheap icon path), and keeping the two panels (the explicit ask was to unify).
