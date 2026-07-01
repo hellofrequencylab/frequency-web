@@ -18,6 +18,8 @@ const KEYS = [
   'SpaceStats',
   'SpaceQuickLinks',
   'SpaceEvents',
+  'SpacePractices',
+  'SpaceCommunity',
   'SpaceBooking',
   'SpaceOfferings',
   'SpaceContact',
@@ -156,6 +158,20 @@ describe('the new business-profile blocks expose clean, operator-editable fields
     for (const k of ['heading', 'body', 'ctaLabel', 'accent']) {
       expect(Object.keys(fields)).toContain(k)
     }
+  })
+
+  it('SpacePractices lets the operator label the practices + journeys groups', () => {
+    const fields = profileComponents.SpacePractices.fields ?? {}
+    for (const k of ['eyebrow', 'heading', 'practicesHeading', 'journeysHeading']) {
+      expect(Object.keys(fields)).toContain(k)
+    }
+    expect((fields.practicesHeading as { type?: string } | undefined)?.type).toBe('text')
+    expect((fields.journeysHeading as { type?: string } | undefined)?.type).toBe('text')
+  })
+
+  it('SpaceCommunity exposes an eyebrow + heading (live, no authored list)', () => {
+    const fields = profileComponents.SpaceCommunity.fields ?? {}
+    expect(Object.keys(fields).sort()).toEqual(['eyebrow', 'heading'])
   })
 })
 

@@ -77,6 +77,8 @@ export const config: Config = {
         'SpaceStats',
         'SpaceQuickLinks',
         'SpaceEvents',
+        'SpacePractices',
+        'SpaceCommunity',
         'SpaceBooking',
         'SpaceOfferings',
         'SpaceContact',
