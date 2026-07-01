@@ -1,65 +1,74 @@
 'use server'
 
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { requireStaff } from '@/lib/staff'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getRootSpaceId, searchLibraryAssets } from '@/lib/library/store'
+import { getCallerProfile } from '@/lib/auth'
+import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { searchSpaceLibraryImages, insertSpaceLibraryImage } from '@/lib/library/store'
 
 // Server actions behind the Loom-backed image field (lib/page-editor/loom-image-field.tsx). A
 // 'use server' module exports ONLY async functions, so the pure field component + its Puck config
 // import THESE, never a server-only module (the build trap: the editor bundle stays client-safe and
 // the public profile ships no editor runtime).
 //
-// Two capabilities, both scoped to Frequency's shared/master Loom (the root space's library, the same
-// catalog Loom Studio browses):
-//   listLoomImages(): the operator PICKS an existing Loom image asset.
-//   uploadToLoom():    the operator UPLOADS a new image, which FILES INTO the Loom (a library_assets
-//                      row) so it is catalogued + reusable, then returns its served URL.
-// Both resolve images through the Loom asset `url` (the library-media public URL the ingest pipeline
-// stamps, which is the rendition-served address), so an image picked or uploaded here resolves the
-// same way it does everywhere the Loom is used. Staff-gated (marketer), matching the site-media field.
+// GATE: these are used by a SPACE OPERATOR editing their OWN profile, who is usually NOT platform
+// staff. So every action RE-RESOLVES the space from its `slug` and RE-GATES caps.canEditProfile
+// (owner / admin / editor) server-side, the SAME authority the space-landing publish action uses
+// (app/(main)/spaces/[slug]/edit-page/actions.ts). The slug is threaded from the editor via the
+// SpaceEditor context (lib/page-editor/space-editor-context.tsx); the client can lie about it, so the
+// server treats it as untrusted and re-checks permission against the resolved space.
+//
+// SCOPE: uploads file into the SPACE'S OWN Loom (library_assets with space_id = <this space>,
+// visibility = 'space') -- NEVER the shared root/public library. The picker searches the space's own
+// images UNIONED with the shared/public library for reuse, but writes are always space-scoped.
+// Images resolve through the Loom asset `url` (the library-media public URL), so a picked asset and an
+// uploaded asset resolve identically.
 
 /** One pickable Loom image: the served URL plus the label the picker grid shows. */
-export type LoomImagePick = {
-  id: string
-  title: string
-  url: string
-  alt: string | null
+export type LoomImagePick = { id: string; title: string; url: string; alt: string | null }
+
+/** Resolve + AUTHORIZE the caller as an editor (owner / admin / editor) of `slug`'s space. Returns the
+ *  space id, or null on any miss (unknown slug, not visible, no edit permission). Untrusted slug: the
+ *  gate is the authority, so a client that passes another space's slug still fails unless the caller
+ *  can actually edit THAT space. */
+async function authorizeSpaceEditor(slug: string | null | undefined): Promise<string | null> {
+  const s = (slug ?? '').trim()
+  if (!s) return null
+  try {
+    const caller = await getCallerProfile()
+    const viewerProfileId = caller?.id ?? null
+    const space = await getVisibleSpaceBySlug(s, viewerProfileId)
+    if (!space) return null
+    const caps = await getSpaceCapabilities(space, viewerProfileId)
+    if (!caps.canEditProfile) return null // owner / admin / editor (the write authority)
+    return space.id
+  } catch {
+    return null
+  }
 }
 
-/** The most-recent image assets in the shared Loom, optionally filtered by a text query. FAIL-SAFE
- *  to [] (a missing root space, an empty catalog, or any error). Only file-backed images with a
- *  resolvable URL ride through, so every result renders. */
-export async function listLoomImages(query?: string): Promise<LoomImagePick[]> {
-  try {
-    await requireStaff('marketer')
-    const spaceId = await getRootSpaceId()
-    if (!spaceId) return []
-    const { items } = await searchLibraryAssets({
-      spaceId,
-      kind: 'image',
-      q: query?.trim() || undefined,
-      sort: 'new',
-      pageSize: 60,
-    })
-    return items
-      .filter((i) => typeof i.url === 'string' && i.url.length > 0)
-      .map((i) => ({ id: i.id, title: i.title || 'Untitled', url: i.url as string, alt: i.alt }))
-  } catch {
-    return []
-  }
+/** The images a space operator may pick: the space's OWN Loom images unioned with the shared/public
+ *  library, optionally filtered by a text query. Gated on per-space edit permission; FAIL-SAFE to []
+ *  (an unauthorized caller, an unknown slug, an empty catalog, or any error). */
+export async function listLoomImages(slug: string, query?: string): Promise<LoomImagePick[]> {
+  const spaceId = await authorizeSpaceEditor(slug)
+  if (!spaceId) return []
+  return searchSpaceLibraryImages(spaceId, query)
 }
 
 const MAX_BYTES = 20 * 1024 * 1024 // matches the Loom uploader ceiling
 
-/** Upload an image and FILE IT INTO the shared Loom (a `library_assets` row, kind='image'), then
- *  return its served public URL. The block stores that URL (the same address the Loom serves it at),
- *  so a picked asset + an uploaded asset resolve identically. Staff-gated. Rolls back the stored file
- *  if the catalog insert fails, so a failed upload never litters storage. */
+/** Upload an image and FILE IT INTO the SPACE'S OWN Loom (library_assets, space_id = this space,
+ *  visibility = 'space'), then return its served public URL. Gated on per-space edit permission. The
+ *  block stores that URL (the same address the Loom serves it at), so a picked asset + an uploaded
+ *  asset resolve identically. Rolls back the stored file if the catalog insert fails, so a failed
+ *  upload never litters storage. */
 export async function uploadToLoom(
+  slug: string,
   formData: FormData,
 ): Promise<{ url: string; id: string } | { error: string }> {
-  await requireStaff('marketer')
+  const spaceId = await authorizeSpaceEditor(slug)
+  if (!spaceId) return { error: 'You do not have access to add images to this space.' }
 
   const file = formData.get('file')
   if (!(file instanceof File) || file.size === 0) return { error: 'No image chosen.' }
@@ -68,12 +77,10 @@ export async function uploadToLoom(
     return { error: `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 20 MB.` }
   }
 
-  const spaceId = await getRootSpaceId()
-  if (!spaceId) return { error: 'The shared library is not available right now.' }
-
   const admin = createAdminClient()
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
   const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+  // Namespace the object under the owning space, so a space's uploads live in its own storage prefix.
   const path = `${spaceId}/${stamp}.${ext}`
   const bytes = new Uint8Array(await file.arrayBuffer())
 
@@ -85,35 +92,26 @@ export async function uploadToLoom(
   const { data: pub } = admin.storage.from('library-media').getPublicUrl(path)
 
   const base = (file.name.replace(/\.[^.]+$/, '') || 'image').slice(0, 120)
-  const slug = `${base}-${stamp}`
+  const slugified = `${base}-${stamp}`
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
 
-  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
-  const dbh = admin as unknown as SupabaseClient
-  const { data: inserted, error: insErr } = await dbh
-    .from('library_assets')
-    .insert({
-      space_id: spaceId,
-      kind: 'image',
-      title: base,
-      slug,
-      status: 'approved',
-      visibility: 'public',
-      storage_bucket: 'library-media',
-      storage_path: path,
-      url: pub.publicUrl,
-      mime: file.type || 'image/jpeg',
-      bytes: file.size,
-    })
-    .select('id')
-    .maybeSingle()
-  if (insErr) {
+  const id = await insertSpaceLibraryImage({
+    spaceId,
+    title: base,
+    slug: slugified,
+    storageBucket: 'library-media',
+    storagePath: path,
+    url: pub.publicUrl,
+    mime: file.type || 'image/jpeg',
+    bytes: file.size,
+  })
+  if (!id) {
     // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
     await admin.storage.from('library-media').remove([path])
-    return { error: insErr.message }
+    return { error: 'Could not save the image to your library. Try again.' }
   }
 
-  return { url: pub.publicUrl, id: String((inserted as { id?: unknown } | null)?.id ?? '') }
+  return { url: pub.publicUrl, id }
 }

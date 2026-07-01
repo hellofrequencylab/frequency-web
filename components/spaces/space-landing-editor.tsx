@@ -13,6 +13,7 @@ import { publishSpaceLanding, resetSpaceLanding } from '@/app/(main)/spaces/[slu
 import { setSpaceLayoutTemplate } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { SPACE_TEMPLATES, SPACE_TEMPLATE_LABEL, type SpaceTemplate } from '@/lib/spaces/templates'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
+import { SpaceEditorProvider } from '@/lib/page-editor/space-editor-context'
 
 // THE OPERATOR EDITOR for a Space's public LANDING (ADR-476/472, Phase 1). Reuses the
 // shared Puck config + the marketing editor's publish/baseline pattern, but writes to
@@ -191,6 +192,7 @@ export function SpaceLandingEditor({
     </Link>
   )
   return (
+    <SpaceEditorProvider slug={slug}>
     <ResponsiveEditor
       desktop={
         <Puck
@@ -235,5 +237,6 @@ export function SpaceLandingEditor({
         ) : undefined,
       }}
     />
+    </SpaceEditorProvider>
   )
 }

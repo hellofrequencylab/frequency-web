@@ -3,12 +3,18 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { Upload, X, ImageIcon, Search } from 'lucide-react'
 import { listLoomImages, uploadToLoom, type LoomImagePick } from './loom-field-actions'
+import { useSpaceEditorSlug } from './space-editor-context'
 
-// A Loom-BACKED custom Puck image field. The operator either PICKS an existing image from the shared
-// Loom (the DAM Loom Studio browses) or UPLOADS a new one, which FILES INTO the Loom so it is
-// catalogued + reusable. Either way the field stores the Loom asset's served URL, so an image
-// resolves the SAME whether it was picked or uploaded (images resolve through the Loom `url`, the
-// rendition-served address).
+// A Loom-BACKED custom Puck image field for a SPACE OPERATOR editing their own profile. The operator
+// either PICKS an existing image from the Loom (their space's own images UNIONED with the shared/public
+// library) or UPLOADS a new one, which FILES INTO their SPACE'S OWN Loom (never the shared root
+// library). Either way the field stores the Loom asset's served URL, so an image resolves the SAME
+// whether it was picked or uploaded (images resolve through the Loom `url`, the rendition-served
+// address).
+//
+// The active-space `slug` comes from the SpaceEditor context both editor surfaces provide; the server
+// actions re-resolve the space + re-gate per-space edit permission, so the slug is UX plumbing only.
+// Outside a space editor (no slug) the field disables the Loom actions and explains why.
 //
 // It mirrors the SpotlightAssetField pattern (a 'use client' control wrapping 'use server' actions),
 // so it renders in BOTH the desktop <Puck> field panel AND the mobile editor's FieldForm (both drive
@@ -26,6 +32,7 @@ function LoomImageField({
   /** Render the preview as a 1:1 square (logos / avatars); otherwise a landscape frame. */
   square?: boolean
 }) {
+  const slug = useSpaceEditorSlug()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -34,20 +41,24 @@ function LoomImageField({
   const [q, setQ] = useState('')
   const [loading, startLoad] = useTransition()
 
-  // Load the Loom grid when the picker opens or the query changes (debounced).
+  // Load the Loom grid when the picker opens or the query changes (debounced). Needs the space slug.
   useEffect(() => {
-    if (!picking) return
+    if (!picking || !slug) return
     const handle = setTimeout(() => {
       startLoad(async () => {
-        const rows = await listLoomImages(q)
+        const rows = await listLoomImages(slug, q)
         setItems(rows)
       })
     }, 200)
     return () => clearTimeout(handle)
-  }, [picking, q])
+  }, [picking, q, slug])
 
   async function upload(file: File) {
     setErr(null)
+    if (!slug) {
+      setErr('Open this from your space editor to add images.')
+      return
+    }
     if (!file.type.startsWith('image/')) {
       setErr('Choose an image file.')
       return
@@ -55,7 +66,7 @@ function LoomImageField({
     setBusy(true)
     const fd = new FormData()
     fd.set('file', file)
-    const res = await uploadToLoom(fd)
+    const res = await uploadToLoom(slug, fd)
     setBusy(false)
     if ('error' in res) {
       setErr(res.error)
@@ -110,12 +121,12 @@ function LoomImageField({
           <button
             type="button"
             onClick={() => setPicking((p) => !p)}
-            disabled={busy}
-            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-60`}
+            disabled={busy || !slug}
+            className={`flex ${aspect} flex-1 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface/60 px-3 text-center text-sm font-medium text-muted transition-colors hover:border-border-strong hover:bg-surface disabled:opacity-50`}
           >
             <ImageIcon className="h-5 w-5" aria-hidden />
             Pick from the Loom
-            <span className="text-2xs font-normal text-subtle">or upload a new image</span>
+            <span className="text-2xs font-normal text-subtle">your library plus the shared one</span>
           </button>
         </div>
       )}
@@ -124,7 +135,8 @@ function LoomImageField({
         <button
           type="button"
           onClick={() => setPicking((p) => !p)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated"
+          disabled={!slug}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <ImageIcon className="h-3.5 w-3.5" aria-hidden />
           {picking ? 'Close library' : 'Browse the Loom'}
@@ -132,15 +144,19 @@ function LoomImageField({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-60"
+          disabled={busy || !slug}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50"
         >
           <Upload className="h-3.5 w-3.5" aria-hidden />
           {busy ? 'Uploading…' : 'Upload'}
         </button>
       </div>
 
-      {picking && (
+      {!slug && (
+        <p className="text-2xs text-subtle">Open this from your space editor to pick or upload images.</p>
+      )}
+
+      {picking && slug && (
         <div className="rounded-xl border border-border bg-surface p-2">
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-surface px-2">
             <Search className="h-3.5 w-3.5 text-subtle" aria-hidden />
@@ -156,7 +172,7 @@ function LoomImageField({
             <p className="px-1 py-4 text-center text-xs text-subtle">Loading…</p>
           ) : items.length === 0 ? (
             <p className="px-1 py-4 text-center text-xs text-subtle">
-              No images in the Loom yet. Upload one to get started.
+              No images in your library yet. Upload one to get started.
             </p>
           ) : (
             <div className="grid max-h-56 grid-cols-3 gap-1.5 overflow-y-auto">
