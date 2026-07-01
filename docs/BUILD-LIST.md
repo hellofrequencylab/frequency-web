@@ -760,20 +760,30 @@ specialist tools.*
 
 *Living master list — re-rank as tracks land; update the Progress log on every ship.*
 
-## 🧵 The Loom — built-in asset library — 2026-07-01 ([ADR-478](DECISIONS.md), spec [LIBRARY.md](LIBRARY.md))
+## 🧵 The Loom — built-in DAM (asset library) — 2026-07-01 ([ADR-478](DECISIONS.md)/[479](DECISIONS.md), spec [LIBRARY.md](LIBRARY.md))
 
-The built-in, searchable asset library for the whole web editor: every entity has its own,
-Frequency shares a master set, spanning **images, themes, app assets, and Puck-droppable
-elements/templates/flows**, meant to grow for years without a deploy per asset. Search is
-Supabase-native (FTS + `pg_trgm` now, `pgvector` semantic fast-follow). Decisions locked with the
-owner: Supabase-native search · semantic as fast-follow · foundation first.
+The built-in **digital-asset-management** system for the whole web editor: hosts every image/asset,
+protects them, edits + versions them, and is callable from every upload point in Puck. Frequency
+runs a master library; **every entity gets its own Loom** (shared/master = the root space). Search is
+Supabase-native (FTS + `pg_trgm` now, `pgvector` semantic later). **Owner decisions (2026-07-01):**
+Filerobot in-browser editor · on-the-fly transforms · **editing saves a new version** · every asset
+space-scoped · **backfill everything** · full privacy system but built later.
+
+**Spine shipped (S0):** the catalog (`library_assets`, ADR-478, migration `20260919000000`) + the
+DAM tables — `library_renditions` / `library_versions` / `library_collections(+items)` /
+`library_usages` + richer asset metadata + `space_id` NOT NULL (root = shared) — (ADR-480, migration
+`20260920000000`). Typed contract `lib/library/types.ts`; rendition/crop presets
+`lib/library/renditions.ts`. Service-role only; not yet applied to a DB. Best practice baked in:
+blocks store an **asset reference** (not a raw URL), one master → many renditions, non-destructive
+edits, every upload ingests, a usage index for safe delete + global swap.
 
 | # | Scope | Status |
 |---|---|---|
-| L1 | **Catalog + storage framework.** One polymorphic `public.library_assets` table (`kind` = image·icon·element·template·flow·theme·app_asset; file payload OR parametric `config`; `space_id` null = Frequency shared, set = entity's own), generated `search_tsv` + `pg_trgm` + `tags` GIN indexes, reserved `embedding vector(384)`, service-role-only RLS, and a `library-media` bucket. Typed contract `lib/library/types.ts`. | ✅ migration `20260919000000`, ADR-478 |
-| L2 | **Seed the existing kit into the catalog.** The 17 illustration elements as `element` rows (registry ref in `config`), the LeadFunnel as a `flow` row, the theme registry as `theme` rows. Idempotent upsert by slug. | 📋 |
-| L3 | **Search + browser.** `searchAssets({ q, kinds, tags, category, scope, color, sort })` (FTS + trigram + facet counts) and a janitor `/admin/library` browser (Index template): search box + facet rail + grid + preview. | 📋 |
-| L4 | **Editor integration.** A `type:'custom'` "insert from library" picker + a Library panel in the Puck editor; `LibraryImage` / `LibraryElement` / `LibraryFlow` blocks; media blocks pick from the library. | 📋 |
-| L5 | **Tenancy + roles.** Per-space libraries + upload-to-library (extend `uploadSiteMedia`, space-scoped), client-facing RLS, capability keys (`library.view` / `library.manage`), entitlements `library.*`, feature flags. | 📋 |
-| L6 | **Semantic search (killer search+).** Populate `embedding`, hybrid FTS+vector ranking (RRF, matching the practice-library pattern), AI auto-tagging + color extraction, collections/favorites, usage-ranked results. | 📋 |
-| L7 | **The Weave composer.** Brand-token-aware element/texture designer, versioning UI, cross-tenant publishing, template marketplace. | 📋 |
+| S0 | **DAM spine.** The five entities (assets + renditions + versions + collections + usages), metadata/protection hooks, root-space-as-shared, typed contract + presets. | ✅ ADR-478/480, migrations `20260919000000` + `20260920000000` |
+| D1 | **Ingest + gallery** (the standard site image gallery). Ingest pipeline (validate → checksum dedupe → EXIF strip → extract dims/colors/blurhash → standard rendition set → catalog row); `/admin/library` browser (Index template): search + facet rail + grid + detail drawer (view / edit-meta / download). | 📋 |
+| D2 | **AssetField seam.** One `Upload / Pick from library / Paste URL` control replacing `ImageField` everywhere; blocks store an **asset reference** (+ URL cache); render resolves reference → CDN url; **backfill** existing `site-media` URLs into the catalog + rewrite references. | 📋 |
+| D3 | **Editor + versions.** Filerobot image editor (crop frames, rotate, adjust, compress); **edit saves a new `library_versions` row** (non-destructive); rollback via `is_current`; on-the-fly rendition resolver. | 📋 |
+| D4 | **Organization at scale.** Collections ("sales funnel" sets), saved views, tag governance; the **usage index** wired (scan Puck data) → "used on N pages", archive-not-destroy, **global swap**. | 📋 |
+| D5 | **Per-space Looms.** Space-scoped libraries + upload-to-library, fork-on-edit, quotas, per-space `/spaces/[slug]/manage/library` console, client-facing RLS, capability keys (`library.view`/`library.manage`), entitlements `library.*`, feature flags. | 📋 |
+| D6 | **Privacy system** (full build, later). `library-private` bucket, signed URLs, storage RLS, download gating + audit, EXIF strip enforced, optional watermark/proofing. Hooks (`is_protected` / `download_policy` / `expires_at`) already in the schema. | 📋 |
+| D7 | **Semantic + AI.** Populate `embedding`, hybrid FTS+vector ranking (RRF), AI auto-tag + color extraction, background removal / upscale. Later: the Weave generative composer. | 📋 |
