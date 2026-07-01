@@ -10502,3 +10502,40 @@ self-hosted. This is *text/metadata* similarity; **visual** similarity (CLIP ima
 a separate column) is the Phase 2 fast-follow. Vector generation (OmniSVG/StarVector) and the raster
 lane (FLUX) remain later phases pending GPU infra + the follow-up research. Backfill happens on the
 first cron run post-deploy (or a manual authorized GET of the endpoint).
+
+## ADR-488: The Loom image studio — Recraft generation + non-destructive editing + version history
+
+**Status:** Accepted (2026-07-01). Implements [RESEARCH-ASSET-GEN.md](RESEARCH-ASSET-GEN.md).
+
+**Context.** The Loom generated and edited art by having Claude write inline SVG code, then re-prompting
+to refine it (ADR-485/486). Research and use both confirmed a hard ceiling: an LLM hand-writing SVG
+can't produce consistent icon SETS or polished raster rewards/trophies, and edits drift after a few
+rounds. The owner asked for a fully capable, non-destructive image editor to build on — generate icon
+sets + rewards/trophies/cards, edit existing assets, and keep version history with easy rollback. The
+research recommended a hybrid: a **managed vector-native engine** for clean icon sets + brand styles,
+plus raster for richer art, deferring self-hosted open models (OmniSVG/FLUX) until GPU infra exists.
+
+**Decision.** Adopt **Recraft** as the Loom's managed image/vector engine, behind a thin server-only
+client (`lib/loom/recraft.ts`) and janitor + budget-gated server actions
+(`app/(main)/admin/library/recraft-actions.ts`). Two lanes: **vector** (`vector_illustration` →
+icons/SVG) and **raster** (`digital_illustration` → trophies/rewards/art). Operators can **generate**
+(prompt + lane + count → stored `library_assets`), and **edit** a file-backed asset in place with
+**Vectorize**, **Remove BG**, and **Variation** (image-to-image). Editing is **non-destructive**: every
+edit first snapshots the asset's current state into `library_versions` via a new versioning backbone
+(`lib/library/versions.ts` — `recordVersion` / `listVersions` / `rollbackToVersion`, storing the full
+`AssetSnapshot` in the version's `recipe` jsonb), then overwrites the live row. The drawer shows a
+**Versions** list with one-click **Restore** (which itself snapshots current first, so rollback is
+reversible). The whole feature is **inert unless `RECRAFT_API_KEY` is set** (`recraftConfigured()`
+hides the generate panel + edit row); a dedicated `recraft` daily budget cap ($10) with per-call cost
+accounting ($0.04 raster / $0.08 vector) via the existing usage ledger. Egress note: Recraft is called
+server-side only (Vercel egress is open).
+
+**Consequences.** The Loom gets a real image engine — consistent vector sets, raster rewards/trophies,
+and controlled instruction edits — plus true non-destructive history that maps onto the DAM's
+`library_versions` table (ADR-480), reusing it beyond Filerobot recipes for any edit source. Cost moves
+from Anthropic tokens to Recraft per-image pricing, bounded by the feature cap. The versioning module is
+source-agnostic, so future edit paths (Vera SVG saves, self-hosted models) can snapshot through the same
+API. Rejected/deferred: self-hosting OmniSVG/StarVector (vector) and FLUX (raster) — better quality
+control but needs GPU infra; revisit per the research's phased path. Brand-style consistency
+(`createStyle` from reference images → `style_id`) is wired in the client but not yet surfaced in the UI;
+it's the next step for locking a house style across a generated set.

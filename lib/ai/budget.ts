@@ -62,6 +62,7 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'studio-winback': 1,         // lapsed-member win-back draft (Haiku; low-volume, human-approved)
   'loom-illustration': 3,      // Vera draws a new Loom card as inline SVG (Sonnet; operator-facing, one-shot)
   'library-search': 1,         // semantic search over the Loom (free gte-small embeddings; cap is a safety net)
+  'recraft': 10,               // Recraft image/vector generation + editing ($0.04 raster / $0.08 vector; operator-facing)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {

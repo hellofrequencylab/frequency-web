@@ -15,11 +15,13 @@ import {
   type LibraryGalleryItem,
 } from '@/lib/library/store'
 import { matchLibraryAssets, similarLibraryAssets } from '@/lib/library/embeddings'
+import { recraftConfigured } from '@/lib/loom/recraft'
 import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
 import { VeraWizard } from './vera-wizard'
+import { RecraftPanel } from './recraft-studio'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -74,6 +76,7 @@ export default async function LoomStudioPage({
   const ctx = await requireAdmin('janitor')
   const sp = await searchParams
   const scope = await resolveActiveScope()
+  const recraftEnabled = recraftConfigured()
 
   const q = (sp.q ?? '').trim()
   const kind = LIBRARY_KINDS.includes(sp.kind as (typeof LIBRARY_KINDS)[number]) ? sp.kind! : ''
@@ -183,6 +186,7 @@ export default async function LoomStudioPage({
         {/* Header section — spans both columns, so the rail + grid align beneath it. */}
         <div className="mb-6 space-y-4">
           <VeraWizard />
+          <RecraftPanel enabled={recraftEnabled} />
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <div className="flex items-baseline gap-2">
@@ -282,7 +286,7 @@ export default async function LoomStudioPage({
               </div>
             ) : (
               <>
-                <LoomGrid assets={assets} collections={collections} activeCollectionId={collectionId || undefined} view={view} />
+                <LoomGrid assets={assets} collections={collections} activeCollectionId={collectionId || undefined} view={view} recraftEnabled={recraftEnabled} />
 
                 {totalPages > 1 && (
                   <nav className="mt-8 flex flex-wrap items-center justify-center gap-1" aria-label="Pagination">

@@ -37,6 +37,7 @@ import {
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
 import { editLoomSvg, saveElementSvg, reviewLoomSvg, type LoomEditMode } from './vera-actions'
+import { RecraftEditRow, AssetVersions } from './recraft-studio'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -114,11 +115,13 @@ export function LoomGrid({
   collections,
   activeCollectionId,
   view = 'cards',
+  recraftEnabled = false,
 }: {
   assets: LibraryGalleryItem[]
   collections: LibraryCollection[]
   activeCollectionId?: string
   view?: LoomView
+  recraftEnabled?: boolean
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [sel, setSel] = useState<Set<string>>(new Set())
@@ -248,7 +251,7 @@ export function LoomGrid({
         </div>
       )}
 
-      {selected && <DetailDrawer asset={selected} onClose={() => setOpenId(null)} />}
+      {selected && <DetailDrawer asset={selected} onClose={() => setOpenId(null)} recraftEnabled={recraftEnabled} />}
     </>
   )
 }
@@ -420,7 +423,15 @@ function BulkBar({
   )
 }
 
-function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: () => void }) {
+function DetailDrawer({
+  asset,
+  onClose,
+  recraftEnabled,
+}: {
+  asset: LibraryGalleryItem
+  onClose: () => void
+  recraftEnabled: boolean
+}) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [err, setErr] = useState<string | null>(null)
@@ -751,6 +762,11 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
               {veraErr && <p className="mt-2 text-sm text-danger">{veraErr}</p>}
             </div>
           )}
+
+          {/* Managed image studio (Recraft): non-destructive edits + version history. Hidden unless
+              a key is configured; edit ops need a file-backed image. */}
+          <RecraftEditRow assetId={asset.id} hasFile={!!asset.url} enabled={recraftEnabled} chipCls={chipCls} />
+          {recraftEnabled && <AssetVersions assetId={asset.id} />}
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-subtle">Title</span>
