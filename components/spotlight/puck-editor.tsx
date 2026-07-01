@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Puck, usePuck, type Data } from '@measured/puck'
 import '@measured/puck/puck.css'
+import '@/components/page-editor/puck-theme.css'
 import Link from 'next/link'
 import { Check, Palette, X } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
