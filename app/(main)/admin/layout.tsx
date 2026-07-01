@@ -1,10 +1,13 @@
 import { Suspense } from 'react'
 import { requireAdminFloor } from '@/lib/admin/guard'
 import { AdminSearchBar } from '@/components/admin/admin-search-bar'
+import { AdminSubNav } from '@/components/admin/admin-sub-nav'
 import { AdminInfoRail } from '@/components/admin/admin-info-rail'
 import { AdminRailDrawerColumn } from '@/components/admin/admin-rail-drawer-column'
 import { AdminPageDock } from '@/components/admin/admin-page-dock'
 import { AdminFooter } from '@/components/admin/admin-footer'
+import { getMenu } from '@/lib/menus/read'
+import { viewerRoleFor } from '@/components/layout/menu-role'
 
 // Admin route group. The guard is the single entry gate (host+); a viewer without
 // access is redirected home rather than shown a dead-end 404. Pages re-assert their
@@ -23,6 +26,18 @@ import { AdminFooter } from '@/components/admin/admin-footer'
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { role, webRole, staffRole } = await requireAdminFloor()
 
+  // The admin sub-nav (§6): the ACTIVE Studio world's sub-pages render as a flat horizontal row of
+  // text links at the TOP of this sticky band, directly above the search bar — the MegaBar's second
+  // dropdown layer is gone (removed from the shell). The active world + active leaf are resolved
+  // client-side (usePathname) inside AdminSubNav; here we just read the admin_header surface (DB
+  // override, code default on any miss) and collapse the viewer to the MenuAccess token + staff role
+  // the two-axis gate consumes. Gates are unchanged: canSeeMenuItem unions the same axes as before.
+  const adminHeaderMenu = await getMenu('admin_header')
+  const menuViewer = {
+    viewerRole: viewerRoleFor({ loggedIn: true, communityRole: role, webRole }),
+    staffRole,
+  }
+
   // The page-admin dock shares the canvas-tab skin: flush to the bottom edge, rounded
   // on top, hairline outline, canvas-colored with a soft blur over content.
   const cornerTab =
@@ -33,15 +48,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* No row gap: the rail column carries its own left gap at xl (w-72 = rail + gap), and a
           gap on a zero-width column would push the center in at lg. */}
       <div className="flex w-full">
-        {/* Center — the Ask-Vera/search command bar in its own sticky band, sitting
-            just below the shell's full-width admin sub-header (stays visible on scroll). */}
+        {/* Center — the admin chrome block: the flat sub-nav link row + the Ask-Vera/search command
+            bar, in ONE sticky band that stays visible on scroll. */}
         <main className="min-w-0 flex-1">
-          {/* Sticks under the main header on mobile (no sub-header there) and under the
-              full-width admin sub-header on md+ (3.5rem header + 3rem sub-header = 6.5rem).
-              The band is OPAQUE canvas so the page scrolls cleanly underneath it like header
-              chrome — nothing bleeds through the padding around the input. */}
-          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-6 bg-[var(--color-canvas)] py-2.5 md:top-[calc(6.5rem+env(safe-area-inset-top))]">
-            <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
+          {/* The admin chrome block (§6a): the sub-nav text-link row on TOP and the Ask-Vera/search
+              bar below live in ONE opaque sticky container, so page content scrolls cleanly UNDERNEATH
+              the whole band like header chrome — nothing bleeds through the padding (the old bug was a
+              transparent gap above the input). bg-[var(--color-canvas)] at FULL opacity spans the whole
+              band height; a hairline border-b reads the scroll seam as chrome. The old shell-rendered
+              admin sub-header is gone, so this band now pins directly under the main header (3.5rem) at
+              EVERY breakpoint — the sub-nav row it absorbed is inside this same container. */}
+          <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 mb-6 border-b border-border bg-[var(--color-canvas)]">
+            <AdminSubNav sections={adminHeaderMenu.categories} viewer={menuViewer} />
+            <div className="py-2.5">
+              <AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />
+            </div>
           </div>
 
           {children}

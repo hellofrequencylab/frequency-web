@@ -18,7 +18,6 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
-import { getMenuConfig, orderedVisibleAreas } from '@/lib/menu-config'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { PERSONAL_CONTEXT } from '@/lib/context/operator-context'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
@@ -233,7 +232,6 @@ export default async function MainLayout({
     previewVisitor,
     unreadCount,
     permissions,
-    menuConfig,
     realHats,
     helpIndex,
     analyticsConsent,
@@ -254,7 +252,6 @@ export default async function MainLayout({
     viewingAsVisitor(realRole),
     getUnreadCount().catch(() => 0),
     getAreaPermissions(),
-    getMenuConfig(),
     getViewerHats(),
     getSearchIndex(),
     hasConsent(profile.id, 'analytics'),
@@ -276,7 +273,11 @@ export default async function MainLayout({
     getMenu('admin_header'),
     getMenuSettings(),
   ])
-  const menuAreaKeys = orderedVisibleAreas(menuConfig).map((a) => a.key)
+  // Left-rail order/visibility (NAV-SYSTEM-REDESIGN §8, phase 3): the legacy menu_config
+  // overlay is retired. lib/menus (getMenu('left')) is the surviving DB override — when a
+  // left surface is seeded it owns order + hide; unseeded, the shell falls back to the
+  // registry / NAV_AREAS code order (sectionsFromKeys(undefined) → the full code rail), so
+  // the rail's behavior with no DB menu is unchanged.
 
   // Janitor previewing the logged-out experience: server caps drop to member
   // (effectiveRole), and the NAV gates as a visitor (driven by this flag).
@@ -539,7 +540,6 @@ export default async function MainLayout({
       ticker={ticker}
       unreadCount={unreadCount}
       permissions={permissions}
-      menuAreaKeys={menuAreaKeys}
       leftMenu={leftMenu}
       navAccess={navAccess}
       staffRole={staffRole}

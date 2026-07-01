@@ -46,8 +46,6 @@ import type { AccessLevel } from '@/lib/core/access-matrix'
 import type { StaffRole, StaffDomain } from '@/lib/staff'
 import type { ProfileIdentity } from '@/lib/types/profile'
 import { PrimaryNav } from '@/components/layout/primary-nav'
-import { MegaBar } from '@/components/layout/mega-menu'
-import { AdminSearchBar } from '@/components/admin/admin-search-bar'
 import { defaultMenu } from '@/lib/menus/defaults'
 import type {
   MenuAccess,
@@ -242,27 +240,9 @@ function menuToSections(menu: ResolvedMenu, viewer: MenuViewer): NavSectionGroup
   return sections
 }
 
-// The ACTIVE admin section for the current route (ADR-390 admin header). The `admin_header`
-// menu's top-level categories are the admin SECTIONS; each owns a subtree of page hrefs.
-// The active section is the one whose subtree has the LONGEST href that prefixes the
-// pathname (so /admin/crm/today resolves to the CRM section). Returns null off-admin or
-// when nothing matches, so the sub-header simply doesn't render.
-function adminSectionForPath(menu: ResolvedMenu, pathname: string): ResolvedCategory | null {
-  let best: { cat: ResolvedCategory; len: number } | null = null
-  const hrefsOf = (cat: ResolvedCategory): string[] => {
-    const out: string[] = []
-    for (const it of cat.items) if (it.href) out.push(it.href)
-    for (const ch of cat.children) out.push(...hrefsOf(ch))
-    return out
-  }
-  for (const section of menu.categories) {
-    for (const href of hrefsOf(section)) {
-      const match = pathname === href || pathname.startsWith(`${href}/`)
-      if (match && href.length > (best?.len ?? 0)) best = { cat: section, len: href.length }
-    }
-  }
-  return best?.cat ?? null
-}
+// The active admin section resolution (longest href-prefix) moved to AdminSubNav
+// (components/admin/admin-sub-nav.tsx), which now owns the flat admin sub-nav row and
+// resolves the active world client-side via usePathname (NAV-SYSTEM-REDESIGN §6).
 
 // The Manage sections TELESCOPE: an item the viewer can't reach is hidden (not
 // muted), and a group with nothing reachable is skipped entirely (header included)
@@ -1329,7 +1309,6 @@ export default function AppShell({
   occasion = 'none',
   headerMenu,
   profileMenu,
-  adminHeaderMenu,
   menuViewerRole = 'visitor',
   menuTimings,
 }: {
@@ -1406,9 +1385,9 @@ export default function AppShell({
   /** The resolved `profile` menu (server-fetched, DB-backed). Drives the account dropdown's
    *  editable link list. Falls back to the code default when omitted. */
   profileMenu?: ResolvedMenu
-  /** The resolved `admin_header` menu (server-fetched, DB-backed). The shell renders ONLY the
-   *  ACTIVE admin section's sub-pages from it as the contextual mega sub-header on /admin*
-   *  routes. Falls back to the code default when omitted. */
+  /** The resolved `admin_header` menu (server-fetched, DB-backed). Retained for backward-compat
+   *  with existing callers; the admin sub-nav now renders from the admin layout's own AdminSubNav
+   *  (NAV-SYSTEM-REDESIGN §6), so the shell no longer consumes this prop. */
   adminHeaderMenu?: ResolvedMenu
   /** The viewer collapsed to a single MenuAccess token; drives per-item mode (active /
    *  ghost / hidden) in the header + admin megas. */
@@ -1563,28 +1542,13 @@ export default function AppShell({
   // the same page-chrome map the rails use — pages never toggle it.
   const showFooter = !hideAppNav && showLeftRail && effectiveRail !== 'none'
 
-  // Admin contextual sub-header (ADR-390). On /admin* routes the `admin_header` surface drives
-  // a mega bar above the content showing ONLY the ACTIVE section's sub-pages (plus the admin /
-  // Vera search bar). The left rail's admin entries land on a section dashboard; this resolves
-  // which section that is (longest href-prefix) and re-roots the menu to its children so MegaBar
-  // (triggerLevel='category') renders the section's sub-pages as tabs / dropdowns. Off-admin or
-  // for a flat section with no sub-pages, nothing renders. Pages still re-gate server-side.
+  // Admin contextual sub-nav (NAV-SYSTEM-REDESIGN §6): the flat text-link row of the active Studio
+  // world's sub-pages now lives at the top of the admin layout's own sticky band (AdminSubNav in
+  // app/(main)/admin/layout.tsx), not here — the shell no longer renders an admin sub-header, and
+  // the `admin_header` MegaBar's second dropdown layer is retired. We still track whether the route
+  // is under /admin so the shell suppresses its own SettingsDrawer column there (the admin layout
+  // mounts the drawer over its info-rail column instead).
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
-  const adminMenuResolved = adminHeaderMenu ?? defaultMenu('admin_header')
-  const adminSection =
-    !hideAppNav && isAdminRoute ? adminSectionForPath(adminMenuResolved, pathname) : null
-  const adminMega: ResolvedMenu | null = adminSection
-    ? {
-        surfaceKey: 'admin_header',
-        label: adminSection.label ?? 'Admin',
-        columns: adminMenuResolved.columns,
-        categories: adminSection.children,
-        rootItems: [],
-        railCards: [],
-        isDefault: adminMenuResolved.isDefault,
-      }
-    : null
-  const showAdminMega = !!adminMega && adminMega.categories.length > 0
 
   function cycleTheme() {
     if (theme === 'system') setTheme('dark')
@@ -1753,34 +1717,11 @@ export default function AppShell({
       </header>
       )}
 
-      {/* ── Admin contextual sub-header (ADR-390) ───────────── */}
-      {/* On /admin*, a second full-width bar opens below the main header showing ONLY the
-          active section's sub-pages (the `admin_header` surface, re-rooted to the active
-          section). It is in normal flow (pushes the body down), sticky under the main header
-          (top-14), with the admin / Vera search bar as its panel header. Triggers align to the
-          content column (a left rail-width spacer); the panel slides out with panelAlign='content'. */}
-      {showAdminMega && adminMega && (
-        <div
-          className="sticky z-30 hidden border-b border-border bg-surface/95 backdrop-blur-sm md:block"
-          style={{ top: 'calc(3.5rem + env(safe-area-inset-top))' }}
-        >
-          <div className="mx-auto flex h-12 max-w-[105rem] items-center gap-8 px-4 sm:px-6 lg:px-8">
-            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-            <div className="min-w-0 flex-1">
-              <MegaBar
-                menus={[adminMega]}
-                triggerLevel="category"
-                viewerRole={menuViewerRole}
-                variant="light"
-                ariaLabel="Admin section"
-                panelAlign="content"
-                timings={menuTimings}
-                panelHeader={<AdminSearchBar role={role} webRole={webRole} staffRole={staffRole} />}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Admin contextual sub-nav (NAV-SYSTEM-REDESIGN §6) ── */}
+      {/* The old admin MegaBar sub-header (a second dropdown layer) is GONE. On /admin* the active
+          Studio world's sub-pages now render as a FLAT horizontal text-link row (AdminSubNav) at the
+          TOP of the admin layout's own sticky band, directly above the search bar (one opaque
+          container, §6a) — see app/(main)/admin/layout.tsx. The shell renders no admin sub-header. */}
 
       {/* ── Body ──────────────────────────────────────────── */}
       {/* DockRevealProvider runs the single shared scroll listener that rises

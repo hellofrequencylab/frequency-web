@@ -1,24 +1,21 @@
-// Single source of truth for the admin IA — the grouped catalog of every admin
-// surface, the role each one needs, and where it lives. The admin nav
-// (sub-nav.tsx), the three domain dashboards (programs/operations/growth), the
-// Home overview (page.tsx), and the in-context console (admin-console.tsx) all
-// render from this, so a feature is declared in exactly ONE place and can never be
-// orphaned again.
+// The admin IA — the grouped catalog of every admin surface, the role each one needs,
+// and where it lives. The admin nav (sub-nav.tsx), the three domain dashboards
+// (programs/operations/growth), the Home overview (page.tsx), and the in-context console
+// (admin-console.tsx) all render from this, so a feature is declared in exactly ONE place
+// and can never be orphaned again.
 //
-// REORG (Phase 1, ADR pending): the nine scattered suites collapse into THREE
-// durable operator domains plus a Home —
-//   • Programs    — the game: content, seasons, rewards, crews, leader training.
-//   • Operations  — run the site: community, people, trust & safety, system keys.
-//   • Growth      — grow it: funnels, onboarding, pipeline, campaigns, expansion.
-// Each domain has its OWN dashboard route (/admin/{key}) with KPI stat cards on top
-// and "areas of focus" cards underneath. The top bar no longer reshuffles per page:
-// it switches between Home / Programs / Operations / Growth, with the active domain
-// derived from the URL via `domainForPath`.
+// STRANGLER-FIG (NAV-SYSTEM-REDESIGN §5b, §8, phase 2): this catalog is now a THIN
+// DERIVATION of the ONE Studio sub-tree (lib/nav/studio.ts). ADMIN_GROUPS is built from
+// ADMIN_GROUP_SPECS (the ten dashboard domains + folded roll-ups) + STUDIO_LEAVES (the
+// operator destinations, declared ONCE). Every EXPORT SIGNATURE — the AdminGroup /
+// AdminLink / DomainKey / AdminDestination types, ADMIN_GROUPS, ADMIN_HOME,
+// adminDestinations, canUseLink, canSeeGroup, visibleGroups, visibleLinks, groupLinks,
+// groupSections, domainForPath, relatedGroups, pageLabelForPath, backToDomainFor — is
+// UNCHANGED, so the six components/admin/* consumers, app/admin/page.tsx, and
+// operator-context.ts keep compiling and rendering identically.
 //
-// Every link keeps its EXACT current href, icon, and per-link role/staff gate —
-// only the grouping changed. Operations sub-groups its area cards under titled
-// sections via the optional `section` field (Community / People / Trust & safety /
-// Site & system); the other domains render one flat grid.
+// Every link keeps its EXACT current href, icon, and per-link role/staff gate (all now
+// sourced from the leaf's StudioLeaf) — only the DECLARATION moved into the registry.
 
 import {
   LayoutDashboard,
@@ -70,6 +67,27 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { atLeastRole, isStaff, isJanitor, type CommunityRole, type WebRole } from '@/lib/core/roles'
 import { staffCan, type StaffDomain, type StaffRole, type Access } from '@/lib/core/staff-roles'
+import {
+  ADMIN_GROUP_SPECS,
+  studioLeaf,
+  type AdminDomainKey,
+  type AdminGroupSpec,
+  type AdminGroupLinkRef,
+} from '@/lib/nav/studio'
+
+// lucide icon NAME → component. The Studio sub-tree stores icon names (framework-free);
+// this catalog resolves them back to the components its consumers render.
+const ICONS: Record<string, LucideIcon> = {
+  LayoutDashboard, CircleDot, Radio, CalendarDays, Megaphone, ClipboardList, BookOpen,
+  Trophy, ShieldAlert, Building2, Network, Activity, Target, Sparkles, Telescope, PieChart,
+  Bot, HelpCircle, Users, Shield, QrCode, Power, FileText, BadgeCheck, Lightbulb, ScrollText,
+  LifeBuoy, ShoppingBag, Map, CreditCard, Gamepad2, SlidersHorizontal, TrendingUp, Rocket,
+  Layers, Contact, Briefcase, Menu, GraduationCap, ToggleRight, Share2, Palette,
+  LayoutPanelLeft, Workflow, Images,
+}
+function icon(name: string): LucideIcon {
+  return ICONS[name] ?? LayoutDashboard
+}
 
 export interface AdminLink {
   href: string
@@ -95,24 +113,11 @@ export interface AdminLink {
 }
 
 // The operator domains. Each `key` doubles as its dashboard route slug
-// ('programs' → /admin/programs). The broad Growth domain is kept as a ROLL-UP whose
-// links point into the three operational growth areas below it — Acquisition (how
-// people arrive), CRM (relationships + pipeline), and Marketing (campaigns + outbound)
-// — and the assistant pulls out of Operations into its own Vera AI area. Analytics are
-// distributed to the area they measure (engagement→Community, outcomes→Programs,
-// intel→Marketing, expansion→Acquisition, segments→CRM). Individual links keep their
-// own (often stricter, janitor) gates.
-export type DomainKey =
-  | 'programs'
-  | 'content'
-  | 'rewards'
-  | 'community'
-  | 'growth'
-  | 'acquisition'
-  | 'crm'
-  | 'marketing'
-  | 'vera-ai'
-  | 'operations'
+// ('programs' → /admin/programs). The broad Growth domain is a ROLL-UP whose links point
+// into the three operational growth areas below it — Acquisition, CRM, Marketing — and the
+// assistant pulls out of Operations into its own Vera AI area. Individual links keep their
+// own (often stricter, janitor) gates. Now sourced from lib/nav/studio.ts::ADMIN_GROUP_SPECS.
+export type DomainKey = AdminDomainKey
 
 export interface AdminGroup {
   key: DomainKey
@@ -136,238 +141,47 @@ export interface AdminGroup {
   links: readonly AdminLink[]
 }
 
-export const ADMIN_GROUPS: readonly AdminGroup[] = [
-  {
-    key: 'programs',
-    label: 'Programs',
-    blurb: 'The game. Content, seasons, rewards, and the crews that run them.',
-    href: '/admin/programs',
-    Icon: Gamepad2,
-    min: 'host',
-    staffDomain: 'community',
-    related: ['community', 'vera-ai'],
-    links: [
-      { href: '/admin/programs?tab=content', label: 'Content', desc: 'Seasons, Journeys, Practices, and Challenges.', Icon: Map, min: 'host', staffDomain: 'community', section: 'Workspaces' },
-      { href: '/admin/programs?tab=rewards', label: 'Rewards & economy', desc: 'Gamification, the store, retroactive rewards, and crew tasks.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Workspaces' },
-      // ── Enablement ──
-      { href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Enablement' },
-    ],
-  },
-  {
-    // Content + Rewards are FOLDED sub-workspaces of Programs (primary:false, like the
-    // Growth tabs in ADR-264): they keep a group so the domain switcher + sub-nav resolve
-    // their leaf editors and highlight the right Programs tab, but drop out of the left
-    // rail. Their `href` is the Programs tab that hosts them.
-    key: 'content',
-    label: 'Content',
-    blurb: 'The Quest content suite. Seasons, Journeys, Practices, Challenges, and creator tips.',
-    href: '/admin/programs?tab=content',
-    Icon: Map,
-    min: 'host',
-    staffDomain: 'community',
-    primary: false,
-    related: ['programs', 'community'],
-    links: [
-      { href: '/admin/content/seasons', label: 'Seasons', desc: 'Season identity, theme, and lifecycle.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Content' },
-      { href: '/admin/content/journeys', label: 'Journeys', desc: 'Curate and publish official journeys.', Icon: BookOpen, min: 'host', staffDomain: 'community', section: 'Content' },
-      { href: '/admin/content/practices', label: 'Practices', desc: 'The practice catalog and its adopters.', Icon: Sparkles, min: 'host', staffDomain: 'community', section: 'Content' },
-      { href: '/admin/content/challenges', label: 'Challenges', desc: 'Define challenges and watch completion.', Icon: Target, min: 'host', staffDomain: 'community', section: 'Content' },
-      { href: '/admin/content/training', label: 'Role training', desc: 'The advancement curriculum each promotion teaches.', Icon: GraduationCap, min: 'host', staffDomain: 'community', section: 'Content' },
-      { href: '/admin/content/tips', label: 'Creator tips', desc: 'Tips and prompts for content creators.', Icon: Lightbulb, min: 'host', staffDomain: 'community', section: 'Content' },
-    ],
-  },
-  {
-    key: 'rewards',
-    label: 'Rewards & economy',
-    blurb: 'The economy. Gamification, the gem store, retroactive grants, and crew tasks.',
-    href: '/admin/programs?tab=rewards',
-    Icon: Trophy,
-    min: 'host',
-    staffDomain: 'community',
-    primary: false,
-    related: ['programs'],
-    links: [
-      { href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', Icon: Trophy, min: 'host', staffDomain: 'community', section: 'Rewards' },
-      { href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', Icon: ShoppingBag, min: 'host', staffDomain: 'community', section: 'Rewards' },
-      { href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', Icon: ClipboardList, min: 'host', staffDomain: 'community', section: 'Rewards' },
-    ],
-  },
-  {
-    key: 'community',
-    label: 'Community',
-    blurb: 'The people and their spaces. Circles, members, events, and trust and safety.',
-    href: '/admin/community',
-    Icon: Users,
-    min: 'host',
-    staffDomain: 'community',
-    related: ['programs', 'crm'],
-    links: [
-      // ── Structure ──
-      { href: '/admin/circles', label: 'Circles', desc: 'Create, edit, and archive circles.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
-      { href: '/admin/circle-templates', label: 'Circle Templates', desc: 'Starter Circle blueprints members remix into their own.', Icon: CircleDot, min: 'host', staffDomain: 'community', section: 'Structure' },
-      { href: '/admin/hubs', label: 'Hubs', desc: 'Clusters of circles in an area.', Icon: Building2, min: 'guide', staffDomain: 'structure', section: 'Structure' },
-      { href: '/admin/nexuses', label: 'Nexuses', desc: 'Regions that hold hubs.', Icon: Network, min: 'mentor', staffDomain: 'structure', section: 'Structure' },
-      { href: '/admin/channels', label: 'Channels', desc: 'Topical and event channels.', Icon: Radio, min: 'host', staffDomain: 'community', section: 'Structure' },
-      // ── People & access ──
-      { href: '/admin/members', label: 'Member Roster', desc: 'The platform census: every member, subscriber, and beta account.', Icon: Users, min: 'janitor', staffDomain: 'members', section: 'People & access' },
-      { href: '/admin/roles', label: 'Roles & permissions', desc: 'Assign roles and the permission grid.', Icon: Shield, min: 'janitor', section: 'People & access' },
-      { href: '/admin/personas', label: 'Partner verification', desc: 'Vet and verify partner persona claims.', Icon: BadgeCheck, min: 'janitor', staffDomain: 'profiles', section: 'People & access' },
-      // ── Activity ──
-      { href: '/admin/events', label: 'Events', desc: 'Gatherings across your circles, plus posted events, claims, and poster quality.', Icon: CalendarDays, min: 'host', staffDomain: 'community', section: 'Activity' },
-      { href: '/admin/dispatches', label: 'Broadcasts', desc: 'Posts and polls to your people.', Icon: Megaphone, min: 'host', staffDomain: 'community', section: 'Activity' },
-      // ── Engagement (the member-side analytics) ──
-      // ── Trust & safety ──
-      { href: '/admin/moderation', label: 'Moderation', desc: 'Review and resolve reports.', Icon: ShieldAlert, min: 'host', staffDomain: 'community', section: 'Trust & safety' },
-      { href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', Icon: LifeBuoy, min: 'host', staffDomain: 'members', section: 'Trust & safety' },
-    ],
-  },
-  {
-    key: 'growth',
-    label: 'Growth',
-    blurb: 'The growth engine at a glance. Jump into Acquisition or Marketing.',
-    href: '/admin/growth',
-    Icon: TrendingUp,
-    min: 'host',
-    staffDomain: 'marketing',
-    related: ['acquisition', 'crm', 'marketing'],
-    links: [
-      // Roll-up: the three operational growth areas. The dashboard reads their KPIs;
-      // these point into each one's own home (resolved to its own domain, not Growth).
-      { href: '/admin/growth?tab=acquisition', label: 'Acquisition', desc: 'How people first arrive and where to grow next.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-      { href: '/admin/growth?tab=marketing', label: 'Marketing', desc: 'Campaigns, funnels, automations, and outbound.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Workspaces' },
-    ],
-  },
-  {
-    key: 'acquisition',
-    label: 'Acquisition',
-    blurb: 'How people first arrive, and where to open the next door.',
-    href: '/admin/growth?tab=acquisition',
-    Icon: Rocket,
-    min: 'host',
-    staffDomain: 'marketing',
-    primary: false,
-    related: ['crm', 'marketing', 'community'],
-    links: [
-      // ── Entry points ──
-      { href: '/entry-points', label: 'Entry points', desc: 'Where people first enter your spaces.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
-      { href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', Icon: Images, min: 'janitor', section: 'Assets' },
-      { href: '/admin/qr', label: 'QR Studio', desc: 'Generate, design, and manage all QR codes.', Icon: QrCode, min: 'host', staffDomain: 'qr', section: 'Entry points' },
-      { href: '/admin/referrals', label: 'Referrals', desc: 'The personal-code referral funnel: signups, activations, and top referrers.', Icon: Share2, min: 'host', staffDomain: 'marketing', section: 'Entry points' },
-      // ── Waitlist & Applications (Growth OS Engine 3) ──
-      { href: '/admin/growth/applications', label: 'Applications', desc: 'The dual-track review queue: builders apply to host, operators bring an offering, and seekers wait for a Circle near them.', Icon: ClipboardList, min: 'host', staffDomain: 'members', section: 'Waitlist & Applications' },
-      // ── Onboarding ──
-      { href: '/pages/splash', label: 'Onboarding splash', desc: 'The first-run splash members land on.', Icon: Rocket, min: 'janitor', section: 'Onboarding' },
-      { href: '/pages/sequences', label: 'Splash pages', desc: 'Sequenced splash pages and flows.', Icon: Layers, min: 'janitor', section: 'Onboarding' },
-      { href: '/admin/walkthroughs', label: 'Walkthroughs', desc: 'Instructional walkthroughs by role + trigger', Icon: GraduationCap, min: 'host', staffDomain: 'marketing', section: 'Onboarding' },
-      { href: '/admin/onboarding-controls', label: 'Onboarding & referral controls', desc: 'Turn Next Steps prompts, popups, and referrals on or off.', Icon: ToggleRight, min: 'janitor', section: 'Onboarding' },
-      // ── Expansion (Keystone: the cold-start solver) ──
-      { href: '/admin/keystone/density', label: 'Density by city', desc: 'The cold-start read: where the community has a real pulse, and where a corner is still cold enough to want a founder seeded.', Icon: Telescope, min: 'admin', staffDomain: 'insights', staffLevel: 'read', section: 'Expansion' },
-    ],
-  },
-  {
-    // Promoted to a PRIMARY domain (was folded under Growth) so the Resonance Engine
-    // (ADR-382 to 387) has its own first-class admin home. Rooted at the cockpit; gated
-    // 'janitor' to match the pages (per-member predictions are sensitive). Marketing staff
-    // reach the deal board and contacts directly from this CRM domain (now a primary
-    // left-rail entry, ADR-382), so the old Growth > CRM roll-up is removed as a duplicate.
-    key: 'crm',
-    label: 'Resonance CRM',
-    blurb: 'The Vera-driven CRM. The cockpit, the daily action queue, member intelligence, contacts, and the pipeline.',
-    href: '/admin/crm',
-    Icon: Contact,
-    min: 'janitor',
-    staffDomain: 'marketing',
-    related: ['acquisition', 'marketing', 'vera-ai'],
-    links: [
-      // ── Resonance Engine: the cockpit, the daily loop, and member intelligence. ──
-      { href: '/admin/crm', label: 'Cockpit', desc: 'The dashboard: resonance health, the funnel, and who needs attention now.', Icon: LayoutDashboard, min: 'janitor', section: 'Resonance', exact: true },
-      { href: '/admin/crm/today', label: 'Today', desc: "Vera's daily queue: the people and one-tap actions that matter now.", Icon: ClipboardList, min: 'janitor', section: 'Resonance' },
-      { href: '/admin/crm/members', label: 'Member Intelligence', desc: 'Health-scored drill-down: resonance, churn risk, and the why, by tier and lifecycle.', Icon: Users, min: 'janitor', section: 'Resonance' },
-      { href: '/admin/crm/playbooks', label: 'Playbooks', desc: "The saved Vera plays: each prediction's governed, reversible action, the autonomy grade, and the run history.", Icon: Workflow, min: 'janitor', section: 'Resonance' },
-      { href: '/admin/crm/graph', label: 'Resonance Graph', desc: 'The consent-first relationship view: the strongest double opt-in connections and graph health.', Icon: Network, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Resonance' },
-      // ── Pipeline (the deal board) ──
-      { href: '/admin/crm/deals', label: 'Deals', desc: 'The pipeline board: every deal by stage, with quick add and one-tap stage moves.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
-      { href: '/admin/crm/deals/new', label: 'New deal', desc: 'Add a deal to the pipeline.', Icon: Briefcase, min: 'host', staffDomain: 'marketing', section: 'Pipeline' },
-      // ── Contacts ──
-      { href: '/admin/crm/contacts', label: 'Contacts', desc: 'The scoped roster: your people, the launch point for a message, profile, or deal.', Icon: Contact, min: 'host', staffDomain: 'marketing', section: 'Contacts' },
-      // ── Audiences ──
-      { href: '/admin/segments', label: 'Segments', desc: 'Saved audiences by tag and trait.', Icon: PieChart, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Audiences' },
-    ],
-  },
-  {
-    key: 'marketing',
-    label: 'Marketing',
-    blurb: 'Campaigns and outbound. Funnels, automations, broadcasts, and the read on how they land.',
-    href: '/admin/growth?tab=marketing',
-    Icon: Megaphone,
-    min: 'host',
-    staffDomain: 'marketing',
-    primary: false,
-    related: ['crm', 'vera-ai', 'acquisition'],
-    links: [
-      // ── Campaigns ──
-      { href: '/admin/marketing/campaigns', label: 'Campaigns', desc: 'Compose and send email and push broadcasts.', Icon: Megaphone, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      { href: '/admin/growth/funnels', label: 'Funnels', desc: 'Build a funnel as one object: entry, wedge, capture, and the goal it converts on.', Icon: Activity, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      { href: '/admin/marketing/funnels', label: 'Campaign builder', desc: 'Group entry points into campaigns, generate flyers and QR, and track scans.', Icon: QrCode, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      { href: '/admin/marketing/automations', label: 'Automations', desc: 'Event-triggered rules and follow-ups.', Icon: SlidersHorizontal, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      { href: '/admin/marketing/nurture', label: 'Nurture', desc: 'Sequenced nurture flows.', Icon: Layers, min: 'host', staffDomain: 'marketing', section: 'Campaigns' },
-      // ── Audience ──
-      { href: '/admin/marketing/beta', label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', Icon: Rocket, min: 'host', staffDomain: 'marketing', section: 'Audience' },
-      // ── Analytics ──
-      { href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', Icon: PieChart, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
-      { href: '/admin/marketing/deliverability', label: 'Deliverability', desc: 'Outbox health and the dead-letter queue, with one-tap recovery.', Icon: Activity, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
-      { href: '/admin/marketing/market-read', label: 'Market read', desc: 'Demand, geography, and content performance.', Icon: Telescope, min: 'host', staffDomain: 'marketing', section: 'Analytics' },
-      // ── AI operator ──
-      { href: '/admin/marketing/agent', label: 'Marketing agent', desc: 'Ask the AI operator to draft, segment, and run the busywork.', Icon: Bot, min: 'host', staffDomain: 'marketing', section: 'AI operator' },
-    ],
-  },
-  {
-    key: 'vera-ai',
-    label: 'Vera AI',
-    blurb: 'The assistant and the intelligence behind it. Voice, gaps, recommendations, and the read.',
-    href: '/admin/vera-ai',
-    Icon: Bot,
-    min: 'janitor',
-    staffDomain: 'insights',
-    related: ['operations', 'marketing', 'community'],
-    links: [
-      // ── Assistant ──
-      { href: '/admin/vera-ai?tab=vera', label: 'Vera config', desc: 'Voice, responses, and induction copy.', Icon: Bot, min: 'janitor', staffDomain: 'insights', section: 'Assistant' },
-      { href: '/admin/vera-ai?tab=help-gaps', label: 'Help gaps', desc: 'Questions Vera deflected. The to-write list.', Icon: HelpCircle, min: 'janitor', section: 'Assistant' },
-      { href: '/admin/vera-ai?tab=ai', label: 'AI controls', desc: 'Turn AI on or off platform-wide; usage and audit.', Icon: Power, min: 'janitor', staffDomain: 'platform', section: 'Assistant' },
-      // ── Intelligence ──
-      { href: '/admin/vera-ai?tab=studio', label: 'AI Studio', desc: 'Ranked AI recommendations and one-click, reversible changes.', Icon: Lightbulb, min: 'admin', staffDomain: 'insights', section: 'Intelligence' },
-      { href: '/admin/insights', label: 'Insights', desc: 'All analytics in one place: the read, engagement, outcomes, marketing intel, expansion, and finances.', Icon: Sparkles, min: 'janitor', staffDomain: 'insights', staffLevel: 'read', section: 'Intelligence' },
-    ],
-  },
-  {
-    key: 'operations',
-    label: 'Operations',
-    blurb: 'The platform machine. Content infrastructure, commerce, and the system trail.',
-    href: '/admin/operations',
-    Icon: SlidersHorizontal,
-    min: 'janitor',
-    staffDomain: 'platform',
-    related: ['vera-ai'],
-    links: [
-      // ── Platform ──
-      { href: '/admin/menu', label: 'Menu manager', desc: 'Order and hide the one shared nav menu; set who reaches each item.', Icon: Menu, min: 'janitor', section: 'Platform' },
-      { href: '/pages', label: 'Pages', desc: 'The page library: open any page to edit it in place. Marketing pages + beta induction too.', Icon: FileText, min: 'admin', section: 'Platform' },
-      { href: '/admin/payments', label: 'Payments', desc: 'Turn host payouts (tips, tickets, sales) on or off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
-      { href: '/admin/pricing', label: 'Pricing', desc: 'Plans, prices, feature gates, and the switches that govern billing. Ships off.', Icon: CreditCard, min: 'janitor', section: 'Platform' },
-      { href: '/admin/appearance', label: 'Theme Studio', desc: 'Brand themes, palettes, and seasonal looks. Edit and assign without code.', Icon: Palette, min: 'janitor', section: 'Platform' },
-      { href: '/admin/spaces', label: 'Spaces', desc: 'White-label tenants: set each Space its theme and brand, view its live profile, or open the owner settings.', Icon: Building2, min: 'janitor', section: 'Platform' },
-      { href: '/admin/page-layout', label: 'Page layout', desc: "Frame each route's right rail: Global, Scoped, or full-width Focus.", Icon: LayoutPanelLeft, min: 'janitor', section: 'Platform' },
-      // ── Commerce (the Marketplace: General market + Housing / Makers / Shop) ──
-      { href: '/admin/marketplace', label: 'Marketplace', desc: 'Listings, the shop catalog, and area visibility across General, Housing, Makers, and Shop.', Icon: ShoppingBag, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
-      { href: '/admin/marketplace/orders', label: 'Marketplace orders', desc: 'Every order across makers and the shop, with one-tap refunds.', Icon: CreditCard, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
-      { href: '/admin/marketplace/reports', label: 'Marketplace reports', desc: 'The moderation queue for reported listings and sellers.', Icon: ShieldAlert, min: 'admin', staffDomain: 'platform', section: 'Commerce' },
-      // ── System ──
-      { href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', Icon: Sparkles, min: 'janitor', section: 'System' },
-      { href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', Icon: ScrollText, min: 'admin', section: 'System' },
-    ],
-  },
-] as const
+/** Resolve one link ref (a leaf id OR a synthetic roll-up tab) into an AdminLink, applying
+ *  the domain's `section` override where the spec sets one. */
+function linkFromRef(ref: AdminGroupLinkRef): AdminLink | null {
+  if ('synthetic' in ref) {
+    const s = ref.synthetic
+    const link: AdminLink = { href: s.href, label: s.label, desc: s.desc, Icon: icon(s.icon), min: s.min }
+    if (s.staffDomain) link.staffDomain = s.staffDomain
+    if (s.staffLevel) link.staffLevel = s.staffLevel
+    if (s.section) link.section = s.section
+    return link
+  }
+  const leaf = studioLeaf(ref.leaf)
+  if (!leaf) return null
+  const groupTag = leaf.adminGroups?.find(() => true)
+  const link: AdminLink = { href: leaf.href, label: leaf.label, desc: leaf.desc, Icon: icon(leaf.icon), min: leaf.min }
+  if (leaf.staffDomain) link.staffDomain = leaf.staffDomain
+  if (leaf.staffLevel) link.staffLevel = leaf.staffLevel
+  if (leaf.exact) link.exact = leaf.exact
+  // Section: the ref-level override wins, else the leaf's tag for THIS domain, else its first.
+  const section = ref.section ?? groupTag?.section
+  if (section) link.section = section
+  return link
+}
+
+function groupFromSpec(spec: AdminGroupSpec): AdminGroup {
+  const g: AdminGroup = {
+    key: spec.key,
+    label: spec.label,
+    blurb: spec.blurb,
+    href: spec.href,
+    Icon: icon(spec.icon),
+    min: spec.min,
+    links: spec.links.map(linkFromRef).filter((l): l is AdminLink => !!l),
+  }
+  if (spec.staffDomain) g.staffDomain = spec.staffDomain
+  if (spec.related) g.related = spec.related
+  if (spec.primary === false) g.primary = false
+  return g
+}
+
+export const ADMIN_GROUPS: readonly AdminGroup[] = ADMIN_GROUP_SPECS.map(groupFromSpec)
 
 // ── Home pseudo-entry ─────────────────────────────────────────────────────────
 // /admin is the exec dashboard that fans out to the three domains. It is not a

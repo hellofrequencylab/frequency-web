@@ -909,6 +909,20 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: none;
 }
 
+/* The admin sub-nav (§6 NAV-SYSTEM-REDESIGN): the active world's sub-pages render as a single
+   horizontal row of text links. When they overrun the band the row scrolls sideways on ONE line;
+   the scrollbar is hidden (chrome, not a control) and a subtle fade masks the right/left edges so
+   the overflow reads as "there's more" without a visible bar. Pure presentation. */
+.admin-subnav-scroll {
+  scrollbar-width: none; /* Firefox */
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 1.25rem, #000 calc(100% - 1.25rem), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 1.25rem, #000 calc(100% - 1.25rem), transparent 100%);
+}
+.admin-subnav-scroll::-webkit-scrollbar {
+  display: none; /* Safari / Chrome */
+}
+
 /* ── Rank badge primitive. Drives off three CSS vars set inline.
    Usage:
      <span class="rank-badge" style={{
