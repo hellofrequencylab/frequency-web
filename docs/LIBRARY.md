@@ -28,6 +28,9 @@ gets its own Loom**. It grows for years without a code deploy per asset.
 
 The janitor-facing studio ([ADR-483](DECISIONS.md)):
 
+- **Layout** uses the shared **`RailGrid`** template (mobile-first): the folder rail is a **mini menu
+  on the left** at every width — a slim rail on phones, never stacked above the grid — with the card
+  grid beside it. On phones the grid opens with a full-width single card, then falls to two-up.
 - **Folder rail** (left): **All** · by **Type** · by **Category** (smart folders from the
   `category` field) · **Collections** (custom folders — `library_collections`; an asset can be in
   many). Navigation is URL-driven and preserves the search + sort. New / rename / delete collection

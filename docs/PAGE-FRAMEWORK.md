@@ -367,6 +367,7 @@ forces a big-bang rewrite.
 | **WizardShell** | `WizardShell` | a centered, no-rail **multi-step flow**: onboarding, Space provisioning (`app/onboarding/form.tsx`) | step progress (`WizardProgress`) + body + footer actions |
 | **HeaderSidebar** | `HeaderSidebarTemplate` | one primary flow beside a persistent in-body secondary panel (§3 Template D) | `sidebar` (+ `sidebarSide`) + `children` |
 | **TwoColumn** | `TwoColumnTemplate` | two peer columns of comparable weight (§3 Template E) | `left` · `right` |
+| **RailGrid** | `RailGrid` | a browse surface pairing a narrow filter/folder rail with a fluid card grid (Loom Studio) — **mobile-first**: the rail is a mini menu on phones (always beside the grid, never stacked above it) and widens on larger screens | `menu` · `children` |
 | **Admin** | `AdminTemplate` | the rail-less `/admin/*` workspace under its own two-layer nav | `AdminSection`s |
 
 All nine share **one header grammar** (`PageHeading`): the same type scale, eyebrow,

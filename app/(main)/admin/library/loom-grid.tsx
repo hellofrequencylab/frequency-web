@@ -206,14 +206,17 @@ export function LoomGrid({
               : 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4'
           }
         >
-          {assets.map((a) => {
+          {assets.map((a, i) => {
             const isSel = sel.has(a.id)
+            // Mobile "rail of single cards → two cards": the first card spans full width, the rest
+            // fall to 2-up. Only on the smallest screens (sm+ uses the normal even grid).
+            const featured = i === 0 && !compact
             return (
               <div
                 key={a.id}
                 className={`group relative overflow-hidden rounded-2xl border bg-surface shadow-sm transition-shadow hover:shadow-pop ${
-                  isSel ? 'border-primary ring-2 ring-primary' : 'border-border'
-                }`}
+                  featured ? 'col-span-2 sm:col-span-1' : ''
+                } ${isSel ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
               >
                 <SelDot id={a.id} className={`absolute left-2 top-2 z-10 ${compact ? '[&_svg]:h-5 [&_svg]:w-5' : ''}`} />
                 <button type="button" onClick={() => setOpenId(a.id)} className="block w-full text-left">
