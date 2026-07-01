@@ -34,11 +34,11 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 // harmonization of navigation onto the unified spine.
 //
 // DESIGN (this rework):
-//   • Identity & basics LEADS, always, at the top — never demoted below the mode-emphasized modules
-//     (the bug the old emphasis-reorder caused: it promoted bookings/CRM above the space's own identity).
-//   • The 9-category spine is grouped into clear clusters (Identity & basics · Bookings & offerings ·
-//     People & CRM · Reach & comms · Money & billing · Insights · Danger zone), each a titled cluster of
-//     cards with a per-section icon, rather than one long flat list.
+//   • Space LEADS, always, at the top — never demoted below the mode-emphasized modules (the bug the old
+//     emphasis-reorder caused: it promoted bookings/CRM above the space's own identity).
+//   • The 9-category spine is compressed into five tight clusters plus Danger (Space · People ·
+//     Offerings · Reach · Billing and insights · Danger zone), each a titled cluster of compact cards
+//     with a per-surface icon, rather than one long flat list.
 //   • Mode is a SECONDARY signal: a surface a Mode emphasizes gets a quiet "Suggested for your mode" tag
 //     and sorts first WITHIN its group. Nothing is dropped; every gated surface still appears.
 //
@@ -99,10 +99,15 @@ export function hrefForSurface(id: string, slug: string): string | null {
 //
 // The console renders its sections in titled GROUPS rather than one flat list. A group is keyed by a
 // stable id; every surface id is assigned to exactly one group (CONSOLE_GROUP_FOR). The groups render in
-// CONSOLE_GROUPS order, with Identity & basics first (so the space's own identity always leads) and the
-// Danger zone last. A surface whose id is not mapped falls back to 'identity' (defensive; never expected).
+// CONSOLE_GROUPS order, with Space first (so the space's own identity always leads) and the Danger zone
+// last. A surface whose id is not mapped falls back to 'space' (defensive; never expected).
+//
+// This is the COMPRESSED IA: the seven prior clusters collapse into five tight top-level sections plus
+// Danger. Space folds in identity + how it runs + the public page; People holds the team + contacts;
+// Offerings gathers everything bookable, joinable, supportable, or attendable (check-in rides along with
+// attendance); Reach pairs email + QR; Billing and insights pairs the plan with how the space performs.
 
-type GroupId = 'identity' | 'offerings' | 'people' | 'reach' | 'money' | 'insights' | 'danger'
+type GroupId = 'space' | 'people' | 'offerings' | 'reach' | 'billing' | 'danger'
 
 interface ConsoleGroup {
   id: GroupId
@@ -111,34 +116,33 @@ interface ConsoleGroup {
   blurb: string
 }
 
-/** The group spine, in render order. Identity leads; Danger trails. */
+/** The group spine, in render order. Space leads; Danger trails. */
 const CONSOLE_GROUPS: readonly ConsoleGroup[] = [
-  { id: 'identity', title: 'Identity and basics', blurb: 'Your name, brand, story, and how this space runs.' },
-  { id: 'offerings', title: 'Bookings and offerings', blurb: 'What people can book, join, support, or attend.' },
-  { id: 'people', title: 'People and CRM', blurb: 'Your team, your contacts, and who shows up.' },
-  { id: 'reach', title: 'Reach and comms', blurb: 'Get your space in front of people and stay in touch.' },
-  { id: 'money', title: 'Money and billing', blurb: 'Your plan and what each plan unlocks.' },
-  { id: 'insights', title: 'Insights', blurb: 'See how your space is performing.' },
+  { id: 'space', title: 'Space', blurb: 'Your identity, how it runs, and your public page.' },
+  { id: 'people', title: 'People', blurb: 'Your members, your team, and who shows up.' },
+  { id: 'offerings', title: 'Offerings', blurb: 'Everything people can book, join, support, or attend.' },
+  { id: 'reach', title: 'Reach', blurb: 'Get your space in front of people and stay in touch.' },
+  { id: 'billing', title: 'Billing and insights', blurb: 'Your plan, what it unlocks, and how the space is performing.' },
   { id: 'danger', title: 'Danger zone', blurb: 'Permanent actions for this space.' },
 ]
 
 /** Which group each surface id belongs to. The console reads this to cluster the flat spine. */
 const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
-  'space.basics': 'identity',
-  'space.mode': 'identity',
-  'space.layout': 'identity',
+  'space.basics': 'space',
+  'space.mode': 'space',
+  'space.layout': 'space',
+  'space.people': 'people',
+  'space.engage.crm': 'people',
   'space.place': 'offerings',
   'space.engage.memberships': 'offerings',
   'space.engage.donations': 'offerings',
   'space.engage.enroll': 'offerings',
   'space.engage.tickets': 'offerings',
-  'space.people': 'people',
-  'space.engage.crm': 'people',
-  'space.safety.checkin': 'people',
-  'space.reach': 'reach',
+  'space.safety.checkin': 'offerings',
   'space.comms': 'reach',
-  'space.billing': 'money',
-  'space.insights': 'insights',
+  'space.reach': 'reach',
+  'space.billing': 'billing',
+  'space.insights': 'billing',
   'space.danger': 'danger',
 }
 
@@ -162,9 +166,9 @@ const ICON_FOR: Record<string, LucideIcon> = {
   'space.danger': Trash2,
 }
 
-/** The group a surface belongs to (defensive default: identity). PURE. */
+/** The group a surface belongs to (defensive default: space). PURE. */
 export function groupForSurface(id: string): GroupId {
-  return CONSOLE_GROUP_FOR[id] ?? 'identity'
+  return CONSOLE_GROUP_FOR[id] ?? 'space'
 }
 
 /**
@@ -182,7 +186,7 @@ export function isSuggestedByMode(
 /**
  * Order surfaces WITHIN a single group by Mode emphasis: a surface the Mode emphasizes sorts ahead of
  * one it does not, ties keep their incoming spine order (a stable sort). This is the ONLY place Mode
- * touches order now — it reorders within a group, never across groups, so Identity & basics can never be
+ * touches order now — it reorders within a group, never across groups, so the Space group can never be
  * demoted below a mode-emphasized module. PURE.
  */
 export function orderWithinGroupByEmphasis(
@@ -223,25 +227,29 @@ function SectionCard({
   return (
     <Link
       href={href}
-      className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      className="group flex min-h-11 items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
-        <Icon className="h-5 w-5" aria-hidden />
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
+        <Icon className="h-4 w-4" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-text">{surface.label}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-sm font-semibold text-text">{surface.label}</span>
           {suggested && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+            <span
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
+              title="Suggested for your mode"
+            >
               <Sparkles className="h-3 w-3" aria-hidden />
-              Suggested for your mode
+              <span className="sr-only">Suggested for your mode</span>
+              <span aria-hidden>Suggested</span>
             </span>
           )}
         </span>
-        <span className="mt-0.5 block text-xs text-muted">{surface.desc}</span>
+        <span className="mt-0.5 line-clamp-1 block text-xs text-muted">{surface.desc}</span>
       </span>
       <ArrowRight
-        className="mt-2.5 h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+        className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
         aria-hidden
       />
     </Link>
@@ -260,10 +268,10 @@ function DangerCard({
   spaceId: string
 }) {
   return (
-    <div className="rounded-2xl border border-danger/30 bg-surface p-4 shadow-sm">
+    <div className="rounded-xl border border-danger/30 bg-surface p-3 shadow-sm">
       <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-danger-bg text-danger">
-          <Trash2 className="h-5 w-5" aria-hidden />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-danger-bg text-danger">
+          <Trash2 className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-text">{surface.label}</p>
@@ -271,7 +279,7 @@ function DangerCard({
         </div>
       </div>
       {canDelete && (
-        <div className="mt-4">
+        <div className="mt-3">
           <DangerDelete
             entity="space"
             warning="Permanently deletes this space and everything it owns: all its events (with their RSVPs and check-ins), members, circles, pages, and CRM. This cannot be undone."
@@ -304,8 +312,8 @@ function GroupCluster({
   return (
     <section>
       <SectionHeader title={group.title} />
-      <p className="-mt-2 mb-3 text-sm text-muted">{group.blurb}</p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <p className="-mt-2.5 mb-2.5 text-xs text-muted">{group.blurb}</p>
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
         {surfaces.map((surface) => {
           if (surface.id === 'space.danger') {
             return (
@@ -356,7 +364,7 @@ export function SpaceManageConsole({
   }
 
   return (
-    <>
+    <div className="space-y-8">
       {CONSOLE_GROUPS.map((group) => {
         const inGroup = byGroup.get(group.id)
         if (!inGroup || inGroup.length === 0) return null
@@ -375,6 +383,6 @@ export function SpaceManageConsole({
           />
         )
       })}
-    </>
+    </div>
   )
 }
