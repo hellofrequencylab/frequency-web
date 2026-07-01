@@ -66,3 +66,73 @@ export async function uploadLibraryImage(
   revalidatePath('/admin/library')
   return { ok: true }
 }
+
+// eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
+const dbh = () => createAdminClient() as unknown as SupabaseClient
+
+/** Edit an asset's metadata. Tags arrive as a comma-separated string. Janitor-gated. */
+export async function updateLibraryAssetMeta(
+  id: string,
+  fields: { title?: string; alt?: string; category?: string; tags?: string },
+): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!id) return { error: 'Missing asset id.' }
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (fields.title !== undefined) {
+    const t = fields.title.trim()
+    if (!t) return { error: 'Title cannot be empty.' }
+    patch.title = t.slice(0, 200)
+  }
+  if (fields.alt !== undefined) patch.alt = fields.alt.trim().slice(0, 500) || null
+  if (fields.category !== undefined) patch.category = fields.category.trim().slice(0, 80) || null
+  if (fields.tags !== undefined) {
+    patch.tags = fields.tags
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 40)
+  }
+
+  const { error } = await dbh().from('library_assets').update(patch).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
+
+/** Soft-remove: hide from the library without destroying the file or breaking references. */
+export async function archiveLibraryAsset(id: string): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!id) return { error: 'Missing asset id.' }
+  const { error } = await dbh()
+    .from('library_assets')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
+
+/** Permanently delete: remove the stored file, then the row. Janitor-gated. */
+export async function deleteLibraryAsset(id: string): Promise<{ ok: true } | { error: string }> {
+  await requireAdmin('janitor')
+  if (!id) return { error: 'Missing asset id.' }
+
+  const admin = createAdminClient()
+  // eslint-disable-next-line no-restricted-syntax -- library_assets isn't in lib/database.types.ts yet (types regen is a follow-up integrator step); genuinely untyped table access
+  const handle = admin as unknown as SupabaseClient
+  const { data } = await handle
+    .from('library_assets')
+    .select('storage_bucket, storage_path')
+    .eq('id', id)
+    .maybeSingle()
+  const row = data as { storage_bucket: string | null; storage_path: string | null } | null
+  if (row?.storage_bucket && row.storage_path) {
+    await admin.storage.from(row.storage_bucket).remove([row.storage_path])
+  }
+
+  const { error } = await handle.from('library_assets').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/library')
+  return { ok: true }
+}
