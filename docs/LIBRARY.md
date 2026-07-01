@@ -54,24 +54,25 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   render (vision) and **checks her own work** conservatively (only fixing clear breakage: Redraw
   auto-checks, Tweak checks on demand). Saved edits land in `config.svg`; clearing it restores the
   original code render ([ADR-484](DECISIONS.md)/[485](DECISIONS.md)/[486](DECISIONS.md)).
-- **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) in the warm
-  **induction vibe** — flat, filled, amber-led (see
-  [`docs/LOOM-DESIGN-LANGUAGE.md`](LOOM-DESIGN-LANGUAGE.md), [ADR-486](DECISIONS.md)).
-- **Image studio (Recraft)**: a managed image/vector engine for real generation + editing
-  ([ADR-488](DECISIONS.md)). **Generate** icon sets/graphics (**vector** lane → SVG) or
-  trophies/rewards/cards (**raster** lane → PNG) from a prompt; results land as `library_assets`.
-  **Edit** a file-backed asset in the drawer with **Vectorize**, **Remove BG**, or **Variation** —
-  each is **non-destructive** (snapshots the current state to `library_versions` first). A
-  **Versions** list in the drawer restores any prior state with one click (rollback snapshots current
-  first, so it's reversible). The whole studio is **hidden unless `RECRAFT_API_KEY` is set**
-  (`recraftConfigured()`); it's janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08 vector)
-  and called server-side only. Client: `lib/loom/recraft.ts`; actions:
-  `admin/library/recraft-actions.ts`; versioning backbone: `lib/library/versions.ts`.
+- **Create (one smart panel)**: a single `CreateStudio` surface where you pick **what** you're making
+  (Icon · Spot art · Illustration · Trophy/reward · Card · Texture) and it routes to the right engine
+  ([ADR-490](DECISIONS.md)). **Vera** draws quick house-style **line marks** (icons/spot art) as inline
+  SVG you review before saving — instant, no cost. The **Image Studio** (Recraft) generates richer
+  **vector or raster** art (illustrations/trophies/cards/textures) and adds it straight to the library
+  ([ADR-488](DECISIONS.md)). One-tap **smart prompts** fill an on-brand starter per type; a **Quick /
+  Rich** toggle lets icons/spot art choose Vera vs the Studio. Studio types are hidden/disabled unless
+  `RECRAFT_API_KEY` is set; the Studio is janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08
+  vector) and called server-side only. Clients: `create-studio.tsx`, `lib/loom/recraft.ts`; actions:
+  `vera-actions.ts` + `recraft-actions.ts`.
+- **Edit (drawer)**: a file-backed asset can be edited in place with **Vectorize**, **Remove BG**, or
+  **Variation** — each **non-destructive** (snapshots the current state to `library_versions` first). A
+  **Versions** list restores any prior state with one click (rollback snapshots current first, so it's
+  reversible). Backbone: `lib/library/versions.ts`.
 - **Brand styles (matching sets)**: train a reusable **house style** so a whole generated set looks
   like one family ([ADR-489](DECISIONS.md)). Select 1–5 on-brand images in the grid → **"Train style"**
   in the selection bar → name it + pick the lane. The style is saved (`library_styles`, the Recraft
-  `style_id` + a name), and the studio's **Style** picker offers it when generating; every image with
-  that style selected matches. Styles are per-space and forgettable. Data layer: `lib/library/styles.ts`.
+  `style_id` + a name), and the Create panel's **Style** picker offers it when generating; every image
+  with that style selected matches. Styles are per-space and forgettable. Data layer: `lib/library/styles.ts`.
 
 ## Code-drawn elements (registries)
 

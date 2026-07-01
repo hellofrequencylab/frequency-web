@@ -20,8 +20,7 @@ import { RailGrid } from '@/components/templates'
 import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
-import { VeraWizard } from './vera-wizard'
-import { RecraftPanel } from './recraft-studio'
+import { CreateStudio } from './create-studio'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -185,8 +184,7 @@ export default async function LoomStudioPage({
       <AdminSection>
         {/* Header section — spans both columns, so the rail + grid align beneath it. */}
         <div className="mb-6 space-y-4">
-          <VeraWizard />
-          <RecraftPanel enabled={recraftEnabled} />
+          <CreateStudio recraftEnabled={recraftEnabled} />
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
             <div className="flex items-baseline gap-2">
