@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   X,
@@ -20,6 +20,8 @@ import {
   Sparkles,
   Wand2,
   Undo2,
+  Eye,
+  BadgeCheck,
 } from 'lucide-react'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
@@ -28,10 +30,11 @@ import {
   downloadElementSvg,
   downloadElementPng,
   downloadImageUrl,
+  rasterizeSvgElement,
   extForMime,
 } from '@/lib/library/export-svg'
 import { updateLibraryAssetMeta, archiveLibraryAsset, deleteLibraryAsset } from './actions'
-import { editLoomSvg, saveElementSvg } from './vera-actions'
+import { editLoomSvg, saveElementSvg, reviewLoomSvg } from './vera-actions'
 import {
   addAssetsToCollection,
   removeAssetsFromCollection,
@@ -415,11 +418,15 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
   const previewRef = useRef<HTMLDivElement>(null)
   const isElement = asset.kind === 'element' && (isRegistryElement(asset) || !!safeElementSvg(asset))
 
-  // Vera design assistant (SVG elements only): iterate on the graphic by instruction.
+  // Vera design assistant (SVG elements only): iterate on the graphic by instruction, and let
+  // her CHECK her work — render the result to an image, look at it (vision), and self-correct.
   const [override, setOverride] = useState<string | null>(null)
   const [instruction, setInstruction] = useState('')
   const [veraErr, setVeraErr] = useState<string | null>(null)
+  const [reviewNote, setReviewNote] = useState<string | null>(null)
   const [veraBusy, startVera] = useTransition()
+  const [reviewing, setReviewing] = useState(false)
+  const autoReview = useRef(false)
   const safeOverride = override && sanitizeSvg(override).ok ? override : null
 
   function previewSvg(): SVGSVGElement | null {
@@ -437,12 +444,48 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
     const svg = currentSvgString()
     if (!svg || !instruction.trim()) return
     setVeraErr(null)
+    setReviewNote(null)
     startVera(async () => {
       const res = await editLoomSvg(svg, instruction)
       if ('error' in res) setVeraErr(res.error)
-      else setOverride(res.svg)
+      else {
+        setOverride(res.svg)
+        autoReview.current = true // she checks her work as soon as it paints
+      }
     })
   }
+  /** Render the current graphic and have Vera look at it, correcting if it reads wrong. */
+  async function reviewCurrent() {
+    const el = previewSvg()
+    const svgStr = currentSvgString()
+    if (!el || !svgStr) return
+    setVeraErr(null)
+    setReviewing(true)
+    try {
+      const imageBase64 = await rasterizeSvgElement(el, 512)
+      const res = await reviewLoomSvg({ svg: svgStr, instruction, imageBase64 })
+      if ('error' in res) setVeraErr(res.error)
+      else if ('svg' in res) {
+        setOverride(res.svg)
+        setReviewNote(res.note)
+      } else {
+        setReviewNote(res.note)
+      }
+    } catch {
+      setVeraErr('Could not render the graphic to check it.')
+    } finally {
+      setReviewing(false)
+    }
+  }
+  // After an edit paints, auto-run one review pass so Vera catches her own mistakes.
+  useEffect(() => {
+    if (!autoReview.current || !safeOverride) return
+    autoReview.current = false
+    const id = requestAnimationFrame(() => void reviewCurrent())
+    return () => cancelAnimationFrame(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeOverride])
+
   function saveVera() {
     if (!safeOverride) return
     setVeraErr(null)
@@ -569,18 +612,28 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                 <button
                   type="button"
                   onClick={askVera}
-                  disabled={veraBusy || !instruction.trim()}
+                  disabled={veraBusy || reviewing || !instruction.trim()}
                   className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   {veraBusy ? 'Working…' : safeOverride ? 'Refine' : 'Ask Vera'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void reviewCurrent()}
+                  disabled={veraBusy || reviewing}
+                  title="Vera renders it, looks at it, and fixes anything off"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-text hover:bg-surface-elevated disabled:opacity-70"
+                >
+                  {reviewing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                  {reviewing ? 'Checking…' : 'Check her work'}
                 </button>
                 {safeOverride && (
                   <>
                     <button
                       type="button"
                       onClick={saveVera}
-                      disabled={veraBusy}
+                      disabled={veraBusy || reviewing}
                       className="rounded-2xl bg-signal px-3 py-1.5 text-sm font-bold text-on-signal hover:bg-signal-strong disabled:opacity-70"
                     >
                       Save changes
@@ -590,6 +643,7 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                       onClick={() => {
                         setOverride(null)
                         setVeraErr(null)
+                        setReviewNote(null)
                       }}
                       className="inline-flex items-center gap-1.5 rounded-2xl border border-border px-3 py-1.5 text-sm text-muted hover:bg-surface-elevated"
                     >
@@ -598,6 +652,11 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                   </>
                 )}
               </div>
+              {reviewNote && (
+                <p className="mt-2 flex items-start gap-1.5 text-sm text-signal-strong">
+                  <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /> {reviewNote}
+                </p>
+              )}
               {veraErr && <p className="mt-2 text-sm text-danger">{veraErr}</p>}
             </div>
           )}

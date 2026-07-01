@@ -38,7 +38,9 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
 - **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer — describe a
   change ("make the arrow teal", "add a second person") and Vera rewrites the SVG (house style,
   token colors preserved), preview, then save. Saved edits land in `config.svg`; clearing it restores
-  the original code render.
+  the original code render. **Vera checks her own work**: after each edit (and via "Check her work")
+  the graphic is rendered to an image and shown back to her with vision, so she can SEE the result
+  and self-correct if it reads wrong ([ADR-484](DECISIONS.md)).
 - **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) from a prompt.
 
 ## Code-drawn elements (registries)

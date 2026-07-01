@@ -10398,3 +10398,27 @@ non-destructive **version history** (the `library_versions` table) and a per-spa
 the next step (D3/D5), not this slice. Bulk tag/edit loops run per-row for the union merge (bounded
 to 500 selected) rather than a single set-based UPDATE — acceptable at this scale, revisit with
 generated columns if it grows.
+
+## ADR-484: Vera checks her own SVG edits with vision (render → look → self-correct)
+
+**Status:** Accepted (2026-07-01). Extends [ADR-483](DECISIONS.md).
+
+**Context.** The Design-with-Vera editor edited SVG blind (text in, text out). Editing paths without
+seeing the result produced graphics that were often worse than the original — the model had no
+feedback on what it actually drew.
+
+**Decision.** Give Vera eyes. After an edit (and on demand via "Check her work"), the client
+rasterizes the currently rendered SVG to a PNG on a white field (`rasterizeSvgElement`, reusing the
+export canvas path with computed-style inlining so token colors bake in) and sends it to
+`reviewLoomSvg`, which calls `completeRaw` with a **vision** message: the goal, the SVG code, and the
+rendered image. Vera looks at it and either approves ("GOOD: …") or returns a corrected full `<svg>`
+(same viewBox, same color approach, allowlist-sanitized). The client applies the correction and shows
+her note. One review runs automatically right after each edit (via a `requestAnimationFrame` once the
+candidate paints); further passes are manual. Rendering must be client-side (browser canvas), so the
+loop is client-driven — the server stays a pure, gated function.
+
+**Consequences.** Vera can see and fix her own mistakes, which is the missing feedback loop; each
+edit costs one extra (vision) sonnet call under the existing `loom-illustration` budget. The review
+is a single pass, not an unbounded agentic loop — bounded cost, and the operator drives further
+iteration. Rejected: server-side rasterization (would add a native SVG renderer dependency, against
+ADR-011) and a fully-automatic multi-round refine loop (cost + latency; a manual button is enough).
