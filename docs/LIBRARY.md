@@ -39,6 +39,12 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
   and a **view-mode** switch — so the rail and grid columns align vertically beneath it.
 - **Grid** (right): searchable, sorted, paginated (48/page). Three view modes — **Cards** (default),
   **Compact**, and **List** (URL `?view=`). Click a card to open the detail drawer.
+- **Semantic search** (Phase 1, [RESEARCH-ASSET-GEN.md](RESEARCH-ASSET-GEN.md)): a **"Most relevant"**
+  sort runs meaning-based search (query embedding → nearest assets), and **"Find similar"** in the
+  drawer (`?similar=<id>`) surfaces an asset's neighbours. Powered by the reserved
+  `library_assets.embedding` (384‑d, key‑free gte‑small via `embedText()`), the `match_library_assets`
+  / `similar_library_assets` RPCs, and the `embed-library` cron (content‑hash gated). Degrades to
+  keyword search when AI is off or nothing is embedded yet.
 - **Bulk edits**: select cards (or the whole page), then **add to collection**, **set category**,
   **add tags**, **archive**, or **delete** across the selection.
 - **Design with Vera**: every SVG element has a "Design with Vera" panel in the drawer with two

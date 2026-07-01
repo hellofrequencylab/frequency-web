@@ -23,6 +23,7 @@ import {
   Eye,
   BadgeCheck,
   RefreshCw,
+  Sparkles as SparklesIcon,
 } from 'lucide-react'
 import type { LibraryGalleryItem, LibraryCollection } from '@/lib/library/store'
 import { renderRegistryElement, isRenderableElement } from '@/lib/library/element-registry'
@@ -664,6 +665,9 @@ function DetailDrawer({ asset, onClose }: { asset: LibraryGalleryItem; onClose: 
                 </button>
               </>
             )}
+            <a href={`/admin/library?similar=${asset.id}`} className={chipCls}>
+              <SparklesIcon className="h-4 w-4" /> Find similar
+            </a>
           </div>
 
           {/* Design with Vera — edit this graphic by describing the change (SVG elements only). */}

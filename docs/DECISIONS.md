@@ -10479,3 +10479,26 @@ clean rebuild; new creations carry the warm induction feel. The induction render
 hand-coded (ADR-068, no prompts existed) — the vibe was reconstructed from the code into the spec.
 Rejected: one universal edit prompt (the root cause), and restyling the existing icon kit (the owner
 chose non-destructive: new output only).
+
+## ADR-487: The Loom semantic search (Phase 1) — reuse the gte-small text embeddings
+
+**Status:** Accepted (2026-07-01). Implements [RESEARCH-ASSET-GEN.md](RESEARCH-ASSET-GEN.md) Phase 1.
+
+**Context.** Loom Studio search was substring/FTS only. We want meaning-based sort + "find similar"
+for smart grouping — without new infrastructure. The `library_assets.embedding vector(384)` column
+was already reserved (ADR-478), and the platform already ships a key-free, self-hosted gte-small
+`embed` edge function (`lib/ai/embed.ts`, ADR-067) used by help + room search.
+
+**Decision.** Reuse that exact pipeline for the Loom. Embed each asset's TEXT (title + description +
+category + tags + kind) via `embedText()` into the reserved column, gated by a content hash
+(`embedding_hash`) so unchanged assets are skipped; a nightly `embed-library` cron keeps it in sync
+(mirrors `embed-help`). Two SECURITY-DEFINER RPCs — `match_library_assets` (query → nearest, space +
+kind scoped) and `similar_library_assets` (asset → neighbours) — over an HNSW index. UI: a
+**"Most relevant"** sort and a drawer **"Find similar"** (`?similar=<id>`). Both degrade to the
+keyword path when AI is off or nothing is embedded yet.
+
+**Consequences.** Semantic sort/grouping ship with **zero new infra, no GPU, no vendor** — 100%
+self-hosted. This is *text/metadata* similarity; **visual** similarity (CLIP image embeddings, 512-d,
+a separate column) is the Phase 2 fast-follow. Vector generation (OmniSVG/StarVector) and the raster
+lane (FLUX) remain later phases pending GPU infra + the follow-up research. Backfill happens on the
+first cron run post-deploy (or a manual authorized GET of the endpoint).
