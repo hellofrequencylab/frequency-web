@@ -6,6 +6,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
 import { spacePuckData } from '@/lib/page-editor/templates/space'
+import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { templateDescriptorForSpace } from '@/lib/spaces/templates'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 
@@ -58,7 +59,11 @@ export async function SpaceLanding({ slug }: { slug: string }) {
     plan: space.plan,
     preferences: space.preferences,
   }
-  const data = stripIdentityHeader(spacePuckData({ name: brandName, ...templateInput }))
+  // Resolve the doc, drop any block the Page panel hid (and strip the flag off survivors), then strip
+  // the legacy identity header. So a hidden top-level block never renders on the public landing.
+  const data = stripIdentityHeader(
+    withVisibleBlocks(spacePuckData({ name: brandName, ...templateInput })),
+  )
 
   // The resolved template names the primary action (a plain verb + the tab it routes to). The landing
   // lives at the profile index; the CTA points at that tab as a slug-relative link so it never 404s.

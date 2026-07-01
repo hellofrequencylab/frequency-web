@@ -4,30 +4,32 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Render, type Data } from '@measured/puck'
-import { Check, Loader2, Sparkles, ArrowRight } from 'lucide-react'
+import { ArrowRight, ArrowDown, ArrowUp, Check, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { SpaceTemplate } from '@/lib/spaces/templates'
+import type { SpaceBlockRow } from '@/lib/page-editor/templates/space-blocks'
 import type { CoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
-import { setSpaceLayoutTemplate, setSpaceCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import {
+  setSpaceLayoutTemplate,
+  setSpaceCoverSize,
+  setSpaceAccent,
+  reorderSpaceBlock,
+  setSpaceBlockHidden,
+} from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
+import { ACCENT_TOKENS } from '@/components/spaces/space-form'
+import { SpaceEditorOverlay } from '@/components/spaces/space-editor-overlay'
 
-// SPACE LAYOUT panel — the operator surface for picking the public-page STARTING layout (ADR-472). It
-// shows a gallery of the four templates (Book · Schedule · Storefront · Hub), each with a live mini
-// preview of its generated preset, and lets the operator set the layout. Every write calls a server
-// action that RE-GATES the owner/admin/editor role; this layer is fast inline feedback only. A thin echo
-// of the Focus switch sits above the gallery (the full mode settings stay at /manage/mode).
-//
-// SEMANTICS (see actions.ts): "Use this layout" sets preferences.template (non-destructive). When the
-// page is CUSTOMIZED (a stored puck doc wins over any preset), that alone would not visibly change the
-// live page, so a secondary "Reset to this layout" also clears the doc (behind a confirm). When the page
-// is NOT customized, "Use this layout" applies immediately.
-//
-// COPY (CONTENT-VOICE §10): plain nouns, plain verbs, skeptic-proof, no em dashes. DAWN semantic tokens
-// only (no hex, no text-[10/11px]).
+// THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). Approved model: a compact
+// panel in Manage for FAST tweaks (layout, cover size, theme/accent, and block order + show/hide), plus
+// a prominent "Full page editor" button that opens the COMPLETE Puck editor as a fullscreen overlay for
+// deep editing. Mirrors the Layout panel it grew out of: every write calls a server action that RE-GATES
+// the owner/admin/editor role; this client is fast inline feedback only. DAWN semantic tokens only (no
+// hex), sentence-case copy, no em dashes (CONTENT-VOICE §10).
 
 /** A focus choice mirroring the mode view's shape, kept LOCAL so this surface stays decoupled from the
  *  mode settings module (it only needs these fields to render the echo). */
@@ -38,7 +40,7 @@ export interface FocusChoiceLike {
   active: boolean
 }
 
-// The two public-header cover sizes, with a plain forward function each (CONTENT-VOICE, no em dashes).
+// The two public-header cover sizes, each with a plain forward function (CONTENT-VOICE, no em dashes).
 const COVER_SIZES: { value: CoverSize; label: string; tagline: string }[] = [
   { value: 'header', label: 'Header', tagline: 'A compact band. Good when the page is the point.' },
   { value: 'hero', label: 'Hero', tagline: 'A tall, immersive cover. Good for a strong first image.' },
@@ -53,18 +55,24 @@ export interface LayoutPreview {
   data: Data
 }
 
-export function SpaceLayoutPanel({
+export function SpacePagePanel({
   slug,
+  brandName,
   activeTemplate,
   overrideIsAuto,
   customized,
   coverSize,
+  accent,
+  blocks,
+  editorData,
   previews,
   metadata,
   focus,
   readOnly = false,
 }: {
   slug: string
+  /** The Space display name, for the full-editor overlay title. */
+  brandName: string
   /** The currently RESOLVED template (after any override), so the active card + auto row read true. */
   activeTemplate: SpaceTemplate
   /** Whether the layout is deriving automatically (no preferences.template override set). */
@@ -73,6 +81,12 @@ export function SpaceLayoutPanel({
   customized: boolean
   /** The chosen public-header cover size (Header vs Hero), for the Cover size toggle. */
   coverSize: CoverSize
+  /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
+  accent: string
+  /** The TOP-LEVEL blocks of the current landing doc (stored-or-preset), in order, for the Blocks list. */
+  blocks: SpaceBlockRow[]
+  /** The resolved landing doc (hidden blocks already stripped) the Full page editor overlay opens on. */
+  editorData: Data
   previews: LayoutPreview[]
   /** The Render metadata (metadata.space) so previews resolve identity + highlights like the live page. */
   metadata: Record<string, unknown>
@@ -103,6 +117,27 @@ export function SpaceLayoutPanel({
         <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
           {error}
         </p>
+      )}
+
+      {/* The prominent deep-edit entry: opens the COMPLETE Puck editor as a fullscreen overlay. The
+          editor + Puck bundle lazy-load only when opened, never on this panel's initial load. */}
+      {!readOnly && (
+        <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-text">Full page editor</p>
+              <p className="mt-1 text-sm text-muted">
+                Open the full editor to add, edit, and arrange every block on your page.
+              </p>
+            </div>
+            <SpaceEditorOverlay
+              slug={slug}
+              title={brandName}
+              data={editorData}
+              customized={customized}
+            />
+          </div>
+        </section>
       )}
 
       {/* Type / focus echo (the full mode settings live at /manage/mode). */}
@@ -208,6 +243,116 @@ export function SpaceLayoutPanel({
         </div>
       </section>
 
+      {/* Theme / accent: the curated brand accent that paints the page (tokens only, never a hex). */}
+      <section>
+        <SectionHeader title="Theme and accent" />
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          Your brand color. It paints your buttons, the active tab, and highlights across the page.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={readOnly || pending}
+            onClick={() => run(() => setSpaceAccent(slug, ''))}
+            aria-pressed={accent === ''}
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
+              accent === ''
+                ? 'border-primary bg-primary-bg text-primary-strong'
+                : 'border-border text-muted hover:border-border-strong',
+            )}
+          >
+            Default
+          </button>
+          {ACCENT_TOKENS.map((a) => {
+            const active = accent === a.token
+            return (
+              <button
+                key={a.token}
+                type="button"
+                disabled={readOnly || pending}
+                onClick={() => run(() => setSpaceAccent(slug, a.token))}
+                aria-pressed={active}
+                title={a.label}
+                aria-label={a.label}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
+                  active ? 'border-primary bg-primary-bg text-text' : 'border-border text-muted hover:border-border-strong',
+                )}
+              >
+                <span
+                  className="h-4 w-4 rounded-full border border-border"
+                  style={{ backgroundColor: `var(${a.token})` }}
+                  aria-hidden
+                />
+                {a.label}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Blocks: the page's top-level blocks, with reorder + show/hide. No Puck; fast tweaks only. The
+          full editor (overlay above) is where blocks are added + edited. */}
+      <section>
+        <SectionHeader title="Blocks" />
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          The sections on your page, top to bottom. Reorder them or hide one from your public page. Open
+          the full editor to add or edit a block.
+        </p>
+        {blocks.length === 0 ? (
+          <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
+            Your page has no blocks yet. Open the full editor to add one.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {blocks.map((block, index) => (
+              <li
+                key={block.id}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm',
+                  block.hidden && 'opacity-70',
+                )}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-text">{block.label}</span>
+                  <span className="mt-0.5 block text-xs text-muted">
+                    {block.hidden ? 'Hidden from your public page' : 'Showing on your public page'}
+                  </span>
+                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <IconButton
+                    label={`Move ${block.label} up`}
+                    disabled={readOnly || pending || index === 0}
+                    onClick={() => run(() => reorderSpaceBlock(slug, index, -1))}
+                  >
+                    <ArrowUp className="h-4 w-4" aria-hidden />
+                  </IconButton>
+                  <IconButton
+                    label={`Move ${block.label} down`}
+                    disabled={readOnly || pending || index === blocks.length - 1}
+                    onClick={() => run(() => reorderSpaceBlock(slug, index, 1))}
+                  >
+                    <ArrowDown className="h-4 w-4" aria-hidden />
+                  </IconButton>
+                  <IconButton
+                    label={block.hidden ? `Show ${block.label}` : `Hide ${block.label}`}
+                    disabled={readOnly || pending}
+                    onClick={() => run(() => setSpaceBlockHidden(slug, index, !block.hidden))}
+                  >
+                    {block.hidden ? (
+                      <EyeOff className="h-4 w-4" aria-hidden />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden />
+                    )}
+                  </IconButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {/* The four-layout gallery. */}
       <section>
         <SectionHeader title="Pick a layout" />
@@ -232,6 +377,32 @@ export function SpaceLayoutPanel({
         </div>
       </section>
     </div>
+  )
+}
+
+/** A compact square icon button for the block row controls (reorder / show-hide). */
+function IconButton({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string
+  disabled: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-text disabled:cursor-default disabled:opacity-40 motion-reduce:transition-none"
+    >
+      {children}
+    </button>
   )
 }
 

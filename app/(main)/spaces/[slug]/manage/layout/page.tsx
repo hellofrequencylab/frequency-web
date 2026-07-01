@@ -15,27 +15,30 @@ import {
   templateForSpace,
   readTemplateOverride,
 } from '@/lib/spaces/templates'
-import { generateSpacePreset, readStoredSpaceDoc } from '@/lib/page-editor/templates/space'
+import { generateSpacePreset, readStoredSpaceDoc, spacePuckData } from '@/lib/page-editor/templates/space'
+import { readBlockRows, withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { readCoverSize } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
-  SpaceLayoutPanel,
+  SpacePagePanel,
   type LayoutPreview,
   type FocusChoiceLike,
-} from '@/components/spaces/space-layout-panel'
+} from '@/components/spaces/space-page-panel'
 
-// SPACE LAYOUT SETTINGS (ADR-472, the public-page layout layer). The Layout surface in the unified
-// console where an operator picks the STARTING layout their public landing renders through, previews each
-// of the four templates, and (as a thin echo) switches the Focus. A Server Component, gated server-side
-// exactly like the console + mode pages: it resolves the Space, gates on resolveSpaceManageAccess, and
-// notFound()s otherwise so a non-manager cannot tell the route exists. A staff previewer sees the gallery
-// read-only (every write re-gates in its server action; this render gate is UX).
+// SPACE PAGE SETTINGS (ADR-472, the public-page layout layer). The "Page" quick-edit surface in the
+// unified console: a compact panel for FAST tweaks (layout, cover size, theme/accent, and block order +
+// show/hide) with NO Puck runtime, plus a "Full page editor" button that opens the COMPLETE Puck editor
+// as a fullscreen overlay for deep block editing (lazy-loaded, so this page ships no editor code). A
+// Server Component, gated server-side exactly like the console + mode pages: it resolves the Space, gates
+// on resolveSpaceManageAccess, and notFound()s otherwise so a non-manager cannot tell the route exists. A
+// staff previewer sees the panel read-only (every write re-gates in its server action; this render gate
+// is UX).
 
 export const metadata: Metadata = {
-  title: 'Layout',
-  description: 'Pick the layout your public page starts from and preview each one.',
+  title: 'Page',
+  description: 'Set your public page layout, cover, accent, and block order, or open the full editor.',
   robots: { index: false, follow: false },
 }
 
@@ -47,7 +50,7 @@ const TEMPLATE_BLURB: Record<string, string> = {
   hub: 'A mission and community hub, with all your functions on.',
 }
 
-export default async function SpaceLayoutPage({
+export default async function SpacePageSettingsPage({
   params,
 }: {
   params: Promise<{ slug: string }>
@@ -78,6 +81,14 @@ export default async function SpaceLayoutPage({
   const overrideIsAuto = readTemplateOverride(space.preferences) === null
   const customized = readStoredSpaceDoc(space.preferences) !== null
   const coverSize = readCoverSize(space.preferences)
+
+  // The current landing doc (stored-or-preset). The Blocks list reads its TOP-LEVEL blocks WITH the
+  // hidden flag intact (so the panel shows a hidden block as toggle-able); the Full page editor opens on
+  // the same doc with hidden blocks stripped (hiding lives only in the compact panel).
+  const presetInput = { name: brandName, ...resolverInput }
+  const currentDoc = spacePuckData(presetInput)
+  const blocks = readBlockRows(currentDoc)
+  const editorData = withVisibleBlocks(currentDoc)
 
   // The four layout previews (generated presets), each named by its forward function.
   const previews: LayoutPreview[] = SPACE_TEMPLATES.map((template) => ({
@@ -114,8 +125,8 @@ export default async function SpaceLayoutPage({
   return (
     <FocusTemplate
       eyebrow="Manage space"
-      title="Layout"
-      description="Pick the layout your public page starts from. Every layout is a start point, not a lock: you can rearrange any page in the editor after."
+      title="Page"
+      description="Set your public page: pick a layout, size your cover, choose your accent, and reorder or hide blocks. Open the full editor to add and edit any block."
       back={{ href: `/spaces/${slug}/manage`, label: brandName }}
       width="wide"
     >
@@ -124,12 +135,16 @@ export default async function SpaceLayoutPage({
           <StaffPreviewBanner spaceName={brandName} />
         </div>
       )}
-      <SpaceLayoutPanel
+      <SpacePagePanel
         slug={slug}
+        brandName={brandName}
         activeTemplate={activeTemplate}
         overrideIsAuto={overrideIsAuto}
         customized={customized}
         coverSize={coverSize}
+        accent={space.brandAccent ?? ''}
+        blocks={blocks}
+        editorData={editorData}
         previews={previews}
         metadata={{ space: spaceContent }}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
