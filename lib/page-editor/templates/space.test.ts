@@ -10,17 +10,25 @@ import {
 import { config } from '@/lib/page-editor/config'
 import { SPACE_TEMPLATES, templateDescriptor, type SpaceTemplate } from '@/lib/spaces/templates'
 
-// SPACE LANDING PUCK PRESET + RESOLVER contract (ADR-476/472, Phase 1). Pure, no IO.
-// Locks: the four presets are valid Puck documents composed only from registered blocks, are
-// descriptor-driven (hero emphasis + stat set + About lead order), read visibly distinct per
-// template, and the resolver prefers a stored valid doc, else the preset, fail-safe throughout.
+// SPACE LANDING PUCK PRESET + RESOLVER contract (Phase 4, profile-native block set). Pure, no IO.
+// Locks: the four presets are valid Puck documents composed only from registered blocks, every
+// template LEADS with SpaceIdentityHeader (the shared cover/logo identity), the arrangement is
+// distinct per template (Book / Schedule / Storefront / Hub), NONE of the marketing display-type
+// blocks (Hero / FeatureGrid / StatRow / MediaText / CallToAction) remain in the space presets, and
+// the resolver prefers a stored valid doc, else the preset, fail-safe throughout.
 
 const KNOWN_BLOCKS = new Set(Object.keys(config.components))
+
+// The marketing display-type blocks the profile presets must NO LONGER seed (they still power the
+// marketing pages; the Profile set is additive, only the space PRESETS switched).
+const MARKETING_BLOCKS = ['Hero', 'FeatureGrid', 'StatRow', 'MediaText', 'CallToAction'] as const
 
 // Every block in a doc is a currently-registered block type.
 function everyBlockKnown(data: Data): boolean {
   return (data.content ?? []).every((b) => typeof b?.type === 'string' && KNOWN_BLOCKS.has(b.type))
 }
+
+const types = (t: SpaceTemplate) => generateSpacePreset(t, 'Willow Studio').content.map((b) => b.type)
 
 describe('the four preset generators', () => {
   it('generates a valid Puck Data shape for every template', () => {
@@ -34,90 +42,46 @@ describe('the four preset generators', () => {
 
   it('composes ONLY from registered blocks (no invented block types)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      expect(everyBlockKnown(doc)).toBe(true)
+      expect(everyBlockKnown(generateSpacePreset(t, 'Willow Studio'))).toBe(true)
     }
   })
 
-  it('leads with a Cover, then a Hero, and ends with a StatRow (Phase 2)', () => {
+  it('LEADS every template with SpaceIdentityHeader (the shared cover/logo identity)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      expect(doc.content[0]?.type).toBe('Cover')
-      expect(doc.content[1]?.type).toBe('Hero')
-      expect(doc.content[doc.content.length - 1]?.type).toBe('StatRow')
+      expect(generateSpacePreset(t, 'Willow Studio').content[0]?.type).toBe('SpaceIdentityHeader')
     }
   })
 
-  it('drives the hero CTA + label from the descriptor (descriptor-driven)', () => {
+  it('never seeds any marketing display-type block (they read like a landing page, not a profile)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const descriptor = templateDescriptor(t)
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const hero = doc.content.find((b) => b.type === 'Hero')!
-      expect(hero.props.ctaPrimaryLabel).toBe(descriptor.hero.primaryCta.label)
-    }
-  })
-
-  it('drives the StatRow stat labels from the descriptor hero stats (in order)', () => {
-    for (const t of SPACE_TEMPLATES) {
-      const descriptor = templateDescriptor(t)
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const stat = doc.content.find((b) => b.type === 'StatRow')!
-      const labels = (stat.props.items as { label: string }[]).map((i) => i.label)
-      expect(labels).toEqual(descriptor.hero.heroStats.slice(0, 4).map((s) => s.label))
-    }
-  })
-
-  it('never seeds invented counts in the stat band (honest at day zero)', () => {
-    for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const stat = doc.content.find((b) => b.type === 'StatRow')!
-      for (const item of stat.props.items as { value: string }[]) {
-        expect(item.value).toBe('-')
+      const ts = types(t)
+      for (const marketing of MARKETING_BLOCKS) {
+        expect(ts, `${t} must not include ${marketing}`).not.toContain(marketing)
       }
-    }
-  })
-
-  it('skips the brand-new-Space empty (entity-getting-started) in the body', () => {
-    // The descriptor's aboutModules lead with entity-getting-started; the preset drops it (it has no
-    // public landing section), so no body block id references it.
-    for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const ids = doc.content.map((b) => String(b.props.id ?? ''))
-      expect(ids.some((id) => id.includes('entity-getting-started'))).toBe(false)
     }
   })
 
   it('threads the Space name through the copy so it reads as the operator site', () => {
     const doc = generateSpacePreset('book', 'Willow Studio')
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(String(hero.props.title)).toContain('Willow Studio')
+    const json = JSON.stringify(doc)
+    expect(json).toContain('Willow Studio')
   })
 
   it('never emits an em dash in any string prop (CONTENT-VOICE punctuation)', () => {
     for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const json = JSON.stringify(doc)
-      expect(json).not.toContain('—')
+      expect(JSON.stringify(generateSpacePreset(t, 'Willow Studio'))).not.toContain('—')
     }
   })
 
   it('falls back to a neutral name when the brand name is blank', () => {
-    const doc = generateSpacePreset('book', '   ')
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(String(hero.props.title)).toContain('this space')
+    const doc = generateSpacePreset('hub', '   ')
+    expect(JSON.stringify(doc)).toContain('this space')
   })
 })
 
-describe('the four presets read visibly distinct', () => {
-  // A fingerprint of the visible differences: the hero eyebrow/title + the ordered body block types
-  // + the ordered stat labels. Two templates must never share the same fingerprint.
+describe('the four presets read visibly distinct (per-template arrangement)', () => {
   function fingerprint(t: SpaceTemplate): string {
-    const doc = generateSpacePreset(t, 'Willow Studio')
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    const bodyTypes = doc.content.map((b) => b.type).join(',')
-    const stat = doc.content.find((b) => b.type === 'StatRow')!
-    const statLabels = (stat.props.items as { label: string }[]).map((i) => i.label).join(',')
-    return `${hero.props.eyebrow}|${hero.props.title}|${bodyTypes}|${statLabels}`
+    return types(t).join(',')
   }
 
   it('produces four different fingerprints', () => {
@@ -125,87 +89,85 @@ describe('the four presets read visibly distinct', () => {
     expect(new Set(prints).size).toBe(SPACE_TEMPLATES.length)
   })
 
-  it('each template opens its body on a distinct lead section, mirroring the descriptor aboutLead', () => {
-    // The block right after the Hero is the first non-empty About module. Map the module the
-    // descriptor leads with (aboutLead) to the block type the preset uses for it.
-    const leadBlockType: Record<string, string> = {
-      'entity-offerings': 'Heading',
-      'entity-about': 'MediaText',
-      'entity-cta': 'CallToAction',
+  it('Book: Identity -> Highlights -> Offerings -> CTA -> Reviews -> FAQ -> About -> Contact', () => {
+    expect(types('book')).toEqual([
+      'SpaceIdentityHeader',
+      'SpaceHighlights',
+      'SpaceOfferings',
+      'SpaceCTA',
+      'SpaceReviews',
+      'SpaceFAQ',
+      'SpaceAbout',
+      'SpaceContact',
+    ])
+  })
+
+  it('Schedule: Identity -> Offerings -> CTA -> Highlights -> Reviews -> About -> Contact', () => {
+    expect(types('schedule')).toEqual([
+      'SpaceIdentityHeader',
+      'SpaceOfferings',
+      'SpaceCTA',
+      'SpaceHighlights',
+      'SpaceReviews',
+      'SpaceAbout',
+      'SpaceContact',
+    ])
+  })
+
+  it('Storefront: Identity -> Offerings -> Gallery -> Reviews -> About -> Contact', () => {
+    expect(types('storefront')).toEqual([
+      'SpaceIdentityHeader',
+      'SpaceOfferings',
+      'Gallery',
+      'SpaceReviews',
+      'SpaceAbout',
+      'SpaceContact',
+    ])
+  })
+
+  it('Hub is the fullest: Identity -> About -> CTA -> Updates -> Offerings -> Gallery -> Team -> FAQ -> Contact', () => {
+    expect(types('hub')).toEqual([
+      'SpaceIdentityHeader',
+      'SpaceAbout',
+      'SpaceCTA',
+      'SpaceUpdates',
+      'SpaceOfferings',
+      'Gallery',
+      'SpaceTeam',
+      'SpaceFAQ',
+      'SpaceContact',
+    ])
+    // Hub is the fullest of the four.
+    for (const t of ['book', 'schedule', 'storefront'] as const) {
+      expect(types('hub').length).toBeGreaterThan(types(t).length)
     }
-    for (const t of SPACE_TEMPLATES) {
-      const descriptor = templateDescriptor(t)
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      const firstBody = doc.content[2] // after the Cover + Hero (Phase 2 leads with Cover)
-      expect(firstBody.type).toBe(leadBlockType[descriptor.aboutLead])
-    }
   })
 
-  it('hub is the fullest body (mission-first, all functions on)', () => {
-    const hub = generateSpacePreset('hub', 'Willow Studio')
-    const book = generateSpacePreset('book', 'Willow Studio')
-    expect(hub.content.length).toBeGreaterThan(book.content.length)
-    // Hub leads its body with the mission (entity-about -> MediaText), right after the Cover + Hero.
-    expect(hub.content[2].type).toBe('MediaText')
-  })
-})
-
-describe('Phase 2 content blocks are wired into the presets (Cover leads; per-template placements)', () => {
-  const types = (t: SpaceTemplate) => generateSpacePreset(t, 'Willow Studio').content.map((b) => b.type)
-
-  it('Cover is the first block in every template', () => {
-    for (const t of SPACE_TEMPLATES) {
-      expect(generateSpacePreset(t, 'Willow Studio').content[0]?.type).toBe('Cover')
-    }
-  })
-
-  it('Book and Schedule include SpaceReviews then SpaceFAQ (proof near the CTA, FAQ lower)', () => {
-    for (const t of ['book', 'schedule'] as const) {
-      const ts = types(t)
-      expect(ts).toContain('SpaceReviews')
-      expect(ts).toContain('SpaceFAQ')
-      expect(ts.indexOf('SpaceReviews')).toBeLessThan(ts.indexOf('SpaceFAQ'))
-      expect(ts).not.toContain('SpaceUpdates') // Updates are the Hub feed, not Book/Schedule
-    }
-  })
-
-  it('Storefront keeps a Gallery, plus SpaceReviews and SpaceFAQ', () => {
-    const ts = types('storefront')
-    expect(ts).toContain('Gallery')
-    expect(ts).toContain('SpaceReviews')
-    expect(ts).toContain('SpaceFAQ')
-  })
-
-  it('Hub is the fullest: Cover, mission (MediaText), SpaceUpdates, Gallery, SpaceFAQ, community', () => {
-    const ts = types('hub')
-    expect(ts).toContain('Cover')
-    expect(ts).toContain('SpaceUpdates')
-    expect(ts).toContain('Gallery')
-    expect(ts).toContain('SpaceFAQ')
-    // The community beat is seeded as a Heading (entity-community); mission leads the body.
-    expect(ts).toContain('MediaText')
-  })
-
-  it('every seeded content block is a currently-registered block type', () => {
-    for (const t of SPACE_TEMPLATES) {
-      const doc = generateSpacePreset(t, 'Willow Studio')
-      expect(everyBlockKnown(doc)).toBe(true)
+  it('reuses the Phase 2 dynamic blocks + Gallery (never rebuilds them)', () => {
+    expect(types('hub')).toContain('SpaceUpdates')
+    expect(types('storefront')).toContain('Gallery')
+    for (const t of ['book', 'schedule', 'storefront'] as const) {
+      expect(types(t)).toContain('SpaceReviews')
     }
   })
 })
 
 describe('generateSpacePresetForSpace resolves the template from the descriptor layer', () => {
-  it('a practitioner resolves to the Book preset', () => {
+  // The primary CTA copy still threads through: Book seeds a "Book a session" SpaceCTA.
+  function ctaLabels(doc: Data): string[] {
+    return doc.content.filter((b) => b.type === 'SpaceCTA').map((b) => String(b.props.ctaLabel))
+  }
+
+  it('a practitioner resolves to the Book preset (a bookable CTA)', () => {
     const doc = generateSpacePresetForSpace({ name: 'Ana Coaching', type: 'practitioner', variant: 'appointments' })
-    // Book's hero CTA is "Book a session".
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(hero.props.ctaPrimaryLabel).toBe(templateDescriptor('book').hero.primaryCta.label)
+    expect(doc.content[0]?.type).toBe('SpaceIdentityHeader')
+    expect(ctaLabels(doc)).toContain(templateDescriptor('book').hero.primaryCta.label)
   })
 
-  it('a Nonprofit/Organization tier forces the Hub preset', () => {
+  it('a Nonprofit/Organization tier forces the Hub preset (the fullest arrangement)', () => {
     const doc = generateSpacePresetForSpace({ name: 'Rivers Fund', type: 'business', plan: 'organization' })
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(hero.props.ctaPrimaryLabel).toBe(templateDescriptor('hub').hero.primaryCta.label)
+    expect(doc.content.map((b) => b.type)).toContain('SpaceTeam') // Team rides only on Hub
+    expect(ctaLabels(doc)).toContain(templateDescriptor('hub').hero.primaryCta.label)
   })
 
   it('a preferences.template override wins over the type map', () => {
@@ -215,15 +177,15 @@ describe('generateSpacePresetForSpace resolves the template from the descriptor 
       variant: 'service',
       preferences: { template: 'schedule' },
     })
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(hero.props.ctaPrimaryLabel).toBe(templateDescriptor('schedule').hero.primaryCta.label)
+    // Schedule's arrangement leads Offerings before Highlights.
+    const ts = doc.content.map((b) => b.type)
+    expect(ts.indexOf('SpaceOfferings')).toBeLessThan(ts.indexOf('SpaceHighlights'))
   })
 
   it('an unknown type is default-safe (Book), never blank', () => {
     const doc = generateSpacePresetForSpace({ name: 'Mystery', type: undefined })
     expect(doc.content.length).toBeGreaterThan(0)
-    const hero = doc.content.find((b) => b.type === 'Hero')!
-    expect(hero.props.ctaPrimaryLabel).toBe(templateDescriptor('book').hero.primaryCta.label)
+    expect(doc.content[0]?.type).toBe('SpaceIdentityHeader')
   })
 })
 

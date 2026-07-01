@@ -5,6 +5,7 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
 import { spacePuckData } from '@/lib/page-editor/templates/space'
+import { templateDescriptorForSpace } from '@/lib/spaces/templates'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 
 // THE SPACE LANDING BODY, RENDERED THROUGH PUCK (ADR-476/472, Phase 1). The profile
@@ -31,19 +32,38 @@ export async function SpaceLanding({ slug }: { slug: string }) {
   if (!space) notFound()
   setActiveSpace(space)
 
-  const data = spacePuckData({
-    name: space.brandName?.trim() || space.name,
+  const brandName = space.brandName?.trim() || space.name
+  const templateInput = {
     type: space.type,
     variant: space.modeVariant,
     plan: space.plan,
     preferences: space.preferences,
-  })
+  }
+  const data = spacePuckData({ name: brandName, ...templateInput })
 
-  // The live rows the dynamic Space content blocks (SpaceUpdates / SpaceReviews / SpaceFAQ)
-  // read off `puck.metadata.space` -- the same metadata-injection pattern LiveStats + the
-  // Circles index blocks use. FAIL-SAFE: the reader defaults to empty, so a brand-new Space
-  // simply renders nothing for a block with no rows and the landing never throws.
-  const spaceContent = await getSpaceContentData(space.id)
+  // The resolved template names the primary action (a plain verb + the tab it routes to). The landing
+  // lives at the profile index; the CTA points at that tab as a slug-relative link so it never 404s.
+  const descriptor = templateDescriptorForSpace(templateInput)
+  const ctaTab = descriptor.hero.primaryCta.tab
+  const primaryCta = {
+    label: descriptor.hero.primaryCta.label,
+    href: ctaTab === 'about' ? `/spaces/${space.slug}` : `/spaces/${space.slug}/${ctaTab}`,
+  }
+
+  // The live rows the dynamic Space content blocks read off `puck.metadata.space` (the same
+  // metadata-injection pattern LiveStats + the Circles index blocks use), PLUS the shared identity
+  // (cover / logo / name / tagline / primary CTA) + the live highlight counts the Profile blocks read
+  // (Phase 4). FAIL-SAFE: the reader defaults to empty, so a brand-new Space simply renders nothing for
+  // a block with no rows and the landing never throws.
+  const spaceContent = await getSpaceContentData(space.id, {
+    name: brandName,
+    type: space.type,
+    logoUrl: space.brandLogoUrl,
+    coverUrl: space.coverImageUrl,
+    tagline: space.tagline,
+    primaryCta,
+    statsInput: templateInput,
+  })
 
   return <Render config={config} data={data} metadata={{ space: spaceContent }} />
 }

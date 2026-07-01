@@ -21,7 +21,10 @@ const COLS =
 // is reached untyped (ADR-246) because the column is not in the generated types yet. `mode_variant` +
 // `preferences` (Space Modes M2, ADR-461/464) ride the same untyped tail: the Focus sub-mode and the
 // operator's Mode-preset overrides, both FRAMING only (never a gate), defaulting safe when absent.
-const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences`
+// `cover_image_url` (20260918000000) + `tagline` ride the untyped tail too (ADR-246, not in the
+// generated types yet). Both are FREE content framing, never a gate: the SpaceIdentityHeader block
+// (Phase 4) reads them to paint the shared cover + subtitle. Default-safe (null) when absent.
+const COLS_FULL = `${COLS}, feature_roles, mode_variant, preferences, cover_image_url, tagline`
 
 type SpaceRow = {
   id: string
@@ -43,6 +46,8 @@ type SpaceRow = {
   plan?: string | null
   mode_variant?: string | null
   preferences?: unknown
+  cover_image_url?: string | null
+  tagline?: string | null
 }
 
 function mapSpace(r: SpaceRow): Space {
@@ -75,6 +80,10 @@ function mapSpace(r: SpaceRow): Space {
     // overrides).
     modeVariant: r.mode_variant ?? null,
     preferences: r.preferences ?? {},
+    // Phase 4 shared identity: the cover banner + tagline. FREE framing, never a gate; null-safe when
+    // the column is absent (pre-migration) so every existing read behaves identically.
+    coverImageUrl: r.cover_image_url ?? null,
+    tagline: r.tagline ?? null,
   }
 }
 
