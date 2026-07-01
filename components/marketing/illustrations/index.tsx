@@ -46,6 +46,13 @@ export const illustrationNames = [
   'lab',
   'community',
   'belonging',
+  // Coach lead-funnel set — one element per feature, composable into a flow
+  // (see components/marketing/lead-funnel-flow.tsx).
+  'spotlight',
+  'book',
+  'capture',
+  'nurture',
+  'pipeline',
 ] as const
 
 export type IllustrationName = (typeof illustrationNames)[number]
@@ -242,6 +249,122 @@ const ART: Record<IllustrationName, ReactNode> = {
       </g>
       <rect x="86" y="118" width="76" height="16" rx="8" className="fill-signal" />
       <rect x="98" y="123" width="52" height="6" rx="3" className="fill-on-signal" />
+    </Svg>
+  ),
+
+  // ── Coach lead-funnel set ─────────────────────────────────────────────────
+  // Each of these five stands alone in the library AND slots into the funnel
+  // flow: found on Spotlight → book online → captured in the CRM → automated
+  // follow-up → into the pipeline.
+
+  // Spotlight, a coach's public mini-site (link-tree) being discovered — a phone
+  // with an avatar + stacked link buttons, framed by a magnifier that finds a person.
+  spotlight: (
+    <Svg label="A coach's Spotlight page being discovered">
+      <rect x="82" y="12" width="76" height="126" rx="15" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <path d="M82 46v-19a15 15 0 0 1 15-15h46a15 15 0 0 1 15 15v19z" className="fill-primary-bg" />
+      <circle cx="120" cy="40" r="15" className="fill-primary" />
+      <circle cx="120" cy="36" r="5" className="fill-surface" />
+      <path d="M112 50a8 8 0 0 1 16 0z" className="fill-surface" />
+      <rect x="104" y="62" width="32" height="6" rx="3" className="fill-border-strong" />
+      {[78, 97, 116].map((y, i) => (
+        <g key={y}>
+          <rect x="94" y={y} width="52" height="13" rx="6.5" className={i === 1 ? 'fill-signal-bg' : 'fill-primary-bg'} />
+          <circle cx="103" cy={y + 6.5} r="3" className={i === 1 ? 'fill-signal' : 'fill-primary'} />
+        </g>
+      ))}
+      <circle cx="170" cy="108" r="15" className="fill-surface stroke-primary-strong" strokeWidth="4" />
+      <circle cx="170" cy="104" r="4" className="fill-primary" />
+      <path d="M164 114a6 6 0 0 1 12 0z" className="fill-primary" />
+      <path d="M181 119l12 12" className="stroke-primary-strong" strokeWidth="5" strokeLinecap="round" />
+    </Svg>
+  ),
+
+  // Book, an online booking sheet — a calendar-topped card with time slots, one
+  // selected and confirmed with a check.
+  book: (
+    <Svg label="An online booking sheet with a time slot confirmed">
+      <rect x="88" y="6" width="7" height="16" rx="3.5" className="fill-primary-strong" />
+      <rect x="145" y="6" width="7" height="16" rx="3.5" className="fill-primary-strong" />
+      <rect x="64" y="14" width="112" height="122" rx="14" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <path d="M64 40v-12a14 14 0 0 1 14-14h84a14 14 0 0 1 14 14v12z" className="fill-primary" />
+      {[52, 80, 108].map((y, i) => (
+        <g key={y}>
+          <rect x="78" y={y} width="84" height="18" rx="9" className={i === 1 ? 'fill-signal' : 'fill-primary-bg'} />
+          <circle cx="90" cy={y + 9} r="4" className={i === 1 ? 'fill-on-signal' : 'fill-primary'} />
+          <rect x="102" y={y + 5} width="38" height="8" rx="4" className={i === 1 ? 'fill-on-signal' : 'fill-border'} opacity={i === 1 ? 0.45 : 1} />
+          {i === 1 && (
+            <path d="M147 89l4 4 8-9" className="stroke-on-signal" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          )}
+        </g>
+      ))}
+    </Svg>
+  ),
+
+  // Capture, the new lead lands in the CRM — a contact record with an avatar and
+  // fields, a lead dropping in from above, and a saved check.
+  capture: (
+    <Svg label="A new contact captured and saved in the CRM">
+      <circle cx="120" cy="18" r="8" className="fill-signal" />
+      <path d="M120 28v12" className="stroke-signal-strong" strokeWidth="4" strokeLinecap="round" />
+      <path d="M112 40l8 8 8-8z" className="fill-signal-strong" />
+      <rect x="52" y="52" width="136" height="80" rx="12" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <circle cx="84" cy="82" r="13" className="fill-primary" />
+      <path d="M68 108a16 16 0 0 1 32 0z" className="fill-primary" />
+      <rect x="110" y="68" width="62" height="8" rx="4" className="fill-border-strong" />
+      <rect x="110" y="84" width="48" height="7" rx="3.5" className="fill-border" />
+      <rect x="110" y="98" width="54" height="7" rx="3.5" className="fill-border" />
+      <circle cx="176" cy="118" r="13" className="fill-signal" />
+      <path d="M170 118l4 4 8-9" className="stroke-on-signal" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </Svg>
+  ),
+
+  // Nurture, the automated follow-up — an envelope with an automation spark and a
+  // little run of messages sending out on their own.
+  nurture: (
+    <Svg label="An automated follow-up sequence sending on its own">
+      <rect x="78" y="52" width="96" height="64" rx="10" className="fill-surface stroke-border-strong" strokeWidth="3" />
+      <path d="M80 56h92l-46 32z" className="fill-primary-bg stroke-border-strong" strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="80" cy="48" r="14" className="fill-signal" />
+      <path d="M82 40l-9 13h6l-3 11 11-15h-6z" className="fill-on-signal" />
+      <g className="fill-signal">
+        <circle cx="188" cy="90" r="6" />
+        <circle cx="204" cy="82" r="4.5" opacity="0.6" />
+        <circle cx="217" cy="75" r="3.5" opacity="0.35" />
+      </g>
+    </Svg>
+  ),
+
+  // Pipeline, the lead moving through stages — three kanban columns, cards
+  // advancing left to right, the last one won with a check.
+  pipeline: (
+    <Svg label="A lead pipeline of stages with a deal won">
+      <rect x="20" y="28" width="58" height="98" rx="10" className="fill-primary-bg" />
+      <rect x="91" y="28" width="58" height="98" rx="10" className="fill-primary-bg" />
+      <rect x="162" y="28" width="58" height="98" rx="10" className="fill-signal-bg" />
+      <rect x="31" y="38" width="26" height="6" rx="3" className="fill-primary" />
+      <rect x="102" y="38" width="26" height="6" rx="3" className="fill-primary" />
+      <rect x="173" y="38" width="26" height="6" rx="3" className="fill-signal" />
+      <g>
+        <rect x="28" y="54" width="42" height="20" rx="5" className="fill-surface stroke-border" strokeWidth="2" />
+        <circle cx="37" cy="64" r="4" className="fill-primary" />
+        <rect x="45" y="61" width="20" height="6" rx="3" className="fill-border" />
+        <rect x="28" y="80" width="42" height="20" rx="5" className="fill-surface stroke-border" strokeWidth="2" />
+      </g>
+      <g>
+        <rect x="99" y="54" width="42" height="20" rx="5" className="fill-surface stroke-border" strokeWidth="2" />
+        <circle cx="108" cy="64" r="4" className="fill-primary" />
+        <rect x="116" y="61" width="20" height="6" rx="3" className="fill-border" />
+      </g>
+      <g>
+        <rect x="170" y="54" width="42" height="20" rx="5" className="fill-surface stroke-signal" strokeWidth="2" />
+        <path d="M178 64l4 4 8-9" className="stroke-signal" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <rect x="196" y="61" width="10" height="6" rx="3" className="fill-signal-bg" />
+      </g>
+      <g className="stroke-primary-strong" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <path d="M81 100h6m0 0l-4-4m4 4l-4 4" />
+        <path d="M152 100h6m0 0l-4-4m4 4l-4 4" />
+      </g>
     </Svg>
   ),
 }
