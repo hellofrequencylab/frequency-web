@@ -57,6 +57,16 @@ The janitor-facing studio ([ADR-483](DECISIONS.md)):
 - **Create with Vera**: draw a brand-new **graphic** (240×150) or **icon** (24×24) in the warm
   **induction vibe** — flat, filled, amber-led (see
   [`docs/LOOM-DESIGN-LANGUAGE.md`](LOOM-DESIGN-LANGUAGE.md), [ADR-486](DECISIONS.md)).
+- **Image studio (Recraft)**: a managed image/vector engine for real generation + editing
+  ([ADR-488](DECISIONS.md)). **Generate** icon sets/graphics (**vector** lane → SVG) or
+  trophies/rewards/cards (**raster** lane → PNG) from a prompt; results land as `library_assets`.
+  **Edit** a file-backed asset in the drawer with **Vectorize**, **Remove BG**, or **Variation** —
+  each is **non-destructive** (snapshots the current state to `library_versions` first). A
+  **Versions** list in the drawer restores any prior state with one click (rollback snapshots current
+  first, so it's reversible). The whole studio is **hidden unless `RECRAFT_API_KEY` is set**
+  (`recraftConfigured()`); it's janitor + budget-gated (`recraft` cap, $0.04 raster / $0.08 vector)
+  and called server-side only. Client: `lib/loom/recraft.ts`; actions:
+  `admin/library/recraft-actions.ts`; versioning backbone: `lib/library/versions.ts`.
 
 ## Code-drawn elements (registries)
 
@@ -91,7 +101,7 @@ The five DAM entities (migrations `20260919000000_library_assets.sql` +
 |---|---|---|
 | `library_assets` | The **master** record | `kind`, `title`, `slug`, `description`, `category`, `tags[]`, `colors[]`; `space_id` (NOT NULL; **root space = shared**); file payload (`storage_*`/`url`/`mime`/`width`/`height`/`bytes`) or parametric `config jsonb`; ingest meta (`sha256`, `alt`, `blurhash`, `focal_x/y`, `orig_width/height`); protection hooks (`is_protected`, `download_policy`, `expires_at`); `search_tsv` + `embedding vector(384)` |
 | `library_renditions` | Derived files off a master | `kind` (thumb/grid/hero/og/source/custom), `recipe jsonb` (on-the-fly transform), storage + dims |
-| `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (the Filerobot edit), `is_current` (one per asset), `note` |
+| `library_versions` | Non-destructive edit history | `version`, `recipe jsonb` (a full **asset snapshot** — url/storage/mime/dims/config — from any edit source: a Recraft edit, a Vera SVG save, or a Filerobot recipe), `is_current` (one per asset), `note`; see `lib/library/versions.ts` |
 | `library_collections` + `_items` | Arbitrary groupings ("Q3 sales funnel"), space-scoped | `title`, `slug`; items are many-to-many with `sort` |
 | `library_usages` | Where each asset is referenced | `context` (page/space_brand/spotlight/email/other), `ref_id`, `block_id` |
 
@@ -106,8 +116,10 @@ tenancy phase.
   compatibility; the render path resolves reference → CDN URL.
 - **One master, many renditions.** Serve web-optimized renditions (thumb/grid/hero/og), never the
   master, in pages and grids. Transforms are on-the-fly against the master.
-- **Non-destructive editing.** Edits are a `recipe`; saving produces a new `library_versions` row
-  and flips `is_current`. Rollback = flip back. The original is immutable.
+- **Non-destructive editing.** Every edit (Recraft op, Vera SVG save, Filerobot recipe) first
+  **snapshots** the asset's current state into a new `library_versions` row (`lib/library/versions.ts`
+  `recordVersion`) and flips `is_current`, then overwrites the live row. Rollback restores a snapshot
+  (and snapshots current first, so it's reversible). The prior states are never lost.
 - **Every upload ingests.** Validate → checksum + **dedupe** → strip EXIF → extract
   dimensions/colors/blurhash → generate the standard rendition set → write the catalog row. Heavy
   work runs in a background/edge job so uploads feel instant.
