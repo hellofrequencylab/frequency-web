@@ -4,6 +4,26 @@
 > 49 high / 117 medium / 83 low) and the follow-up work. This is the durable record of
 > what shipped and what is still open. Update it as items close.
 
+## Completion roadmap (phases)
+
+The remaining work, sequenced by risk + dependency. Each phase is one (or few) PRs, all
+green (`tsc`/`lint`/`test`/`check:authz`/`check:canon`) before merge. Sign-off = merged +
+its row here flipped to ✅.
+
+| Phase | Scope | Risk | Sign-off criteria |
+|---|---|---|---|
+| **A. commerce_variants** | ① remove the null-only `variant_id` write in `lib/billing/checkout.ts`; ② after that deploys, drop the `variant_id` column + `commerce_variants` table (migration). | Low (2-step, deploy-gated) | Column/table gone; checkout still creates orders; tests green. |
+| **B. Dependency hygiene** | Bump patch/minor (resend, stripe, supabase-js, lucide-react, tailwindcss, next patch, @sentry, @anthropic-ai/sdk, supabase CLI). Hold majors (eslint 10, @types/node 26). Re-run `pnpm audit`. | Low-med (build+test per batch) | Build+test green; audit ≤ prior; no major bumps. |
+| **C. Stripe / economy atomicity** | Atomic RPCs for: ticket oversell reservation (`lib/billing/tickets.ts`), gem daily-cap (`lib/gems.ts`), notification-queue SKIP-LOCKED claim (`lib/queue/outbox.ts`), challenge/streak read-modify-write (`lib/achievements.ts`), journey-finish purse claim (`lib/quest/complete.ts`); + Stripe event-ordering guard. | High (needs RPC design + concurrency tests) | Each fix has an RPC migration + a concurrency/idempotency test; `test:rls` green. |
+| **D. Performance** | Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`; make `(marketing)`/`discover`/splash auth a client island so `revalidate` ISR isn't defeated by `cookies()`; events/messages serial chains → waves. | High (architectural; shell regressions) | Before/after render trace; shell not blocked; ISR restored on public routes; tests green. |
+| **E. @measured/puck migration** | Execute ADR-493: pin exact → in-house `<Render>` over the block registry → in-house editor → drop dep. Keep the persisted `Data` shape (zero doc migration). | High (multi-week, phased itself) | Each ADR-493 sub-phase shippable behind a flag; published-page parity. |
+| **F. Lower-priority advisors** | Consolidate 56 `multiple_permissive_policies`; enable leaked-password protection (Supabase dashboard auth setting — not a migration, needs owner toggle). | Med / config | Advisor counts drop; document the dashboard toggle for the owner. |
+
+Execution order: A → B (safe, fast) → C → D (dedicated, test-gated) → F → E (largest).
+Phases C–E are deliberately individual, verified PRs — not rushed in a batch, because their
+failure modes (money races, shell regressions, published-page breakage) are not caught by
+the unit suite.
+
 ## Status at a glance
 
 | Area | State |
@@ -73,14 +93,15 @@
 - **`@measured/puck` migration execution** — per `PUCK-MIGRATION-PLAN.md` (pin exact → in-house
   renderer → in-house editor → drop dep). Also: publishing a Puck page drops FAQ/Article
   JSON-LD (emit schema from the block render path).
-- **Supabase advisors (remaining)**: 56 `multiple_permissive_policies`, `auth_leaked_password_protection`
-  off, 71 `rls_enabled_no_policy` (default-deny, mostly informational), 225+ unused-index review.
-  SECURITY DEFINER lockdown: ✅ phase 1 done — 15 trigger functions revoked (zero-risk).
-  REMAINING: ~73 STANDALONE SECURITY DEFINER functions — needs a tested pass that revokes only
-  the ones NOT in the `.rpc()` call set AND NOT referenced in any RLS policy (a policy helper
-  needs the querying role's EXECUTE, so a blind revoke breaks RLS). Build the keep-set from
-  `grep -roE "\.rpc\('([a-z_]+)'"` + `pg_policies` function references, revoke the complement,
-  then run the full suite + smoke the public feed/discover pages before merging.
+- ✅ ~~**SECURITY DEFINER executable lockdown**~~ — DONE (applied, verified). Phase 1: 15 trigger
+  functions revoked. Phase 2: the 2 genuinely-internal standalone helpers
+  (`recompute_community_level`, `get_my_group_ids`) revoked. The other 68 flagged standalone
+  functions are **intentionally executable** and left as-is — 49 are PostgREST RPCs, 18 are
+  RLS-policy helpers (revoking breaks RLS — confirmed via `pg_depend`), 1 is PostGIS. Those
+  advisor warnings are expected/"won't fix". Method is codified in the `/meta-scan` skill.
+- **Supabase advisors (remaining, lower priority)**: 56 `multiple_permissive_policies` (consolidate
+  overlapping policies), `auth_leaked_password_protection` off (a dashboard toggle), 71
+  `rls_enabled_no_policy` (default-deny, informational), 225+ unused-index review.
 - **Help-doc naming audit**: sweep `content/help/**` for retired member terms
   (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
 - **Dependencies**: minor/patch bumps (resend, stripe, supabase-js, lucide-react, tailwindcss,
