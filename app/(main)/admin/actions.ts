@@ -18,6 +18,7 @@ import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { atLeastRole, isStaff, isJanitor } from '@/lib/core/roles'
 import { coerceTierZaps } from '@/lib/practices/tiers'
 import { stampCircleSpaceId } from '@/lib/circles/store'
+import { verifyCrewCompletion } from '@/lib/crew/verify'
 import { assignTraining } from '@/lib/onboarding/training'
 import { markWalkthroughPending } from '@/lib/walkthroughs/progress'
 import { promotionStepsCrossed, ROLE_PROMOTION_SLUG } from '@/lib/walkthroughs/role-promotion'
@@ -853,13 +854,10 @@ export async function updateEventDetails(id: string, fd: FormData) {
 
 export async function approveVerification(completionId: string) {
   const caller = await requireCommunityOps()
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('crew_completions')
-    .update({ verified_by: caller.id })
-    .eq('id', completionId)
-    .is('verified_by', null)
-  if (error) throw new Error(error.message)
+  // Verification-gated Zaps (leader grant): stamping verified_at releases the held Zaps via
+  // trg_after_crew_completion_verified, which writes the ledger row once. Idempotent — re-approving
+  // an already-verified completion is a safe no-op (the helper only touches still-held rows).
+  await verifyCrewCompletion(completionId, 'leader', caller.id)
   revalidatePath('/admin/crew-tasks')
 }
 
