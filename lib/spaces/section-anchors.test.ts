@@ -21,12 +21,29 @@ const ALL_PRESENT: SectionPresence = {
 }
 
 describe('listSectionBlocks', () => {
-  it('expands a SpaceLayout box main-column-first then side, and tolerates junk', () => {
+  it('reads the FLAT default in order (no SpaceLayout wrapper)', () => {
     const doc = generateDefaultSpacePage('Willow')
     const types = listSectionBlocks(doc).map((b) => b.type)
-    // main = Offerings -> Booking -> Events -> Practices -> Community -> ..., then side = Highlights -> About -> ...
-    expect(types.slice(0, 5)).toEqual(['SpaceOfferings', 'SpaceBooking', 'SpaceEvents', 'SpacePractices', 'SpaceCommunity'])
+    // The default is now a flat top-level list: Highlights -> Offerings -> Booking -> About -> Events ...
+    expect(types.slice(0, 5)).toEqual(['SpaceHighlights', 'SpaceOfferings', 'SpaceBooking', 'SpaceAbout', 'SpaceEvents'])
     expect(types).toContain('SpaceAbout')
+  })
+
+  it('still expands a legacy SpaceLayout box main-column-first then side, and tolerates junk', () => {
+    // A legacy stored doc may still wrap blocks in a SpaceLayout; listSectionBlocks must expand it.
+    const legacy = {
+      root: {},
+      content: [
+        {
+          type: 'SpaceLayout',
+          props: {
+            main: [{ type: 'SpaceOfferings', props: {} }, { type: 'SpaceBooking', props: {} }],
+            side: [{ type: 'SpaceAbout', props: {} }],
+          },
+        },
+      ],
+    } as never
+    expect(listSectionBlocks(legacy).map((b) => b.type)).toEqual(['SpaceOfferings', 'SpaceBooking', 'SpaceAbout'])
     expect(listSectionBlocks(null)).toEqual([])
     expect(listSectionBlocks({ content: 'nope' } as never)).toEqual([])
   })

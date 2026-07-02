@@ -9,10 +9,14 @@ import { emphasisDefault } from '@/lib/page-editor/fields'
 // defined pages. Every new page (and a "reset") seeds from this ONE universal arrangement,
 // not a per-type variant. The operator then reorders / hides / adds any block.
 //
-// It composes the PROFILE-NATIVE block set (components/page-editor/blocks/profile.tsx) as a
-// single SpaceLayout region box (main + side slots) of clean boxed cards. The identity Hero
-// (cover + logo + name + primary CTA) is owned by the profile LAYOUT chrome, never a block
-// here, so this body starts at the SpaceLayout grid.
+// It composes the PROFILE-NATIVE block set (components/page-editor/blocks/profile.tsx) as a FLAT,
+// TOP-LEVEL list of blocks — NOT wrapped in a SpaceLayout region box. The flat list is deliberate
+// (owner directive, 2026-07): the old SpaceLayout two-column shell nested the blocks in slots, so the
+// minimal layout editor's block list (which reads TOP-LEVEL blocks) only saw the wrapper, not each
+// block — making the content read as untouchable "template" cruft not tied to the editor. Flat = every
+// block is a real, top-level, reorder/hide/remove-able block in the layout editor. An operator can
+// still add a SpaceLayout box themselves for a two-column section. The identity header (cover + logo +
+// name + primary CTA) is owned by the profile LAYOUT chrome, never a block here.
 //
 // HONEST AT DAY ZERO (AGENTS.md): the live blocks (Highlights / Events / Booking / Reviews)
 // render NOTHING until there is real data; the authored blocks (Offerings / QuickLinks /
@@ -72,11 +76,6 @@ function events(): Block {
     type: 'SpaceEvents',
     props: { id: `${P}-events`, eyebrow: 'On the calendar', heading: 'Upcoming events', max: '5' },
   }
-}
-
-// ── QUICK LINKS card (operator authored; empty by default).
-function quickLinks(): Block {
-  return { type: 'SpaceQuickLinks', props: { id: `${P}-quicklinks`, eyebrow: '', heading: 'Quick links', links: [] } }
 }
 
 // ── CONTACT + hours info card (empty by default).
@@ -155,30 +154,35 @@ function callout(name: string): Block {
   }
 }
 
-// ── The SpaceLayout region box holding the two card columns (main + side).
-function spaceLayout(main: Block[], side: Block[]): Block {
-  return { type: 'SpaceLayout', props: { id: `${P}-layout`, layout: 'main-side', sideSticky: 'no', main, side } }
-}
-
 /**
  * The ONE universal default Space page body, as a Puck `Data` document. PURE + total.
  *
- *   main = Offerings -> Booking -> Events -> Practices -> Community -> Reviews -> FAQ -> Callout
- *   side = Highlights -> About -> QuickLinks -> Contact -> Business
+ * A FLAT, importance-ordered single column of TOP-LEVEL blocks (no SpaceLayout wrapper), so every
+ * block is individually reorder/hide/remove-able in the minimal layout editor:
  *
- * A sensible, general-purpose first arrangement for any Space (the operator freely
- * rearranges it). Live blocks render nothing until there is real data, so the page
- * self-composes to whatever the space has turned on.
+ *   Highlights -> Offerings -> Booking -> About -> Events -> Practices -> Community -> Reviews ->
+ *   FAQ -> Business -> Contact -> Callout
+ *
+ * Live blocks render nothing until there is real data and authored blocks render nothing until the
+ * central Business Info is filled, so the page self-composes to whatever the space has turned on.
  */
 export function generateDefaultSpacePage(name: string): Data {
   const brand = name.trim() || 'this space'
   return {
     root: {},
     content: [
-      spaceLayout(
-        [offerings(), booking(brand), events(), practices(), community(), reviews(), faq(), callout(brand)],
-        [highlights(), about(brand), quickLinks(), contact(), business()],
-      ),
+      highlights(),
+      offerings(),
+      booking(brand),
+      about(brand),
+      events(),
+      practices(),
+      community(),
+      reviews(),
+      faq(),
+      business(),
+      contact(),
+      callout(brand),
     ],
   }
 }

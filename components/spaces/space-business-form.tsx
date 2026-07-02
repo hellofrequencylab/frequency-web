@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { setSpaceBusinessInfo, setSpaceImages } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { ImageUpload } from '@/components/ui/image-upload'
 import type { SpaceProfileData, SpaceSocialLink, SpaceOffering } from '@/lib/spaces/profile-data'
 
 // THE BUSINESS INFO FORM — the ONE place an operator edits their Space's central business data
@@ -34,15 +35,36 @@ const labelClass = 'mb-1 block text-xs font-semibold text-text'
 export function SpaceBusinessForm({
   slug,
   initial,
+  initialCoverUrl = null,
+  initialLogoUrl = null,
   readOnly = false,
 }: {
   slug: string
   initial: SpaceProfileData
+  /** The Space's current header (cover) image URL, for the upload control. */
+  initialCoverUrl?: string | null
+  /** The Space's current profile (logo) image URL, for the upload control. */
+  initialLogoUrl?: string | null
   readOnly?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+
+  // Images save on their own the moment an upload resolves (or a URL is pasted / cleared), separate
+  // from the business-info Save button, so a new header/logo appears without a second step.
+  const [coverUrl, setCoverUrl] = useState<string | null>(initialCoverUrl)
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl)
+  const saveImage = (patch: { coverImageUrl?: string | null; brandLogoUrl?: string | null }) => {
+    start(async () => {
+      const result = await setSpaceImages(slug, patch)
+      if (isError(result)) {
+        setStatus('error')
+        return
+      }
+      router.refresh()
+    })
+  }
 
   // One flat form state, seeded from the central data. Socials become a key→url map for the fixed
   // inputs; on save they fold back into the socials[] the model stores.
@@ -122,6 +144,31 @@ export function SpaceBusinessForm({
         Edit your business details in one place. They show on every block that displays them, so a
         change here updates your whole profile at once.
       </p>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ImageUpload
+          value={coverUrl}
+          onChange={(v) => {
+            setCoverUrl(v)
+            saveImage({ coverImageUrl: v })
+          }}
+          label="Header image"
+          hint="Wide banner across the top. About 1600 by 500."
+          folder="space-covers"
+          disabled={readOnly}
+        />
+        <ImageUpload
+          value={logoUrl}
+          onChange={(v) => {
+            setLogoUrl(v)
+            saveImage({ brandLogoUrl: v })
+          }}
+          label="Profile image"
+          hint="Your logo or portrait. A square reads best."
+          folder="space-logos"
+          disabled={readOnly}
+        />
+      </div>
 
       <div>
         <label className={labelClass} htmlFor="biz-about">Story</label>

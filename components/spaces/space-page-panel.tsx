@@ -79,6 +79,8 @@ export function SpacePagePanel({
   accent,
   blocks,
   businessInfo,
+  coverImageUrl = null,
+  brandLogoUrl = null,
   focus,
   readOnly = false,
 }: {
@@ -99,6 +101,10 @@ export function SpacePagePanel({
   blocks: SpaceBlockRow[]
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
+  /** The Space's current header (cover) image URL, for the Business info form's upload control. */
+  coverImageUrl?: string | null
+  /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
+  brandLogoUrl?: string | null
   /** The Focus switcher echo, or null to omit it. */
   focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
@@ -199,7 +205,13 @@ export function SpacePagePanel({
           surface, so it sits near the top of the panel. */}
       <section>
         <SectionHeader title="Business info" />
-        <SpaceBusinessForm slug={slug} initial={businessInfo} readOnly={readOnly} />
+        <SpaceBusinessForm
+          slug={slug}
+          initial={businessInfo}
+          initialCoverUrl={coverImageUrl}
+          initialLogoUrl={brandLogoUrl}
+          readOnly={readOnly}
+        />
       </section>
 
       {/* ADVANCED: the full Puck page builder, DEMOTED. Editing a Space is minimal by default (the

@@ -117,6 +117,8 @@ export default async function SpacePageSettingsPage({
         accent={space.brandAccent ?? ''}
         blocks={blocks}
         businessInfo={readProfileData(space.preferences)}
+        coverImageUrl={space.coverImageUrl}
+        brandLogoUrl={space.brandLogoUrl}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />
