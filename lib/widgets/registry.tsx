@@ -78,6 +78,12 @@ import { CrmGraphConnections } from '@/components/widgets/crm/graph-connections'
 import { CrmPlaybooksStats } from '@/components/widgets/crm/playbooks-stats'
 import { CrmPlaybooksRegistry } from '@/components/widgets/crm/playbooks-registry'
 import { CrmPlaybooksRuns } from '@/components/widgets/crm/playbooks-runs'
+import { CommunityStructure } from '@/components/widgets/community/structure'
+import { CommunityTrustSafety } from '@/components/widgets/community/trust-safety'
+import { CommunityFeedReach } from '@/components/widgets/community/feed-reach'
+import { CommunityManage } from '@/components/widgets/community/manage'
+import { CommunityRelated } from '@/components/widgets/community/related'
+import { AuditRecentActions } from '@/components/widgets/audit/recent-actions'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -230,6 +236,14 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'crm-playbooks-stats': CrmPlaybooksStats,
   'crm-playbooks-registry': CrmPlaybooksRegistry,
   'crm-playbooks-runs': CrmPlaybooksRuns,
+  // Community dashboard (/admin/community) — the people and their spaces as one operator home.
+  'community-structure': CommunityStructure,
+  'community-trust-safety': CommunityTrustSafety,
+  'community-feed-reach': CommunityFeedReach,
+  'community-manage': CommunityManage,
+  'community-related': CommunityRelated,
+  // Audit log (/admin/audit) — the append-only security trail.
+  'audit-recent-actions': AuditRecentActions,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,

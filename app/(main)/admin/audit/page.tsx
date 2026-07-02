@@ -1,21 +1,21 @@
-import { ScrollText, History } from 'lucide-react'
+import { ScrollText } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
-import { EmptyState } from '@/components/ui/empty-state'
-import { getRecentAdminActions } from '@/lib/admin/audit'
-import { AuditTable } from './audit-table'
+import { AdminTemplate } from '@/components/templates'
+import { PageModules } from '@/components/widgets/page-modules'
 
+// AUDIT LOG, the append-only security trail for sensitive platform actions (ADR-233 §3.3). Module-driven
+// (ADR-270/294): the page composes the AdminTemplate header, then renders <PageModules>, which lays out
+// the recent-actions trail. The single block is a self-fetching, fail-safe RSC in
+// components/widgets/audit/* isolated in its own <Suspense>, so the slow read never blocks the shell
+// (PAGE-FRAMEWORK §5).
+//
+// STAFF-GATED: requireAdmin('admin') — the security trail is admin-only. The module renders only through
+// this gated route, so it never re-gates. The /admin/* group mounts its own info rail (page-chrome
+// 'none'), so no rail registration is needed here.
 export const dynamic = 'force-dynamic'
-
-// Audit log — the INDEX/TABLE template (ADR-233 §3.3): the append-only security trail
-// for sensitive platform actions rendered through the canonical DataTable. Header +
-// instructional copy on the canvas; the trail lives in one white tile. The ACTION_LABEL
-// map is CONTENT (the human reading of each dotted action key) and stays — it now lives
-// next to the table that consumes it.
 
 export default async function AdminAuditPage() {
   await requireAdmin('admin')
-  const rows = await getRecentAdminActions(100)
 
   return (
     <AdminTemplate
@@ -25,28 +25,7 @@ export default async function AdminAuditPage() {
       width="wide"
       description="A record of sensitive platform actions. Who did what, to whom. Append-only; the security trail for role grants, partner verification, and more."
     >
-      <AdminSection title="Recent actions" description="The 100 most recent sensitive actions, newest first.">
-        {rows.length === 0 ? (
-          <EmptyState
-            variant="first-use"
-            icon={History}
-            title="No actions logged yet"
-            description="Sensitive admin actions (role grants, partner verification) will appear here."
-          />
-        ) : (
-          <AuditTable
-            rows={rows.map((r) => ({
-              id: r.id,
-              action: r.action,
-              actor: r.actor?.displayName ?? 'System',
-              targetType: r.targetType,
-              targetId: r.targetId,
-              detail: r.detail,
-              createdAt: r.createdAt,
-            }))}
-          />
-        )}
-      </AdminSection>
+      <PageModules route="/admin/audit" />
     </AdminTemplate>
   )
 }
