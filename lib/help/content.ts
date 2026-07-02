@@ -7,6 +7,7 @@
 // the routes render, mirroring lib/contract: pages get typed data, never raw files.
 // No third-party docs framework, no MDX webpack coupling: owned and portable.
 
+import { cache } from 'react'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -114,9 +115,14 @@ async function readArticle(category: string, file: string): Promise<HelpArticle>
   }
 }
 
-export async function getAllCategories(
-  opts: { includeDrafts?: boolean } = {}
-): Promise<HelpCategory[]> {
+// Read + parse EVERY category and article from disk ONCE per request (drafts included),
+// memoized with React cache(). The help center is static, bundled Markdown, yet getSearchIndex,
+// getAllCategories, getAllArticles, and getArticle each re-walked + re-parsed it — so a single
+// page render (layout getAllCategories + getSearchIndex + a page's getArticle) parsed the whole
+// tree 2–3×, and the (main) shell parsed it on every authed navigation. cache() collapses all of
+// that to one parse per render pass. Draft-filtering + empty-category pruning stay in the public
+// getters below, so their behavior is byte-for-byte unchanged.
+const loadCategoriesFromDisk = cache(async (): Promise<HelpCategory[]> => {
   let dirents: string[]
   try {
     dirents = (await fs.readdir(HELP_DIR, { withFileTypes: true }))
@@ -129,15 +135,24 @@ export async function getAllCategories(
     dirents.map(async (slug): Promise<HelpCategory> => {
       const meta = await readCategoryMeta(slug)
       const files = (await fs.readdir(path.join(HELP_DIR, slug))).filter((f) => /\.mdx?$/.test(f))
-      let articles = await Promise.all(files.map((f) => readArticle(slug, f)))
-      if (!opts.includeDrafts) articles = articles.filter((a) => a.status === 'published')
+      const articles = await Promise.all(files.map((f) => readArticle(slug, f)))
       articles.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
       return { slug, ...meta, articles }
     })
   )
-  return cats
-    .filter((c) => c.articles.length > 0)
-    .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+  return cats.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+})
+
+export async function getAllCategories(
+  opts: { includeDrafts?: boolean } = {}
+): Promise<HelpCategory[]> {
+  const cats = await loadCategoriesFromDisk()
+  // Copy-on-filter (never mutate the cached arrays): drop drafts unless asked, then drop any
+  // category left with no visible articles — matching the prior behavior exactly.
+  const visible = opts.includeDrafts
+    ? cats
+    : cats.map((c) => ({ ...c, articles: c.articles.filter((a) => a.status === 'published') }))
+  return visible.filter((c) => c.articles.length > 0)
 }
 
 export async function getAllArticles(): Promise<HelpArticle[]> {

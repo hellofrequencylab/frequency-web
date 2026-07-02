@@ -234,15 +234,14 @@ export default async function MainLayout({
     unreadCount,
     permissions,
     realHats,
-    helpIndex,
     analyticsConsent,
     [demoMode, demoHidden, hasDemoContent],
-    nextSteps,
-    autoPopups,
     chromeOverrides,
     space,
-    chores,
     staffMember,
+    operatesSpacesRaw,
+    operatorContextRaw,
+    marketplaceVis,
     headerMenu,
     leftMenu,
     profileMenu,
@@ -254,15 +253,20 @@ export default async function MainLayout({
     getUnreadCount().catch(() => 0),
     getAreaPermissions(),
     getViewerHats(),
-    getSearchIndex(),
     hasConsent(profile.id, 'analytics'),
     Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
-    nextStepsEnabled(),
-    autoPopupsEnabled(),
     loadChromeOverrides(),
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
-    BETA_INDUCTION_ACTIVE ? getProfileChores(profile.id) : Promise.resolve(null),
     getStaffMember().catch(() => null),
+    // Speculative operator reads, folded in like getStaffMember above. Each is React-cached AND
+    // internally fail-safe (hasOperatedSpaces → false; resolveOperatorContext → personal-only;
+    // marketplaceVisibility → all-visible/fail-open), so calling them unconditionally here never
+    // throws and is free on the previewing-down path where the value is discarded. Folding them
+    // into this wave (rather than awaiting them serially further down) lets the theme chain start
+    // earlier. The previewing-down / operator suppression is applied where each is consumed below.
+    hasOperatedSpaces(profile.id),
+    resolveOperatorContext({ id: profile.id, webRole: asWebRole(profile.web_role) }),
+    marketplaceVisibility(),
     // The standardized menu containers (lib/menus, ADR-390). getMenu falls back to the code
     // defaults on any miss/error, so these reads are safe pre-migration and no menu ever breaks.
     // The in-app shell uses: header (the mega-menu), left (the rail — admin section entry points
@@ -292,7 +296,7 @@ export default async function MainLayout({
   // person OWN or actively ADMIN at least one Space? One cheap request-cached EXISTS probe, resolved
   // once here and threaded into the shell (never per-item). Suppressed under a downgrade / visitor
   // preview so a steward's "view as" faithfully drops the operator entry too, matching staffRole.
-  const operatesSpaces = previewingDown ? false : await hasOperatedSpaces(profile.id)
+  const operatesSpaces = previewingDown ? false : operatesSpacesRaw
 
   // Staff web_role axis (ADR-208) — gates the staff-only on-page "Page" settings group
   // (admin+, the EMBEDDED-ADMIN inline layer). Suppressed under a downgrade preview so a
@@ -308,7 +312,7 @@ export default async function MainLayout({
   // staff axis so the Admin context is offered to actual staff regardless of the view-as preview.
   const { context: operatorContext, available: availableContexts } = previewingDown
     ? { context: PERSONAL_CONTEXT, available: [] }
-    : await resolveOperatorContext({ id: profile.id, webRole: asWebRole(profile.web_role) })
+    : operatorContextRaw
 
   // The viewer collapsed to a single MenuAccess token for the DB-backed header / admin
   // megas (components/layout/menu-role). View-as aware: a visitor preview reads as
@@ -355,32 +359,20 @@ export default async function MainLayout({
     NAV_AREAS.map((a) => [a.key, a.surface ? accessTo(a.surface as Surface, navHats) : 'full']),
   )
 
-  // Help index for the app-wide support launcher (docs/SUPPORT-SYSTEM.md §1) was loaded
-  // in the parallel wave above (helpIndex). Small + read from local Markdown.
+  // The Vera launcher inputs (help index + upsell tease gate), the onboarding coach, and the
+  // daily-check-in/tour are all OVERLAY chrome — none feed a redirect or the theme. Their reads
+  // are pushed into their own Suspense slots below (VeraLauncherSlot / CoachOverlaySlot /
+  // AutoPopupsSlot) so they stream in and never block the shell's first byte (PAGE-FRAMEWORK §5).
 
-  // Phase E upsell tease gate (ADR-466) for Vera depth: at a Vera turn (a depth moment), tease the
-  // Crew unlock past the free daily cap — ONLY when billing is live AND the caller is below Crew
-  // (resolvePersonalTeaseGate is HIDDEN while OFF). Dormant until billing_live ON.
-  const veraTease = await resolvePersonalTeaseGate('vera_unlimited')
-
-  // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1).
+  // Deterministic onboarding tour state from profiles.meta.tour (ADR-047 P1). Cheap + sync (no
+  // await), so it stays here and is handed to AutoPopupsSlot; the async tour reads (the flag +
+  // getOnboardingStatus for `tourSatisfied`) live in that slot so they never block the shell.
   const tourMeta = (profile.meta as { tour?: Partial<TourState> } | null)?.tour
   const tourState: TourState = {
     seen: tourMeta?.seen ?? [],
     dismissed: tourMeta?.dismissed ?? [],
     lastShownAt: tourMeta?.lastShownAt ?? null,
   }
-
-  // Cues whose activation task is already done are suppressed (don't tell someone
-  // to add a photo they have). Only pay for the status lookup when a task-cue is
-  // still unseen — otherwise there's nothing to suppress.
-  const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
-  // `tourSatisfied` feeds ONLY the TourProvider, which renders only when `autoPopups` is on
-  // (line ~589; the flag ships OFF). Gate the getOnboardingStatus read (5 serial round-trips)
-  // on the already-resolved flag so the shipped state skips it entirely — identical when on.
-  const tourSatisfied: string[] = autoPopups && TASK_CUES.some((id) => !tourState.seen.includes(id))
-    ? (await getOnboardingStatus(profile.id)).steps.filter((s) => s.done).map((s) => s.key)
-    : []
 
   // Right sidebar streams in independently. Doesn't block page render
   const sidebar = (
@@ -401,48 +393,9 @@ export default async function MainLayout({
     </Suspense>
   )
 
-  // Analytics consent (ADR-069), the beta-content toggle (demoMode/demoHidden/hasDemoContent),
-  // Vera's "chores" (BETA-ACTIVATION §2; beta-only via the induction flag), and the operator
-  // switches (nextSteps/autoPopups, both default off) were all resolved in the parallel wave above.
-
-  // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
-  // surface — no competing card): surface the single next activation step.
-  // coachNext feeds ONLY the ChoresOverlay, which renders only when `nextSteps` is on
-  // (line ~583; the flag ships OFF). Gate the whole chain (getOnboardingStatus +
-  // getFounderTasks + getActiveTraining, ~13 serial round-trips) on the already-resolved
-  // flag so the shipped state skips it entirely — output is identical when the flag is on.
-  let coachNext = nextSteps && chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
-  // Activation done? Hand off to Founder's First Week (build item 1.4) while it's
-  // unfinished. The founder query only runs for this small, fully-activated cohort.
-  if (nextSteps && chores?.complete && !coachNext && !(await getFounderTasks(profile.id)).complete) {
-    coachNext = {
-      key: 'log', // synthetic step — the overlay renders by copy/href, not key
-      label: FOUNDER_COACH.headline,
-      headline: FOUNDER_COACH.headline,
-      blurb: FOUNDER_COACH.blurb,
-      href: FOUNDER_COACH.href,
-      cta: FOUNDER_COACH.cta,
-      done: false,
-    }
-  }
-  // Role-advancement training (ADR-157 §7): if a promotion assigned training, Vera
-  // points at it (takes precedence — it's the freshest thing they unlocked). Query
-  // gated to host+ (the management roles that receive training) so the member
-  // majority never pays for it.
-  if (nextSteps && chores?.complete && atLeastRole(realRole, 'host')) {
-    const training = await getActiveTraining(profile.id)
-    if (training) {
-      coachNext = {
-        key: 'log',
-        label: training.title,
-        headline: training.title,
-        blurb: training.blurb,
-        href: '/training',
-        cta: 'Start training',
-        done: false,
-      }
-    }
-  }
+  // The onboarding coach (ChoresOverlay) and its next-step chain (chores + getOnboardingStatus /
+  // getFounderTasks / getActiveTraining) moved into CoachOverlaySlot below — flag-guarded
+  // (nextStepsEnabled ships OFF) and streamed behind its own Suspense, so it never blocks the shell.
 
   // Community news ticker — streams in independently, never blocks the shell.
   const ticker = (
@@ -490,7 +443,7 @@ export default async function MainLayout({
   let marketAreaHidden = false
   try {
     if (!isMarketOperator) {
-      const vis = await marketplaceVisibility()
+      const vis = marketplaceVis
       for (const area of MARKET_AREAS) {
         if (vis[area]) continue
         navAccess[AREA_NAV_KEY[area]] = 'none'
@@ -577,7 +530,11 @@ export default async function MainLayout({
       {/* One-time browser→home_timezone sync so the practice "day" resolves in the
           member's own tz server-side (their Log Practice buttons reset at THEIR midnight). */}
       <TimezoneSync />
-      <VeraLauncher index={helpIndex} veraTease={veraTease} />
+      {/* Vera launcher — its help index (parsed Markdown, now React-cached) + the upsell tease
+          gate resolve in their own Suspense slot, so they never block the shell's first byte. */}
+      <Suspense fallback={null}>
+        <VeraLauncherSlot />
+      </Suspense>
       {/* Capture — the app-wide primary action (§6 Phase 2). Posts default to the
           member's wall; reachable from any page in the shell. */}
       <CaptureLauncher scopeId={profile.id} />
@@ -587,13 +544,18 @@ export default async function MainLayout({
       {/* Invite — the app-wide "invite friends, earn zaps" modal; opened from the
           account menu / anywhere via the 'open-invite' event. */}
       <InviteLauncher />
-      {nextSteps && chores && (!chores.complete || !chores.rewarded || coachNext) && (
-        <ChoresOverlay chores={chores} nextAction={coachNext} />
-      )}
+      {/* Onboarding coach (ChoresOverlay) — flag-guarded (ships OFF) + streamed: the chores +
+          next-step reads resolve inside this slot's Suspense so they never block the shell. */}
+      <Suspense fallback={null}>
+        <CoachOverlaySlot profileId={profile.id} realRole={realRole} />
+      </Suspense>
       <PageViewTracker />
       <ObserveProvider />
-      {autoPopups && <DailyCheckIn />}
-      {autoPopups && <TourProvider initialState={tourState} satisfied={tourSatisfied} />}
+      {/* Daily check-in + onboarding tour — flag-guarded (ships OFF) + streamed: the auto-popups
+          flag + getOnboardingStatus resolve inside this slot's Suspense, off the shell's path. */}
+      <Suspense fallback={null}>
+        <AutoPopupsSlot profileId={profile.id} tourState={tourState} />
+      </Suspense>
     </AppShell>
     </>
   )
@@ -606,5 +568,84 @@ function RightSidebarSkeleton() {
       <div className="h-36 rounded-xl border border-border bg-surface animate-pulse" />
       <div className="h-28 rounded-xl border border-border bg-surface animate-pulse" />
     </div>
+  )
+}
+
+// ── Overlay slots (streamed behind Suspense, off the shell's critical path) ────────────────────
+// Each is overlay-only chrome — none feeds a redirect or the theme — so its reads are resolved
+// here (under a <Suspense fallback={null}> in the shell) instead of blocking the shell's first
+// byte. Behavior is identical to the prior inline derivations; only the timing changes.
+
+// Vera's launcher inputs. getSearchIndex parses the help-center Markdown (now React-cached, so
+// once per request) and resolvePersonalTeaseGate reads the (dormant-until-billing) upsell gate.
+async function VeraLauncherSlot() {
+  const [index, veraTease] = await Promise.all([
+    getSearchIndex(),
+    resolvePersonalTeaseGate('vera_unlimited'),
+  ])
+  return <VeraLauncher index={index} veraTease={veraTease} />
+}
+
+// The onboarding coach overlay. Gated on nextStepsEnabled() (ships OFF) → returns null after one
+// flag read in the shipped state. When ON, the chores + next-step chain (getOnboardingStatus /
+// getFounderTasks / getActiveTraining) streams in behind this slot. Mirrors the prior inline logic.
+async function CoachOverlaySlot({ profileId, realRole }: { profileId: string; realRole: CommunityRole }) {
+  const nextSteps = await nextStepsEnabled()
+  if (!nextSteps) return null
+  const chores = BETA_INDUCTION_ACTIVE ? await getProfileChores(profileId) : null
+  if (!chores) return null
+
+  // Once chores are done, Vera keeps coaching (build item 1.3): surface the single next step.
+  let coachNext = chores.complete ? (await getOnboardingStatus(profileId)).current : null
+  // Activation done? Hand off to Founder's First Week (build item 1.4) while it's unfinished.
+  if (chores.complete && !coachNext && !(await getFounderTasks(profileId)).complete) {
+    coachNext = {
+      key: 'log', // synthetic step — the overlay renders by copy/href, not key
+      label: FOUNDER_COACH.headline,
+      headline: FOUNDER_COACH.headline,
+      blurb: FOUNDER_COACH.blurb,
+      href: FOUNDER_COACH.href,
+      cta: FOUNDER_COACH.cta,
+      done: false,
+    }
+  }
+  // Role-advancement training (ADR-157 §7) takes precedence, host+ only.
+  if (chores.complete && atLeastRole(realRole, 'host')) {
+    const training = await getActiveTraining(profileId)
+    if (training) {
+      coachNext = {
+        key: 'log',
+        label: training.title,
+        headline: training.title,
+        blurb: training.blurb,
+        href: '/training',
+        cta: 'Start training',
+        done: false,
+      }
+    }
+  }
+
+  if (!(!chores.complete || !chores.rewarded || coachNext)) return null
+  return <ChoresOverlay chores={chores} nextAction={coachNext} />
+}
+
+// Cues whose activation task is already done are suppressed (don't tell someone to add a photo
+// they have). Only pay for the status lookup when a task-cue is still unseen.
+const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
+
+// Daily check-in + onboarding tour. Gated on autoPopupsEnabled() (ships OFF) → returns null after
+// one flag read in the shipped state. When ON, tourSatisfied (getOnboardingStatus) streams in
+// behind this slot. Mirrors the prior inline logic.
+async function AutoPopupsSlot({ profileId, tourState }: { profileId: string; tourState: TourState }) {
+  const autoPopups = await autoPopupsEnabled()
+  if (!autoPopups) return null
+  const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
+    ? (await getOnboardingStatus(profileId)).steps.filter((s) => s.done).map((s) => s.key)
+    : []
+  return (
+    <>
+      <DailyCheckIn />
+      <TourProvider initialState={tourState} satisfied={tourSatisfied} />
+    </>
   )
 }

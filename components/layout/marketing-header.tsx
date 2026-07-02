@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { BETA_CTA_LABEL, BETA_CTA_HREF } from '@/lib/site'
 import { PrimaryNav } from '@/components/layout/primary-nav'
 import { MarketingMobileMenu } from '@/components/layout/marketing-mobile-menu'
+import { createClient } from '@/lib/supabase/client'
 import type { MenuSettings, ResolvedMenu } from '@/lib/menus/types'
 
 // Public marketing header. No search box (that's for the community app). When
@@ -23,6 +24,7 @@ export function MarketingHeader({
   menuTimings,
   isAuth = false,
   ctaLabel = BETA_CTA_LABEL,
+  detectClientAuth = false,
 }: {
   overHero?: boolean
   headerMenu?: ResolvedMenu
@@ -35,8 +37,22 @@ export function MarketingHeader({
    * keeps the builder-framed site-wide default ("Start a Circle", see lib/site).
    */
   ctaLabel?: string
+  /**
+   * Resolve the signed-in state CLIENT-side instead of taking it from the server. The public
+   * marketing layout sets this so it no longer needs a server `cookies()`/`getUser()` read —
+   * that read opted every marketing page OUT of static/ISR rendering (it defeated their
+   * `revalidate`). With this on, the page body prerenders statically and the header simply
+   * upgrades the logo link (→ /feed) + nav mode after hydration for a signed-in member. The
+   * only auth-dependent chrome here is the logo target + PrimaryNav mode (there is no account
+   * menu), so the static default (signed-out) is safe and never changes the page body / SEO.
+   */
+  detectClientAuth?: boolean
 }) {
   const [scrolled, setScrolled] = useState(false)
+  // Client-resolved auth: starts from the server value (default signed-out) and, when
+  // detectClientAuth is set, upgrades from the local Supabase session cookie (no network
+  // round-trip — getSession reads the cookie the SSR client already hydrated).
+  const [authed, setAuthed] = useState(isAuth)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -44,6 +60,20 @@ export function MarketingHeader({
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    if (!detectClientAuth) return
+    let active = true
+    createClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (active) setAuthed(!!data.session)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [detectClientAuth])
 
   const light = !overHero || scrolled
 
@@ -67,7 +97,7 @@ export function MarketingHeader({
       </a>
 
       {/* Logo — into the app when signed in, to the splash when not. */}
-      <Link href={isAuth ? '/feed' : '/'} className="shrink-0">
+      <Link href={authed ? '/feed' : '/'} className="shrink-0">
         <Image
           src="/frequency-logo.png"
           alt="Frequency"
@@ -83,7 +113,7 @@ export function MarketingHeader({
         className="ml-3"
         headerMenu={headerMenu}
         viewerRole="visitor"
-        isAuth={isAuth}
+        isAuth={authed}
         timings={menuTimings}
       />
 
