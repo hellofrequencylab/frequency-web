@@ -1816,16 +1816,23 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Offerings',
       items: [],
     },
-    render: ({ eyebrow, heading, items, puck }) => (
-      <AnchorSection anchor="offerings">
-        <SpaceOfferingsBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          items={(items as OfferingItem[]) ?? []}
-          editing={puck?.isEditing}
-        />
-      </AnchorSection>
-    ),
+    render: ({ eyebrow, heading, items, puck }) => {
+      // Central services catalog wins (single source): the offerings come from the Business Info form,
+      // falling back to this block's own inline items only when the central catalog is empty.
+      const centralOfferings = profileFrom(puck)?.offerings as OfferingItem[] | undefined
+      const mergedItems: OfferingItem[] =
+        centralOfferings && centralOfferings.length > 0 ? centralOfferings : ((items as OfferingItem[]) ?? [])
+      return (
+        <AnchorSection anchor="offerings">
+          <SpaceOfferingsBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            items={mergedItems}
+            editing={puck?.isEditing}
+          />
+        </AnchorSection>
+      )
+    },
   },
 
   SpaceContact: {
