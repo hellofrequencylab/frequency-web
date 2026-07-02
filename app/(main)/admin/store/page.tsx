@@ -107,7 +107,7 @@ export default async function AdminStorePage() {
     <AdminTemplate
       title="Store"
       eyebrow="Engage"
-      description="Manage gem store items, catalog, and availability."
+      description="Manage Vault Store items, catalog, and availability."
       width="wide"
       actions={<NewItemButton />}
     >
@@ -121,7 +121,7 @@ export default async function AdminStorePage() {
 
       <AdminSection title={`Catalog (${rows.length})`}>
         <DataTable
-          caption="Gem store catalog"
+          caption="Vault Store catalog"
           columns={columns}
           rows={rows}
           getRowId={(item) => item.id}
@@ -136,7 +136,7 @@ export default async function AdminStorePage() {
               variant="first-use"
               icon={Package}
               title="No items yet"
-              description="Add the first gem store item using the button above."
+              description="Add the first Vault Store item using the button above."
             />
           }
         />

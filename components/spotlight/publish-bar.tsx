@@ -32,7 +32,7 @@ export function SpotlightPublishBar({ handle, initialPublished }: { handle: stri
         }`}
       >
         {published ? <Globe className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-        {published ? 'Live' : 'Draft — only you can see it'}
+        {published ? 'Live' : 'Draft. Only you can see it'}
       </span>
 
       <div className="flex-1" />

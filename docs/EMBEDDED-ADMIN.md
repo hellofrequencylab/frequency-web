@@ -357,7 +357,8 @@ Hubs · Nexuses (see the §7 *Progress* table). ⏳ **Left in `/admin/*`:** the 
 ## 7. Build sequence (additive, each step shippable)
 
 > **Progress: ✅ the console is live; admin is now three layers ([ADR-153](DECISIONS.md)).** The
-> drill-down **settings console** (`components/admin/sidebar/admin-console.tsx`) ships inside the
+> drill-down **settings console** (rebuilt at the shell level as
+> `components/layout/settings-drawer.tsx` in the ADR-345+ settings-drawer rework) ships inside the
 > dock: a category **home → category screen → back + search**, **driven by the role-gated admin
 > catalog** (`visibleLinks`) so tiers filter automatically.
 >

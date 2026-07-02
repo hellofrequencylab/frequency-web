@@ -60,7 +60,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // enforce it here too and hand back a clean upsell pointing at /upgrade.
   const tier = ((profile as { membership_tier?: EntitlementTier | null } | null)?.membership_tier) ?? 'free'
   if (!canCashIn(tier)) {
-    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
+    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems. You keep everything you’ve earned.')
   }
   // Pricing P3: the SAME gate, now also routed through the operator-tunable entitlements layer
   // (featureAllowed) so an operator can adjust the cash-in minimum from /admin/pricing once billing
@@ -68,7 +68,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
   // true, so this is a no-op and today's behavior (the canCashIn line above) is exactly preserved.
   const cashInAllowed = await featureAllowed('vault_cash_in', { tier: deriveTier(tier) }, { billingLive: await billingLive() })
   if (!cashInAllowed) {
-    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems — you keep everything you’ve earned.')
+    return fail('Cashing in the Vault is a Crew perk. Upgrade at /upgrade to spend your Gems. You keep everything you’ve earned.')
   }
 
   // Season-exclusive + retiring SKUs (Rewards Economy v2): an S1 item stops
@@ -116,7 +116,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
     giftsSent,
   })
   if (balance < item.gem_cost) {
-    return fail(`Not enough gems. You need ${item.gem_cost - balance} more.`)
+    return fail(`Not enough Gems. You need ${item.gem_cost - balance} more.`)
   }
 
   // Buy-a-freeze sink (ADR-305): the 'streak-freeze' SKU grants a daily-streak freeze
@@ -175,7 +175,7 @@ export async function redeemItem(itemId: string): Promise<ActionResult<{ pending
     // The RPC raises a typed P0001 message; map the two expected ones to clean copy and
     // fail CLOSED on anything else (incl. a missing function) — never a silent overspend.
     if (error.message?.includes('insufficient_balance')) {
-      return fail(`Not enough gems. You need ${item.gem_cost - balance} more.`)
+      return fail(`Not enough Gems. You need ${item.gem_cost - balance} more.`)
     }
     if (error.message?.includes('out_of_stock')) {
       return fail('Out of stock')

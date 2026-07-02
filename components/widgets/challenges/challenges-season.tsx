@@ -105,7 +105,7 @@ export async function ChallengesSeason() {
             delta={{ label: `${completedPct}% of season`, trend: completedPct > 0 ? 'up' : 'flat' }}
           />
           <StatCard
-            label="Bonus zaps earned"
+            label="Bonus Zaps earned"
             value={earnedZaps}
             icon={Zap}
             delta={{ label: `${poolZaps} up for grabs`, trend: 'flat' }}

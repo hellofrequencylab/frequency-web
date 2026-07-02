@@ -64,7 +64,7 @@ const FAQ = [
   },
   {
     q: 'How can I be more social as an introvert?',
-    a: 'Lean into structure and repetition instead of forcing yourself to be outgoing. Introverts do not need to become extroverts to have a full social life, they need rooms that do not depend on working a crowd. A small group built around a shared activity is ideal, because the thing itself carries the interaction, you see the same few faces each time, and you can leave when you are spent. Depth over volume is a feature, not a problem.',
+    a: 'Build on structure and repetition instead of forcing yourself to be outgoing. Introverts do not need to become extroverts to have a full social life, they need rooms that do not depend on working a crowd. A small group built around a shared activity is ideal, because the thing itself carries the interaction, you see the same few faces each time, and you can leave when you are spent. Depth over volume is a feature, not a problem.',
   },
   {
     q: 'What should I do if I am out of practice socially?',
@@ -219,7 +219,7 @@ export default function HowToBeMoreSocialPage() {
           How can I be more social as an introvert?
         </h2>
         <Lead>
-          Lean into structure and small rooms instead of forcing yourself to work
+          Build on structure and small rooms instead of forcing yourself to work
           a crowd. You do not have to become an extrovert to have a full social
           life.
         </Lead>

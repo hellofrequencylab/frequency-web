@@ -234,6 +234,7 @@ export function MessageThread({
           <textarea
             ref={textareaRef}
             value={body}
+            aria-label="Message"
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Message…"

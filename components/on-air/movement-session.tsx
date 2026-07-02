@@ -718,7 +718,7 @@ export function MovementSession({
   // A run recovered from a reload/discard: offer to pick it up where it left off, or drop it. Shown
   // over the setup screen so a dropped run is never silently lost.
   if (resumePrompt) {
-    const modeLabel = MOVEMENT_MODES.find((m) => m.mode === resumePrompt.setup.config.mode)?.label ?? 'Movement'
+    const modeLabel = MOVEMENT_MODES.find((m) => m.mode === resumePrompt.setup.config.mode)?.label ?? 'Get Moving session'
     const elapsedSec = liveElapsedSeconds(resumePrompt)
     return (
       <Overlay>
@@ -819,7 +819,7 @@ export function MovementSession({
             stays visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))]">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
-            <MovementArt className="block h-5" /> Movement
+            <MovementArt className="block h-5" /> Get Moving
           </p>
 
           {/* The phase chip — color-coded, with the round counter for Strength. */}
@@ -895,7 +895,7 @@ export function MovementSession({
           <>
             <div className="relative flex items-center justify-center pb-2">
               <p className="flex items-center gap-2.5 text-base font-bold uppercase tracking-[0.35em] text-move">
-                <MovementArt className="block h-6" /> Movement
+                <MovementArt className="block h-6" /> Get Moving
               </p>
               <button
                 type="button"

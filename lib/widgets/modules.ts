@@ -92,7 +92,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'vault-summary', label: 'Your Vault', description: 'Amplitude (the lifetime layer), the Zaps & Gems ledger, and equipped winnings.' },
   { id: 'vault-trophies', label: 'Your Trophies', description: 'The lifetime Trophy Case — every finished Journey, kept across seasons.' },
   { id: 'vault-awards', label: 'Your Awards', description: 'The badge collection, grouped by category, earned vs. secret.' },
-  { id: 'vault-store', label: 'Gem Store', description: 'The redeemable categories — cosmetics, titles, badges, membership credits (paid-gated).' },
+  { id: 'vault-store', label: 'Vault Store', description: 'The redeemable categories — cosmetics, titles, badges, membership credits (paid-gated).' },
 
   // ── Practice detail blocks (/practices/<id>) — the arrangeable body of one practice ──
   { id: 'practice-detail-stats', label: 'Practice stats', description: 'The headline band: reward, cadence, time, practising now, and times logged.' },
@@ -150,7 +150,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'circle-events', label: 'Upcoming events', description: 'The next gatherings for this circle.' },
   { id: 'circle-map', label: 'Venue map', description: "A map of the circle's public meeting place; hides when there's no location." },
   { id: 'circle-invite', label: 'Invite a friend', description: 'Invite tools for the host (manager only).' },
-  { id: 'circle-journey-run', label: 'Start a journey run', description: 'Start a Journey cohort for the circle (manager only).' },
+  { id: 'circle-journey-run', label: 'Start a Journey Run', description: 'Start a Journey Run for the circle (manager only).' },
   { id: 'circle-text', label: 'Page text', description: 'A free rich-text note you can place anywhere on the page. Set per circle, with a network default.' },
 
   // ── Event detail blocks (/events/<slug>) — the FULL arrangeable interior of one event. The fixed

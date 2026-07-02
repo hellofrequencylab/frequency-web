@@ -63,9 +63,9 @@ One rule of thumb. The default Journey already balances the four pillars and car
 
 All of Frequency runs on one rhythm. The year has four seasons, and every Circle is in the same one at the same time. Stretch in summer, Shed in autumn, Sit in winter, Sprout in spring. Inside each season, your Circle runs its own Journey.
 
-There is a light game underneath to keep it moving. Daily practice earns points across the season. Those points build your rank, from Initiate to Adept to Master, as you complete each of a Journey's challenges. At the end of a season your points convert into a lasting currency you keep. The game is the same everywhere, so the whole community is playing together even as each Circle does its own thing.
+There is a light game underneath to keep it moving. Daily practice earns Zaps across the season. Your rank climbs from Initiate to Adept to Master as you finish each Journey. At the end of a season your Zaps roll into Gems, a lasting currency you keep. The game is the same everywhere, so the whole community is playing together even as each Circle does its own thing.
 
-Full details of points and rewards live in the Rewards guide.
+Full details of Zaps, Gems, and rewards live in the Rewards guide.
 
 ## How to start a Circle
 

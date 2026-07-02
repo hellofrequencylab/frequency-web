@@ -21,9 +21,10 @@
 > **Authority order (unchanged):** running code + `supabase/migrations/` > this doc >
 > Notion. Where this names something not yet built, the code is still the truth.
 >
-> **Active execution list:** the ordered, one-PR-at-a-time work items live in
-> [`MASTER-PLAN.md`](MASTER-PLAN.md). This map holds the staged build and the mission; the
-> master plan holds what we are shipping next.
+> **Active execution list:** the ordered, one-PR-at-a-time "what to build next" lives in
+> [`BUILD-SEQUENCE.md`](BUILD-SEQUENCE.md). This map holds the staged build and the mission.
+> ([`MASTER-PLAN.md`](MASTER-PLAN.md) is ✅ completed history — its 48 items shipped 2026-06-20
+> to 2026-06-21; kept for the record, not for planning.)
 >
 > Companions: [PLATFORM-VISION.md](PLATFORM-VISION.md) (the *why* of the two-entity model)
 > and [DECISIONS.md](DECISIONS.md) (ADR-029→036, the irreversible seams). Updated 2026-06-03 ·
@@ -251,7 +252,7 @@
 >
 > **2026-06-06:** **Embedded admin console**: the `/admin` catalog is being absorbed into the page
 > itself (ADR-133/137/138/149, [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md)). Hit **Edit** on a page you
-> steward and a drill-down settings **console** (`components/admin/sidebar/admin-console.tsx`) opens
+> steward and a drill-down settings **console** (`components/layout/settings-drawer.tsx`) opens
 > in the `PageAdminDock`, its categories driven by the role-gated catalog so tiers auto-filter, no
 > trip to `/admin`. **16 surfaces ported in place** (each a loader + gated `'use server'` action + a
 > module reusing the existing admin UI): Moderation, Broadcasts, Gamification, Crew tasks, Members,
@@ -298,28 +299,17 @@
 > resonance"). One CodeQL high (remote property injection via the Boops accumulator) found + fixed (#756).
 > Verified each wave: eslint + tsc clean on the events surface, 921 tests pass, Vercel previews green.
 >
-> **NEXT, Events go-live (founder-gated; the code is built, not yet live):**
-> 1. **Supabase Pro** → apply the 8 migrations on a preview branch, regenerate `lib/database.types.ts`,
->    and drop the temp `as unknown as`/untyped-handle casts in `lib/events/*`. **This is the single step
->    that takes Events from coded to live** (the migrations are additive + backward-compatible).
-> 2. **EIN / legal entity** → unblocks SMS ("text the group", ADR-256: A2P 10DLC brand + campaign) and
+> **Events go-live — ✅ DONE (applied 2026-06-15, [ADR-277](DECISIONS.md)).** The events-catalog
+> migration wave (geolocation, standalone public events, RSVP depth, questions, dispatches, cover/theme,
+> Boops) was applied to prod via the Supabase MCP tools (owner-approved, fixing 3 latent migration bugs on
+> the way), `lib/database.types.ts` was regenerated, and the temp `as unknown as` casts in `lib/events/*`
+> largely retired. **Events is schema-live.** Still-open gates before the surface opens wide:
+> 1. **EIN / legal entity** → unblocks SMS ("text the group", ADR-256: A2P 10DLC brand + campaign) and
 >    Stripe Connect host payouts (`host_payouts_enabled`).
-> 3. **Standalone-events moderation policy** (ADR-254) → the gate before public, non-Circle events open
+> 2. **Standalone-events moderation policy** (ADR-254) → the gate before public, non-Circle events open
 >    to discovery.
-> 4. **On go-live:** update member help (`content/help/groups/events.md`, `circle-current.md`) via
->    `/sync-docs`, and re-run the Supabase security + performance advisors after the migrations apply.
-> Post-Pro build backlog (small, unblocked once typed): rotating/Wallet ticket passes, recurring-event
+> Build backlog (unblocked now that the schema is typed): rotating/Wallet ticket passes, recurring-event
 > RRULE, host analytics depth, Typesense only if typo-tolerant search becomes a growth lever.
->
-> **FINALIZE STATUS (2026-06-14):** the typed cutover was **attempted and is on hold**: Supabase
-> branching returned `PaymentRequiredException` (Pro not yet active on the org), and the founder chose to
-> **wait for Pro** rather than apply to prod directly. No prod changes were made; no branch/cost incurred.
-> Events remains coded-but-not-live. **Finalize runbook (run the moment Pro is active):**
-> ① `create_branch` (events-finalize) → ② `apply_migration` the 8 files `20260625000000``20260626010000`
-> in order on the branch → ③ `generate_typescript_types` from the branch → overwrite `lib/database.types.ts`
-> → ④ remove the temp untyped-handle/`as unknown as` casts in `lib/events/*` (+ `components/feed/feed-list.tsx`,
-> the `manage/` reads) now that the columns are typed → ⑤ `pnpm tsc`/`lint`/`test`, then `merge_branch`
-> to prod (go-live), `get_advisors` (security + perf), `delete_branch`; finally `/sync-docs` for member help.
 >
 > **2026-06-14:** **Adaptive theming completeness audit** ([`THEME.md`](THEME.md); spec owned there).
 > The four-axis chain (mode · skin · occasion · generation) + the data-driven theme manager + the
@@ -424,7 +414,7 @@ Five layers. Only one of them is "verticals"; the rest is the substrate everythi
 | Comms spine + durable queue | ✅ |
 | Geo / PostGIS | ✅ |
 | Trust & safety (moderation; +blocking, deletion, reviews) | 🟡 |
-| **Payments + financial ledger (Stripe Connect)** | 📐 |
+| **Payments + financial ledger (Stripe Connect)** | 🟡 built, dormant behind `billing_live` (ADR-175/392/465) |
 | **Module registry** (verticals declare into it) | 🟡 |
 | Design tokens | ✅ |
 | **Website Membership / tiers** (resolver input + `/upgrade`; generalizes `crew`) | 🟡 |
@@ -438,7 +428,7 @@ Legend: ✅ built · 🟡 partial · 📐 designed only.
 | 2 | **The Game** | shared | gems/zaps, ranks, seasons, the circle-lifecycle rewards | ✅ · 🟡 economy |
 | 3 | **Physical World** | shared | QR/NFC/ghost nodes, captures, PostGIS | ✅ · 🟡 wiring |
 | 4 | **Programs** | Foundation | frameworks + trainings to start/run/maintain a circle; lifecycle gamification (start→activate→invite→attend). The mission's activation engine. | 🟡 content |
-| 5 | **Local Marketplace** | Foundation · **no fee** | geolocated goods swap/sell/offer; anti-consumerism, local mutual support. Likely **no in-app payment** (arrange offline, FB-Marketplace-local style). | 📐 |
+| 5 | **Local Marketplace** | Foundation · **no fee** | geolocated goods swap/sell/offer; anti-consumerism, local mutual support. Likely **no in-app payment** (arrange offline, FB-Marketplace-local style). | ✅ (ADR-148/392) |
 | 6 | **Donations & Grants** | Foundation | nonprofit funding rail (one-time + recurring) | 📐 |
 | 7 | **The Collective** | Labs | members apply to contribute and host **paid** meditations/courses (Insight-Timer model); Connect payouts | 📐 |
 | 8 | **Partners** | Labs | local business directory, offers, plaques, redemptions | ✅ · 🟡 |
@@ -471,8 +461,10 @@ personas, and the mobile app are greenfield.**
   CRM/Studio (Phase 6).
 - **🟡 Partial:** reward *economy* (amounts), `practice.verified` sources, RLS convergence
   (Phase 2), live-Claude agent + autonomy, partner redemption-on-capture, apex cutover.
-- **📐 Not started:** money foundation (entities, ledger, Connect, personas), Programs,
-  Local Marketplace, The Collective, Affiliate, Lab Spaces, Donations, Mobile.
+- **🟡 Built, dormant behind `billing_live`:** the money foundation (entity partition +
+  `financial_transactions` ledger, Stripe Connect, `profile_personas`) and the Local Marketplace
+  foundation — shipped but nothing charges until the flag flips (ADR-175/392/465; Marketplace ADR-148/392).
+- **📐 Not started:** Programs, The Collective, Affiliate, Lab Spaces, Donations, Mobile.
 - **⏸ Deferred (correct):** scale hardening (Phase 4), metric-driven, not calendar-driven.
 
 ---
@@ -578,10 +570,11 @@ on the real domain. **Depends on:** nothing (all in-codebase closeouts).
       node's `zaps_value`, and emits `practice.verified` for non-partner nodes.
 - [x] **Live-Claude agent + consent test**: swap the deterministic proposer for the bounded
       Claude operator; add the `shouldSend` consent test; keep copilot-gated (closes 6.6).
-      ✅ 2026-06-02, `lib/studio/winback.ts`: `draftWinbackWithClaude` drafts win-back copy via
-      the Anthropic SDK (`claude-opus-4-8`, JSON-constrained, cached system prompt) when
-      `ANTHROPIC_API_KEY` is set, with a deterministic template fallback so nothing breaks
-      without a key. `proposeWinbacks` now gates candidates by `shouldSend(*, 'email',
+      ✅ 2026-06-02, `lib/studio/winback.ts`: `draftWinbackWithClaude` drafts win-back copy on
+      the **Haiku tier via the governed `lib/ai` gateway** (`completeRaw`, JSON-constrained,
+      cached system prompt — no per-call SDK instance, no hardcoded model id; a 2-3 sentence
+      email needs no Opus), gated by `aiEnabled()` (an `ANTHROPIC_API_KEY` **or** the gateway),
+      with a deterministic template fallback so nothing breaks when AI is off. `proposeWinbacks` now gates candidates by `shouldSend(*, 'email',
       'lifecycle')` *at proposal time* (not just at send), via the injectable `filterByConsent`.
       Still copilot-gated: the model only drafts a *proposed* action; a human approves before
       send. Consent + fallback unit-tested (`lib/studio/winback.test.ts`). Set
@@ -639,7 +632,7 @@ admin/analytics surface.
 verticals that don't need the money foundation. **Depends on:** Stage A.
 
 - [x] **Launch the free Beta** (ADR-071): the **self-serve beta is open**: "Join the Beta" →
-      `/sign-in` → induction → real member (`BETA_CTA_HREF = "/sign-in"`, one switch in `lib/site.ts`);
+      `/onboarding/beta` → induction → real member (`BETA_CTA_HREF = "/onboarding/beta"`, one switch in `lib/site.ts`);
       the `/beta` waitlist + `requestBetaAccess` are **parked** for the future gated weekly-cohort phase.
       *Instrumentation:* WAM + activation live on `/studio/analytics`; weekly practice-
       retention cohorts shipped there too (`getPracticeRetention`), the PMF lens. The **New-member
@@ -686,14 +679,15 @@ the entities are legally live.
 
 - **C1 · Mobile app (old Phase 5)**: Expo/RN on the proven contract + capability sets +
   tokens; native QR/NFC/geofencing/push; pilot a Postgres-backed sync engine on one surface.
-- **C2 · Money foundation (the new substrate)**: pure infrastructure, nothing charges yet:
-  - [ ] Entity partition + `financial_transactions` ledger, entity-tagged (ADR-029/032).
-  - [ ] **Persona axis**: `profile_personas` (state + Connect binding) (ADR-030).
-  - [ ] **Stripe Connect** payments module (`create_checkout`/`process_payout`/
-        `record_commission`) (ADR-032).
-  - [ ] **Module registry** formalized so verticals self-declare (ADR-033).
-  - [ ] **Subscription-as-bridge entitlement** (ADR-035) + **store seams**: digital/physical
-        flag, reviews/disputes (ADR-036).
+- **C2 · Money foundation (the new substrate)** — ✅ **built, dormant behind the `billing_live`
+  master flag** (the substrate exists; nothing charges until the flag flips):
+  - [x] Entity partition + `financial_transactions` ledger, entity-tagged (ADR-029/032, migration `20260618000000`).
+  - [x] **Persona axis**: `profile_personas` (state + Connect binding) (ADR-030).
+  - [x] **Stripe Connect** payments module (`create_checkout`/`process_payout`/
+        `record_commission`) (ADR-032/175/392).
+  - [x] **Module registry** so verticals self-declare (ADR-033).
+  - [x] **Subscription-as-bridge entitlement** (ADR-035/362, gated OFF) + **store seams**:
+        digital/physical flag, reviews/disputes (ADR-036).
 
 **Done when:** mobile reaches relevant parity by *assembling* the contract; and a test
 checkout + payout can run end-to-end in a sandbox with money correctly entity-partitioned.

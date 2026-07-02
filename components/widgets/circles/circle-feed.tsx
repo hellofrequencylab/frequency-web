@@ -34,7 +34,7 @@ export const CircleFeed = async () => {
             <div>
               <p className="text-sm font-semibold text-text">Welcome to {circle.name}</p>
               <p className="mt-0.5 text-xs leading-relaxed text-muted">
-                You&rsquo;re in. Say hello below so the circle knows who just arrived — a quick intro is
+                You&rsquo;re in. Say hello below so the circle knows who just arrived. A quick intro is
                 the easiest way to start showing up here.
               </p>
             </div>

@@ -10,7 +10,7 @@ export async function PracticeDetailStats() {
   if (!practice) return null
   return (
     <div className="grid grid-cols-2 gap-3 @md:grid-cols-3 @3xl:grid-cols-5">
-      <StatCard bordered size="sm" icon={Zap} label="Reward per log" value={`+${practiceZapValue(practice)} zaps`} />
+      <StatCard bordered size="sm" icon={Zap} label="Reward per log" value={`+${practiceZapValue(practice)} Zaps`} />
       <StatCard bordered size="sm" icon={Repeat} label="Cadence" value={practice.cadence ?? 'Your call'} />
       {practice.duration_min != null && (
         <StatCard bordered size="sm" icon={Clock} label="Time" value={`${practice.duration_min} min`} />

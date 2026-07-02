@@ -1,6 +1,6 @@
 # Space Mode Templates — research + the four layouts
 
-> **⚠️ RETIRED (2026-07-01, ADR-489).** The type-driven **four-template** system this doc describes
+> **⚠️ RETIRED (2026-07-01, ADR-491).** The type-driven **four-template** system this doc describes
 > (Book · Schedule · Storefront · Hub, `lib/spaces/templates.ts` + `lib/spaces/blueprints.ts`) has been
 > DELETED. A Space profile is now **operator-composed feature-block pages** (`preferences.pages` +
 > `preferences.pageDocs`), each seeded from ONE universal default (`generateDefaultSpacePage`) and
@@ -10,9 +10,9 @@
 > mechanism as historical.
 
 > **What this was.** The best-practice research behind a Space's public page, distilled into **four layout
-> templates** (Book · Schedule · Storefront · Hub) that were live from ADR-476 to ADR-489, plus the
+> templates** (Book · Schedule · Storefront · Hub) that were live from ADR-476 to ADR-491, plus the
 > content-blocks + Spotlight direction that built on them. Tie-in: ADR-461 (Modes), ADR-472 (Tier × Mode),
-> ADR-476 (templates), ADR-489 (retirement).
+> ADR-476 (templates), ADR-491 (retirement).
 
 ## 1. The model: two threads, one of four layouts
 

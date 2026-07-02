@@ -163,7 +163,7 @@ export default async function EventPage({
           body={
             hasEnded
               ? 'This one has passed, but somewhere near you another circle is already deciding on the next. Join the beta to find it, and be one of the faces the next person walks in and recognizes.'
-              : 'RSVP and you are expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Join the beta to claim your spot — two words to belong.'
+              : "RSVP and you're expected: see who else is coming, get the exact venue, and let the host know to save you a seat. Join the beta to claim your spot."
           }
         />
       </DetailTemplate>

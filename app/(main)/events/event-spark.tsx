@@ -294,7 +294,7 @@ export function EventSpark({
             <input autoFocus value={when} onChange={(e) => setWhen(e.target.value)} className={FIELD} placeholder="e.g. this Friday 7pm" />
           )}
           {!usingFlyer && step === 3 && (
-            <input autoFocus value={where} onChange={(e) => setWhere(e.target.value)} className={FIELD} placeholder="e.g. Balboa Park, San Diego — or online" />
+            <input autoFocus value={where} onChange={(e) => setWhere(e.target.value)} className={FIELD} placeholder="e.g. Balboa Park, San Diego, or online" />
           )}
           {!usingFlyer && step === 4 && (
             <textarea

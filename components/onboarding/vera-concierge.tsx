@@ -132,13 +132,14 @@ export function VeraConcierge() {
           <div className="flex items-center gap-2">
             <input
               value={input}
+              aria-label="Message Vera"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') send() }}
               placeholder="Say something to Vera…"
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none"
             />
-            <button type="button" onClick={send} disabled={pending || !input.trim()} className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
-              <Send className="h-4 w-4" />
+            <button type="button" aria-label="Send" onClick={send} disabled={pending || !input.trim()} className="rounded-xl bg-primary p-2 text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50">
+              <Send className="h-4 w-4" aria-hidden />
             </button>
           </div>
         </>

@@ -215,7 +215,7 @@ async function ManageSections() {
     { label: 'Role training', desc: 'The advancement curriculum each promotion teaches.', stat: '', statLabel: 'Manage', href: '/admin/content/training', Icon: GraduationCap },
     { label: "Vera's tips", desc: 'Draft tips and prompts to content creators. Review and send.', stat: '', statLabel: 'Manage', href: '/admin/content/tips', Icon: Lightbulb },
     { label: 'Gamification', desc: 'Season ranks, achievements, and reward config.', stat: '', statLabel: 'Manage', href: '/admin/gamification', Icon: Trophy },
-    { label: 'Store', desc: 'Manage gem store items and the catalog.', stat: `${storeC.count ?? 0}`, statLabel: 'items', href: '/admin/store', Icon: ShoppingBag },
+    { label: 'Store', desc: 'Manage Vault Store items and the catalog.', stat: `${storeC.count ?? 0}`, statLabel: 'items', href: '/admin/store', Icon: ShoppingBag },
     { label: 'Crew tasks', desc: 'Define and verify member tasks.', stat: `${tasksC.count ?? 0}`, statLabel: 'tasks', href: '/admin/crew-tasks', Icon: ClipboardList },
   ]
 

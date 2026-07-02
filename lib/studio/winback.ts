@@ -31,8 +31,8 @@ export interface WinbackDraft {
 export function deterministicWinback(name: string): WinbackDraft {
   const lead = name?.trim() || 'there'
   return {
-    subject: 'We miss you at Frequency',
-    body: `Hi ${lead}, it's been a couple of weeks since your last practice. A short session today is all it takes to pick your streak back up. We'd love to see you.`,
+    subject: "A five-minute restart, when you're ready",
+    body: `Hi ${lead}, it's been a couple of weeks since your last practice. Five minutes today starts a new streak, and everything you've earned is still in your Vault.`,
   }
 }
 

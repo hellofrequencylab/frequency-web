@@ -117,26 +117,42 @@ async function resolveAssignment(profileId: string): Promise<Assignment> {
     // fall through
   }
 
-  // 4. A depth mark within reach on their most-practiced thing.
+  // 4. A depth mark within reach on their most-practiced thing. Rebuilt on
+  //    practice_logs (count completed logs per practice) after the rewards-v3
+  //    teardown dropped practice_streaks — the old read always errored, so this
+  //    dispatch never fired.
   try {
-    const { data: top } = await admin
-      .from('practice_streaks')
-      .select('lifetime_logs, practice:practices(title)')
+    const { data: logRows } = await admin
+      .from('practice_logs')
+      .select('practice_id')
       .eq('profile_id', profileId)
-      .order('lifetime_logs', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    const row = top as unknown as { lifetime_logs: number; practice: { title: string } | null } | null
-    if (row?.practice?.title) {
-      const next = [10, 25, 50, 100].find((m) => m > row.lifetime_logs)
-      const left = next ? next - row.lifetime_logs : null
+      .eq('completed', true)
+      .not('practice_id', 'is', null)
+    const counts = new Map<string, number>()
+    for (const r of ((logRows as { practice_id: string | null }[] | null) ?? [])) {
+      if (r.practice_id) counts.set(r.practice_id, (counts.get(r.practice_id) ?? 0) + 1)
+    }
+    let topId: string | null = null
+    let topCount = 0
+    for (const [pid, n] of counts) if (n > topCount) { topId = pid; topCount = n }
+    if (topId) {
+      const next = [10, 25, 50, 100].find((m) => m > topCount)
+      const left = next ? next - topCount : null
       if (next && left !== null && left <= 5) {
-        return {
-          kind: 'depth_mark',
-          copy: `${left} more ${left === 1 ? 'log' : 'logs'} and ${row.practice.title} hits ${next} Deep. Keep digging.`,
-          actionHref: '/on-air',
-          actionLabel: 'Go again tomorrow',
-          payload: { mark: next, left },
+        const { data: prac } = await admin
+          .from('practices')
+          .select('title')
+          .eq('id', topId)
+          .maybeSingle()
+        const title = (prac as { title: string } | null)?.title
+        if (title) {
+          return {
+            kind: 'depth_mark',
+            copy: `${left} more ${left === 1 ? 'log' : 'logs'} and ${title} hits ${next} Deep. Keep digging.`,
+            actionHref: '/on-air',
+            actionLabel: 'Go again tomorrow',
+            payload: { mark: next, left },
+          }
         }
       }
     }

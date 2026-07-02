@@ -103,7 +103,7 @@ export function buildWelcomeSlides(ctx: VeraWelcomeContext): DeckSlide[] {
       art: 'zaps',
       eyebrow: 'The fun part',
       title: 'Showing up earns its keep.',
-      body: 'You collect zaps for the real things: turning up, keeping a practice, bringing a friend. They lift you through the ranks and open the Vault. Gems are the lighter, everyday kind. Both reward the same thing, being here.',
+      body: 'You collect Zaps for the real things: turning up, keeping a practice, bringing a friend. Finish Journeys to climb the season ranks and fill the Vault. Gems are the lighter, everyday kind. Both reward the same thing, being here.',
     },
     {
       art: 'vera',

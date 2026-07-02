@@ -219,7 +219,7 @@ export function Scanner({ hint = 'default' }: { hint?: string }) {
           )}
           {state.kind === 'unsupported' && (
             <p className="text-sm text-white/90">
-              This browser can’t open the camera. Your phone’s own camera app works too — Frequency
+              This browser can’t open the camera. Your phone’s own camera app works too: Frequency
               codes are plain links.
             </p>
           )}
