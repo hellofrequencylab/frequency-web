@@ -76,8 +76,10 @@ the unit suite.
   - ✅ ~~journey-finish Zap purse claim (`lib/quest/complete.ts`)~~ — C5: purse rides its own
     claim-then-pay `reward_grants` row, recovered on the alreadyDone path so a crash between the
     completion row and the award self-heals. No migration (reuses the existing unique constraint).
-- **Stripe subscription event ordering**: a delayed `subscription.updated` re-grants a
-  canceled tier; compare `event.created` / fetch the live sub before writing.
+- ✅ ~~**Stripe subscription event ordering**~~ — DONE (ADR-494, migration
+  `20261003000000`): `apply_membership_event_atomic` stamps `profiles.last_stripe_event_at`
+  and applies only events with a strictly-newer `event.created`, under a per-profile advisory
+  lock, so a delayed `subscription.updated(active)` can never re-grant a canceled tier.
 
 ### 🟠 Medium
 - ✅ ~~**DB retirement**~~ — DONE (applied + verified): dropped `circle_topics`, `menu_config`,
