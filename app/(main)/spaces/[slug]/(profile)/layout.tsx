@@ -9,7 +9,7 @@ import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
-import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { isConsoleSpaceType, spaceManageHref } from '@/lib/spaces/types'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { readProfileData } from '@/lib/spaces/profile-data'
@@ -144,10 +144,10 @@ export default async function SpaceProfileChromeLayout({
   const isNetwork = visibility !== 'private'
 
   const base = `/spaces/${space.slug}`
-  // The owner-affordance target (ADR-441 EM1-3): practitioner + organization are served by the unified
-  // /manage console, so point their Manage button straight at it; every other type opens /settings.
-  const manageHref =
-    space.type === 'practitioner' || space.type === 'organization' ? `${base}/manage` : `${base}/settings`
+  // The owner-affordance target: the type-correct manage hub (spaceManageHref — /manage for every
+  // console type, /settings for the never-provisioned root), the SAME single-source predicate the
+  // breadcrumb + console gate on, so the Manage button never takes an extra redirect hop.
+  const manageHref = spaceManageHref(space.type, space.slug)
 
   // The nav is PRE-POPULATED from the page itself (feature-block model): Home, then one ANCHOR link
   // per Home section that will actually render (derived from the Home doc + the live presence flags,

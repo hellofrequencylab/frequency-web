@@ -4,7 +4,6 @@ import { FocusTemplate } from '@/components/templates'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { isSpaceEmailEnabled } from '@/lib/spaces/email-toggle'
@@ -81,7 +80,6 @@ export default async function SpaceEmailPage({
         eyebrow={brandName}
         title="Email"
         description="Campaigns for this space."
-        back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       >
         <FeatureLockedNotice
           brandName={brandName}
@@ -111,7 +109,6 @@ export default async function SpaceEmailPage({
       eyebrow={brandName}
       title="Email"
       description="Write a campaign, pick who gets it from your own contacts, and send or schedule it."
-      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

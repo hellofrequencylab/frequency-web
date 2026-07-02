@@ -6,6 +6,8 @@ import { getVisibleSpaceBySlug, getSpaceBySlug, getSpaceVisibility } from '@/lib
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
+import { spaceManageHref } from '@/lib/spaces/types'
+import { SpaceBreadcrumbs } from '@/components/spaces/space-breadcrumbs'
 import { SITE_NAME } from '@/lib/site'
 
 // ── THE SPACE ROOT LAYOUT (thin, chrome-free) ───────────────────────────────────────────────────
@@ -97,5 +99,14 @@ export default async function SpaceRootLayout({
   // layout — reads this tenant's rows without prop-drilling.
   setActiveSpace(space)
 
-  return children
+  // ONE brand-aware breadcrumb for the whole Space area (profile + owner surfaces). It reads the live
+  // pathname client-side (soft-nav safe) and is the single wayfinding trail — the global auto-breadcrumb
+  // is suppressed on /spaces/<slug> in the shell, and the owner pages drop their ad-hoc back links.
+  const brandName = space.brandName?.trim() || space.name
+  return (
+    <>
+      <SpaceBreadcrumbs slug={slug} brandName={brandName} manageHref={spaceManageHref(space.type, slug)} />
+      {children}
+    </>
+  )
 }

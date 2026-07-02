@@ -96,14 +96,11 @@ export default async function SpaceModePage({
     hasOverrides: Object.keys(prefs).length > 0,
   }
 
-  const brandName = space.brandName ?? space.name
-
   return (
     <FocusTemplate
       eyebrow="Manage space"
       title="Mode and focus"
       description="Your Mode decides what leads on your console, the suggested pipeline, and the words for your people and offerings. Switching keeps all your data."
-      back={{ href: `/spaces/${slug}/manage`, label: brandName }}
       width="wide"
     >
       <ModeSettings slug={slug} view={view} readOnly={staffViewing && !canManage} />

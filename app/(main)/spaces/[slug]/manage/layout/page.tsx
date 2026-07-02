@@ -100,7 +100,6 @@ export default async function SpacePageSettingsPage({
       eyebrow="Manage space"
       title="Page"
       description="Manage your profile pages, size your cover, choose your accent, and reorder or hide blocks. Open the full editor to add and edit any block."
-      back={{ href: `/spaces/${slug}/manage`, label: brandName }}
       width="wide"
     >
       {staffViewing && !canManage && (

@@ -175,7 +175,6 @@ export default async function SpaceCrmBoardPage({
       eyebrow={brandName}
       title={viewCopy[activeView].title}
       description={viewCopy[activeView].description}
-      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       stats={
         <Suspense fallback={<StatsSkeleton />}>
           <CrmStats spaceId={space.id} />
@@ -285,7 +284,6 @@ function LockedCrm({
       eyebrow={brandName}
       title="CRM"
       description="The relationship workspace for this space."
-      back={{ href: `/spaces/${slug}`, label: brandName }}
       width="default"
     >
       <EmptyState

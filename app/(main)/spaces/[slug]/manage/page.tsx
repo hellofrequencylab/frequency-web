@@ -107,7 +107,6 @@ export default async function SpaceManagePage({
       eyebrow={`Manage ${typeLabel.toLowerCase()} space`}
       title={brandName}
       description="Your space's settings in one place. Open a section to manage it; changes show up on your space page."
-      back={{ href: `/spaces/${space.slug}`, label: brandName }}
       width="default"
       banner={staffViewing ? <StaffPreviewBanner spaceName={brandName} /> : undefined}
       stats={

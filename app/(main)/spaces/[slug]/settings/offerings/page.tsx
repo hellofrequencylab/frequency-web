@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { offeringSectionsForType } from '@/lib/spaces/offerings'
 import type { Space } from '@/lib/spaces/types'
@@ -129,7 +128,6 @@ export default async function SpaceOfferingsPage({
       eyebrow={brandName}
       title="Offerings"
       description="Everything people can book, join, support, or attend. Open a section to set it up; it shows on your space page."
-      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}

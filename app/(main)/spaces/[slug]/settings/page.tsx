@@ -158,7 +158,6 @@ export default async function SpaceSettingsPage({
       eyebrow={brandName}
       title={`Manage ${brandName}`}
       description="Your hub for everything you run here. Edit your profile and brand, then jump to the surfaces your space offers."
-      back={{ href: `/spaces/${space.slug}`, label: brandName }}
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
