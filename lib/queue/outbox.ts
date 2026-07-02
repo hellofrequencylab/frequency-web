@@ -68,35 +68,41 @@ export async function enqueue(
 }
 
 /**
- * Claim due pending jobs, run their handler, and mark done / failed / retried
- * (with exponential backoff). Unknown kinds fail the job. Returns counts.
+ * Claim due jobs, run their handler, and mark done / failed / retried (with
+ * exponential backoff). Unknown kinds fail the job. Returns counts.
  *
- * NOTE: simple claim (no row-locking). For high concurrency, move the claim to a
- * `SELECT … FOR UPDATE SKIP LOCKED` RPC; fine for a single periodic cron.
+ * The claim is atomic: claim_outbox_jobs (UPDATE ... FOR UPDATE SKIP LOCKED) flips each
+ * due job to 'processing' so overlapping drains (cron overlap, or a manual "send now"
+ * racing the cron) never process the same job twice -> no double-send. The terminal
+ * updates below move the row out of 'processing' (done, or back to pending/failed on
+ * handler error). Jobs stranded in 'processing' by a crashed drain self-heal: the RPC
+ * reclaims any 'processing' row older than 5 min on a later drain.
  */
 export async function processQueue(
   handlers: Record<string, JobHandler>,
   limit = 25,
 ): Promise<ProcessResult> {
   const client = db()
-  const nowIso = new Date().toISOString()
 
-  const { data: jobs, error: claimError } = await client
-    .from('notification_queue')
-    .select('id, kind, payload, attempts, max_attempts')
-    .eq('status', 'pending')
-    .lte('run_after', nowIso)
-    .order('run_after', { ascending: true })
-    .limit(limit)
+  // Atomic claim: flip up to `limit` due jobs to 'processing' under FOR UPDATE SKIP LOCKED so
+  // two overlapping drains never grab the same job -> no double-send (also reclaims jobs stranded
+  // in 'processing' by a crashed drain). Not in the generated types yet, so call it through the
+  // untyped rpc surface (repo convention for not-yet-typed DB objects).
+  const { data: jobs, error: claimError } = await (client as unknown as {
+    rpc: (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: QueueJob[] | null; error: { message: string } | null }>
+  }).rpc('claim_outbox_jobs', { _limit: limit })
 
   // A failed claim is not an empty queue — surface it instead of silently
   // reporting "0 processed" while the backlog grows unworked.
   if (claimError) {
-    console.error(`[outbox] claim query failed: ${claimError.message}`)
-    throw new Error(`[outbox] claim query failed: ${claimError.message}`)
+    console.error(`[outbox] claim RPC failed: ${claimError.message}`)
+    throw new Error(`[outbox] claim RPC failed: ${claimError.message}`)
   }
 
-  const list = (jobs ?? []) as unknown as QueueJob[]
+  const list = (jobs ?? []) as QueueJob[]
   let done = 0
   let failed = 0
   let retried = 0
