@@ -19,7 +19,7 @@ import {
 } from '@/lib/spaces/profile-pages'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readProfileData } from '@/lib/spaces/profile-data'
-import { readLayoutPreset } from '@/lib/spaces/layout-presets'
+import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
@@ -118,6 +118,7 @@ export default async function SpacePageSettingsPage({
         blocks={blocks}
         businessInfo={readProfileData(space.preferences)}
         layoutPreset={readLayoutPreset(space.preferences, activePageSlug)}
+        defaultPreset={readSpaceLayoutDefault(space.preferences)}
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}

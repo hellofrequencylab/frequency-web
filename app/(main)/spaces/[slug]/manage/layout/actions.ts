@@ -23,7 +23,12 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
-import { withLayoutPreset, type LayoutPreset } from '@/lib/spaces/layout-presets'
+import {
+  withLayoutPreset,
+  withSpaceLayoutDefault,
+  isLayoutPreset,
+  type LayoutPreset,
+} from '@/lib/spaces/layout-presets'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverSizePreferences,
@@ -104,22 +109,48 @@ export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<
 }
 
 /**
- * Set a PAGE's layout preset (stack / main-rail / sections) - the DISPLAY arrangement, kept separate
- * from the neutral block content. Written to preferences.pageLayouts[pageSlug]; the public renderer
- * arranges the same content for the preset (applyLayoutPreset), so the operator picks a layout without
- * ever opening Puck. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
+ * Set a PAGE's layout TEMPLATE (single / main-side / two-col / three-col / header-side) - the DISPLAY
+ * arrangement, kept separate from the neutral block content. Written to preferences.pageLayouts[pageSlug];
+ * the public renderer arranges the same content for the template (applyLayoutPreset), so the operator
+ * picks a layout without ever opening Puck. This "This page" scope overrides the space-level All-pages
+ * default. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
  */
 export async function setSpaceLayoutPreset(
   slug: string,
   pageSlug: string,
   preset: LayoutPreset,
 ): Promise<ActionResult> {
-  if (preset !== 'stack' && preset !== 'main-rail' && preset !== 'sections') return fail('Pick a layout.')
+  if (!isLayoutPreset(preset)) return fail('Pick a layout.')
 
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
   const next = withLayoutPreset(auth.preferences, pageSlug, preset)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the layout. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set the SPACE-LEVEL default layout TEMPLATE (the "All pages" scope). Written to the reserved
+ * preferences.pageLayouts['*'] key (guarded from prototype pollution in layout-presets.ts); it applies
+ * to every page that has no per-page template of its own. Owner/admin/editor-gated (staff preview fails
+ * closed). Returns ActionResult.
+ */
+export async function setSpaceLayoutDefault(
+  slug: string,
+  preset: LayoutPreset,
+): Promise<ActionResult> {
+  if (!isLayoutPreset(preset)) return fail('Pick a layout.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = withSpaceLayoutDefault(auth.preferences, preset)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not update the layout. Try again.')
   }

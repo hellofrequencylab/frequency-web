@@ -13,7 +13,7 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { readProfileData } from '@/lib/spaces/profile-data'
-import { readLayoutPreset } from '@/lib/spaces/layout-presets'
+import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
@@ -378,6 +378,7 @@ export default async function SpaceProfileChromeLayout({
           blocks={readBlockRows(homeDoc)}
           businessInfo={readProfileData(space.preferences)}
           layoutPreset={readLayoutPreset(space.preferences, HOME_SLUG)}
+          defaultPreset={readSpaceLayoutDefault(space.preferences)}
           coverImageUrl={space.coverImageUrl}
           brandLogoUrl={space.brandLogoUrl}
         />

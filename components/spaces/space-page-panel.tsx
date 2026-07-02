@@ -8,8 +8,6 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
-  Eye,
-  EyeOff,
   Loader2,
   Pencil,
   Plus,
@@ -25,10 +23,7 @@ import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/la
 import {
   setSpaceCoverSize,
   setSpaceCoverScrim,
-  setSpaceLayoutPreset,
   setSpaceAccent,
-  reorderSpaceBlock,
-  setSpaceBlockHidden,
   createSpacePage,
   renameSpacePage,
   reorderSpacePages,
@@ -38,8 +33,9 @@ import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
 import { SpaceFullEditorButton } from '@/components/spaces/space-full-editor-button'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
+import { SpaceLayoutEditor } from '@/components/spaces/space-layout-editor'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
-import { LAYOUT_PRESETS, type LayoutPreset } from '@/lib/spaces/layout-presets'
+import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -82,6 +78,7 @@ export function SpacePagePanel({
   blocks,
   businessInfo,
   layoutPreset,
+  defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
   focus,
@@ -104,8 +101,10 @@ export function SpacePagePanel({
   blocks: SpaceBlockRow[]
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
-  /** The ACTIVE page's DISPLAY layout preset (stack / main-rail / sections), for the Layout picker. */
+  /** The ACTIVE page's EFFECTIVE layout template (its own, else inherited), for the Layout editor. */
   layoutPreset: LayoutPreset
+  /** The Space's All-pages default template, for the Layout editor's "All pages" scope. */
+  defaultPreset: LayoutPreset
   /** The Space's current header (cover) image URL, for the Business info form's upload control. */
   coverImageUrl?: string | null
   /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
@@ -235,67 +234,6 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* Blocks: the ACTIVE page's top-level blocks, with reorder + show/hide. No Puck; fast tweaks only.
-          The full editor (overlay above) is where blocks are added + edited. */}
-      <section>
-        <SectionHeader title={`Blocks on ${activeLabel}`} />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          The sections on this page, top to bottom. Reorder them or hide one from your public page. Open
-          the full editor to add or edit a block.
-        </p>
-        {blocks.length === 0 ? (
-          <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
-            This page has no blocks yet. Open the full editor to add one.
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {blocks.map((block, index) => (
-              <li
-                key={block.id}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm',
-                  block.hidden && 'opacity-70',
-                )}
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-text">{block.label}</span>
-                  <span className="mt-0.5 block text-xs text-muted">
-                    {block.hidden ? 'Hidden from your public page' : 'Showing on your public page'}
-                  </span>
-                </span>
-                <div className="flex shrink-0 items-center gap-1">
-                  <IconButton
-                    label={`Move ${block.label} up`}
-                    disabled={readOnly || pending || index === 0}
-                    onClick={() => run(() => reorderSpaceBlock(slug, index, -1, activePageSlug))}
-                  >
-                    <ArrowUp className="h-4 w-4" aria-hidden />
-                  </IconButton>
-                  <IconButton
-                    label={`Move ${block.label} down`}
-                    disabled={readOnly || pending || index === blocks.length - 1}
-                    onClick={() => run(() => reorderSpaceBlock(slug, index, 1, activePageSlug))}
-                  >
-                    <ArrowDown className="h-4 w-4" aria-hidden />
-                  </IconButton>
-                  <IconButton
-                    label={block.hidden ? `Show ${block.label}` : `Hide ${block.label}`}
-                    disabled={readOnly || pending}
-                    onClick={() => run(() => setSpaceBlockHidden(slug, index, !block.hidden, activePageSlug))}
-                  >
-                    {block.hidden ? (
-                      <EyeOff className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <Eye className="h-4 w-4" aria-hidden />
-                    )}
-                  </IconButton>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       {/* Type / focus echo (the full mode settings live at /manage/mode). */}
       {focus && focus.choices.length > 0 && (
         <section>
@@ -336,37 +274,23 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* Layout: the DISPLAY arrangement of THIS page's blocks (content stays the same; only the
-          arrangement changes). Picked here without opening the full editor. */}
+      {/* Layout: pick a TEMPLATE for this page (or for all pages) and arrange its blocks, without opening
+          the full editor. The content stays the same under every template; only the display changes. */}
       <section>
         <SectionHeader title="Layout" />
         <p className="-mt-2 mb-3 text-sm text-muted">
-          How the blocks on {activeLabel} are arranged. Your content stays the same; only the display changes.
+          Pick a layout for {activeLabel} or for every page, then reorder or hide its blocks. Your content
+          stays the same; only the display changes.
         </p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {LAYOUT_PRESETS.map((l) => {
-            const active = layoutPreset === l.value
-            return (
-              <button
-                key={l.value}
-                type="button"
-                disabled={readOnly || pending || active}
-                onClick={() => run(() => setSpaceLayoutPreset(slug, activePageSlug, l.value))}
-                aria-pressed={active}
-                className={cn(
-                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold text-text">
-                  {l.label}
-                  {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
-                </span>
-                <span className="mt-1 block text-xs text-muted">{l.tagline}</span>
-              </button>
-            )
-          })}
-        </div>
+        <SpaceLayoutEditor
+          slug={slug}
+          activePageSlug={activePageSlug}
+          activeLabel={activeLabel}
+          pagePreset={layoutPreset}
+          defaultPreset={defaultPreset}
+          blocks={blocks}
+          readOnly={readOnly}
+        />
       </section>
 
       {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
