@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import {
   ArrowRight,
   DoorOpen,
@@ -98,6 +99,24 @@ const INSIDE: { icon: IconType; title: string; body: string }[] = [
     body: 'A simple way to run the day to day, set the rhythm, and see your community take shape. Start free, grow when you are ready.',
   },
 ]
+
+// Cross-link card into the Labs-track builder guides (the SEO cluster that funnels
+// back here). Keeps the internal-link graph tight so the guides are discoverable and
+// /spaces stays the hub of the builder funnel.
+function GuideLink({ href, title, body }: { href: string; title: string; body: string }) {
+  return (
+    <Link
+      href={href}
+      className="group block rounded-2xl border border-border bg-surface p-6 shadow-sm transition-colors hover:border-border-strong"
+    >
+      <h3 className="font-display uppercase text-text text-xl leading-none">{title}</h3>
+      <p className="mt-2.5 text-base text-muted leading-relaxed">{body}</p>
+      <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-primary-strong">
+        Read the guide <ArrowRight className="w-4 h-4" aria-hidden />
+      </span>
+    </Link>
+  )
+}
 
 function LegacySpaces() {
   return (
@@ -211,6 +230,37 @@ function LegacySpaces() {
         Start free.{' '}
         <span className="text-primary">Grow when you are ready.</span>
       </Statement>
+
+      {/* ── Guides for builders (Labs-track SEO cluster cross-link) ────────── */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="Guides for builders"
+          title="How to build a third space."
+          kicker="The playbooks behind a Space, free to read."
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <GuideLink
+            href="/what-is-a-third-space"
+            title="What a third space is"
+            body="The definition, why they got rare, and how to build one today."
+          />
+          <GuideLink
+            href="/how-to-run-a-community-space"
+            title="How to run a community space"
+            body="The operator playbook: a rhythm, a room, a few regulars, light tooling."
+          />
+          <GuideLink
+            href="/tools-for-community-builders"
+            title="Tools for community builders"
+            body="The four jobs a builder needs, and how one Space covers them."
+          />
+          <GuideLink
+            href="/host-a-recurring-gathering"
+            title="Host a recurring gathering"
+            body="The logistics of recurrence: cadence, a run-of-show, and reminders."
+          />
+        </div>
+      </Section>
 
       {/* ── Close — the single CTA ─────────────────────────────────────────── */}
       <BetaCTA
