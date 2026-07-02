@@ -5,7 +5,7 @@
 // Full-bleed blocks (Hero image, CTA ink) own their own <section> per the kit spec.
 
 import Image from 'next/image'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import {
   Band,

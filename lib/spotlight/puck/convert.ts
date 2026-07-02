@@ -16,7 +16,7 @@
 // title) carry no values in either representation, so they round-trip on their config
 // alone — the numbers/faces are injected at render via metadata, never stored.
 
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import {
   type SpotlightBlock,
   type SpotlightLayout,

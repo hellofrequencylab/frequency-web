@@ -1,5 +1,5 @@
-import type { Data } from '@measured/puck'
-import { Render } from '@measured/puck/rsc'
+import type { Data } from '@/lib/page-editor/types'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { config } from '@/lib/page-editor/config'
 import { getPublishedData } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'
@@ -78,7 +78,7 @@ export default async function CirclesPage({
       }
     >
       {/* The body: the standardized, rearrangeable Circles blocks, fed the live data. */}
-      <Render config={config} data={data} metadata={{ circlesIndex }} />
+      <BlockRender config={config} data={data} metadata={{ circlesIndex }} />
     </IndexTemplate>
   )
 }

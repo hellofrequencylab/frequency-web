@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Star } from 'lucide-react'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { SiteImage } from '@/components/marketing/site-image'
 import { FaqList } from '@/components/marketing/marketing-ui'

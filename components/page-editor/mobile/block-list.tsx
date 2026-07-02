@@ -13,7 +13,7 @@
 
 import { useRef, useState } from 'react'
 import { ChevronRight, GripVertical } from 'lucide-react'
-import type { Config, Data } from '@measured/puck'
+import type { Config, Data } from '@/lib/page-editor/types'
 import { Render } from '@measured/puck'
 import { blockSummary, blockTitle, itemId } from './data-ops'
 

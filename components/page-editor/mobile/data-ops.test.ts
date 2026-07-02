@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Config, Data } from '@measured/puck'
+import type { Config, Data } from '@/lib/page-editor/types'
 import {
   addBlock,
   removeBlock,

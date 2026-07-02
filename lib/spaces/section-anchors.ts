@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SECTION ANCHORS — the profile nav's PRE-POPULATED menu (feature-block model).

@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 
 // The default block layout for the /circles index — the Meetup-style order, rebuilt
 // from the standardized Circles blocks. This seeds both the editor (when there's no

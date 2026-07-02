@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight, CalendarDays } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { createClient } from '@/lib/supabase/server'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
@@ -179,7 +179,7 @@ export default async function RootPage() {
       <>
         <MarketingHeader overHero isAuth={!!user} headerMenu={headerMenu} menuTimings={menuTimings} ctaLabel="Join the beta" />
         <main id="main">
-          <Render config={config} data={data} />
+          <BlockRender config={config} data={data} />
         </main>
         <MarketingFooter menu={footerMenu} />
       </>

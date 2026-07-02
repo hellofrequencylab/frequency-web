@@ -15,7 +15,8 @@
 // RSC page passes (publicBase + stats + topFriends), so blocks look identical to the public page.
 // The card style / heading font ride the theme wrapper + block styling exactly as live.
 
-import { Render, type Config, type Data } from '@measured/puck'
+import { Render } from '@measured/puck'
+import type { Config, Data } from '@/lib/page-editor/types'
 import { Pencil } from 'lucide-react'
 import type { SpotlightTheme } from '@/lib/spotlight/theme'
 import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'

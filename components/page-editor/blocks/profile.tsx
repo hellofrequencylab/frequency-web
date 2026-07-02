@@ -18,7 +18,7 @@ import {
   Video,
   Star,
 } from 'lucide-react'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { getInitials } from '@/lib/utils'
 import { focalClass } from '@/lib/page-editor/image-controls'

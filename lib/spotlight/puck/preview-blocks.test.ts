@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { toPreviewBlocks } from './preview-blocks'
 
 // The pure content→tappable mapping the mobile WYSIWYG preview relies on: each top-level block

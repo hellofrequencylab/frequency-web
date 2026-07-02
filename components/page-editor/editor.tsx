@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Puck, usePuck, type Data } from '@measured/puck'
+import { Puck, usePuck } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import '@measured/puck/puck.css'
 import '@/components/page-editor/puck-theme.css'
 import Link from 'next/link'

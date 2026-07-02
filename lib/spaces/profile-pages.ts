@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
 import { generateDefaultSpacePage } from '@/lib/page-editor/templates/space-default'
 

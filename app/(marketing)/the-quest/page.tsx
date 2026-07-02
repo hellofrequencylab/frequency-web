@@ -12,7 +12,7 @@ import {
   Trophy,
   MapPin,
 } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import {
   PhotoHero,
   Section,
@@ -106,7 +106,7 @@ export default async function TheQuestPage() {
           breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }]),
         ]}
       />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
+      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
     </>
   )
 }

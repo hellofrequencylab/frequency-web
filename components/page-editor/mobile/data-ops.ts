@@ -6,7 +6,7 @@
 // key (see lib/spotlight/puck/convert.ts). These helpers keep that contract and add
 // nothing Puck-specific beyond the `Data` shape, so they are trivially unit-testable.
 
-import type { Config, Data } from '@measured/puck'
+import type { Config, Data } from '@/lib/page-editor/types'
 
 type Item = Data['content'][number]
 

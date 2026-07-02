@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { ArrowRight, MapPin } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import { BETA_CTA_HREF, BETA_CTA_LABEL } from '@/lib/site'
@@ -14,20 +14,21 @@ import { linktreePreset } from '@/lib/page-editor/templates/linktree'
 import type { SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
 
 // THE PUBLIC SPOTLIGHT, RENDERED THROUGH PUCK (Phase 3). A Server Component: the member's
-// identity header + theme wrapper (unchanged, same look as before) wrap a Puck <Render>
+// identity header + theme wrapper (unchanged, same look as before) wrap a <BlockRender>
 // of their block body. The stored SpotlightLayout is bridged into a Puck document by the
 // pure converter (spotlightLayoutToPuck) — a MIGRATION-FREE bridge, so every existing
 // spotlight keeps working. The server-resolved values (stat numbers, Top Friend faces)
 // ride Puck `metadata`, NEVER the stored blocks, so a tampered meta blob can't fake them.
 //
-// <Render> from '@measured/puck/rsc' is the server-friendly renderer the marketing pages
-// and the Space landing already use, so the public page ships NO editor runtime. The
-// shared `config` is client-safe (no server-only reachable), so importing it here is fine.
+// <BlockRender> (lib/page-editor/block-render.tsx) is the in-house server-friendly renderer
+// the marketing pages and the Space landing already use, so the public page ships NO editor
+// runtime. The shared `config` is client-safe (no server-only reachable), so importing it
+// here is fine.
 //
 // The identity header, theme, background, OG image, and privacy gating are all preserved:
 // this component reads the SAME allowlisted SpotlightData (lib/spotlight/data.ts) the old
 // SpotlightView did; it only swaps the block body from the bespoke SpotlightBlocks renderer
-// to the shared Puck <Render>.
+// to the shared <BlockRender>.
 
 const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`
 
@@ -142,7 +143,7 @@ export function SpotlightPuckRender({
 
           {/* The member's block body, rendered through the SHARED Puck engine. */}
           <div className="mt-6 space-y-4 [&_section]:!py-0">
-            <Render config={config} data={puckData} metadata={{ spotlight: meta }} />
+            <BlockRender config={config} data={puckData} metadata={{ spotlight: meta }} />
           </div>
 
           {showJoinCta ? (

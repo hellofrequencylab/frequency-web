@@ -1,6 +1,6 @@
 'use server'
 
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireJanitor } from '@/lib/page-editor/guard'

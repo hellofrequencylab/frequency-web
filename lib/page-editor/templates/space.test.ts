@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { isRenderableSpaceDoc } from './space'
 import { generateDefaultSpacePage } from './space-default'
 

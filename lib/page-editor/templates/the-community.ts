@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import {
   BETA_CTA_LABEL,
   BETA_CTA_HREF,
