@@ -53,7 +53,10 @@ export interface OnboardingStatus {
   complete: boolean
 }
 
-export async function getOnboardingStatus(profileId: string): Promise<OnboardingStatus> {
+// Request-cached (React cache): each call issues ~5 DB round-trips, and multiple surfaces in one
+// render read the same value (the authed layout's coach/tour reads, the feed hero, sidebar nudges),
+// so memoize per request to share a single computation. Pure per-profile read — no behavior change.
+export const getOnboardingStatus = cache(async (profileId: string): Promise<OnboardingStatus> => {
   const admin = createAdminClient()
 
   const [profileRes, membershipRes, practiceRes, myPractices, authored] = await Promise.all([
@@ -101,4 +104,4 @@ export async function getOnboardingStatus(profileId: string): Promise<Onboarding
     pct: Math.round((doneCount / steps.length) * 100),
     complete: todo.length === 0,
   }
-}
+})
