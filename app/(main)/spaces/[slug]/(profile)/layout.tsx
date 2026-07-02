@@ -91,7 +91,9 @@ const onInkSecondaryClasses = cn(
 // photo (Hero) or in flow (Header); only the secondary chips swap to on-ink. Tokens only, no hex.
 const primaryCtaClasses = cn(
   'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors',
-  'bg-primary text-on-primary shadow-pop hover:bg-primary-hover',
+  // The accent-filled dominant action, with only a soft shadow (not the heavy shadow-pop, which read
+  // as a raised cream chip rather than a clean accent button).
+  'bg-primary text-on-primary shadow-sm hover:bg-primary-hover',
 )
 
 function ownerToolClasses(onInk: boolean): string {
@@ -311,21 +313,24 @@ export default async function SpaceProfileChromeLayout({
   const infoBand = (
     <div>
       {!isHero && (
-        // HEADER identity: the logo chip OVERLAPS the cover bottom (a single -mt lift on the chip
-        // alone, so only the logo rides up onto the image while the name + tagline sit cleanly below
-        // it). The name lockup sits to the chip's right, bottom-aligned to it; the action row sits on
+        // HEADER identity: the logo chip OVERLAPS the cover bottom (a single, generous -mt lift on the
+        // chip alone, so the logo clearly rides up ONTO the image while the name + tagline sit below the
+        // cover). The name lockup sits to the chip's right, bottom-aligned to it; the action row sits on
         // the same line, pushed right, wrapping under only when the row runs out of room.
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="flex min-w-0 items-end gap-4 sm:gap-5">
             <div className="-mt-16 shrink-0 sm:-mt-20">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
-            <div className="min-w-0">{nameLockup(false)}</div>
+            <div className="min-w-0 pt-1">{nameLockup(false)}</div>
           </div>
-          <div>{identityActions(false)}</div>
+          <div className="pt-1">{identityActions(false)}</div>
         </div>
       )}
-      <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
+      {/* The menu sits in its OWN band under a hairline rule (the rule is ABOVE the lower menu line). */}
+      <div className="mt-5 border-t border-border">
+        <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
+      </div>
     </div>
   )
 
