@@ -168,17 +168,20 @@ function StageCard({ stage }: { stage: FunnelStage }) {
 
 function LinkRow({ linkId, refType, target }: { linkId: string; refType: StageRefType; target: string }) {
   const [pending, start] = useTransition()
+  const [err, setErr] = useState<string | null>(null)
   const router = useRouter()
 
   function remove() {
+    setErr(null)
     start(async () => {
-      await removeStageLink(linkId)
+      const res = await removeStageLink(linkId)
+      if (isError(res)) { setErr(res.error); return }
       router.refresh()
     })
   }
 
   return (
-    <li className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-1.5">
+    <li className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-1.5">
       <Link2 className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden />
       <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{REF_TYPE_META[refType]?.label ?? refType}</span>
       <span className="min-w-0 flex-1 truncate text-xs text-text">{target}</span>
@@ -190,6 +193,7 @@ function LinkRow({ linkId, refType, target }: { linkId: string; refType: StageRe
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
+      {err && <span role="alert" className="w-full text-2xs text-danger">{err}</span>}
     </li>
   )
 }

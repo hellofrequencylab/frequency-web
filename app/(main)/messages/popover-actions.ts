@@ -93,11 +93,9 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
   }>).filter((p) => !p.conversations?.migrated_to_room_id)
 
   const convIds = myParts.map(p => p.conversation_id as string)
-  const dmReadMap: Record<string, string | null> = {}
   const convNameMap: Record<string, string | null> = {}
   for (const p of myParts ?? []) {
     const cid = p.conversation_id as string
-    dmReadMap[cid] = (p.last_read_at as string | null) ?? null
     const c = (p as unknown as { conversations: { name: string | null } | null }).conversations
     convNameMap[cid] = c?.name ?? null
   }
@@ -120,29 +118,25 @@ export async function fetchMessagesSummary(): Promise<MessagesSummary> {
       partsByConv[cid].push(prof)
     }
 
-    // Get last message per conv + unread count
-    const { data: recentMessages } = await supabase
-      .from('messages')
-      .select('conversation_id, sender_id, body, created_at')
-      .in('conversation_id', convIds)
-      .order('created_at', { ascending: false })
-      .limit(convIds.length * 10)
+    // Per-conversation newest message + unread count via the window RPC (no shared-budget
+    // starvation across busy threads; matches the inbox). Untyped RPC handle (ADR-246).
+    type ConvSummary = {
+      conversation_id: string
+      last_body: string | null
+      last_created_at: string | null
+      unread_count: number
+    }
+    const { data: summaries } = await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: ConvSummary[] | null; error: unknown }>)('dm_conversation_summaries', { _convs: convIds })
 
     const lastMsgMap: Record<string, { body: string; created_at: string }> = {}
     const unreadCountMap: Record<string, number> = {}
     for (const cid of convIds) unreadCountMap[cid] = 0
-
-    for (const m of recentMessages ?? []) {
-      const cid = m.conversation_id as string
-      if (!lastMsgMap[cid]) {
-        lastMsgMap[cid] = { body: m.body as string, created_at: m.created_at as string }
-      }
-      if (m.sender_id !== myProfileId) {
-        const lastRead = dmReadMap[cid]
-        if (!lastRead || new Date(m.created_at as string) > new Date(lastRead)) {
-          unreadCountMap[cid] = (unreadCountMap[cid] ?? 0) + 1
-        }
-      }
+    for (const s of summaries ?? []) {
+      if (s.last_created_at) lastMsgMap[s.conversation_id] = { body: s.last_body ?? '', created_at: s.last_created_at }
+      unreadCountMap[s.conversation_id] = s.unread_count
     }
 
     const sortedConvIds = convIds

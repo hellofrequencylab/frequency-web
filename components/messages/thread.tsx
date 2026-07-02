@@ -78,8 +78,18 @@ export function MessageThread({
         (payload) => {
           const newMsg = payload.new as Message
           setMessages((prev) => {
-            // Avoid duplicates (the sender already sees their own msg via server action revalidate)
             if (prev.some((m) => m.id === newMsg.id)) return prev
+            // My own realtime echo: replace the optimistic placeholder for this message rather than
+            // appending, so a DM I just sent doesn't briefly double-render (the optimistic id is
+            // `optimistic-*`, which the id dedup above can't match against the real row's uuid).
+            if (newMsg.sender_id === myProfileId) {
+              const i = prev.findIndex((m) => m.id.startsWith('optimistic-') && m.body === newMsg.body)
+              if (i !== -1) {
+                const next = prev.slice()
+                next[i] = newMsg
+                return next
+              }
+            }
             return [...prev, newMsg]
           })
         }
@@ -89,7 +99,7 @@ export function MessageThread({
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [conversationId])
+  }, [conversationId, myProfileId])
 
   function submit() {
     const trimmed = body.trim()
