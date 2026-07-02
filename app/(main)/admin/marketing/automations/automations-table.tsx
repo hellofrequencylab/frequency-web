@@ -38,6 +38,35 @@ function ToggleCell({ rule }: { rule: AutomationRule }) {
   )
 }
 
+// The delete button. Mirrors ToggleCell: runs deleteRule in a transition and surfaces a failed
+// delete inline (the action returns { ok, error }) instead of the old fire-and-forget that
+// swallowed the error and looked like the row was gone until a refresh brought it back.
+function DeleteCell({ rule }: { rule: AutomationRule }) {
+  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <div className="inline-flex flex-col items-end">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
+          if (!confirm(`Delete the automation "${rule.name}"? This cannot be undone.`)) return
+          setError(null)
+          start(async () => {
+            const res = await deleteRule(rule.id)
+            if (!res.ok) setError(res.error ?? 'Could not delete the rule.')
+          })
+        }}
+        aria-label="Delete rule"
+        className="rounded-lg p-1.5 text-subtle hover:bg-danger-bg hover:text-danger disabled:opacity-50"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+      {error && <p role="alert" className="mt-1 text-2xs font-medium text-danger">{error}</p>}
+    </div>
+  )
+}
+
 // Operator-facing verb for each action type. Falls back to the raw type for any
 // value the table doesn't recognize yet.
 function actionLabel(actionType: string): string {
@@ -79,7 +108,6 @@ export function AutomationsTable({
   triggers: readonly string[]
 }) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [pendingDelete, startDelete] = useTransition()
 
   const columns: ColumnDef<AutomationRule>[] = [
     { key: 'name', header: 'Rule', render: (r) => <span className="font-medium text-text">{r.name}</span> },
@@ -117,20 +145,7 @@ export function AutomationsTable({
           >
             <Pencil className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            disabled={pendingDelete}
-            onClick={() => {
-              if (!confirm(`Delete the automation "${r.name}"? This cannot be undone.`)) return
-              startDelete(async () => {
-                await deleteRule(r.id)
-              })
-            }}
-            aria-label="Delete rule"
-            className="rounded-lg p-1.5 text-subtle hover:bg-danger-bg hover:text-danger disabled:opacity-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <DeleteCell rule={r} />
         </div>
       ),
     },

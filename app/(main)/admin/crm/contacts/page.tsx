@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { Search } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
+import { atLeastRole, isStaff, type CommunityRole } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { demoModeEnabled } from '@/lib/platform-flags'
@@ -14,8 +14,8 @@ export const dynamic = 'force-dynamic'
 // The CRM Contacts tab — the unified roster of people the steward reaches
 // (host → circles, guide → hub, mentor → nexus, admin/janitor → community), each
 // card a launch point for a message, their profile, or a new pipeline deal.
-function scopeLabel(role: CommunityRole): string {
-  if (role === 'admin' || role === 'janitor') return 'the community'
+function scopeLabel(role: CommunityRole, staff: boolean): string {
+  if (staff) return 'the community'
   if (role === 'mentor') return 'your nexus'
   if (role === 'guide') return 'your hub'
   return 'your circles'
@@ -52,24 +52,22 @@ async function circleIdsForScope(
 }
 
 export default async function CrmContactsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
-
+  const caller = await getCallerProfile()
+  if (!caller) redirect('/')
   const admin = createAdminClient()
-  const { data: caller } = await admin
-    .from('profiles')
-    .select('id, community_role')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
 
-  const role = ((caller?.community_role as CommunityRole) ?? 'member')
-  if (!caller || !atLeastRole(role, 'host')) redirect('/feed')
+  const role = caller.community_role
+  // Staff (web_role, ADR-208) see the whole community; community leaders see their own scope.
+  // The old atLeastRole(community_role,'host') gate locked out Executive Admins (community=member),
+  // and the roster bypass below keyed on the RETIRED community 'admin'/'janitor' enum values (no
+  // row holds them), so the full-roster path was dead. Both now key on the staff axis.
+  const staff = isStaff(caller.webRole)
+  if (!(staff || atLeastRole(role, 'host'))) redirect('/feed')
 
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 
   let profileIds: string[] | null = null
-  if (role !== 'admin' && role !== 'janitor') {
+  if (!staff) {
     const circleIds = await circleIdsForScope(admin, caller.id as string, role)
     if (circleIds.length) {
       const { data: memberships } = await admin
@@ -119,7 +117,7 @@ export default async function CrmContactsPage() {
       title="Contacts"
       description={
         <>
-          The people in <strong className="text-text">{scopeLabel(role)}</strong>. Message them, open their profile, or start a pipeline deal. Only what members choose to share.
+          The people in <strong className="text-text">{scopeLabel(role, staff)}</strong>. Message them, open their profile, or start a pipeline deal. Only what members choose to share.
         </>
       }
       width="wide"
@@ -130,7 +128,7 @@ export default async function CrmContactsPage() {
             icon={Search}
             variant="first-use"
             title="No contacts in your scope yet"
-            description={`As people join ${scopeLabel(role)}, they will appear here.`}
+            description={`As people join ${scopeLabel(role, staff)}, they will appear here.`}
           />
         ) : (
           <ContactsTable rows={members} />

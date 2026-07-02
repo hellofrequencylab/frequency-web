@@ -107,6 +107,11 @@ export async function pageContentMetadata(
   return {
     title,
     description,
+    // Self-canonical so faceted/filtered variants (e.g. /events?category=...&sort=...) consolidate
+    // to the clean path instead of each query-string URL indexing as a duplicate. metadataBase
+    // (root layout) resolves the relative path; harmless on the noindex in-app pages that also use
+    // this helper.
+    alternates: { canonical: route },
     openGraph: { title, description, ...(ogImage ? { images: [{ url: ogImage }] } : {}) },
     twitter: {
       card: ogImage ? 'summary_large_image' : 'summary',

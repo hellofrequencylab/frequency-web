@@ -5,16 +5,20 @@ import { redirect } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { authorizeAction } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // The CRM suite is a steward tool — hosts and up. Every action gates here, and
 // writes go through the untyped admin client (crm_* tables aren't in the generated
 // types yet — same cast as lib/crm/pipeline.ts).
 async function requireCrm(): Promise<string> {
+  // The platform CRM is a STAFF tool: gate on the staff axis (web_role janitor, ADR-208),
+  // matching the CRM pages (deals / deal detail / contacts all require janitor). The old
+  // `atLeastRole(community_role, 'host')` gate was the wrong axis both ways: it locked out
+  // Executive Admins (web_role=janitor, community_role=member) from every write, and admitted
+  // non-staff community hosts to these RLS-bypassing crm_* writes.
   const caller = await getCallerProfile()
-  if (!caller || !atLeastRole(caller.community_role, 'host')) throw new Error('Unauthorized')
-  return caller.id
+  return (await authorizeAction(caller, 'janitor')).id
 }
 
 function db() {
