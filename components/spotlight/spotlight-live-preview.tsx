@@ -7,15 +7,15 @@
 //
 // TAP-TO-EDIT: every top-level content block is rendered inside its own tappable wrapper, so a
 // tap maps unambiguously to that block's id → `onEditBlock(id)` (the editor then opens the
-// block's field form in a popup). Rendering each block through its OWN single-item <Render>
+// block's field form in a popup). Rendering each block through its OWN single-item <BlockRender>
 // (see lib/spotlight/puck/preview-blocks.ts) keeps the output identical to live while giving a
 // clean tap→id mapping — no brittle DOM walk. Structural/background taps do nothing.
 //
-// CLIENT: uses Puck's client <Render> (@measured/puck) with the SAME metadata channel the live
-// RSC page passes (publicBase + stats + topFriends), so blocks look identical to the public page.
-// The card style / heading font ride the theme wrapper + block styling exactly as live.
+// CLIENT: uses the in-house <BlockRender> with the SAME metadata channel the live RSC page passes
+// (publicBase + stats + topFriends), so blocks look identical to the public page. The card style /
+// heading font ride the theme wrapper + block styling exactly as live.
 
-import { Render } from '@measured/puck'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import type { Config, Data } from '@/lib/page-editor/types'
 import { Pencil } from 'lucide-react'
 import type { SpotlightTheme } from '@/lib/spotlight/theme'
@@ -65,7 +65,7 @@ export function SpotlightLivePreview({
             {/* The real themed block. Pointer-events are disabled so inner links/iframes never
                 fire; the whole wrapper is one edit target. */}
             <div className="pointer-events-none">
-              <Render config={config} data={doc} metadata={metadata} />
+              <BlockRender config={config} data={doc} metadata={metadata} />
             </div>
             {/* "Edit" affordance: hidden until press/focus so the preview reads clean. */}
             <span

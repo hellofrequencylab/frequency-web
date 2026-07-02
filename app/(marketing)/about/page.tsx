@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
 import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import {
   PhotoHero,
   Section,
@@ -54,6 +55,7 @@ export default async function AboutPage() {
       <JsonLd
         data={breadcrumbSchema([{ name: 'About', path: '/about' }])}
       />
+      {data && <BlockDocJsonLd data={data} path="/about" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyAbout />}
     </>
   )

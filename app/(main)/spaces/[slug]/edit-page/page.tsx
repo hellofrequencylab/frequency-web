@@ -21,12 +21,12 @@ import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 // editor runtime, no write affordances); everyone else 404s so the route never leaks. A `?page`
 // that is not a real page 404s too, so the editor never opens onto a page that does not exist.
 //
-// CHROME: this is an IN-PAGE editor surface with its own Puck header, so the profile
+// CHROME: this is an IN-PAGE editor surface with its own editor header, so the profile
 // layout escapes its hero + tab chrome for the `edit-page` segment. It is NOT a
 // full-viewport takeover: it keeps the GLOBAL community right rail like the rest of the
-// app (page-chrome.ts), and the Puck side panels are shrunk (puck-theme.css) so the canvas
-// still breathes beside the rail. The editor runtime ships ONLY here; the public landing
-// renders <BlockRender> with no editor code.
+// app (page-chrome.ts), and the in-house DesktopEditor lays out its palette + inspector
+// beside the rail. The editor runtime ships ONLY here; the public landing renders
+// <BlockRender> with no editor code.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {

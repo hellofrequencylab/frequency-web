@@ -1,10 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Puck, usePuck } from '@measured/puck'
 import type { Data } from '@/lib/page-editor/types'
-import '@measured/puck/puck.css'
-import '@/components/page-editor/puck-theme.css'
 import Link from 'next/link'
 import { Check, CircleDot, Palette, X } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
@@ -23,11 +20,13 @@ import { EMPTY_SPOTLIGHT_META, type SpotlightPuckMetadata } from '@/lib/spotligh
 import type { SpotlightThemeSlot } from '@/lib/profile/spotlight-flags'
 import { SpotlightLivePreview } from './spotlight-live-preview'
 import type { SpotlightIdentity } from './spotlight-identity'
+import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
 
-// THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED <Puck> ENGINE (Phase 3). The member arranges
-// their link-tree body from the SAME block library + editor a brand Space uses. It mirrors
-// the marketing/Space editor pattern (components/page-editor/editor.tsx): full-screen Puck,
-// live state read via usePuck().
+// THE SPOTLIGHT EDITOR, RUNNING ON THE SHARED in-house editor engine (ADR-493 Phase 3). The
+// member arranges their link-tree body from the SAME block library + editor a brand Space uses.
+// It mirrors the marketing/Space editor pattern (components/page-editor/editor.tsx): the
+// full-screen <DesktopEditor>, whose live document is read via useEditorDoc() and whose edits
+// autosave into the draft through onChange.
 //
 // DRAFT → PUBLISH (the working-copy split): every edit — blocks, theme, background — autosaves
 // (debounced) into ONE draft node (meta.spotlight.draft) via saveSpotlightDraft. The draft never
@@ -109,33 +108,12 @@ function ThemePanelContent({
   )
 }
 
-// An invisible child mounted INSIDE <Puck> so it can read the live document via usePuck(). It keeps
-// the parent's layout ref in sync and triggers the debounced draft save on every block change — the
-// desktop equivalent of the mobile editor's autosave. Dirty tracking mirrors the marketing editor
-// (baseline captured after Puck's own init) so the very first render doesn't count as an edit.
-function DraftAutosaveWatcher({ controller }: { controller: DraftController }) {
-  const { appState } = usePuck()
-  const doc = appState.data
-  const serialized = JSON.stringify(doc)
-  const baselineRef = useRef(serialized)
-
-  useEffect(() => {
-    controller.setLayoutDoc(doc)
-    if (serialized === baselineRef.current) return // Puck's own init / no real change.
-    baselineRef.current = serialized
-    controller.saveDraft(doc)
-    // Only react to a genuine document change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serialized])
-
-  return null
-}
-
 // Desktop header actions: an explicit "Save" (writes the draft now) and the primary green
-// "Publish" (promotes the draft to the live public page). Autosave already fires on every edit;
-// Save is a manual flush, Publish is the deliberate go-live.
+// "Publish" (promotes the draft to the live public page). Autosave already fires on every edit
+// (DesktopEditor's onChange → controller.saveDraft); Save is a manual flush, Publish is the
+// deliberate go-live.
 function DraftSaveButton({ controller }: { controller: DraftController }) {
-  const { appState } = usePuck()
+  const doc = useEditorDoc()
   const saving = controller.saveState === 'saving'
   const label =
     controller.saveState === 'saving' ? 'Saving…'
@@ -146,7 +124,7 @@ function DraftSaveButton({ controller }: { controller: DraftController }) {
   return (
     <button
       type="button"
-      onClick={() => controller.saveDraft(appState.data)}
+      onClick={() => controller.saveDraft(doc)}
       disabled={saving}
       title="Save your draft (only you can see it until you publish)"
       className={`inline-flex items-center gap-1.5 rounded-lg border border-border px-4 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated ${
@@ -160,7 +138,7 @@ function DraftSaveButton({ controller }: { controller: DraftController }) {
 }
 
 function PublishButton({ controller }: { controller: DraftController }) {
-  const { appState } = usePuck()
+  const doc = useEditorDoc()
   const publishing = controller.publishState === 'publishing'
   const active = controller.hasUnpublishedChanges || controller.publishState === 'error'
   const label =
@@ -172,7 +150,7 @@ function PublishButton({ controller }: { controller: DraftController }) {
   return (
     <button
       type="button"
-      onClick={() => { void controller.publish(appState.data) }}
+      onClick={() => { void controller.publish(doc) }}
       disabled={!active || publishing}
       title={active ? 'Publish your changes to your live Spotlight page' : 'Your live page is up to date'}
       className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
@@ -372,29 +350,31 @@ export function SpotlightPuckEditor({
     <div className="relative">
       <ResponsiveEditor
         desktop={
-          <Puck
+          <DesktopEditor
             config={config}
             data={initialData}
             metadata={spotlightMeta}
             headerTitle="Build your Spotlight"
-            overrides={{
-              headerActions: () => (
-                <>
-                  {/* Invisible: watches the live Puck doc and autosaves it into the draft. */}
-                  <DraftAutosaveWatcher controller={controller} />
-                  <Link
-                    href="/settings/profile"
-                    className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-                  >
-                    ← Exit
-                  </Link>
-                  <UnpublishedBadge show={hasUnpublished} />
-                  {themeButton}
-                  <DraftSaveButton controller={controller} />
-                  <PublishButton controller={controller} />
-                </>
-              ),
+            // Every block edit autosaves into the draft (the desktop equivalent of the mobile
+            // editor's autosave), and keeps the layout ref in sync for Publish.
+            onChange={(doc) => {
+              controller.setLayoutDoc(doc)
+              controller.saveDraft(doc)
             }}
+            headerActions={
+              <>
+                <Link
+                  href="/settings/profile"
+                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+                >
+                  ← Exit
+                </Link>
+                <UnpublishedBadge show={hasUnpublished} />
+                {themeButton}
+                <DraftSaveButton controller={controller} />
+                <PublishButton controller={controller} />
+              </>
+            }
           />
         }
         mobile={{

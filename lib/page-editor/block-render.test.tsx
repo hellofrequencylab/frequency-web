@@ -1,16 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { Render as PuckRender } from '@measured/puck/rsc'
 import type { Data, Metadata } from '@/lib/page-editor/types'
 import { config } from '@/lib/page-editor/config'
 import { BlockRender } from './block-render'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CORRECTNESS GATE — BlockRender must be byte-identical to Puck's own rsc <Render>.
+// CORRECTNESS GATE — frozen golden-markup snapshots of BlockRender's output.
 //
-// For each representative Data document we assert that
-//   renderToStaticMarkup(<BlockRender .../>) === renderToStaticMarkup(<PuckRender .../>)
-// using Puck's still-installed `@measured/puck/rsc` Render as the golden markup.
+// BlockRender was PROVEN byte-identical to Puck's own `@measured/puck/rsc` <Render>
+// (renderToStaticMarkup deep-equal) before the package was removed (ADR-493 Phase 2).
+// With Puck gone, the golden comparison is captured as inline snapshots of the CURRENT
+// BlockRender output: any future regression in the render path (slot recursion,
+// metadata threading, unknown-type skipping, root wrapping) surfaces as a snapshot
+// diff. The snapshots therefore stand in for the old Puck-parity assertion.
 //
 // The docs exercise: the config root wrapper, plain prop-driven blocks, metadata
 // threading (top-level AND nested-in-slot, via LiveStats which reads
@@ -18,7 +20,7 @@ import { BlockRender } from './block-render'
 // recursion, unknown-type skipping, and empty/malformed docs.
 //
 // All blocks chosen render purely from props/metadata (no next/link, next/image,
-// router or Supabase context), so both renderers run cleanly under
+// router or Supabase context), so the renderer runs cleanly under
 // renderToStaticMarkup with no providers.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -43,21 +45,10 @@ const LIVE: Metadata = {
   },
 }
 
-const puck = (data: Data, metadata: Metadata) =>
-  renderToStaticMarkup(<PuckRender config={config} data={data} metadata={metadata} />)
-const block = (data: Data, metadata: Metadata) =>
+const block = (data: Data, metadata: Metadata = {}) =>
   renderToStaticMarkup(<BlockRender config={config} data={data} metadata={metadata} />)
 
-// The core assertion: exact string parity with Puck. Returns the markup so a
-// case can make additional (e.g. metadata-threading) assertions on it.
-function expectParity(data: Data, metadata: Metadata = {}): string {
-  const mine = block(data, metadata)
-  const theirs = puck(data, metadata)
-  expect(mine).toBe(theirs)
-  return mine
-}
-
-describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
+describe('BlockRender golden markup (frozen; was byte-identical to Puck rsc <Render>)', () => {
   it('root + plain prop-driven blocks (Heading, Text, Statement)', () => {
     const data: Data = {
       root: {},
@@ -67,9 +58,10 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         item('Statement', 's1', { text: 'A bold statement.', accent: 'bold' }),
       ],
     }
-    const html = expectParity(data)
+    const html = block(data)
     expect(html).toContain('Gather your ') // accent word "people" is wrapped in a span
     expect(html).toContain('bold')
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Gather your <span class="text-primary">people</span></h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Some <strong class="font-semibold text-text">bold</strong> and <em>italic</em> copy.</p></div></div></section><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">A <span class="text-primary">bold</span> statement.</p></section>"`)
   })
 
   it('threads metadata through the config root (space layout preset wraps children)', () => {
@@ -78,12 +70,15 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
       content: [item('Heading', 'h1', { title: 'Space page' })],
     }
     // With space metadata the config root wraps children in an airy rhythm div;
-    // without it, root passes children straight through. Parity must hold for both,
-    // and the two outputs must differ (proving metadata reaches config.root.render).
-    const withSpace = expectParity(data, { space: { layoutPreset: 'sections' } })
-    const withoutSpace = expectParity(data, {})
+    // without it, root passes children straight through. The two outputs must differ
+    // (proving metadata reaches config.root.render), and the "sections" preset rhythm
+    // must appear when present.
+    const withSpace = block(data, { space: { layoutPreset: 'sections' } })
+    const withoutSpace = block(data, {})
     expect(withSpace).not.toBe(withoutSpace)
     expect(withSpace).toContain('space-y-16') // the "sections" preset rhythm
+    expect(withSpace).toMatchInlineSnapshot(`"<div class="space-y-16 py-10 sm:space-y-20 sm:py-14"><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section></div>"`)
+    expect(withoutSpace).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Space page</h2></div></section>"`)
   })
 
   it('threads metadata into a top-level block (LiveStats reads puck.metadata.live)', () => {
@@ -91,11 +86,12 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
       root: {},
       content: [item('LiveStats', 'ls1')],
     }
-    const withLive = expectParity(data, LIVE)
-    const withoutLive = expectParity(data, {})
+    const withLive = block(data, LIVE)
+    const withoutLive = block(data, {})
     // The live counts change the rendered markup, so a threading regression would
-    // surface as a diff here (and as a parity failure above if only one side broke).
+    // surface as a snapshot diff here (and as a differing pair below).
     expect(withLive).not.toBe(withoutLive)
+    expect(withLive).toMatchInlineSnapshot(`"<section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-6xl sm:text-7xl text-text">1,234</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Members</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">56</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Circles</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">0</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Events soon</p></div></div></div></section>"`)
   })
 
   it('nested slot: Container renders its `content` slot as nested items', () => {
@@ -110,8 +106,9 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         }),
       ],
     }
-    const html = expectParity(data)
+    const html = block(data)
     expect(html).toContain('Inside a container')
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Inside a container</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Nested body.</p></div></div></section></div></div></section>"`)
   })
 
   it('nested slots: Columns renders col1 / col2 / col3 (3-column)', () => {
@@ -126,7 +123,7 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         }),
       ],
     }
-    expectParity(data)
+    expect(block(data)).toMatchInlineSnapshot(`"<section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3 items-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Col one</h2></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Col two</p></div></div></section></div><div><section class="bg-marketing-canvas px-6 py-14 sm:py-24 "><p class="font-display uppercase max-w-3xl mx-auto text-center text-text text-[clamp(2rem,6.5vw,3.75rem)] leading-[1.1]">Col three</p></section></div></div></section>"`)
   })
 
   it('nested slots: SpaceLayout main/side, under a space-metadata root', () => {
@@ -141,7 +138,7 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         }),
       ],
     }
-    expectParity(data, { space: { layoutPreset: 'stack' } })
+    expect(block(data, { space: { layoutPreset: 'stack' } })).toMatchInlineSnapshot(`"<div class="space-y-12 py-8 sm:space-y-14 sm:py-10"><section class="w-full"><div class="grid gap-10 lg:grid-cols-3 lg:gap-14"><div class="space-y-14 lg:col-span-2"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Main region</h2></div></section></div></div><aside class="space-y-6 lg:sticky lg:top-24 lg:self-start"><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Side region</p></div></div></section></div></aside></div></section></div>"`)
   })
 
   it('deep slot recursion + metadata threaded into a slotted LiveStats', () => {
@@ -159,15 +156,16 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         }),
       ],
     }
-    // Parity with AND without live metadata — proves nested items receive
-    // puck.metadata identically to Puck (LiveStats deep inside two slots).
-    const withLive = expectParity(data, LIVE)
-    const withoutLive = expectParity(data, {})
+    // Snapshot WITH live metadata, and prove nested items receive puck.metadata
+    // identically (LiveStats deep inside two slots) by differing without it.
+    const withLive = block(data, LIVE)
+    const withoutLive = block(data, {})
     expect(withLive).not.toBe(withoutLive)
     expect(withLive).toContain('Deeply nested heading')
+    expect(withLive).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto"><div><section class="px-6 py-12 sm:py-16 bg-surface "><div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-2 items-start"><div><section class="bg-surface px-6 py-24 sm:py-28 "><div class="max-w-3xl mx-auto text-center"><p class="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">Not a someday idea</p><h2 class="font-display uppercase text-text text-[clamp(1.875rem,5.5vw,3rem)] mb-12">It’s already happening.</h2><div class="grid grid-cols-3 gap-6 max-w-xl mx-auto"><div><p class="font-display text-6xl sm:text-7xl text-text">1,234</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Members</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">56</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Circles</p></div><div><p class="font-display text-6xl sm:text-7xl text-text">0</p><p class="text-xs text-subtle mt-3 uppercase tracking-widest font-bold">Events soon</p></div></div></div></section></div><div><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Deeply nested heading</h2></div></section></div></div></section></div></div></section>"`)
   })
 
-  it('skips unknown block types instead of throwing (matches Puck)', () => {
+  it('skips unknown block types instead of throwing', () => {
     const data: Data = {
       root: {},
       content: [
@@ -176,19 +174,21 @@ describe('BlockRender is byte-identical to Puck rsc <Render>', () => {
         item('Text', 't1', { body: 'Another real block' }),
       ],
     }
-    const html = expectParity(data)
+    const html = block(data)
     expect(html).toContain('Real block')
     expect(html).toContain('Another real block')
+    expect(html).not.toContain('ThisBlockDoesNotExist')
+    expect(html).toMatchInlineSnapshot(`"<section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><p class="text-sm font-bold uppercase tracking-[0.25em] mb-4 text-primary-strong">Eyebrow</p><h2 class="font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] text-text">Real block</h2></div></section><section class="px-6 py-16 sm:py-20 bg-surface "><div class="max-w-3xl mx-auto "><div class="text-lg text-muted leading-relaxed space-y-4"><p>Another real block</p></div></div></section>"`)
   })
 
-  it('renders an empty document to empty markup (matches Puck)', () => {
-    expect(expectParity({ root: {}, content: [] })).toBe('')
+  it('renders an empty document to empty markup', () => {
+    expect(block({ root: {}, content: [] })).toBe('')
   })
 })
 
-describe('BlockRender is resilient to malformed input (beyond Puck, which throws)', () => {
+describe('BlockRender is resilient to malformed input (beyond Puck, which threw)', () => {
   it('renders nothing for a doc missing content/root without throwing', () => {
-    // Puck rsc <Render> dereferences data.root directly and would throw here; the
+    // Puck rsc <Render> dereferenced data.root directly and would throw here; the
     // in-house renderer defensively defaults, matching the "render nothing" contract.
     expect(block({} as Data, {})).toBe('')
     expect(block({ content: undefined, root: undefined } as unknown as Data, {})).toBe('')

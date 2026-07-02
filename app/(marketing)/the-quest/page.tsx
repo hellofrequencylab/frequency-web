@@ -13,6 +13,7 @@ import {
   MapPin,
 } from 'lucide-react'
 import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import {
   PhotoHero,
   Section,
@@ -106,6 +107,7 @@ export default async function TheQuestPage() {
           breadcrumbSchema([{ name: 'The Quest', path: '/the-quest' }]),
         ]}
       />
+      {data && <BlockDocJsonLd data={data} path="/the-quest" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheQuest />}
     </>
   )

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import {
   ArrowRight,
   Dumbbell,
@@ -94,6 +95,7 @@ export default async function TheLabPage() {
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
       />
+      {data && <BlockDocJsonLd data={data} path="/the-lab" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
     </>
   )

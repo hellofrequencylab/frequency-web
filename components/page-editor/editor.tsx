@@ -2,24 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Puck, usePuck } from '@measured/puck'
 import type { Data } from '@/lib/page-editor/types'
-import '@measured/puck/puck.css'
-import '@/components/page-editor/puck-theme.css'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { publishPage, unpublishPage } from '@/app/edit/actions'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
+import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
 
 // Dynamic publish button: full-colour "Publish now" when there are unpublished
 // edits, dim "Published" (with a check) when the live page matches the editor.
-// Reads Puck's live document via usePuck and compares it to the last-published
-// baseline (captured after Puck finishes its own init, so normalisation doesn't
-// register as a fake edit).
+// Reads the live document via useEditorDoc and compares it to the last-published
+// baseline (captured on first render — the editor loads the doc as-is with no
+// normalisation, so the initial render can't register as a fake edit).
 function PublishButton({ slug }: { slug: string }) {
-  const { appState } = usePuck()
-  const current = JSON.stringify(appState.data)
+  const doc = useEditorDoc()
+  const current = JSON.stringify(doc)
 
   // Baseline = the document as first loaded (the live/published version).
   // Captured once via the useState initializer.
@@ -32,8 +30,8 @@ function PublishButton({ slug }: { slug: string }) {
     if (!dirty || status === 'publishing') return
     setStatus('publishing')
     try {
-      await publishPage(slug, appState.data)
-      setBaseline(JSON.stringify(appState.data))
+      await publishPage(slug, doc)
+      setBaseline(JSON.stringify(doc))
       setStatus('idle')
     } catch {
       setStatus('error')
@@ -107,7 +105,7 @@ function UnpublishButton({ slug }: { slug: string }) {
   )
 }
 
-// Full-screen Puck editor for a marketing page. Admin-only (the editor runtime
+// Full-screen in-house editor for a marketing page. Admin-only (the editor code
 // only loads here; the public site never ships it).
 export function PageEditor({
   slug,
@@ -123,24 +121,22 @@ export function PageEditor({
   return (
     <ResponsiveEditor
       desktop={
-        <Puck
+        <DesktopEditor
           config={config}
           data={data}
           headerTitle={`Editing: ${title}`}
-          overrides={{
-            headerActions: () => (
-              <>
-                <Link
-                  href="/pages"
-                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
-                >
-                  ← Exit
-                </Link>
-                {published && <UnpublishButton slug={slug} />}
-                <PublishButton slug={slug} />
-              </>
-            ),
-          }}
+          headerActions={
+            <>
+              <Link
+                href="/pages"
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-muted hover:text-text"
+              >
+                ← Exit
+              </Link>
+              {published && <UnpublishButton slug={slug} />}
+              <PublishButton slug={slug} />
+            </>
+          }
         />
       }
       mobile={{
