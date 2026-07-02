@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { QrCode, Pencil, LayoutTemplate } from 'lucide-react'
+import { QrCode } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
@@ -10,7 +10,8 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { readProfilePages, resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
+import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
@@ -20,6 +21,8 @@ import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
+import { SpaceCustomizeButton } from '@/components/spaces/space-customize-button'
+import { SpaceCustomizeDrawer } from '@/components/spaces/space-customize-drawer'
 import { SpaceProfileTabs, type SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
@@ -69,30 +72,29 @@ function coverPlaceholderFor(id: string): string {
   return COVER_PLACEHOLDERS[hash]
 }
 
-// The action-row button GEOMETRY, matched to `buttonClasses(_, 'md')` so the on-cover (Hero overlay)
-// affordances share the exact height/radius/gap of the in-flow (Header) ones. Only the COLOR differs:
-// on a photo, a bordered translucent-white chip over a backdrop blur reads legibly on any cover (the
-// gradient scrim guarantees the ≥4.5:1 floor); off-cover uses the canonical secondary token. Tokens
-// only — no hardcoded hex; the translucent whites are legibility scrims.
-const MD_BUTTON_GEOMETRY =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors'
+// The action-row button GEOMETRY, sized to the compact `sm` scale so the identity row stays trim next
+// to the avatar (the buttons were shrunk down a notch from `md`). On a photo (Hero overlay) a bordered
+// translucent-white chip over a backdrop blur reads legibly on any cover (the gradient scrim guarantees
+// the ≥4.5:1 floor); off-cover uses the canonical secondary token. Tokens only — no hardcoded hex; the
+// translucent whites are legibility scrims.
+const SM_BUTTON_GEOMETRY =
+  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors'
 const onInkSecondaryClasses = cn(
-  MD_BUTTON_GEOMETRY,
+  SM_BUTTON_GEOMETRY,
   'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
 )
 
-// The ONE dominant primary CTA (best practice: a single, visually superior primary action). It is
-// deliberately TALLER + bolder than the `md` secondary affordances beside it (py-2.5 vs py-2,
-// font-bold vs semibold) and carries `shadow-pop`, so it reads as the clear hero action while Follow /
-// Connect / owner tools stay subordinate. The accent stays the same over a photo (Hero) or in flow
-// (Header); only the secondary chips swap to on-ink. Tokens only, no hardcoded hex.
+// The ONE dominant primary CTA (best practice: a single, visually superior primary action). It stays a
+// touch taller/bolder than the secondary affordances beside it and carries `shadow-pop`, so it reads as
+// the clear hero action while Connect / Customize stay subordinate. The accent stays the same over a
+// photo (Hero) or in flow (Header); only the secondary chips swap to on-ink. Tokens only, no hex.
 const primaryCtaClasses = cn(
-  'inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-bold transition-colors',
+  'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors',
   'bg-primary text-on-primary shadow-pop hover:bg-primary-hover',
 )
 
 function ownerToolClasses(onInk: boolean): string {
-  return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'md')
+  return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')
 }
 
 export default async function SpaceProfileChromeLayout({
@@ -178,52 +180,36 @@ export default async function SpaceProfileChromeLayout({
   // The Hero scrim treatment (only relevant to the Hero size): 'shade' = a dark ink scrim under the
   // overlaid identity (WCAG-safe on any photo, on-ink text); 'blend' = the photo fades to the page
   // canvas and the identity uses the theme's own text tokens. Default-safe to 'shade'.
-  const heroOnInk = readCoverScrim(space.preferences) === 'shade'
+  const coverScrim = readCoverScrim(space.preferences)
+  const heroOnInk = coverScrim === 'shade'
 
-  // The owner tools (Edit profile · Customize page): the quietest affordances in the action row, never
-  // shown to a visitor. "Customize page" leads to the Manage > Page quick-edit panel for console types;
-  // the never-provisioned `root` host keeps the standalone /edit-page route.
-  const customizeHref = isConsoleSpaceType(space.type) ? `${base}/manage/layout` : `${base}/edit-page`
+  // The ONE owner affordance (Customize): the three old controls (Edit profile · Customize page · the
+  // divider Settings cog) all opened the same shell settings rail, so they collapse to a single button
+  // that opens it (SpaceCustomizeButton dispatches `open-settings`). Inside the rail the core page
+  // settings live, plus an "Edit fullscreen" button into the Puck editor. Never shown to a visitor.
   const ownerTools = (onInk = false) =>
     canSeeAsOwner ? (
-      <>
-        <Link href={manageHref} className={ownerToolClasses(onInk)}>
-          <Pencil className="h-4 w-4" aria-hidden />
-          {manage.staffViewing ? 'Owner view (staff)' : 'Edit profile'}
-        </Link>
-        <Link href={customizeHref} className={ownerToolClasses(onInk)}>
-          <LayoutTemplate className="h-4 w-4" aria-hidden />
-          Customize page
-        </Link>
-      </>
+      <SpaceCustomizeButton
+        className={ownerToolClasses(onInk)}
+        label={manage.staffViewing ? 'Customize (staff)' : 'Customize'}
+      />
     ) : null
 
-  // The identity ACTION ROW: one aligned, wrapping row of same-height (`md`) buttons — the emphasized
-  // primary CTA, then Follow + Connect (secondary), then the owner tools (quietest). It sits RIGHT of
-  // the avatar + name lockup on the SAME line (wrapping below only when the row runs out of room).
-  // `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while the
-  // primary CTA stays the same accent.
+  // The identity ACTION ROW: the emphasized primary CTA, then Connect, then the single Customize tool.
+  // Follow is NOT here — it sits above the name in the lockup (nameLockup). This row sits RIGHT of the
+  // avatar + name lockup on the SAME line (wrapping below only when the row runs out of room). `onInk`
+  // swaps the secondary/owner affordances to on-cover styling for the Hero overlay while the primary
+  // CTA stays the same accent.
   const identityActions = (onInk = false) => (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={ctaHref} className={primaryCtaClasses}>
         {ctaLabel}
       </Link>
-      {viewerProfileId &&
-        (onInk ? (
-          <FollowSpaceButton
-            spaceId={space.id}
-            spaceName={brandName}
-            initialFollowing={viewerFollows}
-            className={onInkSecondaryClasses}
-          />
-        ) : (
-          <FollowSpaceButton spaceId={space.id} spaceName={brandName} initialFollowing={viewerFollows} />
-        ))}
       <Link
         href="/codes"
         aria-label={`Connect with ${brandName}`}
         title="Connect"
-        className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'md', 'px-2.5')}
+        className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'sm', 'px-2.5')}
       >
         <QrCode className="h-4 w-4" aria-hidden />
       </Link>
@@ -242,9 +228,21 @@ export default async function SpaceProfileChromeLayout({
     <Image src={coverSrc} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" preload className="object-cover" />
   )
 
-  // The name + type badge + tagline lockup. `onInk` paints it for legibility over a Hero cover photo.
+  // The name + type badge + tagline lockup, with FOLLOW sitting ABOVE the name (a compact chip, the
+  // quiet social action that belongs with the identity rather than in the primary action row). `onInk`
+  // paints the whole lockup for legibility over a Hero cover photo.
   const nameLockup = (onInk = false) => (
     <div className="min-w-0">
+      {viewerProfileId && (
+        <div className="mb-2">
+          <FollowSpaceButton
+            spaceId={space.id}
+            spaceName={brandName}
+            initialFollowing={viewerFollows}
+            className={onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')}
+          />
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <h1
           className={cn(
@@ -281,8 +279,8 @@ export default async function SpaceProfileChromeLayout({
     <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
       {coverImage}
       <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />
-      <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+      <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="flex min-w-0 items-end gap-4">
             <div className="shrink-0">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
@@ -350,6 +348,21 @@ export default async function SpaceProfileChromeLayout({
       <DetailTemplate title={brandName} hero={coverNode} band={infoBand}>
         {children}
       </DetailTemplate>
+      {/* The owner-gated Customize rail — opened by the single Customize button in the identity row.
+          Space-scoped + re-gated in every action; carries the core page settings + the fullscreen
+          editor button. Rendered only for a manager, so a visitor never ships the drawer. */}
+      {canSeeAsOwner && (
+        <SpaceCustomizeDrawer
+          slug={space.slug}
+          brandName={brandName}
+          pages={pages}
+          maxPages={MAX_PROFILE_PAGES}
+          coverSize={coverSize}
+          coverScrim={coverScrim}
+          accent={space.brandAccent ?? ''}
+          blocks={readBlockRows(homeDoc)}
+        />
+      )}
     </AccentScope>
   )
 }
