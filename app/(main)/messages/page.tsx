@@ -123,69 +123,23 @@ export default async function MessagesPage({
   const { data: peerRows } = peerRes
   const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
 
-  // Liveness (Phase D): who among my DM peers is active now. last_seen_at is a
-  // public field; read via the admin client so presence shows regardless of region.
   const peerIds = [...peerMap.keys()]
-  let onlineIds = new Set<string>()
-  if (peerIds.length > 0) {
-    const { data: seen } = await createAdminClient()
-      .from('profiles').select('id, last_seen_at').in('id', peerIds)
-    onlineIds = new Set(
-      ((seen ?? []) as { id: string; last_seen_at: string | null }[])
-        .filter(s => isOnline(s.last_seen_at)).map(s => s.id),
-    )
-  }
 
-  // ── Rooms ─────────────────────────────────────────────────────────
+  // ── Second-wave input id-lists, computed synchronously from the first wave ─────
   const { data: myMemberships } = myMembershipsRes
-
   const joinedRoomIds = (myMemberships ?? []).map((m: { room_id: string }) => m.room_id)
 
-  const { data: myRoomsData } = joinedRoomIds.length > 0
-    ? await supabase
-        .from('rooms')
-        .select('id, name, description, visibility, member_count, last_message_at')
-        .in('id', joinedRoomIds)
-        .order('last_message_at', { ascending: false, nullsFirst: false })
-    : { data: [] }
-
-  const myRooms: RoomRow[] = ((myRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
-    .map(r => ({ ...r, isMember: true }))
-
-  // Discover: public rooms not yet joined (fetched in the first wave above).
-  const { data: publicRoomsData } = publicRoomsRes
-
-  const discoverRooms: RoomRow[] = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
-    .filter(r => !joinedRoomIds.includes(r.id))
-    .map(r => ({ ...r, isMember: false }))
-
-  // Channel open rooms for the channels I'm tuned into (Phase B). Read-open to
-  // anyone; posting requires tune-in. Untyped client (scope_id / topical_channel_*
-  // not in generated types).
   const { data: myTuned } = myTunedRes
   const tunedChannelIds = ((myTuned ?? []) as { topical_channel_id: string }[]).map(c => c.topical_channel_id)
-  const { data: channelRoomsData } = tunedChannelIds.length > 0
-    ? await (supabase)
-        .from('rooms')
-        .select('id, name, description, visibility, member_count, last_message_at')
-        .eq('visibility', 'channel')
-        .in('scope_id', tunedChannelIds)
-        .order('last_message_at', { ascending: false, nullsFirst: false })
-    : { data: [] }
-  const channelRooms: RoomRow[] = ((channelRoomsData ?? []) as unknown as Omit<RoomRow, 'isMember'>[])
-    .map(r => ({ ...r, isMember: false }))
 
-  // ── DMs (1:1 only — Phase B) ──────────────────────────────────────
-  // Migrated group threads now live as private rooms; filter them out so they
-  // don't double-show (conversation copy + room copy). `migrated_to_room_id`
-  // isn't in the generated types yet, so read through the untyped client.
+  // Migrated group threads now live as private rooms; filter them out so they don't double-show
+  // (conversation copy + room copy). `migrated_to_room_id` isn't in the generated types yet.
   const { data: myPartsRaw } = myPartsRawRes
   const myParts = ((myPartsRaw ?? []) as unknown as Array<{
     conversation_id: string
     last_read_at: string | null
     conversations: { id: string; name: string | null; created_at: string; migrated_to_room_id: string | null } | null
   }>).filter((p) => !p.conversations?.migrated_to_room_id)
-
   const convIds = (myParts ?? []).map(p => p.conversation_id as string)
   const myLastReadMap: Record<string, string | null> = {}
   const convNameMap: Record<string, string | null> = {}
@@ -196,25 +150,12 @@ export default async function MessagesPage({
     convNameMap[cid] = conv?.name ?? null
   }
 
-  const otherPartMap: Record<string, Profile[]> = {}
-  if (convIds.length > 0) {
-    const { data: allParts } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id, profile_id')
-      .in('conversation_id', convIds)
-      .neq('profile_id', myProfileId)
-    for (const p of allParts ?? []) {
-      const cid = p.conversation_id as string
-      const prof = peerMap.get(p.profile_id as string)
-      if (!prof) continue
-      if (!otherPartMap[cid]) otherPartMap[cid] = []
-      otherPartMap[cid].push(prof)
-    }
-  }
-
-  // Per-conversation newest message + the caller's unread count via a window RPC. Replaces the old
-  // shared-budget fetch (limit convIds*20), where a busy thread could starve others -> a real thread
-  // showing lastMessage=null / unread=0. Untyped RPC handle (ADR-246). Fail-safe: empty on error.
+  // ── Second wave: every follow-up read consumes ONLY first-wave output, so they are mutually
+  // independent — fire them CONCURRENTLY in ONE Promise.all instead of ~6 serial round-trips on this
+  // hot surface. Presence uses the admin client (last_seen_at is public; shows regardless of region).
+  // Room unread folds the old per-room N+1 into one grouped RPC (room_unread_counts). An empty
+  // id-list short-circuits to an empty result (no query). Untyped rpc handle (ADR-246). ─────────────
+  const roomCols = 'id, name, description, visibility, member_count, last_message_at'
   type ConvSummary = {
     conversation_id: string
     last_id: string | null
@@ -223,14 +164,73 @@ export default async function MessagesPage({
     last_created_at: string | null
     unread_count: number
   }
-  const summaryByConv: Record<string, ConvSummary> = {}
-  if (convIds.length > 0) {
-    const { data: summaries } = await (supabase.rpc as unknown as (
-      fn: string,
-      args: Record<string, unknown>,
-    ) => Promise<{ data: ConvSummary[] | null; error: unknown }>)('dm_conversation_summaries', { _convs: convIds })
-    for (const s of summaries ?? []) summaryByConv[s.conversation_id] = s
+  type RoomUnread = { room_id: string; unread_count: number }
+  const rpc = supabase.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown }>
+
+  const [onlineRes, myRoomsRes, channelRoomsRes, allPartsRes, summariesRes, roomUnreadRes, pageContent] =
+    await Promise.all([
+      peerIds.length > 0
+        ? createAdminClient().from('profiles').select('id, last_seen_at').in('id', peerIds)
+        : Promise.resolve({ data: [] as { id: string; last_seen_at: string | null }[] }),
+      joinedRoomIds.length > 0
+        ? supabase.from('rooms').select(roomCols).in('id', joinedRoomIds)
+            .order('last_message_at', { ascending: false, nullsFirst: false })
+        : Promise.resolve({ data: [] }),
+      tunedChannelIds.length > 0
+        ? (supabase).from('rooms').select(roomCols).eq('visibility', 'channel')
+            .in('scope_id', tunedChannelIds)
+            .order('last_message_at', { ascending: false, nullsFirst: false })
+        : Promise.resolve({ data: [] }),
+      convIds.length > 0
+        ? supabase.from('conversation_participants').select('conversation_id, profile_id')
+            .in('conversation_id', convIds).neq('profile_id', myProfileId)
+        : Promise.resolve({ data: [] }),
+      convIds.length > 0
+        ? (rpc('dm_conversation_summaries', { _convs: convIds }) as Promise<{ data: ConvSummary[] | null }>)
+        : Promise.resolve({ data: [] as ConvSummary[] }),
+      joinedRoomIds.length > 0
+        ? (rpc('room_unread_counts', { _rooms: joinedRoomIds }) as Promise<{ data: RoomUnread[] | null }>)
+        : Promise.resolve({ data: [] as RoomUnread[] }),
+      resolvePageContent('/messages', CONTENT_FALLBACK),
+    ])
+
+  // Liveness (Phase D): who among my DM peers is active now (last_seen_at is public).
+  const onlineIds = new Set(
+    ((onlineRes.data ?? []) as { id: string; last_seen_at: string | null }[])
+      .filter(s => isOnline(s.last_seen_at)).map(s => s.id),
+  )
+
+  // ── Rooms ─────────────────────────────────────────────────────────
+  const myRooms: RoomRow[] = ((myRoomsRes.data ?? []) as Omit<RoomRow, 'isMember'>[])
+    .map(r => ({ ...r, isMember: true }))
+
+  // Discover: public rooms not yet joined (fetched in the first wave above).
+  const { data: publicRoomsData } = publicRoomsRes
+  const discoverRooms: RoomRow[] = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
+    .filter(r => !joinedRoomIds.includes(r.id))
+    .map(r => ({ ...r, isMember: false }))
+
+  // Channel open rooms for the channels I'm tuned into (Phase B). Untyped client (scope_id not typed).
+  const channelRooms: RoomRow[] = ((channelRoomsRes.data ?? []) as unknown as Omit<RoomRow, 'isMember'>[])
+    .map(r => ({ ...r, isMember: false }))
+
+  // ── DMs (1:1 only — Phase B) ──────────────────────────────────────
+  const otherPartMap: Record<string, Profile[]> = {}
+  for (const p of (allPartsRes.data ?? []) as { conversation_id: string; profile_id: string }[]) {
+    const cid = p.conversation_id
+    const prof = peerMap.get(p.profile_id)
+    if (!prof) continue
+    if (!otherPartMap[cid]) otherPartMap[cid] = []
+    otherPartMap[cid].push(prof)
   }
+
+  // Per-conversation newest message + the caller's unread count from the window RPC (no shared-budget
+  // starvation). Fail-safe: empty on error.
+  const summaryByConv: Record<string, ConvSummary> = {}
+  for (const s of (summariesRes.data ?? []) as ConvSummary[]) summaryByConv[s.conversation_id] = s
 
   const conversations: ConversationRow[] = (myParts ?? [])
     .map(part => {
@@ -286,37 +286,18 @@ export default async function MessagesPage({
     .filter(it => !activeIds.has(`${it.kind}:${it.id}`))
     .filter(it => filter === 'all' || (filter === 'rooms' ? it.kind === 'room' : it.kind === 'dm'))
 
-  // Room unread — mirror the nav popover's per-room counting (room_messages from
-  // others since my last_read_at) so the header badge reflects rooms + DMs, not
-  // DMs alone (the header badge and the popover were disagreeing).
-  const roomReadMap: Record<string, string | null> = {}
-  for (const m of (myMemberships ?? []) as { room_id: string; last_read_at: string | null }[]) {
-    roomReadMap[m.room_id] = m.last_read_at ?? null
-  }
-  const roomUnreadCounts = joinedRoomIds.length > 0
-    ? await Promise.all(
-        joinedRoomIds.map(async (rid) => {
-          const sinceCutoff = roomReadMap[rid] ?? '1970-01-01T00:00:00Z'
-          const { count } = await supabase
-            .from('room_messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('room_id', rid)
-            .neq('author_id', myProfileId)
-            .gt('created_at', sinceCutoff)
-          return count ?? 0
-        }),
-      )
-    : []
-  const roomUnread = roomUnreadCounts.reduce((sum, c) => sum + c, 0)
+  // Room unread — the grouped room_unread_counts RPC (messages from others since my last_read_at, per
+  // joined room, computed server-side) summed into the header badge, so it reflects rooms + DMs, not
+  // DMs alone. Replaces the old per-room N+1 count loop.
+  const roomUnread = ((roomUnreadRes.data ?? []) as RoomUnread[])
+    .reduce((sum, r) => sum + Number(r.unread_count), 0)
 
   const totalUnread =
     conversations.reduce((sum, c) => sum + c.unreadCount, 0) + roomUnread
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  // The unread badge stays dynamic; only the static title text + description flow
-  // through resolvePageContent.
-  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } =
-    await resolvePageContent('/messages', CONTENT_FALLBACK)
+  // Operator-editable page header (ADR-180), resolved in the second wave above. The unread badge
+  // stays dynamic; only the static title + description flow through resolvePageContent.
+  const { title: pageTitle, description: pageDescription, ctaLabel, ctaHref } = pageContent
 
   // Segmented filter — lives in the "Your threads" section header.
   const filterTabs = (
