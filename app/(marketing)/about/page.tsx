@@ -283,6 +283,12 @@ function LegacyAbout() {
         </Body>
       </Section>
 
+      <Statement tone="surface">
+        Get people together.
+        <br />
+        Do things <span className="text-primary">on purpose.</span>
+      </Statement>
+
       {/* ── Timeline ───────────────────────────────────────────────────────── */}
       <Section tone="canvas">
         <SectionHeading

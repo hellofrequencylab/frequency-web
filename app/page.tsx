@@ -614,8 +614,8 @@ function Splash({
             Be the reason your people have somewhere to go.
           </h2>
           <p className="text-xl text-on-ink-muted mb-9 leading-relaxed">
-            Three ways in: build a Circle, start a practice today, or bring one person. Pick yours and
-            we&apos;ll point you at the first move.
+            Get people together, do things on purpose. Three ways in: build a Circle, start a practice
+            today, or bring one person. Pick yours and we&apos;ll point you at the first move.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button href="/start" size="lg">

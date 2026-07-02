@@ -296,6 +296,12 @@ export default function FriendshipPage() {
         <FaqList items={FAQ} />
       </Section>
 
+      <Statement tone="canvas">
+        Get people together.
+        <br />
+        Do things <span className="text-primary">on purpose.</span>
+      </Statement>
+
       <BetaCTA
         heading="Friendship is just a standing plan you keep."
         body="Frequency hands you a room that meets on a rhythm, so the same people keep showing up. Join the Beta and find yours."
