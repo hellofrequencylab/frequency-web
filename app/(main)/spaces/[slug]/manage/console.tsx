@@ -187,11 +187,18 @@ export function orderWithinGroupByEmphasis(
     .map((w) => w.s)
 }
 
-// ── Cards ────────────────────────────────────────────────────────────────────────────────────────────
+// ── Rows ─────────────────────────────────────────────────────────────────────────────────────────────
+//
+// The console is a DENSE, CONSOLIDATED board: compact one-line link ROWS (icon + label, no per-card
+// description, no per-group blurb) laid out in tight titled groups across a multi-column grid, so the
+// whole console fits WITHOUT the page scrolling. Each row still opens the SAME settings sub-page it did
+// before; only the presentation is tightened. The `desc` stays as the row's title (hover) tooltip so the
+// one-liner is still there on demand without spending vertical space.
 
-/** One spine section as a tappable card into its existing settings sub-page: icon tile + label +
- *  one-line description + a clear open affordance, with an optional "Suggested for your mode" tag. */
-function SectionCard({
+/** One spine section as a compact tappable ROW into its settings sub-page: a small icon tile + the label
+ *  (one line), an optional "Suggested" dot, and a quiet open chevron. The full description rides in the
+ *  title attribute. */
+function SectionRow({
   surface,
   href,
   suggested,
@@ -202,40 +209,37 @@ function SectionCard({
 }) {
   const Icon = ICON_FOR[surface.id] ?? IdCard
   return (
-    <Link
-      href={href}
-      className="group flex min-h-11 items-center gap-3 rounded-xl border border-border bg-surface p-3 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-bg text-primary-strong">
-        <Icon className="h-4 w-4" aria-hidden />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-semibold text-text">{surface.label}</span>
-          {suggested && (
-            <span
-              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
-              title="Suggested for your mode"
-            >
-              <Sparkles className="h-3 w-3" aria-hidden />
-              <span className="sr-only">Suggested for your mode</span>
-              <span aria-hidden>Suggested</span>
-            </span>
-          )}
+    <li>
+      <Link
+        href={href}
+        title={surface.desc}
+        className="group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 shadow-sm outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
+          <Icon className="h-3.5 w-3.5" aria-hidden />
         </span>
-        <span className="mt-0.5 line-clamp-1 block text-xs text-muted">{surface.desc}</span>
-      </span>
-      <ArrowRight
-        className="h-4 w-4 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
-        aria-hidden
-      />
-    </Link>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{surface.label}</span>
+        {suggested && (
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-semibold text-primary-strong"
+            title="Suggested for your mode"
+          >
+            <Sparkles className="h-3 w-3" aria-hidden />
+            <span className="sr-only">Suggested for your mode</span>
+          </span>
+        )}
+        <ArrowRight
+          className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+          aria-hidden
+        />
+      </Link>
+    </li>
   )
 }
 
-/** The Danger zone's one non-link card: the existing delete control for an owner / staff viewer, or a
- *  calm header-only note otherwise (mirrors the legacy cockpit + the circle console Danger surface). */
-function DangerCard({
+/** The Danger zone's one non-link row: the delete control for an owner / staff viewer, or a calm
+ *  header-only note otherwise (mirrors the legacy cockpit + the circle console Danger surface). */
+function DangerRow({
   surface,
   canDelete,
   spaceId,
@@ -245,18 +249,15 @@ function DangerCard({
   spaceId: string
 }) {
   return (
-    <div className="rounded-xl border border-danger/30 bg-surface p-3 shadow-sm">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-danger-bg text-danger">
-          <Trash2 className="h-4 w-4" aria-hidden />
+    <li className="rounded-lg border border-danger/30 bg-surface px-2.5 py-2 shadow-sm">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger">
+          <Trash2 className="h-3.5 w-3.5" aria-hidden />
         </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-text">{surface.label}</p>
-          <p className="mt-0.5 text-xs text-muted">{surface.desc}</p>
-        </div>
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{surface.label}</span>
       </div>
       {canDelete && (
-        <div className="mt-3">
+        <div className="mt-2">
           <DangerDelete
             entity="space"
             warning="Permanently deletes this space and everything it owns: all its events (with their RSVPs and check-ins), members, circles, pages, and CRM. This cannot be undone."
@@ -266,11 +267,13 @@ function DangerCard({
           />
         </div>
       )}
-    </div>
+    </li>
   )
 }
 
-/** One titled group cluster: a SectionHeader, a one-line blurb, then a responsive grid of its cards. */
+/** One titled group: a compact SectionHeader, then a tight vertical list of its rows. Sits in a
+ *  multi-column grid cell (break-inside-avoid keeps a group whole). No blurb — the console is
+ *  consolidated to fit without scrolling. */
 function GroupCluster({
   group,
   surfaces,
@@ -287,20 +290,17 @@ function GroupCluster({
   spaceId: string
 }) {
   return (
-    <section>
+    <section className="break-inside-avoid">
       <SectionHeader title={group.title} />
-      <p className="-mt-2.5 mb-2.5 text-xs text-muted">{group.blurb}</p>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="-mt-1 space-y-1.5">
         {surfaces.map((surface) => {
           if (surface.id === 'space.danger') {
-            return (
-              <DangerCard key={surface.id} surface={surface} canDelete={canDelete} spaceId={spaceId} />
-            )
+            return <DangerRow key={surface.id} surface={surface} canDelete={canDelete} spaceId={spaceId} />
           }
           const href = hrefForSurface(surface.id, slug)
           if (!href) return null
           return (
-            <SectionCard
+            <SectionRow
               key={surface.id}
               surface={surface}
               href={href}
@@ -308,7 +308,7 @@ function GroupCluster({
             />
           )
         })}
-      </div>
+      </ul>
     </section>
   )
 }
@@ -340,24 +340,27 @@ export function SpaceManageConsole({
     byGroup.set(g, list)
   }
 
+  // The groups flow across a multi-column grid (masonry-like via CSS columns) so the whole console
+  // reads as one consolidated board that fits WITHOUT the page scrolling. break-inside-avoid on each
+  // group keeps it whole within a column.
   return (
-    <div className="space-y-8">
+    <div className="gap-x-6 [column-gap:1.5rem] sm:columns-2 xl:columns-3">
       {CONSOLE_GROUPS.map((group) => {
         const inGroup = byGroup.get(group.id)
         if (!inGroup || inGroup.length === 0) return null
-        // The Danger group keeps its single card; every other group orders within itself by emphasis.
-        const ordered =
-          group.id === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
+        // The Danger group keeps its single row; every other group orders within itself by emphasis.
+        const ordered = group.id === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
         return (
-          <GroupCluster
-            key={group.id}
-            group={group}
-            surfaces={ordered}
-            slug={slug}
-            emphasis={emphasis}
-            canDelete={canDelete}
-            spaceId={spaceId}
-          />
+          <div key={group.id} className="mb-5 break-inside-avoid">
+            <GroupCluster
+              group={group}
+              surfaces={ordered}
+              slug={slug}
+              emphasis={emphasis}
+              canDelete={canDelete}
+              spaceId={spaceId}
+            />
+          </div>
         )
       })}
     </div>
