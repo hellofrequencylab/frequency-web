@@ -19,13 +19,13 @@ export const SITE_DESTINATIONS: SiteDestination[] = [
   { group: 'Acquisition', label: 'Discover (nearby)', path: '/discover', value: 'Public landing showing everything happening nearby. Great for cold traffic that doesn’t know Frequency yet.' },
   { group: 'Acquisition', label: 'Discover · Circles', path: '/discover/circles', value: 'Public circle browser. Point a poster here so people can find a group before signing up.' },
   { group: 'Acquisition', label: 'Discover · Events', path: '/discover/events', value: 'Public events list — drive RSVPs straight from a flyer or table tent.' },
-  { group: 'Acquisition', label: 'Discover · Interests', path: '/discover/topics', value: 'Public interests browser — let people self-select what they’re into.' },
+  { group: 'Acquisition', label: 'Discover · Channels', path: '/discover/topics', value: 'Public Channels browser, so people can self-select what they’re into.' },
 
   // ── Community (members) ─────────────────────────────────────────────────────
   { group: 'Community', label: 'Feed', path: '/feed', value: 'A member’s home — circle activity, posts, events. Good default for an existing-member code.' },
   { group: 'Community', label: 'Circles', path: '/circles', value: 'Browse and join circles. The core "find your people" action.' },
   { group: 'Community', label: 'Events', path: '/events', value: 'Upcoming gatherings to RSVP to. Use at a venue to boost the next event.' },
-  { group: 'Community', label: 'Channels', path: '/channels', value: 'Interest & event channels to follow.' },
+  { group: 'Community', label: 'Channels', path: '/channels', value: 'Topic and event Channels to follow.' },
   { group: 'Community', label: 'Practices', path: '/practices', value: 'Weekly rituals members keep together — the retention loop.' },
   { group: 'Community', label: 'Programs', path: '/programs', value: 'Frameworks to start and run a circle. Aim hosts here.' },
 
