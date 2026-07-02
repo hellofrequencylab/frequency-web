@@ -60,10 +60,11 @@
 - Voice: capitalize `Zaps`/`Circle` in the legacy fallbacks (`the-quest`, `the-community`, `the-lab`); straighten curly quotes on `/beta`; breadcrumb "Topics" → "Channels" on `/discover/topics/[slug]`.
 - Delete orphaned Puck templates (`build`, `practice`, `spread`; retire `pricing.ts` when `/pricing` is Puck-enabled).
 
-### M2 · Pillar rebalance — *Third Spaces movement + Labs representation*
-- Broaden the top-of-funnel Community framing from loneliness-pain to the **Third Spaces movement** on: `home`, `about`, `/the-community`, `/loneliness`, `/friendship-as-an-adult`, `/meet-people-new-city`, `/beta`, `/founders`. Keep the pain as an on-ramp, lead with the movement + the third place.
-- **Add Labs-side SEO/pillar pages** so the high-traffic set is balanced (today Labs SEO = 0). Candidates: "what is a third space", "how to run a community space", "tools for community builders", "host a recurring gathering" — each Labs-focused, funnelling to `/spaces` + `/for/[persona]`.
-- Keep each page single-pillar; ensure the primary-nav set as a whole reads balanced Community⟷Labs.
+### M2 · Pillar rebalance — *Third Spaces movement + Labs representation* — ✅ shipped
+- ✅ **Labs-side SEO cluster (0 → 4)** shipped: `/what-is-a-third-space`, `/how-to-run-a-community-space`, `/tools-for-community-builders`, `/host-a-recurring-gathering`. Each is single-pillar Labs (builder/host/operator voice), answer-first with Article/HowTo + FAQ schema, funnels to `/spaces` (+ `/the-lab`, siblings, `/how-to-start-a-circle`). Wired into `app/sitemap.ts`; cross-linked inbound from `/spaces` ("Guides for builders").
+- ✅ **Top-of-funnel Community framing** — audit found `home`, `about`, `/the-community`, `/the-lab`, `/spaces`, and the pain-SEO pillars were **already rebalanced to the Third Spaces movement in prior work** (home: "Not home. Not work. The third place… you can bring it back"; about closes on "we're building infrastructure"; the pain pages use pain as the SEO on-ramp then bridge to the movement + Circles). No rewrite needed — would have been churn/regression risk.
+- ✅ **Steps mis-numbering fix** — the shared `Steps` component re-indexes per call, so pages that split a guide into two `<Steps>` blocks rendered "01,02,03,01,02,03". Collapsed to a single block on all four how-to pages (`how-to-run-a-community-space`, `host-a-recurring-gathering`, `how-to-reconnect-with-old-friends`, `how-to-start-a-circle`).
+- Note: no generic host `/for/[persona]` exists (personas are commercial operator types only); the Labs guides use `/the-lab` as the on-pillar secondary instead.
 
 ### M3 · Puck-enable the forward-facing surface — *operator-editable without a deploy*
 - Bring the SEO articles + `what-is-frequency` + `/discover/*` hubs + `/for/[persona]` + `/vs` + `/founders` + `/beta` + `/start` onto the page-editor chain (`getPublishedData → getTemplate → BlockRender`), starting with the highest-traffic (home is already done; do the 12 articles next as a shared template).
