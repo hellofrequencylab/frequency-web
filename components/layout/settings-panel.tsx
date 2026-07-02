@@ -10,10 +10,11 @@ import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
-import type { AdminSlot } from '@/lib/admin/modules/registry'
+import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
 import {
   SPINE_ORDER,
   SPINE_META,
+  PERSONAL_META,
   groupIntoSpine,
   summaryFor,
   shouldFlatten,
@@ -183,8 +184,26 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       ? { caps: providerCaps }
       : SELECTION_VIEWER
 
-  const apps = manager ? settingsAppsFor(scope, viewer) : []
-  const hasSettings = apps.length > 0
+  // Any signed-in viewer (role != null; a visitor preview is null, matching that preview). The
+  // personal "You" set makes the editor set non-empty for every authed member → the bar is always
+  // available (ADMIN-RAIL.md Phase 4). Fail-closed: signed-out ⇒ role null ⇒ no personal apps.
+  const authed = role != null
+
+  // Personal "You" apps — global-scope, member-level; a member's OWN account settings. Resolved
+  // INDEPENDENT of the page scope (they are the same on every page) and caps-blind via
+  // SELECTION_VIEWER (each self-gates + re-checks server-side, exactly like the manage modules).
+  const personalApps = authed
+    ? appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').filter((a) => PERSONAL_MODULE_IDS.has(a.id))
+    : []
+
+  // The management (page-scoped) editor apps, with any personal app filtered out so the global
+  // scope's personal set never doubles as a management category on a global-scope page.
+  const mgmtApps = manager ? settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)) : []
+
+  // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
+  // "You" category above the management spine.
+  const apps = [...personalApps, ...mgmtApps]
+  const hasSettings = mgmtApps.length > 0
   const spineGroups = groupIntoSpine(apps)
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
@@ -232,8 +251,9 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   addExtra('layout', eventLayoutNode)
   addExtra('danger', dangerBlock)
 
-  // The page-settings column — the registry-selected sidebar modules for this scope, ordered by spine.
-  const orderedModules: { id: string; C: ComponentType }[] = spineGroups.flatMap((g) =>
+  // The page-settings column — the registry-selected MANAGEMENT sidebar modules for this scope,
+  // ordered by spine (personal apps are rendered separately in the "You" block below, never here).
+  const orderedModules: { id: string; C: ComponentType }[] = groupIntoSpine(mgmtApps).flatMap((g) =>
     g.appIds.flatMap((id) => {
       const C = MODULE_COMPONENTS[id]
       return C ? [{ id, C }] : []
@@ -244,6 +264,24 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
       <div className="space-y-6">
         {orderedModules.map(({ id, C }) => (
+          <C key={id} />
+        ))}
+      </div>
+    </div>
+  ) : null
+
+  // The personal "You" block — the personal module forms under a "You" header. Rendered at the TOP of
+  // the flat panel (when the panel collapses) so a plain member opens straight into their own
+  // settings; in the browse home the "You" category row carries the same forms as its drill target.
+  const personalModules: { id: string; C: ComponentType }[] = personalApps.flatMap((a) => {
+    const C = MODULE_COMPONENTS[a.id]
+    return C ? [{ id: a.id, C }] : []
+  })
+  const personalBlock: ReactNode = personalModules.length ? (
+    <div className="min-w-0">
+      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">{PERSONAL_META.label}</p>
+      <div className="space-y-6">
+        {personalModules.map(({ id, C }) => (
           <C key={id} />
         ))}
       </div>
@@ -276,26 +314,41 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
 
   const hasContent = categories.length > 0 || !!pageGroup
-  const flat = shouldFlatten(categories, { hasExtras: !!pageGroup })
+  // The personal "You" category never drives the collapse decision (it always rides along, inline in
+  // the flat panel and as the lead row in the browse home). Flatten on the MANAGEMENT targets only, so
+  // a single-category manager stays flat exactly as before Phase 4 — with the "You" block added on top.
+  const managementCategories = categories.filter((c) => c.slot !== 'account')
+  const flat = shouldFlatten(managementCategories, { hasExtras: !!pageGroup })
 
-  // Every scoped app (manage + page blocks), mapped to a lightweight search row (P1/P6).
-  const searchApps: SearchableApp[] = (manager || isOperator ? appsForScope(scope, viewer) : []).map(
-    (a) => ({
-      id: a.id,
-      label: a.label,
-      description: a.description,
-      category: a.category,
-      Icon: a.surfaces.editor?.Icon,
-    }),
-  )
+  // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
+  const searchApps: SearchableApp[] = [
+    ...personalApps,
+    ...(manager || isOperator
+      ? appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id))
+      : []),
+  ].map((a) => ({
+    id: a.id,
+    label: a.label,
+    description: a.description,
+    category: a.category,
+    Icon: a.surfaces.editor?.Icon,
+  }))
 
   if (!hasContent) {
     return { hasContent: false, flat: true, categories: [], pageGroup: null, searchApps: [], content: null }
   }
 
-  // ── The thin `content` adapter — today's flat stacked markup, verbatim, for the collapse case. ──
+  // Whether any MANAGEMENT/operator content sits below the "You" block in the flat panel — drives the
+  // hairline that sets the personal section apart from the rest.
+  const hasBelowPersonal =
+    hasSettings || !!questModule || !!contentModule || !!pageGroup || isEvent || showCircleLayout || showEventLayout
+
+  // ── The thin `content` adapter — the personal "You" block on top, then today's flat stacked
+  //    management markup verbatim, for the collapse case. ──
   const content = (
     <div className="space-y-5">
+      {personalBlock}
+      {personalBlock && hasBelowPersonal && <hr className="border-border" />}
       {isCircle ? (
         <div className="space-y-6">
           {settingsBlock}

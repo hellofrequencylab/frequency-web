@@ -22,6 +22,7 @@ import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
 import { CreateStudio } from './create-studio'
 import { AppsLaneView } from './apps-lane-view'
+import { SplashLaneView } from './splash-lane-view'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -73,6 +74,7 @@ export default async function LoomStudioPage({
     similar?: string
     lane?: string
     surface?: string
+    section?: string
   }>
 }) {
   const ctx = await requireAdmin('janitor')
@@ -82,6 +84,13 @@ export default async function LoomStudioPage({
   // A code-backed lane, so it has its own catalog + preview resolver (no DB scope), like elements.
   if ((sp.lane ?? '') === 'apps') {
     return <AppsLaneView q={sp.q} category={sp.category} surface={sp.surface} view={sp.view} />
+  }
+
+  // The Splash lane (docs/LOOM-PLATFORM.md §4, docs/PAGE-FRAMEWORK.md §10): CATALOGS splash templates
+  // + GOVERNS the live splashes (public.pages micro-sites ∪ qr_codes splashes). Its edit affordances
+  // DEEP-LINK OUT to the real editor — the Loom never becomes the splash block editor.
+  if ((sp.lane ?? '') === 'splash') {
+    return <SplashLaneView q={sp.q} section={sp.section} view={sp.view} />
   }
 
   const scope = await resolveActiveScope()

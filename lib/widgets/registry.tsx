@@ -67,6 +67,12 @@ import { EntityCta } from '@/components/widgets/entity/entity-cta'
 import { PagesInAppMember, PagesInAppFocus } from '@/components/widgets/pages/pages-in-app'
 import { PagesSplashFunnels } from '@/components/widgets/pages/pages-splash-funnels'
 import { PagesMarketing } from '@/components/widgets/pages/pages-marketing'
+import { MarketingAnalyticsNorthStar } from '@/components/widgets/marketing/analytics-northstar'
+import { MarketingAnalyticsRetention } from '@/components/widgets/marketing/analytics-retention'
+import { MarketingAnalyticsCrm } from '@/components/widgets/marketing/analytics-crm'
+import { MarketingAnalyticsEmail } from '@/components/widgets/marketing/analytics-email'
+import { MarketingDeliverabilityHealth } from '@/components/widgets/marketing/deliverability-health'
+import { MarketingDeliverabilityDeadLetters } from '@/components/widgets/marketing/deliverability-dead-letters'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -204,6 +210,14 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'pages-in-app-focus': PagesInAppFocus,
   'pages-splash-funnels': PagesSplashFunnels,
   'pages-marketing': PagesMarketing,
+  // Marketing analytics (/admin/marketing/analytics) — read-models off the event backbone.
+  'marketing-analytics-northstar': MarketingAnalyticsNorthStar,
+  'marketing-analytics-retention': MarketingAnalyticsRetention,
+  'marketing-analytics-crm': MarketingAnalyticsCrm,
+  'marketing-analytics-email': MarketingAnalyticsEmail,
+  // Deliverability (/admin/marketing/deliverability) — outbox health + dead-letter recovery.
+  'marketing-deliverability-health': MarketingDeliverabilityHealth,
+  'marketing-deliverability-dead-letters': MarketingDeliverabilityDeadLetters,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,

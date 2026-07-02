@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks } from 'lucide-react'
+import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks, Sparkles } from 'lucide-react'
 import type { LibraryCollection } from '@/lib/library/store'
 import { createCollection, renameCollection, deleteCollection } from './collections-actions'
 
@@ -143,6 +143,14 @@ export function LoomRail({
         active={false}
         icon={<Blocks className="h-4 w-4" />}
         label="Apps"
+      />
+      {/* Cross-lane link into the Splash lane — catalog + governance (docs/LOOM-PLATFORM.md §4, §10).
+          Editing a splash deep-links OUT to the real editor; the Loom never edits the block tree. */}
+      <Row
+        href="/admin/library?lane=splash"
+        active={false}
+        icon={<Sparkles className="h-4 w-4" />}
+        label="Splash"
       />
 
         <SectionLabel>Type</SectionLabel>

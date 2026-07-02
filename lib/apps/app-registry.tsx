@@ -66,6 +66,7 @@ function surfaceKinds(app: App): AppSurfaceKind[] {
 
 /** Human labels for the 9-category spine + the element lane (voice canon: plain, no em dashes). */
 const CATEGORY_LABELS: Record<App['category'], string> = {
+  account: 'You',
   basics: 'Basics',
   place: 'Place',
   people: 'People',

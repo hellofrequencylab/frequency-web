@@ -6,7 +6,6 @@ import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { meetsAccess } from '@/lib/nav-areas'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { openAdminBar } from '@/components/admin/open-admin-bar'
-import { isStaff } from '@/lib/core/roles'
 
 // The on-page admin control (ADR-128 rebuild, Workstream D). It is now a thin TRIGGER
 // row that sits on the divider under a page title. It no longer hosts the settings
@@ -44,14 +43,17 @@ function isShareable(pathname: string): boolean {
 // When the viewer has nothing to do here it still draws the bare rule (asDivider) or
 // nothing (legacy callers that own their own divider).
 export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}) {
-  const { role, staffRole, webRole } = usePageAdmin()
+  const { role, staffRole } = usePageAdmin()
   const pathname = usePathname()
 
-  // Two manager tiers feed the Settings drawer: page MANAGERS (host+ / staff — each
-  // module re-gates server-side) and platform OPERATORS (web_role admin/janitor, who
-  // get the page-level "Page" group on every page). Either unlocks the Settings button.
+  // ADMIN-RAIL.md Phase 4: the bar is now the site-wide settings menu — ANY signed-in viewer opens it
+  // for their personal "You" settings (the personal App set makes its content non-empty everywhere).
+  // `role` is null for a signed-out visitor (and for the janitor's view-as-visitor preview), so this
+  // is fail-closed: no session ⇒ no bar. Managers/operators additionally get the management spine +
+  // operator "Page" group inside the same menu (resolved by useSettingsPanel). The finer manager vs
+  // operator split now lives entirely in useSettingsPanel; this trigger only asks "is there a session?"
+  const authed = role != null
   const manager = meetsAccess('host', role) || staffRole != null
-  const isOperator = isStaff(webRole)
   const shareable = isShareable(pathname)
   // Entity DETAIL pages render their OWN "Edit X" button in the header (which opens the same drawer
   // and is gated on entity OWNERSHIP, not this bar's community-role manager gate — so it shows for a
@@ -76,12 +78,15 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
   const bareRule = asDivider ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
-  if (!manager && !isOperator && !shareable) return bareRule
+  if (!authed && !shareable) return bareRule
 
   // The Settings trigger — opens the shell-level admin bar via the typed `open-admin-bar` event
   // (docs/ADMIN-RAIL.md Phase 1), with no pre-scoped detail so the panel resolves this page's scope
-  // caps-blind exactly as before. Shown to managers + operators.
-  const settingsTrigger = (manager || isOperator) && !isEntityDetail && !isProfile && !isSpaceProfile ? (
+  // caps-blind exactly as before. Shown to ANY signed-in viewer (Phase 4). Still suppressed on the
+  // surfaces that mount their OWN settings entry into the same drawer — entity-detail leaves (their
+  // "Edit X" button), member profiles (the profile rail), and Space profiles (the Customize button) —
+  // so a page never shows two settings triggers; the "You" section is reached from that button there.
+  const settingsTrigger = authed && !isEntityDetail && !isProfile && !isSpaceProfile ? (
     <button
       type="button"
       onClick={() => openAdminBar()}

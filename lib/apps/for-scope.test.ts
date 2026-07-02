@@ -29,8 +29,14 @@ describe('appsForScope — editor apps preserve modulesForScopeKind behavior (LP
     }
   })
 
-  it('offers no editor modules on the operator global scope', () => {
-    expect(appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor')).toEqual([])
+  it('offers the personal "You" apps as editor modules on the operator global scope (Phase 4)', () => {
+    // The personal apps (ADMIN-RAIL.md Phase 4) are the ONLY global-scope editor modules — they apply
+    // to every signed-in viewer's own account and make the bar always available. A capable viewer sees
+    // them; a no-caps viewer sees none (they gate on account.manage).
+    expect(appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').map((a) => a.id)).toEqual([
+      'account.appearance',
+    ])
+    expect(appsForScope({ kind: 'global' }, { caps: new Set() }, 'editor')).toEqual([])
   })
 
   it('fail-closed: a null scope or null viewer yields []', () => {
@@ -67,11 +73,16 @@ describe('showsAdminBar', () => {
   })
 
   it('is editor-only: page blocks do NOT light the bar on the global scope (the flaw guard)', () => {
-    // The operator global scope offers page blocks (gate 'none') but NO editor modules. Counting page
-    // blocks would falsely light the bar for any signed-in viewer; editor-only keeps it dark here.
+    // The operator global scope offers page blocks (gate 'none') but they must NOT light the bar. A
+    // viewer with no caps holds neither a page-block editor App (there are none) nor the personal gate,
+    // so the bar stays dark — page blocks alone never light it.
     expect(showsAdminBar({ kind: 'global' }, { caps: new Set() })).toBe(false)
-    // Even a viewer holding every editor capability has no EDITOR App on the global scope.
-    expect(showsAdminBar({ kind: 'global' }, SELECTION_VIEWER)).toBe(false)
+  })
+
+  it('lights on the global scope for a viewer holding the personal gate (Phase 4 always-on)', () => {
+    // The personal "You" apps ARE global-scope editor Apps (account.manage), so a capable viewer's bar
+    // is always available. This is the intended Phase-4 flip: presence is guaranteed by the personal set.
+    expect(showsAdminBar({ kind: 'global' }, SELECTION_VIEWER)).toBe(true)
   })
 
   it('still lights on an entity scope for a viewer that holds its manage gate', () => {

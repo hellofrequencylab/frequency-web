@@ -6,6 +6,7 @@ import {
   modulesForScopeKind,
   showsAdminPanel,
   moduleById,
+  PERSONAL_MODULE_IDS,
 } from './registry'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
@@ -89,6 +90,35 @@ describe('admin module registry', () => {
     const circleMods = modulesFor(circleScope, caps)
     const orders = circleMods.map((m) => m.order)
     expect(orders).toEqual([...orders].sort((a, b) => a - b))
+  })
+
+  // ── Personal "You" apps (ADMIN-RAIL.md Phase 4) ──
+  it('registers the personal "You" apps as global-scope, account.manage-gated, account-slot modules', () => {
+    const appearance = moduleById('account.appearance')
+    expect(appearance).toBeDefined()
+    expect(appearance?.scopes).toEqual(['global'])
+    expect(appearance?.requiredCapability).toBe('account.manage')
+    expect(appearance?.slot).toBe('account')
+    expect(appearance?.surface).toBe('sidebar')
+  })
+
+  it('PERSONAL_MODULE_IDS is exactly the global-scope (personal) modules', () => {
+    const globalIds = ADMIN_MODULES.filter((m) => m.scopes.includes('global')).map((m) => m.id)
+    expect([...PERSONAL_MODULE_IDS].sort()).toEqual([...globalIds].sort())
+    expect(PERSONAL_MODULE_IDS.has('account.appearance')).toBe(true)
+    // A management module is never personal.
+    expect(PERSONAL_MODULE_IDS.has('circle.settings')).toBe(false)
+  })
+
+  it('selects the personal apps by the global scope kind, and only with account.manage', () => {
+    // The bar resolves the "You" set on the global scope; a capable viewer sees it, others do not.
+    expect(modulesForScopeKind('global', 'sidebar').map((m) => m.id)).toEqual(['account.appearance'])
+    expect(modulesFor({ kind: 'global' }, new Set<Capability>(['account.manage'])).map((m) => m.id)).toEqual([
+      'account.appearance',
+    ])
+    expect(modulesFor({ kind: 'global' }, new Set<Capability>())).toHaveLength(0)
+    // Personal apps must not leak onto an entity scope.
+    expect(modulesFor(circleScope, new Set<Capability>(['account.manage']))).toHaveLength(0)
   })
 
   it('has unique module ids and resolvable lookups', () => {

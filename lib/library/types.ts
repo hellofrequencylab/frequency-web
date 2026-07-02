@@ -17,6 +17,7 @@ export const LIBRARY_KINDS = [
   'font', // a font family (file-backed + config = { family, weights, variable, fallbacks, license })
   'token', // a design-token set / skin (config = { tokens, mode })
   'copy', // a member-facing content string (config = { body, variables, voice })
+  'sequence', // a managed onboarding/wizard flow (config = a SequenceDef; see lib/onboarding/sequence-schema.ts)
 ] as const
 export type LibraryKind = (typeof LIBRARY_KINDS)[number]
 
@@ -37,7 +38,7 @@ export const LIBRARY_RENDITION_KINDS = ['thumb', 'grid', 'hero', 'og', 'source',
 export type LibraryRenditionKind = (typeof LIBRARY_RENDITION_KINDS)[number]
 
 /** Surfaces an asset can be referenced from (for the usage index / safe delete / swap). */
-export const LIBRARY_USAGE_CONTEXTS = ['page', 'space_brand', 'spotlight', 'email', 'other'] as const
+export const LIBRARY_USAGE_CONTEXTS = ['page', 'space_brand', 'spotlight', 'email', 'onboarding', 'other'] as const
 export type LibraryUsageContext = (typeof LIBRARY_USAGE_CONTEXTS)[number]
 
 /** Parametric payload for non-file kinds. An element points back into the code registry;

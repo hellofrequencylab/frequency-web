@@ -127,6 +127,16 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'pages-splash-funnels', label: 'Splash funnels', description: 'A card into the Splash Funnels library: the onboarding front door and its audience funnels (janitor only).' },
   { id: 'pages-marketing', label: 'Marketing pages', description: 'The public, editor-backed marketing pages with their publish status (janitor only).' },
 
+  // ── Marketing analytics blocks (/admin/marketing/analytics) — read-models off the event backbone ──
+  { id: 'marketing-analytics-northstar', label: 'North Star', description: 'The verified-practice north star: weekly active members, practices this week, activation, and new members.' },
+  { id: 'marketing-analytics-retention', label: 'Practice retention', description: 'Weekly cohorts: the share of each cohort still logging a practice, the practice-retention (PMF) signal.' },
+  { id: 'marketing-analytics-crm', label: 'CRM counts', description: 'Contacts, campaigns, and suppressed addresses at a glance, each linking into its workspace.' },
+  { id: 'marketing-analytics-email', label: 'Email', description: 'The email log at a glance: sent, delivered, opened, clicked, bounced, and complained over the last 30 days.' },
+
+  // ── Deliverability blocks (/admin/marketing/deliverability) — outbox health + dead-letter recovery ──
+  { id: 'marketing-deliverability-health', label: 'Queue health', description: 'The outbox at a glance: the live send backlog and the dead-letter count.' },
+  { id: 'marketing-deliverability-dead-letters', label: 'Dead-letter queue', description: 'Jobs that exhausted every retry, grouped by kind, with one-tap requeue once the cause is fixed.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -322,6 +332,25 @@ const VAULT_MODULE_IDS = [
   'vault-store',
 ] as const
 
+// The Marketing analytics page (/admin/marketing/analytics), in default render order — read-models
+// off the one event backbone + the email log. Each block self-fetches; the CRM and email bands read
+// the email stats independently (as the hand-built sections did), so there's no shared-fetch change.
+// The marketing layout owns the capability gate, so the modules don't re-gate.
+const MARKETING_ANALYTICS_MODULE_IDS = [
+  'marketing-analytics-northstar',
+  'marketing-analytics-retention',
+  'marketing-analytics-crm',
+  'marketing-analytics-email',
+] as const
+
+// The Deliverability page (/admin/marketing/deliverability), in default render order — outbox queue
+// health then the dead-letter queue. The page keeps its own marketing-staff gate (it reads the admin
+// client); the modules render only through that gated route.
+const MARKETING_DELIVERABILITY_MODULE_IDS = [
+  'marketing-deliverability-health',
+  'marketing-deliverability-dead-letters',
+] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -431,6 +460,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/crew': CREW_MODULE_IDS,
   '/admin/content/practices': ADMIN_PRACTICES_MODULE_IDS,
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
+  '/admin/marketing/analytics': MARKETING_ANALYTICS_MODULE_IDS,
+  '/admin/marketing/deliverability': MARKETING_DELIVERABILITY_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,
