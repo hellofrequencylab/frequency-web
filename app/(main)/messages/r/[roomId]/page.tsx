@@ -38,14 +38,19 @@ export default async function RoomPage({
 
   const myProfileId = myProfile.id as string
 
-  // Room (rooms_read: public/cluster-visibility OR member; a private room is
-  // hidden from non-members by RLS → null → notFound)
-  const { data: room } = await supabase
-    .from('rooms')
-    .select('id, name, description, visibility, member_count, created_at')
-    .eq('id', roomId)
-    .maybeSingle()
+  // The room row, my membership, and the visible member roster are mutually independent (each keyed
+  // on roomId/myProfileId), so fetch them in one wave. The notFound / private-room guards and the
+  // canRead-gated message read follow, off these results.
+  type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
+  const [roomRes, membershipRes, memberRowsRes] = await Promise.all([
+    supabase.from('rooms').select('id, name, description, visibility, member_count, created_at').eq('id', roomId).maybeSingle(),
+    supabase.from('room_members').select('room_id, is_admin').eq('room_id', roomId).eq('profile_id', myProfileId).maybeSingle(),
+    (supabase).rpc('visible_room_member_profiles', { _room_id: roomId }),
+  ])
 
+  // rooms_read: public/cluster-visibility OR member; a private room is hidden from
+  // non-members by RLS → null → notFound.
+  const { data: room } = roomRes
   if (!room) notFound()
 
   const r = room as unknown as {
@@ -57,14 +62,7 @@ export default async function RoomPage({
     created_at: string
   }
 
-  // Check membership
-  const { data: membership } = await supabase
-    .from('room_members')
-    .select('room_id, is_admin')
-    .eq('room_id', roomId)
-    .eq('profile_id', myProfileId)
-    .maybeSingle()
-
+  const { data: membership } = membershipRes
   const isMember = !!membership
   const isAdmin = !!membership?.is_admin
   // Channel open rooms (Phase B) are read-open to anyone; posting is gated by
@@ -77,11 +75,9 @@ export default async function RoomPage({
     notFound()
   }
 
-  // Members + their public profiles via the DEFINER RPC (visible only if I can
-  // see the room). Authors of messages are members, so this map hydrates both.
-  type MemberProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const { data: memberRows } = await (supabase)
-    .rpc('visible_room_member_profiles', { _room_id: roomId })
+  // Members + their public profiles via the DEFINER RPC (visible only if I can see the room).
+  // Authors of messages are members, so this map hydrates both.
+  const { data: memberRows } = memberRowsRes
 
   const members = ((memberRows ?? []) as {
     id: string; display_name: string; handle: string; avatar_url: string | null; is_admin: boolean; joined_at: string

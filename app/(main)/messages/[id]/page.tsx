@@ -34,30 +34,39 @@ export default async function ConversationPage({
   if (!myProfile) redirect('/onboarding')
   const myProfileId = myProfile.id as string
 
-  // Conversation + my participation (am_participant gates both; not a member → notFound)
-  const { data: conv } = await supabase
-    .from('conversations')
-    .select('id, name, created_at')
-    .eq('id', conversationId)
-    .maybeSingle()
-  if (!conv) notFound()
+  // The conversation, my participation, the participant roster, peer identities, and the last 100
+  // messages are mutually independent (each keyed on conversationId and/or myProfileId), so fetch
+  // them in one wave instead of five serial round-trips. The notFound guards move below the wave:
+  // on a non-member the RLS-covered reads (am_participant) return empty and we notFound anyway, at
+  // the cost of a couple of cheap empty reads on that rare path.
+  type PeerProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
+  const [convRes, myPartRes, partRowsRes, peerRes, rawMessagesRes] = await Promise.all([
+    supabase.from('conversations').select('id, name, created_at').eq('id', conversationId).maybeSingle(),
+    supabase
+      .from('conversation_participants')
+      .select('profile_id, last_read_at')
+      .eq('conversation_id', conversationId)
+      .eq('profile_id', myProfileId)
+      .maybeSingle(),
+    supabase.from('conversation_participants').select('profile_id').eq('conversation_id', conversationId),
+    (supabase).rpc('message_peer_profiles'),
+    supabase
+      .from('messages')
+      .select('id, conversation_id, sender_id, body, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(100),
+  ])
 
-  const { data: myPart } = await supabase
-    .from('conversation_participants')
-    .select('profile_id, last_read_at')
-    .eq('conversation_id', conversationId)
-    .eq('profile_id', myProfileId)
-    .maybeSingle()
+  // am_participant gates the conversation + my row; not a member → notFound.
+  const { data: conv } = convRes
+  if (!conv) notFound()
+  const { data: myPart } = myPartRes
   if (!myPart) notFound()
 
   // Participant ids via RLS; public profile fields via the hydration RPC.
-  const { data: partRows } = await supabase
-    .from('conversation_participants')
-    .select('profile_id')
-    .eq('conversation_id', conversationId)
-
-  type PeerProfile = { id: string; display_name: string; handle: string; avatar_url: string | null }
-  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
+  const { data: partRows } = partRowsRes
+  const { data: peerRows } = peerRes
   const peerMap = new Map(((peerRows ?? []) as PeerProfile[]).map(p => [p.id, p]))
 
   const participants = ((partRows ?? []) as { profile_id: string }[])
@@ -73,14 +82,7 @@ export default async function ConversationPage({
         (others.length > 3 ? ` +${others.length - 3}` : '')
       : others[0]?.display_name ?? 'Conversation')
 
-  // Load messages (am_participant read policy)
-  const { data: rawMessages } = await supabase
-    .from('messages')
-    .select('id, conversation_id, sender_id, body, created_at')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
+  const { data: rawMessages } = rawMessagesRes
   const messages = ((rawMessages ?? []) as unknown as Message[]).reverse()
 
   // Mark as read (participants_update_own_last_read policy)
