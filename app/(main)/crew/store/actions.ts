@@ -234,22 +234,50 @@ export async function giftGemsAction(
   return result
 }
 
-export async function equipCosmetic(type: 'border' | 'flair' | 'title', value: string | null) {
+export interface GiftRecipient {
+  id: string
+  displayName: string | null
+  handle: string | null
+  avatarUrl: string | null
+}
+
+/**
+ * Search the members you can gift Gems to. Parameterized `.ilike()` per column
+ * (SEC-10: never interpolate user input into a `.or()` filter string — PostgREST
+ * parses that for its own operators), excludes yourself and demo/inactive profiles,
+ * and returns only public identity fields. Limit 8. Mirrors the vetted
+ * searchMembersToLink pattern in connections/actions.ts.
+ */
+export async function searchGiftRecipients(q: string): Promise<GiftRecipient[]> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in')
-
+  if (!profileId) return []
+  const term = q.trim()
+  if (term.length < 2) return []
+  const pattern = `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`
   const admin = createAdminClient()
-
-  if (type === 'border') {
-    await admin.from('profiles').update({ profile_border: value }).eq('id', profileId)
-  } else if (type === 'flair') {
-    await admin.from('profiles').update({ profile_flair: value }).eq('id', profileId)
-  } else if (type === 'title') {
-    await admin.from('profiles').update({ custom_title: value }).eq('id', profileId)
+  const base = () =>
+    admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url')
+      .eq('is_active', true)
+      .eq('is_demo', false)
+      .neq('id', profileId)
+      .limit(8)
+  const [byName, byHandle] = await Promise.all([
+    base().ilike('display_name', pattern),
+    base().ilike('handle', pattern),
+  ])
+  type Row = { id: string; display_name: string | null; handle: string | null; avatar_url: string | null }
+  const merged = new Map<string, Row>()
+  for (const p of [...((byName.data ?? []) as Row[]), ...((byHandle.data ?? []) as Row[])]) {
+    if (!merged.has(p.id)) merged.set(p.id, p)
   }
-
-  revalidatePath('/crew/store')
-  revalidatePath('/people', 'layout')
+  return [...merged.values()].slice(0, 8).map((p) => ({
+    id: p.id,
+    displayName: p.display_name,
+    handle: p.handle,
+    avatarUrl: p.avatar_url,
+  }))
 }
 
 export async function getStoreData() {

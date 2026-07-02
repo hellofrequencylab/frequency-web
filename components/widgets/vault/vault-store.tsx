@@ -1,6 +1,7 @@
 import { getVaultData } from '@/lib/vault/vault-data'
 import { CrewGate } from '@/components/crew/upgrade-lightbox'
 import { StoreGrid } from '@/app/(main)/crew/store/store-grid'
+import { GiftGemsDialog } from '@/app/(main)/crew/store/gift-gems-dialog'
 import { SectionHeader } from '@/components/ui/section-header'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
@@ -38,6 +39,14 @@ export async function VaultStore() {
           body="You have Gems banked. Crew turns them in: profile cosmetics, titles, badges, and membership credits in the Vault Store."
           cta="See what Crew adds"
         />
+      )}
+      {/* Gift Gems (ADR-305 §8) sits OUTSIDE the CrewGate so it stays interactive. Shown to
+          members who can spend and have a balance; gifting draws down the same spendable pool
+          the store uses. The server action is the authority (advisory-locked balance recheck). */}
+      {d.canSpend && d.balance > 0 && (
+        <div className="flex justify-end">
+          <GiftGemsDialog balance={d.balance} />
+        </div>
       )}
       <CrewGate locked={!d.canSpend}>
         <div className="space-y-8">
