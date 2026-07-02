@@ -52,9 +52,14 @@ describe('admin module registry', () => {
     expect(showsAdminPanel(nexusScope, manage)).toBe(true)
   })
 
-  it('surfaces event.settings only on an event scope, only with event.editSettings', () => {
+  it('surfaces the event spine only on an event scope, only with event.editSettings', () => {
     const caps = new Set<Capability>(['event.editSettings'])
-    expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual(['event.settings'])
+    expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual([
+      'event.settings',
+      'event.placeAndTime',
+      'event.people',
+      'event.engage',
+    ])
     expect(modulesFor(eventScope, new Set<Capability>())).toHaveLength(0)
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
@@ -95,7 +100,12 @@ describe('admin module registry', () => {
     // selects their sidebar Basics module by scope kind, exactly as circle/event do.
     expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual(['hub.settings'])
     expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual(['nexus.settings'])
-    expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual(['event.settings'])
+    expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual([
+      'event.settings',
+      'event.placeAndTime',
+      'event.people',
+      'event.engage',
+    ])
     expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual(['practice.settings'])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])

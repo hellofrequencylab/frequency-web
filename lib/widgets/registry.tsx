@@ -106,6 +106,9 @@ import { EventJoin } from '@/components/widgets/events/event-join'
 import { EventWarmProof } from '@/components/widgets/events/event-warm-proof'
 import { EventFacts } from '@/components/widgets/events/event-facts'
 import { EventLocation } from '@/components/widgets/events/event-location'
+import { EventWhenWhere } from '@/components/widgets/events/event-when-where'
+import { EventAttendees } from '@/components/widgets/events/event-attendees'
+import { EventCheckin } from '@/components/widgets/events/event-checkin'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -226,6 +229,9 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-warm-proof': EventWarmProof,
   'event-facts': EventFacts,
   'event-location': EventLocation,
+  'event-when-where': EventWhenWhere,
+  'event-attendees': EventAttendees,
+  'event-checkin': EventCheckin,
   'event-description': EventDescription,
   'event-lineup': EventLineup,
   'event-schedule': EventSchedule,

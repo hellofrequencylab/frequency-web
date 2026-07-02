@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -117,6 +117,39 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     scopes: ['event'],
     requiredCapability: 'event.editSettings',
     slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'event.placeAndTime',
+    label: 'Place & Time',
+    desc: 'When and where: start and end, time zone, repeats, the venue and map, and the booking window.',
+    Icon: Clock,
+    scopes: ['event'],
+    requiredCapability: 'event.editSettings',
+    slot: 'place',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'event.people',
+    label: 'People',
+    desc: 'Your guests: RSVPs, approvals, the waitlist, and how full the event is.',
+    Icon: Users,
+    scopes: ['event'],
+    requiredCapability: 'event.editSettings',
+    slot: 'people',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'event.engage',
+    label: 'Engage',
+    desc: 'Tickets, sales, and check-in.',
+    Icon: Ticket,
+    scopes: ['event'],
+    requiredCapability: 'event.editSettings',
+    slot: 'engage',
     surface: 'sidebar',
     order: 10,
   },

@@ -6,6 +6,9 @@ import { CircleTextModule } from './circle-text-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { EventSettingsModule } from './event-settings-module'
+import { EventPlaceTimeModule } from './event-place-time-module'
+import { EventPeopleModule } from './event-people-module'
+import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { ChannelSettingsModule } from './channel-settings-module'
 
@@ -23,6 +26,9 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'hub.settings': HubSettingsModule,
   'nexus.settings': NexusSettingsModule,
   'event.settings': EventSettingsModule,
+  'event.placeAndTime': EventPlaceTimeModule,
+  'event.people': EventPeopleModule,
+  'event.engage': EventEngageModule,
   'practice.settings': PracticeSettingsModule,
   'channel.settings': ChannelSettingsModule,
 }
