@@ -4,7 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { setSpaceBusinessInfo, setSpaceImages } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import {
+  setSpaceBusinessInfo,
+  setSpaceImages,
+  uploadSpaceImage,
+} from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { ImageUpload } from '@/components/ui/image-upload'
 import type { SpaceProfileData, SpaceSocialLink, SpaceOffering } from '@/lib/spaces/profile-data'
 
@@ -156,6 +160,11 @@ export function SpaceBusinessForm({
           hint="Wide banner across the top. About 1600 by 500."
           folder="space-covers"
           disabled={readOnly}
+          uploadFn={(file) => {
+            const fd = new FormData()
+            fd.append('file', file)
+            return uploadSpaceImage(slug, 'cover', fd)
+          }}
         />
         <ImageUpload
           value={logoUrl}
@@ -167,6 +176,11 @@ export function SpaceBusinessForm({
           hint="Your logo or portrait. A square reads best."
           folder="space-logos"
           disabled={readOnly}
+          uploadFn={(file) => {
+            const fd = new FormData()
+            fd.append('file', file)
+            return uploadSpaceImage(slug, 'logo', fd)
+          }}
         />
       </div>
 
