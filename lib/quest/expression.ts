@@ -124,11 +124,26 @@ export async function completeExpressionChallenge(
     let gems = 0
     if (!wasDone) {
       if (opts.mode === 'circle') {
-        const res = await awardZaps(profileId, QUEST.EXPRESSION_CIRCLE_ZAPS, {
-          actionType: 'expression_challenge',
-          metadata: { journeyId, season, circleId: opts.circleId ?? null },
-        })
-        zaps = res.amount
+        // Claim-then-pay (P0 — final-scan patch list): the wasDone flag is NOT atomic (the
+        // challenge_progress read+write races), so two concurrent submits could both reach here
+        // and double-pay. The unique (rule_key, profile_id) reward_grants insert is the real lock;
+        // only the fresh claim pays, mirroring the Gem path's grantGemsOnce.
+        const circleKey = `expression.circle:${profileId}:${journeyId}:${season}`
+        const { error: claimErr } = await admin
+          .from('reward_grants')
+          .insert({ rule_key: circleKey, profile_id: profileId, reward_kind: 'zaps', amount: QUEST.EXPRESSION_CIRCLE_ZAPS, detail: 'Expression Challenge' })
+        if (!claimErr) {
+          const res = await awardZaps(profileId, QUEST.EXPRESSION_CIRCLE_ZAPS, {
+            actionType: 'expression_challenge',
+            metadata: { journeyId, season, circleId: opts.circleId ?? null },
+          })
+          if (res.awarded) {
+            zaps = res.amount
+          } else {
+            // Nothing was awarded — release the claim so a retry can pay.
+            await admin.from('reward_grants').delete().eq('rule_key', circleKey).eq('profile_id', profileId)
+          }
+        }
       } else {
         const granted = await grantGemsOnce(
           admin,
