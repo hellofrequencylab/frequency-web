@@ -160,6 +160,14 @@ A full re-sweep (docs / SEO / AIO / security / speed + orphan/unwired/undevelope
 roadmap phases merged. Overall assessment: **~90/100 — launch-ready**, no correctness or security
 bugs surfaced. Two things shipped from it; the rest is owner config + lower-priority polish.
 
+> A deeper follow-up sweep of **wired admin surfaces, control boards, and member-facing features**
+> (bug + unfinished-function hunt) is tracked in **[`docs/PATCH-LIST.md`](PATCH-LIST.md)** — a
+> prioritized development list. It found no unguarded mutations and no dead controls, but one
+> privacy leak (fixed), a data-integrity race + an economy double-award (P0), a few authz-axis
+> mismatches (P1), and a broad silent-write-failure class (P2). The safe P0/P1 subset (journey-draft
+> leak, duplicate Starter Circle, stranded bonus, marketplace writes, Support staff gate) is fixed;
+> the rest is enumerated there with file:line + fix.
+
 - ✅ ~~**Dead-code sweep**~~ — DONE. Removed **45 verified zero-reference symbols** (each re-checked
   with `rg -w` before deletion) + the orphaned `/coming-soon` page: 12 dead server actions
   (`equipCosmetic`, `revokeInviteLink`, `createDispatch`, `archiveFunnel`, `setAvatar`, `markOneRead`,

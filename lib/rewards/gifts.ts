@@ -122,5 +122,21 @@ export async function giftGems(
     return fail('We could not complete that gift. Your Gems were not spent.')
   }
 
+  // Tell the recipient — a gift is a visible act of generosity, not a silent balance bump.
+  // Best-effort: a notification failure must never fail (or reverse) a gift that already landed.
+  // The bell prefixes the giver's name, so `body` is just the predicate.
+  try {
+    await admin.from('notifications').insert({
+      recipient_id: toProfileId,
+      actor_id: fromProfileId,
+      type: 'gift_received',
+      reference_type: 'profile',
+      reference_id: fromProfileId,
+      body: `sent you ${amount} ${amount === 1 ? 'Gem' : 'Gems'} 🎁`,
+    })
+  } catch {
+    /* best-effort: the gift is complete regardless of the nudge */
+  }
+
   return ok({ amount, recipientId: toProfileId })
 }

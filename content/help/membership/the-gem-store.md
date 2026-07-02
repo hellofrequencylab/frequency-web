@@ -49,8 +49,9 @@ During the beta everything is open to everyone.
 
 Gems you have earned are yours to give. Open **Gift Gems** from the Vault Store,
 search for a member by name or handle, choose how many Gems to send, and confirm.
-The amount leaves your spendable balance and lands in theirs right away, with a note
-in their earning log that the Gems came from you.
+The amount leaves your spendable balance and lands in theirs right away. They get a
+notification that you sent it, and it shows in their earning log too, so a gift is
+something they see, not a silent bump.
 
 A few things worth knowing:
 

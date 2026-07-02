@@ -160,13 +160,16 @@ export async function updateListing(id: string, patch: ListingPatch): Promise<vo
   if (patch.latitude !== undefined) update.latitude = patch.latitude
   if (patch.longitude !== undefined) update.longitude = patch.longitude
   if (Object.keys(update).length === 0) return
-  await db().from('market_listings').update({ ...update, ...touch() }).eq('id', id)
+  const { error } = await db().from('market_listings').update({ ...update, ...touch() }).eq('id', id)
+  if (error) throw new Error(`Could not update the listing: ${error.message}`)
 }
 
 export async function setListingStatus(id: string, status: ListingStatus): Promise<void> {
-  await db().from('market_listings').update({ status, ...touch() }).eq('id', id)
+  const { error } = await db().from('market_listings').update({ status, ...touch() }).eq('id', id)
+  if (error) throw new Error(`Could not update the listing status: ${error.message}`)
 }
 
 export async function deleteListing(id: string): Promise<void> {
-  await db().from('market_listings').delete().eq('id', id)
+  const { error } = await db().from('market_listings').delete().eq('id', id)
+  if (error) throw new Error(`Could not delete the listing: ${error.message}`)
 }

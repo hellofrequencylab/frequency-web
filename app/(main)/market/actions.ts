@@ -30,7 +30,11 @@ export async function createListingAction(input: ListingInput): Promise<ActionRe
 
 export async function updateListingAction(id: string, patch: ListingPatch): Promise<ActionResult> {
   if (!(await assertOwner(id))) return fail('Not allowed.')
-  await updateListing(id, patch)
+  try {
+    await updateListing(id, patch)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the listing.')
+  }
   revalidatePath('/market')
   revalidatePath(`/market/${id}`)
   return ok()
@@ -38,7 +42,11 @@ export async function updateListingAction(id: string, patch: ListingPatch): Prom
 
 export async function setListingStatusAction(id: string, status: ListingStatus): Promise<ActionResult> {
   if (!(await assertOwner(id))) return fail('Not allowed.')
-  await setListingStatus(id, status)
+  try {
+    await setListingStatus(id, status)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not update the listing status.')
+  }
   revalidatePath('/market')
   revalidatePath(`/market/${id}`)
   return ok()
@@ -46,7 +54,11 @@ export async function setListingStatusAction(id: string, status: ListingStatus):
 
 export async function deleteListingAction(id: string): Promise<ActionResult> {
   if (!(await assertOwner(id))) return fail('Not allowed.')
-  await deleteListing(id)
+  try {
+    await deleteListing(id)
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not delete the listing.')
+  }
   revalidatePath('/market')
   return ok()
 }
