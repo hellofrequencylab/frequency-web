@@ -315,7 +315,7 @@ Proposed ADRs: **498** (the App contract) · **499** (`app_instances`, placement
 | ID | Task | ADR |
 |---|---|---|
 | **LP1** | **App contract & catalog** — `lib/apps/{catalog,bindings,access}.ts`; superset + gate-parity tests | 498 |
-| **LP2** | **Registry unification** — invert `AdminModule` / `LAYOUT_MODULES` / `element-catalog` to derive from `APPS` (snapshot-guarded, adapters kept) | 498 |
+| ~~**LP2**~~ | ~~**Registry unification** — invert `AdminModule` / `LAYOUT_MODULES` / `element-catalog` to derive from `APPS`~~ **REJECTED (ADR-501).** LP1 shipped the derive-direction *code → catalog* (`APPS` is a read-only projection of the registries), matching the platform principle "code is source of truth, Loom indexes read-only". Inverting would couple the pure catalog to the render graph for no gain; there is no drift to fix (122 ids ↔ 122 bindings, symmetric). | 501 |
 | **LP3** | **Persistence** — `app_instances` migration + gated actions; reuse `library_assets kind='app'` / `library_versions` / `library_usages` / `page_settings`; RLS Phase 1 | 499/500 |
 | **LP4** | **Standardized admin bar** — steps B0–B5; visibility = `appsForScope` non-empty; drill-down + search | 501 |
 | **LP5** | **Loom Apps lane** — `kind='app'` in Loom Studio: read-only source + version (L1), editable config/connections/gate (L2), instances (L3), style (L4); the "Used in" help index | 500 |
@@ -330,7 +330,7 @@ Proposed ADRs: **498** (the App contract) · **499** (`app_instances`, placement
 | **LP8** | **Per-space + personal Looms + client RLS** — the D5 tenancy phase; `SPACE_FUNCTIONS` `library` key; community `library.*` caps. **Gated by hardening.** | 503 |
 | **LP9** | **Ingest / backfill** — modules→Apps, layout placements→instances, theme/accent→lanes; idempotent, fail-safe, readers stay default-on-error | 504 |
 
-**Dependency order:** LP1 → LP2 → LP3 → LP4/LP5 ship the core loop; **LP-EVENT** rides on them as
+**Dependency order:** LP1 → LP3 → LP4/LP5 ship the core loop (LP2 rejected, ADR-501); **LP-EVENT** rides on them as
 the reference; **LP7** (template-everywhere) is parallelizable after LP1; **LP8** waits on
 FOUNDATION-HARDENING; **LP9** runs continuously once LP3 exists.
 
