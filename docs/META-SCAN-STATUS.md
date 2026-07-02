@@ -115,8 +115,11 @@ the unit suite.
   - ✅ ~~56 `multiple_permissive_policies`~~ — Phase F (migration `20261004000000`): consolidated the
     6 highest-count `{public}` tables (post_reactions, posts, applications, events, user_achievements,
     waitlist_entries) to one OR-merged permissive policy per (role, action). Advisor **56 → 2**;
-    predicates byte-verified against live policies, RESTRICTIVE policies untouched. Follow-up: the
-    2 remaining `{authenticated}` findings (`dispatch_likes` shape-change, `space_subscription_items`).
+    predicates byte-verified against live policies, RESTRICTIVE policies untouched.
+    - ✅ ~~the 2 remaining `{authenticated}` findings~~ — migration `20261007000000`:
+      `space_subscription_items` (2→1 OR merge) + `dispatch_likes` (split the `ALL` "manage own"
+      policy into own INSERT/UPDATE/DELETE, kept the SELECT-true read). Advisor
+      `multiple_permissive_policies` now **0** (applied + verified + pgTAP guard).
   - ⚠️ `auth_leaked_password_protection` off — **owner action** (Supabase Dashboard → Auth → Password
     protection; not a migration). Enable "leaked password protection" (HaveIBeenPwned check).
   - `rls_enabled_no_policy` (default-deny, informational); unused-index review now ~202 (mostly the
