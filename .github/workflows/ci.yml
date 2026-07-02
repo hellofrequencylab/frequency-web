@@ -42,3 +42,5 @@ jobs:
         run: pnpm test
       - name: Authz-contract check
         run: pnpm check:authz
+      - name: Canon check (member copy)
+        run: pnpm check:canon

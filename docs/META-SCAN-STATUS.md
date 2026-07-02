@@ -74,8 +74,13 @@
   renderer → in-house editor → drop dep). Also: publishing a Puck page drops FAQ/Article
   JSON-LD (emit schema from the block render path).
 - **Supabase advisors (remaining)**: 56 `multiple_permissive_policies`, `auth_leaked_password_protection`
-  off, ~174 SECURITY DEFINER functions anon/authenticated-executable (RPC lockdown), 71
-  `rls_enabled_no_policy` (default-deny, mostly informational), 225+ unused-index review.
+  off, 71 `rls_enabled_no_policy` (default-deny, mostly informational), 225+ unused-index review.
+  SECURITY DEFINER lockdown: ✅ phase 1 done — 15 trigger functions revoked (zero-risk).
+  REMAINING: ~73 STANDALONE SECURITY DEFINER functions — needs a tested pass that revokes only
+  the ones NOT in the `.rpc()` call set AND NOT referenced in any RLS policy (a policy helper
+  needs the querying role's EXECUTE, so a blind revoke breaks RLS). Build the keep-set from
+  `grep -roE "\.rpc\('([a-z_]+)'"` + `pg_policies` function references, revoke the complement,
+  then run the full suite + smoke the public feed/discover pages before merging.
 - **Help-doc naming audit**: sweep `content/help/**` for retired member terms
   (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
 - **Dependencies**: minor/patch bumps (resend, stripe, supabase-js, lucide-react, tailwindcss,
