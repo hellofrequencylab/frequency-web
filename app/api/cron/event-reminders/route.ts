@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { HOME_TZ, zoneAbbrev } from '@/lib/time/zone'
+import { HOME_TZ, zoneAbbrev, eventInstant, resolveZone } from '@/lib/time/zone'
 import type { Database } from '@/lib/database.types'
 import {
   sendEventReminderEmail,
@@ -50,7 +50,13 @@ type EventRow = {
   location:    string | null
   slug:        string
   is_cancelled: boolean
+  time_zone:   string | null
 }
+
+// The widest real UTC offset any IANA zone reaches is ±14h. starts_at stores the event's
+// wall-clock as UTC parts, so the true instant can sit up to 14h off the raw value — widen
+// the SQL band by this much, then filter precisely in code by eventInstant().
+const MAX_TZ_OFFSET_MS = 14 * 60 * 60 * 1000
 
 type RsvpRow = {
   id:          string
@@ -119,14 +125,22 @@ async function processLead(lead: ReminderLead): Promise<{ events: number; sent: 
     ? new Date(now + WEEK_LEAD_MAX_MS)
     : new Date(now + leadOffsetMs(lead) + SLACK_MS)
 
+  // Widen the raw-starts_at band by ±MAX_TZ_OFFSET so no candidate is missed, then keep
+  // only events whose TRUE instant (wall-clock resolved through the event's own zone) lands
+  // in the real window. Without this, the band compared real instants to wall-clock parts,
+  // so reminders fired ~offset hours early/late for any non-HOME event. time_zone is newer
+  // than the generated types, so read untyped and cast (repo convention).
   const { data: events } = await admin
     .from('events')
-    .select('id, title, starts_at, location, slug, is_cancelled')
-    .gte('starts_at', windowStart.toISOString())
-    .lt('starts_at', windowEnd.toISOString())
+    .select('id, title, starts_at, location, slug, is_cancelled, time_zone')
+    .gte('starts_at', new Date(windowStart.getTime() - MAX_TZ_OFFSET_MS).toISOString())
+    .lt('starts_at', new Date(windowEnd.getTime() + MAX_TZ_OFFSET_MS).toISOString())
     .eq('is_cancelled', false)
 
-  const eventRows = (events ?? []) as EventRow[]
+  const eventRows = ((events ?? []) as unknown as EventRow[]).filter((ev) => {
+    const inst = eventInstant(ev.starts_at, resolveZone(ev.time_zone))
+    return !!inst && inst.getTime() >= windowStart.getTime() && inst.getTime() < windowEnd.getTime()
+  })
   if (!eventRows.length) return { events: 0, sent: 0 }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'

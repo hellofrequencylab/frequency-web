@@ -47,13 +47,20 @@ export async function MobileGameStats({ profileId }: { profileId: string }) {
 export async function loadGameStats(profileId: string): Promise<DockData> {
   const admin = createAdminClient()
 
-  const [{ data: profile }, practicesToLog, memberPractices, recentLogs] = await Promise.all([
+  // All sources fetch in ONE parallel batch (no serial waterfall): the profile row, today's
+  // logs, adopted practices, recent logs, the season completion count (drives rank), AND the
+  // enrolled-Journey progress (the dock's "current track"). journeysFinishedThisSeason keeps its
+  // prior behaviour (uncaught → propagates, same as before); getMemberJourneyProgress degrades to
+  // an empty list so its arc line just hides (matching the old try/catch).
+  const [{ data: profile }, practicesToLog, memberPractices, recentLogs, finishedCount, progress] = await Promise.all([
     admin.from('profiles')
       .select('current_season_zaps, lifetime_gems, current_streak')
       .eq('id', profileId).maybeSingle(),
     getPracticesToLogToday(profileId).catch(() => []),
     getMemberPractices(profileId).catch(() => []),
     getRecentPracticeLogs(profileId, 30).catch(() => []),
+    journeysFinishedThisSeason(profileId),
+    getMemberJourneyProgress(profileId).catch(() => []),
   ])
 
   const p = profile as { current_season_zaps?: number; lifetime_gems?: number; current_streak?: number } | null
@@ -61,7 +68,6 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   const gems = p?.lifetime_gems ?? 0
   const streak = p?.current_streak ?? 0
   // Derive rank from Journey completions (completion-based model).
-  const finishedCount = await journeysFinishedThisSeason(profileId)
   const rank = rankForCompletion(finishedCount)
 
   // Today's move (North-Star daily action)
@@ -98,18 +104,13 @@ export async function loadGameStats(profileId: string): Promise<DockData> {
   // active enrolled Journey, % complete, and the next lesson. Hidden when there's no enrollment
   // (no empty/broken widget). Best-effort.
   let arc: DockData['arc'] = null
-  try {
-    const progress = await getMemberJourneyProgress(profileId)
-    const top = progress[0]
-    if (top) {
-      arc = {
-        chain: top.title,
-        step: top.nextLesson?.title ?? 'On track',
-        pct: top.percent,
-      }
+  const top = progress[0]
+  if (top) {
+    arc = {
+      chain: top.title,
+      step: top.nextLesson?.title ?? 'On track',
+      pct: top.percent,
     }
-  } catch {
-    arc = null
   }
 
   return { zaps, gems, streak, rank, todaysMove, last7, rankProgress, arc, vaultGems: gems }
@@ -231,8 +232,13 @@ export default async function RightSidebar({ profileId, role }: RightSidebarProp
         )}
       </div>
       {/* Standing panel — the player's progress cockpit, pinned to the bottom.
-          Hidden on Quest surfaces (the page owns standing there). */}
-      {!onQuest && <GameStatsDock profileId={profileId} />}
+          Hidden on Quest surfaces (the page owns standing there). Its own Suspense
+          so its multi-hop stats load never blocks the rest of the rail (PAGE-FRAMEWORK §5). */}
+      {!onQuest && (
+        <Suspense fallback={<PanelSkeleton />}>
+          <GameStatsDock profileId={profileId} />
+        </Suspense>
+      )}
     </div>
   )
 }

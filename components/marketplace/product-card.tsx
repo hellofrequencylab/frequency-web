@@ -22,7 +22,7 @@ export function ProductCard({ product, href }: { product: CommerceProduct; href:
       description={product.description ?? undefined}
       badge={
         soldOut ? (
-          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-[11px] font-medium text-subtle">
+          <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
             Sold out
           </span>
         ) : undefined

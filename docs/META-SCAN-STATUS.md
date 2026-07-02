@@ -44,10 +44,9 @@
 ## Master to-do (open)
 
 ### 🔴 High — correctness / needs an atomic RPC or a decision
-- **Reminder send-window offset** (`app/api/cron/event-reminders/route.ts`): the `.gte/.lt`
-  window compares real instants to wall-clock-parts `starts_at`, so reminders can fire ~offset
-  hours off for non-HOME events. Fix: widen the SQL window by ±max-offset, then filter in code
-  by `eventInstant(starts_at, time_zone)`.
+- ✅ ~~**Reminder send-window offset**~~ — FIXED: the cron now widens the raw-`starts_at`
+  band by ±14h and filters in code by `eventInstant(starts_at, time_zone)`, so reminders fire
+  at the event's real instant regardless of its zone.
 - **Stripe/economy races** (need atomic RPCs): ticket oversell reservation
   (`lib/billing/tickets.ts`), gem daily-cap count-then-insert (`lib/gems.ts`), notification
   queue claim (`lib/queue/outbox.ts`, SKIP LOCKED), challenge/streak read-modify-write
@@ -68,7 +67,7 @@
   per request + shipped in every RSC payload.
 - **a11y**: missing `error.tsx`/`not-found.tsx` for some route groups; icon-only buttons
   missing `aria-label`; dialog focus-trap soundness; client mutations without error feedback
-  (`settings/notifications/form.tsx` toggle; some admin row-actions).
+  (some admin row-actions). ✅ notifications toggle now reverts + shows an error on save failure.
 - **`@measured/puck` migration execution** — per `PUCK-MIGRATION-PLAN.md` (pin exact → in-house
   renderer → in-house editor → drop dep). Also: publishing a Puck page drops FAQ/Article
   JSON-LD (emit schema from the block render path).
@@ -81,8 +80,9 @@
   next patch); 2 moderate transitive vulns (`postcss` via next, `uuid` via `@measured/puck`).
 
 ### 🟡 Low
-- Remaining marketplace/catalog + a few admin lib helpers swallow Supabase errors
-  (`lib/commerce/products.ts`, `reports.ts`; return/throw the error).
+- ✅ ~~Marketplace/catalog lib helpers swallow Supabase errors~~ — FIXED: `createProduct`,
+  `setProductStatus`, `updateProduct`, `deleteProduct` (`lib/commerce/products.ts`) and
+  `setReportStatus` (`lib/commerce/reports.ts`) now throw on error so the action surfaces it.
 - Page-framework nits: hardcoded hex + `text-[11px]` in a handful of admin/marketplace
   components; hand-rolled headers in Theme Studio / walkthrough editors.
 - Bulk em dashes in **operator/admin** copy and `lib/demo/engine.ts` demo content (voice ban

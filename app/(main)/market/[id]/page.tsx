@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
@@ -51,8 +52,15 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
         {listing.images.length > 0 && (
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {listing.images.map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={src} alt={`${listing.title}, photo ${i + 1}`} className="aspect-square w-full rounded-xl border border-border object-cover" />
+              <div key={i} className="relative aspect-square w-full overflow-hidden rounded-xl border border-border">
+                <Image
+                  src={src}
+                  alt={`${listing.title}, photo ${i + 1}`}
+                  fill
+                  sizes="(min-width: 640px) 33vw, 50vw"
+                  className="object-cover"
+                />
+              </div>
             ))}
           </div>
         )}

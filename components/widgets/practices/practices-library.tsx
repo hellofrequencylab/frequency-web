@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Flame, Library, Zap, Wand2, Users, ChevronLeft, ChevronRight, EyeOff, X, Timer, CircleDot } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
@@ -198,8 +199,13 @@ export async function PracticesLibrary() {
                     metaNoWrap
                     cover={
                       p.header_image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.header_image} alt="" className="h-full w-full object-cover" />
+                        <Image
+                          src={p.header_image}
+                          alt=""
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover"
+                        />
                       ) : (
                         // Every card gets a header: a Pillar-tinted gradient + icon when no image.
                         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg to-surface-elevated text-primary-strong">
