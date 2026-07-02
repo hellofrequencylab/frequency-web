@@ -40,10 +40,11 @@ export async function VaultStore() {
           cta="See what Crew adds"
         />
       )}
-      {/* Gift Gems (ADR-305 §8) sits OUTSIDE the CrewGate so it stays interactive. Shown to
-          members who can spend and have a balance; gifting draws down the same spendable pool
-          the store uses. The server action is the authority (advisory-locked balance recheck). */}
-      {d.canSpend && d.balance > 0 && (
+      {/* Gift Gems (ADR-305 §8) sits OUTSIDE the CrewGate so it stays interactive. Open to ANY
+          member with a spendable balance — gifting is deliberately tier-agnostic (unlike Vault
+          cash-in, which is a Crew perk): generosity isn't gated, and no spendable value is created,
+          only moved between members. The server action is the authority (advisory-locked recheck). */}
+      {d.balance > 0 && (
         <div className="flex justify-end">
           <GiftGemsDialog balance={d.balance} />
         </div>

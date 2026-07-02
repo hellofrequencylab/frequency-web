@@ -3,7 +3,7 @@ title: Spending Gems in the Vault Store
 description: What Gems buy, how redeeming works, and the "how you earned" ledger.
 category: membership
 order: 2
-updated: 2026-06-16
+updated: 2026-07-02
 audience: member
 featureKeys: [vault, gems]
 status: published
@@ -44,6 +44,25 @@ on that below). What's free vs. member is covered in
 
 Anyone can **browse** the whole store; **spending** is the membership benefit.
 During the beta everything is open to everyone.
+
+## Gifting Gems to another member
+
+Gems you have earned are yours to give. Open **Gift Gems** from the Vault Store,
+search for a member by name or handle, choose how many Gems to send, and confirm.
+The amount leaves your spendable balance and lands in theirs right away, with a note
+in their earning log that the Gems came from you.
+
+A few things worth knowing:
+
+- You can only send what you can spend. A gift never takes you below zero, and if
+  anything goes wrong along the way, the Gems stay in your wallet.
+- Your earned total and your Amplitude do not change when you gift. Only your
+  spendable balance moves. The Gems are not spent on you, they are passed on.
+- You cannot gift to yourself, and the amount has to be a whole number.
+
+Gifting is open to anyone with Gems to give. It is the one way to spend Gems that is
+not about you: a way to say thanks, welcome someone new, or back a member doing good
+work.
 
 ## "How you earned": your ledger
 
