@@ -42,7 +42,10 @@ export function CommentSection({
     setBody('')
     startTransition(async () => {
       try {
-        await addDispatchComment(dispatchId, snapshot)
+        const created = await addDispatchComment(dispatchId, snapshot)
+        // Render the new comment right away — the list is a frozen snapshot that
+        // never refreshed, so without this it stayed invisible and a re-submit duped it.
+        setComments(c => [...c, created])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to post comment.')
         setBody(snapshot)

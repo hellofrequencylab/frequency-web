@@ -1,68 +1,55 @@
 # Patch list — final meta-scan (admin surfaces · control boards · member features)
 
 > Read-only bug + gap audit of every wired admin/operator surface and the full member-facing
-> app (2026-07-02), adversarially verified. **Headline: the money/economy, privacy, and auth-guard
-> paths are unusually well-hardened** (atomic RPCs, claim-then-pay reversal, owner-scoped reads,
-> no unguarded admin mutation, no dead controls). The holes are a data-integrity race, a few
-> authz-axis mismatches that block the operators a console serves, and a broad "silent write
-> failure / optimistic-UI lie" class. This is the durable to-do; check items off as they land.
+> app (2026-07-02), adversarially verified, then fixed. **Headline: the money/economy, privacy, and
+> auth-guard paths were already unusually well-hardened**; the holes were a data-integrity race, two
+> economy double-awards, a few authz-axis mismatches, and a broad "silent write failure / optimistic-UI
+> lie" class. **All P0/P1/P2 items below are now fixed** except a short, explicitly-scoped remainder.
 
-Legend: ✅ fixed this session · 🔴 P0 (data/economy/privacy, pre-launch) · 🟠 P1 (operator-blocking / correctness) · 🟡 P2 (silent-failure / UX polish)
+Legend: ✅ fixed · ⏳ open (documented) · 🔵 owner-only (dashboard/console)
 
-## ✅ Fixed this session (shipped in the final-scan PRs)
+## ✅ P0 — data-integrity / economy / privacy (shipped)
 
-| Fix | File | What |
-|---|---|---|
-| Journey draft leak | `app/(main)/journeys/[slug]/learn/page.tsx` | Added the visibility gate the detail page has — a private draft is now author-only (was readable by any member). |
-| Duplicate Starter Circle | `lib/applications/handoff.ts` | Reordered to claim-then-effect: stamp `accepted` (conditional on prior status) BEFORE `runAcceptHandoff`, abort on a failed/lost claim — closes the re-accept duplicate. |
-| Stranded extra-credit bonus | `lib/journeys/grants.ts` | `grantExtraCreditZaps` now releases its `reward_grants` claim when the award fails, so a retry can pay. |
-| Marketplace silent "Saved" | `lib/marketplace.ts` + `app/(main)/market/actions.ts` | `updateListing`/`setListingStatus`/`deleteListing` throw on error; the actions catch → `fail()` (mirrors the `lib/commerce/products.ts` fix). |
-| Support console unusable for staff | `app/(main)/admin/support/actions.ts` | `requireAgent` gained the staff-`members` arm (mirrors `resolveModerator`) — matches the page gate. |
-| Gift Gems policy + notify | `lib/rewards/gifts.ts` + docs | Open to all members; recipient now notified (ADR-498). |
+- **Private journey draft leak** — `app/(main)/journeys/[slug]/learn/page.tsx`: added the visibility gate the detail page has (private → author-only).
+- **Duplicate Starter Circle on re-accept** — `lib/applications/handoff.ts`: claim-then-effect (stamp `accepted` conditional on prior status before `runAcceptHandoff`; abort on failed/lost claim).
+- **Crew-task double-award race** — advisory-lock RPC `log_crew_completion_atomic` (migration `20261008000000`, applied to prod, SECURITY DEFINER + service_role-only); `logCompletion` rewired. Handles repeatable tasks; inserts at most once for non-repeatable so the trigger fires once.
+- **Expression-Challenge double-pay** — `lib/quest/expression.ts`: Zap path now on a `reward_grants` claim-then-pay (the real atomic lock), mirroring the Gem path.
+- **Stranded extra-credit bonus** — `lib/journeys/grants.ts`: releases its claim on a failed award so a retry pays.
 
-## 🔴 P0 — economy integrity (need a migration; fix before launch)
+## ✅ P1 — operator-blocking authz-axis + correctness (shipped)
 
-- **Crew-task completion double-award race** — `app/(main)/crew/actions.ts:25-45` (`logCompletion`). No unique constraint on `crew_completions(task_id, profile_id)`; the `after_crew_completion` trigger credits `current_season_zaps` + advances rank on EVERY insert, so two concurrent completions double-credit (client `useTransition` only stops single-client double-clicks). **Fix:** partial unique index `(task_id, profile_id)` where non-repeatable + `ON CONFLICT DO NOTHING` (or route through `recordEngagementEvent` idempotency). Circle tasks share this path.
-- **Expression-Challenge Zap double-pay** — `lib/quest/expression.ts:97-131`. Non-atomic `wasDone` guard instead of a `reward_grants` claim → concurrent double-submit double-pays. **Fix:** claim-then-pay `reward_grants` row keyed on `(challenge, profile)` (mirror C4/C5).
+- **Support console staff gate** — `admin/support/actions.ts`: `requireAgent` gained the staff-`members` arm (mirrors `resolveModerator`).
+- **Connection settings axis** — `lib/connections/connection-settings-actions.ts`: `saveConnectionSettings` now gates on the staff axis (`isStaff(webRole)`) — unblocks Site Admins AND closes the over-permissive legacy-`community_role='admin'` path.
+- **Gamification award guard** — `crew/gamification-actions.ts`: `award/revokeAchievement` additionally admit a community-domain staffer (mirrors the page gate), fail-closed.
+- **Member manager controls** — `admin/member-manager.tsx` + `admin/page.tsx`: role/deactivate controls now render only for janitors (`canManage` prop) and surface action errors inline.
+- **Broadcasts audience axis** — `admin/dispatches/page.tsx`: staff standing now derives from `web_role` (list + audience branch fixed in lockstep).
+- **Daily check-in timezone** — `checkin-actions.ts` + `components/daily-check-in.tsx`: uses `resolveMemberDay` (member-local day, DST-safe yesterday) instead of UTC; client passes its tz.
+- **DM optimistic-send** — `components/messages/thread.tsx`: wraps `sendMessage` in try/catch, rolls back the optimistic bubble, restores the draft, surfaces an error.
+- **DM realtime publication** — verified a **non-issue**: `messages` and `room_messages` are both in the prod `supabase_realtime` publication (only the migration comment was stale).
 
-## 🟠 P1 — operator-blocking authz-axis + correctness
+## ✅ P2 — silent-failure / optimistic-lie class (shipped)
 
-- **Connection settings save wrong axis** — `lib/connections/connection-settings-actions.ts:17,134`. `saveConnectionSettings` gates on `community_role` 'admin' while the page gates the staff axis → Site Admins blocked on Save; also over-permissive (a legacy `community_role='admin'` non-staff can invoke it directly). **Fix:** gate on the staff axis (`isStaff(webRole)` / `authorizeAction`).
-- **Gamification award guard mismatch** — `app/(main)/admin/gamification/page.tsx:55` vs `app/(main)/crew/gamification-actions.ts:265`. Page admits `{staff:'community'}`; `awardAchievement`/`revokeAchievement` check `community_role` only → a community-domain staffer gets Unauthorized. **Fix:** accept the `community` capability (mirror `authorizeAction`).
-- **Member manager dead controls** — `app/(main)/admin/member-manager.tsx:52-63`. Role dropdown + deactivate render under `requireAdminFloor` (any staff) but `assignRole`/`deactivateMember` are janitor-only → non-janitor sees enabled controls that throw silently. **Fix:** gate control visibility on `isJanitor` + surface the error.
-- **Broadcasts audience axis** — `app/(main)/admin/dispatches/page.tsx:11`. `isStaff` derived from `community_role` not `web_role` → a staff admin with `community_role='member'` gets no audience options. **Fix:** derive from `webRole`/`staffRole`.
-- **Daily check-in uses UTC day, not member-local** — `app/(main)/checkin-actions.ts:13-15,37,41`. Streak/reward keyed to the UTC calendar day; evening-PT members double-fire or skip (LA-home tz theme). **Fix:** thread `clientTimezone` and use `resolveMemberDay` (member-local today AND yesterday), matching `lib/practices.ts`.
-- **DM optimistic-send lies on failure** — `components/messages/thread.tsx:93-114`. Optimistic append + clear, then `await sendMessage` with no try/catch; `sendMessage` throws on block / no-ops on non-participant. **Fix:** try/catch, roll back the optimistic row, surface an error (mirror `room-thread.tsx`).
-- **DM realtime never enabled in a migration** — `supabase/migrations/20240103000000_direct_messages.sql:100-108` leaves `ALTER PUBLICATION supabase_realtime ADD TABLE messages` commented out (rooms ARE added). **Fix:** verify the live publication, add `messages` in a migration, and reconcile the optimistic id vs realtime dedup (currently `optimistic-${Date.now()}` → duplicate bubbles once live).
+- **Member:** feed `createPost`/`createReply` (→ ActionResult + composer keeps text on failure), `joinCircle` (→ ActionResult + new `JoinCircleButton`), channels tune-in/out, `submitToLibrary`, `startConversation`, broadcast comments (renders immediately) + like/vote, friend/block buttons, friend-actions revalidate-by-handle, messages header badge (now includes room unread), "message my circle" pre-filters to friends.
+- **Admin:** the four entity-settings-module saves + hubs/nexuses clients (try/catch + inline error), marketing `sendCampaign` (aborts on insert error) + campaign-composer confirm-with-audience, `bulkSetContactConsent`/`updateContactFields`, agent `approve/dismiss`, `toggleRule`, qr `updateCampaign`, `setReferralLanding`, walkthrough create/seed, loom-rail inline error.
+- **Marketplace writes** — `lib/marketplace.ts` + `market/actions.ts`: throw + surface `fail()`.
 
-## 🟡 P2 — silent-failure / optimistic-lie / stale-cache class
+## ⏳ Open — explicitly scoped remainder (needs design / a new RPC)
 
-**Member app** — surface failures (return `ActionResult` + render) instead of `console.error`+return:
-- `app/(main)/feed/actions.ts:127-140,208-215` — `createPost` / `createReply` drop the post/reply + clear the composer on a failed insert.
-- `app/(main)/circles/actions.ts:42-89` — `joinCircle` silent no-op on every path (incl. the F2 cap trigger).
-- `app/(main)/channels/actions.ts:99-129` — `tuneInChannel`/`tuneOutChannel` don't check the upsert error.
-- `app/(main)/library/actions.ts:64,68` — `submitToLibrary` returns success even if the status update failed.
-- `app/(main)/messages/actions.ts:69-74` — `startConversation` ignores the participant-insert error before redirect (conversation with no participants).
-- `components/.../broadcast/[id]/comment-section.tsx:31,37-51` — posted comment never renders (frozen `initial` state) → re-submit dupes.
-- `app/(main)/broadcast/actions.ts:161-181,216-252` — like/vote optimistic UI lies on a swallowed error.
-- `app/(main)/people/[handle]/friend-button.tsx` + `block-button.tsx` — swallow the `ActionResult` (no error shown; `router.refresh()` masks it).
-- `app/(main)/people/friend-actions.ts:77,110,147,166` — revalidate `\`/people/${uuid}\`` but the route is `/people/[handle]` → target's page stays stale on soft-nav. **Fix:** revalidate by handle (as `people/[handle]/actions.ts:41` does).
-- `app/(main)/messages/page.tsx:288` — header badge counts DMs only; nav popover counts rooms+DMs → the two disagree.
-- `messages/page.tsx:217-223` + `popover-actions.ts:124-129` — shared message budget (`limit(convIds*20/10)`) lets a busy thread starve others → `lastMessage=null`/`unread=0`. **Fix:** newest-per-conversation window RPC.
-- `components/messages/crew-lead-quick-action.tsx:41-64` — "Message my circle" dead-ends behind `startGroupConversation`'s all-invitees-must-be-friends rule. **Fix:** exempt circle co-members or pre-filter.
-
-**Admin app** — the same class, plus the systemic pattern:
-- Entity settings save swallow — `components/admin/modules/{channel,circle,hub,nexus}-settings-module.tsx` (no try/catch, unconditional "Saved"; the actions throw). `hubs-client.tsx:155` / `nexuses-client.tsx:143` same.
-- Marketing writes report success on failure — `campaigns/actions.ts:61-65` (sends anyway, no record), `contacts/actions.ts:41-46,76-88` (bulk-consent + updateContactFields lie), `agent/actions.ts:31-46` (approveAction executes even if the status write failed), `automations/actions.ts:142-148` (`toggleRule` void swallow), `qr/campaign-actions.ts:121-126` (code-set diff), `onboarding-controls/actions.ts:57-63` (QR retarget), `walkthroughs/actions.ts:92,138` (create/seed silent), `growth/funnels/[id]/builder-client.tsx:173-178` (remove link).
-- **Mass campaign send has no confirmation** — `admin/marketing/campaigns/campaign-composer.tsx:30-42` blasts the whole segment on click. **Fix:** confirm with the resolved audience size.
-- **Systemic "pending state, no error surface"** — many client controls `await` an action, discard the failure, and just `router.refresh()`/spin: `circles-client.tsx`, `qr/qr-studio.tsx`, `components/admin/inline/inline-text.tsx` (shared inline-edit — broad blast radius), and the marketing `*-client.tsx` toggle handlers. **Fix:** adopt the shared `isError`+`setError` pattern (`moderation-queue.tsx` / `danger-delete.tsx` do it right); consider a small shared hook.
-- `admin/library/loom-rail.tsx:96,106,115` — `window.alert(res.error)`; functional but off-pattern → inline error.
+- **Messages unread + last-message under-count** — `messages/page.tsx:217-223` + `popover-actions.ts:124-129`: a shared message budget (`limit(convIds*20/10)`) lets a busy thread starve others. Needs a **newest-per-conversation window RPC** — deferred (correctness of a count, not a data risk).
+- **DM optimistic-vs-realtime dedup** — realtime IS live in prod; the optimistic bubble uses `optimistic-${Date.now()}` while the realtime row carries a uuid, so a sent DM can briefly double-render until refresh. Reconcile the optimistic id with the realtime insert.
+- **Funnel builder remove-link** — `admin/growth/funnels/[id]/builder-client.tsx:173-178`: `removeStageLink` result not checked (small; same silent-failure class).
+- **Systemic "fire-and-refresh"** — a shared `isError`+`setError` hook would close the long tail of admin toggle handlers (`inline-text.tsx`, `circles-client.tsx`, `qr-studio.tsx`, marketing `*-client` toggles) that spin without surfacing a failure.
 
 ## Product confirm (not a bug)
 
-- **Verification vs Zaps** — `app/(main)/crew/actions.ts:35-40` writes `zaps_earned` at completion regardless of `requires_verification`; `approveVerification` (`admin/actions.ts:854`) only stamps `verified_by` (never awards). Verification reads as a moderation flag over a projection, not a reward gate. Confirm the intended semantics.
+- **Verification vs Zaps** — `crew/actions.ts` writes `zaps_earned` at completion regardless of `requires_verification`; `approveVerification` only stamps `verified_by`. Confirm the intended semantics.
 
-## ⚠️ Not fully swept (recommend a follow-up pass)
+## 🔵 Owner-only (from the broader scan — dashboard/console, can't be done from code)
 
-- Prod check: is `messages` in the `supabase_realtime` publication (P1 above)? Not captured in migrations.
-- Lighter coverage (spot-checked, no defects surfaced): admin CRM deal-CRUD forms / pipeline drag-drop / playbooks, marketing nurture/deliverability/variants interiors, the editor-heavy surfaces (menu/appearance/theme-studio/walkthrough/page-layout/segments/store-item), and member `programs`, `journal`, `orders` detail, global `search`, QR short-links.
+- Enable **leaked-password protection** (Supabase → Auth).
+- Verify/disable the **enabled-but-unused anonymous sign-ins** (Supabase → Auth).
+- Submit **`sitemap.xml`** to Google Search Console + Bing.
+
+## ⚠️ Not fully swept (lighter coverage, no defects surfaced)
+
+Admin CRM deal-CRUD forms / pipeline drag-drop / playbooks; marketing nurture/deliverability/variants interiors; the editor-heavy surfaces (menu/appearance/theme-studio/walkthrough/page-layout/segments/store-item); member `programs`, `journal`, `orders` detail, global `search`, QR short-links.

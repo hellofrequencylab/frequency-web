@@ -12,7 +12,7 @@ export function DailyCheckIn() {
 
   useEffect(() => {
     let live = true
-    dailyCheckIn()
+    dailyCheckIn(Intl.DateTimeFormat().resolvedOptions().timeZone)
       .then((r) => {
         if (live && r && r.gems > 0) {
           setRes(r)

@@ -77,7 +77,7 @@ async function fanOutMentions(
   }
 }
 
-export async function createPost(formData: FormData) {
+export async function createPost(formData: FormData): Promise<ActionResult> {
   const body = (formData.get('body') as string | null)?.trim()
   const scopeId = formData.get('scopeId') as string | null
   const requestedVisibility = (formData.get('visibility') as string) || 'public'
@@ -90,7 +90,7 @@ export async function createPost(formData: FormData) {
   // `cluster` visibility resolves. A member's post stays circle-only (`group`).
   const visibility = isAnnouncement ? 'cluster' : requestedVisibility
 
-  if ((!body && !imageUrl) || !scopeId) return
+  if ((!body && !imageUrl) || !scopeId) return fail('Write something to post.')
 
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
@@ -107,7 +107,9 @@ export async function createPost(formData: FormData) {
       .select('community_role')
       .eq('id', profileId)
       .maybeSingle()
-    if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) return
+    if (!profile || !HOST_PLUS.includes(profile.community_role ?? '')) {
+      return fail('Only hosts can post an announcement.')
+    }
   }
 
   // Circle-scoped (`group`) posts require active membership in that circle.
@@ -119,7 +121,7 @@ export async function createPost(formData: FormData) {
       .eq('circle_id', scopeId)
       .eq('status', 'active')
       .maybeSingle()
-    if (!membership) return
+    if (!membership) return fail('Join this circle to post here.')
   }
 
   const mediaUrls = imageUrl ? [imageUrl] : []
@@ -136,7 +138,7 @@ export async function createPost(formData: FormData) {
 
   if (error) {
     console.error('[createPost]', error.message)
-    return
+    return fail('Could not save your post. Please try again.')
   }
 
   // Fire gamification events (non-blocking)
@@ -150,6 +152,7 @@ export async function createPost(formData: FormData) {
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
   revalidatePath('/people', 'layout')
+  return ok()
 }
 
 export async function deletePost(postId: string) {
@@ -178,9 +181,9 @@ export async function deletePost(postId: string) {
   revalidatePath('/people', 'layout')
 }
 
-export async function createReply(parentId: string, body: string) {
+export async function createReply(parentId: string, body: string): Promise<ActionResult> {
   const trimmed = body.trim().slice(0, 5000)
-  if (!trimmed) return
+  if (!trimmed) return fail('Write something to reply.')
 
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in')
@@ -192,7 +195,7 @@ export async function createReply(parentId: string, body: string) {
     .select('scope_id, visibility, author_id')
     .eq('id', parentId)
     .maybeSingle()
-  if (!parent) return
+  if (!parent) return fail('That post is no longer available.')
 
   // Self-reply guard: replying to your OWN post grants nothing (anti-farming).
   // A user can't pump Gems or a comment badge by talking to himself.
@@ -202,10 +205,12 @@ export async function createReply(parentId: string, body: string) {
   // group post (createPost above) — otherwise any user could post into a
   // private circle's thread by replying.
   if (parent.visibility === 'group') {
-    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) return
+    if (!parent.scope_id || !(await isActiveMember(admin, profileId, parent.scope_id))) {
+      return fail('Join this circle to reply here.')
+    }
   }
 
-  const { data: reply } = await admin.from('posts').insert({
+  const { data: reply, error } = await admin.from('posts').insert({
     author_id:  profileId,
     body:       trimmed,
     scope_id:   parent.scope_id,
@@ -213,6 +218,11 @@ export async function createReply(parentId: string, body: string) {
     post_type:  'feed',
     parent_id:  parentId,
   }).select('id').maybeSingle()
+
+  if (error) {
+    console.error('[createReply]', error.message)
+    return fail('Could not post your reply. Please try again.')
+  }
 
   // Notify members @mentioned in the reply (same fan-out as top-level posts).
   if (reply) await fanOutMentions(admin, reply.id, trimmed, profileId, 'a reply')
@@ -227,6 +237,7 @@ export async function createReply(parentId: string, body: string) {
   // optimistically right after this resolves, so revalidating the feed here would
   // only refetch the whole feed RPC for nothing (the same wasted work as the old
   // reaction lag).
+  return ok()
 }
 
 // The columns every comment row needs (author drives avatar + ProfileFlair).

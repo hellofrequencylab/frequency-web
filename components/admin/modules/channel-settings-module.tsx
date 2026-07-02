@@ -24,6 +24,9 @@ export function ChannelSettingsModule() {
   const [data, setData] = useState<ChannelData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
+  // updateChannelSettings throws on failure; catch it so a failed save shows a
+  // reason instead of falsely reporting "Saved" (mirrors handlePermalink).
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -51,10 +54,15 @@ export function ChannelSettingsModule() {
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    setError(null)
     startTransition(async () => {
-      await updateChannelSettings(data!.id, fd)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      try {
+        await updateChannelSettings(data!.id, fd)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save the channel.')
+      }
     })
   }
 
@@ -88,6 +96,7 @@ export function ChannelSettingsModule() {
         </label>
 
         <div className="flex items-center justify-end gap-2 pt-1">
+          {error && <span role="alert" className="mr-auto text-xs font-medium text-danger">{error}</span>}
           {saved && (
             <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
               <Check className="h-3.5 w-3.5" /> Saved

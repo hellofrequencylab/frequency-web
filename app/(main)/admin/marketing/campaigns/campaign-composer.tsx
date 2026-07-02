@@ -30,14 +30,31 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
   function submit() {
     if (!subject.trim() || !body.trim()) return
     setResult(null)
-    start(async () => {
-      const res = await sendCampaign({ subject, body, segment })
-      setResult(res)
-      if (res.ok) {
-        setSubject('')
-        setBody('')
-        setAudience(null)
+    // A broadcast is irreversible and mass-scale — resolve the audience first so the
+    // operator confirms the real recipient count before it fires.
+    startPreview(async () => {
+      const preview = await previewBroadcast(segment)
+      if (!preview.ok) {
+        setResult({ ok: false, error: preview.error ?? 'Could not resolve the audience.' })
+        return
       }
+      const size = preview.audienceSize ?? 0
+      setAudience(size)
+      const label = options.find((o) => o.key === segment)?.label ?? segment
+      const confirmed = window.confirm(
+        `Send this broadcast to ${size.toLocaleString()} contact${size === 1 ? '' : 's'} in "${label}"?\n\n` +
+          'The queued count can be lower once each recipient passes the consent and suppression gate.',
+      )
+      if (!confirmed) return
+      start(async () => {
+        const res = await sendCampaign({ subject, body, segment })
+        setResult(res)
+        if (res.ok) {
+          setSubject('')
+          setBody('')
+          setAudience(null)
+        }
+      })
     })
   }
 
@@ -92,7 +109,7 @@ export function CampaignComposer({ options }: { options: { key: string; label: s
       <div className="flex items-center gap-3">
         <button
           onClick={submit}
-          disabled={pending || !subject.trim() || !body.trim()}
+          disabled={pending || previewing || !subject.trim() || !body.trim()}
           className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary-hover text-on-primary text-sm font-semibold px-4 py-2 shadow-sm transition-colors disabled:opacity-60"
         >
           <Send className="w-4 h-4" />

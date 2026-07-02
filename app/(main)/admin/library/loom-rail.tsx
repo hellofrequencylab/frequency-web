@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks } from 'lucide-react'
@@ -85,15 +85,18 @@ export function LoomRail({
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
+  // Surface a failed collection action inline in the rail instead of a window.alert.
+  const [error, setError] = useState<string | null>(null)
 
   const noFilter = !active.kind && !active.category && !active.collectionId
 
   function newCollection() {
     const title = window.prompt('New collection name')
     if (!title || !title.trim()) return
+    setError(null)
     start(async () => {
       const res = await createCollection(title.trim())
-      if ('error' in res) window.alert(res.error)
+      if ('error' in res) setError(res.error)
       else router.push(buildHref(base, { collection: res.id }))
     })
   }
@@ -101,18 +104,20 @@ export function LoomRail({
   function rename(id: string, current: string) {
     const title = window.prompt('Rename collection', current)
     if (!title || !title.trim() || title.trim() === current) return
+    setError(null)
     start(async () => {
       const res = await renameCollection(id, title.trim())
-      if ('error' in res) window.alert(res.error)
+      if ('error' in res) setError(res.error)
       else router.refresh()
     })
   }
 
   function remove(id: string, title: string) {
     if (!window.confirm(`Delete the "${title}" collection? The assets stay in the library.`)) return
+    setError(null)
     start(async () => {
       const res = await deleteCollection(id)
-      if ('error' in res) window.alert(res.error)
+      if ('error' in res) setError(res.error)
       else {
         if (active.collectionId === id) router.push('/admin/library')
         else router.refresh()
@@ -211,6 +216,12 @@ export function LoomRail({
               </button>
             </Row>
           ))
+        )}
+
+        {error && (
+          <p role="alert" className="mt-2 px-2.5 text-xs font-medium text-danger">
+            {error}
+          </p>
         )}
     </nav>
   )

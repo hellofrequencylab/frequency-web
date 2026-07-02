@@ -36,6 +36,9 @@ export function CircleSettingsModule() {
   const [data, setData] = useState<CircleData | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
+  // updateCircleSettings throws on failure; catch it so a failed save shows a
+  // reason instead of falsely reporting "Saved" (mirrors handlePermalink below).
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const [permalink, setPermalink] = useState('')
@@ -69,10 +72,15 @@ export function CircleSettingsModule() {
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    setError(null)
     startTransition(async () => {
-      await updateCircleSettings(data!.id, data!.slug, fd)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      try {
+        await updateCircleSettings(data!.id, data!.slug, fd)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save the circle.')
+      }
     })
   }
 
@@ -195,6 +203,7 @@ export function CircleSettingsModule() {
 
           {/* Save row — spans full width at the bottom. */}
           <div className="flex items-center justify-end gap-2 pt-1 lg:col-span-3">
+            {error && <span role="alert" className="mr-auto text-xs font-medium text-danger">{error}</span>}
             {saved && (
               <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
                 <Check className="h-3.5 w-3.5" /> Saved

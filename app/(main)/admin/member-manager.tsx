@@ -37,9 +37,14 @@ const ROLE_LABEL: Record<CommunityRole, string> = {
   janitor: 'Janitor',
 }
 
-export function MemberManager({ members }: { members: MemberItem[] }) {
+// `canManage` gates the role + deactivate controls. Those actions are janitor-only
+// (assignRole / deactivateMember re-check the STAFF axis server-side); rendering them
+// for a non-janitor community leader gave enabled controls that threw silently. The
+// caller passes its own standing so we never show a dead control.
+export function MemberManager({ members, canManage }: { members: MemberItem[]; canManage: boolean }) {
   const [search, setSearch] = useState('')
   const [confirmId, setConfirmId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const filtered = members.filter(
@@ -50,15 +55,25 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
   )
 
   function handleRoleChange(profileId: string, role: string) {
+    setError(null)
     startTransition(async () => {
-      await assignRole(profileId, role as CommunityRole)
+      try {
+        await assignRole(profileId, role as CommunityRole)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not update this member’s role.')
+      }
     })
   }
 
   function handleDeactivate(profileId: string) {
+    setError(null)
     startTransition(async () => {
-      await deactivateMember(profileId)
-      setConfirmId(null)
+      try {
+        await deactivateMember(profileId)
+        setConfirmId(null)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not deactivate this member.')
+      }
     })
   }
 
@@ -76,6 +91,13 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
           className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/30 dark:border-border-strong dark:bg-surface-elevated dark:text-subtle/60 dark:placeholder:text-muted"
         />
       </div>
+
+      {/* Action error — surfaced inline instead of failing silently */}
+      {error && (
+        <p role="alert" className="mb-3 rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-xs text-danger">
+          {error}
+        </p>
+      )}
 
       {/* Confirm deactivation dialog */}
       {confirmId && confirmTarget && (
@@ -180,28 +202,30 @@ export function MemberManager({ members }: { members: MemberItem[] }) {
                   </div>
                 </div>
 
-                {/* Controls. Visible on hover */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                  <select
-                    defaultValue={m.role}
-                    disabled={isPending}
-                    onChange={(e) => handleRoleChange(m.profileId, e.target.value)}
-                    className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {ROLE_LABEL[r]}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => setConfirmId(m.profileId)}
-                    title="Deactivate member"
-                    className="p-1.5 rounded-md text-subtle hover:text-danger hover:bg-danger-bg transition-colors"
-                  >
-                    <UserX className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                {/* Controls. Janitor-only (the actions are staff-gated), visible on hover */}
+                {canManage && (
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                    <select
+                      defaultValue={m.role}
+                      disabled={isPending}
+                      onChange={(e) => handleRoleChange(m.profileId, e.target.value)}
+                      className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-text focus:border-border-strong focus:outline-none cursor-pointer disabled:opacity-50"
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABEL[r]}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setConfirmId(m.profileId)}
+                      title="Deactivate member"
+                      className="p-1.5 rounded-md text-subtle hover:text-danger hover:bg-danger-bg transition-colors"
+                    >
+                      <UserX className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}

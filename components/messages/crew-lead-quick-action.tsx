@@ -55,11 +55,28 @@ export async function CrewLeadQuickAction() {
 
   if (recipients.length === 0) return null
 
+  // startGroupConversation refuses any invitee who isn't an accepted friend, so a
+  // circle full of non-friends made "Message my circle" dead-end on submit. Pre-filter
+  // the default invitees to accepted friends so the primary path goes through (the
+  // compose still surfaces the friendship error if a member adds a non-friend by hand).
+  const { data: friendRows } = await admin
+    .from('friendships')
+    .select('user_a_id, user_b_id')
+    .eq('status', 'accepted')
+    .or(`user_a_id.eq.${myProfileId},user_b_id.eq.${myProfileId}`)
+  const friendIds = new Set(
+    ((friendRows ?? []) as { user_a_id: string; user_b_id: string }[])
+      .map(f => (f.user_a_id === myProfileId ? f.user_b_id : f.user_a_id)),
+  )
+  const friendRecipients = recipients.filter(r => friendIds.has(r.id))
+
+  if (friendRecipients.length === 0) return null
+
   return (
     <NewGroupDMCompose
       buttonLabel="Message my circle"
       buttonClass="inline-flex items-center gap-1.5 rounded-lg border border-primary-bg bg-primary-bg px-3 py-1.5 text-xs font-semibold text-primary-strong hover:bg-primary-bg dark:hover:bg-primary-bg/50 transition-colors whitespace-nowrap"
-      defaultRecipients={recipients}
+      defaultRecipients={friendRecipients}
       defaultName={`${circle.name} Crew`}
     />
   )

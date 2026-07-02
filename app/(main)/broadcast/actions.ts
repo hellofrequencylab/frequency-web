@@ -171,16 +171,31 @@ export async function toggleDispatchLike(dispatchId: string) {
     .eq('profile_id', profileId)
     .maybeSingle()
 
+  // Surface a failed write so the optimistic like button rolls back (it catches
+  // a throw) instead of showing a like/unlike that never landed.
   if (existing) {
-    await admin.from('dispatch_likes').delete().eq('id', existing.id)
+    const { error } = await admin.from('dispatch_likes').delete().eq('id', existing.id)
+    if (error) throw new Error('Could not update your like')
   } else {
-    await admin.from('dispatch_likes').insert({ dispatch_id: dispatchId, profile_id: profileId })
+    const { error } = await admin.from('dispatch_likes').insert({ dispatch_id: dispatchId, profile_id: profileId })
+    if (error) throw new Error('Could not update your like')
   }
 
   revalidatePath(`/broadcast/${dispatchId}`)
 }
 
-export async function addDispatchComment(dispatchId: string, body: string) {
+// Returns the created comment (with its author) so the client can render it
+// immediately — the comment list seeds from a server snapshot that never
+// refreshed after a post, so without this the new comment stayed invisible and
+// re-submits duped it.
+export type DispatchComment = {
+  id: string
+  body: string
+  created_at: string
+  author: { id: string; display_name: string; handle: string; avatar_url: string | null }
+}
+
+export async function addDispatchComment(dispatchId: string, body: string): Promise<DispatchComment> {
   const profileId = await getCallerProfileId()
   if (!profileId) throw new Error('Unauthorized')
 
@@ -188,14 +203,17 @@ export async function addDispatchComment(dispatchId: string, body: string) {
   if (!trimmed || trimmed.length > 2000) throw new Error('Invalid comment')
 
   const admin = createAdminClient()
-  const { error } = await admin.from('dispatch_comments').insert({
+  const { data, error } = await admin.from('dispatch_comments').insert({
     dispatch_id: dispatchId,
     author_id:   profileId,
     body:        trimmed,
   })
-  if (error) throw new Error(error.message)
+    .select(`id, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )`)
+    .single()
+  if (error || !data) throw new Error(error?.message ?? 'Could not post your comment')
 
   revalidatePath(`/broadcast/${dispatchId}`)
+  return data as unknown as DispatchComment
 }
 
 export async function deleteDispatchComment(commentId: string, dispatchId: string) {
@@ -235,17 +253,23 @@ export async function castVote(optionId: string, dispatchId: string) {
     .in('option_id', optionIds)
     .maybeSingle()
 
+  // Surface a failed write so the optimistic poll UI rolls back (it catches a
+  // throw) instead of showing a vote that never landed.
   if (existingVote) {
     if (existingVote.option_id === optionId) {
       // Toggle off (unvote)
-      await admin.from('dispatch_poll_votes').delete().eq('id', existingVote.id)
+      const { error } = await admin.from('dispatch_poll_votes').delete().eq('id', existingVote.id)
+      if (error) throw new Error('Could not record your vote')
     } else {
       // Switch vote to new option
-      await admin.from('dispatch_poll_votes').delete().eq('id', existingVote.id)
-      await admin.from('dispatch_poll_votes').insert({ option_id: optionId, profile_id: profileId })
+      const { error: delError } = await admin.from('dispatch_poll_votes').delete().eq('id', existingVote.id)
+      if (delError) throw new Error('Could not record your vote')
+      const { error: insError } = await admin.from('dispatch_poll_votes').insert({ option_id: optionId, profile_id: profileId })
+      if (insError) throw new Error('Could not record your vote')
     }
   } else {
-    await admin.from('dispatch_poll_votes').insert({ option_id: optionId, profile_id: profileId })
+    const { error } = await admin.from('dispatch_poll_votes').insert({ option_id: optionId, profile_id: profileId })
+    if (error) throw new Error('Could not record your vote')
   }
 
   revalidatePath(`/broadcast/${dispatchId}`)

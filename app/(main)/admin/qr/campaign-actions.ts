@@ -119,10 +119,18 @@ export async function updateCampaign(id: string, input: CampaignInput): Promise<
   const toAdd = codeIds.filter((x) => !have.has(x))
   const toRemove = [...have].filter((x) => !want.has(x))
   if (toAdd.length) {
-    await db.from('challenge_qr_codes').insert(toAdd.map((qr_code_id) => ({ challenge_id: id, qr_code_id })))
+    const { error: addErr } = await db
+      .from('challenge_qr_codes')
+      .insert(toAdd.map((qr_code_id) => ({ challenge_id: id, qr_code_id })))
+    if (addErr) return fail('Could not attach the codes.')
   }
   if (toRemove.length) {
-    await db.from('challenge_qr_codes').delete().eq('challenge_id', id).in('qr_code_id', toRemove)
+    const { error: removeErr } = await db
+      .from('challenge_qr_codes')
+      .delete()
+      .eq('challenge_id', id)
+      .in('qr_code_id', toRemove)
+    if (removeErr) return fail('Could not detach the codes.')
   }
 
   revalidatePath('/admin/qr')

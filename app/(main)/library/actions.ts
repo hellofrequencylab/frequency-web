@@ -61,11 +61,13 @@ export async function submitToLibrary(type: 'practice' | 'journey', id: string):
   if (type === 'practice') {
     const { data: row } = await d.from('practices').select('created_by').eq('id', id).maybeSingle()
     if ((row as { created_by?: string } | null)?.created_by !== me) return fail('You can only submit practices you created.')
-    await d.from('practices').update({ status: 'pending' }).eq('id', id)
+    const { error } = await d.from('practices').update({ status: 'pending' }).eq('id', id)
+    if (error) return fail('Could not submit this practice. Please try again.')
   } else {
     const { data: row } = await d.from('journey_plans').select('author_id').eq('id', id).maybeSingle()
     if ((row as { author_id?: string } | null)?.author_id !== me) return fail('You can only submit journeys you created.')
-    await d.from('journey_plans').update({ status: 'pending' }).eq('id', id)
+    const { error } = await d.from('journey_plans').update({ status: 'pending' }).eq('id', id)
+    if (error) return fail('Could not submit this journey. Please try again.')
   }
   revalidatePath('/library')
   return ok()

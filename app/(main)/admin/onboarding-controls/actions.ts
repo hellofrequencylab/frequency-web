@@ -56,10 +56,13 @@ export async function setReferralLanding(formData: FormData): Promise<void> {
 
   await setPlatformSetting('personal_code_landing', path, profileId)
   const admin = createAdminClient()
-  await admin
+  const { error } = await admin
     .from('qr_codes')
     .update({ target_url: `${ownOrigin}${path}` })
     .eq('purpose', 'connect')
     .eq('destination_type', 'url')
+  // Surface a failed bulk retarget — otherwise existing codes silently keep pointing
+  // at the old destination while the stored setting says the new one (retry is idempotent).
+  if (error) throw new Error(error.message)
   revalidatePath('/admin/onboarding-controls')
 }

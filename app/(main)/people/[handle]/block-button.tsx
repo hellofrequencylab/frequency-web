@@ -19,6 +19,7 @@ export function BlockButton({
 }) {
   const [isBlocked, setIsBlocked] = useState(blocked)
   const [confirming, setConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const router = useRouter()
 
@@ -28,17 +29,32 @@ export function BlockButton({
     : 'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors'
   const icon = isLink ? 'w-3 h-3' : 'w-3.5 h-3.5'
 
+  const withError = (control: React.ReactNode) => (
+    <span className="inline-flex flex-col gap-1">
+      {control}
+      {error && <span className="text-xs text-danger">{error}</span>}
+    </span>
+  )
+
   if (isBlocked) {
-    return (
+    return withError(
       <button
         disabled={pending}
-        onClick={() =>
+        onClick={() => {
+          setError(null)
           start(async () => {
-            await unblockProfileAction(profileId)
-            setIsBlocked(false)
-            router.refresh()
+            // Only flip the control once the write actually landed — the old code
+            // showed "Unblock" as done even when the action reported failure.
+            try {
+              const res = await unblockProfileAction(profileId)
+              if (!res.ok) { setError('Could not unblock this member. Please try again.'); return }
+              setIsBlocked(false)
+              router.refresh()
+            } catch {
+              setError('Could not unblock this member. Please try again.')
+            }
           })
-        }
+        }}
         className={`${base} ${
           isLink
             ? 'text-subtle hover:text-text hover:underline disabled:opacity-60'
@@ -47,23 +63,29 @@ export function BlockButton({
       >
         <Ban className={icon} />
         {pending ? 'Unblocking…' : 'Unblock'}
-      </button>
+      </button>,
     )
   }
 
   if (confirming) {
-    return (
+    return withError(
       <span className={isLink ? 'inline-flex items-center gap-2' : 'flex items-center gap-1.5'}>
         <button
           disabled={pending}
-          onClick={() =>
+          onClick={() => {
+            setError(null)
             start(async () => {
-              await blockProfileAction(profileId)
-              setIsBlocked(true)
-              setConfirming(false)
-              router.refresh()
+              try {
+                const res = await blockProfileAction(profileId)
+                if (!res.ok) { setError('Could not block this member. Please try again.'); return }
+                setIsBlocked(true)
+                setConfirming(false)
+                router.refresh()
+              } catch {
+                setError('Could not block this member. Please try again.')
+              }
             })
-          }
+          }}
           className={`${base} ${
             isLink ? 'text-danger hover:underline disabled:opacity-60' : 'border-danger bg-danger text-white disabled:opacity-60'
           }`}
@@ -76,7 +98,7 @@ export function BlockButton({
         >
           Cancel
         </button>
-      </span>
+      </span>,
     )
   }
 

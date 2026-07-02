@@ -58,11 +58,17 @@ export async function sendCampaign(input: {
   const recipients = await resolveSegment(input.segment)
   const db = createAdminClient()
 
-  const { data: campaign } = await db
+  const { data: campaign, error: insertError } = await db
     .from('campaigns')
     .insert({ subject, body, segment: input.segment, status: 'sent', created_by: staff.profileId })
     .select('id')
     .maybeSingle()
+
+  // Abort before the send loop if the campaign never recorded — otherwise we'd blast
+  // the whole segment with no auditable row to update, count, or reconcile against.
+  if (insertError || !campaign?.id) {
+    return { ok: false, error: insertError?.message ?? 'Could not record the campaign.' }
+  }
 
   let count = 0
   for (const r of recipients) {
@@ -77,12 +83,10 @@ export async function sendCampaign(input: {
     count++
   }
 
-  if (campaign?.id) {
-    await db
-      .from('campaigns')
-      .update({ recipient_count: count, sent_at: new Date().toISOString() })
-      .eq('id', campaign.id)
-  }
+  await db
+    .from('campaigns')
+    .update({ recipient_count: count, sent_at: new Date().toISOString() })
+    .eq('id', campaign.id)
 
   revalidatePath('/admin/marketing/campaigns')
   return { ok: true, recipientCount: count }

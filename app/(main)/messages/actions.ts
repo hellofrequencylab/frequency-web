@@ -66,10 +66,13 @@ export async function startConversation(otherProfileId: string) {
 
   if (error || !conv) throw new Error('Failed to create conversation')
 
-  await admin.from('conversation_participants').insert([
+  // Both participants must land, or the redirect would open an empty thread that
+  // neither party can post into (they'd fail the participant check in sendMessage).
+  const { error: partError } = await admin.from('conversation_participants').insert([
     { conversation_id: conv.id, profile_id: myProfileId },
     { conversation_id: conv.id, profile_id: otherProfileId },
   ])
+  if (partError) throw new Error('Failed to start the conversation')
 
   redirect(`/messages/${conv.id}`)
 }

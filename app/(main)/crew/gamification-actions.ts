@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
 import type { AchievementCategory, AchievementTier, StreakType } from '@/lib/gamification'
 import type { Database } from '@/lib/database.types'
 
@@ -263,7 +265,13 @@ export async function awardAchievement(profileId: string, achievementId: string)
 
   const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
   if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
-    throw new Error('Unauthorized')
+    // Also admit a community-domain staffer (community_role 'member' but a staff
+    // role holding the 'community' capability), matching the page gate
+    // requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
+    const staff = await getStaffMember().catch(() => null)
+    if (!staffCan(staff?.role, 'community', 'write')) {
+      throw new Error('Unauthorized')
+    }
   }
 
   // Check not already earned
@@ -303,7 +311,12 @@ export async function revokeAchievement(profileId: string, achievementId: string
 
   const role = (caller as Pick<ProfileRow, 'community_role'> | null)?.community_role ?? 'member'
   if (!['host', 'guide', 'mentor', 'admin', 'janitor'].includes(role)) {
-    throw new Error('Unauthorized')
+    // Also admit a community-domain staffer, matching the page gate
+    // requireAdmin('host', { staff: 'community' }). Mirrors feed/report-actions.
+    const staff = await getStaffMember().catch(() => null)
+    if (!staffCan(staff?.role, 'community', 'write')) {
+      throw new Error('Unauthorized')
+    }
   }
 
   await admin

@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { Users, MapPin } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { leaveCircle, joinCircle } from '../actions'
+import { leaveCircle } from '../actions'
+import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
@@ -371,14 +372,11 @@ export default async function CirclePage({
                 label="Join"
                 buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
-                <form action={joinCircle.bind(null, circle.id, circle.slug)}>
-                  <button
-                    type="submit"
-                    className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-                  >
-                    Join
-                  </button>
-                </form>
+                <JoinCircleButton
+                  circleId={circle.id}
+                  circleSlug={circle.slug}
+                  className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+                />
               </CrewGateButton>
             )}
 

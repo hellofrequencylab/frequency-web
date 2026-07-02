@@ -7,6 +7,37 @@ import type { AutomationActionType, AutomationRule } from '@/lib/automations'
 import { toggleRule, deleteRule } from './actions'
 import { RuleForm, type EditableRule } from './rule-form'
 
+// The enabled/disabled toggle. Runs toggleRule in a transition and surfaces a
+// failed write inline (the action returns { ok, error }) instead of the old native
+// <form action> that swallowed it and looked like it had flipped.
+function ToggleCell({ rule }: { rule: AutomationRule }) {
+  const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
+          setError(null)
+          start(async () => {
+            const res = await toggleRule(rule.id, !rule.enabled)
+            if (!res.ok) setError(res.error ?? 'Could not update the rule.')
+          })
+        }}
+        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+          rule.enabled
+            ? 'bg-success-bg text-success hover:bg-surface-elevated'
+            : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'
+        }`}
+      >
+        {rule.enabled ? 'Enabled' : 'Disabled'}
+      </button>
+      {error && <p role="alert" className="mt-1 text-2xs font-medium text-danger">{error}</p>}
+    </div>
+  )
+}
+
 // Operator-facing verb for each action type. Falls back to the raw type for any
 // value the table doesn't recognize yet.
 function actionLabel(actionType: string): string {
@@ -70,20 +101,7 @@ export function AutomationsTable({
     {
       key: 'enabled',
       header: 'State',
-      render: (r) => (
-        <form action={toggleRule.bind(null, r.id, !r.enabled)} className="inline">
-          <button
-            type="submit"
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
-              r.enabled
-                ? 'bg-success-bg text-success hover:bg-surface-elevated'
-                : 'bg-surface-elevated text-muted hover:bg-primary-bg hover:text-primary-strong'
-            }`}
-          >
-            {r.enabled ? 'Enabled' : 'Disabled'}
-          </button>
-        </form>
-      ),
+      render: (r) => <ToggleCell rule={r} />,
     },
     {
       key: 'actions',

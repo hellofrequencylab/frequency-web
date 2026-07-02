@@ -3,7 +3,7 @@
 import type { Database } from '@/lib/database.types'
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
+import { isStaff } from '@/lib/core/roles'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { isLocationBand, isDiscoverableBy } from '@/lib/connections/location'
@@ -11,10 +11,7 @@ import { getConnectionSettings } from '@/lib/connections/connection-settings'
 
 // Mutations for the connection layer (ADR-186). Two authorities:
 //   • per-user prefs — the caller edits their OWN profile row (self-authorized).
-//   • platform settings — admin+ only (the master toggles + reward economics).
-
-// Who may tune the platform connection settings.
-const SETTINGS_MIN_ROLE = 'admin' as const
+//   • platform settings — platform STAFF only (the master toggles + reward economics).
 
 interface MyPrefsInput {
   directoryVisible?: boolean
@@ -127,11 +124,12 @@ interface SettingsInput {
   rewardWelcome?: number
 }
 
-/** Save the platform connection settings (the singleton). Admin+ only; the action is
- *  the authority (re-checks the role server-side). */
+/** Save the platform connection settings (the singleton). Platform STAFF only
+ *  (web_role admin/janitor, ADR-208) — matching the admin/connections page gate
+ *  (requireAdmin('admin')); the action is the authority (re-checks server-side). */
 export async function saveConnectionSettings(input: SettingsInput): Promise<ActionResult> {
   const me = await getCallerProfile()
-  if (!me || !atLeastRole(me.community_role, SETTINGS_MIN_ROLE)) return fail('Not allowed.')
+  if (!me || !isStaff(me.webRole)) return fail('Not allowed.')
 
   const patch: Record<string, unknown> = { updated_by: me.id, updated_at: new Date().toISOString() }
   const bools: [keyof SettingsInput, string][] = [
