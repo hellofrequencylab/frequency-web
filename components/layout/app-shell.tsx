@@ -1676,6 +1676,15 @@ export default function AppShell({
       data-occasion={occasion === 'none' ? undefined : occasion}
       className="flex min-h-dvh flex-col overflow-x-clip bg-canvas"
     >
+      {/* Skip link — first focusable element in the authed shell, visually hidden until a keyboard
+          user tabs to it, so they can jump past the header + rails to <main id="main"> (WCAG 2.4.1
+          Bypass Blocks). Placed before the top bar so it wins tab order even on an editor takeover. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-text focus:shadow-pop"
+      >
+        Skip to content
+      </a>
 
       {/* ── Top bar ───────────────────────────────────────── */}
       {/* In iOS standalone PWA the webview extends under the status bar (viewport-fit=cover +
@@ -1889,7 +1898,7 @@ export default function AppShell({
                   provider — not floating above the page. */}
               {/* A full-viewport editor takeover drops the page padding + breadcrumbs so the editor
                   (its own top bar / thumb-zone dock) fills the column edge to edge. */}
-              <main className={`flex-1 min-w-0 ${edgeToEdge ? '' : 'py-6'}`} data-tour-anchor="content">
+              <main id="main" tabIndex={-1} className={`flex-1 min-w-0 ${edgeToEdge ? '' : 'py-6'}`} data-tour-anchor="content">
                 {/* A Space route (/spaces/<slug>/...) renders its OWN brand-aware breadcrumb inside the
                     Space layout (components/spaces/space-breadcrumbs), so the generic slug-only one is
                     suppressed there to avoid a doubled, lower-fidelity trail. */}
