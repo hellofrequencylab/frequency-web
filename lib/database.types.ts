@@ -1000,39 +1000,6 @@ export type Database = {
         }
         Relationships: []
       }
-      circle_topics: {
-        Row: {
-          circle_id: string
-          created_at: string
-          topical_channel_id: string
-        }
-        Insert: {
-          circle_id: string
-          created_at?: string
-          topical_channel_id: string
-        }
-        Update: {
-          circle_id?: string
-          created_at?: string
-          topical_channel_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "circle_topics_circle_id_fkey"
-            columns: ["circle_id"]
-            isOneToOne: false
-            referencedRelation: "circles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "circle_topics_topical_channel_id_fkey"
-            columns: ["topical_channel_id"]
-            isOneToOne: false
-            referencedRelation: "topical_channels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       circles: {
         Row: {
           about: string | null
@@ -1218,7 +1185,6 @@ export type Database = {
           subtotal_cents: number
           title: string
           unit_cents: number
-          variant_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1229,7 +1195,6 @@ export type Database = {
           subtotal_cents: number
           title: string
           unit_cents: number
-          variant_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1240,7 +1205,6 @@ export type Database = {
           subtotal_cents?: number
           title?: string
           unit_cents?: number
-          variant_id?: string | null
         }
         Relationships: [
           {
@@ -1255,13 +1219,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "commerce_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commerce_order_items_variant_id_fkey"
-            columns: ["variant_id"]
-            isOneToOne: false
-            referencedRelation: "commerce_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -1455,47 +1412,6 @@ export type Database = {
             columns: ["owner_space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      commerce_variants: {
-        Row: {
-          active: boolean
-          created_at: string
-          id: string
-          name: string
-          price_cents: number | null
-          product_id: string
-          sku: string | null
-          stock: number | null
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          id?: string
-          name: string
-          price_cents?: number | null
-          product_id: string
-          sku?: string | null
-          stock?: number | null
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          id?: string
-          name?: string
-          price_cents?: number | null
-          product_id?: string
-          sku?: string | null
-          stock?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "commerce_variants_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "commerce_products"
             referencedColumns: ["id"]
           },
         ]
@@ -1791,39 +1707,6 @@ export type Database = {
           },
         ]
       }
-      conversation_room_migration: {
-        Row: {
-          conversation_id: string
-          migrated_at: string
-          room_id: string
-        }
-        Insert: {
-          conversation_id: string
-          migrated_at?: string
-          room_id: string
-        }
-        Update: {
-          conversation_id?: string
-          migrated_at?: string
-          room_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversation_room_migration_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: true
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "conversation_room_migration_room_id_fkey"
-            columns: ["room_id"]
-            isOneToOne: false
-            referencedRelation: "rooms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       conversations: {
         Row: {
           created_at: string
@@ -1929,6 +1812,8 @@ export type Database = {
           id: string
           profile_id: string
           task_id: string | null
+          verification_method: string | null
+          verified_at: string | null
           verified_by: string | null
           zaps_earned: number
         }
@@ -1937,6 +1822,8 @@ export type Database = {
           id?: string
           profile_id: string
           task_id?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
           verified_by?: string | null
           zaps_earned: number
         }
@@ -1945,6 +1832,8 @@ export type Database = {
           id?: string
           profile_id?: string
           task_id?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
           verified_by?: string | null
           zaps_earned?: number
         }
@@ -1983,6 +1872,7 @@ export type Database = {
           name: string
           requires_verification: boolean | null
           task_type: string
+          verification_method: string | null
           zaps_value: number | null
         }
         Insert: {
@@ -1995,6 +1885,7 @@ export type Database = {
           name: string
           requires_verification?: boolean | null
           task_type: string
+          verification_method?: string | null
           zaps_value?: number | null
         }
         Update: {
@@ -2007,6 +1898,7 @@ export type Database = {
           name?: string
           requires_verification?: boolean | null
           task_type?: string
+          verification_method?: string | null
           zaps_value?: number | null
         }
         Relationships: [
@@ -3403,6 +3295,7 @@ export type Database = {
           status: string
           street: string | null
           theme: Json
+          time_zone: string
           title: string
           venue_name: string | null
           visibility: string
@@ -3461,6 +3354,7 @@ export type Database = {
           status?: string
           street?: string | null
           theme?: Json
+          time_zone?: string
           title: string
           venue_name?: string | null
           visibility?: string
@@ -3519,6 +3413,7 @@ export type Database = {
           status?: string
           street?: string | null
           theme?: Json
+          time_zone?: string
           title?: string
           venue_name?: string | null
           visibility?: string
@@ -4876,33 +4771,337 @@ export type Database = {
           },
         ]
       }
-      listing_saves: {
+      library_assets: {
         Row: {
+          alt: string | null
+          attribution: string | null
+          blurhash: string | null
+          bytes: number | null
+          category: string | null
+          colors: string[]
+          config: Json | null
           created_at: string
-          listing_id: string
-          profile_id: string
+          created_by: string | null
+          description: string | null
+          download_policy: string
+          embedding: string | null
+          embedding_hash: string | null
+          expires_at: string | null
+          focal_x: number | null
+          focal_y: number | null
+          height: number | null
+          id: string
+          is_protected: boolean
+          kind: string
+          license: string | null
+          mime: string | null
+          orig_height: number | null
+          orig_width: number | null
+          parent_id: string | null
+          search_tsv: unknown
+          sha256: string | null
+          slug: string
+          source: string | null
+          space_id: string
+          status: string
+          storage_bucket: string | null
+          storage_path: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          url: string | null
+          usage_count: number
+          version: number
+          visibility: string
+          width: number | null
         }
         Insert: {
+          alt?: string | null
+          attribution?: string | null
+          blurhash?: string | null
+          bytes?: number | null
+          category?: string | null
+          colors?: string[]
+          config?: Json | null
           created_at?: string
-          listing_id: string
-          profile_id: string
+          created_by?: string | null
+          description?: string | null
+          download_policy?: string
+          embedding?: string | null
+          embedding_hash?: string | null
+          expires_at?: string | null
+          focal_x?: number | null
+          focal_y?: number | null
+          height?: number | null
+          id?: string
+          is_protected?: boolean
+          kind: string
+          license?: string | null
+          mime?: string | null
+          orig_height?: number | null
+          orig_width?: number | null
+          parent_id?: string | null
+          search_tsv?: unknown
+          sha256?: string | null
+          slug: string
+          source?: string | null
+          space_id: string
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          url?: string | null
+          usage_count?: number
+          version?: number
+          visibility?: string
+          width?: number | null
         }
         Update: {
+          alt?: string | null
+          attribution?: string | null
+          blurhash?: string | null
+          bytes?: number | null
+          category?: string | null
+          colors?: string[]
+          config?: Json | null
           created_at?: string
-          listing_id?: string
-          profile_id?: string
+          created_by?: string | null
+          description?: string | null
+          download_policy?: string
+          embedding?: string | null
+          embedding_hash?: string | null
+          expires_at?: string | null
+          focal_x?: number | null
+          focal_y?: number | null
+          height?: number | null
+          id?: string
+          is_protected?: boolean
+          kind?: string
+          license?: string | null
+          mime?: string | null
+          orig_height?: number | null
+          orig_width?: number | null
+          parent_id?: string | null
+          search_tsv?: unknown
+          sha256?: string | null
+          slug?: string
+          source?: string | null
+          space_id?: string
+          status?: string
+          storage_bucket?: string | null
+          storage_path?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          url?: string | null
+          usage_count?: number
+          version?: number
+          visibility?: string
+          width?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "listing_saves_listing_id_fkey"
-            columns: ["listing_id"]
+            foreignKeyName: "library_assets_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "listings"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "listing_saves_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "library_assets_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_assets_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_collection_items: {
+        Row: {
+          asset_id: string
+          collection_id: string
+          sort: number
+        }
+        Insert: {
+          asset_id: string
+          collection_id: string
+          sort?: number
+        }
+        Update: {
+          asset_id?: string
+          collection_id?: string
+          sort?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_collection_items_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "library_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_collections: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          slug: string
+          space_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          slug: string
+          space_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          slug?: string
+          space_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_collections_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_collections_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_styles: {
+        Row: {
+          base_style: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          lane: string
+          name: string
+          recraft_style_id: string
+          ref_count: number
+          space_id: string
+        }
+        Insert: {
+          base_style?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lane?: string
+          name: string
+          recraft_style_id: string
+          ref_count?: number
+          space_id: string
+        }
+        Update: {
+          base_style?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lane?: string
+          name?: string
+          recraft_style_id?: string
+          ref_count?: number
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_styles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_styles_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_versions: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_current: boolean
+          note: string | null
+          recipe: Json | null
+          storage_bucket: string | null
+          storage_path: string | null
+          version: number
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          note?: string | null
+          recipe?: Json | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          version: number
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          note?: string | null
+          recipe?: Json | null
+          storage_bucket?: string | null
+          storage_path?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_versions_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "library_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_versions_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -5405,38 +5604,6 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "menu_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      menu_config: {
-        Row: {
-          area_key: string
-          hidden: boolean
-          position: number | null
-          updated_at: string
-          updated_by: string | null
-        }
-        Insert: {
-          area_key: string
-          hidden?: boolean
-          position?: number | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Update: {
-          area_key?: string
-          hidden?: boolean
-          position?: number | null
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "menu_config_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -7964,6 +8131,7 @@ export type Database = {
           is_supporter: boolean
           is_system: boolean
           last_seen_at: string | null
+          last_stripe_event_at: string | null
           lifetime_gems: number
           lifetime_rank: Database["public"]["Enums"]["season_rank_enum"]
           lifetime_zaps: number
@@ -8042,6 +8210,7 @@ export type Database = {
           is_supporter?: boolean
           is_system?: boolean
           last_seen_at?: string | null
+          last_stripe_event_at?: string | null
           lifetime_gems?: number
           lifetime_rank?: Database["public"]["Enums"]["season_rank_enum"]
           lifetime_zaps?: number
@@ -8120,6 +8289,7 @@ export type Database = {
           is_supporter?: boolean
           is_system?: boolean
           last_seen_at?: string | null
+          last_stripe_event_at?: string | null
           lifetime_gems?: number
           lifetime_rank?: Database["public"]["Enums"]["season_rank_enum"]
           lifetime_zaps?: number
@@ -9458,6 +9628,44 @@ export type Database = {
           },
         ]
       }
+      space_faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          position: number
+          question: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer?: string
+          created_at?: string
+          id?: string
+          position?: number
+          question?: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          position?: number
+          question?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_faqs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_follows: {
         Row: {
           created_at: string
@@ -9793,6 +10001,51 @@ export type Database = {
           },
         ]
       }
+      space_reviews: {
+        Row: {
+          author_profile_id: string
+          body: string
+          created_at: string
+          id: string
+          rating: number
+          space_id: string
+          status: string
+        }
+        Insert: {
+          author_profile_id: string
+          body?: string
+          created_at?: string
+          id?: string
+          rating: number
+          space_id: string
+          status?: string
+        }
+        Update: {
+          author_profile_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          space_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_reviews_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_reviews_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_segments: {
         Row: {
           created_at: string
@@ -9974,12 +10227,77 @@ export type Database = {
           },
         ]
       }
+      space_updates: {
+        Row: {
+          author_profile_id: string | null
+          body: string
+          created_at: string
+          id: string
+          image_url: string | null
+          post_id: string | null
+          published_at: string | null
+          space_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_profile_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          post_id?: string | null
+          published_at?: string | null
+          space_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          author_profile_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          post_id?: string | null
+          published_at?: string | null
+          space_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_updates_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_updates_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_updates_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spaces: {
         Row: {
           about: string | null
           brand_accent: string | null
           brand_logo_url: string | null
           brand_name: string | null
+          cover_image_url: string | null
           created_at: string
           domain: string | null
           email_enabled: boolean
@@ -9990,10 +10308,12 @@ export type Database = {
           generation: string | null
           id: string
           is_comped: boolean
+          mode_variant: string | null
           name: string
           network_connected: boolean
           owner_profile_id: string | null
           plan: string | null
+          preferences: Json
           seat_quantity: number
           skin: string
           slug: string
@@ -10010,6 +10330,7 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          cover_image_url?: string | null
           created_at?: string
           domain?: string | null
           email_enabled?: boolean
@@ -10020,10 +10341,12 @@ export type Database = {
           generation?: string | null
           id?: string
           is_comped?: boolean
+          mode_variant?: string | null
           name: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          preferences?: Json
           seat_quantity?: number
           skin?: string
           slug: string
@@ -10040,6 +10363,7 @@ export type Database = {
           brand_accent?: string | null
           brand_logo_url?: string | null
           brand_name?: string | null
+          cover_image_url?: string | null
           created_at?: string
           domain?: string | null
           email_enabled?: boolean
@@ -10050,10 +10374,12 @@ export type Database = {
           generation?: string | null
           id?: string
           is_comped?: boolean
+          mode_variant?: string | null
           name?: string
           network_connected?: boolean
           owner_profile_id?: string | null
           plan?: string | null
+          preferences?: Json
           seat_quantity?: number
           skin?: string
           slug?: string
@@ -11512,9 +11838,33 @@ export type Database = {
         Args: { p_delta: number; p_tier_id: string }
         Returns: undefined
       }
+      advance_challenge_progress: {
+        Args: { _challenge: string; _profile: string; _target: number }
+        Returns: Json
+      }
       am_participant: { Args: { p_conversation_id: string }; Returns: boolean }
       am_room_member: { Args: { p_room_id: string }; Returns: boolean }
-      are_friends: { Args: { a: string; b: string }; Returns: boolean }
+      apply_membership_event_atomic: {
+        Args: {
+          _customer_id?: string
+          _event_at: string
+          _is_supporter?: boolean
+          _payment_status?: string
+          _profile: string
+          _tier: string
+        }
+        Returns: Json
+      }
+      award_gems_atomic: {
+        Args: {
+          _action: string
+          _amount: number
+          _daily_cap: number
+          _metadata?: Json
+          _profile: string
+        }
+        Returns: Json
+      }
       can_read_event: { Args: { p_event_id: string }; Returns: boolean }
       can_view_space_content: { Args: { p_space_id: string }; Returns: boolean }
       can_write_space_content: {
@@ -11558,6 +11908,27 @@ export type Database = {
           status: string
           type: string
         }[]
+      }
+      claim_outbox_jobs: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          kind: string
+          last_error: string | null
+          max_attempts: number
+          payload: Json
+          run_after: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_season_certificate: {
         Args: { p_profile_id: string; p_season: number }
@@ -11626,6 +11997,17 @@ export type Database = {
         }[]
       }
       disablelongtransactions: { Args: never; Returns: string }
+      dm_conversation_summaries: {
+        Args: { _convs: string[] }
+        Returns: {
+          conversation_id: string
+          last_body: string
+          last_created_at: string
+          last_id: string
+          last_sender: string
+          unread_count: number
+        }[]
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -11824,13 +12206,9 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
-      get_my_circle_id: { Args: never; Returns: string }
       get_my_circle_ids: { Args: never; Returns: string[] }
       get_my_group_ids: { Args: never; Returns: string[] }
-      get_my_hub_id: { Args: never; Returns: string }
       get_my_hub_ids: { Args: never; Returns: string[] }
-      get_my_nexus_id: { Args: never; Returns: string }
-      get_my_outpost_id: { Args: never; Returns: string }
       get_my_profile_id: { Args: never; Returns: string }
       get_my_region_id: { Args: never; Returns: string }
       get_my_role: {
@@ -11856,22 +12234,6 @@ export type Database = {
           score: number
         }[]
       }
-      housing_rentals_near: {
-        Args: {
-          _lat: number
-          _limit?: number
-          _lng: number
-          _max_rent_cents?: number
-        }
-        Returns: {
-          city: string
-          distance_band: string
-          listing_id: string
-          rent_cents: number
-          room_type: string
-          title: string
-        }[]
-      }
       interaction_surface_stats: {
         Args: { _days?: number; _limit?: number }
         Returns: {
@@ -11892,6 +12254,16 @@ export type Database = {
       is_my_event: { Args: { p_event_id: string }; Returns: boolean }
       is_space_admin: { Args: { p_space_id: string }; Returns: boolean }
       is_space_member: { Args: { p_space_id: string }; Returns: boolean }
+      is_space_update_post: { Args: { p_post_id: string }; Returns: boolean }
+      log_crew_completion_atomic: {
+        Args: {
+          _profile: string
+          _repeatable: boolean
+          _task: string
+          _zaps: number
+        }
+        Returns: string
+      }
       longtransactionsenabled: { Args: never; Returns: boolean }
       match_help_chunks: {
         Args: {
@@ -11905,6 +12277,18 @@ export type Database = {
           heading: string
           similarity: number
           slug: string
+        }[]
+      }
+      match_library_assets: {
+        Args: {
+          match_count?: number
+          p_kind?: string
+          p_space_id: string
+          query_embedding: string
+        }
+        Returns: {
+          id: string
+          similarity: number
         }[]
       }
       match_practices: {
@@ -12328,6 +12712,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      record_streak_tick: {
+        Args: { _profile: string; _streak_type: string; _window_days: number }
+        Returns: Json
+      }
       redeem_store_item_atomic: {
         Args: { _cost: number; _item: string; _profile: string }
         Returns: string
@@ -12342,12 +12730,32 @@ export type Database = {
           title: string
         }[]
       }
+      reserve_ticket_atomic: {
+        Args: {
+          _amount_cents: number
+          _buyer: string
+          _currency: string
+          _event_id: string
+          _fee_cents: number
+          _qty: number
+          _session_id: string
+          _tier_id: string
+        }
+        Returns: Json
+      }
       reset_season: { Args: never; Returns: undefined }
       resonance_neighbors: {
         Args: { _limit?: number; _profile_id: string }
         Returns: {
           profile_id: string
           similarity: number
+        }[]
+      }
+      room_unread_counts: {
+        Args: { _rooms: string[] }
+        Returns: {
+          room_id: string
+          unread_count: number
         }[]
       }
       scoped_feed_for_viewer: {
@@ -12405,6 +12813,15 @@ export type Database = {
           p_proximity_m: number
         }
         Returns: undefined
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      similar_library_assets: {
+        Args: { match_count?: number; p_asset_id: string }
+        Returns: {
+          id: string
+          similarity: number
+        }[]
       }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
@@ -13054,7 +13471,14 @@ export type Database = {
         | "janitor"
       group_status: "forming" | "active" | "inactive" | "archived" | "draft"
       membership_status: "active" | "pending" | "inactive"
-      post_type: "feed" | "blog" | "announcement" | "recap" | "note" | "system"
+      post_type:
+        | "feed"
+        | "blog"
+        | "announcement"
+        | "recap"
+        | "note"
+        | "system"
+        | "space_update"
       post_visibility: "public" | "region" | "cluster" | "group"
       practice_mindless_mode:
         | "meditate"
@@ -13232,7 +13656,15 @@ export const Constants = {
       ],
       group_status: ["forming", "active", "inactive", "archived", "draft"],
       membership_status: ["active", "pending", "inactive"],
-      post_type: ["feed", "blog", "announcement", "recap", "note", "system"],
+      post_type: [
+        "feed",
+        "blog",
+        "announcement",
+        "recap",
+        "note",
+        "system",
+        "space_update",
+      ],
       post_visibility: ["public", "region", "cluster", "group"],
       practice_mindless_mode: [
         "meditate",
