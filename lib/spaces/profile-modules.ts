@@ -37,6 +37,9 @@ export interface SpaceProfileContext {
   entitlements: unknown
   /** Raw per-function min-role blob (spaces.feature_roles). */
   featureRoles: unknown
+  /** Raw spaces.preferences blob — carries the saved block-picker layout (preferences.profileLayout),
+   *  read fail-safe by effectiveProfileLayout so the renderer honors the operator's saved edits. */
+  preferences: unknown
   /** The central business info + story (single source of truth) the authored blocks render from. */
   profile: SpaceProfileData
 }
@@ -80,6 +83,7 @@ export function toProfileContext(space: Space): SpaceProfileContext {
     tagline: space.tagline ?? null,
     entitlements: space.entitlements,
     featureRoles: space.featureRoles,
+    preferences: space.preferences,
     profile: readProfileData(space.preferences),
   }
 }

@@ -1,0 +1,96 @@
+'use server'
+
+// SPACE PROFILE LAYOUT action (Epic 1.7, S3 block-picker editor). The one server action the profile
+// layout editor (/spaces/<slug>/settings/profile) calls to persist the operator's block-picker edits:
+// the ordered list of profile sections + which are hidden. The SERVER is the authority:
+//   1. Resolve the Space by id and the caller (getCallerProfile).
+//   2. Gate on resolveSpaceManageAccess(...).canManage — FAIL-CLOSED. A staff janitor's read-only
+//      preview (staffViewing) is NOT canManage, so the write is refused for everyone but an editor+.
+//   3. VALIDATE the client layout down to known ProfileBlockIds only (never trust the wire).
+//   4. Merge into spaces.preferences.profileLayout through the untyped admin client (ADR-246: the
+//      `preferences` jsonb column is not in the generated types), preserving every other preferences
+//      key, then revalidate the profile + its staff preview so the saved order shows immediately.
+//
+// The saved blob is fail-safe on READ (lib/spaces/profile-layout.ts parseSavedProfileLayout), so a
+// partial / stale write never breaks a render; this action keeps it clean on WRITE. No em dashes
+// (owner copy, CONTENT-VOICE).
+
+import { revalidatePath } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getCallerProfile } from '@/lib/auth'
+import { getSpaceById } from '@/lib/spaces/store'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
+import type { SavedProfileLayout } from '@/lib/spaces/profile-layout'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
+
+/** Keep only valid, de-duplicated ProfileBlockIds from an unknown array (defense in depth on the wire). */
+function sanitizeIds(value: unknown): ProfileBlockId[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<ProfileBlockId>()
+  const out: ProfileBlockId[] = []
+  for (const v of value) {
+    if (typeof v !== 'string' || profileBlockById(v) === null) continue
+    const id = v as ProfileBlockId
+    if (seen.has(id)) continue
+    seen.add(id)
+    out.push(id)
+  }
+  return out
+}
+
+/** Untyped scoped update of the space's preferences jsonb (ADR-246), bound to the resolved id. */
+async function updateSpacePreferences(spaceId: string, preferences: Record<string, unknown>): Promise<boolean> {
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
+  return !error
+}
+
+/**
+ * Persist the block-picker layout (order + hidden) for a Space. Owner/admin/editor-gated server-side
+ * via resolveSpaceManageAccess (fail-closed: a staff preview cannot write). The client layout is
+ * sanitized to known ProfileBlockIds only, then merged into spaces.preferences.profileLayout without
+ * disturbing other preferences keys. Returns ActionResult; on success revalidates the profile + preview.
+ */
+export async function saveSpaceProfileLayout(
+  spaceId: string,
+  layout: SavedProfileLayout,
+): Promise<ActionResult> {
+  const caller = await getCallerProfile()
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+
+  // FAIL-CLOSED: only a manager (owner / admin / editor) may write. staffViewing (a janitor's read-only
+  // preview) is deliberately NOT accepted, so the preview never confers a save.
+  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
+  if (!canManage) return fail('You do not have permission to edit this space.')
+
+  // Never trust the wire: keep only known block ids.
+  const order = sanitizeIds(layout?.order)
+  const hidden = sanitizeIds(layout?.hidden)
+
+  // Merge into the existing preferences blob, preserving every other key. A layout with no order and
+  // nothing hidden clears the node entirely (back to the fresh default).
+  const current =
+    space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? { ...(space.preferences as Record<string, unknown>) }
+      : {}
+  const node: SavedProfileLayout = {}
+  if (order.length) node.order = order
+  if (hidden.length) node.hidden = hidden
+  if (Object.keys(node).length) current.profileLayout = node
+  else delete current.profileLayout
+
+  if (!(await updateSpacePreferences(space.id, current))) {
+    return fail('Could not save your layout. Try again.')
+  }
+
+  revalidatePath(`/spaces/${space.slug}/settings/profile`)
+  revalidatePath(`/spaces/${space.slug}/profile-preview`)
+  return ok()
+}
