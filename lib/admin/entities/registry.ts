@@ -437,34 +437,3 @@ export function spaceSurfacesFor(
   }).sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
 }
 
-/**
- * Re-order surfaces by a Mode's MODULE EMPHASIS (Space Modes M3, ADR-461/464), keeping the spine
- * order otherwise. A surface whose `requiredFunction` appears earlier in `emphasis` sorts ahead of one
- * that appears later (or not at all), so the console leads with the modules a Mode emphasizes WITHOUT
- * dropping any surface (Mode never hides a capability; it only orders). PURE: it is a stable sort over
- * the already-gated list, so it never changes WHICH surfaces show, only their order. A surface with no
- * `requiredFunction` (Basics / Mode / Danger) keeps its spine position. The emphasis list is the
- * ModeProfile.navEmphasis the caller resolves once (no N+1).
- */
-export function orderSurfacesByEmphasis(
-  surfaces: SpaceSurface[],
-  emphasis: readonly SpaceFunctionKey[],
-): SpaceSurface[] {
-  if (emphasis.length === 0) return surfaces
-  const rank = (s: SpaceSurface): number => {
-    if (!s.requiredFunction) return Number.MAX_SAFE_INTEGER // unfunctioned surfaces keep spine order
-    const i = emphasis.indexOf(s.requiredFunction)
-    return i === -1 ? Number.MAX_SAFE_INTEGER : i
-  }
-  // Stable sort: equal ranks (incl. all the un-emphasized + unfunctioned surfaces) keep their incoming
-  // spine order, so this only PROMOTES the emphasized functional surfaces ahead of the rest.
-  return surfaces
-    .map((s, idx) => ({ s, idx }))
-    .sort((a, b) => {
-      const ra = rank(a.s)
-      const rb = rank(b.s)
-      if (ra !== rb) return ra - rb
-      return a.idx - b.idx
-    })
-    .map((w) => w.s)
-}

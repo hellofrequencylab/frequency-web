@@ -165,27 +165,6 @@ export async function listRules(): Promise<AutomationRule[]> {
   })
 }
 
-/** One rule by id (for the editor's prefill). */
-export async function getRule(id: string): Promise<AutomationRule | null> {
-  const { data } = await db()
-    .from('automation_rules')
-    .select('id, name, trigger_event, action_type, action_config, enabled, created_at')
-    .eq('id', id)
-    .maybeSingle()
-  if (!data) return null
-  const cfg = (data.action_config ?? {}) as Record<string, unknown>
-  return {
-    id: data.id,
-    name: data.name,
-    triggerEvent: data.trigger_event,
-    actionType: data.action_type,
-    actionConfig: cfg,
-    conditions: parseConditions(cfg.conditions),
-    enabled: data.enabled,
-    createdAt: data.created_at ?? null,
-  }
-}
-
 function actorEmailHtml(body: string, unsubscribeUrl: string): string {
   const safe = body.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br/>')
   return `<div style="max-width:560px;margin:0 auto;font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;padding:24px;"><p style="font-size:15px;color:#333;line-height:1.6;">${safe}</p><hr style="border:none;border-top:1px solid #eee;margin:24px 0;"/><p style="font-size:12px;color:#999;">You're receiving this as a Frequency member. <a href="${unsubscribeUrl}" style="color:#999;">Unsubscribe</a>.</p></div>`

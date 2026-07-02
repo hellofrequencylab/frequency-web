@@ -8,7 +8,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
-import { getPlan, completeLesson, uncompleteLesson } from '@/lib/journey-plans'
+import { getPlan, completeLesson } from '@/lib/journey-plans'
 import { getJourneyTree } from '@/lib/journeys/store'
 import { rewardEventsForTransition, type JourneyRewardEvent } from '@/lib/journeys/rewards'
 import { grantJourneyRewards, grantExtraCreditIfAny, type GrantedJourneyReward } from '@/lib/journeys/grants'
@@ -55,12 +55,4 @@ export async function completeJourneyLessonAction(
 
   revalidatePath(`/journeys/${slug}/learn`)
   return ok({ events, granted, bonusZaps })
-}
-
-export async function uncompleteJourneyLessonAction(slug: string, itemId: string): Promise<ActionResult> {
-  const caller = await getCallerProfile()
-  if (!caller) return fail('Sign in first.')
-  await uncompleteLesson(caller.id, itemId)
-  revalidatePath(`/journeys/${slug}/learn`)
-  return ok()
 }

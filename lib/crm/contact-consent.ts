@@ -22,7 +22,6 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const norm = (s: string) => s.trim().toLowerCase()
 
-export type ContactChannel = 'email' | 'sms'
 /** The intent behind a send. A one-time transactional notification + invite (the card-scan nudge) is
  *  allowed to an `unknown` contact; an ongoing marketing stream requires an explicit opt-in. */
 export type ContactPurpose = 'transactional' | 'marketing'

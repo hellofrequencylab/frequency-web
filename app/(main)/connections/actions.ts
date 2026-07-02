@@ -203,14 +203,6 @@ export async function setVisibility(id: string, visibility: Visibility): Promise
   revalidatePath(`/connections/${id}`)
 }
 
-export async function setAvatar(id: string, path: string): Promise<void> {
-  const ownerId = await requireOwner()
-  await assertOwnPath(path)
-  await store.updateContact(ownerId, id, { avatarPath: path })
-  revalidatePath('/connections')
-  revalidatePath(`/connections/${id}`)
-}
-
 // ── Notes & tags ─────────────────────────────────────────────────────────────
 
 export async function addNote(contactId: string, body: string): Promise<void> {

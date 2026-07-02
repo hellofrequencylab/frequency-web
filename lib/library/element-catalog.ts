@@ -25,27 +25,6 @@ export type ElementDef = {
   pillar?: PillarSlug
 }
 
-// Illustration-kit pieces ported from the onboarding welcome deck + On Air reveal
-// (components/onboarding/welcome-art.tsx, components/on-air/reveal-art.tsx). They live
-// in the shared registry now; catalogued here so they seed under their own categories.
-const ONBOARDING_ILLUSTRATIONS: ElementDef[] = [
-  { registry: 'illustration', name: 'welcome', title: 'Welcome sunrise', category: 'Onboarding', tags: ['onboarding', 'welcome', 'vera-deck'] },
-  { registry: 'illustration', name: 'zaps', title: 'Zaps and rewards', category: 'Onboarding', tags: ['onboarding', 'zaps', 'rewards', 'vera-deck'] },
-  { registry: 'illustration', name: 'vera', title: 'Vera sparkle mark', category: 'Onboarding', tags: ['onboarding', 'vera', 'brand', 'vera-deck'] },
-  // The rest of the welcome deck (the deck's own versions, distinct from the kit).
-  { registry: 'illustration', name: 'deck-feed', title: 'Feed (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'feed', 'vera-deck'] },
-  { registry: 'illustration', name: 'deck-circles', title: 'Circles (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'circles', 'vera-deck'] },
-  { registry: 'illustration', name: 'deck-practices', title: 'Practices (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'practices', 'vera-deck'] },
-  { registry: 'illustration', name: 'deck-events', title: 'Events (welcome deck)', category: 'Onboarding', tags: ['onboarding', 'events', 'vera-deck'] },
-]
-
-const ON_AIR_ILLUSTRATIONS: ElementDef[] = [
-  { registry: 'illustration', name: 'rewards', title: 'Rewards radiating', category: 'On Air', tags: ['on-air', 'rewards', 'reveal'] },
-  { registry: 'illustration', name: 'streak', title: 'Streak flames', category: 'On Air', tags: ['on-air', 'streak', 'reveal'] },
-  { registry: 'illustration', name: 'stats', title: 'Climbing stats', category: 'On Air', tags: ['on-air', 'stats', 'reveal'] },
-  { registry: 'illustration', name: 'dispatch', title: 'Dispatch broadcast', category: 'On Air', tags: ['on-air', 'dispatch', 'reveal'] },
-]
-
 // On Air control icon kit (components/on-air/icons.tsx) — 24×24 currentColor marks.
 const ON_AIR_ICONS: ElementDef[] = [
   { registry: 'icon', name: 'lotus', title: 'Lotus (meditation)', category: 'On Air icons', tags: ['icon', 'on-air', 'meditation', 'lotus'] },
@@ -101,17 +80,6 @@ const TEXTURES: ElementDef[] = [
   { registry: 'texture', name: 'ripple-rings', title: 'Ripple rings', category: 'Textures', tags: ['texture', 'abstract', 'ripple', 'brand'] },
   { registry: 'texture', name: 'circle-constellation', title: 'Circle constellation', category: 'Textures', tags: ['texture', 'abstract', 'network', 'brand'] },
   { registry: 'texture', name: 'organic-blob', title: 'Organic blob', category: 'Textures', tags: ['texture', 'abstract', 'blob', 'brand'] },
-]
-
-/** Every non-kit element the Loom catalogues, in display order. */
-export const ELEMENT_CATALOG: ElementDef[] = [
-  ...ONBOARDING_ILLUSTRATIONS,
-  ...ON_AIR_ILLUSTRATIONS,
-  ...ON_AIR_ICONS,
-  ...SPOT_ART,
-  ...CIRCLE_TEMPLATES,
-  ...ONBOARDING_SCREENS,
-  ...TEXTURES,
 ]
 
 /** Pillar for a circle-template slug (for the render palette). */

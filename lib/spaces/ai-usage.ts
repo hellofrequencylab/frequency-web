@@ -25,9 +25,6 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 
 // ── The outcome units + plan-shaped monthly ceilings (PURE config) ───────────────────────────────
 
-/** The three outcome-shaped units we meter on. */
-export type OutcomeUnit = 'playbook_actions' | 'members_reactivated' | 'advocacy_accepted'
-
 /** The plan-shaped MONTHLY ceiling for playbook actions run, the volume lever in the tier ladder
  *  (Pro gets "larger action volume"). `null` = unlimited (no ceiling, no upsell trigger). These are
  *  SOFT ceilings that power the contextual upsell, not hard gates: hitting one never blocks an action,

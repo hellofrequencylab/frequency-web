@@ -43,8 +43,6 @@ export interface HousingDetail {
   preferences: Record<string, unknown>
 }
 
-export type HousingListing = Listing & { housing: HousingDetail }
-
 export interface RoommateMatch {
   listingId: string
   ownerId: string

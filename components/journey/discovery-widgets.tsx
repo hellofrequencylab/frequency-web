@@ -416,52 +416,6 @@ export function JourneyFaq({ plan }: { plan: Pick<JourneyPlan, 'drip_interval_da
   )
 }
 
-// ── Reward + social proof (folded into header chips + the rail) ─────────────────
-
-/** Social proof — "N on this Journey." (Kept for the public discover mirror.) */
-export function SocialProofBlock({ count }: { count: number }) {
-  if (count <= 0) return null
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full bg-surface-elevated px-3 py-1.5 text-sm font-medium text-muted">
-      <Users className="h-4 w-4 text-subtle" />
-      {count} {count === 1 ? 'person' : 'people'} on this Journey
-    </div>
-  )
-}
-
-/** Reward preview — the completion Gems + the permanent badge. (Kept for discover.) */
-export function RewardPreviewBlock({ gems }: { gems: number }) {
-  return (
-    <section className="flex items-center gap-4 rounded-2xl border border-signal-bg bg-signal-bg/40 p-4">
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-signal-bg text-signal-strong">
-        <Trophy className="h-6 w-6" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-bold text-text">Finish to earn</p>
-        <p className="mt-0.5 inline-flex items-center gap-1.5 text-sm text-muted">
-          <span className="inline-flex items-center gap-1 font-semibold text-signal-strong">
-            <Gem className="h-4 w-4" /> {gems} gems
-          </span>
-          · a permanent completion badge
-        </p>
-      </div>
-    </section>
-  )
-}
-
-/** The practice guide — the intro markdown, read while practising (active mode). */
-export function PracticeGuideBlock({ intro }: { intro: string | null }) {
-  if (!intro) return null
-  return (
-    <section>
-      <SectionHeader title="Practice guide" action={<BookOpen className="h-4 w-4 text-subtle" />} />
-      <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-5 text-sm leading-relaxed text-text">
-        {intro}
-      </div>
-    </section>
-  )
-}
-
 // ── The enroll CTA ──────────────────────────────────────────────────────────────
 
 /** The primary action shown to a visitor / not-enrolled member. Author edits, an

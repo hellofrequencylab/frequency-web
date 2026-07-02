@@ -5,12 +5,6 @@
 // or unsupported call simply no-ops: iOS Safari has no Element.requestFullscreen,
 // so the dvh takeover the surfaces already render stays the fallback.
 
-/** True when the page is currently in true (browser) fullscreen. */
-export function isAppFullscreen(): boolean {
-  if (typeof document === 'undefined') return false
-  return !!document.fullscreenElement
-}
-
 /** Enter the app's fullscreen-style takeover for the timer + capture surfaces.
  *
  *  DECISION (owner, 2026-06-22): we deliberately do NOT call Element.requestFullscreen.

@@ -30,18 +30,3 @@ export function setObservabilityTags(tags: ObservabilityTags): void {
   if (tags.space_id) Sentry.setTag('space_id', tags.space_id)
 }
 
-/**
- * Run `fn` inside an isolated Sentry scope tagged with the given dimensions, so
- * the tags apply only to errors raised within `fn` and don't leak to sibling
- * work on the same server instance. When Sentry is disabled this is a thin
- * pass-through that still runs `fn`.
- */
-export function withObservabilityScope<T>(
-  tags: ObservabilityTags,
-  fn: () => T,
-): T {
-  return Sentry.withScope(() => {
-    setObservabilityTags(tags)
-    return fn()
-  })
-}

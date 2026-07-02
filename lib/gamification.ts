@@ -29,14 +29,6 @@ export interface Achievement {
   sort_order: number
 }
 
-export interface UserAchievement {
-  id: string
-  profile_id: string
-  achievement_id: string
-  unlocked_at: string
-  achievement?: Achievement
-}
-
 // ---------------------------------------------------------------------------
 // Achievement criteria — machine-readable unlock conditions
 // ---------------------------------------------------------------------------
@@ -121,28 +113,6 @@ export const STREAK_CONFIG: Record<StreakType, {
 // ---------------------------------------------------------------------------
 
 export type ChallengeDifficulty = 'easy' | 'normal' | 'hard' | 'legendary'
-
-export interface SeasonChallenge {
-  id: string
-  season: number
-  slug: string
-  name: string
-  description: string
-  category: AchievementCategory
-  difficulty: ChallengeDifficulty
-  criteria: Record<string, unknown>
-  target: number
-  zaps_reward: number
-  sort_order: number
-}
-
-export interface ChallengeProgress {
-  id: string
-  profile_id: string
-  challenge_id: string
-  current: number
-  completed_at: string | null
-}
 
 // ---------------------------------------------------------------------------
 // Tier display config

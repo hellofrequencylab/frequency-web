@@ -29,5 +29,3 @@ export const CROP_FRAMES = [
   { key: 'story', label: 'Story (9:16)', ratio: 9 / 16 },
   { key: 'og', label: 'Social (1.91:1)', ratio: 1.91 },
 ] as const
-
-export type CropFrameKey = (typeof CROP_FRAMES)[number]['key']

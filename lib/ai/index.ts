@@ -28,7 +28,6 @@ export {
 export {
   getMemberContext,
   rememberFacts,
-  eraseMemberContext,
   mergeFacts,
   claimMembersDueForSummary,
   writeDigest,

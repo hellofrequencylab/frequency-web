@@ -92,16 +92,3 @@ export async function listPendingApprovals(
   }))
 }
 
-/** Per-event mute: suppress Event Dispatch fan-out to this guest. */
-export async function setRsvpMuted(
-  eventId: string,
-  profileId: string,
-  muted: boolean,
-): Promise<void> {
-  const admin = createAdminClient()
-  await admin
-    .from('event_rsvps')
-    .update({ muted })
-    .eq('event_id', eventId)
-    .eq('profile_id', profileId)
-}

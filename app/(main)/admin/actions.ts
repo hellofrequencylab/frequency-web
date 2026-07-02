@@ -401,18 +401,6 @@ export async function createInviteLink(circleId: string): Promise<{ token: strin
   return { token }
 }
 
-export async function revokeInviteLink(id: string) {
-  await requireCommunityOps()
-
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('invite_links')
-    .update({ is_active: false })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
-  revalidatePath('/admin/circles')
-}
-
 // Public action. No role check, but validates token
 export async function joinViaInviteLink(token: string): Promise<{ circleId: string }> {
   const supabase = await createClient()
@@ -661,46 +649,6 @@ function makeExcerpt(body: string, maxLen = 200): string {
     .replace(/\n+/g, ' ')
     .trim()
   return plain.length <= maxLen ? plain : plain.slice(0, maxLen).trimEnd() + '…'
-}
-
-export async function createDispatch(fd: FormData): Promise<{ id: string }> {
-  const caller = await requireCommunityOps()
-
-  const title          = (fd.get('title') as string).trim()
-  const body           = (fd.get('body') as string).trim()
-  const dispatch_type  = (fd.get('dispatch_type') as string) || 'post'
-  const audience_scope = fd.get('audience_scope') as DispatchScope
-  const audience_id    = (fd.get('audience_id') as string).trim()
-  const linked_task_id = (fd.get('linked_task_id') as string) || null
-  const scheduled_raw  = fd.get('scheduled_for') as string | null
-  const scheduled_for  = scheduled_raw ? new Date(scheduled_raw).toISOString() : null
-  const pollOptionsRaw = fd.get('poll_options') as string | null
-  const excerpt        = makeExcerpt(body)
-
-  if (!title || !body || !audience_scope || !audience_id) throw new Error('Missing required fields')
-
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('dispatches')
-    .insert({ title, body, excerpt, dispatch_type, audience_scope, audience_id, linked_task_id, scheduled_for, author_id: caller.id })
-    .select('id')
-    .single()
-  if (error) throw new Error(error.message)
-
-  // Save poll options when type is 'poll'
-  if (dispatch_type === 'poll' && pollOptionsRaw) {
-    const options: string[] = JSON.parse(pollOptionsRaw)
-    const validOptions = options.map(s => s.trim()).filter(Boolean)
-    if (validOptions.length >= 2) {
-      await admin.from('dispatch_poll_options').insert(
-        validOptions.map((label, position) => ({ dispatch_id: data.id, label, position }))
-      )
-    }
-  }
-
-  revalidatePath('/admin/dispatches')
-  revalidatePath('/broadcast')
-  return { id: data.id }
 }
 
 export async function updateDispatch(id: string, fd: FormData) {

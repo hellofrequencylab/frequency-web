@@ -35,7 +35,3 @@ export async function readImpersonation(): Promise<ImpersonationStash | null> {
   return null
 }
 
-/** True when the current request is a janitor acting as a member. */
-export async function isImpersonating(): Promise<boolean> {
-  return (await readImpersonation()) !== null
-}
