@@ -12,6 +12,7 @@
     "test:rls": "supabase test db",
     "check:authz": "node scripts/check-authz-guards.mjs",
     "check:canon": "node scripts/check-canon.mjs",
+    "check:seo": "node scripts/check-seo.mjs",
     "check:cron-freshness": "node scripts/cron-freshness.mjs",
     "help:coverage": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-coverage.mts",
     "help:index": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/help-index.mts",
