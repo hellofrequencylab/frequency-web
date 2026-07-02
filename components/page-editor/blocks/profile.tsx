@@ -1392,8 +1392,10 @@ function SpaceLayoutRegion({
   Main: SlotComponent
   Side: SlotComponent
 }) {
-  // The standardized vertical rhythm for the profile blocks, tuned so the page breathes:
-  //  - `py-10 sm:py-14` seats the block region below the layout-owned header and above the page foot.
+  // The standardized rhythm for the profile blocks:
+  //  - NO outer `py` here: the PAGE owns the vertical rhythm now (the config root adds page padding on
+  //    space pages), so a SpaceLayout region — whether it wraps the whole page under the `main-rail`
+  //    preset or sits mid-flow as an operator block — never double-pads.
   //  - MAIN sections get the generous stack (`space-y-14`): each is a full content section and needs
   //    clear separation to read as its own chapter.
   //  - the SIDE rail gets a tighter stack (`space-y-6`): its cards are compact facts (highlights,
@@ -1403,7 +1405,7 @@ function SpaceLayoutRegion({
   const SIDE_STACK = 'space-y-6'
   if (layout === 'stacked') {
     return (
-      <section className="w-full py-10 sm:py-14">
+      <section className="w-full">
         <div className={MAIN_STACK}>
           <Main />
         </div>
@@ -1419,7 +1421,7 @@ function SpaceLayoutRegion({
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="w-full py-10 sm:py-14">
+    <section className="w-full">
       <div className="grid gap-10 lg:grid-cols-3 lg:gap-14">
         <div className={`${MAIN_STACK} lg:col-span-2`}>
           <Main />
