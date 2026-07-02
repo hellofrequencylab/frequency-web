@@ -50,6 +50,12 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
 
   const { plan } = view
 
+  // Visibility gate (mirrors the detail page at [slug]/page.tsx): a PRIVATE Journey is
+  // readable only by its author. getJourneyPlayerView -> getPlan loads by slug with no
+  // visibility filter, so without this any signed-in member could open an unpublished
+  // draft's full lesson bodies + media by hitting /journeys/<slug>/learn directly.
+  if (plan.visibility === 'private' && plan.author_id !== profileId) notFound()
+
   // The follow-along extras: the library practice behind each `practice` step, each phase's focus
   // copy, the normalized meeting, and the four-Pillar balance — composed over the existing reads
   // (lib/journeys/learn.ts), plus the author. Loaded in parallel with the Run/cohort resolution.
