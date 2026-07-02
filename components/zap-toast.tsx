@@ -26,7 +26,7 @@ function ZapToastCard({ reward, onDismiss }: { reward: ZapReward; onDismiss: () 
         <Zap className="w-5 h-5" strokeWidth={2.5} />
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-text leading-none">+{reward.amount} zaps</p>
+        <p className="text-sm font-bold text-text leading-none">+{reward.amount} Zaps</p>
         <p className="text-xs text-muted mt-1">{reward.label ?? 'Verified practice'}</p>
       </div>
     </div>

@@ -51,7 +51,7 @@ export function StarterClaim({ templateId }: { templateId: string }) {
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
-          {pending ? 'Starting…' : 'Claim this circle'}
+          {pending ? 'Starting…' : 'Remix'}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-danger">{error}</p>}

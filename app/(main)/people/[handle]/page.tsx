@@ -247,7 +247,7 @@ export default async function ProfilePage({
     { icon: Star, label: 'Early Adopter', description: 'Here from the beginning', current: 1, target: 1, milestone: true },
     { icon: MessageSquare, label: 'First Post', description: 'Said your first hello', current: postCount, target: 1 },
     { icon: Users, label: 'Circle Up', description: 'Found your first circle', current: circles.length, target: 1 },
-    { icon: Zap, label: 'Spark', description: '50 zaps earned', current: lifetimeZaps, target: 50 },
+    { icon: Zap, label: 'Spark', description: '50 Zaps earned', current: lifetimeZaps, target: 50 },
     { icon: Trophy, label: 'Task Master', description: '10 tasks done', current: tasksCompleted, target: 10 },
   ]
     .map((r) => ({ ...r, earned: r.current >= r.target, ratio: Math.min(1, r.current / r.target) }))

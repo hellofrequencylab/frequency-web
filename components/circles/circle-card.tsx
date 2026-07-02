@@ -26,7 +26,7 @@ export type CircleCardData = {
   /** Operator-Featured (circles.featured_at) — badge it as a curated pick. */
   isFeatured?: boolean
   /** A virtual Starter Circle (a staff blueprint surfaced near the viewer). Links
-   *  to the /circles/starter/<slug> preview and offers Claim, not Join — it is not
+   *  to the /circles/starter/<slug> preview and offers Remix, not Join — it is not
    *  a real circle with members. */
   isStarter?: boolean
   /** Primary Pillar — lets a Starter card fall back to the drawn header art (themed
@@ -145,7 +145,7 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             href={href}
             className="inline-flex rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
           >
-            Claim
+            Remix
           </Link>
         ) : isMember ? (
           <Link

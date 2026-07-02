@@ -5,7 +5,7 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { getVaultData } from '@/lib/vault/vault-data'
 
 // The Vault (ADR-270/294). Module-driven: the whole interior — standing hero, the leaderboard
-// link, Your Vault, Trophies, Awards, and the Gem Store — is arranged by the operator through the
+// link, Your Vault, Trophies, Awards, and the Vault Store — is arranged by the operator through the
 // page's Layout editor (Settings ▾ → Page → Layout). Each block self-fetches off the one cached
 // Vault read (lib/vault/vault-data). The page itself only carries the Dashboard chrome + the
 // free-member preview banner (the store block owns its own CrewGate + the redeem authority).

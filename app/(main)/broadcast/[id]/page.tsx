@@ -219,7 +219,7 @@ export default async function DispatchDetailPage({ params }: Props) {
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted capitalize">{linkedTask.task_type}</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-primary">{linkedTask.zaps_value} zaps</span>
+                <span className="text-sm font-black text-primary">{linkedTask.zaps_value} Zaps</span>
                 <Link
                   href="/crew"
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-on-primary hover:bg-primary-hover transition-colors"

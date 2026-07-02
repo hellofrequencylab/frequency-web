@@ -86,7 +86,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Library review blocks (/library/review) — the leadership approval queue ──
   { id: 'library-review-queue', label: 'Review queue', description: 'Community submissions waiting to join the Library — approve to publish, reject to send back (Host+ only).' },
 
-  // ── The Vault blocks (/crew/store) — the member's earnings + the Gem Store ──
+  // ── The Vault blocks (/crew/store) — the member's earnings + the Vault Store ──
   { id: 'vault-standing', label: 'Standing hero', description: 'The four counts — Zaps · Rank · Streak · Gems — the one way a member’s standing renders.' },
   { id: 'vault-leaderboard', label: 'Standing link', description: 'A card linking to the cooperative leaderboard and streaks.' },
   { id: 'vault-summary', label: 'Your Vault', description: 'Amplitude (the lifetime layer), the Zaps & Gems ledger, and equipped winnings.' },
@@ -106,7 +106,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'programs-list', label: 'Programs', description: 'The open browse list of frameworks and trainings for starting, running, and growing a circle, each with the viewer’s completion.' },
 
   // ── Season Challenges blocks (/crew/challenges) — the season's bonus-zap challenges ──
-  { id: 'challenges-season', label: 'Season Challenges', description: 'The season KPI band (progress, zaps, remaining) over the challenges-by-difficulty grid.' },
+  { id: 'challenges-season', label: 'Season Challenges', description: 'The season KPI band (progress, Zaps, remaining) over the challenges-by-difficulty grid.' },
 
   // ── Entity profile blocks (/spaces/<slug>/*) — the networked profile module set ──
   // (ENTITY-SPACES-BUILD §B.2). Each is a self-fetching RSC scoped to the ACTIVE Space

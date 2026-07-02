@@ -368,7 +368,7 @@ export default async function CirclePage({
             {!isMember && myProfileId && !full && (
               <CrewGateButton
                 isCrew={isCrew}
-                label="Join circle"
+                label="Join"
                 buttonClassName="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
               >
                 <form action={joinCircle.bind(null, circle.id, circle.slug)}>
@@ -376,7 +376,7 @@ export default async function CirclePage({
                     type="submit"
                     className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
                   >
-                    Join circle
+                    Join
                   </button>
                 </form>
               </CrewGateButton>
@@ -384,7 +384,7 @@ export default async function CirclePage({
 
             {!isMember && myProfileId && full && (
               <span className="shrink-0 rounded-lg border border-border px-4 py-2 text-sm font-medium text-subtle cursor-not-allowed">
-                Circle full
+                Full
               </span>
             )}
           </>
