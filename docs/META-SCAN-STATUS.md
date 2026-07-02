@@ -105,6 +105,12 @@ the unit suite.
   functions are **intentionally executable** and left as-is — 49 are PostgREST RPCs, 18 are
   RLS-policy helpers (revoking breaks RLS — confirmed via `pg_depend`), 1 is PostGIS. Those
   advisor warnings are expected/"won't fix". Method is codified in the `/meta-scan` skill.
+- ✅ ~~**Anon-executable state-mutating SECURITY DEFINER RPCs**~~ — 🔴 HIGH, found in the follow-up
+  security sweep, DONE (migration `20261005000000`, applied + verified + pgTAP guard). `reset_season`
+  (platform season rollover), `adjust_ticket_sold` (ticket inventory), `set_node_geo` (node geofence),
+  and `refresh_member_engagement_scores` (DoS) were `SECURITY DEFINER` with no internal auth check and
+  EXECUTE-able by anon/authenticated. All revoked to `service_role` only; every caller already uses the
+  admin client, so behavior is unchanged. (Distinct from the RPCs above, which are legitimately callable.)
 - **Supabase advisors (remaining, lower priority)**:
   - ✅ ~~56 `multiple_permissive_policies`~~ — Phase F (migration `20261004000000`): consolidated the
     6 highest-count `{public}` tables (post_reactions, posts, applications, events, user_achievements,
