@@ -245,7 +245,9 @@ export function SpaceLoadoutPicker({
   )
 }
 
-function IntervalSwitch({ interval, onChange }: { interval: BillingInterval; onChange: (i: BillingInterval) => void }) {
+/** The monthly/yearly toggle. Exported so the Nonprofit + Organization plan cards reuse the exact
+ *  control (and copy) Pro uses, rather than forking a second switch. */
+export function IntervalSwitch({ interval, onChange }: { interval: BillingInterval; onChange: (i: BillingInterval) => void }) {
   return (
     <div className="inline-flex items-center rounded-xl border border-border bg-surface p-1 text-xs font-semibold">
       <button

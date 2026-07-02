@@ -52,21 +52,33 @@ export async function startSpacePlanCheckout(
   return ok({ url })
 }
 
-/** Begin a Stripe Checkout for a Pro LOADOUT (the base plus the active add-ons, ADR-463). DOUBLE-GATED:
- *  authorizeOwner re-resolves the space + checks canManage server-side, then createSpaceLoadoutCheckout
- *  itself gates on billingLive() AND the per-plan switch, so this returns a clean error (never a broken
- *  URL) while billing is OFF. The charged price is the FOUNDING price, or the space's grandfathered
- *  locked price when it holds one (the lock is honored inside createSpaceLoadoutCheckout). */
+/** The base tiers the multi-item loadout checkout sells (ADR-460/472): Pro + Business run on the Pro
+ *  base + add-ons framing; Nonprofit is the per-seat item; Organization is the flat org item. All four
+ *  go through the SAME createSpaceLoadoutCheckout, so interval + seat count thread identically. */
+const LOADOUT_PLANS = ['pro', 'business', 'nonprofit', 'organization'] as const
+type LoadoutPlan = (typeof LOADOUT_PLANS)[number]
+function asLoadoutPlan(plan: string | undefined): LoadoutPlan {
+  return (LOADOUT_PLANS as readonly string[]).includes(plan ?? '') ? (plan as LoadoutPlan) : 'pro'
+}
+
+/** Begin a Stripe Checkout for a multi-item LOADOUT (ADR-460/463). Defaults to the Pro base plus its
+ *  active add-ons; `plan` also selects the Nonprofit (per-seat) or Organization (flat) checkout, which
+ *  ride the SAME createSpaceLoadoutCheckout so the monthly/yearly interval + seat count thread the same
+ *  way (no parallel path). DOUBLE-GATED: authorizeOwner re-resolves the space + checks canManage
+ *  server-side, then createSpaceLoadoutCheckout itself gates on billingLive() AND the per-plan switch, so
+ *  this returns a clean error (never a broken URL) while billing is OFF. The charged price is the
+ *  FOUNDING price, or the space's grandfathered locked price when it holds one (the lock is honored
+ *  inside createSpaceLoadoutCheckout). */
 export async function startSpaceLoadoutCheckout(
   slug: string,
-  input: { addons?: string[]; interval?: BillingInterval; seatQuantity?: number },
+  input: { plan?: string; addons?: string[]; interval?: BillingInterval; seatQuantity?: number },
 ): Promise<ActionResult<{ url: string }>> {
   const auth = await authorizeOwner(slug)
   if (!auth) return fail('You do not have access to manage this space.')
   const addons = (input.addons ?? []).map((a) => asAddonKey(a)).filter((a): a is NonNullable<typeof a> => a !== null)
   const interval: BillingInterval = input.interval === 'year' ? 'year' : 'month'
   const url = await createSpaceLoadoutCheckout(auth.spaceId, {
-    plan: 'pro',
+    plan: asLoadoutPlan(input.plan),
     addons,
     interval,
     seatQuantity: input.seatQuantity,

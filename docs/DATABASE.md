@@ -210,7 +210,21 @@ ADR-180/206), `pages` + `pillars` + `sequence_overrides` (page editor), `team_me
 `email_events`, `email_suppressions`, `notification_queue` (durable outbox),
 `profile_personas` (partner hats, P3.1), `conversation_room_migration`,
 `pricing_settings` + `pricing_feature_gates` (pricing P1, ADR-362),
-`pricing_stripe_prices` (pricing P2, ADR-363)
+`pricing_stripe_prices` (pricing P2, ADR-363),
+`supporter_contributions` (PWYW Supporter-badge contribution ledger, pricing Phase C, ADR-495)
+
+> **Supporter contributions (ADR-495; migration `20261005000000_supporter_contributions.sql`).
+> DORMANT while `billing_live` is OFF.** The ledger behind the Crew "Supporter" PWYW badge
+> (`profiles.is_supporter`), mirroring the `tips` posture. Each row is one real-money CONTRIBUTION —
+> a ONE-TIME direct-platform Stripe charge (`mode:'payment'`, not a Connect destination charge), so the
+> full amount is the Foundation's revenue, booked as a `donation` on the entity-partitioned ledger
+> (`financial_transactions`). Columns: `id`, `profile_id` (FK `profiles`, `on delete set null` so the
+> Foundation record survives account deletion), `amount_cents (> 0)`, `currency`, `status`
+> (`pending`/`succeeded`/`failed`), `stripe_checkout_session_id` (UNIQUE where not null — the idempotency
+> key for the `pending -> succeeded` flip), `stripe_payment_intent_id`, `created_at`, `succeeded_at`.
+> RLS: a member reads only their own contributions; ALL writes go through the service role (the checkout
+> creator inserts `pending`; the Stripe webhook + success-page confirm flip to `succeeded`). Not yet in
+> `lib/database.types.ts`; reached untyped (ADR-246). Written by `lib/billing/supporter.ts`.
 
 > **Pricing foundation (ADR-362, [docs/PRICING.md](PRICING.md); migration
 > `20260723010000_pricing_foundation.sql`). EVERYTHING SHIPS OFF — nothing charges in P1.**
@@ -487,14 +501,27 @@ seeded (a non-default menu), so it is unchanged pre-seed. Tables are not in
 
 ## Working with migrations
 
+**Prod is MCP-apply-only. Never `supabase db push` against prod (ADR-496).** The repo
+`supabase/migrations/*.sql` files are the authored SOURCE; the applied set in the prod
+`schema_migrations` table is prod TRUTH. Their stamps deliberately DIVERGE (prod stamps are
+apply-time wall-clock; repo stamps are logical/rounded), so `db push` would see ~300 already-applied
+files as "unapplied" and try to **re-run** them, several destructively (e.g. re-running
+`pricing_plan_collapse` mangles the billing namespace). Do not try to "fix" that divergence by pushing.
+
+- **Apply a new migration to prod** via the Supabase MCP `apply_migration` tool (or, if scripting, a
+  reviewed one-off) — never `db push`. Ship the migration as a repo file first with a monotonic
+  logical stamp later than every existing file.
+- **Author + review** happen on the repo file. Local/branch/CI ephemeral databases build from the
+  repo files on a clean slate (there is no prod history to collide with there), so `db push` is fine
+  *only* against a throwaway DB, never the linked prod project.
+
 ```
-npx supabase migration list          # check local vs remote tracking
-npx supabase db push --dry-run       # preview
-npx supabase db push                 # apply
-npx supabase db query --linked "<sql>"   # inspect live data (no Docker needed)
+npx supabase migration list                 # check local vs remote tracking
+npx supabase db query --linked "<sql>"       # inspect live data, read-only (no Docker needed)
 npx supabase gen types typescript --linked > lib/database.types.ts  # regenerate types
+# Prod apply: MCP apply_migration only (ADR-496). Do NOT run `supabase db push` against prod.
+# `db push` is acceptable ONLY against a clean throwaway/branch DB built from the repo files.
 ```
 
-If a local migration is applied on remote but untracked (blank in
-`migration list`), run `migration repair --status applied <id>` before `db push`,
-or the push will fail trying to recreate existing objects.
+If prod ever needs filename-stamp parity for a tool that only reads filenames, do a deliberate,
+one-time `migration repair --status applied <id>` reconciliation, not an ad-hoc rename or a `db push`.
