@@ -10,14 +10,25 @@ import { buttonClasses } from '@/components/ui/button'
 // owner surface: it escapes the profile chrome, ships the editor runtime only there, and re-gates
 // canEditProfile server-side. The panel still owns the compact quick-edit (layout / cover / accent /
 // block order + show-hide); this button is just the reliable door to the full editor.
-export function SpaceFullEditorButton({ slug, pageSlug = 'home' }: { slug: string; pageSlug?: string }) {
+//
+// `variant`: 'primary' is the standalone door; 'quiet' is the DEMOTED look for the Advanced foot of the
+// minimal customize rail (secondary button), since Space editing is minimal-first now.
+export function SpaceFullEditorButton({
+  slug,
+  pageSlug = 'home',
+  variant = 'primary',
+}: {
+  slug: string
+  pageSlug?: string
+  variant?: 'primary' | 'quiet'
+}) {
   return (
     <Link
       href={`/spaces/${slug}/edit-page?page=${encodeURIComponent(pageSlug)}`}
-      className={buttonClasses('primary', 'md')}
+      className={buttonClasses(variant === 'quiet' ? 'secondary' : 'primary', variant === 'quiet' ? 'sm' : 'md')}
     >
       <LayoutTemplate className="h-4 w-4" aria-hidden />
-      Full page editor
+      {variant === 'quiet' ? 'Full page builder' : 'Full page editor'}
     </Link>
   )
 }

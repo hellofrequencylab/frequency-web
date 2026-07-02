@@ -36,6 +36,23 @@ describe('readProfileData', () => {
     })
   })
 
+  it('keeps offerings with a title, drops blurb-only / empty rows, and trims', () => {
+    const data = readProfileData({
+      profileData: {
+        offerings: [
+          { title: '  Coaching  ', blurb: '  60 min  ' },
+          { title: 'Workshop' }, // blurb optional
+          { blurb: 'no title' }, // dropped
+          { title: '   ' }, // dropped
+        ],
+      },
+    })
+    expect(data.offerings).toEqual([
+      { title: 'Coaching', blurb: '60 min' },
+      { title: 'Workshop' },
+    ])
+  })
+
   it('keeps only valid, known-platform socials with a url', () => {
     const data = readProfileData({
       profileData: {

@@ -23,6 +23,12 @@ export interface SpaceSocialLink {
   url: string
 }
 
+/** One service / offering the Space provides (the single-source services catalog). */
+export interface SpaceOffering {
+  title: string
+  blurb?: string
+}
+
 /** The central, single-source Space profile data. All optional + fail-safe. Business facts first,
  *  then the editorial story. Offerings / callout / section copy join here in a later phase. */
 export interface SpaceProfileData {
@@ -44,6 +50,8 @@ export interface SpaceProfileData {
   ratingCount?: string
   /** The About / story body (one source for the About card + anywhere the story shows). */
   about?: string
+  /** The services / offerings catalog (one source for the Offerings grid + anywhere services show). */
+  offerings?: SpaceOffering[]
 }
 
 const KNOWN_PLATFORMS = new Set([
@@ -78,6 +86,16 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
       return platform && url && KNOWN_PLATFORMS.has(platform) ? { platform, url } : null
     })
     .filter((s): s is SpaceSocialLink => s !== null)
+  const offeringsRaw = Array.isArray(p.offerings) ? (p.offerings as unknown[]) : []
+  const offerings: SpaceOffering[] = offeringsRaw
+    .map((o) => {
+      const row = o && typeof o === 'object' ? (o as Record<string, unknown>) : {}
+      const title = str(row.title)
+      const blurb = str(row.blurb)
+      // A row needs at least a title to be a real offering; a blurb alone is dropped.
+      return title ? { title, ...(blurb ? { blurb } : {}) } : null
+    })
+    .filter((o): o is SpaceOffering => o !== null)
   const out: SpaceProfileData = {}
   const address = str(p.address)
   const hours = str(p.hours)
@@ -96,6 +114,7 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   if (rating) out.rating = rating
   if (ratingCount) out.ratingCount = ratingCount
   if (about) out.about = about
+  if (offerings.length > 0) out.offerings = offerings
   return out
 }
 

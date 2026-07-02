@@ -202,19 +202,18 @@ export function SpacePagePanel({
         <SpaceBusinessForm slug={slug} initial={businessInfo} readOnly={readOnly} />
       </section>
 
-      {/* The prominent deep-edit entry: NAVIGATES to the standalone /edit-page route (the server-rendered
-          full-page Puck editor) for the ACTIVE page. A real navigation always fetches the current chunk
-          hashes, so it can never hit a stale-chunk load failure after a deploy. */}
+      {/* ADVANCED: the full Puck page builder, DEMOTED. Editing a Space is minimal by default (the
+          Business info form + block order + cover/accent above), so the full builder is a quiet
+          advanced entry at the foot for power users, not the primary surface. It NAVIGATES to the
+          standalone /edit-page route (a fresh navigation always fetches current chunk hashes). */}
       {!readOnly && (
-        <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">Full page editor</p>
-              <p className="mt-1 text-sm text-muted">
-                Open the full editor to add, edit, and arrange every block on {activeLabel}.
-              </p>
-            </div>
-            <SpaceFullEditorButton slug={slug} pageSlug={activePageSlug} />
+        <section className="border-t border-border pt-5">
+          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Advanced</p>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <p className="min-w-0 text-sm text-muted">
+              Open the full page builder to hand-arrange every block on {activeLabel}.
+            </p>
+            <SpaceFullEditorButton slug={slug} pageSlug={activePageSlug} variant="quiet" />
           </div>
         </section>
       )}

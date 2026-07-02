@@ -2,10 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, Loader2, Plus, Trash2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import type { SpaceProfileData, SpaceSocialLink } from '@/lib/spaces/profile-data'
+import type { SpaceProfileData, SpaceSocialLink, SpaceOffering } from '@/lib/spaces/profile-data'
 
 // THE BUSINESS INFO FORM — the ONE place an operator edits their Space's central business data
 // (owner directive: "change the business address and it changes everywhere"). It writes
@@ -59,6 +59,22 @@ export function SpaceBusinessForm({
     ratingCount: initial.ratingCount ?? '',
     socials: socialMap,
   })
+  // The services catalog is edited as add/remove rows (its own state so a row edit never re-seeds).
+  const [offerings, setOfferings] = useState<SpaceOffering[]>(
+    (initial.offerings ?? []).map((o) => ({ title: o.title, blurb: o.blurb ?? '' })),
+  )
+  const setOffering = (i: number, key: 'title' | 'blurb', value: string) => {
+    setStatus('idle')
+    setOfferings((rows) => rows.map((r, j) => (j === i ? { ...r, [key]: value } : r)))
+  }
+  const addOffering = () => {
+    setStatus('idle')
+    setOfferings((rows) => [...rows, { title: '', blurb: '' }])
+  }
+  const removeOffering = (i: number) => {
+    setStatus('idle')
+    setOfferings((rows) => rows.filter((_, j) => j !== i))
+  }
 
   const set = (key: keyof typeof form, value: string) => {
     setStatus('idle')
@@ -75,6 +91,9 @@ export function SpaceBusinessForm({
       platform: p.key,
       url: (form.socials[p.key] ?? '').trim(),
     })).filter((s) => s.url)
+    const cleanedOfferings: SpaceOffering[] = offerings
+      .map((o) => ({ title: o.title.trim(), blurb: (o.blurb ?? '').trim() }))
+      .filter((o) => o.title)
     start(async () => {
       const result = await setSpaceBusinessInfo(slug, {
         about: form.about.trim(),
@@ -86,6 +105,7 @@ export function SpaceBusinessForm({
         rating: form.rating.trim(),
         ratingCount: form.ratingCount.trim(),
         socials,
+        offerings: cleanedOfferings,
       })
       if (isError(result)) {
         setStatus('error')
@@ -148,6 +168,64 @@ export function SpaceBusinessForm({
           <label className={labelClass} htmlFor="biz-rating-count">Rating count</label>
           <input id="biz-rating-count" value={form.ratingCount} onChange={(e) => set('ratingCount', e.target.value)} disabled={readOnly} placeholder="126 reviews" className={inputClass} />
         </div>
+      </div>
+
+      <div>
+        <div className="mb-1 flex items-center justify-between">
+          <p className={labelClass + ' mb-0'}>Services</p>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={addOffering}
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden />
+              Add
+            </button>
+          )}
+        </div>
+        <p className="mb-2 text-2xs text-subtle">The things you offer. These fill your Offerings grid.</p>
+        {offerings.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border bg-surface/60 px-3 py-4 text-center text-2xs text-subtle">
+            No services yet. Add one to fill your Offerings grid.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {offerings.map((o, i) => (
+              <li key={i} className="rounded-lg border border-border bg-surface/60 p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    aria-label={`Service ${i + 1} title`}
+                    value={o.title}
+                    onChange={(e) => setOffering(i, 'title', e.target.value)}
+                    disabled={readOnly}
+                    placeholder="Service name"
+                    className={inputClass}
+                  />
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => removeOffering(i)}
+                      aria-label={`Remove service ${i + 1}`}
+                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-danger-bg hover:text-danger"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                    </button>
+                  )}
+                </div>
+                <textarea
+                  aria-label={`Service ${i + 1} description`}
+                  rows={2}
+                  value={o.blurb ?? ''}
+                  onChange={(e) => setOffering(i, 'blurb', e.target.value)}
+                  disabled={readOnly}
+                  placeholder="Short description (optional)"
+                  className={inputClass}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div>
