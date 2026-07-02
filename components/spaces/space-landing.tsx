@@ -8,6 +8,7 @@ import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 
@@ -56,9 +57,16 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
   // Resolve THIS page's doc (Home or a custom page), drop any block the Page panel hid (and strip the
   // flag off survivors), then strip the legacy identity header. The resolver is fail-safe: a page with
   // no stored doc renders the one universal default, so it never goes blank.
-  const data = stripIdentityHeader(
+  // CONTENT (neutral, flat, editor-tied): the stored-or-default doc with hidden blocks stripped and the
+  // legacy identity header removed.
+  const content = stripIdentityHeader(
     withVisibleBlocks(resolveSpacePageDoc(space.preferences, brandName, pageSlug)),
   )
+  // DISPLAY: arrange that same content for the page's chosen layout preset (pure transform; the stored
+  // content is never mutated, so an external site could render the same content with a different
+  // preset). stack/sections stay flat; main-rail wraps into a two-column region.
+  const layoutPreset = readLayoutPreset(space.preferences, pageSlug)
+  const data = applyLayoutPreset(content, layoutPreset)
 
   // The single primary CTA (best practice) routes to the reserved /book action page (the live
   // transactional surface, branched by type). Label is the per-type default (operator-overridable).
@@ -83,6 +91,7 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     // The CENTRAL business info + story, injected so every authored block renders from the ONE
     // source (edit once, changes everywhere). Read off preferences.profileData (fail-safe empty).
     profile: readProfileData(space.preferences),
+    layoutPreset,
   })
 
   return <Render config={config} data={data} metadata={{ space: spaceContent }} />
