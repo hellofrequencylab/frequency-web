@@ -15,16 +15,24 @@ export function SegmentRowActions({ id, name }: { id: string; name: string }) {
   const router = useRouter()
   const [confirming, setConfirming] = useState(false)
   const [pending, start] = useTransition()
+  // The DangerModal closes on confirm, so surface a failed delete inline (it would
+  // otherwise look like the segment was removed when it wasn't).
+  const [error, setError] = useState<string | null>(null)
 
   function remove() {
+    setError(null)
     start(async () => {
-      await deleteSegment(id)
+      const r = await deleteSegment(id)
+      if (!r.ok) {
+        setError(r.error ?? 'Could not delete the segment.')
+        return
+      }
       router.refresh()
     })
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       <Link
         href={`/admin/segments/${id}/edit`}
         aria-label={`Edit ${name}`}
@@ -55,6 +63,12 @@ export function SegmentRowActions({ id, name }: { id: string; name: string }) {
         confirmLabel="Delete segment"
         onConfirm={remove}
       />
+
+      {error && (
+        <span role="alert" className="w-full text-2xs font-medium text-danger">
+          {error}
+        </span>
+      )}
     </div>
   )
 }

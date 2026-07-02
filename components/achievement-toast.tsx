@@ -61,9 +61,10 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
               </p>
               <button
                 onClick={onDismiss}
+                aria-label="Dismiss"
                 className="p-0.5 rounded text-subtle hover:text-muted dark:hover:text-subtle transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden />
               </button>
             </div>
             <p className="text-sm font-bold text-text mt-0.5">

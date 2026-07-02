@@ -88,8 +88,8 @@ export function AwardDialog({
       <div className="w-full rounded-2xl border border-border bg-surface shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h2 className="text-sm font-semibold text-text">Award Achievement</h2>
-          <button onClick={close} className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
-            <X className="w-4 h-4" />
+          <button onClick={close} aria-label="Close" className="p-1 rounded text-subtle hover:text-muted dark:hover:text-subtle">
+            <X className="w-4 h-4" aria-hidden />
           </button>
         </div>
 

@@ -28,23 +28,36 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
   const [name, setName] = useState(ch.name)
   const [description, setDescription] = useState(ch.description ?? '')
   const [pending, start] = useTransition()
+  // These actions throw on failure; catch it so a failed save/hide shows a reason
+  // instead of silently closing as if it worked.
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   function save() {
     const fd = new FormData()
     fd.set('name', name)
     fd.set('description', description)
+    setError(null)
     start(async () => {
-      await updateChannel(ch.id, fd)
-      setEditing(false)
-      router.refresh()
+      try {
+        await updateChannel(ch.id, fd)
+        setEditing(false)
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not save the channel.')
+      }
     })
   }
 
   function archive() {
+    setError(null)
     start(async () => {
-      await archiveChannel(ch.id)
-      router.refresh()
+      try {
+        await archiveChannel(ch.id)
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Could not hide the channel.')
+      }
     })
   }
 
@@ -61,11 +74,13 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
             <X className="h-3.5 w-3.5" /> Cancel
           </button>
         </div>
+        {error && <p role="alert" className="text-2xs font-medium text-danger">{error}</p>}
       </div>
     )
   }
 
   return (
+    <div>
     <div className="group flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-elevated">
         <Hash className="h-4 w-4 text-subtle" aria-hidden />
@@ -100,30 +115,41 @@ function ChannelItem({ ch }: { ch: ChannelRow }) {
         onConfirm={archive}
       />
     </div>
+    {error && <p role="alert" className="mt-1 px-4 text-2xs font-medium text-danger">{error}</p>}
+    </div>
   )
 }
 
 function HiddenChannelItem({ ch }: { ch: ChannelRow }) {
   const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   return (
+    <div>
     <div className="flex items-center gap-3 rounded-2xl bg-surface-elevated/60 px-4 py-3">
       <Hash className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
       <span className="flex-1 truncate text-sm text-muted">{ch.name}</span>
       <button
         type="button"
-        onClick={() =>
+        onClick={() => {
+          setError(null)
           start(async () => {
-            await unarchiveChannel(ch.id)
-            router.refresh()
+            try {
+              await unarchiveChannel(ch.id)
+              router.refresh()
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not restore the channel.')
+            }
           })
-        }
+        }}
         disabled={pending}
         title="Restore to discovery"
         className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-medium text-text transition-colors hover:bg-surface disabled:opacity-50"
       >
         <Eye className="h-3.5 w-3.5" /> Restore
       </button>
+    </div>
+    {error && <p role="alert" className="mt-1 px-4 text-2xs font-medium text-danger">{error}</p>}
     </div>
   )
 }

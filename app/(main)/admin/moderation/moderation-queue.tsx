@@ -11,6 +11,7 @@ import {
   suspendMember,
   cancelEventFromReport,
 } from '@/app/(main)/feed/report-actions'
+import { isError } from '@/lib/action-result'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -51,43 +52,67 @@ const TARGET_LABEL: Record<string, string> = {
 export function ModerationQueue({ reports }: { reports: ReportItem[] }) {
   const [isPending, startTransition] = useTransition()
   const [openSuspendFor, setOpenSuspendFor] = useState<string | null>(null)
+  // Surface a failed moderation action instead of silently swallowing it — a failed
+  // suspend/cancel/hide must never look like it worked.
+  const [error, setError] = useState<string | null>(null)
 
   function handleHide(reportId: string) {
+    setError(null)
     startTransition(async () => {
-      await reviewReport(reportId, 'actioned')
+      const r = await reviewReport(reportId, 'actioned')
+      if (isError(r)) setError(r.error)
     })
   }
 
   function handleDismiss(reportId: string) {
+    setError(null)
     startTransition(async () => {
-      await reviewReport(reportId, 'dismissed')
+      const r = await reviewReport(reportId, 'dismissed')
+      if (isError(r)) setError(r.error)
     })
   }
 
   function handleWarn(reportId: string, memberId: string, reason: string) {
+    setError(null)
     startTransition(async () => {
-      await warnMember(reportId, memberId, reason)
+      const r = await warnMember(reportId, memberId, reason)
+      if (isError(r)) setError(r.error)
     })
   }
 
   function handleSuspend(reportId: string, memberId: string, days: number | null, reason: string) {
+    setError(null)
     startTransition(async () => {
-      await suspendMember(reportId, memberId, {
+      const r = await suspendMember(reportId, memberId, {
         reason,
         durationDays: days ?? undefined,
       })
+      if (isError(r)) {
+        setError(r.error)
+        return
+      }
       setOpenSuspendFor(null)
     })
   }
 
   function handleCancelEvent(reportId: string, eventId: string) {
+    setError(null)
     startTransition(async () => {
-      await cancelEventFromReport(reportId, eventId)
+      const r = await cancelEventFromReport(reportId, eventId)
+      if (isError(r)) setError(r.error)
     })
   }
 
   return (
     <div className="space-y-3">
+      {error && (
+        <p
+          role="alert"
+          className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-xs font-medium text-danger"
+        >
+          {error}
+        </p>
+      )}
       {reports.map((report) => {
         const reasonInfo = REASON_BADGE[report.reason] ?? REASON_BADGE.other
         const targetLabel = TARGET_LABEL[report.target_type] ?? report.target_type
