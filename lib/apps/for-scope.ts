@@ -16,9 +16,9 @@
 // gate; `showsAdminBar` is the resolver a later pass switches visibility onto once the viewer's
 // per-scope capabilities are threaded into PageAdminProvider.
 
-import { surfacesFor } from './access'
+import { appGatePasses, surfacesFor } from './access'
 import { APPS } from './catalog'
-import type { App, AppSurfaceKind, AppViewer } from './types'
+import type { App, AppGate, AppSurfaceKind, AppViewer } from './types'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 import { moduleScopeChain } from '@/lib/widgets/modules'
 import type { ScopeKind } from '@/lib/admin/modules/registry'
@@ -80,4 +80,60 @@ export function appsForScope(
  *  page-admin-bar's runtime visibility gate is switched onto it in Phase 4, not here. */
 export function showsAdminBar(scope: AdminScope | null, viewer: AppViewer): boolean {
   return appsForScope(scope, viewer, 'editor').length > 0
+}
+
+// ── Phase 5: attainable-but-locked Apps (docs/ADMIN-RAIL.md Phase 5, principle P3) ──────────────────
+// The rail resolves each App to one of three states: never-eligible (HIDDEN — `appsForScope` already
+// drops these), eligible (SHOWN as a working editor), and ATTAINABLE-but-locked — an App the viewer
+// cannot act on yet but could plausibly UNLOCK, rendered as a lock + a one-line reason instead of an
+// editor. This is P3's "lock-with-reason only for could-unlock; never appear-then-error."
+//
+// "Attainable" is defined NARROWLY and safely: a `spaceFunction` gate that NAMES the `entitlement`
+// (the plan / owner-grant switch) it needs — the one declared upgrade path in the App contract today.
+// A plain `capability` the viewer merely lacks is NEVER attainable; it stays filtered out (no silent
+// greyed row). A fuller model would flag more gates attainable (e.g. an owner-grantable capability);
+// until a gate opts in this resolver returns [] over the live catalog, so the pattern is inert-safe.
+
+/** Whether a FAILING gate names a path the viewer could plausibly unlock (a plan-gated Space function).
+ *  Narrow by design: capability / staff / none gates are never attainable — lacking them means hidden. */
+export function isAttainableGate(gate: AppGate): boolean {
+  return gate.system === 'spaceFunction' && gate.entitlement != null
+}
+
+/** One plain line naming what unlocks an attainable App (voice canon: no em dashes). */
+function reasonForGate(gate: AppGate): string {
+  return gate.system === 'spaceFunction' && gate.entitlement
+    ? `Available on the ${gate.entitlement} plan.`
+    : 'Ask an owner to turn this on.'
+}
+
+/** An attainable-but-locked App: the App plus the one-line reason (+ optional CTA) the rail shows in
+ *  place of its editor. Fail-closed: a locked App NEVER exposes its editor — the row is inert. */
+export interface LockedApp {
+  app: App
+  reason: string
+  cta?: { label: string; href: string }
+}
+
+/**
+ * The editor Apps for a page `scope` the `viewer` cannot act on YET but could plausibly unlock (P3):
+ * a scope-matching editor App whose gate FAILS for the viewer but is `isAttainableGate`. Rendered as a
+ * locked row with a reason, never a working editor. Fail-closed: null scope / viewer ⇒ []. PURE; `apps`
+ * defaults to the live catalog and is injectable for tests. Never-eligible Apps stay filtered out.
+ */
+export function lockedAppsForScope(
+  scope: AdminScope | null,
+  viewer: AppViewer,
+  apps: readonly App[] = APPS,
+): LockedApp[] {
+  if (!scope || !viewer) return []
+  return apps
+    .filter(
+      (a) =>
+        a.surfaces.editor != null &&
+        a.scopes.some((s) => s.on === 'scopeKind' && s.kind === scope.kind) &&
+        !appGatePasses(a.gate, viewer) &&
+        isAttainableGate(a.gate),
+    )
+    .map((a) => ({ app: a, reason: reasonForGate(a.gate) }))
 }

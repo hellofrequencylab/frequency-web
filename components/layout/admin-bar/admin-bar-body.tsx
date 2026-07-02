@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronRight, ChevronLeft, Search, Settings } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Lock, Search, Settings } from 'lucide-react'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META } from '@/lib/admin/modules/spine'
 import type { SettingsPanelModel, SearchableApp } from '@/components/layout/settings-panel'
@@ -165,7 +165,8 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
           })}
         </div>
       ) : (
-        // ── The category browse list (fixed spine order, drop-empty). ──
+        // ── The category browse list (fixed spine order, drop-empty), then any locked rows (P3). ──
+        <>
         <div className="space-y-1">
           {model.categories.map((cat) => (
             <button
@@ -197,6 +198,37 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
             </div>
           )}
         </div>
+
+        {/* ── LOCKED rows (Phase 5 / P3): attainable-but-locked apps — a lock + one-line reason,
+            never a working editor (fail-closed). Inert rows (not dead buttons); the optional CTA is
+            the only interactive element, so it never reads as an editor you can open. ── */}
+        {model.lockedApps.length > 0 && (
+          <div className="space-y-1 pt-2">
+            {(model.categories.length > 0 || model.pageGroup) && <hr className="border-border" />}
+            <p className="px-1 pt-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Unlock more</p>
+            {model.lockedApps.map((row) => (
+              <div key={row.id} className="flex items-start gap-3 rounded-lg px-2 py-2">
+                <Lock className="mt-0.5 h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-muted">
+                    <span className="sr-only">Locked. </span>
+                    {row.label}
+                  </span>
+                  <span className="block text-xs text-subtle">{row.reason}</span>
+                  {row.cta && (
+                    <a
+                      href={row.cta.href}
+                      className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+                    >
+                      {row.cta.label}
+                    </a>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        </>
       )}
     </div>
   )
