@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/settings-drawer'
+import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
 
 // The admin RIGHT-rail column — the admin twin of the shell's member rail column, so the
 // Settings drawer behaves IDENTICALLY on admin pages (owner directive: "in every instance"
@@ -21,7 +21,7 @@ import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/se
 // match and the admin center `flex-1` compresses. The width transition is dropped mid-drag so
 // the column tracks the pointer 1:1.
 export function AdminRailDrawerColumn({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<SettingsDrawerState>({ open: false, width: 288, resizing: false })
+  const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
 
   return (
     <div
@@ -40,9 +40,10 @@ export function AdminRailDrawerColumn({ children }: { children: React.ReactNode 
         </div>
       </aside>
 
-      {/* The settings drawer slides over THIS column (absolute, full height) on the
-          `open-settings` event, reporting its width up so the column sizes to match. */}
-      <SettingsDrawer onStateChange={setSettings} />
+      {/* The admin bar slides over THIS column (desktop: absolute, full height) on the
+          `open-admin-bar` / `open-settings` event, reporting its width up so the column sizes to
+          match. Its mobile half portals to <body> from here (escaping the hidden lg:flex column). */}
+      <AdminBar onStateChange={setSettings} />
     </div>
   )
 }

@@ -67,8 +67,7 @@ import type { WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
-import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/settings-drawer'
-import { MobileSettingsSheet } from '@/components/layout/mobile-settings-sheet'
+import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -1526,13 +1525,13 @@ export default function AppShell({
   // by path so it auto-resets on navigation — see the railCollapsed derivation below.
   const [railOverride, setRailOverride] = useState<{ path: string; collapsed: boolean } | null>(null)
 
-  // The shell-level settings drawer (ADR-128, rebuilt; owner revision 2026-06-21). The
-  // SettingsDrawer owns open/persistence + the grab-handle resize + the `open-settings` event,
-  // and reports its live { open, width, resizing } up here. The shell sizes the RAIL COLUMN to
-  // that width, so the drawer slides over the rail at rest (covering it, nothing reflows) and,
+  // The shell-level admin bar (ADR-128, rebuilt; owner revision 2026-06-21; unified in ADMIN-RAIL
+  // Phase 2). The AdminBar owns open/persistence + the grab-handle resize + the `open-admin-bar` /
+  // `open-settings` events, and reports its live { open, width, resizing } up here. The shell sizes
+  // the RAIL COLUMN to that width, so the bar slides over the rail at rest (covering it, nothing reflows) and,
   // as the grab handle widens it, the rail column grows and the CENTER CONTENT COMPRESSES to
   // match. It never spills past the content's right column (it is its own pushing column).
-  const [settings, setSettings] = useState<SettingsDrawerState>({ open: false, width: 288, resizing: false })
+  const [settings, setSettings] = useState<AdminBarState>({ open: false, width: 288, resizing: false })
 
   // Mobile right drawer (The Quest stats) — opened only from the tab bar's gem
   // control. The left side is the nav DRAWER (drawerOpen, also bottom-bar
@@ -1651,8 +1650,8 @@ export default function AppShell({
   // world's sub-pages now lives at the top of the admin layout's own sticky band (AdminSubNav in
   // app/(main)/admin/layout.tsx), not here — the shell no longer renders an admin sub-header, and
   // the `admin_header` MegaBar's second dropdown layer is retired. We still track whether the route
-  // is under /admin so the shell suppresses its own SettingsDrawer column there (the admin layout
-  // mounts the drawer over its info-rail column instead).
+  // is under /admin so the shell suppresses its own AdminBar column there (the admin layout
+  // mounts the bar over its info-rail column instead).
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
 
   function cycleTheme() {
@@ -1991,15 +1990,15 @@ export default function AppShell({
                 )}
                 {/* The settings drawer slides over THIS column (absolute, full height) on the
                     `open-settings` event, reporting its width up so the column sizes to match. */}
-                <SettingsDrawer onStateChange={setSettings} />
+                <AdminBar onStateChange={setSettings} />
               </div>
             )}
             {/* No member rail here (Focus surfaces, railFor 'none'): STILL mount the
-                SettingsDrawer in a zero-width relative column so the page Settings button works
-                everywhere. The column grows to the drawer width and the panel slides in over it
-                when opened. ADMIN routes are EXCLUDED: they render their own info-rail column
-                (AdminRailDrawerColumn) which mounts the drawer over that rail, so mounting it
-                here too would be a second, conflicting drawer. */}
+                AdminBar in a zero-width relative column so the page Settings button works
+                everywhere (its mobile half portals to <body> from here). The column grows to the bar
+                width and the desktop panel slides in over it when opened. ADMIN routes are EXCLUDED:
+                they render their own info-rail column (AdminRailDrawerColumn) which mounts the bar over
+                that rail, so mounting it here too would be a second, conflicting bar. */}
             {!showSidebar && !isAdminRoute && (
               <div
                 className={`relative hidden shrink-0 justify-end lg:flex ${
@@ -2007,14 +2006,14 @@ export default function AppShell({
                 }`}
                 style={{ width: settings.open ? settings.width : 0 }}
               >
-                <SettingsDrawer onStateChange={setSettings} />
+                <AdminBar onStateChange={setSettings} />
               </div>
             )}
           </div>
-          {/* Mobile settings surface (< lg): the desktop SettingsDrawer above lives inside the
-              hidden lg:flex rail column, so on phones it never renders. This full-screen sheet is
-              the mobile equivalent, opening on the same `open-settings` event with the same content. */}
-          <MobileSettingsSheet />
+          {/* Mobile settings surface (< lg): the AdminBar mounted in the rail column above self-hosts
+              its mobile half through a portal to <body> (it escapes the hidden lg:flex column), so there
+              is no separate mobile mount here — exactly one AdminBar renders per route (the live rail
+              column: the member rail, the Focus zero-width column, or the admin info-rail column). */}
           </PageAdminProvider>
         </div>
 
