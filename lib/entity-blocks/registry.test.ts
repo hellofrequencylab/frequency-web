@@ -1,0 +1,69 @@
+import { describe, it, expect } from 'vitest'
+import {
+  ENTITY_BLOCKS,
+  entityBlockById,
+  blockSupportsKind,
+  blocksForKind,
+} from './registry'
+import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
+
+describe('unified entity-block registry', () => {
+  it('has unique ids and ascending order', () => {
+    const ids = ENTITY_BLOCKS.map((b) => b.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    const orders = ENTITY_BLOCKS.map((b) => b.order)
+    expect([...orders].sort((a, b) => a - b)).toEqual(orders)
+  })
+
+  it('carries no em dashes in copy (CONTENT-VOICE §10)', () => {
+    expect(JSON.stringify(ENTITY_BLOCKS)).not.toContain('—')
+  })
+
+  it('every block supports at least one kind, and only known kinds', () => {
+    for (const b of ENTITY_BLOCKS) {
+      expect(b.kinds.length).toBeGreaterThan(0)
+      for (const k of b.kinds) expect(['member', 'space']).toContain(k)
+    }
+  })
+
+  it('only space DATA blocks may require a function', () => {
+    for (const b of ENTITY_BLOCKS) {
+      if (b.requiresFunction) {
+        expect(b.category).toBe('data')
+        expect(b.kinds).toEqual(['space'])
+      }
+    }
+  })
+
+  it('content blocks are authored and shared by both kinds', () => {
+    for (const b of ENTITY_BLOCKS.filter((x) => x.category === 'content')) {
+      expect(b.kinds).toContain('member')
+      expect(b.kinds).toContain('space')
+      expect(b.requiresFunction).toBeUndefined()
+    }
+  })
+
+  it('subsumes every space profile block (S1) as a space-supporting block', () => {
+    for (const pb of PROFILE_BLOCKS) {
+      // S1 'highlights' unified to 'stats'; the rest keep their id.
+      const id = pb.id === 'highlights' ? 'stats' : pb.id
+      const unified = entityBlockById(id)
+      expect(unified, `missing unified block for space profile block ${pb.id}`).not.toBeNull()
+      expect(blockSupportsKind(unified!, 'space')).toBe(true)
+    }
+  })
+
+  it('blocksForKind returns member vs space palettes', () => {
+    const member = blocksForKind('member').map((b) => b.id)
+    const space = blocksForKind('space').map((b) => b.id)
+    expect(member).toContain('topfriends')
+    expect(member).not.toContain('offerings')
+    expect(space).toContain('offerings')
+    expect(space).not.toContain('topfriends')
+    // shared blocks appear in both
+    for (const id of ['about', 'stats', 'heading', 'links']) {
+      expect(member).toContain(id)
+      expect(space).toContain(id)
+    }
+  })
+})
