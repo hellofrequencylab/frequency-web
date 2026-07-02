@@ -105,9 +105,17 @@ the unit suite.
   functions are **intentionally executable** and left as-is — 49 are PostgREST RPCs, 18 are
   RLS-policy helpers (revoking breaks RLS — confirmed via `pg_depend`), 1 is PostGIS. Those
   advisor warnings are expected/"won't fix". Method is codified in the `/meta-scan` skill.
-- **Supabase advisors (remaining, lower priority)**: 56 `multiple_permissive_policies` (consolidate
-  overlapping policies), `auth_leaked_password_protection` off (a dashboard toggle), 71
-  `rls_enabled_no_policy` (default-deny, informational), 225+ unused-index review.
+- **Supabase advisors (remaining, lower priority)**:
+  - ✅ ~~56 `multiple_permissive_policies`~~ — Phase F (migration `20261004000000`): consolidated the
+    6 highest-count `{public}` tables (post_reactions, posts, applications, events, user_achievements,
+    waitlist_entries) to one OR-merged permissive policy per (role, action). Advisor **56 → 2**;
+    predicates byte-verified against live policies, RESTRICTIVE policies untouched. Follow-up: the
+    2 remaining `{authenticated}` findings (`dispatch_likes` shape-change, `space_subscription_items`).
+  - ⚠️ `auth_leaked_password_protection` off — **owner action** (Supabase Dashboard → Auth → Password
+    protection; not a migration). Enable "leaked password protection" (HaveIBeenPwned check).
+  - `rls_enabled_no_policy` (default-deny, informational); unused-index review now ~202 (mostly the
+    FK covering indexes added in the advisor sweep — expected with no production traffic; do NOT drop
+    pre-launch, revisit once query patterns are real).
 - **Help-doc naming audit**: sweep `content/help/**` for retired member terms
   (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
 - **Dependencies**: minor/patch bumps (resend, stripe, supabase-js, lucide-react, tailwindcss,
