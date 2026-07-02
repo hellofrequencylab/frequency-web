@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { Icon } from '@/components/ui/icon'
+import { icon } from '@/lib/ui/icon-catalog'
 import { requireAdmin } from '@/lib/admin/guard'
 import { createClient } from '@/lib/supabase/server'
 import { SequenceRunner } from '@/components/onboarding/sequence-runner'
@@ -63,7 +65,10 @@ export default async function SequencePreviewPage({
       <div className="sticky top-0 z-50 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl flex-col gap-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-            <span className="font-medium text-ink">Sequence preview</span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-ink">
+              <Icon name={icon('magic')} className="size-4 text-primary" />
+              Sequence preview
+            </span>
             <span>Staff only. Nothing is saved.</span>
           </div>
           <nav className="flex flex-wrap gap-1.5" aria-label="Preview a persona flow">
