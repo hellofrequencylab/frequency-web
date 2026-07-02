@@ -40,7 +40,7 @@ export default async function LeadershipCrewTasksPage() {
       {circles.length === 0 ? (
         <EmptyState
           title="No circles to assign tasks for yet"
-          description="Crew tasks are scoped to a circle you host. When you host a circle, you can create tasks here for its Crew to claim and earn zaps."
+          description="Crew tasks are scoped to a circle you host. When you host a circle, you can create tasks here for its Crew to claim and earn Zaps."
         />
       ) : (
         <CircleTasksPanel circles={circles} />

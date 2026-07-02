@@ -219,12 +219,16 @@ export async function completeSession(
     admin.from('practices').select('title').eq('id', input.practiceId).maybeSingle(),
     getPracticeStreak(profileId),
     admin.from('profiles').select('amplitude').eq('id', profileId).maybeSingle(),
+    // Lifetime depth for this practice = completed practice_logs rows. (The old
+    // practice_streaks.lifetime_logs source was dropped by the rewards-v3 teardown;
+    // reading it always errored and pinned the depth stat to 0.) head+count avoids
+    // pulling rows, and works with hosted PostgREST aggregates disabled.
     admin
-      .from('practice_streaks')
-      .select('lifetime_logs')
+      .from('practice_logs')
+      .select('id', { count: 'exact', head: true })
       .eq('profile_id', profileId)
       .eq('practice_id', input.practiceId)
-      .maybeSingle(),
+      .eq('completed', true),
     admin
       .from('practice_sessions')
       .select('seconds')
@@ -236,9 +240,7 @@ export async function completeSession(
     (s, r) => s + (r.seconds ?? 0),
     0,
   )
-  const lifetimeLogs = Number(
-    (depthRow.data as { lifetime_logs: number | null } | null)?.lifetime_logs ?? 0,
-  )
+  const lifetimeLogs = Number(depthRow.count ?? 0)
   const amplitude = Number((profRow.data as { amplitude: number | null } | null)?.amplitude ?? 0)
 
   // 4. Today's Dispatch from Vera — tied to the member's real state right now:

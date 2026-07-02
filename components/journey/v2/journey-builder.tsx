@@ -122,7 +122,7 @@ function JourneyActions({
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {pending ? 'Publishing…' : 'Publish'}
             </button>
             <label
-              title="Assign yourself every practice so you can run it from On Air."
+              title="Assign yourself every practice so you can run it from Mindless."
               className="inline-flex items-center gap-1.5 text-sm text-muted"
             >
               <input

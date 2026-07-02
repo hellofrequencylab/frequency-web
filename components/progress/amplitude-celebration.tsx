@@ -39,7 +39,7 @@ export function AmplitudeCelebration({
       <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-text">
           {milestone
-            ? `${milestoneLabel} — a permanent Award is in your Vault.`
+            ? `${milestoneLabel}. A permanent Award is in your Vault.`
             : `Amplitude Level ${level}`}
         </p>
         <p className="mt-0.5 text-xs text-muted">

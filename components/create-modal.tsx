@@ -99,10 +99,11 @@ export function CreateModal({
           </div>
           <button
             type="button"
+            aria-label="Close"
             onClick={() => !isPending && onClose()}
             className="shrink-0 rounded-lg p-1.5 text-subtle hover:text-muted hover:bg-surface-elevated transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden />
           </button>
         </div>
 

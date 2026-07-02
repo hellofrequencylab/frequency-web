@@ -86,8 +86,8 @@ everything in **cohesive admin suites three layers deep**.
    (`lib/contract/`) so the mobile app reuses them. No funnel logic trapped in React.
 7. **Canon-compliant by construction.** The splash/copy engines enforce NAMING.md + CONTENT-VOICE.md
    (no em dashes, locked nouns, skeptic test); pages compose the kit per PAGE-FRAMEWORK.md.
-8. **Registry pattern everywhere.** New funnels/templates/blueprints/modules *declare into a
-   registry* (`lib/entry-points/templates.ts`, `lib/spaces/blueprints.ts`, `lib/admin/modules/registry.ts`),
+8. **Registry pattern everywhere.** New funnels/templates/per-type defaults/modules *declare into a
+   registry* (`lib/entry-points/templates.ts`, `lib/spaces/profile-config.ts`, `lib/admin/modules/registry.ts`),
    never edit the core.
 
 ---
@@ -335,7 +335,7 @@ broadcast composer for real rooms; GE9-4 resonance-gated nearby-rooms surface. *
 **Purpose:** each persona's free toolset + (dormant) paid conversion: coach, practitioner, event
 host, fitness, nonprofit, business, collective.
 **Rides on:** `spaces` (P0–P3), `space_members`, `space_booking`, `space_donations`, CRM, email,
-per-type blueprints (`lib/spaces/blueprints.ts`), entitlement gating (`featureAllowed`).
+per-type defaults (`lib/spaces/profile-config.ts`), entitlement gating (`featureAllowed`).
 **Extend:** deep per-role features (coaching cohorts/curriculum, venue ticketing/capacity/check-in,
 fitness class scheduling/memberships, nonprofit programs/recurring giving, collective course
 slots), each free-wedge live + paid dormant.

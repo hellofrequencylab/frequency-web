@@ -89,7 +89,7 @@ export default async function AdminCrewTasksPage() {
     <AdminTemplate
       title="Crew Tasks"
       eyebrow="Community"
-      description="Define the tasks members can complete to earn zaps. Changes apply immediately across the app."
+      description="Define the tasks members can complete to earn Zaps. Changes apply immediately across the app."
       width="wide"
       actions={<NewTaskCompose />}
     >

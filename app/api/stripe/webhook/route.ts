@@ -52,9 +52,23 @@ export async function POST(req: Request) {
   // re-introduce a dead enum value and re-conflate the role with the tier. Crew the
   // PAID membership and Crew the (retired) community role are fully decoupled.
   const setTier = async (profileId: string, tier: string, customerId?: string | null) => {
-    const patch: { membership_tier: string; stripe_customer_id?: string } = { membership_tier: tier }
+    // Supporter was retired as a TIER (ADR-458 / 20260915000100): membership_tier
+    // collapses to ('free','crew') and Supporter becomes the is_supporter PWYW badge
+    // on top of Crew. Map here so a legacy/PWYW 'supporter' event writes the allowed
+    // tier + sets the badge (access-preserving), instead of violating the
+    // membership_tier CHECK and failing.
+    const isSupporter = tier === 'supporter'
+    const patch: { membership_tier: string; is_supporter?: boolean; stripe_customer_id?: string } = {
+      membership_tier: isSupporter ? 'crew' : tier,
+    }
+    if (isSupporter) patch.is_supporter = true
     if (customerId) patch.stripe_customer_id = customerId
-    await admin.from('profiles').update(patch).eq('id', profileId)
+    const { error } = await admin.from('profiles').update(patch).eq('id', profileId)
+    // A failed entitlement write must NOT ack 200: supabase-js returns { error } rather
+    // than throwing, so an unchecked failure here would leave a paying member on 'free'
+    // with the event claimed as processed (Stripe never redelivers) — unrecoverable.
+    // Throw so the outer catch releases the claim and returns 500 for Stripe to retry.
+    if (error) throw new Error(`setTier(${profileId}) failed: ${error.message}`)
   }
 
   // Wrap the handler switch: a transient handler failure must NOT leave the claim row

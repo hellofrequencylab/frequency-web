@@ -39,7 +39,7 @@ function preset(key: string): QrStyle {
 const SPEC: Record<MemberCodePurpose, { title: string; destination_type: string; style: QrStyle }> = {
   connect: { title: 'My personal code', destination_type: 'url', style: { ...DEFAULT_STYLE } },
   referral: { title: 'Invite to Frequency', destination_type: 'action', style: preset('forest') },
-  gift_zap: { title: 'Gift me a zap', destination_type: 'action', style: preset('midnight') },
+  gift_zap: { title: 'Gift me a Zap', destination_type: 'action', style: preset('midnight') },
 }
 
 /** Return the member's personal codes (currently just `connect`), creating any that don't exist yet. */

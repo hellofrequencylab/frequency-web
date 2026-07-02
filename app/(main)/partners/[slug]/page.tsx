@@ -108,7 +108,7 @@ export default async function PartnerPage({
             >
               scan their code
             </Link>{' '}
-            in person to claim an offer and earn zaps.
+            in person to claim an offer and earn Zaps.
           </p>
         </div>
       </DetailTemplate>

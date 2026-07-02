@@ -52,7 +52,11 @@ export async function enqueue(
   payload: Record<string, unknown>,
   opts?: { runAfter?: Date; maxAttempts?: number },
 ): Promise<void> {
-  await db()
+  // Callers treat enqueue as durable (the whole point of the outbox is that a
+  // provider outage can't drop the side-effect). supabase-js returns { error }
+  // rather than throwing, so an unchecked failure would silently lose the job with
+  // no log, no retry, no dead-letter. Throw so the caller sees the failure.
+  const { error } = await db()
     .from('notification_queue')
     .insert({
       kind,
@@ -60,6 +64,7 @@ export async function enqueue(
       run_after: (opts?.runAfter ?? new Date()).toISOString(),
       max_attempts: opts?.maxAttempts ?? 5,
     })
+  if (error) throw new Error(`enqueue(${kind}) failed: ${error.message}`)
 }
 
 /**

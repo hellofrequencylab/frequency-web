@@ -154,12 +154,15 @@ features — leave them blank otherwise.
 ```bash
 pnpm exec tsc --noEmit   # the project's main correctness gate
 pnpm lint
-pnpm test                # Vitest unit suite (lib/**/*.test.ts)
+pnpm test                # Vitest unit suite (repo-wide co-located *.test.ts)
+pnpm check:authz         # authz contract gate (admin-client guards)
 ```
 
-Tests are a focused unit suite over the pure-logic seams (`lib/**/*.test.ts`:
-capabilities, currency, the outbox queue, suppression, webhook verification). They
-complement, not replace, `tsc --noEmit` + ESLint + manual verification. Schema source
+Tests are a repo-wide unit suite of co-located `*.test.ts` files (under `test/` and
+alongside the code they cover in `app/`, `components/`, and `lib/` — capabilities,
+currency, the outbox queue, suppression, webhook verification, and more). They
+complement, not replace, `tsc --noEmit` + ESLint + `pnpm check:authz` + manual
+verification. Schema source
 of truth is `supabase/migrations/`; see [ARCHITECTURE](docs/ARCHITECTURE.md) for the
 **authorization model you must follow** (the admin client bypasses RLS — authz is
 enforced in application code today, converging on RLS + RPCs per the strategy).
@@ -190,12 +193,13 @@ team-grade setup) lives in [docs/WORKFLOW.md](docs/WORKFLOW.md).
 
 ## How we work the phases
 
-1. Pick the current phase in [BUILD-PHASES](docs/BUILD-PHASES.md).
-2. Each phase lists workstreams as `[ ]` items with a **definition of done** and
-   the **strategy doc that governs it**.
-3. Update the checkbox state in the same PR that lands the work (the repo file is
-   the source of truth — same convention as `ROADMAP.md`).
-4. Don't start a phase whose **dependencies** (listed per phase) aren't met.
+1. Start at [DEVELOPMENT-MAP](docs/DEVELOPMENT-MAP.md) for where we are and what's
+   built; take the ordered "what to build next" from
+   [BUILD-SEQUENCE](docs/BUILD-SEQUENCE.md). (`BUILD-PHASES.md` is superseded history.)
+2. Each work item lists a **definition of done** and the **strategy doc that governs it**.
+3. Update status in the same PR that lands the work (the repo file is the source of
+   truth — same convention as `ROADMAP.md`).
+4. Don't start work whose **dependencies** aren't met.
 
 ---
 

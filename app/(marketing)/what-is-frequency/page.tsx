@@ -26,7 +26,7 @@ export const revalidate = 3600
 
 const TITLE = 'What is Frequency?'
 const DESCRIPTION =
-  'Frequency is a movement to rebuild the third place: it connects neighborhoods into real-world community through small local Circles, nearby Events, and a physical space to gather. Here is what it is, how it works, and why it exists.'
+  "Frequency rebuilds the third place: small local Circles, nearby Events, and a physical space to gather, connecting neighborhoods into real-world community. Here's what it is, how it works, and why it exists."
 
 // The hero photo, fed to the Article schema for richer-result eligibility.
 const HERO_IMAGE = '/images/site/community-1.jpg'

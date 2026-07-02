@@ -1,12 +1,19 @@
 # Space Modes — type-as-operating-mode plan (roles surface + settings + marketing focus)
 
+> **Note (2026-07-01, ADR-491).** `lib/spaces/blueprints.ts` and the four-template layer
+> (`lib/spaces/templates.ts`) have been DELETED. The public Space profile is now
+> operator-composed feature-block pages; the surviving per-type defaults (accent / primary-CTA
+> label / hero stat set / provisionable types) live in `lib/spaces/profile-config.ts`, and the
+> `ModeProfile` dropped its unused `blueprint` field. Read the "blueprint" references below as
+> `lib/spaces/profile-config.ts`.
+
 > **The answer, first.** Now that practitioner / coach / business / studio all bill on the one **Pro**
 > plan, the old `spaces.type` stops being a price tier and becomes an **operating Mode**: a preset layer
 > that decides which Pro modules lead, the default settings, the CRM pipeline, the lexicon, the
 > onboarding, and the recommended add-ons, **without changing what the Space pays for**. A Mode never
 > gates a feature (every Pro Space can use every module); it only decides what is surfaced first and how
-> it is framed. This is a data-driven extension of the blueprint pattern already in
-> [`lib/spaces/blueprints.ts`](../lib/spaces/blueprints.ts), pushed from the public profile onto the
+> it is framed. This is a data-driven extension of the per-type defaults already in
+> [`lib/spaces/profile-config.ts`](../lib/spaces/profile-config.ts), pushed from the public profile onto the
 > operator console. Decision: ADR-461. Implementation folds into Phase C (the role surface + settings)
 > and Phase F (marketing + the pricing table) of [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md).
 
@@ -62,7 +69,7 @@ existing `RoleBlueprint`. Everything below is a **default or an emphasis**, neve
 | **Default CRM pipeline + stages** | Lead → Discovery call → Package sold → Active → Renewal | Lead → Cart → Purchased → Repeat → Lapsed |
 | **Lexicon / labels** | clients, packages, sessions | customers, products, orders |
 | **Onboarding + starter templates** | seed a sample package + a booking type | seed a sample product + a storefront section |
-| **Public profile blueprint** | (reuse `blueprints.ts` coaching) tabs/CTA/hero stats | (reuse business) |
+| **Public profile defaults** | (reuse `profile-config.ts` coaching) accent/CTA/hero stats | (reuse business) |
 | **Dashboard widgets + next-best-actions** | "fill your calendar", "renew a client" | "list a product", "recover a cart" |
 | **Recommended add-ons** (suggested, not auto-on) | AI Engine + Marketing | Marketing + Branding |
 
@@ -169,7 +176,7 @@ anchor, and the grandfather note (ADR-458 §1a) render on the same page. Fully s
 
 | Step | Scope | Migration | Lands in |
 |---|---|---|---|
-| **M1 · Mode registry** | `lib/spaces/modes.ts` (ModeProfile per type+variant), pure + unit-tested; align with `blueprints.ts` | no | Phase C |
+| **M1 · Mode registry** | `lib/spaces/modes.ts` (ModeProfile per type+variant), pure + unit-tested; align with `profile-config.ts` | no | Phase C |
 | **M2 · Data** | `spaces.mode_variant` (+ `spaces.preferences` if needed); default resolver | yes (file, hand-review) | Phase C |
 | **M3 · Surface** | create wizard "what do you run?", console Mode settings page + switcher + overrides, console nav/dashboard/CRM read the ModeProfile; bring coaching onto the console | no | Phase C |
 | **M4 · Onboarding** | per-Mode starter templates + CRM pipeline seed | no | Phase C / G3 |
@@ -182,6 +189,6 @@ pricing-table steps (M5/M6) ride with Phase F so the copy and the live prices sh
 ---
 
 *Owner: Daniel (Vision Steward). Created 2026-06-30. Source of truth for the Space Modes rework;
-companion to [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) (ADR-458) and the profile blueprints
-([`lib/spaces/blueprints.ts`](../lib/spaces/blueprints.ts)). Decision: ADR-461. Notion strategy pages
+companion to [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md) (ADR-458) and the profile per-type defaults
+([`lib/spaces/profile-config.ts`](../lib/spaces/profile-config.ts)). Decision: ADR-461. Notion strategy pages
 (Pricing & Value Ladder, Role & Permissions) link here.*

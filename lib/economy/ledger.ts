@@ -157,7 +157,7 @@ const LEDGER_LABELS: Record<string, string> = {
   achievement: 'Achievement unlocked',
   challenge_complete: 'Completed a season challenge',
   quest_complete: 'Quest progress',
-  season_convert: 'Season zaps converted to gems',
+  season_convert: 'Season Zaps converted to Gems',
   // Zaps — real-life / outreach
   circle_start: 'Founded a circle',
   event_host: 'Hosted an event',
@@ -174,15 +174,15 @@ const LEDGER_LABELS: Record<string, string> = {
   practice_logged_heavy: 'Logged a heavy practice',
   practice_claim: 'Claimed a practice',
   node_capture: 'Captured a node out in the world',
-  gift_zap: 'Received a zap',
+  gift_zap: 'Received a Zap',
   program_run: 'Ran a program',
   entry_point_created: 'Set up an entry point',
   streak_milestone: 'Streak milestone',
   journey_bonus: 'Journey bonus',
   journey_reward: 'Journey reward',
-  co_op_pulse: 'Co-op Pulse with your circle',
+  co_op_pulse: 'Practiced together with your circle (legacy bonus)',
   welcome_back: 'Welcome back',
-  practice_full_cycle: 'Full Cycle — 13 weeks on one practice',
+  practice_full_cycle: '13 weeks on one practice (legacy)',
   manual: 'Adjustment',
 }
 

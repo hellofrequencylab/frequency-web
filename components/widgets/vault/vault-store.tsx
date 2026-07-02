@@ -12,7 +12,7 @@ const CATEGORIES = [
   { key: 'cosmetic', label: 'Profile Cosmetics', desc: 'Borders, flair icons, and visual upgrades' },
   { key: 'title', label: 'Custom Titles', desc: 'Display a special title on your profile' },
   { key: 'collectible', label: 'Collectible Badges', desc: 'Exclusive badges for your collection' },
-  { key: 'membership', label: 'Membership Credits', desc: 'Redeem gems for free membership months' },
+  { key: 'membership', label: 'Membership Credits', desc: 'Redeem Gems for free membership months' },
 ] as const
 
 export async function VaultStore() {

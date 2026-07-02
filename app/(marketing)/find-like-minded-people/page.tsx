@@ -67,7 +67,7 @@ const FAQ = [
   },
   {
     q: 'How do I find my tribe or my people as an adult?',
-    a: 'Stop trying to find a whole tribe and find one small recurring room first. The phrase "my people" makes it sound like a crowd you discover all at once, but in practice it is built one repeated face at a time. Pick a thing you care about, become a regular where it happens, and let two or three real connections form. A tribe is just enough of those, stacked up over months.',
+    a: 'Stop trying to find a whole tribe and find one small recurring room first. The phrase "my people" makes it sound like a crowd you discover all at once, but in practice it is built one repeated face at a time. Pick a thing you care about, become a regular where it happens, and let two or three real connections form. Your people are just enough of those, stacked up over months.',
   },
   {
     q: 'Why does it feel like nobody gets me?',

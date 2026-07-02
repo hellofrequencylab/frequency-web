@@ -153,7 +153,7 @@ function AwardsCollection({
                           {!a.earned && a.zaps_reward > 0 && !isSecret && (
                             <div className="mt-1 flex items-center gap-1">
                               <Zap className="h-3 w-3 text-primary" />
-                              <span className="text-xs font-medium text-subtle">+{a.zaps_reward} zaps</span>
+                              <span className="text-xs font-medium text-subtle">+{a.zaps_reward} Zaps</span>
                             </div>
                           )}
                         </div>

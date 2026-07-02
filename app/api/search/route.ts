@@ -55,10 +55,15 @@ export async function GET(request: Request) {
       .eq('is_active', true)
       .order('display_name')
       .limit(6),
+    // The admin client bypasses RLS, so search must scope results itself: only
+    // PUBLIC posts (visibility enum is public|region|cluster|group — the others
+    // are circle/region-scoped and must not surface to arbitrary searchers) and
+    // only published, non-cancelled, public events.
     admin
       .from('posts')
       .select('id, body, created_at, is_demo, author:profiles!author_id ( display_name, handle, avatar_url )')
       .ilike('body', `%${safeQ}%`)
+      .eq('visibility', 'public')
       .is('hidden_at', null)
       .order('created_at', { ascending: false })
       .limit(6),
@@ -66,6 +71,9 @@ export async function GET(request: Request) {
       .from('events')
       .select('id, title, slug, starts_at, location, is_cancelled, is_demo')
       .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%`)
+      .eq('status', 'published')
+      .eq('visibility', 'public')
+      .eq('is_cancelled', false)
       .order('starts_at', { ascending: true })
       .limit(6),
     stewardId ? searchVisibleLeads(stewardId, q, { includeNetwork: true }) : Promise.resolve([]),

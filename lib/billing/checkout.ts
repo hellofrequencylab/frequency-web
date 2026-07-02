@@ -111,13 +111,28 @@ export async function confirmCheckout(sessionId: string, profileId: string): Pro
   if (session.payment_status !== 'paid') return null
   if ((session.metadata?.profile_id ?? session.client_reference_id) !== profileId) return null
 
-  const tier: EntitlementTier = session.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
+  // Only a member Crew/Supporter subscription grants a membership tier here. A one-time
+  // Founders payment (mode:'payment', kind:'founders') and Space subscriptions
+  // (kind:'space_plan'/'space_membership') are ALSO 'paid' sessions for this profile —
+  // without this guard, opening /settings/billing?session_id=<founders session> would
+  // flip the member to Crew for a one-time payment. Mirrors the webhook's routing.
+  if (session.mode !== 'subscription' || session.metadata?.kind) return null
+
+  // Supporter retired as a tier (ADR-458): write 'crew' + the is_supporter PWYW badge,
+  // never 'supporter' (which the membership_tier CHECK now rejects).
+  const isSupporter = session.metadata?.tier === 'supporter'
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id
-  await createAdminClient()
+  const { error } = await createAdminClient()
     .from('profiles')
-    .update({ membership_tier: tier, ...(customerId ? { stripe_customer_id: customerId } : {}) })
+    .update({
+      membership_tier: 'crew',
+      ...(isSupporter ? { is_supporter: true } : {}),
+      ...(customerId ? { stripe_customer_id: customerId } : {}),
+    })
     .eq('id', profileId)
-  return tier
+  // Surface a failed entitlement write instead of returning a false "upgraded" banner.
+  if (error) throw new Error(`confirmCheckout(${profileId}) failed: ${error.message}`)
+  return 'crew'
 }
 
 /**

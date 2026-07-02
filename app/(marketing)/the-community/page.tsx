@@ -59,7 +59,7 @@ const CHANNELS = [
   {
     icon: Brain,
     title: 'Mind',
-    body: 'Meditation, breathwork, learning, the quiet practices that settle a nervous system and sharpen a life.',
+    body: 'Meditation, breathwork, learning. The quiet practices that help you switch off and sharpen a life.',
   },
   {
     icon: HeartPulse,
