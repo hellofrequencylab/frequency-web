@@ -165,9 +165,10 @@ export default async function SpaceBillingPage({
           />
         </fieldset>
 
-        {/* Nonprofit and Organization run on the legacy plan ladder (all-inclusive, not the Pro
-            loadout). The picker covers them; the Pro rows there overlap the loadout above, so this
-            reads as the other plans. */}
+        {/* Nonprofit and Organization. Their cards check out through the SAME multi-item loadout
+            checkout Pro uses (createSpaceLoadoutCheckout), so the picker gives them Pro's monthly/yearly
+            toggle, and Nonprofit (a per-seat item) a seat-count control. It reads the catalog amounts +
+            the seat floor so the shown price matches what the loadout would charge. */}
         <details className="group rounded-2xl border border-border bg-surface">
           <summary className="cursor-pointer list-none px-5 py-4 text-sm font-semibold text-text">
             Nonprofit and Organization plans
@@ -181,6 +182,8 @@ export default async function SpaceBillingPage({
                 rows={rows}
                 sellable={sellable}
                 unlocks={unlocks}
+                catalogItems={catalog.items}
+                seatFloor={Math.max(catalog.seat.bundledFloor, seatUsage.seatQuantity)}
               />
             </fieldset>
           </div>

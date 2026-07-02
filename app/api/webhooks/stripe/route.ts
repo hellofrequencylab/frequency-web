@@ -18,6 +18,7 @@ import { persistAccount } from '@/lib/billing/connect'
 import { recordTipFromSession } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
+import { recordSupporterContributionFromSession } from '@/lib/billing/supporter'
 import { recordCommerceOrderFromSession, recordCommerceRefundFromCharge } from '@/lib/commerce/checkout'
 
 export const dynamic = 'force-dynamic'
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
         const session = event.data.object as Stripe.Checkout.Session
         await recordTipFromSession(session)
         await recordTicketFromSession(session)
+        await recordSupporterContributionFromSession(session)
         await recordCommerceOrderFromSession(session)
         break
       }
