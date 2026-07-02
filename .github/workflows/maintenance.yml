@@ -76,6 +76,15 @@ jobs:
           echo "$REPORT" > advisors.txt
           echo "code=$CODE" >> "$GITHUB_OUTPUT"
 
+      # ── AI triage (Phase 4) — optional, uses the existing ANTHROPIC_API_KEY. Advises only;
+      #    never edits code. Non-fatal, so the deterministic report always ships. ──────────
+      - name: AI triage
+        if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1'
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/maintenance/sweep.mts
+
       # ── Open / update one tracking issue only when there's something to act on ──
       - name: Report to a tracking issue on delta
         if: steps.audit.outputs.code != '0' || steps.advisors.outputs.code == '1'
@@ -87,6 +96,7 @@ jobs:
             const body = [
               `Automated weekly maintenance sweep (${new Date().toISOString().slice(0,10)}). New items only — see docs/MAINTENANCE-AUTOMATION.md.`,
               '',
+              read('triage.md') && ('### Triage\n' + read('triage.md')),
               read('audit.txt') && ('### Dependency audit\n```\n' + read('audit.txt').split('\n').slice(-40).join('\n') + '\n```'),
               read('advisors.txt') && ('### Supabase advisors (new)\n' + read('advisors.txt')),
             ].filter(Boolean).join('\n')
