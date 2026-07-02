@@ -9,9 +9,7 @@ import { ROLE_LABEL, roleBadgeStyle, type RoleChipKey } from '@/lib/community-ro
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { config } from '@/lib/page-editor/config'
-import { spotlightLayoutToPuck } from '@/lib/spotlight/puck/convert'
-import { linktreePreset } from '@/lib/page-editor/templates/linktree'
-import type { SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
+import { SPOTLIGHT_PUBLIC_BASE, spotlightRenderMeta, spotlightPuckDoc } from '@/lib/spotlight/puck/resolve'
 
 // THE PUBLIC SPOTLIGHT, RENDERED THROUGH PUCK (Phase 3). A Server Component: the member's
 // identity header + theme wrapper (unchanged, same look as before) wrap a <BlockRender>
@@ -30,8 +28,6 @@ import type { SpotlightRenderMeta } from '@/lib/spotlight/puck/metadata'
 // SpotlightView did; it only swaps the block body from the bespoke SpotlightBlocks renderer
 // to the shared <BlockRender>.
 
-const PUBLIC_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/avatars/`
-
 export function SpotlightPuckRender({
   data,
   showJoinCta = false,
@@ -39,30 +35,17 @@ export function SpotlightPuckRender({
   data: SpotlightData
   showJoinCta?: boolean
 }) {
-  const { profile, layout, background, theme, totalZaps, topFriends } = data
+  const { profile, background, theme } = data
   const skin = resolveProfileSkin(profile.profile_theme)
   const themeStyles = spotlightThemeStyles(theme)
   const name = profile.display_name || `@${profile.handle}`
   const region = profile.nexus_regions?.name ?? null
 
-  // The member's block body as a Puck document. An empty layout seeds the designed
-  // link-tree preset, so a brand-new (published-but-unbuilt) Spotlight still reads as an
-  // intentional page rather than a bare identity card.
-  const hasLayout = layout.blocks.length > 0
-  const puckData = hasLayout ? spotlightLayoutToPuck(layout) : linktreePreset()
-
-  // Server-resolved values the Stats + Top Friends blocks read off metadata (never stored).
-  const meta: SpotlightRenderMeta = {
-    stats: {
-      zaps: totalZaps,
-      streak: profile.current_streak,
-      gems: profile.lifetime_gems,
-      joinedYear: profile.created_at ? new Date(profile.created_at).getFullYear() : null,
-      region,
-    },
-    topFriends,
-    publicBase: PUBLIC_BASE,
-  }
+  // The member's block body + its server-resolved metadata, from the ONE shared resolver every
+  // surface uses (ADR-500 Phase C). `seedWhenEmpty` = the standalone page seeds the designed
+  // link-tree preset for a published-but-unbuilt Spotlight, so it never renders as a bare card.
+  const puckData = spotlightPuckDoc(data, { seedWhenEmpty: true })!
+  const meta = spotlightRenderMeta(data)
 
   return (
     <div data-skin={skin} className="spotlight-root relative min-h-screen bg-canvas" style={themeStyles.wrapper}>
@@ -70,7 +53,7 @@ export function SpotlightPuckRender({
         <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${PUBLIC_BASE}${background.assetPath}`}
+            src={`${SPOTLIGHT_PUBLIC_BASE}${background.assetPath}`}
             alt=""
             className="h-full w-full object-cover"
             style={{
