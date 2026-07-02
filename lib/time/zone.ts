@@ -147,8 +147,8 @@ export function formatEventWhen(
   const style = opts.style ?? 'full'
   const withZone = opts.withZone ?? true
 
-  // Which zone we render in, and which instant we format.
-  let renderTz = eventTz
+  // Which zone we render in, and which instant we format (both branches below assign).
+  let renderTz: string
   let instant: Date
   const stored = new Date(storedIso)
   if (Number.isNaN(stored.getTime())) return ''
