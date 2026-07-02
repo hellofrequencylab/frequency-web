@@ -27,6 +27,16 @@ people's lives. Dead serious about the mission, light about the delivery. The
 metric that matters is whether people come back, not whether we acquired them.
 We do not measure screen time. We measure whether you showed up Thursday.
 
+**The spirit, in one plain line: Get people together. Do things on purpose.**
+That is Frequency in seven words, and unlike the movement register (§6d) it is
+repeatable, not rationed, because it is plain, not grand. It names what we do and
+why: intentional connection. A Circle is a few friends doing life on purpose. The
+Quest is a path you choose to walk. A Practice is something you decide to do, on a
+rhythm, with other people. Use it as a rallying line, a section header, or a close,
+and let it sit next to the concrete proof rather than carry a page alone. Keep it
+plain and never dress it up: the second it becomes "gather to manifest your
+purpose," it is dead.
+
 The big frame (used RARELY, see Section 6): this is a movement of community
 connection. We never call ourselves a revolution in routine copy. The work says
 it; the copy doesn't.
@@ -163,6 +173,9 @@ allowed inside pages. The surface always passes the skeptic test.
   as canonized
 - Sensory outcomes: "your jaw unclenches," "your shoulders drop"
 - The reader's own pain language (Section 2a/2b verbatim phrases)
+- The spirit line and its parts (§1): "get people together," "do things on
+  purpose," "on purpose," "doing life on purpose." A Circle is friends doing life
+  on purpose. Repeatable because it stays plain, so keep it plain.
 
 ### 5b. Avoid: vibe-verbs and narrated feelings
 feel the current · tap into · drop into · sink into · tune into yourself · lean
