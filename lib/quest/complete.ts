@@ -14,7 +14,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCurrentSeason } from '@/lib/seasons'
-import { awardZapsForAction } from '@/lib/zaps'
+import { awardZapsForAction, type ZapAction } from '@/lib/zaps'
 import { awardGems } from '@/lib/gems'
 import { higherRank, rankForCompletion, type SeasonRank } from '@/lib/season-ranks'
 import { journeysFinishedThisSeason } from '@/lib/quest/completion-read'
@@ -126,6 +126,37 @@ async function grantGemsOnce(
   return true
 }
 
+/** Claim-then-pay Zap grant (mirrors grantGemsOnce / lib/rewards/creation.ts): the unique
+ *  (rule_key, profile_id) reward_grants insert is the lock; only a fresh claim writes the zap
+ *  ledger, so a redelivered/concurrent completion never double-pays. Because the claim is
+ *  DECOUPLED from the journey_completions lock, a crash AFTER the completion row lands but
+ *  BEFORE the award is recoverable — a later call re-claims and pays (C5). `amount` is the
+ *  nominal purse recorded on the grant row; the authoritative value lands in zap_transactions
+ *  via awardZapsForAction, which reads the live zap_config. */
+async function grantZapsOnce(
+  admin: ReturnType<typeof createAdminClient>,
+  ruleKey: string,
+  profileId: string,
+  action: ZapAction,
+  amount: number,
+  label: string,
+): Promise<boolean> {
+  if (amount <= 0) return false
+  const { error } = await admin
+    .from('reward_grants')
+    .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'zaps', amount, detail: label })
+  if (error) return false // already granted / lost the race
+  // The claim is the lock, but the ZAPS must actually land. If the award fails (a transient
+  // ledger error, or an inactive zap_config row → awarded:false), release the claim so a retry
+  // can re-pay — otherwise the lock is permanent and the purse is never credited (claimed-but-unpaid).
+  const res = await awardZapsForAction(profileId, action)
+  if (!res.awarded) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return false
+  }
+  return true
+}
+
 /**
  * Try to complete a Journey for a member. Re-checks eligibility, writes the
  * journey_completions row exactly once, advances rank, and pays the Zap + Gem
@@ -144,6 +175,11 @@ export async function tryCompleteJourney(
 
     const admin = createAdminClient()
 
+    // The +75 Zap purse rides its OWN reward_grants claim (below), decoupled from the
+    // journey_completions lock — a crash after the completion row but before the award is
+    // recoverable on any later call. rule_key is per (member, journey, season) (C5).
+    const zapPurseKey = `journey.finish.zaps:${profileId}:${journeyId}:${season}`
+
     // The Trophy + the lock. Insert the canonical completion row; the unique
     // (profile_id, journey_id, season) constraint makes a redelivery a no-op. Only a
     // row we actually inserted (returned id) is a fresh completion worth paying.
@@ -159,8 +195,13 @@ export async function tryCompleteJourney(
       console.error('[tryCompleteJourney] insert', insertErr.message)
       return { completed: false }
     }
-    // ignoreDuplicates → zero rows returned when the completion already existed.
+    // ignoreDuplicates → zero rows returned when the completion already existed. The Trophy +
+    // lock are in place, but the ORIGINAL call may have crashed after the row landed and before
+    // the +75 Zap purse was paid (C5). The purse carries its own reward_grants claim, so
+    // re-attempt it here: it re-pays a claimed-but-unlanded purse and is a cheap unique-conflict
+    // no-op once already paid. The OTHER finish rewards stay gated on the fresh insert below.
     if (!inserted || inserted.length === 0) {
+      await grantZapsOnce(admin, zapPurseKey, profileId, 'journey_finished', QUEST.JOURNEY_FINISH_ZAPS, 'Journey finished')
       return { completed: false, alreadyDone: true }
     }
 
@@ -193,8 +234,10 @@ export async function tryCompleteJourney(
         .eq('id', profileId)
     }
 
-    // +75 Zaps (the finish purse). Reads zap_config, falls back to ZAP_AMOUNTS.
-    await awardZapsForAction(profileId, 'journey_finished')
+    // +75 Zaps (the finish purse). Claim-then-pay through reward_grants (C5) so the purse
+    // survives a redelivery/crash between the completion row and the award. Reads the live
+    // amount from zap_config; the grant row records the canonical purse for the Vault log.
+    await grantZapsOnce(admin, zapPurseKey, profileId, 'journey_finished', QUEST.JOURNEY_FINISH_ZAPS, 'Journey finished')
 
     // Escalating Gem bonus by the new rank reached, granted idempotently.
     const bonus = QUEST.JOURNEY_GEM_BONUS[newRank] ?? 0

@@ -28,7 +28,7 @@ the unit suite.
 
 | Area | State |
 |---|---|
-| Build / lint / tests | ✅ `pnpm build` compiles, lint clean, 3,267 tests pass |
+| Build / lint / tests | ✅ `pnpm build` compiles, lint clean, 3,313 tests pass |
 | Supabase migrations | ✅ all repo migrations applied to prod; zero drift |
 | Supabase advisors (initplan + unindexed FKs) | ✅ fixed + applied (`auth_rls_initplan` 6→0, unindexed FKs 13→0) |
 | Timezones (LA home, per-event zones, member location) | ✅ shipped |
@@ -67,10 +67,15 @@ the unit suite.
 - ✅ ~~**Reminder send-window offset**~~ — FIXED: the cron now widens the raw-`starts_at`
   band by ±14h and filters in code by `eventInstant(starts_at, time_zone)`, so reminders fire
   at the event's real instant regardless of its zone.
-- **Stripe/economy races** (need atomic RPCs): ticket oversell reservation
-  (`lib/billing/tickets.ts`), gem daily-cap count-then-insert (`lib/gems.ts`), notification
-  queue claim (`lib/queue/outbox.ts`, SKIP LOCKED), challenge/streak read-modify-write
-  (`lib/achievements.ts`), journey-finish Zap purse claim (`lib/quest/complete.ts`).
+- **Stripe/economy races** (need atomic RPCs):
+  - ✅ ~~gem daily-cap count-then-insert (`lib/gems.ts`)~~ — `award_gems_atomic` (C1, shipped).
+  - ✅ ~~ticket oversell reservation (`lib/billing/tickets.ts`)~~ — `reserve_ticket_atomic` (C2, shipped).
+  - ✅ ~~notification queue claim (`lib/queue/outbox.ts`, SKIP LOCKED)~~ — `claim_outbox_jobs` (C3, #1418).
+  - ✅ ~~challenge/streak read-modify-write (`lib/achievements.ts`)~~ — `advance_challenge_progress` +
+    `record_streak_tick` (C4, #1420); closes challenge purse double-pay + streak lost-increment.
+  - ✅ ~~journey-finish Zap purse claim (`lib/quest/complete.ts`)~~ — C5: purse rides its own
+    claim-then-pay `reward_grants` row, recovered on the alreadyDone path so a crash between the
+    completion row and the award self-heals. No migration (reuses the existing unique constraint).
 - **Stripe subscription event ordering**: a delayed `subscription.updated` re-grants a
   canceled tier; compare `event.created` / fetch the live sub before writing.
 
