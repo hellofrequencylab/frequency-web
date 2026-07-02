@@ -15,10 +15,8 @@ import {
   type StewardRole,
   type StewardState,
   type StewardshipEdge,
-  deriveCommunityLevel,
   leadsScope,
 } from '@/lib/core/stewardship'
-import type { CommunityRole } from '@/lib/core/roles'
 
 export type {
   CommunityLevel,
@@ -56,15 +54,6 @@ export async function getStewardships(profileId: string): Promise<StewardshipEdg
       scopeId: r.scope_id,
       state: r.state,
     }))
-}
-
-/** A profile's derived global Community level — the live recompute of the cache. Pass the
- *  profile's `community_role` as the floor so a legacy global rank never regresses. */
-export async function getCommunityLevel(
-  profileId: string,
-  floorRole: CommunityRole | null | undefined = 'member',
-): Promise<CommunityLevel> {
-  return deriveCommunityLevel(await getStewardships(profileId), floorRole)
 }
 
 /** Does this profile lead the given scope (hold an active edge on it)? The scoped-edge

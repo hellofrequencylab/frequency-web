@@ -9,21 +9,6 @@
 
 import { sanitizeProps } from './track'
 
-/** The signals the client auto-captures + explicit ones. Documentation, not a gate —
- *  any safe slug is accepted, so adding a kind is a one-line client call. */
-export const KNOWN_INTERACTION_KINDS = [
-  'view',        // entered a surface (route)
-  'dwell',       // left a surface — props.ms = time on it
-  'scroll',      // hit a scroll-depth milestone — props.pct
-  'click',       // clicked an instrumented element — props.target
-  'rage_click',  // rapid repeated clicks on one spot — props.count
-  'search',      // ran a search — props.scope, props.q_len
-  'zero_result', // a search returned nothing — props.scope
-  'abandon',     // started then left a form/flow — props.form
-  'visibility',  // tab hidden/shown — props.state
-  'custom',      // explicit observe() with props.name
-] as const
-
 /** Max events accepted per batch POST (a flush). Bounds payload + insert size. */
 export const MAX_BATCH = 50
 

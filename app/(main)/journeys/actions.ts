@@ -5,9 +5,6 @@ import { redirect } from 'next/navigation'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import {
-  createPlan,
-  addItem,
-  updateItem,
   updatePlan,
   publishPlan,
   setPlanVisibility,
@@ -17,9 +14,6 @@ import {
   adoptPlan,
   forkPlan,
   duplicatePlan,
-  addBlock,
-  updateBlock,
-  removeBlock,
   planAuthorId,
   planMeta,
   applyVeraReview,
@@ -111,28 +105,6 @@ export async function duplicateJourney(planId: string): Promise<ActionResult<{ s
 // These power the interactive Studio window (components/studio/journey). The
 // FormData actions above stay as the no-JS fallback. Ownership + Crew gating are
 // re-checked here (the client is never trusted).
-
-export async function createJourney(input: {
-  title: string
-  summary?: string
-  emoji?: string
-  accent?: string
-}): Promise<ActionResult<{ slug: string }>> {
-  const profileId = await getMyProfileId()
-  if (!profileId) return fail('Sign in to create a journey.')
-  const title = (input.title ?? '').trim()
-  if (!title) return fail('Give your journey a name.')
-  const plan = await createPlan({
-    authorId: profileId,
-    title,
-    summary: input.summary,
-    emoji: input.emoji,
-    accent: input.accent,
-  })
-  if (!plan) return fail('Could not create the journey. Try again.')
-  revalidatePath('/journeys', 'layout')
-  return ok({ slug: plan.slug })
-}
 
 export async function saveJourneyMeta(
   planId: string,
@@ -246,53 +218,6 @@ export async function getJourneyMeetingEvent(
     .maybeSingle()
   const e = data as { id: string; title: string; slug: string; starts_at: string | null } | null
   return ok({ event: e ? { id: e.id, title: e.title, slug: e.slug, startsAt: e.starts_at } : null })
-}
-
-export async function addPracticeToJourney(
-  planId: string,
-  practiceId: string,
-  domainId: string | null,
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  if (!practiceId) return fail('No practice given.')
-  await addItem({ planId, practiceId, domainId })
-  return ok()
-}
-
-// --- Lesson/section block authoring (ADR-244) — owner-only -------------------
-export async function addJourneyLesson(
-  planId: string,
-  input: { kind: 'lesson' | 'section'; title?: string; body?: string },
-): Promise<ActionResult<{ id: string }>> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  const id = await addBlock(planId, { blockType: input.kind, title: input.title, body: input.body })
-  return id ? ok({ id }) : fail('Could not add it.')
-}
-
-export async function updateJourneyLesson(
-  planId: string,
-  itemId: string,
-  patch: { title?: string | null; body?: string | null },
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updateBlock(itemId, patch)
-  return ok()
-}
-
-export async function removeJourneyLesson(planId: string, itemId: string): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await removeBlock(itemId)
-  return ok()
-}
-
-export async function setJourneyStep(
-  planId: string,
-  practiceId: string,
-  patch: { note?: string | null; cadence?: string | null },
-): Promise<ActionResult> {
-  if (!(await assertOwner(planId))) return fail('Not allowed.')
-  await updateItem(planId, practiceId, patch)
-  return ok()
 }
 
 /**

@@ -549,7 +549,3 @@ export function resonanceMatchCount(rawCount: number): number {
   return Math.min(999, Math.floor(rawCount))
 }
 
-/** The resonance_match_count trait for one member (the nightly edge-density cue). PURE. */
-export function computeResonanceMatchTrait(rawCount: number): ComputedTrait {
-  return { key: 'resonance_match_count', type: 'number', value: resonanceMatchCount(rawCount) }
-}

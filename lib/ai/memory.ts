@@ -106,16 +106,6 @@ export async function rememberFacts(profileId: string, incoming: Partial<MemberF
   }
 }
 
-/** Erase a member's memory entirely (the member's right; also callable by the AI
- *  core). Member-initiated erase also works via RLS on the user client. */
-export async function eraseMemberContext(profileId: string): Promise<void> {
-  try {
-    await db().from('ai_member_context').delete().eq('profile_id', profileId)
-  } catch {
-    /* best-effort */
-  }
-}
-
 // ── Summarization batch support (build-list P6 §2.3) ───────────────────────────
 
 interface ContextRow {

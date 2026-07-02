@@ -108,35 +108,6 @@ export async function switchSpaceFocus(slug: string, variant: string): Promise<A
   return ok()
 }
 
-/** Override (or clear) a function's nav LABEL on the owner's own space. An empty label CLEARS the
- *  override (back to the Mode default). Owner/admin-gated. Sparse: only a set value is stored. */
-export async function setModeLabelOverride(
-  slug: string,
-  fn: string,
-  label: string,
-): Promise<ActionResult> {
-  if (!isSpaceFunctionKey(fn)) return fail('Unknown module.')
-
-  const auth = await authorizeManager(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
-
-  const prefs = readModePreferences(auth.preferences)
-  const labels = { ...(prefs.labels ?? {}) }
-  const trimmed = label.trim()
-  if (trimmed) labels[fn as SpaceFunctionKey] = trimmed
-  else delete labels[fn as SpaceFunctionKey]
-  const next: ModePreferences = { ...prefs }
-  if (Object.keys(labels).length) next.labels = labels
-  else delete next.labels
-
-  if (!(await writeModePreferences(auth.spaceId, auth.preferences, next))) {
-    return fail('Could not save that label. Try again.')
-  }
-  revalidatePath(`/spaces/${slug}/manage/mode`)
-  revalidatePath(`/spaces/${slug}/manage`)
-  return ok()
-}
-
 /** Override (or clear) a module's nav TOGGLE on the owner's own space. `state` of true/false forces the
  *  module on/off in the nav; null CLEARS the override (back to the Mode default). FRAMING only: this never
  *  changes the capability (still gated by the entitlement engine + role ladder). Owner/admin-gated. */

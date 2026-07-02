@@ -158,16 +158,3 @@ export interface SpotlightBackground {
 
 export const EMPTY_LAYOUT: SpotlightLayout = { version: SPOTLIGHT_LAYOUT_VERSION, blocks: [] }
 
-/** The block types a member can add, in palette order, with a label for the editor. */
-export const BLOCK_PALETTE: { type: BlockType; label: string }[] = [
-  { type: 'heading', label: 'Heading' },
-  { type: 'text', label: 'Text' },
-  { type: 'links', label: 'Links' },
-  { type: 'image', label: 'Image' },
-  { type: 'gallery', label: 'Gallery' },
-  { type: 'quote', label: 'Quote' },
-  { type: 'stats', label: 'Stats' },
-  { type: 'topfriends', label: 'Top Friends' },
-  { type: 'embed', label: 'Music / Video' },
-  { type: 'divider', label: 'Divider' },
-]

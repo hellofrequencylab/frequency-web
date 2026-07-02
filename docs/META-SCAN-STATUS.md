@@ -124,9 +124,13 @@ the unit suite.
       `multiple_permissive_policies` now **0** (applied + verified + pgTAP guard).
   - ⚠️ `auth_leaked_password_protection` off — **owner action** (Supabase Dashboard → Auth → Password
     protection; not a migration). Enable "leaked password protection" (HaveIBeenPwned check).
+  - ⚠️ `auth_allow_anonymous_sign_ins` fires 147× but the code never calls `signInAnonymously`
+    (verified: 0 refs). Almost certainly **enabled-but-unused** — **owner action**: disable anonymous
+    sign-ins in Auth settings to close an unused JWT attack surface (verify first; nothing depends on it).
   - `rls_enabled_no_policy` (default-deny, informational); unused-index review now ~202 (mostly the
     FK covering indexes added in the advisor sweep — expected with no production traffic; do NOT drop
-    pre-launch, revisit once query patterns are real).
+    pre-launch, revisit once query patterns are real). `spatial_ref_sys` ERROR = PostGIS reference
+    table (documented no-action); `extension_in_public` (vector/postgis, 3) = low-risk hardening, left.
 - **Help-doc naming audit**: sweep `content/help/**` for retired member terms
   (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
 - ✅ ~~**Dependencies**: minor/patch bumps + 2 moderate transitive vulns~~ — DONE (Phase B). The
@@ -147,4 +151,36 @@ the unit suite.
   is primarily member-facing; operator copy is lower priority).
 - Docs: `docs/PAGE-EDITOR-SPEC.md` still cites a retired `/studio/pages/[slug]/edit` route.
 - Dead single-symbol exports flagged but not removed (kit API judgement calls):
-  `MapPreview`, `DeltaBadge`, `StudioSectionLabel`, `canSeeMenuCategory`, a couple stray re-exports.
+  `MapPreview`, `DeltaBadge`, `StudioSectionLabel`, `canSeeMenuCategory` — deliberately kept as
+  intended-surface API. (The rest of the dead-code surface was swept — see Final verification scan.)
+
+## Final verification scan (2026-07-02)
+
+A full re-sweep (docs / SEO / AIO / security / speed + orphan/unwired/undeveloped hunt) after the
+roadmap phases merged. Overall assessment: **~90/100 — launch-ready**, no correctness or security
+bugs surfaced. Two things shipped from it; the rest is owner config + lower-priority polish.
+
+- ✅ ~~**Dead-code sweep**~~ — DONE. Removed **45 verified zero-reference symbols** (each re-checked
+  with `rg -w` before deletion) + the orphaned `/coming-soon` page: 12 dead server actions
+  (`equipCosmetic`, `revokeInviteLink`, `createDispatch`, `archiveFunnel`, `setAvatar`, `markOneRead`,
+  `setSeatQuantity`, `setModeLabelOverride`, and the legacy `journeys/actions.ts` journey-CRUD cluster
+  superseded by `create-actions.ts`), 3 orphaned journey discovery-widget components, 14 unused
+  singletons, 12 dead types, and 1 barrel re-export (`eraseMemberContext`). Kept the intentionally
+  **staged-not-rot** work (`lib/spaces/content-actions.ts`, the `*Live` pricing/entitlement gates).
+  tsc/lint/test all green after the sweep (no test referenced the removed code — confirming dead).
+- ✅ ~~**Gift Gems had no UI**~~ — DONE. The race-safe `giftGems` → `gift_gems_atomic` backend
+  (ADR-305) was fully built but unreachable. Wired it: `searchGiftRecipients` (SEC-10-safe member
+  search) + `GiftGemsDialog` + a trigger in the Vault Store widget (outside the CrewGate, shown when
+  `canSpend && balance > 0`). Added `lib/rewards/gifts.test.ts` (the input-guard money-path contract,
+  previously untested). **Open policy note for the owner:** gifting is currently gated behind
+  `canSpend` (Crew) for UX consistency; the backend is tier-agnostic, so free-member gifting is a
+  one-line change if desired.
+- ⏳ **SEO owner step** — submit `sitemap.xml` to Google Search Console + Bing (needs domain
+  verification creds). Note: `lib/site.ts` now falls back to the production apex
+  `https://frequencylocal.com`, so canonical/OG/sitemap/JSON-LD are correct even without
+  `NEXT_PUBLIC_SITE_URL` set (the old `SEO-AEO-PLAN.md` warning about the vercel.app fallback is stale).
+- ⏳ **Still-dormant, wire before billing goes live**: `confirmSupporterContribution`
+  (`app/(main)/upgrade/actions.ts`) has no caller and no test — the PWYW supporter-contribution
+  confirm half. Intentional pre-launch (behind `billing_live`), flagged so it isn't forgotten.
+- ⏳ **Lower-priority polish** (unchanged): operator/admin em dashes, 26 raw `<img>` → `next/image` on
+  the few LCP-ish surfaces, extend JSON-LD to circle/journey detail, axe/a11y CI gate, E2E coverage.

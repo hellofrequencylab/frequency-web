@@ -67,27 +67,8 @@ export interface CircleTemplate {
   displayOrder: number
 }
 
-/** The rich content copied onto a live/draft Circle (table `circle_profiles`). */
-export interface CircleProfile {
-  circleId: string
-  pillarsInside: PillarsInside
-  meetup: CircleRhythm
-  gathering: CircleRhythm
-  thread: string | null
-  format: string | null
-  sizeLabel: string | null
-  agreements: string[]
-  recommendedJourneyPillar: PillarSlug | null
-  remixOptions: string[]
-  /** Edit-mode-only callouts that travelled in from the template. */
-  editorNotes: CircleCallout[]
-}
-
 /** Global master switch key (platform_flags) gating the whole member surface. */
 export const CIRCLE_TEMPLATES_FLAG = 'circle_templates_enabled' as const
-
-/** Fixed-UUID prefix for the seeded twelve (easy find + purge). */
-export const STARTER_CIRCLE_ID_PREFIX = 'ce110000-' as const
 
 // ── Standard guidance ────────────────────────────────────────────────
 // The baked-in best-practice instruction boxes shown in EVERY Circle builder

@@ -47,12 +47,6 @@ export const SPACE_TEMPLATES: { id: SpaceTemplateId; label: string; description:
   { id: 'header-side', label: 'Header and side', description: 'A full-width header over a main column and a side rail.' },
 ]
 
-/** Kept for the legacy 3-preset picker shape (unused by the new editor, retained so nothing else
- *  breaks if it still imports it). */
-export const LAYOUT_PRESETS: { value: LayoutPreset; label: string; tagline: string }[] = SPACE_TEMPLATES.map(
-  (t) => ({ value: t.id, label: t.label, tagline: t.description }),
-)
-
 /** True for any stored value we accept (a current template id or a legacy preset). */
 export function isLayoutPreset(v: unknown): v is LayoutPreset {
   return (

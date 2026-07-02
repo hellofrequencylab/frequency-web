@@ -205,11 +205,6 @@ export async function updateFunnel(input: UpdateFunnelInput): Promise<ActionResu
   return ok()
 }
 
-/** Archive a funnel (soft retire; status flips to archived, nothing is deleted). */
-export async function archiveFunnel(id: string): Promise<ActionResult> {
-  return updateFunnel({ id, status: 'archived' })
-}
-
 export interface StageLinkInput {
   stageId: string
   refType: string

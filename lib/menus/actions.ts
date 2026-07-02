@@ -325,20 +325,6 @@ export async function seedMenuFromDefaults(surfaceKey: MenuSurfaceKey): Promise<
   }
 }
 
-/** Materialize a surface's code defaults into real DB rows and return the freshly assembled
- *  menu. The editor calls this when it opens a surface that is still the code default (synthetic
- *  ids) or whose row is empty, so per-item edits land on REAL rows instead of synthetic default
- *  ids. Seeds via seedMenuFromDefaults (which bridges the left rail's saved order), then re-reads
- *  through getAdminMenu so the editor adopts the real, editable menu. */
-export async function materializeMenu(
-  surfaceKey: MenuSurfaceKey,
-): Promise<{ ok: true; menu: ResolvedMenu } | { ok: false; error: string }> {
-  const seeded = await seedMenuFromDefaults(surfaceKey)
-  if (!seeded.ok) return seeded
-  const menu = await getAdminMenu(surfaceKey)
-  return { ok: true, menu }
-}
-
 // ── Auto-sync new code pages into a saved menu (ADR-390) ──────────────────────
 // A saved menu is a snapshot; a nav page added in code later won't be in it. The sync
 // pass injects only GENUINELY-NEW default pages (not in the menu AND not previously

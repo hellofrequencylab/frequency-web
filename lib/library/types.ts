@@ -100,22 +100,6 @@ export type LibraryAsset = {
   updatedAt: string
 }
 
-/** A derived file off a master (`public.library_renditions`). */
-export type LibraryRendition = {
-  id: string
-  assetId: string
-  kind: LibraryRenditionKind
-  recipe: LibraryRecipe | null
-  storageBucket: string | null
-  storagePath: string | null
-  url: string | null
-  mime: string | null
-  width: number | null
-  height: number | null
-  bytes: number | null
-  createdAt: string
-}
-
 /** A point in an asset's non-destructive edit history (`public.library_versions`). */
 export type LibraryVersion = {
   id: string
@@ -141,22 +125,3 @@ export type LibraryCollection = {
   createdAt: string
 }
 
-export type LibraryCollectionItem = {
-  collectionId: string
-  assetId: string
-  sort: number
-}
-
-/** One place an asset is used (`public.library_usages`). */
-export type LibraryUsage = {
-  id: string
-  assetId: string
-  context: LibraryUsageContext
-  refId: string | null
-  blockId: string | null
-  updatedAt: string
-}
-
-/** A new asset before it has server-assigned fields. */
-export type NewLibraryAsset = Pick<LibraryAsset, 'kind' | 'title' | 'slug' | 'spaceId'> &
-  Partial<Omit<LibraryAsset, 'id' | 'createdAt' | 'updatedAt'>>
