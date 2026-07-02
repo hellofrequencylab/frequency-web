@@ -2,7 +2,8 @@ import { Suspense } from 'react'
 import { getSpaceContentData, type SpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
-import { resolveProfileLayout, type SpaceProfileContext } from '@/lib/spaces/profile-modules'
+import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
+import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 
 import { AboutBlock } from './about'
 import { HighlightsBlock } from './highlights'
@@ -54,10 +55,11 @@ export async function SpaceProfileModules({
   layout,
 }: {
   space: SpaceProfileContext
-  /** Override the derived layout (e.g. a saved block-picker order). Omitted = the fresh default. */
+  /** Override the derived layout (e.g. a caller-supplied order). Omitted = the operator's saved
+   *  block-picker layout merged over the fresh default (effectiveProfileLayout), fail-safe. */
   layout?: ProfileBlockId[]
 }) {
-  const resolved = layout ?? resolveProfileLayout(space)
+  const resolved = layout ?? effectiveProfileLayout(space, space.preferences)
 
   // ONE request-cached pass for every section's live data, with the SAME identity/profile inputs the
   // live Puck landing feeds, so the preview shows the operator's real content (not editor placeholders).

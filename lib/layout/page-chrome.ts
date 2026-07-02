@@ -324,6 +324,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   // like its sibling settings sub-pages (CRM notes, availability, memberships); this catalog entry makes
   // the route an explicitly managed surface an operator can reframe.
   { route: '/spaces/_/settings/features', label: 'Space features and access', area: 'Focus surfaces' },
+  // The block-picker Profile layout editor (Epic 1.7, S3): a centered Focus surface that composes
+  // <FocusTemplate>. Like its settings siblings it falls through to 'global' in railFor (the global rail
+  // shows beside its centered body, owner directive 2026-06-20); this catalog entry makes it an
+  // explicitly managed surface an operator can reframe.
+  { route: '/spaces/_/settings/profile', label: 'Space profile layout', area: 'Focus surfaces' },
   // The Mode and focus settings page (Space Modes M3, ADR-461/464): a centered Focus surface that
   // composes <FocusTemplate> inside the unified console. It falls through to 'global' in railFor (the
   // console manage root is full-width 'none', but its /manage/mode sub-page is a Focus form that keeps
