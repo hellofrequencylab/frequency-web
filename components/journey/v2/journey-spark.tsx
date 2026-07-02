@@ -463,7 +463,7 @@ export function JourneySpark({ templates = [] }: { templates?: JourneyTemplateMe
           <>
             {!usingOverview && <span className="px-1.5 text-border" aria-hidden>·</span>}
             <button type="button" onClick={() => setMode('manual')} className="underline-offset-4 transition-colors hover:text-muted hover:underline">
-              Skip — I&apos;ll build it myself
+              Skip, I&apos;ll build it myself
             </button>
           </>
         )}

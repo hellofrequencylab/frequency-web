@@ -72,7 +72,11 @@ export async function deleteCatalogProductAction(id: string): Promise<void> {
 /** Refund a paid order (destination charges unwind; platform charges refund normally). */
 export async function refundOrderAction(id: string): Promise<void> {
   await requireOperator()
-  await refundCommerceOrder(id)
+  // refundCommerceOrder reports failure as { error } (payments off, order not found, or a
+  // processor error) — throw so the operator sees it instead of a silent "success" that
+  // never moved money.
+  const res = await refundCommerceOrder(id)
+  if (res.error) throw new Error(res.error)
   revalidatePath('/admin/marketplace/orders')
 }
 

@@ -26,7 +26,7 @@ export function CommunityProof({
         <p className="text-sm text-muted leading-relaxed">
           The first Circles are taking root in{' '}
           <strong className="text-text">{FOUNDING_PLACE}</strong>. The founding members are
-          shaping what this becomes — come be one of them.
+          shaping what this becomes. Come be one of them.
         </p>
       </div>
     )

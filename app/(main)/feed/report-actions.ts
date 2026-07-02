@@ -6,6 +6,8 @@ import { getCallerProfile } from '@/lib/auth'
 import { logAdminAction } from '@/lib/admin/audit'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 import { atLeastRole } from '@/lib/core/roles'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
 
 type TargetType = 'post' | 'dispatch' | 'comment' | 'member' | 'event'
@@ -19,6 +21,19 @@ const MAX_REPORT_DETAILS = 2000
 
 // Role-ladder comparison — single source in lib/core/roles.
 const hasRole = atLeastRole
+
+// A moderator is a community host+ OR a staff member holding the community domain — the
+// same additive, fail-closed union the moderation page gates on
+// (requireAdmin('host', { staff: 'community' })). Without the staff arm, a platform-staff
+// moderator (community_role 'member') passed the page gate but every action returned
+// Unauthorized, so the queue buttons silently no-op. Returns the caller when authorized.
+async function resolveModerator() {
+  const caller = await getCallerProfile()
+  if (!caller) return null
+  if (hasRole(caller.community_role, 'host')) return caller
+  const staff = await getStaffMember().catch(() => null)
+  return staffCan(staff?.role, 'community', 'write') ? caller : null
+}
 
 // A moderation action must act on the SAME target the report names (site-audit SEC-3): a host
 // passing an unrelated id alongside an open report id must not be able to warn/suspend/cancel an
@@ -103,8 +118,8 @@ export async function reviewReport(
   reportId: string,
   action: 'actioned' | 'dismissed'
 ): Promise<ActionResult> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) {
+  const caller = await resolveModerator()
+  if (!caller) {
     return fail('Unauthorized')
   }
 
@@ -163,8 +178,8 @@ export async function warnMember(
   memberProfileId: string,
   reason?: string,
 ): Promise<ActionResult> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) {
+  const caller = await resolveModerator()
+  if (!caller) {
     return fail('Unauthorized')
   }
 
@@ -257,8 +272,8 @@ export async function suspendMember(
   memberProfileId: string,
   options: { reason?: string; durationDays?: number } = {},
 ): Promise<ActionResult> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) {
+  const caller = await resolveModerator()
+  if (!caller) {
     return fail('Unauthorized')
   }
 
@@ -302,8 +317,8 @@ export async function cancelEventFromReport(
   reportId: string,
   eventId: string,
 ): Promise<ActionResult> {
-  const caller = await getCallerProfile()
-  if (!caller || !hasRole(caller.community_role, 'host')) {
+  const caller = await resolveModerator()
+  if (!caller) {
     return fail('Unauthorized')
   }
 
