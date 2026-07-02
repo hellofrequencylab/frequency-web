@@ -11,7 +11,8 @@
 //   - "cohort" is internal/research framing only (member word is "Run").
 //
 // Usage: `node scripts/check-canon.mjs` (or `pnpm check:canon`). Exits non-zero on any
-// violation, printing file:line. Wire into CI's checks job once content is clean.
+// violation, printing file:line. Wired into CI's `checks` job (.github/workflows/ci.yml),
+// alongside check:authz and check:seo, so a canon regression fails the PR.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
