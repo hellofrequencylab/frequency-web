@@ -208,9 +208,8 @@ export default function HowToStartACirclePage() {
           Pick one thing, set a standing time, invite a few people, run the same
           simple format, and keep showing up. Five plain steps:
         </Lead>
-        <div className="mt-8 space-y-8">
-          <Steps steps={HOW_TO_STEPS.slice(0, 3).map((s) => ({ title: s.name, body: s.text }))} />
-          <Steps steps={HOW_TO_STEPS.slice(3).map((s) => ({ title: s.name, body: s.text }))} />
+        <div className="mt-8">
+          <Steps steps={HOW_TO_STEPS.map((s) => ({ title: s.name, body: s.text }))} />
         </div>
       </Section>
 
