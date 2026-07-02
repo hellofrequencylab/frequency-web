@@ -33,16 +33,19 @@ Legend: ✅ fixed · ⏳ open (documented) · 🔵 owner-only (dashboard/console
 - **Admin:** the four entity-settings-module saves + hubs/nexuses clients (try/catch + inline error), marketing `sendCampaign` (aborts on insert error) + campaign-composer confirm-with-audience, `bulkSetContactConsent`/`updateContactFields`, agent `approve/dismiss`, `toggleRule`, qr `updateCampaign`, `setReferralLanding`, walkthrough create/seed, loom-rail inline error.
 - **Marketplace writes** — `lib/marketplace.ts` + `market/actions.ts`: throw + surface `fail()`.
 
-## ⏳ Open — explicitly scoped remainder (needs design / a new RPC)
+## ✅ Threads closed (T)
 
-- **Messages unread + last-message under-count** — `messages/page.tsx:217-223` + `popover-actions.ts:124-129`: a shared message budget (`limit(convIds*20/10)`) lets a busy thread starve others. Needs a **newest-per-conversation window RPC** — deferred (correctness of a count, not a data risk).
-- **DM optimistic-vs-realtime dedup** — realtime IS live in prod; the optimistic bubble uses `optimistic-${Date.now()}` while the realtime row carries a uuid, so a sent DM can briefly double-render until refresh. Reconcile the optimistic id with the realtime insert.
-- **Funnel builder remove-link** — `admin/growth/funnels/[id]/builder-client.tsx:173-178`: `removeStageLink` result not checked (small; same silent-failure class).
-- **Systemic "fire-and-refresh"** — a shared `isError`+`setError` hook would close the long tail of admin toggle handlers (`inline-text.tsx`, `circles-client.tsx`, `qr-studio.tsx`, marketing `*-client` toggles) that spin without surfacing a failure.
+- ✅ **Messages unread + last-message under-count** — new window RPC `dm_conversation_summaries` (migration `20261010000000`, per-conversation LATERAL joins, `auth.uid()`-scoped, applied to prod + verified against a manual computation) replaces the shared `limit(convIds*20/10)` budget on both the inbox (`messages/page.tsx`) and the nav popover (`popover-actions.ts`) — no more busy-thread starvation.
+- ✅ **DM optimistic-vs-realtime dedup** — `components/messages/thread.tsx`: the realtime handler now replaces my own optimistic placeholder (`optimistic-*`) with the real row instead of appending, so a sent DM no longer double-renders.
+- ✅ **Funnel builder remove-link** — `admin/growth/funnels/[id]/builder-client.tsx`: `removeStageLink` result checked; failures surface inline.
 
-## Product confirm (not a bug)
+## ⏳ Open — explicitly scoped remainder
 
-- **Verification vs Zaps** — `crew/actions.ts` writes `zaps_earned` at completion regardless of `requires_verification`; `approveVerification` only stamps `verified_by`. Confirm the intended semantics.
+- **Systemic "fire-and-refresh"** — a shared `isError`+`setError` hook would close the long tail of admin toggle handlers (`inline-text.tsx`, `circles-client.tsx`, `qr-studio.tsx`, marketing `*-client` toggles) that spin without surfacing a failure. Deferred: a broad UX-polish refactor, best done as its own reviewed pass.
+
+## Product confirm — RESOLVED
+
+- ✅ **Verification vs Zaps** — decided (owner): verification GATES the Zaps. Shipped as ADR-499 (per-task, held-then-released; leader grant releases; timer/location/code auto-methods documented as follow-up). Migration `20261009000000`.
 
 ## 🔵 Owner-only (from the broader scan — dashboard/console, can't be done from code)
 

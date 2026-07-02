@@ -212,31 +212,30 @@ export default async function MessagesPage({
     }
   }
 
-  const messagesByConv: Record<string, Array<{ id: string; conversation_id: string; sender_id: string; body: string; created_at: string }>> = {}
+  // Per-conversation newest message + the caller's unread count via a window RPC. Replaces the old
+  // shared-budget fetch (limit convIds*20), where a busy thread could starve others -> a real thread
+  // showing lastMessage=null / unread=0. Untyped RPC handle (ADR-246). Fail-safe: empty on error.
+  type ConvSummary = {
+    conversation_id: string
+    last_id: string | null
+    last_body: string | null
+    last_sender: string | null
+    last_created_at: string | null
+    unread_count: number
+  }
+  const summaryByConv: Record<string, ConvSummary> = {}
   if (convIds.length > 0) {
-    const { data: recentMessages } = await supabase
-      .from('messages')
-      .select('id, conversation_id, sender_id, body, created_at')
-      .in('conversation_id', convIds)
-      .order('created_at', { ascending: false })
-      .limit(convIds.length * 20)
-
-    for (const msg of recentMessages ?? []) {
-      const cid = msg.conversation_id as string
-      if (!messagesByConv[cid]) messagesByConv[cid] = []
-      messagesByConv[cid].push(msg as { id: string; conversation_id: string; sender_id: string; body: string; created_at: string })
-    }
+    const { data: summaries } = await (supabase.rpc as unknown as (
+      fn: string,
+      args: Record<string, unknown>,
+    ) => Promise<{ data: ConvSummary[] | null; error: unknown }>)('dm_conversation_summaries', { _convs: convIds })
+    for (const s of summaries ?? []) summaryByConv[s.conversation_id] = s
   }
 
   const conversations: ConversationRow[] = (myParts ?? [])
     .map(part => {
       const cid = part.conversation_id as string
-      const msgs = messagesByConv[cid] ?? []
-      const lastMsg = msgs[0] ?? null
-      const myLastRead = myLastReadMap[cid]
-      const unreadCount = myLastRead
-        ? msgs.filter(m => m.sender_id !== myProfileId && new Date(m.created_at) > new Date(myLastRead)).length
-        : msgs.filter(m => m.sender_id !== myProfileId).length
+      const s = summaryByConv[cid]
       const conv = (part as unknown as { conversations: { id: string; created_at: string } | null }).conversations
 
       return {
@@ -244,9 +243,11 @@ export default async function MessagesPage({
         name: convNameMap[cid] ?? null,
         created_at: conv?.created_at ?? '',
         participants: otherPartMap[cid] ?? [],
-        lastMessage: lastMsg ? { body: lastMsg.body, sender_id: lastMsg.sender_id, created_at: lastMsg.created_at } : null,
-        unreadCount,
-        myLastReadAt: myLastRead ?? null,
+        lastMessage: s?.last_id
+          ? { body: s.last_body ?? '', sender_id: s.last_sender ?? '', created_at: s.last_created_at ?? '' }
+          : null,
+        unreadCount: s?.unread_count ?? 0,
+        myLastReadAt: myLastReadMap[cid] ?? null,
       }
     })
     .sort((a, b) => {
