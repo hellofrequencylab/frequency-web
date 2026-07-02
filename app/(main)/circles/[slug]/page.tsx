@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Users, MapPin } from 'lucide-react'
+import { Users, MapPin, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { leaveCircle } from '../actions'
@@ -9,7 +9,7 @@ import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { CrewGateButton } from '@/components/crew/upgrade-lightbox'
 import { CollapsibleAbout } from '@/components/circles/collapsible-about'
 import { CircleHostMenu } from '@/components/circles/circle-host-menu'
-import { EditCircleButton } from '@/components/circles/edit-circle-button'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { isPaidViewer, surfaceAccess } from '@/lib/core/viewer-hats'
 import { insightAffordance } from '@/lib/core/scoped-surface-ui'
@@ -353,7 +353,14 @@ export default async function CirclePage({
           <>
             {canManage && <CircleHostMenu circleId={circle.id} />}
 
-            {canManage && <EditCircleButton />}
+            {canManage && (
+              <OpenAdminBarButton
+                scope={{ kind: 'circle', id: circle.id }}
+                caps={Array.from(caps)}
+                label="Edit Circle"
+                icon={<Settings className="h-4 w-4" />}
+              />
+            )}
 
             {isMember && !isHost && (
               <form action={leaveCircle.bind(null, circle.id)}>

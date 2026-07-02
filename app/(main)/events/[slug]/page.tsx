@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Check, Ticket, Clock, Zap, Video, Globe, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -45,7 +45,7 @@ import { ZAP_AMOUNTS } from '@/lib/zaps'
 // modules to render (lib/events/active-event.ts), so no module re-derives the ticketing/RSVP logic.
 import { PageModules } from '@/components/widgets/page-modules'
 import { setEventContext } from '@/lib/events/active-event'
-import { EditEventButton } from '@/components/events/edit-event-button'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
@@ -1060,7 +1060,12 @@ export default async function EventDetailPage({
         actions={
           canManage ? (
             <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <EditEventButton />
+              <OpenAdminBarButton
+                scope={{ kind: 'event', id: event.id }}
+                caps={Array.from(eventCaps)}
+                label="Edit event"
+                icon={<Settings className="h-4 w-4" />}
+              />
               <Link
                 href={`/events/${event.slug}/manage`}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"

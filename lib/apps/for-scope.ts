@@ -72,8 +72,12 @@ export function appsForScope(
   ]
 }
 
-/** Whether the standardized admin bar appears for this (scope, viewer): the site-wide law is it
- *  shows iff there is at least one App to present here (docs/LOOM-PLATFORM.md §5). */
+/** Whether the standardized admin bar appears for this (scope, viewer): it shows iff the viewer has at
+ *  least one EDITOR (manage) App to act on here. Editor-only by design (docs/ADMIN-RAIL.md Phase 1):
+ *  page blocks self-gate ('none') and are placed by the layout editor, so counting them would falsely
+ *  light the bar on every content page for any signed-in viewer (the LP4-flagged hole) — excluding
+ *  them ties visibility to real manage authority. NOTE: this only corrects the helper's definition;
+ *  page-admin-bar's runtime visibility gate is switched onto it in Phase 4, not here. */
 export function showsAdminBar(scope: AdminScope | null, viewer: AppViewer): boolean {
-  return appsForScope(scope, viewer).length > 0
+  return appsForScope(scope, viewer, 'editor').length > 0
 }

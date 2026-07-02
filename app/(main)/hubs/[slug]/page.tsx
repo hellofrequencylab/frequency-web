@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, LayoutDashboard } from 'lucide-react'
+import { Users, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
-import { EditHubButton } from '@/components/hubs/edit-hub-button'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
@@ -129,7 +129,12 @@ export default async function HubPage({
         actions={
           canManage ? (
             <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <EditHubButton />
+              <OpenAdminBarButton
+                scope={{ kind: 'hub', id: hub.id }}
+                caps={Array.from(caps)}
+                label="Edit hub"
+                icon={<Settings className="h-4 w-4" />}
+              />
               <Link
                 href={`/hubs/${hub.slug}/manage`}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"

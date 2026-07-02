@@ -169,7 +169,7 @@ export default async function SpaceProfileChromeLayout({
 
   // The ONE owner affordance (Customize): the three old controls (Edit profile · Customize page · the
   // divider Settings cog) all opened the same shell settings rail, so they collapse to a single button
-  // that opens it (SpaceCustomizeButton dispatches `open-settings`). Inside the rail the core page
+  // that opens it (SpaceCustomizeButton dispatches `open-space-customize`). Inside the rail the core page
   // settings live, plus an "Edit fullscreen" button into the Puck editor. Never shown to a visitor.
   const ownerTools = (onInk = false) =>
     canSeeAsOwner ? (

@@ -19,6 +19,8 @@ import { DispatchTickerSlot } from '@/components/layout/dispatch-ticker-slot'
 import type { CommunityRole } from '@/components/sidebar/right-sidebar'
 import { getUnreadCount } from '@/app/(main)/notifications/actions'
 import { getAreaPermissions } from '@/lib/permissions'
+import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import type { Capability } from '@/lib/core/capabilities'
 import { applyViewAs, viewingAsVisitor } from '@/lib/view-as'
 import { PERSONAL_CONTEXT } from '@/lib/context/operator-context'
 import { resolveOperatorContext } from '@/lib/context/resolve-context'
@@ -233,6 +235,7 @@ export default async function MainLayout({
     previewVisitor,
     unreadCount,
     permissions,
+    globalCaps,
     realHats,
     analyticsConsent,
     [demoMode, demoHidden, hasDemoContent],
@@ -252,6 +255,10 @@ export default async function MainLayout({
     viewingAsVisitor(realRole),
     getUnreadCount().catch(() => 0),
     getAreaPermissions(),
+    // Global-scope capabilities for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1), threaded
+    // through PageAdminProvider. Per-entity caps ride the open event from each entity page; this is the
+    // route-independent set. Request-cached + fail-closed (empty set) in the resolver.
+    getGlobalCapabilities().catch((): Set<Capability> => new Set()),
     getViewerHats(),
     hasConsent(profile.id, 'analytics'),
     Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
@@ -497,6 +504,7 @@ export default async function MainLayout({
       brandLogoUrl={activeBrandLogoUrl}
       chromeOverrides={chromeOverrides}
       webRole={pageWebRole}
+      caps={previewingDown ? [] : Array.from(globalCaps)}
       profile={{ ...profile, community_role: effectiveRole }}
       realRole={realRole}
       previewVisitor={previewVisitor}
