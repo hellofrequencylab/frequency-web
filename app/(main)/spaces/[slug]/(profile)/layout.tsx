@@ -10,7 +10,9 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { readProfilePages, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readProfilePages, resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { deriveSectionNav } from '@/lib/spaces/section-anchors'
+import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
@@ -26,11 +28,12 @@ import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
 // This is the profile's ONE cohesive header for every public tab (Facebook/LinkedIn business-page
-// grammar): a full-width COVER at the top (Header or Hero size, off preferences.coverSize) → a PROFILE
-// INFO area (logo chip, the brand name as the single <h1>, type badge, tagline, then a full-width action
-// row on its own line: the primary CTA by type + Follow + Connect + owner tools) → the tab menu → a
-// hairline rule → the tab body (children). In the Hero size the identity is overlaid on the bottom of
-// the cover over a gradient that fades to the page canvas.
+// grammar): a full-width COVER at the top (Header or Hero size, off preferences.coverSize) → ONE
+// identity row (logo chip + the brand name as the single <h1> + type badge + tagline on the left; the
+// action buttons — the primary CTA by type + Follow + Connect + owner tools — pushed RIGHT on the same
+// line) → the menu row (Home + section anchors + custom pages, with the operator's Manage/CRM links
+// right-aligned) → a hairline rule → the tab body (children). In the Hero size the identity row is
+// overlaid on the bottom of the cover over a gradient scrim.
 //
 // WHY THIS IS A ROUTE-GROUP LAYOUT (the soft-nav header bug fix): the chrome used to live in the PARENT
 // [slug]/layout.tsx, which decided whether to render it by reading the request path from the
@@ -120,12 +123,15 @@ export default async function SpaceProfileChromeLayout({
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
 
   // The hero's remaining inputs are independent, so resolve them in ONE round-trip (site-audit PERF-4).
-  // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private).
-  const [caller, tagline, visibility, viewerFollows] = await Promise.all([
+  // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
+  // live sections have real rows) rides the same round-trip and is request-cached, SHARED with the page
+  // body's own content read, so the anchor menu costs no extra queries on the Home render.
+  const [caller, tagline, visibility, viewerFollows, presence] = await Promise.all([
     getCallerProfile(),
     readTagline(space.id),
     getSpaceVisibility(slug),
     viewerProfileId ? isFollowing(space.id, viewerProfileId) : Promise.resolve(false),
+    getSpaceSectionPresence(space.id, space.slug),
   ])
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
@@ -137,13 +143,29 @@ export default async function SpaceProfileChromeLayout({
   const manageHref =
     space.type === 'practitioner' || space.type === 'organization' ? `${base}/manage` : `${base}/settings`
 
-  // The nav is now OPERATOR-DEFINED (feature-block model): the ordered pages off preferences (Home +
-  // any custom pages the operator created), as {href, label} for the client tab bar (active state via
-  // usePathname, never a server signal — see SpaceProfileTabs). Home targets the profile index.
-  const tabs: SpaceProfileTab[] = readProfilePages(space.preferences).map((p) => ({
-    href: p.slug === HOME_SLUG ? base : `${base}/${p.slug}`,
-    label: p.label,
-  }))
+  // The nav is PRE-POPULATED from the page itself (feature-block model): Home, then one ANCHOR link
+  // per Home section that will actually render (derived from the Home doc + the live presence flags,
+  // so a link never scrolls to an empty spot), then any custom sub-pages the operator created. Active
+  // state stays client-side via usePathname (see SpaceProfileTabs); anchor links are never "active".
+  const pages = readProfilePages(space.preferences)
+  const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
+  const sections = deriveSectionNav(homeDoc, presence)
+  const tabs: SpaceProfileTab[] = [
+    { href: base, label: pages[0]?.label ?? 'Home' },
+    ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
+    ...pages
+      .filter((p) => p.slug !== HOME_SLUG)
+      .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
+  ]
+
+  // The OPERATOR'S back-end quick links, right-aligned on the same menu row and never shown to a
+  // visitor: the unified Manage console and (for console types) the CRM.
+  const adminTabs: SpaceProfileTab[] = canSeeAsOwner
+    ? [
+        { href: manageHref, label: 'Manage' },
+        ...(isConsoleSpaceType(space.type) ? [{ href: `${base}/crm`, label: 'CRM' }] : []),
+      ]
+    : []
 
   // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
   // page, which renders the Space's live transactional surface (booking / join / donate / enroll /
@@ -177,9 +199,10 @@ export default async function SpaceProfileChromeLayout({
     ) : null
 
   // The identity ACTION ROW: one aligned, wrapping row of same-height (`md`) buttons — the emphasized
-  // primary CTA, then Follow + Connect (secondary), then the owner tools (quietest). It sits on its OWN
-  // full-width line BELOW the name lockup at every breakpoint. `onInk` swaps the secondary/owner
-  // affordances to on-cover styling for the Hero overlay while the primary CTA stays the same accent.
+  // primary CTA, then Follow + Connect (secondary), then the owner tools (quietest). It sits RIGHT of
+  // the avatar + name lockup on the SAME line (wrapping below only when the row runs out of room).
+  // `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while the
+  // primary CTA stays the same accent.
   const identityActions = (onInk = false) => (
     <div className="flex flex-wrap items-center gap-2">
       <Link href={ctaHref} className={primaryCtaClasses}>
@@ -248,8 +271,9 @@ export default async function SpaceProfileChromeLayout({
 
   // HERO cover node: image + a legibility SCRIM anchored at the bottom (a dark `ink` gradient fading up
   // to transparent) so the overlaid on-ink identity clears the WCAG ≥4.5:1 floor on ANY cover photo,
-  // while the top of the image stays crisp. The logo chip + name + action row anchor to the bottom over
-  // the scrim. Tokens only (ink), no hardcoded hex.
+  // while the top of the image stays crisp. ONE identity row anchors to the bottom over the scrim:
+  // avatar + name on the left, the action buttons pushed RIGHT on the same line (they wrap below the
+  // lockup only when the row runs out of room). Tokens only (ink), no hardcoded hex.
   const heroScrimGradient = heroOnInk
     ? 'from-ink/80 via-ink/30 to-transparent'
     : 'from-canvas via-canvas/40 to-transparent'
@@ -258,13 +282,15 @@ export default async function SpaceProfileChromeLayout({
       {coverImage}
       <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />
       <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-        <div className="flex items-end gap-4">
-          <div className="shrink-0">
-            <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-end gap-4">
+            <div className="shrink-0">
+              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+            </div>
+            <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
           </div>
-          <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
+          <div className="pb-1">{identityActions(heroOnInk)}</div>
         </div>
-        <div className="mt-4">{identityActions(heroOnInk)}</div>
       </div>
     </div>
   )
@@ -279,23 +305,24 @@ export default async function SpaceProfileChromeLayout({
   const coverNode = isHero ? heroCoverNode : headerCoverNode
 
   // ── THE PROFILE INFO AREA (band slot) ──────────────────────────────────────────────────────────
-  // HEADER size: the logo chip overlaps the cover bottom, then the name + type badge + tagline, then a
-  // FULL-WIDTH action ROW on its own line. HERO size: the identity is already overlaid on the cover, so
-  // the info area is just the tab row. The client tab bar closes the band in both, above the divider.
+  // HEADER size: ONE identity row — the logo chip overlapping the cover bottom + the name lockup on the
+  // left, the action buttons pushed RIGHT on the same line (wrapping below only when the row runs out
+  // of room). HERO size: the identity is already overlaid on the cover, so the info area is just the
+  // menu row. The client tab bar closes the band in both, above the divider.
   const infoBand = (
     <div>
       {!isHero && (
-        <>
-          <div className="flex items-end gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div className="flex min-w-0 items-end gap-4">
             <div className="-mt-12 shrink-0 sm:-mt-14">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
             <div className="min-w-0 pb-1">{nameLockup(false)}</div>
           </div>
-          <div className="mt-5">{identityActions(false)}</div>
-        </>
+          <div className="pb-1">{identityActions(false)}</div>
+        </div>
       )}
-      <SpaceProfileTabs tabs={tabs} />
+      <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
     </div>
   )
 

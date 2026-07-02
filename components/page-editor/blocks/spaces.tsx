@@ -8,7 +8,6 @@ import { FaqList } from '@/components/marketing/marketing-ui'
 import { richParagraphs } from '@/lib/page-editor/richtext'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import {
-  Eyebrow,
   accentize,
   emphasisClasses,
   visClass,
@@ -56,6 +55,38 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
     <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-8 text-center text-sm text-muted">
       {label}
       <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
+    </div>
+  )
+}
+
+// The ANCHOR seam for the pre-populated profile menu (matches profile.tsx): each dynamic Space
+// section renders inside a <section id> the chrome's derived menu can deep-link to. `scroll-mt`
+// clears the app header on jump; `empty:hidden` collapses the wrapper on an honest-empty render.
+function AnchorSection({ anchor, children }: { anchor: string; children: React.ReactNode }) {
+  return (
+    <section id={anchor} className="scroll-mt-28 empty:hidden">
+      {children}
+    </section>
+  )
+}
+
+// The PROFILE section-title lockup (eyebrow + plain bold heading), matching profile.tsx's CardTitle.
+// These blocks render on a Space PROFILE, not a marketing landing, so the headings are calm bold
+// text, never the full-bleed display type they carried before (which towered over the page).
+function SectionTitle({ eyebrow, heading, ink, accent }: { eyebrow?: string; heading?: React.ReactNode; ink?: boolean; accent?: string }) {
+  if (!eyebrow && !heading) return null
+  return (
+    <div className="mb-6">
+      {eyebrow && (
+        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+          {eyebrow}
+        </p>
+      )}
+      {heading && (
+        <h2 className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
+          {heading}
+        </h2>
+      )}
     </div>
   )
 }
@@ -144,16 +175,7 @@ export function SpaceUpdatesBlock({
   const shown = updates.slice(0, Math.max(1, limit))
   return (
     <div>
-      {(eyebrow || heading) && (
-        <div className="mb-8">
-          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {heading && (
-            <h2 className={`font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] ${ink ? 'text-on-ink' : 'text-text'}`}>
-              {heading}
-            </h2>
-          )}
-        </div>
-      )}
+      <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       <div className="space-y-6">
         {shown.map((u) => (
           <article
@@ -226,30 +248,23 @@ export function SpaceReviewsBlock({
   const shown = reviews.latest.slice(0, Math.max(1, limit))
   return (
     <div>
-      {(eyebrow || heading) && (
-        <div className="mb-6">
-          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {heading && (
-            <h2 className={`font-display uppercase text-balance text-[clamp(1.875rem,5.5vw,3rem)] ${ink ? 'text-on-ink' : 'text-text'}`}>
-              {heading}
-            </h2>
-          )}
-        </div>
-      )}
+      <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {reviews.average !== null && (
         <div className="mb-6 flex items-center gap-3">
-          <span className={`font-display text-4xl ${ink ? 'text-on-ink' : 'text-text'}`}>{reviews.average.toFixed(1)}</span>
+          <span className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
+            {reviews.average.toFixed(1)}
+          </span>
           <Stars rating={reviews.average} ink={ink} />
           <span className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
             {reviews.count === 1 ? '1 review' : `${reviews.count} reviews`}
           </span>
         </div>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {shown.map((r) => (
           <article
             key={r.id}
-            className={`rounded-2xl border p-5 ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface'}`}
+            className={`rounded-2xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
           >
             <Stars rating={r.rating} ink={ink} />
             {r.body && (
@@ -283,20 +298,11 @@ export function SpaceFaqBlock({
   emphasis?: EmphasisValue
 }) {
   if (faqs.length === 0) return null
-  const { scale, accent } = emphasisClasses(emphasis)
+  const { accent } = emphasisClasses(emphasis)
   const items = faqs.map((f) => ({ q: f.question, a: richParagraphs(f.answer) }))
   return (
     <div>
-      {(eyebrow || heading) && (
-        <div className="mb-8">
-          {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}
-          {heading && (
-            <h2 className={`font-display uppercase text-balance ${scale} ${accent || (ink ? 'text-on-ink' : 'text-text')}`}>
-              {heading}
-            </h2>
-          )}
-        </div>
-      )}
+      <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} accent={accent} />
       <FaqList items={items} />
     </div>
   )
@@ -373,13 +379,15 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     render: ({ eyebrow, heading, limit, viewAllHref, puck }) => {
       const d = spaceFrom(puck)
       return d ? (
-        <SpaceUpdatesBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          updates={d.updates}
-          limit={Number(limit) || 3}
-          viewAllHref={(viewAllHref as string) || undefined}
-        />
+        <AnchorSection anchor="updates">
+          <SpaceUpdatesBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            updates={d.updates}
+            limit={Number(limit) || 3}
+            viewAllHref={(viewAllHref as string) || undefined}
+          />
+        </AnchorSection>
       ) : (
         <EditorStub label="Space updates" hint="Your published updates show on the live page" />
       )
@@ -409,12 +417,14 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     render: ({ eyebrow, heading, limit, puck }) => {
       const d = spaceFrom(puck)
       return d ? (
-        <SpaceReviewsBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          reviews={d.reviews}
-          limit={Number(limit) || 4}
-        />
+        <AnchorSection anchor="reviews">
+          <SpaceReviewsBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            reviews={d.reviews}
+            limit={Number(limit) || 4}
+          />
+        </AnchorSection>
       ) : (
         <EditorStub label="Space reviews" hint="Member reviews show on the live page" />
       )
@@ -438,12 +448,14 @@ export const spacesComponents: Record<string, ComponentConfig> = {
     render: ({ eyebrow, heading, titleAccent, emphasis, puck }) => {
       const d = spaceFrom(puck)
       return d ? (
-        <SpaceFaqBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={heading ? accentize(heading as string, titleAccent as string) : undefined}
-          faqs={d.faqs}
-          emphasis={emphasis as EmphasisValue}
-        />
+        <AnchorSection anchor="faq">
+          <SpaceFaqBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={heading ? accentize(heading as string, titleAccent as string) : undefined}
+            faqs={d.faqs}
+            emphasis={emphasis as EmphasisValue}
+          />
+        </AnchorSection>
       ) : (
         <EditorStub label="Space FAQ" hint="Your questions show on the live page" />
       )

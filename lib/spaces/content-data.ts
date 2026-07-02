@@ -18,8 +18,10 @@
 // ONLY server path the blocks read through -- the block components themselves import nothing
 // server-only, so the shared Puck config stays client-safe (the classic build trap).
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
+import type { SectionPresence } from '@/lib/spaces/section-anchors'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
@@ -296,26 +298,50 @@ export interface SpaceContentInput {
   slug?: string
 }
 
-/** Assemble every Space content block's data in one pass. The three content reads (updates / reviews
- *  / faqs) plus, when `input` is given (Phase 4), the shared identity + the live highlight counts.
- *  Injected into <Render> as `metadata.space`. FAIL-SAFE throughout: any miss yields empty, so the
- *  landing never throws; the highlight resolve degrades to [] on any error. */
+/** ONE request-cached round of every live content read for a Space, keyed on (spaceId, slug). The
+ *  profile LAYOUT (which derives the anchor menu from what will actually render) and the page BODY
+ *  (which injects the same rows into the blocks) both read through here, so the two never disagree
+ *  AND the queries run once per request. React.cache: per-request, primitive-keyed. */
+const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) => {
+  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community] = await Promise.all([
+    getSpaceUpdates(spaceId),
+    getSpaceReviews(spaceId),
+    getSpaceFaqs(spaceId),
+    getSpaceHighlights(spaceId),
+    getSpaceStats(spaceId),
+    getSpaceUpcomingEvents(spaceId),
+    getSpaceBookingInfo(spaceId, slug),
+    getSpacePractices(spaceId),
+    getSpaceCommunity(spaceId),
+  ])
+  return { updates, reviews, faqs, highlights, stats, events, booking, practices, community }
+})
+
+/** Which live sections currently have real rows, for the pre-populated anchor menu (the chrome shows
+ *  an anchor only when its section will render). Shares the ONE cached read with the page body. */
+export async function getSpaceSectionPresence(spaceId: string, slug: string | null): Promise<SectionPresence> {
+  const c = await getSpaceLiveContent(spaceId, slug)
+  return {
+    booking: c.booking.enabled && !!c.booking.href,
+    events: c.events.length > 0,
+    reviews: c.reviews.count > 0,
+    faqs: c.faqs.length > 0,
+    updates: c.updates.length > 0,
+    practices: c.practices.practices.length + c.practices.journeys.length > 0,
+    community: c.community.length > 0,
+  }
+}
+
+/** Assemble every Space content block's data in one pass (through the request-cached live read), plus,
+ *  when `input` is given (Phase 4), the shared identity. Injected into <Render> as `metadata.space`.
+ *  FAIL-SAFE throughout: any miss yields empty, so the landing never throws. */
 export async function getSpaceContentData(
   spaceId: string,
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community] = await Promise.all([
-    getSpaceUpdates(spaceId),
-    getSpaceReviews(spaceId),
-    getSpaceFaqs(spaceId),
-    input ? getSpaceHighlights(spaceId) : Promise.resolve([]),
-    input ? getSpaceStats(spaceId) : Promise.resolve([]),
-    input ? getSpaceUpcomingEvents(spaceId) : Promise.resolve([]),
-    input ? getSpaceBookingInfo(spaceId, slug) : Promise.resolve<SpaceBookingInfo>({ enabled: false, href: null }),
-    input ? getSpacePractices(spaceId) : Promise.resolve<SpacePracticesData>({ practices: [], journeys: [] }),
-    input ? getSpaceCommunity(spaceId) : Promise.resolve<SpaceCircleItem[]>([]),
-  ])
+  const { updates, reviews, faqs, highlights, stats, events, booking, practices, community } =
+    await getSpaceLiveContent(spaceId, slug)
   const identity: SpaceIdentity | undefined = input
     ? {
         name: input.name,
