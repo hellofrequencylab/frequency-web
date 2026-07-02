@@ -1890,7 +1890,10 @@ export default function AppShell({
               {/* A full-viewport editor takeover drops the page padding + breadcrumbs so the editor
                   (its own top bar / thumb-zone dock) fills the column edge to edge. */}
               <main className={`flex-1 min-w-0 ${edgeToEdge ? '' : 'py-6'}`} data-tour-anchor="content">
-                {!edgeToEdge && <Breadcrumbs />}
+                {/* A Space route (/spaces/<slug>/...) renders its OWN brand-aware breadcrumb inside the
+                    Space layout (components/spaces/space-breadcrumbs), so the generic slug-only one is
+                    suppressed there to avoid a doubled, lower-fidelity trail. */}
+                {!edgeToEdge && !/^\/spaces\/[^/]+/.test(pathname) && <Breadcrumbs />}
                 {children}
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />

@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import {
   functionsForType,
@@ -77,7 +76,6 @@ export default async function SpaceFeaturesPage({
       eyebrow={brandName}
       title="Features and access"
       description="Turn the tools this space uses on or off, and set who on your team can use each one."
-      back={{ href: spaceManageHref(space.type, space.slug), label: `Manage ${brandName}` }}
     >
       {access.staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 

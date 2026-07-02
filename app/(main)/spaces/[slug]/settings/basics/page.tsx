@@ -3,7 +3,6 @@ import { FocusTemplate } from '@/components/templates'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { spaceManageHref } from '@/lib/spaces/types'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -95,7 +94,6 @@ export default async function SpaceBasicsPage({
       eyebrow={brandName}
       title="Basics"
       description="Your space's name, brand, about, and who can find it. Changes show up on your space page."
-      back={{ href: spaceManageHref(space.type, space.slug), label: brandName }}
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
