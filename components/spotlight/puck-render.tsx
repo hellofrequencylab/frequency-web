@@ -84,11 +84,13 @@ export function SpotlightPuckRender({
         <main className="mx-auto max-w-xl px-4 pb-16">
           {theme.header.show && profile.header_image_url ? (
             <div className="relative -mx-4 overflow-hidden sm:rounded-b-3xl" style={{ height: theme.header.height }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={profile.header_image_url}
                 alt=""
-                className="h-full w-full object-cover"
+                fill
+                priority
+                sizes="(max-width: 640px) 100vw, 608px"
+                className="object-cover"
                 style={{ objectPosition: `50% ${theme.header.focusY}%` }}
               />
             </div>

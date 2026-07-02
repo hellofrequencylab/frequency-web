@@ -102,7 +102,7 @@ and declares left-bar **categories**. Accent words use a `title` + optional
 ## 5. Editor (Studio, admin-only)
 
 - `/studio/pages`: list the 4 editable pages + status + "last published".
-- `/studio/pages/[slug]/edit`: the Puck editor:
+- `/edit/[slug]`: the Puck editor:
   - `requireStaff('marketer')`. **Puck is dynamically imported here only.**
   - Loads `data` (draft). `<Puck config data onPublish={save+publish} />`.
   - Actions (server, staff-gated): `savePageDraft(slug, data)`,

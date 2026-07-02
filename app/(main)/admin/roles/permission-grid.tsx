@@ -172,7 +172,7 @@ function GroupRows({
                   checked={current === lvl}
                   disabled={savingKey === area.key}
                   onChange={() => onChoose(area.key, lvl)}
-                  className="h-3.5 w-3.5 cursor-pointer accent-[var(--color-primary,#7a5c3a)] disabled:opacity-50"
+                  className="h-3.5 w-3.5 cursor-pointer accent-[var(--color-primary)] disabled:opacity-50"
                 />
               </td>
             ))}
