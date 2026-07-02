@@ -62,7 +62,7 @@ import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
-import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
+import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { WebRole } from '@/lib/core/roles'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
@@ -1606,6 +1606,13 @@ export default function AppShell({
   // Declared in one place (page-chrome.ts) so the shell never path-sniffs.
   const editorTakeover = isFullViewportEditor(pathname)
 
+  // Full-WIDTH editor (the Space landing editor): the builder fills the whole content width — both
+  // rails + the page gutters are dropped like a takeover — but the site header STAYS (owner directive,
+  // 2026-07). So it shares the takeover's LAYOUT effects (no rails, edge-to-edge, no breadcrumbs) while
+  // the header guard below keys on `editorTakeover` ALONE, so the header is never hidden here.
+  const fullWidthEditor = isFullWidthEditor(pathname)
+  const edgeToEdge = editorTakeover || fullWidthEditor
+
   // Mini rail (immersive build surfaces — the Journey course builder). The GLOBAL rail is
   // still mounted (never removed), but on these routes it STARTS collapsed to a thin strip
   // so the builder gets the full center width; a foot toggle expands/collapses it. The
@@ -1624,7 +1631,7 @@ export default function AppShell({
   // by page-chrome.ts (leftRailFor) — the shell never path-sniffs.
   // A full-viewport editor takeover also drops the LEFT nav (the editor owns the whole viewport with
   // its own top bar), so the desktop <Puck> reads truly full-screen like the mobile dock does.
-  const showLeftRail = leftRailFor(pathname) === 'global' && !editorTakeover
+  const showLeftRail = leftRailFor(pathname) === 'global' && !editorTakeover && !fullWidthEditor
 
   // The member sitemap footer (canvas, end of the center column, scrolls with the
   // page). Shown only on real MEMBER content pages: skip stripped shells
@@ -1836,7 +1843,7 @@ export default function AppShell({
           <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
           {/* A full-viewport editor takeover drops the max-width, gutters, and min-height so the
               editor (which owns its own top bar + full-height layout) sits truly edge-to-edge. */}
-          <div className={editorTakeover
+          <div className={edgeToEdge
             ? 'flex w-full items-stretch'
             : 'mx-auto flex w-full max-w-[105rem] items-stretch gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-3.5rem)]'}>
 
@@ -1882,8 +1889,8 @@ export default function AppShell({
                   provider — not floating above the page. */}
               {/* A full-viewport editor takeover drops the page padding + breadcrumbs so the editor
                   (its own top bar / thumb-zone dock) fills the column edge to edge. */}
-              <main className={`flex-1 min-w-0 ${editorTakeover ? '' : 'py-6'}`} data-tour-anchor="content">
-                {!editorTakeover && <Breadcrumbs />}
+              <main className={`flex-1 min-w-0 ${edgeToEdge ? '' : 'py-6'}`} data-tour-anchor="content">
+                {!edgeToEdge && <Breadcrumbs />}
                 {children}
                 {showFooter && (
                   <MemberFooter role={gateRole} staffRole={staffRole} navAccess={navAccess} />
