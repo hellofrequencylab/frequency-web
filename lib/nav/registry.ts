@@ -164,10 +164,11 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
   { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
   {
     id: 'spaces',
-    label: 'Spaces',
-    href: '/spaces',
+    label: 'Community Spaces',
+    href: '/spaces/directory',
     items: [
-      { label: 'Spaces', href: '/spaces', desc: 'Bring your people. They join free' },
+      { label: 'All Spaces', href: '/spaces/directory', desc: 'Browse every space in the network' },
+      { label: 'About Spaces', href: '/spaces', desc: 'Bring your people. They join free' },
       { label: 'Pricing', href: '/pricing', desc: 'One Pro plan, four add-ons' },
       { label: 'For coaches', href: '/for/coaches', desc: 'Packages, scheduling, and a client CRM' },
       { label: 'For service businesses', href: '/for/service-businesses', desc: 'Bookings, quotes, and repeat clients' },
