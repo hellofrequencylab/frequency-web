@@ -81,7 +81,7 @@
 
 | Feature | Route | What it is | Spec |
 |---|---|---|---|
-| **Growth Studio** | `/growth` | The acquisition/onboarding launchpad (absorbed Marketing, IA §10.2) | LEAD-FLOWS |
+| **Growth Studio** | `/admin/growth` | The acquisition/onboarding launchpad (absorbed Marketing, IA §10.2) | LEAD-FLOWS |
 | **Landing pages** | `/pages` · `/pages/edit/[slug]` | Block (Puck) page editor + publish | PAGE-EDITOR-SPEC · PAGE-FRAMEWORK |
 | **Onboarding sequences** | `/pages/sequences` · `…/[slug]/build` | Beat-by-beat induction **version builder** + splash editor + share/QR (ADR-162) | — |
 | **Entry points** | `/entry-points` | Crew QR campaigns that bring people in (flyers deferred) | ENTRY-POINTS |
@@ -92,11 +92,11 @@
 
 | Feature | Route | What it is | Spec |
 |---|---|---|---|
-| **CRM pipeline** | `/crm` · `/crm/deals/[id]` | Deals, stages, activities | NETWORK-CRM · COMMS-CRM-ARCHITECTURE |
+| **CRM pipeline** | `/admin/crm` · `/admin/crm/deals/[id]` | Deals, stages, activities | NETWORK-CRM · COMMS-CRM-ARCHITECTURE |
 | **Profiles / Connections** | `/connections` | The captured member-contact network (consent ladder, §5.2) | MEMBER-DATA-PLATFORM |
 | **Outreach** | `/outreach` | Steward composer | COMMS-STRATEGY |
-| **Marketing suite** | `/marketing/*` | Campaigns · Funnels · Nurture · Automations · Analytics · Market read · Beta waitlist | ENGAGEMENT-MARKETING-ENGINE · MARKETING-AI |
-| **AI operator (Agent)** | `/marketing/agent` (in Vera area) | Proposes winbacks/content drafts; runs through the consent/suppression spine | MARKETING-AI |
+| **Marketing suite** | `/admin/marketing/*` | Campaigns · Funnels · Nurture · Automations · Analytics · Market read · Beta waitlist | ENGAGEMENT-MARKETING-ENGINE · MARKETING-AI |
+| **AI operator (Agent)** | `/admin/marketing/agent` (in Vera area) | Proposes winbacks/content drafts; runs through the consent/suppression spine | MARKETING-AI |
 
 ## 9 · Operator — community ops & platform
 

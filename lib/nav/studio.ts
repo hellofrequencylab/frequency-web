@@ -230,7 +230,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'gamification', href: '/admin/gamification', label: 'Gamification & rewards', desc: 'Achievements, seasons, rewards.', icon: 'Trophy', min: 'host', staffDomain: 'community',
     world: 'content', worldLabel: 'Gamification', worldOrder: 6,
     adminGroups: [{ domain: 'rewards', section: 'Rewards' }], adminNav: { section: 'programs', heading: 'Engagement' } },
-  { id: 'store', href: '/admin/store', label: 'Store', desc: 'Manage gem store items and catalog.', icon: 'ShoppingBag', min: 'host', staffDomain: 'community',
+  { id: 'store', href: '/admin/store', label: 'Store', desc: 'Manage Vault Store items and catalog.', icon: 'ShoppingBag', min: 'host', staffDomain: 'community',
     world: 'content', worldLabel: 'Store', worldOrder: 7,
     adminGroups: [{ domain: 'rewards', section: 'Rewards' }], adminNav: { section: 'programs', heading: 'Engagement' } },
   { id: 'crew-tasks', href: '/admin/crew-tasks', label: 'Crew tasks', desc: 'Define and verify member tasks.', icon: 'ClipboardList', min: 'host', staffDomain: 'community',
@@ -459,7 +459,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
   },
   {
     key: 'rewards', label: 'Rewards & economy',
-    blurb: 'The economy. Gamification, the gem store, retroactive grants, and crew tasks.',
+    blurb: 'The economy. Gamification, the Vault Store, retroactive grants, and crew tasks.',
     href: '/admin/programs?tab=rewards', icon: 'Trophy', min: 'host', staffDomain: 'community',
     primary: false, related: ['programs'],
     links: [{ leaf: 'gamification' }, { leaf: 'store' }, { leaf: 'crew-tasks' }],

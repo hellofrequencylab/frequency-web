@@ -37,7 +37,7 @@ const WHAT_IT_IS = [
   {
     Icon: Gamepad2,
     label: 'A real-world game',
-    body: 'The Quest moves through seasons of practices and gatherings across four pillars: Mind, Body, Spirit, and Expression.',
+    body: 'The Quest moves through seasons of practices and gatherings across four Pillars: Mind, Body, Spirit, and Expression.',
   },
   {
     Icon: Users,
@@ -54,11 +54,11 @@ const WHAT_IT_IS = [
 const HOW_IT_WORKS = [
   {
     title: 'Join the circle',
-    body: 'Claim your founding membership and your place in the first cohort.',
+    body: 'Claim your founding membership and your place in the first 150.',
   },
   {
     title: 'Find your people',
-    body: 'Drop into local Circles, gatherings, and the founding cohort space.',
+    body: "Join local Circles, gatherings, and the founding members' space.",
   },
   {
     title: 'Play the Quest',
@@ -76,7 +76,7 @@ const THE_RALLY = [
   },
   {
     label: 'Early is the whole point',
-    body: 'Being first is not a perk we tacked on. The founding cohort picks the first cities, the first gatherings, and what gets built next.',
+    body: 'Being first is not a perk we tacked on. The founding members pick the first cities, the first gatherings, and what gets built next.',
   },
   {
     label: 'Small on purpose',

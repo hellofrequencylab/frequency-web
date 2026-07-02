@@ -52,3 +52,6 @@ next-env.d.ts
 
 # Data snapshots / DB exports are PII — never commit them (see SECURITY).
 supabase/backups/*.json
+
+# Editor/filesystem artifacts
+.fuse_hidden*

@@ -137,7 +137,7 @@ export default async function PublicPartnerPage({
 
         <SignInCta
           title="Join Frequency to claim offers"
-          body={`Become a member to claim ${partner.name}'s offers in person and earn zaps for showing up. Free to join.`}
+          body={`Become a member to claim ${partner.name}'s offers in person and earn Zaps for showing up. Free to join.`}
           action="Get started"
         />
       </DetailTemplate>

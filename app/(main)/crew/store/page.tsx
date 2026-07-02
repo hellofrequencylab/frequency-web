@@ -21,7 +21,7 @@ export default async function StorePage() {
       <DashboardTemplate
         eyebrow="The Quest"
         title="Vault Store"
-        description="Your Vault and the Gem Store in one place. Everything you earn by showing up, and what you can spend it on."
+        description="Your Vault and the Vault Store in one place. Everything you earn by showing up, and what you can spend it on."
         back={{ href: '/crew', label: 'Crew Dashboard' }}
       >
         <PageModules route="/crew/store" />

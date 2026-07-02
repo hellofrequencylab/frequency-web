@@ -427,8 +427,8 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">How it&rsquo;s done</legend>
         <div role="radiogroup" aria-label="How it's done" className="mt-1 grid grid-cols-3 gap-2">
           {([
-            { value: 'mindless', label: 'Mindless', hint: 'Opens On Air to sit or breathe' },
-            { value: 'movement', label: 'Movement', hint: 'Opens the Movement timer' },
+            { value: 'mindless', label: 'Mindless', hint: 'Opens Mindless to sit or breathe' },
+            { value: 'movement', label: 'Get Moving', hint: 'Opens Mindless in Get Moving mode' },
             { value: 'none', label: 'Log it', hint: 'Records it in one tap' },
           ] as { value: TimerKind; label: string; hint: string }[]).map((k) => {
             const active = timerKind === k.value

@@ -110,7 +110,7 @@ export default async function PublicPracticePage({
 
         <SignInCta
           title="Start this practice"
-          body={`Join Frequency to adopt ${practice.title}, log it with people near you, and earn zaps for showing up. Free to join.`}
+          body={`Join Frequency to adopt ${practice.title}, log it with people near you, and earn Zaps for showing up. Free to join.`}
           action="Get started"
         />
       </DetailTemplate>

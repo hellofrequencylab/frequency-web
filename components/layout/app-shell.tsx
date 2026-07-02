@@ -629,7 +629,7 @@ function AccountDropdown({
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text hover:bg-surface-elevated transition-colors"
             >
               <Gift className="w-4 h-4 text-primary-strong" />
-              Invite friends · earn zaps
+              Invite friends · earn Zaps
             </button>
           </div>
 

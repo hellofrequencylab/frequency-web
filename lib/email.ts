@@ -100,7 +100,7 @@ export async function sendWelcomeEmail(params: {
 
   await enqueueEmail({
     to,
-    subject: `Welcome to Frequency, ${displayName} 👋`,
+    subject: `Welcome to Frequency, ${displayName}`,
     html:    welcomeHtml({ displayName, inviterName: inviterName ?? null }),
     text:    welcomeText({ displayName, inviterName: inviterName ?? null }),
   })
@@ -160,8 +160,8 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
   const who = escapeHtml(inviterName || 'A friend')
-  const hey = recipientName ? `Hey ${escapeHtml(recipientName)} 👋🏼` : 'Hey 👋🏼'
-  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe</a> and you won't hear from us again.<br>❤️ Frequency™ · ${orgContactLine()}`
+  const hey = recipientName ? `Hey ${escapeHtml(recipientName)}` : 'Hey'
+  const footer = `A one-time invite from ${who}, we won't add you to any marketing list. Not interested? <a href="${unsubscribeUrl}" style="color:#8F8675;">Unsubscribe</a> and you won't hear from us again.<br>Frequency™ · ${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">${hey}</h1>
     <p style="${pStyle}">
@@ -175,7 +175,7 @@ function scanIntroHtml({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
     <p style="margin:0 0 28px;">
       <a href="${joinUrl}" style="${btnStyle}">Join us here →</a>
     </p>
-    <p style="${pStyle}margin-bottom:8px;">❤️ Frequency™</p>
+    <p style="${pStyle}margin-bottom:8px;">Frequency™</p>
     <p style="${pStyle}font-size:13px;color:#888;">
       Button not working? Paste this into your browser:<br>
       <a href="${joinUrl}" style="color:#888;">${joinUrl}</a>
@@ -187,7 +187,7 @@ function scanIntroText({ recipientName, inviterName, joinUrl, unsubscribeUrl }: 
   recipientName: string | null; inviterName: string; joinUrl: string; unsubscribeUrl: string
 }): string {
   const who = inviterName || 'A friend'
-  const hey = recipientName ? `Hey ${recipientName} 👋` : 'Hey 👋'
+  const hey = recipientName ? `Hey ${recipientName}` : 'Hey'
   const addr = process.env.COMPANY_POSTAL_ADDRESS
   return `${hey}
 
@@ -197,7 +197,7 @@ We won't send a bunch of marketing emails, but we're happy to send you Quest rem
 
 Join us here: ${joinUrl}
 
-❤️ Frequency™
+Frequency™
 
 A one-time invite from ${who}; we won't add you to any marketing list. To opt out so you never hear from us: ${unsubscribeUrl}
 ${addr ? addr : `Frequency™ · ${BASE_URL}`}`
@@ -227,7 +227,7 @@ export async function sendWeeklyDigestEmail(params: {
 
   await enqueueEmail({
     to,
-    subject: `📡 Your week on Frequency`,
+    subject: `Your week on Frequency`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
     text:    digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank, unsubscribeUrl }),
@@ -251,8 +251,8 @@ export async function sendEventReminderEmail(params: {
   const { to, recipientName, recipientProfileId, eventTitle, whenLabel, whenAbsolute, location, eventUrl, lead } = params
 
   const subject = lead === '24h'
-    ? `🗓️ Tomorrow: ${eventTitle}`
-    : `⏰ Starting soon: ${eventTitle}`
+    ? `Tomorrow: ${eventTitle}`
+    : `Starting soon: ${eventTitle}`
 
   const unsubscribeUrl = buildUnsubscribeUrl({
     baseUrl:   BASE_URL,
@@ -298,8 +298,8 @@ export async function sendEventRsvpConfirmationEmail(params: {
   } = params
 
   const subject = status === 'going'
-    ? `✅ You're going: ${eventTitle}`
-    : `📝 You're on the waitlist: ${eventTitle}`
+    ? `You're going: ${eventTitle}`
+    : `You're on the waitlist: ${eventTitle}`
 
   const unsubscribeUrl = buildUnsubscribeUrl({
     baseUrl:   BASE_URL,
@@ -427,7 +427,7 @@ export async function sendDispatchNotificationEmail(params: {
 
   await enqueueEmail({
     to,
-    subject: `📡 New dispatch: ${dispatchTitle}`,
+    subject: `New dispatch: ${dispatchTitle}`,
     headers: listUnsubscribeHeaders(unsubscribeUrl),
     html:    dispatchHtml({ recipientName, authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
     text:    dispatchText({ authorName, dispatchTitle, excerpt, dispatchUrl, unsubscribeUrl }),
@@ -598,7 +598,7 @@ function welcomeHtml({ displayName, inviterName }: { displayName: string; invite
       <li><a href="${BASE_URL}/circles" style="${link}">Circles</a>: your local group, where it actually happens.</li>
       <li><a href="${BASE_URL}/events" style="${link}">Events</a>: what's on near you this week.</li>
       <li><a href="${BASE_URL}/practices" style="${link}">Practices</a>: pick one small thing to do for yourself.</li>
-      <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn zaps, climb the ranks.</li>
+      <li><a href="${BASE_URL}/crew" style="${link}">The Quest</a>: show up, earn Zaps, climb the ranks.</li>
     </ul>
 
     <hr style="${dividerStyle}">
@@ -624,7 +624,7 @@ Find your people:
 - Circles (your local group): ${BASE_URL}/circles
 - Events (what's on near you): ${BASE_URL}/events
 - Practices (one small thing for yourself): ${BASE_URL}/practices
-- The Quest (earn zaps, climb the ranks): ${BASE_URL}/crew
+- The Quest (earn Zaps, climb the ranks): ${BASE_URL}/crew
 
 Bring a friend, earn as you go: share your personal code and you both earn when someone you bring joins. Find yours at ${BASE_URL}/codes
 
@@ -642,7 +642,7 @@ function inviteHtml({ inviterName, circleName, inviteUrl }: {
     <h1 style="${h1Style}">${inviterName} invited you to join ${circleName}.</h1>
     <p style="${pStyle}">
       You've been invited to join <strong>${circleName}</strong> on Frequency, a community platform
-      for local groups to connect, organise events, and stay in touch.
+      for local groups to connect, organize events, and stay in touch.
     </p>
     <a href="${inviteUrl}" style="${btnStyle}">Accept invite →</a>
     <hr style="${dividerStyle}">
@@ -661,7 +661,7 @@ function inviteText({ inviterName, circleName, inviteUrl }: {
 Accept your invite here:
 ${inviteUrl}
 
-Frequency is a community platform for local groups to connect, organise events, and stay in touch.
+Frequency is a community platform for local groups to connect, organize events, and stay in touch.
 `
 }
 
@@ -698,7 +698,7 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
   const who = posterName ? escapeHtml(posterName) : 'A neighbor'
   const title = escapeHtml(eventTitle)
   const meta = [whenLine, location].filter(Boolean).map((s) => escapeHtml(s as string)).join(' · ')
-  const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>${orgContactLine()}`
+  const footer = `${who} listed your event on Frequency, a place to find and host local gatherings. You're getting this once so you can claim it or ignore it. Not your event? No action needed, it stays as a community listing.<br>${orgContactLine()}`
   return emailShell(`
     <h1 style="${h1Style}">Is this your event?</h1>
     <p style="${pStyle}">${greeting}</p>
@@ -706,7 +706,7 @@ function claimInviteHtml({ organizerName, posterName, eventTitle, whenLine, loca
       ${who} added <strong>${title}</strong>${meta ? ` (${meta})` : ''} to Frequency so people nearby can find it.
     </p>
     <p style="${pStyle}">
-      If you are the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
+      If you're the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
     </p>
     <a href="${claimUrl}" style="${btnStyle}">Claim your event →</a>
     <hr style="${dividerStyle}">
@@ -731,14 +731,14 @@ function claimInviteText({ organizerName, posterName, eventTitle, whenLine, loca
 
 ${who} added "${eventTitle}"${meta ? ` (${meta})` : ''} to Frequency so people nearby can find it.
 
-If you are the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
+If you're the organizer, claim it to become the host. You can edit the details, see who is coming, and message your guests.
 
 Claim your event:
 ${claimUrl}
 
 Want to see it first? View the event: ${eventUrl}
 
-${who} listed your event on Frequency, a place to find and host local gatherings. You are getting this once so you can claim it or ignore it. Not your event? No action needed.
+${who} listed your event on Frequency, a place to find and host local gatherings. You're getting this once so you can claim it or ignore it. Not your event? No action needed.
 Frequency™ · ${BASE_URL}
 `
 }
@@ -763,7 +763,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
   unsubscribeUrl: string
 }): string {
   const dispatchesHtml = dispatches.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">📡 This week's dispatches</h2>
+    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week's dispatches</h2>
     ${dispatches.map((d) => `
       <div style="border-left:3px solid #9A5E12;padding:0 0 0 14px;margin-bottom:18px;">
         <p style="margin:0 0 4px;font-size:11px;color:#8F8675;font-weight:600;">${d.authorName}</p>
@@ -775,7 +775,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
   ` : ''
 
   const eventsHtml = upcomingEvents.length ? `
-    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">🗓️ This week on your calendar</h2>
+    <h2 style="font-size:14px;font-weight:800;color:#9A5E12;text-transform:uppercase;letter-spacing:0.08em;margin:32px 0 12px;">This week on your calendar</h2>
     <table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
       ${upcomingEvents.map((e) => `
         <tr>
@@ -796,7 +796,7 @@ function digestHtml({ recipientName, dispatches, upcomingEvents, topStreak, rank
   const statusHtml = (topStreak || rank) ? `
     <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;margin:24px 0;">
       <p style="margin:0;font-size:11px;font-weight:800;color:#8F8675;text-transform:uppercase;letter-spacing:0.08em;">Your standing</p>
-      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:#3D352A;">⚡ <strong>${rank.zaps} zaps</strong> · ${rank.name}</p>` : ''}
+      ${rank ? `<p style="margin:6px 0 0;font-size:14px;color:#3D352A;">⚡ <strong>${rank.zaps} Zaps</strong> · ${rank.name}</p>` : ''}
       ${topStreak ? `<p style="margin:4px 0 0;font-size:14px;color:#3D352A;">🔥 <strong>${topStreak.count}-day ${topStreak.type} streak</strong></p>` : ''}
     </div>
   ` : ''
@@ -833,7 +833,7 @@ function digestText({ recipientName, dispatches, upcomingEvents, topStreak, rank
 
   if (rank || topStreak) {
     lines.push('YOUR STANDING')
-    if (rank)      lines.push(`  ⚡ ${rank.zaps} zaps · ${rank.name}`)
+    if (rank)      lines.push(`  ⚡ ${rank.zaps} Zaps · ${rank.name}`)
     if (topStreak) lines.push(`  🔥 ${topStreak.count}-day ${topStreak.type} streak`)
     lines.push('')
   }

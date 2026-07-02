@@ -62,7 +62,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'zaps', label: 'Zaps', area: 'engagement', routes: ['/settings'], core: true },
   { key: 'gems', label: 'Gems', area: 'engagement', routes: ['/settings'], core: true },
   { key: 'ranks', label: 'Season ranks', area: 'engagement', routes: ['/settings'], core: true },
-  { key: 'store', label: 'Gem store & redemptions', area: 'engagement', routes: ['/settings'], core: false },
+  { key: 'store', label: 'Vault Store & redemptions', area: 'engagement', routes: ['/settings'], core: false },
   { key: 'codes', label: 'QR codes & check-ins', area: 'engagement', routes: ['/codes', '/n', '/admin/qr'], core: true },
 
   // ── Account ─────────────────────────────────────────────────────────────────

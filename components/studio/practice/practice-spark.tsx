@@ -282,7 +282,7 @@ export function PracticeSpark() {
             </>
           )}
           <button type="button" onClick={buildItMyself} disabled={pending} className="underline-offset-4 transition-colors hover:text-muted hover:underline disabled:opacity-60">
-            Skip — I&apos;ll build it myself
+            Skip, I&apos;ll build it myself
           </button>
         </p>
       )}

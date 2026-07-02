@@ -17,7 +17,7 @@ import type { OnboardingStatus } from '@/lib/onboarding/status'
 // the two surfaces feel of a piece. Reads only the status counts (no extra data).
 function welcomeNote(doneCount: number, total: number): string {
   if (doneCount <= 0) return 'Welcome in. A few small steps and Frequency starts to feel like yours.'
-  if (doneCount < total - 1) return 'You’re finding your footing — keep going, you’re most of the way in.'
+  if (doneCount < total - 1) return 'You’re finding your footing. Keep going, you’re most of the way in.'
   return 'So close. One more and you’re fully set up here.'
 }
 
@@ -42,7 +42,7 @@ export function ProfileActivationWelcome({
         <div className="min-w-0 flex-1">
           <p className="text-2xs font-semibold uppercase tracking-wide text-broadcast-strong/80">
             {lastStepLeft
-              ? 'Almost there — one step left'
+              ? 'Almost there. One step left'
               : `${greeting} · ${status.doneCount} of ${status.total} done`}
           </p>
           <h2 className="text-base font-bold leading-tight text-text">{current.headline}</h2>

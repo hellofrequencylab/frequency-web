@@ -163,7 +163,7 @@ pattern). The global staff axis (`web_role`) stays separate and locked.
 
 ### 2.2 What a role blueprint consists of (the extensibility contract)
 
-> **⚠️ Superseded (2026-07-01, ADR-489).** The per-type `RoleBlueprint` registry
+> **⚠️ Superseded (2026-07-01, ADR-491).** The per-type `RoleBlueprint` registry
 > (`lib/spaces/blueprints.ts`) and the four-template layer (`lib/spaces/templates.ts`) have been
 > DELETED. The public profile is now **operator-composed feature-block pages** (Phase 5 of the profile
 > redesign); the only per-type nuances that survive are DATA in `lib/spaces/profile-config.ts` (default

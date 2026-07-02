@@ -127,6 +127,7 @@ export default async function SearchPage({
            author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
         )
         .ilike('body', `%${safe}%`)
+        .eq('visibility', 'public')
         .is('hidden_at', null)
         .order('created_at', { ascending: false })
         .limit(20)
@@ -141,6 +142,9 @@ export default async function SearchPage({
            host:profiles!host_id ( display_name, handle )`
         )
         .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+        .eq('status', 'published')
+        .eq('visibility', 'public')
+        .eq('is_cancelled', false)
         .order('starts_at', { ascending: true })
         .limit(20)
       events = (data ?? []) as unknown as EventRow[]
