@@ -13,21 +13,25 @@ describe('generateDefaultSpacePage', () => {
     expect(doc.content[0].type).toBe('SpaceLayout')
   })
 
-  it('arranges main = Offerings->Booking->Events->Reviews->FAQ, side = Highlights->About->QuickLinks->Contact', () => {
+  it('arranges main = Offerings->Booking->Events->Practices->Community->Reviews->FAQ->Callout, side = Highlights->About->QuickLinks->Contact->Business', () => {
     const doc = generateDefaultSpacePage('Willow Studio')
     const layout = doc.content[0].props as { main: { type: string }[]; side: { type: string }[] }
     expect(layout.main.map((b) => b.type)).toEqual([
       'SpaceOfferings',
       'SpaceBooking',
       'SpaceEvents',
+      'SpacePractices',
+      'SpaceCommunity',
       'SpaceReviews',
       'SpaceFAQ',
+      'SpaceCallout',
     ])
     expect(layout.side.map((b) => b.type)).toEqual([
       'SpaceHighlights',
       'SpaceAbout',
       'SpaceQuickLinks',
       'SpaceContact',
+      'SpaceBusiness',
     ])
   })
 

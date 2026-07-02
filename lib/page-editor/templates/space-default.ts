@@ -97,6 +97,28 @@ function contact(): Block {
   }
 }
 
+// ── PRACTICES + JOURNEYS list (live; nothing until the space has practices or journeys).
+function practices(): Block {
+  return {
+    type: 'SpacePractices',
+    props: {
+      id: `${P}-practices`,
+      eyebrow: 'Start here',
+      heading: 'Practices and journeys',
+      practicesHeading: 'Practices to start',
+      journeysHeading: 'Journeys to begin',
+    },
+  }
+}
+
+// ── CIRCLES list (live; nothing until the space runs active circles).
+function community(): Block {
+  return {
+    type: 'SpaceCommunity',
+    props: { id: `${P}-community`, eyebrow: 'Community', heading: 'Circles' },
+  }
+}
+
 // ── Dynamic REVIEWS + FAQ blocks (live; nothing until real rows).
 function reviews(): Block {
   return { type: 'SpaceReviews', props: { id: `${P}-reviews`, eyebrow: 'What members say', heading: 'Reviews', limit: '4' } }
@@ -109,6 +131,30 @@ function faq(): Block {
   }
 }
 
+// ── BUSINESS PRESENCE strip (operator authored; empty by default). Social links + optional rating.
+function business(): Block {
+  return {
+    type: 'SpaceBusiness',
+    props: { id: `${P}-business`, heading: 'Find us online', rating: '', ratingCount: '', links: [] },
+  }
+}
+
+// ── Closing CALLOUT band (operator authored; a friendly conversion moment at the foot of the page).
+function callout(name: string): Block {
+  return {
+    type: 'SpaceCallout',
+    props: {
+      id: `${P}-callout`,
+      eyebrow: '',
+      heading: 'Come say hello',
+      body: `Have a question or want to get started with ${name}? We would love to hear from you.`,
+      ctaLabel: 'Get in touch',
+      ctaHref: '#',
+      align: 'center',
+    },
+  }
+}
+
 // ── The SpaceLayout region box holding the two card columns (main + side).
 function spaceLayout(main: Block[], side: Block[]): Block {
   return { type: 'SpaceLayout', props: { id: `${P}-layout`, layout: 'main-side', sideSticky: 'no', main, side } }
@@ -117,11 +163,12 @@ function spaceLayout(main: Block[], side: Block[]): Block {
 /**
  * The ONE universal default Space page body, as a Puck `Data` document. PURE + total.
  *
- *   main = Offerings -> Booking -> Events -> Reviews -> FAQ
- *   side = Highlights -> About -> QuickLinks -> Contact
+ *   main = Offerings -> Booking -> Events -> Practices -> Community -> Reviews -> FAQ -> Callout
+ *   side = Highlights -> About -> QuickLinks -> Contact -> Business
  *
  * A sensible, general-purpose first arrangement for any Space (the operator freely
- * rearranges it). Live blocks render nothing until there is real data.
+ * rearranges it). Live blocks render nothing until there is real data, so the page
+ * self-composes to whatever the space has turned on.
  */
 export function generateDefaultSpacePage(name: string): Data {
   const brand = name.trim() || 'this space'
@@ -129,8 +176,8 @@ export function generateDefaultSpacePage(name: string): Data {
     root: {},
     content: [
       spaceLayout(
-        [offerings(), booking(brand), events(), reviews(), faq()],
-        [highlights(), about(brand), quickLinks(), contact()],
+        [offerings(), booking(brand), events(), practices(), community(), reviews(), faq(), callout(brand)],
+        [highlights(), about(brand), quickLinks(), contact(), business()],
       ),
     ],
   }
