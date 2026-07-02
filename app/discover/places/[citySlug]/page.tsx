@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowRight, Users, CalendarDays } from 'lucide-react'
-import { getCityHub, listDiscoverCities, cityFromSlug } from '../_data'
+import { getCityHub, listDiscoverCities, cityFromSlug, citySlug as toSlug } from '../_data'
+import { listDensityCities } from '../../cities/_data'
 import { CircleCard, EventRow } from '@/components/discover/cards'
 import {
   PageHero,
@@ -42,7 +43,21 @@ export async function generateMetadata({
         hub.events.length === 1 ? 'event' : 'events'
       } on Frequency. Browse for free, then show up in person.`
     : `Local Circles and real-world events in ${city} on Frequency.`
-  const canonical = `/discover/places/${citySlug}`
+  // Dedup with the density-gated landing at /discover/cities/<slug>: an active city
+  // and a high-density city render near-identical circle/event content, so when a city
+  // ALSO earns the density page, that richer page is the canonical and the two
+  // overlapping city URLs consolidate there instead of competing in search (M4). Only
+  // points at the density URL when it actually renders (slug in listDensityCities), so
+  // the canonical never targets a 404; any density-read hiccup falls back to self.
+  const want = toSlug(cityFromSlug(citySlug))
+  let canonical = `/discover/places/${citySlug}`
+  try {
+    if ((await listDensityCities()).some((c) => c.slug === want)) {
+      canonical = `/discover/cities/${want}`
+    }
+  } catch {
+    // keep the self-canonical; never break metadata over the dedup
+  }
   return {
     title,
     description,

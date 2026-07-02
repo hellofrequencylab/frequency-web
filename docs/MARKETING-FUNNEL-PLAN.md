@@ -71,10 +71,10 @@
 - Make `/pricing` actually render the Puck chain (it currently ignores `templates/pricing.ts`).
 - Move the editable `/circles` template out of the robots-disallowed `(main)` group so its editable copy can be indexed.
 
-### M4 · Funnel consolidation + measurement
-- De-dupe `/discover/places` vs `/discover/cities` (canonicalize one; 301 the other).
-- Standardize detail-page CTAs: hubs → `/onboarding/beta`, detail → the same induction (not bare `/sign-in`), inline capture where a waitlist is intended.
-- Confirm the Growth OS `funnels` tables are applied in prod; wire the 4 seed funnels to real `goal_event`s and watch `funnel_rollup`.
+### M4 · Funnel consolidation + measurement — ✅ mostly shipped
+- ✅ **De-duped `/discover/places` vs `/discover/cities`** — a high-density city renders near-identical circle/event content at both URLs. The broader `places/[citySlug]` page now sets its **canonical to `/discover/cities/[citySlug]` when that city also earns the density-gated page** (guarded so the canonical never targets a 404; falls back to self on any density-read hiccup). Consolidates the SEO signal to the richer page without a destructive 301 that would break either browse path.
+- ✅ **Detail-page CTAs** — audited: both city detail pages already funnel to `BETA_CTA_HREF` (`/onboarding/beta`) via `BetaCTA` + the ghost button, and the two index hubs carry no bare `/sign-in`. No change needed.
+- ✅ **Growth OS `funnels` tables confirmed live in prod** (`funnels`, `funnel_stages`, `funnel_stage_links`, `funnel_rollup`). Only the migration *record* `20260913000000` is missing from `schema_migrations` (benign drift per ADR-496). Follow-up (non-blocking): wire the 4 seed funnels to real `goal_event`s and watch `funnel_rollup`.
 
 ## Definition of done (launch)
 Every forward-facing page: in the sitemap with canonical + metadata; carries a funnel CTA into
