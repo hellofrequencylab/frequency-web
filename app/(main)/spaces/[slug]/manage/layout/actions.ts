@@ -23,6 +23,7 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
+import { withLayoutPreset, type LayoutPreset } from '@/lib/spaces/layout-presets'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverSizePreferences,
@@ -98,6 +99,32 @@ export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<
   }
 
   revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set a PAGE's layout preset (stack / main-rail / sections) - the DISPLAY arrangement, kept separate
+ * from the neutral block content. Written to preferences.pageLayouts[pageSlug]; the public renderer
+ * arranges the same content for the preset (applyLayoutPreset), so the operator picks a layout without
+ * ever opening Puck. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceLayoutPreset(
+  slug: string,
+  pageSlug: string,
+  preset: LayoutPreset,
+): Promise<ActionResult> {
+  if (preset !== 'stack' && preset !== 'main-rail' && preset !== 'sections') return fail('Pick a layout.')
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = withLayoutPreset(auth.preferences, pageSlug, preset)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the layout. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

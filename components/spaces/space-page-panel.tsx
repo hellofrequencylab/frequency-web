@@ -25,6 +25,7 @@ import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/la
 import {
   setSpaceCoverSize,
   setSpaceCoverScrim,
+  setSpaceLayoutPreset,
   setSpaceAccent,
   reorderSpaceBlock,
   setSpaceBlockHidden,
@@ -38,6 +39,7 @@ import { ACCENT_TOKENS } from '@/components/spaces/space-form'
 import { SpaceFullEditorButton } from '@/components/spaces/space-full-editor-button'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
+import { LAYOUT_PRESETS, type LayoutPreset } from '@/lib/spaces/layout-presets'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -79,6 +81,7 @@ export function SpacePagePanel({
   accent,
   blocks,
   businessInfo,
+  layoutPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
   focus,
@@ -101,6 +104,8 @@ export function SpacePagePanel({
   blocks: SpaceBlockRow[]
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
+  /** The ACTIVE page's DISPLAY layout preset (stack / main-rail / sections), for the Layout picker. */
+  layoutPreset: LayoutPreset
   /** The Space's current header (cover) image URL, for the Business info form's upload control. */
   coverImageUrl?: string | null
   /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
@@ -330,6 +335,39 @@ export function SpacePagePanel({
           </Link>
         </section>
       )}
+
+      {/* Layout: the DISPLAY arrangement of THIS page's blocks (content stays the same; only the
+          arrangement changes). Picked here without opening the full editor. */}
+      <section>
+        <SectionHeader title="Layout" />
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          How the blocks on {activeLabel} are arranged. Your content stays the same; only the display changes.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {LAYOUT_PRESETS.map((l) => {
+            const active = layoutPreset === l.value
+            return (
+              <button
+                key={l.value}
+                type="button"
+                disabled={readOnly || pending || active}
+                onClick={() => run(() => setSpaceLayoutPreset(slug, activePageSlug, l.value))}
+                aria-pressed={active}
+                className={cn(
+                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                  active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+                )}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold text-text">
+                  {l.label}
+                  {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
+                </span>
+                <span className="mt-1 block text-xs text-muted">{l.tagline}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
       <section>

@@ -23,6 +23,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
 import type { SectionPresence } from '@/lib/spaces/section-anchors'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
+import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
@@ -173,6 +174,9 @@ export type SpaceContentData = {
    *  so editing it once updates every surface (lib/spaces/profile-data.ts). Undefined in the editor /
    *  a member Spotlight (the blocks fall back to their own inline props). */
   profile?: SpaceProfileData
+  /** The page's DISPLAY layout preset (stack / main-rail / sections). The renderer's root reads this to
+   *  set the page rhythm; the content is arranged for the preset upstream (applyLayoutPreset). */
+  layoutPreset?: LayoutPreset
 }
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
@@ -305,6 +309,8 @@ export interface SpaceContentInput {
    *  every authored block renders from the ONE source. Omit it (a non-space render path) and the
    *  blocks fall back to their inline props. */
   profile?: SpaceProfileData
+  /** The page's DISPLAY layout preset, echoed into metadata so the renderer root sets the rhythm. */
+  layoutPreset?: LayoutPreset
 }
 
 /** ONE request-cached round of every live content read for a Space, keyed on (spaceId, slug). The
@@ -374,6 +380,7 @@ export async function getSpaceContentData(
     practices,
     community,
     profile: input?.profile,
+    layoutPreset: input?.layoutPreset,
   }
 }
 

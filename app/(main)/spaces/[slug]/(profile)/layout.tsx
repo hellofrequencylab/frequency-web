@@ -13,6 +13,7 @@ import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { readLayoutPreset } from '@/lib/spaces/layout-presets'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
@@ -375,6 +376,7 @@ export default async function SpaceProfileChromeLayout({
           accent={space.brandAccent ?? ''}
           blocks={readBlockRows(homeDoc)}
           businessInfo={readProfileData(space.preferences)}
+          layoutPreset={readLayoutPreset(space.preferences, HOME_SLUG)}
           coverImageUrl={space.coverImageUrl}
           brandLogoUrl={space.brandLogoUrl}
         />

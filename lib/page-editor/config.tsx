@@ -31,9 +31,14 @@ export const config: Config = {
   // Spotlight) passes children straight through untouched, so their self-spacing sections are unchanged.
   root: {
     render: ({ children, puck }: { children: ReactNode; puck?: { metadata?: Record<string, unknown> } }) => {
-      const isSpace = !!puck?.metadata?.space
-      if (!isSpace) return <>{children}</>
-      return <div className="space-y-12 py-8 sm:space-y-14 sm:py-10">{children}</div>
+      const space = puck?.metadata?.space as { layoutPreset?: string } | undefined
+      if (!space) return <>{children}</>
+      // The DISPLAY rhythm per layout preset: `sections` is airier (a landing-page feel); `stack` and
+      // `main-rail` share the standard rhythm (main-rail wraps into one SpaceLayout child that owns its
+      // own grid, so the space-y just seats it). Content is identical; only the rhythm differs.
+      const airy = space.layoutPreset === 'sections'
+      const cls = airy ? 'space-y-16 py-10 sm:space-y-20 sm:py-14' : 'space-y-12 py-8 sm:space-y-14 sm:py-10'
+      return <div className={cls}>{children}</div>
     },
   },
   components: {
