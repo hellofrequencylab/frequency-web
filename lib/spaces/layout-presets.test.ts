@@ -41,6 +41,19 @@ describe('readLayoutPreset / withLayoutPreset', () => {
     const cleared = withLayoutPreset(prefs, 'home', 'stack')
     expect('pageLayouts' in cleared).toBe(false)
   })
+
+  it('never writes a prototype-pollution / non-slug key (security guard)', () => {
+    for (const bad of ['__proto__', 'constructor', 'prototype', 'has space', 'Home', 'trailing-']) {
+      const next = withLayoutPreset({}, bad, 'main-rail')
+      // No pageLayouts written for a hostile / invalid key, and the prototype is never touched.
+      expect('pageLayouts' in next).toBe(false)
+      expect((({}) as Record<string, unknown>).polluted).toBeUndefined()
+      // Reading a hostile key falls back to the default, never a walked prototype value.
+      expect(readLayoutPreset(next, bad)).toBe('stack')
+    }
+    // A valid kebab slug still writes normally.
+    expect(readLayoutPreset(withLayoutPreset({}, 'about-us', 'sections'), 'about-us')).toBe('sections')
+  })
 })
 
 describe('applyLayoutPreset (pure display transform)', () => {

@@ -41,6 +41,18 @@ function isLayoutPreset(v: unknown): v is LayoutPreset {
   return v === 'stack' || v === 'main-rail' || v === 'sections'
 }
 
+// A page slug used as an OBJECT KEY must be a plain kebab token — never a prototype-pollution vector
+// (`__proto__` / `prototype` / `constructor`) or anything non-slug. Both the reader and writer gate on
+// this before touching `pageLayouts[slug]`, so a hostile slug can neither read nor write a stray key.
+const SAFE_SLUG_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+// Reserved object-internal names that are valid kebab tokens but must never be used as a key.
+const DANGEROUS_KEYS = new Set(['__proto__', 'prototype', 'constructor'])
+function isSafeSlugKey(slug: unknown): slug is string {
+  return (
+    typeof slug === 'string' && slug.length <= 64 && !DANGEROUS_KEYS.has(slug) && SAFE_SLUG_KEY.test(slug)
+  )
+}
+
 /** The block types that move to the SIDE RAIL under the two-column preset: compact "fact" cards, not
  *  the main content flow. Everything else stays in the main column. */
 export const SIDEBAR_BLOCK_TYPES = new Set<string>([
@@ -54,10 +66,13 @@ export const SIDEBAR_BLOCK_TYPES = new Set<string>([
 /** Read a page's chosen layout preset off preferences.pageLayouts[slug]. FAIL-SAFE to the default.
  *  Pure + total. */
 export function readLayoutPreset(preferences: unknown, pageSlug: string): LayoutPreset {
+  if (!isSafeSlugKey(pageSlug)) return DEFAULT_LAYOUT_PRESET
   const prefs = preferences && typeof preferences === 'object' ? (preferences as Record<string, unknown>) : {}
   const map = prefs.pageLayouts
   if (!map || typeof map !== 'object' || Array.isArray(map)) return DEFAULT_LAYOUT_PRESET
-  const value = (map as Record<string, unknown>)[pageSlug]
+  const value = Object.prototype.hasOwnProperty.call(map, pageSlug)
+    ? (map as Record<string, unknown>)[pageSlug]
+    : undefined
   return isLayoutPreset(value) ? value : DEFAULT_LAYOUT_PRESET
 }
 
@@ -68,13 +83,23 @@ export function withLayoutPreset(preferences: unknown, pageSlug: string, preset:
     preferences && typeof preferences === 'object' && !Array.isArray(preferences)
       ? { ...(preferences as Record<string, unknown>) }
       : {}
-  const current = prefs.pageLayouts && typeof prefs.pageLayouts === 'object' && !Array.isArray(prefs.pageLayouts)
-    ? { ...(prefs.pageLayouts as Record<string, unknown>) }
-    : {}
+  // A hostile / non-slug key is never written (prototype-pollution guard); the prefs are returned
+  // unchanged so the caller degrades to the default preset rather than mutating a stray property.
+  if (!isSafeSlugKey(pageSlug)) return prefs
+  const source =
+    prefs.pageLayouts && typeof prefs.pageLayouts === 'object' && !Array.isArray(prefs.pageLayouts)
+      ? (prefs.pageLayouts as Record<string, unknown>)
+      : {}
+  // A null-prototype clone so an assignment can never reach Object.prototype even if a key slipped the
+  // guard, and only own, safe-keyed entries are carried over.
+  const current: Record<string, unknown> = Object.create(null)
+  for (const key of Object.keys(source)) {
+    if (isSafeSlugKey(key)) current[key] = source[key]
+  }
   if (preset === DEFAULT_LAYOUT_PRESET) delete current[pageSlug]
   else current[pageSlug] = preset
   if (Object.keys(current).length === 0) delete prefs.pageLayouts
-  else prefs.pageLayouts = current
+  else prefs.pageLayouts = { ...current }
   return prefs
 }
 
