@@ -84,7 +84,11 @@ export async function updateRewardConfig(
     if (!r.action_type) continue
     const amount = clampInt(r.amount)
     if (amount === null) return fail(`Invalid amount for "${r.action_type}"`)
-    const dailyCap = r.daily_cap === null || r.daily_cap === undefined ? null : clampInt(r.daily_cap)
+    // A present-but-invalid cap (negative / NaN) must NOT silently fall through to null
+    // ("unlimited") — that quietly removes the throttle the operator meant to set.
+    const capProvided = r.daily_cap !== null && r.daily_cap !== undefined
+    const dailyCap = capProvided ? clampInt(r.daily_cap) : null
+    if (capProvided && dailyCap === null) return fail(`Invalid daily cap for "${r.action_type}"`)
 
     const { error } = await db
       .from(table)
@@ -113,8 +117,10 @@ export async function createRewardConfig(
   if (!action_type) return fail('Enter an action name (letters, numbers, underscores).')
   const amount = clampInt(input.amount)
   if (amount === null) return fail('Enter a valid amount.')
-  const dailyCap =
-    input.daily_cap === null || input.daily_cap === undefined ? null : clampInt(input.daily_cap)
+  // A present-but-invalid cap must not silently become null ("unlimited") — surface it.
+  const capProvided = input.daily_cap !== null && input.daily_cap !== undefined
+  const dailyCap = capProvided ? clampInt(input.daily_cap) : null
+  if (capProvided && dailyCap === null) return fail('Enter a valid daily cap.')
   const description = input.description?.trim().slice(0, 280) || null
 
   // gem_config.description is NOT NULL — default to the prettified key.

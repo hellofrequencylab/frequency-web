@@ -305,7 +305,13 @@ function PredicateRow({
       <select
         aria-label="Field"
         value={row.key}
-        onChange={(e) => onChange({ key: e.target.value })}
+        onChange={(e) => {
+          const key = e.target.value
+          // A boolean trait's control renders "true" by default; seed the row's value so an
+          // untouched control persists what the operator sees (was: showed true, saved false).
+          const picked = row.type === 'trait' ? traitByKey.get(key) : undefined
+          onChange(picked?.type === 'boolean' ? { key, value: 'true' } : { key })
+        }}
         className={cn(fieldClasses, 'min-w-40 flex-1')}
       >
         <option value="">Choose one…</option>

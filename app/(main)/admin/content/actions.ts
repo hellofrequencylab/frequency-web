@@ -682,14 +682,29 @@ export async function updateSeasonAction(
     if (endsAt && Number.isNaN(endsAt.getTime())) return fail('End date is not a valid date.')
     update.ends_at = endsAt ? endsAt.toISOString() : null
   }
-  // When both ends of the window are being set together, keep them ordered.
-  if (startsAt && endsAt && endsAt <= startsAt) {
-    return fail('The end date must be after the start date.')
+  // Keep the window ordered even when only ONE bound is edited: read the stored other bound
+  // and compare against it, so a single-field save can't invert the window (end before start).
+  const client = ub()
+  if (patch.startsAt !== undefined || patch.endsAt !== undefined) {
+    let effStart: Date | null = patch.startsAt !== undefined ? (startsAt ?? null) : null
+    let effEnd: Date | null = patch.endsAt !== undefined ? (endsAt ?? null) : null
+    if ((patch.startsAt === undefined) !== (patch.endsAt === undefined)) {
+      const { data: stored } = await client
+        .from('seasons')
+        .select('starts_at, ends_at')
+        .eq('id', id)
+        .maybeSingle()
+      const row = stored as { starts_at: string | null; ends_at: string | null } | null
+      if (patch.startsAt === undefined) effStart = row?.starts_at ? new Date(row.starts_at) : null
+      if (patch.endsAt === undefined) effEnd = row?.ends_at ? new Date(row.ends_at) : null
+    }
+    if (effStart && effEnd && effEnd <= effStart) {
+      return fail('The end date must be after the start date.')
+    }
   }
 
   if (Object.keys(update).length === 0) return ok()
 
-  const client = ub()
   const { error } = await client.from('seasons').update(update).eq('id', id)
   if (error) return fail(error.message)
 
@@ -973,20 +988,54 @@ export async function cloneSeasonAction(
     if (!newJourneyId) return fail('Could not copy a Journey.')
     journeyCount += 1
 
-    // The Journey's items — practices are SHARED, so copy the references only.
+    // The Journey's items — practices are SHARED, so copy the references only. Items form a
+    // parent/child tree (block containers + their children via parent_id). A flat copy would
+    // leave each new item's parent_id pointing at the SOURCE Journey's rows, corrupting the
+    // clone. Insert parents-first in waves, map every old id to its new id, and rewrite
+    // parent_id through that map (null when the parent isn't in the copied set) so the tree is
+    // rebuilt against the new Journey.
     const { data: itemRows } = await client
       .from('journey_plan_items')
       .select(
-        'practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes',
+        'id, practice_id, domain_id, sort_order, note, cadence, block_type, parent_id, title, body, media, settings, required, est_minutes',
       )
       .eq('plan_id', j.id)
       .order('sort_order', { ascending: true })
-    const items = (itemRows ?? []) as Record<string, unknown>[]
+    const items = (itemRows ?? []) as ({ id: string; parent_id: string | null } & Record<string, unknown>)[]
     if (items.length > 0) {
-      const { error: itemsErr } = await client
-        .from('journey_plan_items')
-        .insert(items.map((it) => ({ ...it, plan_id: newJourneyId })))
-      if (itemsErr) return fail(itemsErr.message)
+      const copiedIds = new Set(items.map((it) => it.id))
+      const idMap = new Map<string, string>() // old item id -> new item id
+      const remaining = [...items]
+      // Each pass inserts every item whose parent is already mapped, or is a root / outside the
+      // copied set. INSERT ... RETURNING preserves input order, so the new ids line up with the
+      // batch and we can record the mapping for the next pass.
+      while (remaining.length > 0) {
+        const ready = remaining.filter(
+          (it) => it.parent_id == null || !copiedIds.has(it.parent_id) || idMap.has(it.parent_id),
+        )
+        // Safety net against an unexpected cycle: flush whatever is left as roots.
+        const batch = ready.length > 0 ? ready : remaining.slice()
+        const payload = batch.map((it) => {
+          const parentId = it.parent_id && idMap.has(it.parent_id) ? idMap.get(it.parent_id)! : null
+          const rest: Record<string, unknown> = { ...it }
+          delete rest.id
+          return { ...rest, plan_id: newJourneyId, parent_id: parentId }
+        })
+        const { data: inserted, error: itemsErr } = await client
+          .from('journey_plan_items')
+          .insert(payload)
+          .select('id')
+        if (itemsErr) return fail(itemsErr.message)
+        const newIds = (inserted ?? []) as { id: string }[]
+        batch.forEach((it, i) => {
+          const nid = newIds[i]?.id
+          if (nid) idMap.set(it.id, nid)
+        })
+        const done = new Set(batch.map((it) => it.id))
+        for (let k = remaining.length - 1; k >= 0; k--) {
+          if (done.has(remaining[k].id)) remaining.splice(k, 1)
+        }
+      }
     }
 
     // The Journey's Expression Challenge (if any) — re-pointed to the new Journey, with
@@ -1076,11 +1125,10 @@ async function activeSeasonNumber(client: SupabaseClient): Promise<number | null
  * `journey_plans.quest_id` set + `official = true`). Server-only read. Returns [] when
  * there is no active season or no Quest yet, so the form degrades to an empty selector.
  */
-export async function activeSeasonJourneys(): Promise<ExpressionJourneyOption[]> {
-  const client = ub()
-  const season = await activeSeasonNumber(client)
-  if (season == null) return []
-
+/** The official Journeys under a GIVEN season's Quest. Server-only read; [] when the season
+ *  has no active Quest yet. Used both for the active-season form and to validate a re-point
+ *  against the challenge's OWN season (not whatever season happens to be active). */
+async function journeysForSeason(client: SupabaseClient, season: number): Promise<ExpressionJourneyOption[]> {
   const { data: questRows } = await client
     .from('quests')
     .select('id')
@@ -1102,6 +1150,13 @@ export async function activeSeasonJourneys(): Promise<ExpressionJourneyOption[]>
   }))
 }
 
+export async function activeSeasonJourneys(): Promise<ExpressionJourneyOption[]> {
+  const client = ub()
+  const season = await activeSeasonNumber(client)
+  if (season == null) return []
+  return journeysForSeason(client, season)
+}
+
 /**
  * Resolve an Expression Challenge's Journey server-side: confirm the id is a real official
  * Journey under the active season's Quest, and that no OTHER Expression Challenge already
@@ -1115,7 +1170,9 @@ async function resolveExpressionJourney(
   journeyId: string,
   excludeChallengeId?: string,
 ): Promise<{ slug: string } | { error: string }> {
-  const journey = (await activeSeasonJourneys()).find((j) => j.id === journeyId)
+  // Resolve the journey list for the CHALLENGE'S OWN season, not the active season — editing a
+  // challenge in a non-active (e.g. draft/cloned) season must validate against its own Journeys.
+  const journey = (await journeysForSeason(client, season)).find((j) => j.id === journeyId)
   if (!journey) return { error: 'Pick an official Journey from this season to cap.' }
 
   let dupeQuery = client
@@ -1237,8 +1294,22 @@ export async function moveChallengeAction(id: string, dir: 'up' | 'down'): Promi
   const swapIdx = dir === 'up' ? idx - 1 : idx + 1
   if (idx < 0 || swapIdx < 0 || swapIdx >= list.length) return ok() // already at the edge
   const neighbor = list[swapIdx]
-  await client.from('season_challenges').update({ sort_order: neighbor.sort_order }).eq('id', s.id)
-  await client.from('season_challenges').update({ sort_order: s.sort_order }).eq('id', neighbor.id)
+  // Two writes, not atomic (no transaction over supabase-js). Check BOTH: if the first lands
+  // and the second fails we'd leave two rows sharing a sort_order, so revert the first before
+  // surfacing. A truly atomic swap needs a DB function (see PUNT in the handoff).
+  const { error: e1 } = await client
+    .from('season_challenges')
+    .update({ sort_order: neighbor.sort_order })
+    .eq('id', s.id)
+  if (e1) return fail('Could not reorder the challenge.')
+  const { error: e2 } = await client
+    .from('season_challenges')
+    .update({ sort_order: s.sort_order })
+    .eq('id', neighbor.id)
+  if (e2) {
+    await client.from('season_challenges').update({ sort_order: s.sort_order }).eq('id', s.id)
+    return fail('Could not reorder the challenge.')
+  }
   revalidateContent('challenges')
   return ok()
 }

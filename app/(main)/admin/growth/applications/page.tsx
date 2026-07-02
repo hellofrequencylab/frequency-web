@@ -40,8 +40,9 @@ export default async function ApplicationsQueuePage({
   }
 
   const [apps, waitlist] = await Promise.all([listApplications(filter), listWaitlist({ track: 'seeker' })])
-  // Counts read the WHOLE queue (not the filtered view) so the KPIs are stable.
-  const allApps = filter.track || filter.status ? await listApplications({}) : apps
+  // Counts ALWAYS read the whole queue, never the filtered/openOnly view — otherwise the default
+  // (openOnly) view undercounts Accepted/etc. because those apps are filtered out of `apps`.
+  const allApps = await listApplications({})
   const counts = await applicationCounts(allApps)
   const wlCounts = await waitlistCounts(waitlist)
 
