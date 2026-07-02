@@ -1,0 +1,82 @@
+# check:rls deny-all allowlist — tables that intentionally have RLS ENABLED but NO POLICY.
+#
+# RLS-on-no-policy = FAIL-CLOSED: the table is reachable ONLY by the service-role client
+# (which bypasses RLS); anon/authenticated get nothing. It is the correct posture for a table
+# no caller-role should ever touch directly — written/read via the admin client behind
+# app-layer authz (server actions, crons, webhooks). This mirrors Supabase's own advisor,
+# which rates `rls_enabled_no_policy` as INFO (safe), not a vulnerability.
+#
+# This file IS the documented posture. The guard (scripts/check-rls.mjs) fails a NEW table
+# that has RLS off (real exposure) OR RLS-on-no-policy and is NOT listed here — forcing a
+# conscious "is this deny-all on purpose?" decision at PR time. To intentionally add a
+# service-role-only table, add its name below. One table per line; # comments allowed.
+
+agent_actions
+ai_help_queries
+ai_usage
+app_instances
+automation_rules
+campaigns
+challenge_qr_codes
+content_ratings
+creator_tips
+email_events
+email_suppressions
+entry_campaigns
+entry_point_conversions
+entry_point_variants
+entry_template_settings
+event_blurb_cache
+event_embeddings
+financial_transactions
+help_chunks
+journey_enrollments
+journey_phase_events
+journey_runs
+library_assets
+library_collection_items
+library_collections
+library_styles
+library_versions
+nodes
+notification_queue
+nurture_enrollments
+nurture_sequences
+nurture_steps
+outreach_sends
+pages
+platform_flag_events
+platform_settings
+playbook_runs
+playbooks
+practice_slug_redirects
+pricing_feature_gates
+pricing_settings
+pricing_stripe_prices
+program_adoptions
+qr_scans
+resonance_consent
+resonance_density_cells
+resonance_edges
+resonance_embeddings
+resonance_matches
+segments
+space_availability
+space_bookings
+space_donation_asks
+space_email_templates
+space_enrollments
+space_follows
+space_function_type_defaults
+space_invites
+space_membership_tiers
+space_memberships
+space_programs
+space_segments
+space_ticket_rsvps
+space_ticket_tiers
+stripe_webhook_events
+team_members
+trust_scores
+trust_signals
+vera_config
