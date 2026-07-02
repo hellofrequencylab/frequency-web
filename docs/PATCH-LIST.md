@@ -39,9 +39,9 @@ Legend: ✅ fixed · ⏳ open (documented) · 🔵 owner-only (dashboard/console
 - ✅ **DM optimistic-vs-realtime dedup** — `components/messages/thread.tsx`: the realtime handler now replaces my own optimistic placeholder (`optimistic-*`) with the real row instead of appending, so a sent DM no longer double-renders.
 - ✅ **Funnel builder remove-link** — `admin/growth/funnels/[id]/builder-client.tsx`: `removeStageLink` result checked; failures surface inline.
 
-## ⏳ Open — explicitly scoped remainder
+## ✅ Fire-and-refresh / silent write-failure (shipped)
 
-- **Systemic "fire-and-refresh"** — a shared `isError`+`setError` hook would close the long tail of admin toggle handlers (`inline-text.tsx`, `circles-client.tsx`, `qr-studio.tsx`, marketing `*-client` toggles) that spin without surfacing a failure. Deferred: a broad UX-polish refactor, best done as its own reviewed pass.
+- **Admin toggle/save handlers now surface failures** — the long tail of fire-and-forget handlers that spun (or silently reverted on refresh) with no error now show an inline `role="alert"` (`text-danger`) and preserve/restore state on failure: `components/admin/inline/inline-text.tsx` (throw-based save), `admin/circles/circles-client.tsx` (`updateCircle`/`archiveCircle`; editor stays open on failed save), `admin/qr/qr-studio.tsx` (`setNodeActive`/`deleteNode`), and the marketing `*-client` toggles — `nurture-client.tsx` (create/toggle sequence, step toggle/remove), `funnels-client.tsx` (campaign archive), `funnels/[id]/detail-client.tsx` (rename/archive/owner reassign), `funnels/variants/[codeId]/variants-client.tsx` (variant toggle/remove). No shared hook: each file already carried its own inline `error` convention and a distinct success path, so the pattern was inlined per component (throw → try/catch; `ActionResult` → `'error' in res`). Success paths preserved byte-for-byte; toggles render from server props so no false optimistic rollback.
 
 ## Product confirm — RESOLVED
 

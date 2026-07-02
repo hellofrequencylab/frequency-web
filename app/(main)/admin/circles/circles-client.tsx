@@ -92,6 +92,7 @@ function CircleForm({
   onSave,
   onCancel,
   isPending,
+  error,
 }: {
   initial?:  CircleRow
   hubs:      HubOption[]
@@ -99,6 +100,8 @@ function CircleForm({
   onSave:    (fd: FormData) => void
   onCancel:  () => void
   isPending: boolean
+  /** A failed save from the parent, shown above the actions so the operator sees it. */
+  error?:    string | null
 }) {
   const [name,   setName]   = useState(initial?.name ?? '')
   const [about,  setAbout]  = useState(initial?.about ?? '')
@@ -210,6 +213,12 @@ function CircleForm({
         </label>
       </div>
 
+      {error && (
+        <p role="alert" className="text-xs text-danger sm:col-span-2">
+          {error}
+        </p>
+      )}
+
       <div className="flex items-center gap-2 pt-1 sm:col-span-2">
         <Button type="submit" size="sm" disabled={!name.trim() || isPending}>
           <Check className="h-3.5 w-3.5" />
@@ -242,20 +251,33 @@ export function CirclesClient({
     initialEditId && circles.some((c) => c.id === initialEditId) ? initialEditId : null,
   )
   const [confirmArchive, setConfirmArchive] = useState<CircleRow | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
   const router = useRouter()
 
+  // updateCircle / archiveCircle throw on failure — catch so a failed save doesn't
+  // close the editor (or drop the archive) and leave the operator staring at a spinner.
   function handleUpdate(id: string, fd: FormData) {
+    setError(null)
     startTransition(async () => {
-      await updateCircle(id, fd)
-      setEditingId(null)
-      router.refresh()
+      try {
+        await updateCircle(id, fd)
+        setEditingId(null)
+        router.refresh()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't save. Try again.")
+      }
     })
   }
 
   function handleArchive(id: string) {
+    setError(null)
     startTransition(async () => {
-      await archiveCircle(id)
+      try {
+        await archiveCircle(id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't archive. Try again.")
+      }
     })
   }
 
@@ -289,6 +311,12 @@ export function CirclesClient({
 
   return (
     <div>
+      {/* Archive failures (the editor is closed) surface here; save failures show in the form. */}
+      {error && !editingCircle && (
+        <p role="alert" className="mb-3 text-xs text-danger">
+          {error}
+        </p>
+      )}
       <DataTable
         caption="Circles"
         rows={active}
@@ -301,7 +329,7 @@ export function CirclesClient({
               act={(next) => setCircleFeaturedAction(c.id, next)}
             />
             <InviteLinkButton circleId={c.id} />
-            <button onClick={() => setEditingId(c.id)} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
+            <button onClick={() => { setError(null); setEditingId(c.id) }} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-primary-bg hover:text-primary-strong motion-reduce:transition-none" aria-label="Edit">
               <Pencil className="h-3.5 w-3.5" aria-hidden />
             </button>
             <button onClick={() => setConfirmArchive(c)} disabled={isPending} className="rounded-lg p-1.5 text-subtle transition-colors hover:bg-warning-bg hover:text-warning disabled:opacity-50 motion-reduce:transition-none" aria-label="Archive">
@@ -335,14 +363,15 @@ export function CirclesClient({
       )}
 
       {editingCircle && (
-        <StudioWindow open onClose={() => setEditingId(null)} eyebrow="Studio · Circle">
+        <StudioWindow open onClose={() => { setError(null); setEditingId(null) }} eyebrow="Studio · Circle">
           <CircleForm
             initial={editingCircle}
             hubs={hubs}
             hosts={hosts}
             onSave={(fd) => handleUpdate(editingCircle.id, fd)}
-            onCancel={() => setEditingId(null)}
+            onCancel={() => { setError(null); setEditingId(null) }}
             isPending={isPending}
+            error={error}
           />
         </StudioWindow>
       )}

@@ -42,6 +42,7 @@ export function CampaignDetail({
   const [template, setTemplate] = useState<EntryTemplate | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(campaign.name)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
 
   function closeAdd() {
@@ -50,8 +51,10 @@ export function CampaignDetail({
   }
 
   function saveName() {
+    setError(null)
     start(async () => {
-      await updateCampaign(campaign.id, { name })
+      const r = await updateCampaign(campaign.id, { name })
+      if ('error' in r) { setError(r.error); return }
       setRenaming(false)
       router.refresh()
     })
@@ -59,8 +62,10 @@ export function CampaignDetail({
 
   function archive() {
     if (!confirm('Archive this campaign? Its entry points keep working.')) return
+    setError(null)
     start(async () => {
-      await archiveCampaign(campaign.id)
+      const r = await archiveCampaign(campaign.id)
+      if ('error' in r) { setError(r.error); return }
       router.refresh()
     })
   }
@@ -104,6 +109,11 @@ export function CampaignDetail({
               <Plus className="h-3.5 w-3.5" /> Add entry point
             </button>
           </>
+        )}
+        {error && (
+          <p role="alert" className="basis-full text-xs text-danger">
+            {error}
+          </p>
         )}
       </section>
 
@@ -193,13 +203,16 @@ function OwnerControl({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const currentName = owner?.ownerName ?? 'Unassigned'
 
   function reassign(id: string) {
     if (!id || id === owner?.ownerId) { setOpen(false); return }
+    setError(null)
     start(async () => {
-      await reassignEntryPoint(campaignId, codeId, id)
+      const r = await reassignEntryPoint(campaignId, codeId, id)
+      if ('error' in r) { setError(r.error); return }
       setOpen(false)
       router.refresh()
     })
@@ -218,23 +231,26 @@ function OwnerControl({
     )
   }
   return (
-    <span className="inline-flex items-center gap-1">
-      <User className="h-3 w-3 text-subtle" />
-      <select
-        autoFocus
-        defaultValue={owner?.ownerId ?? ''}
-        onChange={(e) => reassign(e.target.value)}
-        disabled={pending}
-        className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-2xs text-text"
-      >
-        <option value="" disabled>Assign to…</option>
-        {members.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}{m.role !== 'crew' ? ` · ${m.role}` : ''}
-          </option>
-        ))}
-      </select>
-      <button onClick={() => setOpen(false)} className="text-2xs text-muted hover:text-text">×</button>
+    <span className="inline-flex flex-col gap-1">
+      <span className="inline-flex items-center gap-1">
+        <User className="h-3 w-3 text-subtle" />
+        <select
+          autoFocus
+          defaultValue={owner?.ownerId ?? ''}
+          onChange={(e) => reassign(e.target.value)}
+          disabled={pending}
+          className="rounded-md border border-border bg-canvas px-1.5 py-0.5 text-2xs text-text"
+        >
+          <option value="" disabled>Assign to…</option>
+          {members.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}{m.role !== 'crew' ? ` · ${m.role}` : ''}
+            </option>
+          ))}
+        </select>
+        <button onClick={() => setOpen(false)} className="text-2xs text-muted hover:text-text">×</button>
+      </span>
+      {error && <span role="alert" className="text-2xs text-danger">{error}</span>}
     </span>
   )
 }

@@ -47,20 +47,25 @@ export function NurtureManager({ rows }: { rows: PersonaRow[] }) {
 function PersonaCard({ row }: { row: PersonaRow }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const seq = row.sequence
 
   function create() {
+    setError(null)
     start(async () => {
-      await createSequence(row.persona)
+      const r = await createSequence(row.persona)
+      if ('error' in r) { setError(r.error); return }
       setOpen(true)
       router.refresh()
     })
   }
   function toggle() {
     if (!seq) return
+    setError(null)
     start(async () => {
-      await toggleSequence(seq.id, !seq.enabled)
+      const r = await toggleSequence(seq.id, !seq.enabled)
+      if ('error' in r) { setError(r.error); return }
       router.refresh()
     })
   }
@@ -109,6 +114,12 @@ function PersonaCard({ row }: { row: PersonaRow }) {
         )}
       </div>
 
+      {error && (
+        <p role="alert" className="px-4 pb-3 text-xs text-danger">
+          {error}
+        </p>
+      )}
+
       {seq && open && (
         <div className="space-y-3 border-t border-border p-4">
           {seq.steps.map((step, i) => (
@@ -139,14 +150,21 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
     })
   }
   function toggle() {
+    setError(null)
     start(async () => {
-      await updateStep(step.id, { delayHours: step.delayHours, subject: step.subject, body: step.body, enabled: !step.enabled })
+      const r = await updateStep(step.id, { delayHours: step.delayHours, subject: step.subject, body: step.body, enabled: !step.enabled })
+      if ('error' in r) { setError(r.error); return }
       router.refresh()
     })
   }
   function remove() {
     if (!confirm('Delete this step?')) return
-    start(async () => { await deleteStep(step.id); router.refresh() })
+    setError(null)
+    start(async () => {
+      const r = await deleteStep(step.id)
+      if ('error' in r) { setError(r.error); return }
+      router.refresh()
+    })
   }
 
   if (editing) {
@@ -169,20 +187,23 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
   }
 
   return (
-    <div className={`flex items-start gap-3 rounded-xl border border-border bg-canvas/40 p-3 ${step.enabled ? '' : 'opacity-60'}`}>
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary-strong">{index + 1}</span>
-      <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-2xs font-medium text-subtle">
-          <Clock className="h-3 w-3" /> {humanDelay(step.delayHours)}
-        </p>
-        <p className="truncate text-sm font-semibold text-text">{step.subject}</p>
-        <p className="mt-0.5 line-clamp-2 text-xs text-muted">{step.body}</p>
+    <div className="space-y-1">
+      <div className={`flex items-start gap-3 rounded-xl border border-border bg-canvas/40 p-3 ${step.enabled ? '' : 'opacity-60'}`}>
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary-strong">{index + 1}</span>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 text-2xs font-medium text-subtle">
+            <Clock className="h-3 w-3" /> {humanDelay(step.delayHours)}
+          </p>
+          <p className="truncate text-sm font-semibold text-text">{step.subject}</p>
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted">{step.body}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button onClick={toggle} disabled={pending} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text disabled:opacity-60">{step.enabled ? 'Disable' : 'Enable'}</button>
+          <button onClick={() => setEditing(true)} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text">Edit</button>
+          <button onClick={remove} disabled={pending} className="rounded-md border border-border px-2 py-1 text-muted hover:text-danger disabled:opacity-60" aria-label="Delete step"><Trash2 className="h-3 w-3" /></button>
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <button onClick={toggle} disabled={pending} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text disabled:opacity-60">{step.enabled ? 'Disable' : 'Enable'}</button>
-        <button onClick={() => setEditing(true)} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text">Edit</button>
-        <button onClick={remove} disabled={pending} className="rounded-md border border-border px-2 py-1 text-muted hover:text-danger disabled:opacity-60" aria-label="Delete step"><Trash2 className="h-3 w-3" /></button>
-      </div>
+      {error && <p role="alert" className="text-xs text-danger">{error}</p>}
     </div>
   )
 }

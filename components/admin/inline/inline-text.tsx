@@ -27,14 +27,22 @@ export function InlineText({
 }) {
   const { editing } = useEditMode()
   const [val, setVal] = useState(value ?? '')
+  const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   if (!editing) return <>{children ?? value}</>
 
   const commit = () => {
     if (val.trim() === (value ?? '').trim()) return
+    setError(null)
     startTransition(async () => {
-      await save(val.trim())
+      // The save action throws on failure (auth, validation, db) — surface it inline
+      // instead of letting the field look saved until a refresh silently reverts it.
+      try {
+        await save(val.trim())
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't save. Try again.")
+      }
     })
   }
 
@@ -49,25 +57,34 @@ export function InlineText({
     inputClassName ??
     'w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text outline-none focus:ring-2 focus:ring-border-strong/30 disabled:opacity-50 placeholder:text-subtle'
 
-  return multiline ? (
-    <textarea
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={commit}
-      placeholder={placeholder}
-      rows={3}
-      disabled={pending}
-      className={`${cls} resize-none`}
-    />
-  ) : (
-    <input
-      value={val}
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={commit}
-      onKeyDown={onKeyDown}
-      placeholder={placeholder}
-      disabled={pending}
-      className={cls}
-    />
+  return (
+    <>
+      {multiline ? (
+        <textarea
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          placeholder={placeholder}
+          rows={3}
+          disabled={pending}
+          className={`${cls} resize-none`}
+        />
+      ) : (
+        <input
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          disabled={pending}
+          className={cls}
+        />
+      )}
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-danger">
+          {error}
+        </p>
+      )}
+    </>
   )
 }

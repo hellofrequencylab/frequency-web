@@ -141,22 +141,27 @@ function NodeCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const router = useRouter()
   const downloadName = (node.label ?? 'frequency-code').replace(/[^\w.-]+/g, '-').slice(0, 48)
   const apiBase = `/api/qr?node=${encodeURIComponent(node.id)}`
 
   function toggleActive() {
+    setError(null)
     start(async () => {
-      await setNodeActive(node.id, !node.active)
+      const res = await setNodeActive(node.id, !node.active)
+      if ('error' in res) { setError(res.error); return }
       router.refresh()
     })
   }
 
   function remove() {
     if (!confirm('Delete this code? Its check-in history goes too. This can’t be undone.')) return
+    setError(null)
     start(async () => {
-      await deleteNode(node.id)
+      const res = await deleteNode(node.id)
+      if ('error' in res) { setError(res.error); return }
       router.refresh()
     })
   }
@@ -279,6 +284,11 @@ function NodeCard({
               </button>
             </div>
           </div>
+          {error && (
+            <p role="alert" className="mt-2 text-xs text-danger">
+              {error}
+            </p>
+          )}
         </div>
       </div>
 

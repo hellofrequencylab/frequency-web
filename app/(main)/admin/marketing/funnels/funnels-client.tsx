@@ -62,53 +62,59 @@ export function FunnelsManager({ campaigns }: { campaigns: Campaign[] }) {
 function CampaignRow({ campaign }: { campaign: Campaign }) {
   const [pending, start] = useTransition()
   const [confirming, setConfirming] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   function archive() {
+    setError(null)
     start(async () => {
-      await archiveCampaign(campaign.id)
+      const r = await archiveCampaign(campaign.id)
+      if ('error' in r) { setError(r.error); return }
       router.refresh()
     })
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <Link href={`/admin/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>
-          <StatusChip tone={STATUS_TONE[campaign.status] ?? 'neutral'} size="sm">
-            <span className="capitalize">{campaign.status}</span>
-          </StatusChip>
-        </div>
-        <p className="mt-0.5 text-xs text-muted">
-          <span className="font-semibold text-text">{campaign.entryCount}</span> entry point{campaign.entryCount === 1 ? '' : 's'} ·{' '}
-          <span className="font-semibold text-text">{campaign.scans}</span> scan{campaign.scans === 1 ? '' : 's'}
-        </p>
-      </Link>
-      {campaign.status !== 'archived' && (
-        <button
-          onClick={() => setConfirming(true)}
-          disabled={pending}
-          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+    <div className="space-y-1">
+      <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+        <Link href={`/admin/marketing/funnels/${campaign.id}`} className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-sm font-bold text-text">{campaign.name}</h3>
+            <StatusChip tone={STATUS_TONE[campaign.status] ?? 'neutral'} size="sm">
+              <span className="capitalize">{campaign.status}</span>
+            </StatusChip>
+          </div>
+          <p className="mt-0.5 text-xs text-muted">
+            <span className="font-semibold text-text">{campaign.entryCount}</span> entry point{campaign.entryCount === 1 ? '' : 's'} ·{' '}
+            <span className="font-semibold text-text">{campaign.scans}</span> scan{campaign.scans === 1 ? '' : 's'}
+          </p>
+        </Link>
+        {campaign.status !== 'archived' && (
+          <button
+            onClick={() => setConfirming(true)}
+            disabled={pending}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted transition-colors hover:text-danger disabled:opacity-60"
+          >
+            <Archive className="h-3 w-3" /> Archive
+          </button>
+        )}
+        <Link
+          href={`/admin/marketing/funnels/${campaign.id}`}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-muted transition-colors hover:text-text"
         >
-          <Archive className="h-3 w-3" /> Archive
-        </button>
-      )}
-      <Link
-        href={`/admin/marketing/funnels/${campaign.id}`}
-        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-semibold text-muted transition-colors hover:text-text"
-      >
-        Open <ChevronRight className="h-3 w-3" />
-      </Link>
+          Open <ChevronRight className="h-3 w-3" />
+        </Link>
 
-      <DangerModal
-        open={confirming}
-        onClose={() => setConfirming(false)}
-        title="Archive campaign"
-        body="The campaign moves to archived. Its entry points keep working."
-        confirmLabel="Archive campaign"
-        onConfirm={archive}
-      />
+        <DangerModal
+          open={confirming}
+          onClose={() => setConfirming(false)}
+          title="Archive campaign"
+          body="The campaign moves to archived. Its entry points keep working."
+          confirmLabel="Archive campaign"
+          onConfirm={archive}
+        />
+      </div>
+      {error && <p role="alert" className="px-1 text-xs text-danger">{error}</p>}
     </div>
   )
 }
