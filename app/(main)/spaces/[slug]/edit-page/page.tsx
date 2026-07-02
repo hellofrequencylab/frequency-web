@@ -8,6 +8,8 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { resolveSpacePageDoc, readPageDoc, hasPage, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readProfileData } from '@/lib/spaces/profile-data'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
@@ -86,6 +88,19 @@ export default async function SpaceEditLandingPage({
     )
   }
 
+  // The SAME central content the public landing injects (identity + business profile + live rows), so
+  // the Puck editor renders blocks with the operator's REAL data (WYSIWYG), not the empty placeholders.
+  const spaceContent = await getSpaceContentData(space.id, {
+    name: brandName,
+    type: space.type,
+    logoUrl: space.brandLogoUrl,
+    coverUrl: space.coverImageUrl,
+    tagline: space.tagline,
+    primaryCta: { label: defaultPrimaryCtaLabel(space.type), href: `/spaces/${space.slug}/book` },
+    slug: space.slug,
+    profile: readProfileData(space.preferences),
+  })
+
   return (
     <SpaceLandingEditor
       slug={slug}
@@ -93,6 +108,7 @@ export default async function SpaceEditLandingPage({
       data={data}
       customized={customized}
       pageSlug={pageSlug}
+      spaceContent={spaceContent}
     />
   )
 }

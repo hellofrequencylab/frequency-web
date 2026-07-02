@@ -296,10 +296,18 @@ export default async function SpaceProfileChromeLayout({
     </div>
   )
 
-  // HEADER cover node: the compact image band alone (logo + name + actions live in the infoBand below).
+  // HEADER cover node: the compact image band, with the logo chip hanging HALF-OFF the cover bottom-left
+  // (the LinkedIn / Facebook business-profile pattern). The chip is ABSOLUTELY positioned against the
+  // cover (not a fragile negative margin across the template's hero/band gap), so it deterministically
+  // sits half on the image, half below it. The name + actions live in the infoBand, cleared below it.
   const headerCoverNode = (
-    <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
-      {coverImage}
+    <div className="relative w-full">
+      <div className={cn('relative w-full overflow-hidden rounded-xl bg-surface-elevated', coverH)}>
+        {coverImage}
+      </div>
+      <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-6">
+        <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+      </div>
     </div>
   )
 
@@ -313,21 +321,16 @@ export default async function SpaceProfileChromeLayout({
   const infoBand = (
     <div>
       {!isHero && (
-        // HEADER identity: the logo chip OVERLAPS the cover bottom (a single, generous -mt lift on the
-        // chip alone, so the logo clearly rides up ONTO the image while the name + tagline sit below the
-        // cover). The name lockup sits to the chip's right, bottom-aligned to it; the action row sits on
-        // the same line, pushed right, wrapping under only when the row runs out of room.
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-          <div className="flex min-w-0 items-end gap-4 sm:gap-5">
-            <div className="-mt-16 shrink-0 sm:-mt-20">
-              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
-            </div>
-            <div className="min-w-0 pt-1">{nameLockup(false)}</div>
-          </div>
-          <div className="pt-1">{identityActions(false)}</div>
+        // HEADER identity: the logo chip is owned by the cover (hanging half-off it), so this row is the
+        // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left,
+        // actions pushed right, wrapping under only when the row runs out of room.
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pt-14 sm:pt-16">
+          <div className="min-w-0">{nameLockup(false)}</div>
+          <div>{identityActions(false)}</div>
         </div>
       )}
-      {/* The menu sits in its OWN band under a hairline rule (the rule is ABOVE the lower menu line). */}
+      {/* The menu sits in its OWN band under a hairline rule (the rule is ABOVE the lower menu line;
+          the line UNDER the menu is dropped in PageAdminBar for space profiles). */}
       <div className="mt-5 border-t border-border">
         <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
       </div>
