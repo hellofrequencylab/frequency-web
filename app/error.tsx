@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export default function Error({
   error,
@@ -15,34 +17,22 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-canvas flex items-center justify-center px-4">
-      <div className="text-center max-w-sm">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-danger-bg dark:bg-danger-bg flex items-center justify-center">
-            <AlertTriangle className="w-8 h-8 text-danger" strokeWidth={2} />
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+      <EmptyState
+        variant="error"
+        title="Something went wrong"
+        description="Something broke on our end. Try again, or head back to your feed."
+        action={
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button variant="secondary" onClick={reset}>
+              Try again
+            </Button>
+            <Button asChild>
+              <Link href="/feed">Back to feed</Link>
+            </Button>
           </div>
-        </div>
-        <h1 className="text-xl font-semibold text-text mb-2">
-          Something went wrong
-        </h1>
-        <p className="text-sm text-muted leading-relaxed mb-8">
-          Something broke on our end. Try again, and if it keeps happening, refresh the page.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={reset}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-primary-hover transition-colors"
-          >
-            Try again
-          </button>
-          <a
-            href="/feed"
-            className="inline-flex items-center justify-center rounded-xl border border-border-strong px-5 py-2.5 text-sm font-semibold text-text hover:bg-surface-elevated transition-colors"
-          >
-            Go to feed
-          </a>
-        </div>
-      </div>
+        }
+      />
     </div>
   )
 }

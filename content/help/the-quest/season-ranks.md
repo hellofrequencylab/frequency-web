@@ -18,7 +18,7 @@ Ranks are your standing in the current season of **The Quest**, earned by finish
 - **Adept**: finish two Journeys.
 - **Master**: finish all three Journeys.
 
-Your rank advances automatically the moment you finish a Journey. There is no points threshold to hit and no manual recognition required. Finish the work and the rank follows.
+Your rank advances automatically the moment you finish a Journey. There is no Zap threshold to hit and no manual recognition required. Finish the work and the rank follows.
 
 ## What finishing a Journey earns
 

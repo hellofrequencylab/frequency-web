@@ -50,6 +50,20 @@ function inline(text: string): React.ReactNode[] {
     .filter((n) => n !== null)
 }
 
+// The same tiny markdown subset, flattened to PLAIN TEXT (for JSON-LD / meta,
+// where React nodes aren't valid): [label](href) → label, **bold**/*italic* →
+// their inner text, and any paragraph/line breaks collapse to single spaces.
+// Mirrors inline() so on-page copy and its structured-data mirror never drift.
+export function richPlainText(body?: string | null): string {
+  if (!body) return ''
+  return body
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // Body string → <p> per blank-line-separated paragraph, with inline formatting.
 export function richParagraphs(body?: string): React.ReactNode {
   if (!body) return null

@@ -35,9 +35,11 @@ import {
   type CardStyleValue,
   type DensityValue,
 } from '@/lib/page-editor/fields'
-import { richParagraphs } from '@/lib/page-editor/richtext'
+import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
 import { SiteImage } from '@/components/marketing/site-image'
 import { Stat, FaqList, Marquee } from '@/components/marketing/marketing-ui'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 
@@ -268,8 +270,18 @@ export function AccordionBlock({
     a: richParagraphs(item.a),
   }))
 
+  // FAQPage structured data, built from THIS block's own items, so a Puck-published
+  // page keeps the FAQ schema the coded page used to emit (the <Render> path bypasses
+  // the coded <JsonLd>). Plain-text answers (schema can't hold React nodes) so the
+  // structured data mirrors the visible copy. Only well-formed Q/A pairs are emitted
+  // (Google requires both), and the node is omitted entirely when none qualify.
+  const schemaQas = (items || [])
+    .map((item) => ({ q: (item.q ?? '').trim(), a: richPlainText(item.a) }))
+    .filter((qa) => qa.q && qa.a)
+
   return (
     <div>
+      {schemaQas.length > 0 && <JsonLd data={faqSchema(schemaQas)} />}
       {(eyebrow || title) && (
         <div className="mb-10">
           {eyebrow && <Eyebrow ink={ink}>{eyebrow}</Eyebrow>}

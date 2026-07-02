@@ -37,4 +37,4 @@ A Circle with a small star is **Featured**: one the Frequency team picked as a g
 - You can be in more than one Circle. Most people settle into one home Circle and
   visit others.
 
-Next: learn how showing up earns [zaps and gems](/help/the-quest/zaps-and-gems).
+Next: learn how showing up earns [Zaps and Gems](/help/the-quest/zaps-and-gems).

@@ -12,15 +12,15 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     <div className="flex min-h-[40vh] flex-col items-center justify-center px-4">
       <EmptyState
         variant="error"
-        title="Something went wrong on our end"
-        description="This page hit a snag. Try again, or head back to your feed."
+        title="The Marketplace didn't load"
+        description="This part of the Marketplace hit a snag. Try again, or head back to the full list."
         action={
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Button variant="secondary" onClick={reset}>
               Try again
             </Button>
             <Button asChild>
-              <Link href="/feed">Back to feed</Link>
+              <Link href="/market">Back to the marketplace</Link>
             </Button>
           </div>
         }
