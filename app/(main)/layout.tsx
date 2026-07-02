@@ -8,7 +8,8 @@ import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
 import type { Metadata } from 'next'
-import { loadChromeOverrides, isSafeRoute } from '@/lib/layout/page-chrome'
+import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
+import { loadAppOverrides, scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
 import { loadPageSettings } from '@/lib/page-settings/store'
 import { resolveTheme } from '@/lib/theme/server/resolve'
 import { structureFor } from '@/lib/theme/structure'
@@ -222,6 +223,11 @@ export default async function MainLayout({
   const reqHeaders = await headers()
   const reqPath = reqHeaders.get('x-pathname')
 
+  // The admin scope for this page (adminScopeFor, pure) — used to load the per-scope App overrides
+  // (docs/ADMIN-RAIL.md Phase 6) threaded into PageAdminProvider, mirroring loadChromeOverrides. A
+  // null scope (full-viewport takeover) has nothing to manage, so no overrides load.
+  const pageScope = reqPath && isSafeRoute(reqPath) ? adminScopeFor(reqPath) : null
+
   // ONE parallel wave of the shell's independent reads. Every entry depends only on
   // `profile` / `realRole` (or nothing), so they run concurrently instead of as ~16 serial
   // round-trips — that serial chain is what made every authed navigation feel laggy (site
@@ -240,6 +246,7 @@ export default async function MainLayout({
     analyticsConsent,
     [demoMode, demoHidden, hasDemoContent],
     chromeOverrides,
+    appOverrides,
     space,
     staffMember,
     operatesSpacesRaw,
@@ -263,6 +270,10 @@ export default async function MainLayout({
     hasConsent(profile.id, 'analytics'),
     Promise.all([demoModeEnabled(), viewerHidesDemo(), demoContentExists()]),
     loadChromeOverrides(),
+    // Per-scope App overrides for the standardized admin rail (docs/ADMIN-RAIL.md Phase 6). Loaded
+    // once per request like chromeOverrides; FAIL-SAFE ({} on any error / pre-migration) so the rail
+    // always falls back to the catalog defaults. A null page scope (takeover) loads nothing.
+    pageScope ? loadAppOverrides(scopeKeyFor(pageScope)) : Promise.resolve({} as AppOverrides),
     resolveSpaceForHost(reqHeaders.get('host')).catch(() => null),
     getStaffMember().catch(() => null),
     // Speculative operator reads, folded in like getStaffMember above. Each is React-cached AND
@@ -503,6 +514,7 @@ export default async function MainLayout({
       brandName={activeBrandName}
       brandLogoUrl={activeBrandLogoUrl}
       chromeOverrides={chromeOverrides}
+      appOverrides={appOverrides}
       webRole={pageWebRole}
       caps={previewingDown ? [] : Array.from(globalCaps)}
       profile={{ ...profile, community_role: effectiveRole }}

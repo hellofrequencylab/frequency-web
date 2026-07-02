@@ -5,6 +5,7 @@ import type { CommunityRole } from '@/lib/community-roles'
 import type { StaffRole } from '@/lib/staff'
 import type { WebRole } from '@/lib/core/roles'
 import type { Capability } from '@/lib/core/capabilities'
+import type { AppOverrides } from '@/lib/apps/overrides'
 
 // Carries the viewer's role + staff role to the on-page Settings bar
 // (components/layout/page-admin-bar) so it can render INSIDE the page templates'
@@ -23,6 +24,11 @@ interface PageAdminCtx {
    *  manage modules caps-blind and each module self-gates server-side. Present ⇒ the panel gates its
    *  catalog selection (appsForScope) on the real set, and bar visibility can switch to showsAdminBar. */
   caps?: ReadonlySet<Capability>
+  /** Per-scope operator App overrides for THIS page's admin scope (docs/ADMIN-RAIL.md Phase 6),
+   *  loaded once per request by the shell (loadAppOverrides). Merged over the catalog Apps in the
+   *  settings panel (mergeAppOverrides + the min_role gate). FAIL-SAFE: absent ⇒ treated as `{}` ⇒
+   *  the catalog defaults, so the rail is unchanged until overrides are threaded + saved. */
+  appOverrides?: AppOverrides
 }
 
 const Ctx = createContext<PageAdminCtx>({

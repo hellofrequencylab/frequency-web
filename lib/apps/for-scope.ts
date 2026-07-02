@@ -22,6 +22,8 @@ import type { App, AppGate, AppSurfaceKind, AppViewer } from './types'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 import { moduleScopeChain } from '@/lib/widgets/modules'
 import type { ScopeKind } from '@/lib/admin/modules/registry'
+import { loadAppOverrides, mergeAppOverrides, effectiveMinRole, scopeKeyFor } from './overrides'
+import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 
 // A scope kind → its URL section, so a scope can address the page-app route sets keyed under
 // ROUTE_MODULE_IDS ('/circles/*', '/events/*', …). 'global' addresses the default '*' set.
@@ -136,4 +138,34 @@ export function lockedAppsForScope(
         isAttainableGate(a.gate),
     )
     .map((a) => ({ app: a, reason: reasonForGate(a.gate) }))
+}
+
+// ── Phase 6: per-scope operator overrides (docs/ADMIN-RAIL.md Phase 6) ───────────────────────────
+// The IMPURE, override-aware twin of `appsForScope`. `appsForScope` stays pure (the code catalog,
+// resolved for a scope + viewer); this composes the operator overlay OVER it — dropping disabled
+// Apps, applying `position`, and gating each survivor on its per-App `min_role` floor. FAIL-SAFE:
+// loadAppOverrides returns {} on any error (incl. pre-migration), so with no overrides this is
+// exactly `appsForScope(scope, viewer, 'editor')` and the rail never breaks.
+
+/**
+ * The EDITOR (manage) Apps to present at a page `scope` for a `viewer`, with operator overrides
+ * applied: `mergeAppOverrides(appsForScope(scope, viewer, 'editor'), loadAppOverrides(scopeKeyFor(
+ * scope)))`, then the per-App `min_role` render gate (reuse `atLeastRole`) resolved against the
+ * viewer's community `role`. FAIL-CLOSED on the role gate: an App with a `min_role` floor is
+ * dropped when `role` is null/undefined or below the floor (matching resolveSlots's per-module
+ * gate). Fail-safe on scope: a null scope yields []. Server-only (it awaits the service-role
+ * reader); `appsForScope` remains the pure client-safe path.
+ */
+export async function resolveAppsForScope(
+  scope: AdminScope | null,
+  viewer: AppViewer,
+  role?: CommunityRole | null,
+): Promise<App[]> {
+  if (!scope || !viewer) return []
+  const overrides = await loadAppOverrides(scopeKeyFor(scope))
+  const merged = mergeAppOverrides(appsForScope(scope, viewer, 'editor'), overrides)
+  return merged.filter((a) => {
+    const floor = effectiveMinRole(a.id, overrides)
+    return floor == null || atLeastRole(role, floor)
+  })
 }
