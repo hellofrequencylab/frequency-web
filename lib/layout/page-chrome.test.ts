@@ -195,16 +195,17 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     expect(railFor('/administrators')).toBe('global')
   })
 
-  it('keeps the global rail on the entity owner consoles, drops it only on the horizontal CRM board', () => {
+  it('keeps the global rail on the entity owner consoles AND the Space CRM board', () => {
     // ADR-471 (owner directive: "the right rail shows on every page"): the entity OWNER CONSOLES
     // (/{entity}/[id]/manage, ADR-441/469) are a vertical GRID of section cards, not a horizontal
-    // board, so they read correctly beside the community rail and now ride the global rail like every
-    // other member surface (the rail fills what was an empty right gutter). Only the Space CRM board
-    // (a horizontal stage board) still drops the rail.
+    // board, so they read correctly beside the community rail and ride the global rail like every
+    // other member surface (the rail fills what was an empty right gutter). The Space CRM board now
+    // keeps the rail too (owner directive, 2026-07): its default views are vertical and its Pipeline
+    // scrolls horizontally within its own column.
     expect(railFor('/circles/sunrise-sit/manage')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/manage')).toBe('global')
     expect(railFor('/spaces/demo-org/manage')).toBe('global')
-    expect(railFor('/spaces/demo-practitioner/crm')).toBe('none')
+    expect(railFor('/spaces/demo-practitioner/crm')).toBe('global')
     // The left menu stays on these member-side dashboards.
     expect(leftRailFor('/spaces/demo-practitioner/manage')).toBe('global')
     // The Space SETTINGS cockpit (the legacy 7-tab) keeps the global rail too.
