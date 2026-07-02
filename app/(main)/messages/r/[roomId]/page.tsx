@@ -99,13 +99,16 @@ export default async function RoomPage({
   type RoomMessageRow = { id: string; room_id: string; author_id: string; body: string; created_at: string }
   let messages: (RoomMessageRow & { author: MemberProfile | null })[] = []
   if (canRead) {
+    // Fetch the NEWEST 100 (descending), then reverse to chronological order for
+    // render. Ordering ascending + limit would pin busy rooms to their first-ever
+    // 100 messages and never show recent conversation (matches the DM thread).
     const { data: rawMessages } = await supabase
       .from('room_messages')
       .select('id, room_id, author_id, body, created_at')
       .eq('room_id', roomId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(100)
-    const rawMsgs = (rawMessages ?? []) as RoomMessageRow[]
+    const rawMsgs = ((rawMessages ?? []) as RoomMessageRow[]).reverse()
 
     // Channel rooms have no member roster, so resolve message authors directly
     // (public fields) rather than from the room-member map.

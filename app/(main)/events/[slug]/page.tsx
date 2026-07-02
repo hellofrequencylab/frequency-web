@@ -123,25 +123,47 @@ export async function generateMetadata({
   const admin = createAdminClient()
   const { data: ev } = await admin
     .from('events')
-    .select('title, description, location, starts_at')
+    .select('title, description, starts_at, ends_at, visibility, status, is_cancelled')
     .eq('slug', slug)
     .maybeSingle()
   if (!ev) return { title: 'Event not found' }
   const event = ev as {
     title: string
     description: string | null
-    location: string | null
     starts_at: string
+    ends_at: string | null
+    visibility: string | null
+    status: string | null
+    is_cancelled: boolean | null
   }
 
-  const where = event.location ? ` at ${event.location}` : ''
+  // The admin read bypasses RLS, so mirror the page body's visibility gate here:
+  // only genuinely public, published, live events get rich indexable metadata.
+  // Anything private / circle_only / unlisted / draft / cancelled gets a minimal,
+  // noindexed head so private event data (title, description, venue) never crosses
+  // to crawlers or answer engines for a page the body will 404 or member-gate.
+  const isPublic =
+    event.visibility === 'public' &&
+    event.status === 'published' &&
+    !event.is_cancelled
+  if (!isPublic) {
+    return { title: event.title, robots: { index: false, follow: false } }
+  }
+
+  // Never expose events.location in the description (SEO-AEO-PLAN: city/area is the
+  // coarsest location an anon sees; the exact venue must not reach crawlers).
   const full =
     event.description ??
-    `${event.title}: an event on Frequency${where}. Sign in to RSVP.`
+    `${event.title}: an event on Frequency. Sign in to RSVP.`
   // Search snippets truncate around 155 chars — keep the meta description tight
   // (matches the discover detail pages).
   const description = full.length > 155 ? `${full.slice(0, 152).trimEnd()}…` : full
   const ogTitle = `${event.title} · ${SITE_NAME}`
+
+  // Past events stay reachable but drop out of the index (they linger in the
+  // sitemap comment's promise but were never actually noindexed): thin, stale.
+  const endInstant = event.ends_at ?? event.starts_at
+  const isPast = new Date(endInstant).getTime() < Date.now()
 
   // The share image is the dynamic OG card (opengraph-image.tsx) — Next injects it into
   // openGraph.images automatically, and Twitter inherits it as a large summary image. So
@@ -149,6 +171,7 @@ export async function generateMetadata({
   return {
     title: event.title,
     description,
+    ...(isPast ? { robots: { index: false, follow: true } } : {}),
     // /events/<slug> is the canonical public event URL (the discover detail points here too),
     // so search + AI engines consolidate on this one page.
     alternates: { canonical: `/events/${slug}` },

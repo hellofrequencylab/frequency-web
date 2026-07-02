@@ -216,8 +216,10 @@ export async function FeedList({
   }
 
   // Member-level beta-content toggle: drop seeded demo posts for an opted-out
-  // viewer (the global demo_mode already removes them when it's off).
-  if (await viewerHidesDemo()) {
+  // viewer (the global demo_mode already removes them when it's off). Reused
+  // below to gate the nearest-event banner the same way.
+  const hideDemoEvents = await viewerHidesDemo()
+  if (hideDemoEvents) {
     rawPosts = rawPosts.filter((p) => !(p as { is_demo?: boolean }).is_demo)
   }
 
@@ -308,11 +310,29 @@ export async function FeedList({
         .is('hidden_at', null)
         .order('published_at', { ascending: false })
         .limit(8),
-      admin.from('events').select('id, title, starts_at, location, slug')
-        .eq('is_cancelled', false)
-        .gte('starts_at', new Date().toISOString())
-        .order('starts_at', { ascending: true })
-        .limit(1),
+      // The admin client bypasses RLS, so this banner must re-apply the public
+      // listing gate itself (mirrors app/(main)/events/index-data.ts public query):
+      // only genuinely public, published, non-circle/space events, and drop demo
+      // rows for a viewer who has opted out. Without these, a private / draft /
+      // circle-only / standalone event would surface in every member's feed.
+      (hideDemoEvents
+        ? admin.from('events').select('id, title, starts_at, location, slug')
+            .eq('status', 'published')
+            .eq('visibility', 'public')
+            .eq('scope_type', 'public')
+            .eq('is_cancelled', false)
+            .eq('is_demo', false)
+            .gte('starts_at', new Date().toISOString())
+            .order('starts_at', { ascending: true })
+            .limit(1)
+        : admin.from('events').select('id, title, starts_at, location, slug')
+            .eq('status', 'published')
+            .eq('visibility', 'public')
+            .eq('scope_type', 'public')
+            .eq('is_cancelled', false)
+            .gte('starts_at', new Date().toISOString())
+            .order('starts_at', { ascending: true })
+            .limit(1)),
     ])
 
     // Viewer context for the Event-Dispatch gate (visibility + surrounding-area
