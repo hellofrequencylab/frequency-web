@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -73,6 +73,45 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     scopes: ['circle'],
     requiredCapability: 'circle.editSettings',
     slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  // Circle 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
+  // Appendix A, the Circle row). Each is gated per Appendix A and its server action re-checks the
+  // same capability. Place & Time = the meeting location/type + time zone; People = the roster,
+  // roles, capacity, and invites; Engage = the shared challenges the circle takes on together.
+  // Declared before circle.text so this scope's declaration order stays monotonic by `order` (the
+  // App catalog preserves declaration order while modulesFor* sorts by `order` — they must agree).
+  {
+    id: 'circle.placeAndTime',
+    label: 'Place & Time',
+    desc: 'Where and when your circle meets: in person or online, the area, and the time zone.',
+    Icon: MapPin,
+    scopes: ['circle'],
+    requiredCapability: 'circle.editSettings',
+    slot: 'place',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'circle.people',
+    label: 'People',
+    desc: 'Your members: the roster, roles, how full the circle is, and invites.',
+    Icon: Users,
+    scopes: ['circle'],
+    requiredCapability: 'circle.moderate',
+    slot: 'people',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'circle.engage',
+    label: 'Engage',
+    desc: 'The shared challenges your circle takes on together.',
+    Icon: Trophy,
+    scopes: ['circle'],
+    requiredCapability: 'circle.assignTask',
+    slot: 'engage',
     surface: 'sidebar',
     order: 10,
   },

@@ -11,8 +11,10 @@ import {
   getCircleChallenges,
   listAdoptableChallenges,
   type CircleChallenge,
+  type AdoptableChallenge,
 } from '@/lib/circles/challenges'
 import { slugify } from '@/lib/utils'
+import { isValidTimeZone } from '@/lib/time/zone'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -375,4 +377,169 @@ export async function deleteCircle(id: string, slug: string): Promise<{ error?: 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/admin/circles')
   return {}
+}
+
+// ─── Place & Time (the 'place' spine module) ───────────────────────────────────
+// Where + when the circle meets: in person or online, the neighborhood/city, the map pin, and the
+// time zone. Read + write both re-resolve circle.editSettings server-side (the admin client bypasses
+// RLS, so THIS gate — not RLS — is the authority). circles.geog is a GENERATED column derived from
+// latitude/longitude, so writing the lat/lng columns keeps the map + the near-me RPC in sync.
+
+/** The meeting fields the Place & Time module edits. Returns null unless the caller holds
+ *  circle.editSettings (visibility is enforced here, not in the client). */
+export async function getCirclePlaceTimeData(slug: string) {
+  const admin = createAdminClient()
+  const { data: circle } = await admin
+    .from('circles')
+    .select('id, slug, type, timezone, neighborhood, city, latitude, longitude')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!circle) return null
+
+  const caps = await getCircleCapabilities(circle.id)
+  if (!caps.has('circle.editSettings')) return null
+
+  return circle
+}
+
+export async function updateCirclePlaceTime(id: string, slug: string, fd: FormData) {
+  const caps = await getCircleCapabilities(id)
+  if (!caps.has('circle.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+
+  const typeRaw = ((fd.get('type') as string) ?? '').trim()
+  const type = typeRaw === 'online' ? 'online' : 'in-person'
+
+  // Time zone: only a valid IANA zone is written, else the column is left unchanged.
+  const zoneRaw = ((fd.get('timezone') as string) ?? '').trim()
+  const timezone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
+
+  const update: Record<string, unknown> = { type }
+  if (timezone !== undefined) update.timezone = timezone
+
+  if (type === 'online') {
+    // Going online clears the physical meeting place (the map + near-me RPC then skip it).
+    update.neighborhood = null
+    update.city = null
+    update.latitude = null
+    update.longitude = null
+  } else {
+    update.neighborhood = ((fd.get('neighborhood') as string) ?? '').trim() || null
+    update.city = ((fd.get('city') as string) ?? '').trim() || null
+    // Manual map pin: a valid lat/lng pair persists the meeting spot; empty/NaN clears it.
+    const latRaw = ((fd.get('lat') as string) ?? '').trim()
+    const lngRaw = ((fd.get('lng') as string) ?? '').trim()
+    const latNum = latRaw ? Number(latRaw) : NaN
+    const lngNum = lngRaw ? Number(lngRaw) : NaN
+    const valid =
+      Number.isFinite(latNum) && Number.isFinite(lngNum) && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180
+    update.latitude = valid ? latNum : null
+    update.longitude = valid ? lngNum : null
+  }
+
+  const { error } = await (admin as unknown as UntypedUpdate).from('circles').update(update).eq('id', id)
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/circles/${slug}`)
+  revalidatePath('/circles')
+}
+
+// ─── People (the 'people' spine module) ────────────────────────────────────────
+// The active roster, each member's crew role, how full the circle is, and the host invite tools.
+// Gated on circle.moderate (the same principals who moderate the circle); the read returns null for
+// anyone else so the module renders nothing. Invites reuse the existing circle actions
+// (createHostInviteLink / inviteByEmail), each with its own server-side gate.
+
+export interface CirclePeopleMember {
+  profileId: string
+  displayName: string
+  handle: string | null
+  avatarUrl: string | null
+  role: string | null
+  isHost: boolean
+}
+
+export interface CirclePeopleData {
+  circleId: string
+  slug: string
+  memberCount: number
+  memberCap: number
+  crewCount: number
+  members: CirclePeopleMember[]
+}
+
+export async function getCirclePeopleData(slug: string): Promise<CirclePeopleData | null> {
+  const admin = createAdminClient()
+  const { data: circle } = await admin
+    .from('circles')
+    .select('id, slug, member_count, member_cap, host_id')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!circle) return null
+
+  const caps = await getCircleCapabilities(circle.id)
+  if (!caps.has('circle.moderate')) return null
+
+  const { data: rows } = await admin
+    .from('memberships')
+    .select('profile_id, volunteer_role, joined_at, profile:profiles(id, display_name, handle, avatar_url)')
+    .eq('circle_id', circle.id)
+    .eq('status', 'active')
+    .order('joined_at', { ascending: true })
+
+  type PeopleRow = {
+    profile_id: string
+    volunteer_role: string | null
+    profile: { id: string; display_name: string | null; handle: string | null; avatar_url: string | null } | null
+  }
+  const list: CirclePeopleMember[] = ((rows ?? []) as unknown as PeopleRow[]).map((r) => ({
+    profileId: r.profile_id,
+    displayName: r.profile?.display_name ?? 'Member',
+    handle: r.profile?.handle ?? null,
+    avatarUrl: r.profile?.avatar_url ?? null,
+    role: r.volunteer_role,
+    isHost: r.profile_id === circle.host_id,
+  }))
+  // Crew = anyone carrying a volunteer role above plain member.
+  const crewCount = list.filter((m) => m.role && m.role !== 'member').length
+  // Host floats to the top; the rest keep join order.
+  list.sort((a, b) => (a.isHost === b.isHost ? 0 : a.isHost ? -1 : 1))
+
+  return {
+    circleId: circle.id,
+    slug: circle.slug,
+    memberCount: circle.member_count,
+    memberCap: circle.member_cap,
+    crewCount,
+    members: list.slice(0, 8),
+  }
+}
+
+// ─── Engage (the 'engage' spine module) ────────────────────────────────────────
+// The shared season challenges the circle has taken on together, each with collective member
+// progress, plus the ones it could still adopt. Reads the existing challenge layer (getCircleChallenges
+// / listAdoptableChallenges); adopting + dropping reuse adoptCircleChallenge / dropCircleChallenge
+// above. The read re-checks circle.assignTask (the gate for the Engage cell per Appendix A).
+
+export interface CircleEngageData {
+  circleId: string
+  slug: string
+  adopted: CircleChallenge[]
+  adoptable: AdoptableChallenge[]
+}
+
+export async function getCircleEngageData(slug: string): Promise<CircleEngageData | null> {
+  const admin = createAdminClient()
+  const { data: circle } = await admin.from('circles').select('id, slug').eq('slug', slug).maybeSingle()
+  if (!circle) return null
+
+  const caps = await getCircleCapabilities(circle.id)
+  if (!caps.has('circle.assignTask')) return null
+
+  const [adopted, adoptable] = await Promise.all([
+    getCircleChallenges(circle.id),
+    listAdoptableChallenges(circle.id),
+  ])
+  return { circleId: circle.id, slug: circle.slug, adopted, adoptable }
 }

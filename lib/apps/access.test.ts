@@ -23,11 +23,12 @@ describe('gate parity — surfacesFor(editor) reproduces modulesFor', () => {
   it('circle manager sees both circle editor modules, in order', () => {
     const scope: Scope = { kind: 'circle', circleId: 'c1', hostId: null }
     assertParity(scope, ['circle.editSettings'])
-    // Order guarantee: circle.settings (order 10) precedes circle.text (order 15).
+    // Order guarantee, editSettings-gated cells only (Place & Time shares the gate; People +
+    // Engage need circle.moderate / circle.assignTask, so a plain editSettings holder omits them).
     const ids = surfacesFor(APPS, { on: 'scopeKind', kind: 'circle' }, viewer(['circle.editSettings']), 'editor').map(
       (a) => a.id,
     )
-    expect(ids).toEqual(['circle.settings', 'circle.text'])
+    expect(ids).toEqual(['circle.settings', 'circle.placeAndTime', 'circle.text'])
   })
 
   it('circle non-manager sees no editor modules', () => {

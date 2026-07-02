@@ -95,7 +95,16 @@ describe('admin module registry', () => {
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
-    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual(['circle.settings', 'circle.text'])
+    // Circle now carries the 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics (settings + text),
+    // Place & Time, People, Engage. modulesForScopeKind sorts by `order` (stable), so the order-10
+    // modules keep declaration order and text (order 15) trails.
+    expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual([
+      'circle.settings',
+      'circle.placeAndTime',
+      'circle.people',
+      'circle.engage',
+      'circle.text',
+    ])
     // Hub/Nexus reach circle/event parity for in-page edit mode (EM1-4): the SettingsDrawer
     // selects their sidebar Basics module by scope kind, exactly as circle/event do.
     expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual(['hub.settings'])

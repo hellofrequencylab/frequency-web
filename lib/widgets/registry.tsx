@@ -84,6 +84,8 @@ import { CircleMomentumBlock } from '@/components/widgets/circles/circle-momentu
 import { CirclePracticeBlock } from '@/components/widgets/circles/circle-practice'
 import { CircleEvents } from '@/components/widgets/circles/circle-events'
 import { CircleMapBlock } from '@/components/widgets/circles/circle-map'
+import { CircleMeeting } from '@/components/widgets/circles/circle-meeting'
+import { CircleChallengesBlock } from '@/components/widgets/circles/circle-challenges'
 import { CircleInvite } from '@/components/widgets/circles/circle-invite'
 import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-run'
 import { CircleText } from '@/components/widgets/circles/circle-text'
@@ -220,6 +222,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'circle-practice': CirclePracticeBlock,
   'circle-events': CircleEvents,
   'circle-map': CircleMapBlock,
+  'circle-meeting': CircleMeeting,
+  'circle-challenges': CircleChallengesBlock,
   'circle-invite': CircleInvite,
   'circle-journey-run': CircleJourneyRun,
   'circle-text': CircleText,

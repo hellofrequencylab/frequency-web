@@ -3,6 +3,9 @@
 import type { ComponentType } from 'react'
 import { CircleSettingsModule } from './circle-settings-module'
 import { CircleTextModule } from './circle-text-module'
+import { CirclePlaceTimeModule } from './circle-place-time-module'
+import { CirclePeopleModule } from './circle-people-module'
+import { CircleEngageModule } from './circle-engage-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { EventSettingsModule } from './event-settings-module'
@@ -23,6 +26,9 @@ import { ChannelSettingsModule } from './channel-settings-module'
 export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.settings': CircleSettingsModule,
   'circle.text': CircleTextModule,
+  'circle.placeAndTime': CirclePlaceTimeModule,
+  'circle.people': CirclePeopleModule,
+  'circle.engage': CircleEngageModule,
   'hub.settings': HubSettingsModule,
   'nexus.settings': NexusSettingsModule,
   'event.settings': EventSettingsModule,
