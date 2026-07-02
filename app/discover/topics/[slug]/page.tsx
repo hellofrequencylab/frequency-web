@@ -78,7 +78,7 @@ export default async function TopicPage({
         data={[
           breadcrumbSchema([
             { name: 'Discover', path: '/discover' },
-            { name: 'Topics', path: '/discover/topics' },
+            { name: 'Channels', path: '/discover/topics' },
             { name: channel.name, path: `/discover/topics/${channel.slug}` },
           ]),
           circleListSchema(circles, `${channel.name} circles`),
@@ -90,7 +90,7 @@ export default async function TopicPage({
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-text"
       >
         <ChevronLeft className="h-4 w-4" />
-        Topics
+        Channels
       </Link>
 
       <DetailTemplate

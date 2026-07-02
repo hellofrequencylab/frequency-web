@@ -8,6 +8,7 @@ import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
 import { practiceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { IndexTemplate } from '@/components/templates'
+import { BetaCTA } from '@/components/marketing/marketing-ui'
 
 export const revalidate = 3600
 
@@ -70,44 +71,51 @@ export default async function PillarPracticesPage({
   const title = `${pillar.name} Practices`
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-      <JsonLd
-        data={[
-          practiceListSchema(rows, title),
-          breadcrumbSchema([
-            { name: 'Discover', path: '/discover' },
-            { name: 'Practices', path: '/discover/practices' },
-            { name: pillar.name, path: `/discover/practices/pillar/${slug}` },
-          ]),
-        ]}
+    <>
+      <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
+        <JsonLd
+          data={[
+            practiceListSchema(rows, title),
+            breadcrumbSchema([
+              { name: 'Discover', path: '/discover' },
+              { name: 'Practices', path: '/discover/practices' },
+              { name: pillar.name, path: `/discover/practices/pillar/${slug}` },
+            ]),
+          ]}
+        />
+
+        {/* Public SEO surface: no operator admin bar (that's a member-app control). A
+            back-link returns to the full library, matching the breadcrumb trail. */}
+        <IndexTemplate
+          title={title}
+          description={pillarDescription(pillar.name, pillar.description)}
+          back={{ href: '/discover/practices', label: 'Practices' }}
+          adminBar={false}
+        >
+          <PillarChips pillars={pillars} active={slug} />
+
+          {rows.length === 0 ? (
+            <p className="text-muted">
+              No {pillar.name} practices yet.{' '}
+              <Link className="underline hover:text-text" href="/discover/practices">
+                Browse the full library
+              </Link>
+              .
+            </p>
+          ) : (
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {rows.map((p) => (
+                <PracticeCard key={p.id} p={p} />
+              ))}
+            </ul>
+          )}
+        </IndexTemplate>
+      </div>
+
+      <BetaCTA
+        heading="Practices stick when people are counting on you."
+        body={`Pick a ${pillar.name} practice, then find a Circle near you doing it on a standing rhythm. Join the Beta and start showing up.`}
       />
-
-      {/* Public SEO surface: no operator admin bar (that's a member-app control). A
-          back-link returns to the full library, matching the breadcrumb trail. */}
-      <IndexTemplate
-        title={title}
-        description={pillarDescription(pillar.name, pillar.description)}
-        back={{ href: '/discover/practices', label: 'Practices' }}
-        adminBar={false}
-      >
-        <PillarChips pillars={pillars} active={slug} />
-
-        {rows.length === 0 ? (
-          <p className="text-muted">
-            No {pillar.name} practices yet.{' '}
-            <Link className="underline hover:text-text" href="/discover/practices">
-              Browse the full library
-            </Link>
-            .
-          </p>
-        ) : (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {rows.map((p) => (
-              <PracticeCard key={p.id} p={p} />
-            ))}
-          </ul>
-        )}
-      </IndexTemplate>
-    </div>
+    </>
   )
 }

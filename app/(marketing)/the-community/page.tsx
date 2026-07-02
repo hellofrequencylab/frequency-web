@@ -386,8 +386,8 @@ function LegacyTheCommunity() {
           <DayBeat
             icon={MessageCircle}
             time="9:40a"
-            title="A ping from the circle"
-            body="Someone posts a photo from the morning. A few zaps, a couple of replies. The thread keeps the warmth alive between meetings."
+            title="A ping from the Circle"
+            body="Someone posts a photo from the morning. A few Zaps, a couple of replies. The thread keeps the warmth alive between meetings."
           />
           <DayBeat
             icon={CalendarCheck}

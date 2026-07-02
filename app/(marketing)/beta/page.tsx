@@ -10,7 +10,7 @@ import { breadcrumbSchema } from '@/lib/jsonld'
 export const metadata: Metadata = {
   title: 'Join the Beta',
   description:
-    'Request your spot in the Frequency community Beta. We’re opening it to a small group at a time, free during the beta, no card, founder pricing locked.',
+    "Request your spot in the Frequency community Beta. We're opening it to a small group at a time, free during the beta, no card, founder pricing locked.",
   alternates: { canonical: '/beta' },
   openGraph: {
     title: 'Join the Frequency Beta',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600
 
 const WHAT_YOU_GET = [
-  { Icon: Users, label: 'A local Circle near you', body: 'A small group of neighbors built around what you practice, small enough to be missed when you don’t show.' },
+  { Icon: Users, label: 'A local Circle near you', body: "A small group of neighbors built around what you practice, small enough to be missed when you don't show." },
   { Icon: CalendarHeart, label: 'Real gatherings, in person', body: 'Standing times to actually show up, on the bluff, at The Lab, around a table.' },
   { Icon: Sparkles, label: 'A say in what it becomes', body: 'Founding members shape the Circles, the rituals, and the room from day one.' },
   { Icon: ShieldCheck, label: 'Founder pricing, locked', body: 'Free for the whole beta, no card. Lock your founder rate for when paid memberships launch.' },
@@ -40,7 +40,7 @@ export default function BetaPage() {
         focal="object-center"
         eyebrow="The community beta"
         title="Be one of the first."
-        subtitle={`We’re opening Frequency to a small group at a time, starting in ${FOUNDING_PLACE}. Add your name and we’ll reach out when a spot opens for you.`}
+        subtitle={`We're opening Frequency to a small group at a time, starting in ${FOUNDING_PLACE}. Add your name and we'll reach out when a spot opens for you.`}
         footer={
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/60">
             <span className="font-semibold text-white/80">Free during the beta.</span>
@@ -56,7 +56,7 @@ export default function BetaPage() {
           {/* Why you're here */}
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-primary-strong mb-4">
-              What you’re joining
+              What you&apos;re joining
             </p>
             <h2 className="font-display uppercase text-text text-4xl sm:text-5xl mb-7">
               Not another feed. A place to be missed.
@@ -106,7 +106,7 @@ export default function BetaPage() {
           {[
             { n: '01', t: 'Add your name', b: 'Tell us where you are. It takes ten seconds and costs nothing.' },
             { n: '02', t: 'We reach out', b: 'When a spot opens near you, we send a personal invite, not a mass blast.' },
-            { n: '03', t: 'Show up', b: 'Find your Circle, meet your people, and start being missed when you’re gone.' },
+            { n: '03', t: 'Show up', b: "Find your Circle, meet your people, and start being missed when you're gone." },
           ].map((s) => (
             <li key={s.n} className="rounded-2xl border border-border bg-surface p-7 shadow-sm">
               <span className="font-display text-3xl text-border-strong" aria-hidden>

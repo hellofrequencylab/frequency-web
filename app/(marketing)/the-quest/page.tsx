@@ -79,7 +79,7 @@ const RANKS: { icon: IconType; name: string; tag: string; body: string }[] = [
     icon: Star,
     name: 'Master',
     tag: 'Three Journeys done',
-    body: 'You finished the season. Mind, body, spirit: you moved through all three and came out changed.',
+    body: 'You finished the season. Mind, Body, Spirit: you moved through all three and came out changed.',
   },
 ]
 
@@ -275,7 +275,7 @@ function LegacyTheQuest() {
         alt="A Frequency music circle gathered on a cliffside at golden hour"
         eyebrow="Quests"
         title="Three Journeys. One season."
-        kicker="Mind, body, spirit: each one a focused track, each one capped by an Expression Challenge."
+        kicker="Mind, Body, Spirit: each one a focused track, each one capped by an Expression Challenge."
         imgAspect="landscape"
         reverse
         tone="canvas"
@@ -325,7 +325,7 @@ function LegacyTheQuest() {
         <Marquee
           items={[
             'Show up',
-            'Earn zaps',
+            'Earn Zaps',
             'Finish a Journey',
             'Earn a Trophy',
             'Bring someone new',
@@ -384,7 +384,7 @@ function LegacyTheQuest() {
 
       <BetaCTA
         heading="Start your first season."
-        body="Pick a Circle, show up, and earn your first zap. The high score is a life you're actually living."
+        body="Pick a Circle, show up, and earn your first Zap. The high score is a life you're actually living."
       />
     </>
   )

@@ -63,7 +63,7 @@ const INSIDE = [
   {
     icon: Snowflake,
     title: 'The cold pool',
-    body: 'A plunge that shocks everything loose. Do it alone and it’s a habit; do it with your circle and it’s a ritual.',
+    body: 'A plunge that shocks everything loose. Do it alone and it’s a habit; do it with your Circle and it’s a ritual.',
   },
   {
     icon: Coffee,
@@ -196,7 +196,7 @@ function LegacyTheLab() {
           stranger across the water.
         </p>
         <p>
-          Do it alone and it&apos;s a habit. Do it with your circle and it
+          Do it alone and it&apos;s a habit. Do it with your Circle and it
           becomes the thing you text each other about at 6am.
         </p>
       </ZigZag>
