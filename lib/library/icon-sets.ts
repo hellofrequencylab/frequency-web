@@ -1,3 +1,4 @@
+import lucideInfo from '@iconify-json/lucide/info.json'
 import phInfo from '@iconify-json/ph/info.json'
 import tablerInfo from '@iconify-json/tabler/info.json'
 
@@ -49,9 +50,11 @@ function fromInfo(prefix: string, role: IconSetRole, raw: RawInfo): IconSetInfo 
   }
 }
 
-/** THE installed sets, house family first. Add a set here when its @iconify-json package is installed. */
+/** THE installed sets, primary (house) family first. Lucide is the set the site already uses in ~897
+ *  files and stays primary; Phosphor + Tabler fill gaps. Add a set here when its package is installed. */
 export const ICON_SETS: readonly IconSetInfo[] = [
-  fromInfo('ph', 'house', phInfo as RawInfo),
+  fromInfo('lucide', 'house', lucideInfo as RawInfo),
+  fromInfo('ph', 'coverage', phInfo as RawInfo),
   fromInfo('tabler', 'coverage', tablerInfo as RawInfo),
 ]
 

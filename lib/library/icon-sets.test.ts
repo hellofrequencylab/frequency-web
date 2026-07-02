@@ -1,19 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import { getIconData } from '@iconify/utils'
+import lucideIcons from '@iconify-json/lucide/icons.json'
 import phIcons from '@iconify-json/ph/icons.json'
 import tablerIcons from '@iconify-json/tabler/icons.json'
 import type { IconifyJSON } from '@iconify/types'
 import { ICON_SETS, iconSetByPrefix, houseIconSet } from './icon-sets'
 
 const COLLECTIONS: Record<string, IconifyJSON> = {
+  lucide: lucideIcons as IconifyJSON,
   ph: phIcons as IconifyJSON,
   tabler: tablerIcons as IconifyJSON,
 }
 
 describe('Loom icon-set registry', () => {
-  it('exposes exactly one house family', () => {
+  it('exposes exactly one house family (Lucide, the primary set)', () => {
     expect(ICON_SETS.filter((s) => s.role === 'house')).toHaveLength(1)
-    expect(houseIconSet().prefix).toBe('ph')
+    expect(houseIconSet().prefix).toBe('lucide')
   })
 
   it('every set carries a license (the white-label audit needs it)', () => {

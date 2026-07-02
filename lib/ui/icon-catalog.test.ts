@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import { getIconData } from '@iconify/utils'
+import lucideIcons from '@iconify-json/lucide/icons.json'
 import phIcons from '@iconify-json/ph/icons.json'
 import tablerIcons from '@iconify-json/tabler/icons.json'
 import type { IconifyJSON } from '@iconify/types'
 import { ICONS, icon } from './icon-catalog'
 
 const COLLECTIONS: Record<string, IconifyJSON> = {
+  lucide: lucideIcons as IconifyJSON,
   ph: phIcons as IconifyJSON,
   tabler: tablerIcons as IconifyJSON,
 }
@@ -23,9 +25,16 @@ describe('semantic icon catalog', () => {
     expect(broken).toEqual([])
   })
 
-  it('icon() returns the mapped name', () => {
-    expect(icon('energy')).toBe('ph:lightning-fill')
-    expect(icon('award')).toBe('ph:trophy')
+  it('icon() returns the mapped name (Lucide-primary)', () => {
+    expect(icon('energy')).toBe('lucide:zap')
+    expect(icon('award')).toBe('lucide:trophy')
+    // gap-fill: Lucide has no lotus, so meditation comes from Phosphor
+    expect(icon('meditation')).toBe('ph:flower-lotus')
+  })
+
+  it('is Lucide-first: the primary set backs the vast majority of meanings', () => {
+    const lucide = Object.values(ICONS).filter((n) => n.startsWith('lucide:')).length
+    expect(lucide).toBeGreaterThan(Object.keys(ICONS).length * 0.8)
   })
 
   it('every name is prefixed (prefix:name)', () => {

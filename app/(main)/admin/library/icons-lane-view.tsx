@@ -21,7 +21,7 @@ export function IconsLaneView() {
       title="Icons"
       eyebrow="Loom"
       icon={Shapes}
-      description="The installed icon sets and the house palette. Phosphor is the house family; Tabler fills gaps. Reference icons by meaning through the semantic catalog, not by raw name."
+      description="The installed icon sets and the house palette. Lucide is the primary family (the set the site already uses); Phosphor and Tabler fill gaps. Reference icons by meaning through the semantic catalog, not by raw name."
       width="wide"
     >
       <AdminSection
