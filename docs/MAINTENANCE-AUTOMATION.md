@@ -51,7 +51,7 @@ Autonomy legend: **🟢 buildable + verifiable in-repo** · **🟡 needs an owne
 | **1** | `check:rls` static guard + CI (every `create table` gets RLS + a policy or a documented deny-all) | 🟢 | ✅ shipped — `scripts/check-rls.mjs` + `rls-deny-all.txt` (69 tables), CI-wired, 5 self-tests |
 | **2** | Accepted-risk allowlist (`scripts/maintenance/accepted-advisories.json`) + `advisor-diff.mjs` (surfaces only new findings) + test | 🟢 (diff logic) / 🟡 (advisor fetch needs `SUPABASE_ACCESS_TOKEN` in CI) | ✅ shipped — pure `diffAdvisors()` + 6 self-tests; fetch arms with the token |
 | **3** | `maintenance.yml` scheduled workflow — `pnpm audit` + advisor diff, opens an **issue on delta** (default `GITHUB_TOKEN`) | 🟢 | ✅ shipped — weekly (Mon 07:17 UTC) + manual; quiet unless there's a new finding |
-| **4** | `scripts/maintenance/sweep.mts` — the AI triage step (help-autodoc pattern): reads the diff + guard results, opens a **draft PR/issue** with the report | 🟡 (uses existing `ANTHROPIC_API_KEY`) | ⏳ |
+| **4** | `scripts/maintenance/sweep.mts` — the AI triage step (help-autodoc pattern): triages the sweep's findings into a prioritized action list folded into the tracking issue. Advises only; never edits code. | 🟡 (uses existing `ANTHROPIC_API_KEY`) | ✅ shipped — gated + non-fatal; for full draft-PR autonomy, arm a scheduled Claude Code session running `/maintenance` (below) |
 | **5** | Gate `db-tests` on PRs | 🔴 (precondition: a fresh full apply is green — the migration-ledger reconciliation, OPEN-THREADS A2) | 📋 owner/verification |
 | **6** | Storage orphaned-object GC cron (reference-based, dry-run first) + bucket-policy audit | 🟢 (build) / 🟡 (arming touches prod storage) | 📋 |
 | **7** | Schedule `check:cron-freshness` + wire one alert channel (Slack/email webhook) | 🟡 (alert webhook secret) | 📋 |
@@ -71,6 +71,16 @@ about *new* ones. Each entry cites the ADR/rationale. Seed set:
 
 **Rule:** an advisory may be added to the allowlist ONLY with a one-line rationale + an ADR
 reference. The sweep treats anything not on the list as a new finding to surface.
+
+### 3a. The full-autonomy AI layer (owner-armed)
+
+The Phase 4 `sweep.mts` step *advises* (triages findings into the tracking issue). For the
+Tier-2 loop's full **draft-and-approve** power — the AI reading advisors + drift + deps and
+opening a **draft PR** with safe fixes — arm a **scheduled Claude Code session** (this platform)
+that runs the `/maintenance` skill weekly. That skill already does the whole draft-and-approve
+flow (never merges, never applies migrations, drafts risky items for approval). This is
+strictly more capable than a bespoke SDK script because it reuses the full agent + skill, so it
+is the recommended path for autonomous fixes; the in-CI `sweep.mts` is the always-on advisory floor.
 
 ## 5. Owner actions (arm the 🟡/🔴 pieces)
 
