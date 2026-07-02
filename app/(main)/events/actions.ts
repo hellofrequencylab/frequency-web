@@ -19,6 +19,7 @@ import { cancelAudit } from '@/lib/events/event-lifecycle'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
+import { HOME_TZ, isValidTimeZone, isEventPast, zoneAbbrev, resolveZone } from '@/lib/time/zone'
 import { embedEvent } from '@/lib/events/embeddings'
 import { saveEventLocation, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
@@ -135,6 +136,13 @@ export async function createEvent(formData: FormData) {
   // Additional gallery images (ordered storage paths in the same bucket).
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
 
+  // Event time zone (lib/time/zone): the venue's coordinates aren't known at insert (geocoding
+  // runs async below), so seed the column with the creator's submitted zone when the form sends
+  // one, else HOME_TZ. geocodeEventOnCreate then refines it from the resolved point (in-person),
+  // so an in-person event ends up in its venue's zone and an online one keeps the creator's.
+  const submittedTz = (formData.get('timeZone') as string | null)?.trim() || null
+  const timeZone = isValidTimeZone(submittedTz) ? submittedTz : HOME_TZ
+
   if (!title || !startsAt) return
   // A circle event must name a circle; a public event resolves its scope below.
   if (!isPublic && !formScopeId) return
@@ -199,6 +207,9 @@ export async function createEvent(formData: FormData) {
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
+      // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
+      // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
+      time_zone: timeZone,
       // space_id is newer than the generated DB types — cast the payload to reach the column
       // (ADR-246); omit when the root row is missing (the backfill sweeps the NULL to root).
       ...(spaceId ? { space_id: spaceId } : {}),
@@ -359,16 +370,22 @@ export async function updateEvent(eventId: string, formData: FormData) {
   redirect(`/events/${slug}`)
 }
 
-// Same UTC rendering the reminder cron uses (app/api/cron/event-reminders) so the
-// "when" line reads identically across the RSVP confirmation and later reminders —
-// "Wed Jul 22 · 7:00 AM UTC". Timezone is explicit (we don't store per-profile TZ
-// yet) so it's never ambiguous.
-function formatEventWhen(iso: string): string {
-  return new Date(iso).toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
-    timeZone: 'UTC', timeZoneName: 'short',
-  }).replace(',', '').replace(' at ', ' · ')
+// The "when" line for RSVP confirmations + reminders. starts_at stores the event's
+// wall-clock as UTC PARTS, so we render those parts (timeZone:'UTC') to get the event's
+// own local time, then label it with the event's REAL zone abbrev (PST/PDT/EST…) via
+// lib/time/zone — not the literal "UTC" the old formatter printed. Reads identically to
+// "Wed Jul 22 · 7:00 AM PDT".
+function formatEventWhen(iso: string, tz: string = HOME_TZ): string {
+  const base = new Date(iso)
+    .toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+      timeZone: 'UTC',
+    })
+    .replace(',', '')
+    .replace(' at ', ' · ')
+  const abbr = zoneAbbrev(iso, tz)
+  return abbr ? `${base} ${abbr}` : base
 }
 
 // Best-effort, non-blocking RSVP confirmation email. Mirrors the reminder cron's
@@ -384,12 +401,20 @@ async function sendRsvpConfirmation(
 ): Promise<void> {
   const admin = createAdminClient()
 
-  const { data: ev } = await admin
+  // time_zone is newer than the generated DB types, so selecting it yields a
+  // SelectQueryError type — read untyped and cast to the shape we use (repo convention).
+  const { data: evRaw } = await admin
     .from('events')
-    .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, host:profiles!host_id ( display_name )')
+    .select('title, starts_at, ends_at, location, slug, description, scope_id, scope_type, is_cancelled, time_zone, host:profiles!host_id ( display_name )')
     .eq('id', eventId)
     .maybeSingle()
+  const ev = evRaw as unknown as {
+    title: string; starts_at: string; ends_at: string | null; location: string | null
+    slug: string; description: string | null; scope_id: string | null; scope_type: string | null
+    is_cancelled: boolean; time_zone: string | null; host: { display_name: string | null } | null
+  } | null
   if (!ev || ev.is_cancelled) return
+  const evTz = resolveZone(ev.time_zone)
 
   // The SMS leg is independent of the email leg (a member may want one and not the
   // other), so it runs in its own gated, self-contained try/catch below.
@@ -423,7 +448,7 @@ async function sendRsvpConfirmation(
       recipientName:      profile.display_name ?? 'there',
       recipientProfileId: profileId,
       eventTitle:         ev.title,
-      whenAbsolute:       formatEventWhen(ev.starts_at),
+      whenAbsolute:       formatEventWhen(ev.starts_at, evTz),
       location:           ev.location,
       hostName:           host?.display_name ?? null,
       circleName,
@@ -434,7 +459,7 @@ async function sendRsvpConfirmation(
       googleCalUrl:       status === 'going'
         ? buildGoogleCalendarUrl({
             title: ev.title, startsAt: ev.starts_at, endsAt: ev.ends_at,
-            description: ev.description, location: ev.location,
+            description: ev.description, location: ev.location, timeZone: evTz,
           })
         : null,
       status,
@@ -790,12 +815,19 @@ export async function checkInEvent(eventId: string): Promise<CheckInResult> {
   if (!myProfileId) return { ok: false }
 
   const admin = createAdminClient()
-  const { data: ev } = await admin
+  // time_zone is newer than the generated DB types, so a plain typed select of it yields a
+  // SelectQueryError type — read the row untyped and cast (repo convention). The column is
+  // still returned at runtime.
+  const { data: evRaw } = await admin
     .from('events')
-    .select('starts_at, is_cancelled')
+    .select('starts_at, is_cancelled, time_zone')
     .eq('id', eventId)
     .maybeSingle()
-  if (!ev || ev.is_cancelled || new Date(ev.starts_at) > new Date()) return { ok: false }
+  const ev = evRaw as unknown as { starts_at: string; is_cancelled: boolean; time_zone: string | null } | null
+  // Check-in unlocks only once the event has actually STARTED in its own zone. Comparing
+  // the raw wall-clock to now unlocked it (and awarded Zaps) ~7h early for a PT event.
+  const evCheckInTz = resolveZone(ev?.time_zone)
+  if (!ev || ev.is_cancelled || !isEventPast(ev.starts_at, null, evCheckInTz)) return { ok: false }
 
   const { data: rsvp } = await admin
     .from('event_rsvps')

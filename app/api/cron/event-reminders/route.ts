@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { HOME_TZ, zoneAbbrev } from '@/lib/time/zone'
 import type { Database } from '@/lib/database.types'
 import {
   sendEventReminderEmail,
@@ -80,15 +81,21 @@ async function stampReminder(rsvpId: string, sentColumn: string): Promise<void> 
 }
 
 function formatAbsolute(iso: string): string {
-  // Render in UTC since we don't know the recipient's timezone yet (P2.13
-  // attendance refinement may add per-profile timezone). Format reads as
-  // "Wed, Jul 22 · 7:00 AM UTC" which is unambiguous.
+  // starts_at holds the event's wall-clock as UTC PARTS. Render those parts
+  // (timeZone:'UTC') to show the event's own local time, then label it with the
+  // community's HOME zone abbrev (PST/PDT) instead of the literal "UTC" the old
+  // formatter printed. NOTE: reminders default the label to HOME; the send WINDOW
+  // itself (the .gte/.lt on starts_at below) still compares real instants against
+  // wall-clock parts and can fire ~offset hours off for non-HOME events — a proper
+  // fix widens the SQL window and filters in code by eventInstant(starts_at, tz).
   const d = new Date(iso)
-  return d.toLocaleString('en-US', {
+  const base = d.toLocaleString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric',
     hour: 'numeric', minute: '2-digit',
-    timeZone: 'UTC', timeZoneName: 'short',
+    timeZone: 'UTC',
   }).replace(',', '').replace(' at ', ' · ')
+  const abbr = zoneAbbrev(iso, HOME_TZ)
+  return abbr ? `${base} ${abbr}` : base
 }
 
 function formatRelative(lead: ReminderLead): string {

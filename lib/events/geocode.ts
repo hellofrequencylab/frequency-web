@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { safeHttpUrl } from '@/lib/safe-url'
+import { tzFromLatLng } from '@/lib/time/zone'
 
 // Event geolocation data layer (EVENTS-REWORK B1).
 //
@@ -87,6 +88,18 @@ export async function saveEventLocation(
   const admin = createAdminClient()
   const { address, attendanceMode, onlineUrl, geocoder, point: explicitPoint } = args
 
+  // Whenever we land a real point, derive + persist the event's IANA time_zone from its
+  // coordinates (lib/time/zone). This is the ONE place every save path (create, edit, the
+  // on-page location editor, the admin editor) resolves a venue, so pinning the zone here
+  // keeps events.time_zone correct without each caller repeating the lookup. Written via an
+  // untyped cast — time_zone is newer than the generated DB types (repo convention).
+  const persistTimeZone = async (p: GeoPoint): Promise<void> => {
+    await admin
+      .from('events')
+      .update({ time_zone: tzFromLatLng(p.lat, p.lng) } as never)
+      .eq('id', eventId)
+  }
+
   // Always persist the structured address + mode (additive columns).
   await admin
     .from('events')
@@ -114,6 +127,7 @@ export async function saveEventLocation(
       _lat: explicitPoint.lat,
       _long: explicitPoint.lng,
     })
+    await persistTimeZone(explicitPoint)
     return explicitPoint
   }
 
@@ -135,6 +149,7 @@ export async function saveEventLocation(
     _lat: point.lat,
     _long: point.lng,
   })
+  await persistTimeZone(point)
   return point
 }
 

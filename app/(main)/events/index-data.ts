@@ -13,6 +13,7 @@ import { pointFromGeog } from '@/lib/events/geo'
 import { demoModeEnabled } from '@/lib/platform-flags'
 import { viewerHidesDemo } from '@/lib/demo-preference'
 import { resolvePageContent } from '@/lib/page-content'
+import { HOME_TZ, dayInZone } from '@/lib/time/zone'
 import type { CatalogFacet } from './events-filter-bar'
 import type { SortOption } from './events-sort'
 import type { EventMapPin } from '@/components/events/events-map'
@@ -179,15 +180,19 @@ function dateRangeWindow(value: string | undefined, now: Date): { from: Date; to
 // `now` is passed in so this stays a pure helper (no clock read at render).
 export function formatWhen(iso: string, now: Date) {
   const d = new Date(iso)
+  // starts_at holds the event's wall-clock as UTC PARTS — render those parts (timeZone:'UTC')
+  // so the time reads as the event's own local time on any server/browser zone. The day
+  // label ("Today"/"Tomorrow") is relative to today in the community's HOME zone.
   const opts: Intl.DateTimeFormatOptions =
-    d.getMinutes() === 0 ? { hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' }
+    d.getUTCMinutes() === 0 ? { hour: 'numeric', timeZone: 'UTC' } : { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }
   const time = d.toLocaleTimeString('en-US', opts).replace(' ', '').toLowerCase()
-  const startOfDay = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
-  const days = Math.round((startOfDay(d) - startOfDay(now)) / (24 * 60 * 60 * 1000))
+  const eventDay = iso.slice(0, 10) // YYYY-MM-DD of the stored wall-clock
+  const todayDay = dayInZone(now, HOME_TZ)
+  const days = Math.round((Date.parse(`${eventDay}T00:00:00Z`) - Date.parse(`${todayDay}T00:00:00Z`)) / (24 * 60 * 60 * 1000))
   if (days === 0) return `Today at ${time}`
   if (days === 1) return `Tomorrow at ${time}`
-  if (days > 1 && days < 7) return `${d.toLocaleDateString('en-US', { weekday: 'long' })} at ${time}`
-  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`
+  if (days > 1 && days < 7) return `${d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })} at ${time}`
+  return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} at ${time}`
 }
 
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
@@ -302,13 +307,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
 
   const nowDate = new Date()
   const future = new Date(nowDate.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString()
-  // An event stays "upcoming" through the end of its start day even when it has no end
-  // time. Lower-bounding on the current instant makes a same-day event with a null
-  // ends_at vanish from every listing the moment its start time passes (the "Swami's
-  // Beach Gathering" case); lower-bound on the start OF today (UTC) instead.
-  const listableFrom = new Date(
-    Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth(), nowDate.getUTCDate()),
-  ).toISOString()
+  // An event stays "upcoming" through the end of its start day. starts_at stores the
+  // wall-clock as UTC PARTS, so the floor must be the start of TODAY in the community's
+  // HOME zone expressed the same way — otherwise, once UTC rolls past midnight (~5pm PT),
+  // a plain UTC start-of-day floor lands on "tomorrow" and silently drops tonight's
+  // not-yet-started events from every listing.
+  const listableFrom = `${dayInZone(nowDate, HOME_TZ)}T00:00:00.000Z`
 
   const hideDemo = !(await demoModeEnabled()) || (await viewerHidesDemo())
 

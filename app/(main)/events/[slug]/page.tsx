@@ -22,6 +22,7 @@ import { isPaidViewer } from '@/lib/core/viewer-hats'
 import { updateEventField } from '../admin-actions'
 import { RsvpControls } from '@/components/events/rsvp-controls'
 import { AddToCalendar, buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+import { HOME_TZ, resolveZone, isEventPast, zoneAbbrev } from '@/lib/time/zone'
 import { type ActivityPost } from '@/components/events/event-activity'
 import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { type FactGuest } from '@/components/events/event-fact-panel'
@@ -99,14 +100,18 @@ type RSVPRow = {
   }
 }
 
+// The stored starts_at/ends_at hold the event's wall-clock as UTC parts, so rendering
+// them with timeZone:'UTC' shows the event's OWN local time on any server/browser zone
+// (without it, a non-UTC runtime silently shifted every event). The zone abbrev is added
+// once by the caller via zoneAbbrev(event.time_zone).
 function formatFull(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
   })
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' })
 }
 
 // ── Anonymous share-card metadata (logged-in link unfurls; correct-by-construction
@@ -162,8 +167,9 @@ export async function generateMetadata({
 
   // Past events stay reachable but drop out of the index (they linger in the
   // sitemap comment's promise but were never actually noindexed): thin, stale.
-  const endInstant = event.ends_at ?? event.starts_at
-  const isPast = new Date(endInstant).getTime() < Date.now()
+  // Resolve through the event's own zone (default HOME) so the expired-noindex flips at
+  // the event's real end, not the server's UTC clock.
+  const isPast = isEventPast(event.starts_at, event.ends_at, HOME_TZ)
 
   // The share image is the dynamic OG card (opengraph-image.tsx) — Next injects it into
   // openGraph.images automatically, and Twitter inherits it as a large summary image. So
@@ -232,6 +238,9 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    // Event's IANA zone (newer than the generated types → untyped read). Drives every
+    // is-past / check-in gate and the when-line abbrev via lib/time/zone.
+    time_zone: string | null
     // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
     // GeoJSON object) — decode it with pointFromGeog, never read `.coordinates` directly.
     geog: unknown
@@ -243,7 +252,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, geog',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, time_zone, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -254,6 +263,9 @@ export default async function EventDetailPage({
     getEventCapabilities(event.id),
   ])
   const extra = (rawExtra ?? null) as ExtraMeta | null
+  // The event's IANA zone (default HOME). Every is-past / check-in gate + when-line
+  // resolves through this so an event geolocated to another city reads in ITS zone.
+  const eventTz = resolveZone(extra?.time_zone)
   const postedById = extra?.posted_by_profile_id ?? null
   const isPostedEvent = !!postedById
   const attendanceMode: AttendanceMode = extra?.attendance_mode ?? 'in_person'
@@ -546,11 +558,14 @@ export default async function EventDetailPage({
     soldTickets = (rawSold ?? []) as unknown as SoldTicketRow[]
   }
 
-  const isPast = new Date(event.starts_at) < new Date()
+  // Resolve the event's real instant through its own zone — never compare the raw
+  // wall-clock to now (that flipped a 7pm PT event "past" at noon, hiding RSVP and
+  // unlocking check-in ~7h early). isPast = has started; hasEnded = past ends_at.
+  const isPast = isEventPast(event.starts_at, null, eventTz)
   // RSVP stays changeable until the event actually ENDS (not merely starts), so a
   // member can still un-RSVP during a live session. Falls back to starts_at when
   // no end time is set.
-  const hasEnded = new Date(event.ends_at ?? event.starts_at) < new Date()
+  const hasEnded = isEventPast(event.starts_at, event.ends_at, eventTz)
 
   // For a recurring anchor whose start has passed, compute the next upcoming date so the
   // page surfaces "Next: ..." instead of looking like a one-off that already happened
@@ -587,6 +602,7 @@ export default async function EventDetailPage({
     endsAt: event.ends_at,
     description: event.description,
     location: event.location,
+    timeZone: eventTz,
   })
 
   // ── Post-event social loop (slice B-2, EVENTS-SYSTEM §2.5) ──────────────────
@@ -727,7 +743,7 @@ export default async function EventDetailPage({
           id: event.id,
           slug: event.slug,
           title: event.title,
-          whenLabel: `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}`,
+          whenLabel: `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)} ${zoneAbbrev(event.starts_at, eventTz)}`.trim(),
           cityLabel: scopeName,
           lat: circleCoords.lat,
           lng: circleCoords.lng,
@@ -736,7 +752,7 @@ export default async function EventDetailPage({
 
   const whenLine = `${formatFull(event.starts_at)} at ${formatTime(event.starts_at)}${
     event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''
-  }`
+  } ${zoneAbbrev(event.starts_at, eventTz)}`.trim()
 
   const mode = MODE_CHIP[attendanceMode]
 
@@ -1020,10 +1036,10 @@ export default async function EventDetailPage({
               <div className="flex flex-col items-center gap-1 text-center">
                 <CalendarDays className="h-7 w-7 opacity-80" />
                 <span className="text-3xl font-bold leading-none sm:text-4xl">
-                  {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric' })}
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { day: 'numeric', timeZone: 'UTC' })}
                 </span>
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                  {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long' })}
+                  {new Date(event.starts_at).toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })}
                 </span>
               </div>
             </div>
