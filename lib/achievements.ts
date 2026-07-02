@@ -24,13 +24,69 @@ async function grantReward(
   amount: number,
   action: 'achievement' | 'challenge_complete' | 'quest_complete',
   metadata: Record<string, unknown>,
-): Promise<void> {
-  if (!(amount > 0)) return
+): Promise<boolean> {
+  if (!(amount > 0)) return false
   if (currency === 'zaps') {
-    await awardZaps(profileId, amount, { actionType: action, metadata })
-  } else {
-    await awardGems(profileId, action, amount, metadata)
+    const r = await awardZaps(profileId, amount, { actionType: action, metadata })
+    return r.awarded
   }
+  const r = await awardGems(profileId, action, amount, metadata)
+  return r.awarded
+}
+
+// Pay a completed challenge's purse EXACTLY ONCE, claim-then-pay on reward_grants
+// (rule_key `challenge:{challengeId}:{profileId}`, the same idempotency the rest of the
+// economy uses — lib/journeys/grants.ts, lib/quest/complete.ts). advance_challenge_progress
+// already fires `just_completed` once per (member, challenge) under its advisory lock, so this
+// is the second guarantee that a redelivered/concurrent completion can never double-pay the
+// purse. The UNIQUE (rule_key, profile_id) insert is the lock; if the currency award then
+// fails, release the claim so a later retry can re-pay (else: claimed-but-unpaid forever).
+async function grantChallengeReward(
+  admin: AdminClient,
+  challengeId: string,
+  profileId: string,
+  currency: EngagementCurrency,
+  amount: number,
+): Promise<boolean> {
+  if (!(amount > 0)) return false
+  const ruleKey = `challenge:${challengeId}:${profileId}`
+  const { error: claimErr } = await admin
+    .from('reward_grants')
+    .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: currency, amount, detail: `challenge:${challengeId}` })
+  if (claimErr) return false // already paid / lost the race
+  const paid = await grantReward(profileId, currency, amount, 'challenge_complete', { challenge: challengeId })
+  if (!paid) {
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return false
+  }
+  return true
+}
+
+// Atomically advance one member's progress on one challenge (advance_challenge_progress,
+// migration 20261002000000). The prior read-compute-write in advanceChallenges was a race:
+// concurrent events lost increments and double-completed => double-paid the purse. The RPC
+// serializes per (member, challenge) and reports whether THIS call finished it. Not in the
+// generated types yet, so call it through the untyped rpc surface (repo convention).
+async function advanceChallengeProgress(
+  admin: AdminClient,
+  profileId: string,
+  challengeId: string,
+  target: number,
+): Promise<{ current: number; completed: boolean; just_completed: boolean } | null> {
+  const rpc = admin.rpc as unknown as (
+    name: 'advance_challenge_progress',
+    args: { _profile: string; _challenge: string; _target: number },
+  ) => Promise<{ data: { current: number; completed: boolean; just_completed: boolean } | null; error: { message: string } | null }>
+  const { data, error } = await rpc('advance_challenge_progress', {
+    _profile: profileId,
+    _challenge: challengeId,
+    _target: target,
+  })
+  if (error) {
+    console.error('[gamification] advance_challenge_progress failed:', error.message)
+    return null
+  }
+  return data
 }
 
 // ---------------------------------------------------------------------------
@@ -89,81 +145,40 @@ export async function recordStreakActivity(
   streakType: StreakType,
 ): Promise<{ current: number; longest: number }> {
   const admin = createAdminClient()
-  const now = new Date().toISOString()
+  const windowDays = STREAK_CONFIG[streakType]?.window_days ?? 9
 
-  const { data: existing } = await admin
-    .from('streaks')
-    .select('id, current_count, longest_count, last_activity_at')
-    .eq('profile_id', profileId)
-    .eq('streak_type', streakType)
-    .maybeSingle()
+  // Atomic tick: record_streak_tick (migration 20261002000000) serializes per (member, streak),
+  // dedups to one tick per home-zone week, and extends-or-resets by the grace window in a single
+  // statement — closing the old read-compute-write race (lost increments, double streak_update
+  // events, insert-race errors). Not in the generated types yet, so call it untyped (repo convention).
+  const rpc = admin.rpc as unknown as (
+    name: 'record_streak_tick',
+    args: { _profile: string; _streak_type: string; _window_days: number },
+  ) => Promise<{ data: { current: number; longest: number; ticked: boolean } | null; error: { message: string } | null }>
 
-  if (!existing) {
-    const { data } = await admin
-      .from('streaks')
-      .insert({
-        profile_id: profileId,
-        streak_type: streakType,
-        current_count: 1,
-        longest_count: 1,
-        last_activity_at: now,
-      })
-      .select('current_count, longest_count')
-      .single()
+  const { data, error } = await rpc('record_streak_tick', {
+    _profile: profileId,
+    _streak_type: streakType,
+    _window_days: windowDays,
+  })
 
+  if (error || !data) {
+    console.error('[gamification] record_streak_tick failed:', error?.message)
+    return { current: 0, longest: 0 }
+  }
+
+  // Fire the streak milestone check only on a real tick — mirrors the old same-week no-op,
+  // which returned before emitting the streak_update event.
+  if (data.ticked) {
     await processGamificationEvent({
       type: 'streak_update',
       profileId,
       streakType,
-      count: 1,
+      count: data.current,
     })
-
-    return { current: data?.current_count ?? 1, longest: data?.longest_count ?? 1 }
   }
 
-  const lastActivity = existing.last_activity_at
-    ? new Date(existing.last_activity_at)
-    : null
-  const nowDate = new Date()
-
-  // Already recorded this week — no-op
-  if (lastActivity && isSameWeek(lastActivity, nowDate)) {
-    return { current: existing.current_count, longest: existing.longest_count }
-  }
-
-  // Check if streak is still alive (within window per type)
-  const windowDays = STREAK_CONFIG[streakType]?.window_days ?? 9
-  const daysSinceLast = lastActivity
-    ? (nowDate.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
-    : Infinity
-
-  let newCurrent: number
-  if (daysSinceLast <= windowDays) {
-    newCurrent = existing.current_count + 1
-  } else {
-    newCurrent = 1
-  }
-
-  const newLongest = Math.max(existing.longest_count, newCurrent)
-
-  await admin
-    .from('streaks')
-    .update({
-      current_count: newCurrent,
-      longest_count: newLongest,
-      last_activity_at: now,
-      updated_at: now,
-    })
-    .eq('id', existing.id)
-
-  await processGamificationEvent({
-    type: 'streak_update',
-    profileId,
-    streakType,
-    count: newCurrent,
-  })
-
-  return { current: newCurrent, longest: newLongest }
+  return { current: data.current, longest: data.longest }
 }
 
 // ---------------------------------------------------------------------------
@@ -447,47 +462,19 @@ async function advanceChallenges(admin: AdminClient, event: GamificationEvent) {
       continue
     }
 
-    const { data: progress } = await admin
-      .from('challenge_progress')
-      .select('id, current, completed_at')
-      .eq('profile_id', event.profileId)
-      .eq('challenge_id', challenge.id)
-      .maybeSingle()
+    // Atomic advance: serializes per (member, challenge), increments once, and reports whether
+    // THIS call finished it. Closes the old lost-increment + double-completion race.
+    const res = await advanceChallengeProgress(admin, event.profileId, challenge.id, challenge.target)
+    if (!res) continue // RPC failed — leave progress untouched rather than tear it with app writes
 
-    if (progress?.completed_at) continue
-
-    const newCurrent = (progress?.current ?? 0) + 1
-    const completed = newCurrent >= challenge.target
-
-    if (progress) {
-      await admin
-        .from('challenge_progress')
-        .update({
-          current: newCurrent,
-          completed_at: completed ? new Date().toISOString() : null,
-        })
-        .eq('id', progress.id)
-    } else {
-      await admin
-        .from('challenge_progress')
-        .insert({
-          profile_id: event.profileId,
-          challenge_id: challenge.id,
-          current: newCurrent,
-          completed_at: completed ? new Date().toISOString() : null,
-        })
-    }
-
-    if (completed) {
+    if (res.just_completed) {
       // A challenge pays in the currency of the act it tracks: an in-person
       // challenge ("Attend 8 events") pays zaps and drives season rank; an online
-      // one ("Make 5 posts") pays gems (ADR-139).
+      // one ("Make 5 posts") pays gems (ADR-139). Paid once via claim-then-pay.
       const ctype = (criteria.type as string) ?? ''
       const streakType = ctype === 'streak' ? (criteria.streak_type as string) : undefined
       const currency = currencyForCriteria(ctype, { streakType })
-      await grantReward(event.profileId, currency, challenge.zaps_reward ?? 0, 'challenge_complete', {
-        challenge: challenge.id,
-      })
+      await grantChallengeReward(admin, challenge.id, event.profileId, currency, challenge.zaps_reward ?? 0)
       await checkAllChallengesComplete(admin, event.profileId)
     }
   }
@@ -561,9 +548,7 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
         completed_at: now,
       })
     }
-    await grantReward(profileId, 'zaps', completionist.zaps_reward ?? 0, 'challenge_complete', {
-      challenge: completionist.id,
-    }).catch(() => {})
+    await grantChallengeReward(admin, completionist.id, profileId, 'zaps', completionist.zaps_reward ?? 0).catch(() => {})
     try {
       const { grantStoreItem } = await import('@/lib/awards/cosmetics')
       await grantStoreItem(profileId, 'every-frequency-border')
@@ -579,17 +564,7 @@ async function checkAllChallengesComplete(admin: AdminClient, profileId: string)
 
 // Note: the headline streak columns (profiles.current_streak / longest_streak)
 // now track the DAILY practice streak, owned by lib/practice-streak.ts (ADR-145).
-// The weekly attendance/posting/hosting streaks below live only in the `streaks`
-// table and surface on /crew/streaks — they no longer drive the headline.
-
-function isSameWeek(a: Date, b: Date): boolean {
-  const startOfWeek = (d: Date) => {
-    const date = new Date(d)
-    const day = date.getDay()
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1)
-    date.setDate(diff)
-    date.setHours(0, 0, 0, 0)
-    return date.getTime()
-  }
-  return startOfWeek(a) === startOfWeek(b)
-}
+// The weekly attendance/posting/hosting streaks live only in the `streaks` table
+// and surface on /crew/streaks — they no longer drive the headline. The once-per-week
+// dedup + grace-window logic now lives atomically in record_streak_tick (migration
+// 20261002000000), so the old JS isSameWeek/window math here was retired with it.
