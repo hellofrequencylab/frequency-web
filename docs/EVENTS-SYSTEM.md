@@ -89,9 +89,10 @@ Legend: ✅ exists, reuse as-is · 🔧 exists, extend · 🆕 genuinely new · 
   (`scope_type:'circle'` hardcoded in `createEvent`; the Index shows only the viewer's circles'
   events; empty state literally says *"Events live inside circles"*). A member-created standalone
   event needs a deliberate scope decision, not just a nullable `circle_id`.
-- **Two Stripe webhook endpoints exist** (`/api/stripe/webhook` for memberships,
-  `/api/webhooks/stripe` for Connect/tickets). Decide whether to consolidate before adding more
-  ticket logic.
+- **One Stripe webhook endpoint** (`/api/webhooks/stripe`, ADR-506) handles every event —
+  Connect `account.updated`, memberships/subscriptions, tips, tickets, commerce, dues, refunds.
+  The former two-route split (a separate `/api/stripe/webhook`) is consolidated; add new ticket
+  logic here.
 - **Embedding dim is 384, not 1536** (`EMBED_DIM`, gte-small via the `embed` edge function).
 - **No `frontend-design` skill** exists in this repo (AGENTS.md references one). UI rules live in
   `PAGE-FRAMEWORK.md` + `PRESENTATION.md` + `DESIGN-LANGUAGE.md` (DAWN tokens).

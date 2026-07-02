@@ -89,6 +89,61 @@ export default async function SearchPage({
 
   const admin = createAdminClient()
   const supabase = await createClient()
+
+  // The tab query and the viewer-hats lookup depend only on the query string, NOT on the
+  // signed-in identity, so fire them NOW and let them run concurrently with the auth +
+  // profile read below (each is awaited at its point of use). This drops ~2 serial RTTs off
+  // every search render vs. the old await-then-query-then-hats chain.
+  const resultsP: Promise<{ people: PersonRow[]; posts: PostRow[]; events: EventRow[] }> =
+    (async () => {
+      const empty = { people: [] as PersonRow[], posts: [] as PostRow[], events: [] as EventRow[] }
+      if (safe.length < 2) return empty
+
+      if (tab === 'people') {
+        const { data } = await admin
+          .from('profiles')
+          .select('id, display_name, handle, avatar_url, community_role, is_demo')
+          .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
+          .eq('is_active', true)
+          .order('display_name')
+          .limit(24)
+        return { ...empty, people: (data ?? []) as PersonRow[] }
+      }
+
+      if (tab === 'posts') {
+        const { data } = await admin
+          .from('posts')
+          .select(
+            `id, body, created_at, is_demo,
+             author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
+          )
+          .ilike('body', `%${safe}%`)
+          .eq('visibility', 'public')
+          .is('hidden_at', null)
+          .order('created_at', { ascending: false })
+          .limit(20)
+        return { ...empty, posts: (data ?? []) as unknown as PostRow[] }
+      }
+
+      // tab === 'events' (rawTab is validated to one of TABS at the top)
+      const { data } = await admin
+        .from('events')
+        .select(
+          `id, title, slug, starts_at, location, is_cancelled, is_demo,
+           host:profiles!host_id ( display_name, handle )`
+        )
+        .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+        .eq('status', 'published')
+        .eq('visibility', 'public')
+        .eq('is_cancelled', false)
+        .order('starts_at', { ascending: true })
+        .limit(20)
+      return { ...empty, events: (data ?? []) as unknown as EventRow[] }
+    })()
+
+  // getViewerHats does its own auth read internally; fired here it overlaps the getUser() below.
+  const hatsP = query.length >= 2 ? getViewerHats() : null
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -103,61 +158,15 @@ export default async function SearchPage({
     myProfileId = p?.id ?? null
   }
 
-  let people: PersonRow[] = []
-  let posts: PostRow[] = []
-  let events: EventRow[] = []
-
-  if (safe.length >= 2) {
-    if (tab === 'people') {
-      const { data } = await admin
-        .from('profiles')
-        .select('id, display_name, handle, avatar_url, community_role, is_demo')
-        .or(`display_name.ilike.%${safe}%,handle.ilike.%${safe}%`)
-        .eq('is_active', true)
-        .order('display_name')
-        .limit(24)
-      people = (data ?? []) as PersonRow[]
-    }
-
-    if (tab === 'posts') {
-      const { data } = await admin
-        .from('posts')
-        .select(
-          `id, body, created_at, is_demo,
-           author:profiles!author_id ( display_name, handle, avatar_url, community_role )`
-        )
-        .ilike('body', `%${safe}%`)
-        .eq('visibility', 'public')
-        .is('hidden_at', null)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      posts = (data ?? []) as unknown as PostRow[]
-    }
-
-    if (tab === 'events') {
-      const { data } = await admin
-        .from('events')
-        .select(
-          `id, title, slug, starts_at, location, is_cancelled, is_demo,
-           host:profiles!host_id ( display_name, handle )`
-        )
-        .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
-        .eq('status', 'published')
-        .eq('visibility', 'public')
-        .eq('is_cancelled', false)
-        .order('starts_at', { ascending: true })
-        .limit(20)
-      events = (data ?? []) as unknown as EventRow[]
-    }
-  }
+  const { people, posts, events } = await resultsP
 
   // Navigable destinations matching the query — the "Go to" shortcut row, tab-independent
   // (it sits above the People/Posts/Events tabs). Access-gated by the viewer's hats so a
   // member never sees admin tools and a visitor never sees member-only pages, exactly like
   // the ⌘K overlay's /api/search path.
   let pages: { href: string; label: string; group: string }[] = []
-  if (query.length >= 2) {
-    const hats = await getViewerHats()
+  if (hatsP) {
+    const hats = await hatsP
     pages = matchDestinations(query)
       .filter((d) => !d.surface || accessTo(d.surface, hats) !== 'none')
       .slice(0, 8)

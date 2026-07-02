@@ -201,8 +201,8 @@ The pure price-key, take-rate, and founder-lock math lives in `lib/billing/prici
 `lib/billing/fees.ts` `spaceTakeRateCents` (reads `pricing_settings.take_rate`, fail-safe). Management
 reuses `createBillingPortal`.
 
-**Webhook → entitlements (idempotent, by `metadata.kind`).** The existing membership webhook
-(`app/api/stripe/webhook/route.ts`) now routes subscription events through
+**Webhook → entitlements (idempotent, by `metadata.kind`).** The consolidated webhook
+(`app/api/webhooks/stripe/route.ts`, ADR-506) routes subscription events through
 `lib/billing/space-subscriptions.ts` FIRST:
 
 - `kind:'space_plan'` (`created`/`updated`/`deleted`) → `setSpacePlan(space_id, plan|free)` (active →
@@ -348,7 +348,7 @@ All writes are admin-gated server actions (`actions.ts`) that audit flag flips v
 | Space plan + loadout picker + white-label lead (P3/C2) | `app/(main)/spaces/[slug]/settings/billing/` (`page.tsx`, `plan-picker.tsx`, `loadout-picker.tsx`, `whitelabel-request.tsx`, `actions.ts`) |
 | Space membership join CTA (P3) | `components/spaces/membership-join.tsx` · `membership-join-card.tsx` · `lib/spaces/memberships-actions.ts` (`startSpaceMembershipCheckout`) |
 | Vault cash-in gate wiring (P3) | `app/(main)/crew/store/actions.ts` (`redeemItem`) |
-| Webhook → entitlements (by `metadata.kind`) | `lib/billing/space-subscriptions.ts` · `app/api/stripe/webhook/route.ts` |
+| Webhook → entitlements (by `metadata.kind`) | `lib/billing/space-subscriptions.ts` · `app/api/webhooks/stripe/route.ts` |
 | Take-rate IO wrapper | `lib/billing/fees.ts` (`spaceTakeRateCents`) |
 | Admin console | `app/(main)/admin/pricing/` |
 | Tests | `lib/pricing/pricing.test.ts` · `lib/billing/pricing-keys.test.ts` · `lib/billing/space-subscriptions.test.ts` |

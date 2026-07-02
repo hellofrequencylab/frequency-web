@@ -180,7 +180,7 @@ Products have not been synced, so the Stripe catalog is empty. To go live, **in 
 | # | Step | Status | Where |
 |---|---|---|---|
 | 1 | `STRIPE_SECRET_KEY` present | ✅ | Vercel (confirm it's the **live** key, not test, when you actually charge) |
-| 2 | `STRIPE_WEBHOOK_SECRET` set + a webhook endpoint added in Stripe pointing at `/api/stripe/webhook` | 📋 confirm | Stripe dashboard → Developers → Webhooks, then Vercel env |
+| 2 | `STRIPE_WEBHOOK_SECRET` set + **one** webhook endpoint added in Stripe pointing at `/api/webhooks/stripe` (ADR-506 consolidated all events onto this single route) | 📋 confirm | Stripe dashboard → Developers → Webhooks, then Vercel env |
 | 3 | **Sync products to Stripe** (creates the ~24 Products/Prices from the admin pricing values) | 📋 **0/24 synced** — SAFE, creates the catalog, charges nobody | `/admin/pricing` → "Sync products to Stripe" |
 | 4 | Review the created Products/Prices look right (amounts, monthly/annual) | 📋 | Stripe dashboard |
 | 5 | Turn ON the per-plan `*_enabled` flags for the plans you want to sell | 📋 | `/admin/pricing` |

@@ -11,7 +11,7 @@
 //                              state-of-record.
 //   kind:'space_membership'  → upsert space_memberships.stripe_subscription_id + payment_status + status.
 //
-// The member Crew/Supporter path stays in app/api/stripe/webhook/route.ts UNTOUCHED. All writes are
+// The member Crew/Supporter path stays in app/api/webhooks/stripe/route.ts UNTOUCHED. All writes are
 // idempotent (the webhook claims the event id first; these set fixed values keyed by id) and FAIL-SAFE
 // (a missing space/tier no-ops). Server-only.
 //
