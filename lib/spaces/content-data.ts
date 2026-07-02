@@ -22,6 +22,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveProfileStats, type ResolvedStat } from '@/lib/spaces/profile-stats'
 import type { SectionPresence } from '@/lib/spaces/section-anchors'
+import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
@@ -168,6 +169,10 @@ export type SpaceContentData = {
   /** The Space's live active Circles the SpaceCommunity block lists. Empty when none; undefined in the
    *  editor / a member Spotlight. */
   community?: SpaceCircleItem[]
+  /** The CENTRAL, single-source profile data (business info + story) every authored block reads off,
+   *  so editing it once updates every surface (lib/spaces/profile-data.ts). Undefined in the editor /
+   *  a member Spotlight (the blocks fall back to their own inline props). */
+  profile?: SpaceProfileData
 }
 
 // Bounded caps so a query can never scan an unbounded table. The blocks show the latest N with a
@@ -296,6 +301,10 @@ export interface SpaceContentInput {
   primaryCta?: { label: string; href: string } | null
   /** The Space slug, so the events + booking blocks can build slug-relative hrefs. */
   slug?: string
+  /** The CENTRAL profile data (business info + story) read off preferences.profileData, injected so
+   *  every authored block renders from the ONE source. Omit it (a non-space render path) and the
+   *  blocks fall back to their inline props. */
+  profile?: SpaceProfileData
 }
 
 /** ONE request-cached round of every live content read for a Space, keyed on (spaceId, slug). The
@@ -352,7 +361,20 @@ export async function getSpaceContentData(
         primaryCta: input.primaryCta ?? null,
       }
     : undefined
-  return { spaceId, updates, reviews, faqs, identity, highlights, stats, events, booking, practices, community }
+  return {
+    spaceId,
+    updates,
+    reviews,
+    faqs,
+    identity,
+    highlights,
+    stats,
+    events,
+    booking,
+    practices,
+    community,
+    profile: input?.profile,
+  }
 }
 
 /** The live highlight counts (members / offerings / ...) for the SpaceHighlights strip, from the same

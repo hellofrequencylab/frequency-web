@@ -22,6 +22,7 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
+import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverSizePreferences,
@@ -97,6 +98,30 @@ export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<
   }
 
   revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Save the Space's CENTRAL BUSINESS INFO (the single source of truth: address, hours, phone, email,
+ * website, socials, rating, story). Written to preferences.profileData; every authored block reads it
+ * off the shared metadata seam, so this ONE write updates the address / story / links on every block
+ * and every surface at once (owner directive: "change it and it changes everywhere"). NON-DESTRUCTIVE:
+ * only the profileData node is touched (withProfileData preserves every other key + drops cleared
+ * fields). Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = withProfileData(auth.preferences, patch)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not save your business info. Try again.')
+  }
+
+  // The profile data shows across every public profile route (Home + custom pages + the Spotlight),
+  // so revalidate the whole space layout, not just the landing.
+  revalidatePath(`/spaces/${slug}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

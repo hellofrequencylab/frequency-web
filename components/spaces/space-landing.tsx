@@ -7,6 +7,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 
@@ -79,6 +80,9 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     tagline: space.tagline,
     primaryCta,
     slug: space.slug,
+    // The CENTRAL business info + story, injected so every authored block renders from the ONE
+    // source (edit once, changes everywhere). Read off preferences.profileData (fail-safe empty).
+    profile: readProfileData(space.preferences),
   })
 
   return <Render config={config} data={data} metadata={{ space: spaceContent }} />

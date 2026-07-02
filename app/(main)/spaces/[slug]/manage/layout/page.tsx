@@ -18,6 +18,7 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readProfileData } from '@/lib/spaces/profile-data'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
@@ -115,6 +116,7 @@ export default async function SpacePageSettingsPage({
         coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
         blocks={blocks}
+        businessInfo={readProfileData(space.preferences)}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />

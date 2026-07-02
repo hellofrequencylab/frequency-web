@@ -6,6 +6,7 @@ import { SpacePagePanel, type FocusChoiceLike } from '@/components/spaces/space-
 import { OPEN_SPACE_CUSTOMIZE } from '@/components/spaces/space-customize-button'
 import type { SpaceBlockRow } from '@/lib/page-editor/templates/space-blocks'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
+import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 
 // THE SPACE CUSTOMIZE RAIL — the right-hand settings drawer the profile's single "Customize" button
@@ -27,6 +28,7 @@ export function SpaceCustomizeDrawer({
   coverScrim,
   accent,
   blocks,
+  businessInfo,
   focus = null,
 }: {
   slug: string
@@ -37,6 +39,7 @@ export function SpaceCustomizeDrawer({
   coverScrim: CoverScrim
   accent: string
   blocks: SpaceBlockRow[]
+  businessInfo: SpaceProfileData
   focus?: { choices: FocusChoiceLike[] } | null
 }) {
   const [open, setOpen] = useState(false)
@@ -99,6 +102,7 @@ export function SpaceCustomizeDrawer({
             coverScrim={coverScrim}
             accent={accent}
             blocks={blocks}
+            businessInfo={businessInfo}
             focus={focus}
           />
         </div>
