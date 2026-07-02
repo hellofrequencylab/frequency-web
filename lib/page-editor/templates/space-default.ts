@@ -38,7 +38,8 @@ function offerings(): Block {
   }
 }
 
-// ── ABOUT / story card.
+// ── ABOUT / story card. The body seeds EMPTY (honest at day zero): the live page shows nothing and
+// the editor shows the designed placeholder, so a visitor never reads fill-me-in instructions.
 function about(name: string): Block {
   return {
     type: 'SpaceAbout',
@@ -46,7 +47,7 @@ function about(name: string): Block {
       id: `${P}-about`,
       eyebrow: 'About',
       heading: `About ${name}`,
-      body: `Tell people who you are and why this matters. Share what brought ${name} here and what someone can expect.`,
+      body: '',
     },
   }
 }

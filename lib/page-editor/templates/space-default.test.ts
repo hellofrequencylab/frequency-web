@@ -31,7 +31,7 @@ describe('generateDefaultSpacePage', () => {
     ])
   })
 
-  it('carries the brand name into the About + Booking copy, and is honest-empty for authored blocks', () => {
+  it('carries the brand name into the About heading + Booking copy, and is honest-empty for authored blocks', () => {
     const doc = generateDefaultSpacePage('Willow Studio')
     const layout = doc.content[0].props as {
       main: { type: string; props: Record<string, unknown> }[]
@@ -39,7 +39,11 @@ describe('generateDefaultSpacePage', () => {
     }
     const about = layout.side.find((b) => b.type === 'SpaceAbout')!
     expect(about.props.heading).toBe('About Willow Studio')
-    expect(String(about.props.body)).toContain('Willow Studio')
+    // Honest at day zero: the About body seeds EMPTY, so a visitor never reads fill-me-in copy
+    // (the editor shows the designed placeholder instead).
+    expect(about.props.body).toBe('')
+    const booking = layout.main.find((b) => b.type === 'SpaceBooking')!
+    expect(String(booking.props.body)).toContain('Willow Studio')
     const offerings = layout.main.find((b) => b.type === 'SpaceOfferings')!
     expect(offerings.props.items).toEqual([])
   })
