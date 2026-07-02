@@ -8,6 +8,7 @@ import { data as theCommunity } from './the-community'
 import { data as theQuest } from './the-quest'
 import { data as pricing } from './pricing'
 import { data as circles } from './circles'
+import { generateDefaultProfilePage } from './profile-default'
 
 // Starter documents that re-create each editable page's content using the
 // STANDARDIZED block library. They seed the editor when a page has no usable
@@ -29,6 +30,10 @@ const TEMPLATES: Record<string, Data> = {
   'the-quest': theQuest,
   pricing,
   circles,
+  // The member/user-page starter (cross-surface Puck template system, ADR-500). Registered here so
+  // getTemplate('profile') returns the designed member default; the `user` surface in surfaces.ts
+  // references the same generator. Keyed with a neutral (blank) name; a live seed passes the member's.
+  profile: generateDefaultProfilePage(''),
 }
 
 export function getTemplate(slug: string): Data | null {
