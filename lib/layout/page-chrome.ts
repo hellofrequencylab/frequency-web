@@ -109,10 +109,12 @@ export function isSafeRoute(pathname: string): boolean {
 // surface whose body truly scrolls sideways belongs in this list.
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated) — horizontal stage board
-  // NOTE: the Space LANDING editor (/spaces/<slug>/edit-page, ADR-476/472) is NO LONGER here (chrome
-  // pass, 2026-06): it is an IN-PAGE editor, not a full-viewport takeover, so it keeps the GLOBAL
-  // community right rail like the rest of the app. Its Puck side panels are shrunk (puck-theme.css) so
-  // the canvas still breathes beside the rail. Only a surface that truly owns the viewport belongs here.
+  // The Space LANDING editor (/spaces/<slug>/edit-page, ADR-476/472) is a FULL-WIDTH editor: it drops
+  // BOTH rails so the Puck builder (left components · canvas · right fields) uses the whole width, but
+  // it KEEPS the site header (owner directive, 2026-07: "full page with the main header still
+  // showing") — so it is NOT a full-viewport takeover (which also hides the header). The header-keeping
+  // + left-nav-dropping half lives in isFullWidthEditor + the shell; this entry drops the right rail.
+  /^\/spaces\/[^/]+\/edit-page$/,
   // The "Build your Spotlight" Puck editor (/settings/profile/spotlight): the same full-viewport
   // editor takeover. Its desktop <Puck> owns the surface and its mobile control dock needs the whole
   // viewport, so it drops the member right rail here (and the mobile bottom nav via
@@ -140,6 +142,20 @@ const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = [
  *  whole viewport with nothing over it. Pure + client-safe like railFor. */
 export function isFullViewportEditor(pathname: string): boolean {
   return FULL_VIEWPORT_EDITOR_PATTERNS.some((re) => re.test(pathname))
+}
+
+// FULL-WIDTH EDITORS — page builders that use the WHOLE content width (both rails + the page gutters
+// dropped) but KEEP the site header, unlike a full-viewport takeover which also hides the header. The
+// Space landing editor (/spaces/<slug>/edit-page) is one: the operator edits their profile with the
+// Puck builder edge to edge, but the top header stays so they never feel out of the app (owner
+// directive, 2026-07: "full page with the main header still showing"). Pattern match (exact surface).
+const FULL_WIDTH_EDITOR_PATTERNS: RegExp[] = [/^\/spaces\/[^/]+\/edit-page$/]
+
+/** Whether `pathname` is a FULL-WIDTH editor: the shell drops both rails + page gutters (like a
+ *  takeover) so the builder fills the width, but KEEPS the site header (not a full-viewport takeover).
+ *  Pure + client-safe like railFor. */
+export function isFullWidthEditor(pathname: string): boolean {
+  return FULL_WIDTH_EDITOR_PATTERNS.some((re) => re.test(pathname))
 }
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️
