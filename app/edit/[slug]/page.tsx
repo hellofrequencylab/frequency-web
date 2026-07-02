@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { getJanitor } from '@/lib/page-editor/guard'
 import { getPage, isEditableSlug, EDITABLE_PAGES } from '@/lib/page-editor/data'
 import { getTemplate, isRenderable } from '@/lib/page-editor/templates'

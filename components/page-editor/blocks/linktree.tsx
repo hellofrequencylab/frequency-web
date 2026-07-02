@@ -28,7 +28,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { Flame, Gem, CalendarDays, MapPin, Zap } from 'lucide-react'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 import { getInitials } from '@/lib/utils'
 import {
   MAX_LINKS_PER_BLOCK,

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Config } from '@measured/puck'
+import type { Config } from '@/lib/page-editor/types'
 
 // The STANDARDIZED block library, shared by BOTH the editor (<Puck>) and the
 // public renderer (<Render>). Blocks are organized like a real page-builder:

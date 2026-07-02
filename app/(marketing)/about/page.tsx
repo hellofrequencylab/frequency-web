@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Compass, Users, HandHeart, Home } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import {
   PhotoHero,
   Section,
@@ -54,7 +54,7 @@ export default async function AboutPage() {
       <JsonLd
         data={breadcrumbSchema([{ name: 'About', path: '/about' }])}
       />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyAbout />}
+      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyAbout />}
     </>
   )
 }

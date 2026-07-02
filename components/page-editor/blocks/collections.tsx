@@ -6,7 +6,7 @@
 import Link from 'next/link'
 import { Check, Award, Users, MapPin, CalendarDays, Sparkles, Heart, MessageCircle, Compass, Flame, Star, Shield, Coffee, Music, Sun, Leaf, Handshake, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 import { safeHref } from '@/lib/page-editor/richtext'
 
 import {

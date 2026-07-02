@@ -8,7 +8,7 @@ import {
   HeartHandshake,
   LineChart,
 } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import {
   PhotoHero,
   Section,
@@ -57,7 +57,7 @@ export default async function SpacesPage() {
   return (
     <>
       <JsonLd data={breadcrumbSchema([{ name: 'Spaces', path: '/spaces' }])} />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacySpaces />}
+      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacySpaces />}
     </>
   )
 }

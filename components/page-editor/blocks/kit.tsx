@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 import {
   toneBg,
   isInk,

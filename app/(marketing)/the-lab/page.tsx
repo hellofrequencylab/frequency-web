@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import {
   ArrowRight,
   Dumbbell,
@@ -94,7 +94,7 @@ export default async function TheLabPage() {
       <JsonLd
         data={breadcrumbSchema([{ name: 'The Lab', path: '/the-lab' }])}
       />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
+      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheLab />}
     </>
   )
 }

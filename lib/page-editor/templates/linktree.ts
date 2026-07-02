@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { SPOTLIGHT_PUCK_TYPES } from '@/lib/spotlight/puck/convert'
 
 // THE LINK-TREE PRESET — the default Signal-page (member Spotlight) starting document,

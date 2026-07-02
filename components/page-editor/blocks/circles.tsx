@@ -1,4 +1,4 @@
-import type { ComponentConfig } from '@measured/puck'
+import type { ComponentConfig } from '@/lib/page-editor/types'
 import Link from 'next/link'
 import { Users, Compass, Sparkles } from 'lucide-react'
 import type { CirclesIndexData } from '@/lib/circles/index-data'

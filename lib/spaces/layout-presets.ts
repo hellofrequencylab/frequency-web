@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LAYOUT PRESETS / TEMPLATES — the CONTENT vs DISPLAY seam for Space pages (owner

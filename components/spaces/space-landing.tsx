@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
-import { Render } from '@measured/puck/rsc'
-import type { Data } from '@measured/puck'
+import { BlockRender } from '@/lib/page-editor/block-render'
+import type { Data } from '@/lib/page-editor/types'
 import { getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -16,7 +16,7 @@ import { getSpaceContentData } from '@/lib/spaces/content-data'
 // landing body must NEVER render a SpaceIdentityHeader block or it would duplicate the layout header.
 // The generated presets no longer seed it, but a STORED (customized) doc from before the change may
 // still carry one. Strip it from the top-level content AND from any SpaceLayout main / side slot
-// before <Render>. PURE + tolerant: unknown shapes pass through untouched.
+// before <BlockRender>. PURE + tolerant: unknown shapes pass through untouched.
 function stripIdentityHeader(data: Data): Data {
   const isIdentity = (b: unknown): boolean =>
     typeof (b as { type?: unknown })?.type === 'string' && (b as { type: string }).type === 'SpaceIdentityHeader'
@@ -42,9 +42,9 @@ function stripIdentityHeader(data: Data): Data {
 // AccentScope that paints the Space's brand tokens, so the Puck blocks theme to the
 // Space without a hex (white-label hygiene, D4/D6).
 //
-// `<Render>` from `@measured/puck/rsc` is the server-friendly renderer the public
-// marketing pages already use (app/page.tsx), so the public landing ships no editor
-// runtime. Server Component throughout; static-friendly.
+// `<BlockRender>` (lib/page-editor/block-render.tsx) is the in-house server-friendly
+// renderer the public marketing pages already use (app/page.tsx), so the public landing
+// ships no editor runtime. Server Component throughout; static-friendly.
 export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: string; pageSlug?: string }) {
   // Re-resolve the Space (request-cached via getSpaceBySlug) + re-stamp the active
   // Space so any dynamic block reads THIS tenant's rows.
@@ -94,5 +94,5 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     layoutPreset,
   })
 
-  return <Render config={config} data={data} metadata={{ space: spaceContent }} />
+  return <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
 }

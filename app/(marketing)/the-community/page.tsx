@@ -15,7 +15,7 @@ import {
   MessageCircle,
   MapPin,
 } from 'lucide-react'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import {
   PhotoHero,
   Section,
@@ -102,7 +102,7 @@ export default async function TheCommunityPage() {
           breadcrumbSchema([{ name: 'The Community', path: '/the-community' }]),
         ]}
       />
-      {data ? <Render config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
+      {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
     </>
   )
 }

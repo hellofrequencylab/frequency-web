@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Eye, EyeOff, Layers, Plus, Trash2 } from 'lucide-react'
-import type { Config, Data } from '@measured/puck'
+import type { Config, Data } from '@/lib/page-editor/types'
 import { Render } from '@measured/puck'
 import { Button } from '@/components/ui/button'
 import {

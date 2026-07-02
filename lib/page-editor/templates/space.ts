@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 import { config } from '@/lib/page-editor/config'
 
 // ─────────────────────────────────────────────────────────────────────────────

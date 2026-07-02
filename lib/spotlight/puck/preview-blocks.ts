@@ -7,7 +7,7 @@
 // PURE (no React/IO) so it round-trips in a unit test and is safe to import from the client
 // preview. It must NOT live in a 'use server' file (it is a plain helper exported for tests).
 
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 
 export interface PreviewBlock {
   /** The block's stable id (from `props.id`). Falls back to the index when absent so a

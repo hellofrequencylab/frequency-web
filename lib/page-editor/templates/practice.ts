@@ -1,4 +1,4 @@
-import type { Data } from '@measured/puck'
+import type { Data } from '@/lib/page-editor/types'
 
 // /practice. The participant landing, authored from the standardized block library
 // so the editor mirrors the live page (ADR-055 / "editor = live"). Audience: the

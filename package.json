@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.109.1",
-    "@measured/puck": "^0.20.2",
+    "@measured/puck": "0.20.2",
     "@resvg/resvg-wasm": "^2.6.2",
     "@sentry/nextjs": "^10.63.0",
     "@supabase/ssr": "^0.12.0",

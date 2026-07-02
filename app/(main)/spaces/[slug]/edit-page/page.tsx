@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { Render } from '@measured/puck/rsc'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
@@ -26,7 +26,7 @@ import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 // full-viewport takeover: it keeps the GLOBAL community right rail like the rest of the
 // app (page-chrome.ts), and the Puck side panels are shrunk (puck-theme.css) so the canvas
 // still breathes beside the rail. The editor runtime ships ONLY here; the public landing
-// renders <Render> with no editor code.
+// renders <BlockRender> with no editor code.
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
@@ -83,7 +83,7 @@ export default async function SpaceEditLandingPage({
     return (
       <div className="mx-auto max-w-5xl px-6 py-8">
         <StaffPreviewBanner spaceName={brandName} />
-        <Render config={config} data={data} metadata={{ space: spaceContent }} />
+        <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
       </div>
     )
   }
