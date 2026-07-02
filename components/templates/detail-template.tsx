@@ -63,7 +63,8 @@ export function DetailTemplate({
   /** OPTIONAL sticky menu band rendered as a direct child of the page root (NOT inside the short
    *  header), so it pins under the global header and STAYS pinned for the whole scroll — its containing
    *  block is the full-height page, not the header. Used by the Space profile for its persistent sub-nav.
-   *  When set, it draws its own top+bottom hairline and replaces the default `tabs`/divider treatment. */
+   *  The node OWNS its sticky positioner + hairlines (see SpaceStickyNav); this slot only positions it as
+   *  a root-level child so the containing block is correct. Suppresses the default `tabs` row. */
   stickyNav?: React.ReactNode
   children: React.ReactNode
 }) {
@@ -139,14 +140,11 @@ export function DetailTemplate({
         )}
       </header>
 
-      {/* The STICKY sub-nav band (Space profile): a direct child of the page root so it pins under the
-          global header and stays pinned across the whole scroll. It owns its hairlines + an opaque canvas
-          backdrop so content scrolls cleanly beneath it. Sits below the header's z-30. */}
-      {stickyNav && (
-        <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-y border-border bg-canvas/95 backdrop-blur-sm">
-          {stickyNav}
-        </div>
-      )}
+      {/* The STICKY sub-nav band (Space profile): rendered as a direct child of the page root so its
+          containing block is the full-height page and it stays pinned across the whole scroll. The node
+          itself owns the sticky positioner + hairlines + backdrop (SpaceStickyNav), so it is byte-
+          identical to the same bar rendered by the owner shell layouts (manage / crm). */}
+      {stickyNav}
 
       {/* The header's hairline rule, with the on-page "Settings" split inline on it (one line). It
           self-suppresses on Space profiles, so the sticky band above is the only rule there. */}

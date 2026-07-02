@@ -2,20 +2,17 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
+import { resolveMode } from '@/lib/spaces/modes'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
-import { isStaff } from '@/lib/core/roles'
-import { spaceSurfacesFor } from '@/lib/admin/entities/registry'
 import { Compass, CreditCard, Users } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
-import { SpaceManageConsole } from './console'
+import { SpaceManageBoard } from './manage-board'
 
 // The Space OWNER CONSOLE (ADR-441 EM1-3, the Spaces harmonization slice). The unified
 // `/{entity}/[id]/manage` Dashboard surface, brought to Spaces: an owner / admin / editor (or a
@@ -66,36 +63,11 @@ export default async function SpaceManagePage({
   // without revealing a half-built surface.
   if (!isConsoleSpaceType(space.type)) notFound()
 
-  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2): which tool sections render. A surface whose
-  // function the viewer's role cannot use (or that is off / not on the plan) is dropped, exactly like
-  // the legacy cockpit. A staff previewer sees them all (read-only; every write stays gated in the
-  // sub-page). Basics + Danger have no per-tool function and always render for a manager.
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const canUse = (fn: SpaceFunctionKey): boolean =>
-    staffViewing || spaceFunctionAccess(space, fn, caps.role)
-
-  // SURFACES: the gated spine, in SPINE order (Basics / identity always leads). The console groups
-  // these into scannable clusters itself (console.tsx), so it keeps the stable spine order here and does
-  // NOT pre-reorder by Mode emphasis. Mode stays a SECONDARY signal: the emphasis list below tags the
-  // surfaces a Mode suggests ("Suggested for your mode") and orders WITHIN a group, but core identity is
-  // never demoted below mode modules (the bug this rework fixes). Every gated surface still appears.
-  const surfaces = spaceSurfacesFor(space.type, canUse)
-
-  // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the
-  // console the emphasized FUNCTION list as framing only. A type with no Mode (root, already excluded) or
-  // no preset resolves to an empty list, in which case nothing is tagged and the spine order stands.
-  const mode = resolveMode(space.type, space.modeVariant)
-  const prefs = readModePreferences(space.preferences)
-  const emphasis = effectiveNavEmphasis(mode, prefs)
-
-  // Deleting a Space is OWNER-grade (or platform staff). The Danger section's control only renders
-  // when this is true; otherwise the section shows header-only (mirrors circle's Danger).
-  const canDelete = caps.isOwner || isStaff(caller?.webRole)
-
   const brandName = space.brandName ?? space.name
   const typeLabel = spaceTypeLabel(space.type)
   const planLabel = SPACE_PLAN_LABEL[asSpacePlan(space.plan)]
   // The Mode + Focus label for the stat row (falls back to the type label when a Space has no Mode).
+  const mode = resolveMode(space.type, space.modeVariant)
   const modeLabel = mode ? `${mode.modeLabel}: ${mode.focusLabel}` : typeLabel
 
   // Member count for the stat row (service-role read, fail-safe to an empty list).
@@ -124,13 +96,7 @@ export default async function SpaceManagePage({
         </>
       }
     >
-      <SpaceManageConsole
-        slug={space.slug}
-        surfaces={surfaces}
-        emphasis={emphasis}
-        canDelete={canDelete}
-        spaceId={space.id}
-      />
+      <SpaceManageBoard slug={slug} />
     </DashboardTemplate>
   )
 }

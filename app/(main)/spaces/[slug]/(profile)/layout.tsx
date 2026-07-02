@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { QrCode } from 'lucide-react'
@@ -9,13 +10,11 @@ import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
-import { isConsoleSpaceType, spaceManageHref } from '@/lib/spaces/types'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readLayoutPreset } from '@/lib/spaces/layout-presets'
-import { deriveSectionNav } from '@/lib/spaces/section-anchors'
-import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
+import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
@@ -25,7 +24,9 @@ import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { SpaceCustomizeButton } from '@/components/spaces/space-customize-button'
 import { SpaceCustomizeDrawer } from '@/components/spaces/space-customize-drawer'
-import { SpaceProfileTabs, type SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
+import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
+import { SpaceManageBoard } from '@/app/(main)/spaces/[slug]/manage/manage-board'
+import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { JsonLd } from '@/components/json-ld'
@@ -132,46 +133,25 @@ export default async function SpaceProfileChromeLayout({
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
   // live sections have real rows) rides the same round-trip and is request-cached, SHARED with the page
   // body's own content read, so the anchor menu costs no extra queries on the Home render.
-  const [caller, tagline, visibility, viewerFollows, presence] = await Promise.all([
+  const [caller, tagline, visibility, viewerFollows] = await Promise.all([
     getCallerProfile(),
     readTagline(space.id),
     getSpaceVisibility(slug),
     viewerProfileId ? isFollowing(space.id, viewerProfileId) : Promise.resolve(false),
-    getSpaceSectionPresence(space.id, space.slug),
   ])
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
 
   const base = `/spaces/${space.slug}`
-  // The owner-affordance target: the type-correct manage hub (spaceManageHref — /manage for every
-  // console type, /settings for the never-provisioned root), the SAME single-source predicate the
-  // breadcrumb + console gate on, so the Manage button never takes an extra redirect hop.
-  const manageHref = spaceManageHref(space.type, space.slug)
 
-  // The nav is PRE-POPULATED from the page itself (feature-block model): Home, then one ANCHOR link
-  // per Home section that will actually render (derived from the Home doc + the live presence flags,
-  // so a link never scrolls to an empty spot), then any custom sub-pages the operator created. Active
-  // state stays client-side via usePathname (see SpaceProfileTabs); anchor links are never "active".
+  // The profile sub-nav (Home + section anchors + custom pages, plus the operator's Manage/CRM links)
+  // is built by the shared helper — the SAME menu the owner shell layouts (manage / crm) render, so the
+  // sticky bar reads as one persistent nav across profile ↔ Manage ↔ CRM. Active state stays client-side
+  // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
   const pages = readProfilePages(space.preferences)
   const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
-  const sections = deriveSectionNav(homeDoc, presence)
-  const tabs: SpaceProfileTab[] = [
-    { href: base, label: pages[0]?.label ?? 'Home' },
-    ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
-    ...pages
-      .filter((p) => p.slug !== HOME_SLUG)
-      .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
-  ]
-
-  // The OPERATOR'S back-end quick links, right-aligned on the same menu row and never shown to a
-  // visitor: the unified Manage console and (for console types) the CRM.
-  const adminTabs: SpaceProfileTab[] = canSeeAsOwner
-    ? [
-        { href: manageHref, label: 'Manage' },
-        ...(isConsoleSpaceType(space.type) ? [{ href: `${base}/crm`, label: 'CRM' }] : []),
-      ]
-    : []
+  const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
   // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
   // page, which renders the Space's live transactional surface (booking / join / donate / enroll /
@@ -337,7 +317,27 @@ export default async function SpaceProfileChromeLayout({
   // pins directly under the global header, staying in view for the whole page (and for anchor jumps —
   // the section targets carry scroll-margin that clears the header + this pinned bar). The band above
   // holds only the identity; on the Hero size the identity is already on the cover, so the band is bare.
-  const stickyNav = <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
+  //
+  // Manage / CRM are OWNER-only toggles that slide open a compact, in-place panel UNDER the menu on the
+  // same page (no navigation): the manager console + a CRM snapshot, server-rendered here and handed to
+  // the client menu, gated on the same adminTabs the nav computes (a visitor gets neither). The CRM
+  // snapshot streams behind Suspense so it never blocks the profile paint. The panels are intentionally
+  // cramped, a quick in-place view that points to the full workspace / the operator's own website.
+  const hasManage = adminTabs.some((t) => t.label === 'Manage')
+  const hasCrm = adminTabs.some((t) => t.label === 'CRM')
+  const stickyNav = (
+    <SpaceProfileMenu
+      tabs={tabs}
+      manageNode={hasManage ? <SpaceManageBoard slug={space.slug} /> : null}
+      crmNode={
+        hasCrm ? (
+          <Suspense fallback={<p className="px-4 py-6 text-sm text-muted">Loading your CRM…</p>}>
+            <SpaceCrmSnapshot slug={space.slug} />
+          </Suspense>
+        ) : null
+      }
+    />
+  )
 
   return (
     <AccentScope vars={accentVars}>
