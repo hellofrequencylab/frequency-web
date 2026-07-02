@@ -99,8 +99,28 @@ export default async function MessagesPage({
     PAID_TIERS.includes((myProfile as { membership_tier?: string | null }).membership_tier ?? '') ||
     STEWARD_ROLES.includes(myProfile.community_role ?? '')
 
+  // First wave: five mutually-independent reads (each depends only on myProfileId or nothing) run
+  // concurrently instead of serially. Their dependent follow-ups (presence, my rooms, channel rooms,
+  // co-participants) resolve after, off these results. No ordering matters — the discover-rooms and
+  // co-participant filters already exclude joined/self in JS.
+  const [peerRes, myMembershipsRes, publicRoomsRes, myTunedRes, myPartsRawRes] = await Promise.all([
+    (supabase).rpc('message_peer_profiles'),
+    supabase.from('room_members').select('room_id, last_read_at').eq('profile_id', myProfileId),
+    supabase
+      .from('rooms')
+      .select('id, name, description, visibility, member_count, last_message_at')
+      .eq('visibility', 'public')
+      .order('member_count', { ascending: false })
+      .limit(10),
+    (supabase).from('topical_channel_memberships').select('topical_channel_id').eq('profile_id', myProfileId),
+    (supabase)
+      .from('conversation_participants')
+      .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at, migrated_to_room_id)')
+      .eq('profile_id', myProfileId),
+  ])
+
   // Public profile fields for everyone I share a DM / room with (caller-scoped).
-  const { data: peerRows } = await (supabase).rpc('message_peer_profiles')
+  const { data: peerRows } = peerRes
   const peerMap = new Map(((peerRows ?? []) as Profile[]).map(p => [p.id, p]))
 
   // Liveness (Phase D): who among my DM peers is active now. last_seen_at is a
@@ -117,10 +137,7 @@ export default async function MessagesPage({
   }
 
   // ── Rooms ─────────────────────────────────────────────────────────
-  const { data: myMemberships } = await supabase
-    .from('room_members')
-    .select('room_id, last_read_at')
-    .eq('profile_id', myProfileId)
+  const { data: myMemberships } = myMembershipsRes
 
   const joinedRoomIds = (myMemberships ?? []).map((m: { room_id: string }) => m.room_id)
 
@@ -135,13 +152,8 @@ export default async function MessagesPage({
   const myRooms: RoomRow[] = ((myRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
     .map(r => ({ ...r, isMember: true }))
 
-  // Discover: public rooms not yet joined
-  const { data: publicRoomsData } = await supabase
-    .from('rooms')
-    .select('id, name, description, visibility, member_count, last_message_at')
-    .eq('visibility', 'public')
-    .order('member_count', { ascending: false })
-    .limit(10)
+  // Discover: public rooms not yet joined (fetched in the first wave above).
+  const { data: publicRoomsData } = publicRoomsRes
 
   const discoverRooms: RoomRow[] = ((publicRoomsData ?? []) as Omit<RoomRow, 'isMember'>[])
     .filter(r => !joinedRoomIds.includes(r.id))
@@ -150,10 +162,7 @@ export default async function MessagesPage({
   // Channel open rooms for the channels I'm tuned into (Phase B). Read-open to
   // anyone; posting requires tune-in. Untyped client (scope_id / topical_channel_*
   // not in generated types).
-  const { data: myTuned } = await (supabase)
-    .from('topical_channel_memberships')
-    .select('topical_channel_id')
-    .eq('profile_id', myProfileId)
+  const { data: myTuned } = myTunedRes
   const tunedChannelIds = ((myTuned ?? []) as { topical_channel_id: string }[]).map(c => c.topical_channel_id)
   const { data: channelRoomsData } = tunedChannelIds.length > 0
     ? await (supabase)
@@ -170,10 +179,7 @@ export default async function MessagesPage({
   // Migrated group threads now live as private rooms; filter them out so they
   // don't double-show (conversation copy + room copy). `migrated_to_room_id`
   // isn't in the generated types yet, so read through the untyped client.
-  const { data: myPartsRaw } = await (supabase)
-    .from('conversation_participants')
-    .select('conversation_id, last_read_at, conversations!conversation_id(id, name, created_at, migrated_to_room_id)')
-    .eq('profile_id', myProfileId)
+  const { data: myPartsRaw } = myPartsRawRes
   const myParts = ((myPartsRaw ?? []) as unknown as Array<{
     conversation_id: string
     last_read_at: string | null
