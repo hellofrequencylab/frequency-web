@@ -137,6 +137,15 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'marketing-deliverability-health', label: 'Queue health', description: 'The outbox at a glance: the live send backlog and the dead-letter count.' },
   { id: 'marketing-deliverability-dead-letters', label: 'Dead-letter queue', description: 'Jobs that exhausted every retry, grouped by kind, with one-tap requeue once the cause is fixed.' },
 
+  // ── Resonance Graph blocks (/admin/crm/graph) — the consent-first relationship + health view ──
+  { id: 'crm-graph-metrics', label: 'Graph metrics', description: 'Consented members, live double-opt-in connections, and the mean resonance health at a glance.' },
+  { id: 'crm-graph-connections', label: 'Strongest connections', description: 'The highest-resonance ties between consenting members, ranked, each with the plain reason behind it.' },
+
+  // ── Playbooks blocks (/admin/crm/playbooks) — the saved Vera plays + their run history ──
+  { id: 'crm-playbooks-stats', label: 'Playbook stats', description: 'The headline band: saved plays, runs this week, the platform autonomy default, and the circuit breaker.' },
+  { id: 'crm-playbooks-registry', label: 'The registry', description: 'Every saved play, the signal that selects it, and how much it may do on its own.' },
+  { id: 'crm-playbooks-runs', label: 'Recent runs', description: 'What ran lately, and how it landed. A wave-off teaches the next night’s ranking.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -351,6 +360,18 @@ const MARKETING_DELIVERABILITY_MODULE_IDS = [
   'marketing-deliverability-dead-letters',
 ] as const
 
+// The Resonance Graph page (/admin/crm/graph), in default render order — the consent-first metric row
+// then the ranked list of the strongest consented connections. Each block self-fetches (fail-safe) and
+// reads only double-opt-in ties. The page keeps its own janitor/insights staff gate; the modules render
+// only through that gated route, so they never re-gate.
+const CRM_GRAPH_MODULE_IDS = ['crm-graph-metrics', 'crm-graph-connections'] as const
+
+// The Playbooks page (/admin/crm/playbooks), in default render order — the stat band, the code-registry
+// table, then the recent run history. Each block self-fetches (fail-safe); the stats and runs read the
+// activity independently (as the hand-built sections did), so there's no shared-fetch change. The page
+// keeps its own janitor gate (and its idempotent seedPlaybooks sync); the modules render only through it.
+const CRM_PLAYBOOKS_MODULE_IDS = ['crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs'] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -462,6 +483,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/content/journeys': ADMIN_JOURNEYS_MODULE_IDS,
   '/admin/marketing/analytics': MARKETING_ANALYTICS_MODULE_IDS,
   '/admin/marketing/deliverability': MARKETING_DELIVERABILITY_MODULE_IDS,
+  '/admin/crm/graph': CRM_GRAPH_MODULE_IDS,
+  '/admin/crm/playbooks': CRM_PLAYBOOKS_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,

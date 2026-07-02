@@ -16,6 +16,8 @@ export const MODULE_ROUTES: readonly string[] = [
   '/admin/content/journeys',
   '/admin/marketing/analytics',
   '/admin/marketing/deliverability',
+  '/admin/crm/graph',
+  '/admin/crm/playbooks',
   '/journeys',
   '/friends',
   '/journal',
