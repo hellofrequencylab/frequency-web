@@ -93,7 +93,11 @@ export default function LifeAfterTheFeedPage() {
         title="How to quit doomscrolling: replace the feed, do not just delete it"
         subtitle="You already know the scroll is not good for you. Deleting the app and white-knuckling it rarely sticks. The thing that works is having somewhere to be."
         focal="object-center"
-      />
+      >
+        <Button href="/discover">
+          Find a Circle near you <ArrowRight className="h-5 w-5" />
+        </Button>
+      </PhotoHero>
 
       {/* Answer-first opening. */}
       <Section tone="canvas" pad="pt-16 pb-16 sm:pt-20 sm:pb-20">
