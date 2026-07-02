@@ -51,38 +51,47 @@ export async function POST(req: Request) {
   // crew role VALUE and moved every row to 'member', so re-writing it here would
   // re-introduce a dead enum value and re-conflate the role with the tier. Crew the
   // PAID membership and Crew the (retired) community role are fully decoupled.
+  // apply_membership_event_atomic is new (migration 20261003000000) and not yet in the
+  // generated Database types, so call it through a localized method cast (repo convention for
+  // not-yet-typed RPCs — see lib/gems.ts award_gems_atomic; ADR-246). Drop after `gen types`.
+  const applyMembershipEvent = admin.rpc as unknown as (
+    name: 'apply_membership_event_atomic',
+    args: {
+      _profile: string
+      _event_at: string
+      _tier: string
+      _payment_status: string | null
+      _is_supporter: boolean | null
+      _customer_id: string | null
+    },
+  ) => Promise<{ data: { applied?: boolean; reason?: string } | null; error: { message: string } | null }>
+
+  // Writes membership_tier via apply_membership_event_atomic, which IGNORES an event OLDER
+  // than the last one applied to this profile (Stripe does not guarantee delivery order, so
+  // a delayed customer.subscription.updated(active) can otherwise re-grant a canceled tier).
+  // eventAt is event.created (unix seconds). Supporter was retired as a TIER (ADR-458 /
+  // 20260915000100) and maps to crew + the is_supporter PWYW badge, access-preserving, so a
+  // legacy 'supporter' event never violates the membership_tier CHECK. A failed write must
+  // NOT ack 200 (a paying member would be stranded on the wrong tier with the event claimed
+  // as processed), so throw and let the outer catch release the claim + return 500 for retry.
   const setTier = async (
     profileId: string,
     tier: string,
-    customerId?: string | null,
-    paymentStatus?: 'active' | 'past_due' | 'canceled',
+    customerId: string | null | undefined,
+    paymentStatus: 'active' | 'past_due' | 'canceled',
+    eventAt: number,
   ) => {
-    // Supporter was retired as a TIER (ADR-458 / 20260915000100): membership_tier
-    // collapses to ('free','crew') and Supporter becomes the is_supporter PWYW badge
-    // on top of Crew. Map here so a legacy/PWYW 'supporter' event writes the allowed
-    // tier + sets the badge (access-preserving), instead of violating the
-    // membership_tier CHECK and failing.
     const isSupporter = tier === 'supporter'
-    const patch: {
-      membership_tier: string
-      is_supporter?: boolean
-      stripe_customer_id?: string
-      membership_payment_status?: string
-    } = {
-      membership_tier: isSupporter ? 'crew' : tier,
-    }
-    if (isSupporter) patch.is_supporter = true
-    if (customerId) patch.stripe_customer_id = customerId
-    // Dunning state (ADR-370, migration 20260727000000): the gated member webhook is the ONLY
-    // writer of membership_payment_status; lib/pricing/dunning.ts reads it (fail-safe to 'active'
-    // when NULL). Write it alongside the tier so a past-due member gets the recovery banner
-    // without being downgraded.
-    if (paymentStatus) patch.membership_payment_status = paymentStatus
-    const { error } = await admin.from('profiles').update(patch).eq('id', profileId)
-    // A failed entitlement write must NOT ack 200: supabase-js returns { error } rather
-    // than throwing, so an unchecked failure here would leave a paying member on 'free'
-    // with the event claimed as processed (Stripe never redelivers) — unrecoverable.
-    // Throw so the outer catch releases the claim and returns 500 for Stripe to retry.
+    const { error } = await applyMembershipEvent('apply_membership_event_atomic', {
+      _profile: profileId,
+      _event_at: new Date(eventAt * 1000).toISOString(),
+      _tier: isSupporter ? 'crew' : tier,
+      _payment_status: paymentStatus,
+      _is_supporter: isSupporter ? true : null,
+      _customer_id: customerId ?? null,
+    })
+    // A stale event returns { applied:false } WITHOUT an error (the correct current state is
+    // preserved) and is acked normally; only a real DB error throws.
     if (error) throw new Error(`setTier(${profileId}) failed: ${error.message}`)
   }
 
@@ -111,7 +120,7 @@ export async function POST(req: Request) {
         const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
         const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
         // A completed checkout is a successful payment → the membership is active.
-        if (profileId) await setTier(profileId, tier, customerId, 'active')
+        if (profileId) await setTier(profileId, tier, customerId, 'active', event.created)
         break
       }
       case 'customer.subscription.created':
@@ -133,15 +142,15 @@ export async function POST(req: Request) {
               : tierForPrice(sub.items?.data?.[0]?.price?.id)
           const status = sub.status
           if (status === 'active' || status === 'trialing') {
-            await setTier(profileId, paidTier, null, 'active')
+            await setTier(profileId, paidTier, null, 'active', event.created)
           } else if (status === 'past_due') {
             // Dunning grace (ADR-370): a failed renewal must NOT instantly downgrade a paying
             // member. Keep the paid tier and mark past_due so the recovery banner shows while
             // Stripe retries; only a terminal state below reverts the tier.
-            await setTier(profileId, paidTier, null, 'past_due')
+            await setTier(profileId, paidTier, null, 'past_due', event.created)
           } else if (status === 'unpaid' || status === 'canceled' || status === 'incomplete_expired') {
             // Terminal: Stripe gave up (unpaid) or the subscription ended → revert to free + canceled.
-            await setTier(profileId, 'free', null, 'canceled')
+            await setTier(profileId, 'free', null, 'canceled', event.created)
           }
           // incomplete / paused: no confirmed entitlement change — leave the current state as-is.
         }
@@ -152,7 +161,7 @@ export async function POST(req: Request) {
         // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
         if (await routeSpaceSubscription(sub)) break
         const profileId = sub.metadata?.profile_id
-        if (profileId) await setTier(profileId, 'free', null, 'canceled')
+        if (profileId) await setTier(profileId, 'free', null, 'canceled', event.created)
         break
       }
     }
