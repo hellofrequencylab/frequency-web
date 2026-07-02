@@ -15,7 +15,7 @@ its row here flipped to ✅.
 | **A. commerce_variants** | ✅ DONE. ① removed the null-only `variant_id` write (#1411, deployed); ② dropped the `variant_id` column + `commerce_variants` table (applied, verified gone). | Low (2-step, deploy-gated) | ✅ Column/table gone; checkout unaffected; tests green. |
 | **B. Dependency hygiene** | Bump patch/minor (resend, stripe, supabase-js, lucide-react, tailwindcss, next patch, @sentry, @anthropic-ai/sdk, supabase CLI). Hold majors (eslint 10, @types/node 26). Re-run `pnpm audit`. | Low-med (build+test per batch) | Build+test green; audit ≤ prior; no major bumps. |
 | **C. Stripe / economy atomicity** | Atomic RPCs for: ticket oversell reservation (`lib/billing/tickets.ts`), gem daily-cap (`lib/gems.ts`), notification-queue SKIP-LOCKED claim (`lib/queue/outbox.ts`), challenge/streak read-modify-write (`lib/achievements.ts`), journey-finish purse claim (`lib/quest/complete.ts`); + Stripe event-ordering guard. | High (needs RPC design + concurrency tests) | Each fix has an RPC migration + a concurrency/idempotency test; `test:rls` green. |
-| **D. Performance** ⏳ | Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`; make `(marketing)`/`discover`/splash auth a client island so `revalidate` ISR isn't defeated by `cookies()`; events/messages serial chains → waves. **D1 shipped**: guarded the layout coach/tour reads behind their (shipped-OFF) flags + cached `getOnboardingStatus` (drops ~18 serial DB round-trips/navigation in the shipped state). **D2 next**: events/messages fetch waterfalls → `Promise.all`. | High (architectural; shell regressions) | Before/after render trace; shell not blocked; ISR restored on public routes; tests green. |
+| **D. Performance** ⏳ | Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`; make `(marketing)`/`discover`/splash auth a client island so `revalidate` ISR isn't defeated by `cookies()`; events/messages serial chains → waves. **D1 shipped**: guarded the layout coach/tour reads behind their (shipped-OFF) flags + cached `getOnboardingStatus` (drops ~18 serial DB round-trips/navigation in the shipped state). **D2 shipped**: `/events` index loader — parallelized the 3 event-source reads + the 4 post-assembly reads (`Promise.all`). **D3 next**: messages/DM/room fetch waterfalls. | High (architectural; shell regressions) | Before/after render trace; shell not blocked; ISR restored on public routes; tests green. |
 | **E. @measured/puck migration** | Execute ADR-493: pin exact → in-house `<Render>` over the block registry → in-house editor → drop dep. Keep the persisted `Data` shape (zero doc migration). | High (multi-week, phased itself) | Each ADR-493 sub-phase shippable behind a flag; published-page parity. |
 | **F. Lower-priority advisors** | Consolidate 56 `multiple_permissive_policies`; enable leaked-password protection (Supabase dashboard auth setting — not a migration, needs owner toggle). | Med / config | Advisor counts drop; document the dashboard toggle for the owner. |
 
@@ -105,6 +105,12 @@ the unit suite.
   functions are **intentionally executable** and left as-is — 49 are PostgREST RPCs, 18 are
   RLS-policy helpers (revoking breaks RLS — confirmed via `pg_depend`), 1 is PostGIS. Those
   advisor warnings are expected/"won't fix". Method is codified in the `/meta-scan` skill.
+- ✅ ~~**Anon-executable state-mutating SECURITY DEFINER RPCs**~~ — 🔴 HIGH, found in the follow-up
+  security sweep, DONE (migration `20261005000000`, applied + verified + pgTAP guard). `reset_season`
+  (platform season rollover), `adjust_ticket_sold` (ticket inventory), `set_node_geo` (node geofence),
+  and `refresh_member_engagement_scores` (DoS) were `SECURITY DEFINER` with no internal auth check and
+  EXECUTE-able by anon/authenticated. All revoked to `service_role` only; every caller already uses the
+  admin client, so behavior is unchanged. (Distinct from the RPCs above, which are legitimately callable.)
 - **Supabase advisors (remaining, lower priority)**:
   - ✅ ~~56 `multiple_permissive_policies`~~ — Phase F (migration `20261004000000`): consolidated the
     6 highest-count `{public}` tables (post_reactions, posts, applications, events, user_achievements,
