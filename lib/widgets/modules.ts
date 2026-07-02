@@ -146,6 +146,16 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'crm-playbooks-registry', label: 'The registry', description: 'Every saved play, the signal that selects it, and how much it may do on its own.' },
   { id: 'crm-playbooks-runs', label: 'Recent runs', description: 'What ran lately, and how it landed. A wave-off teaches the next night’s ranking.' },
 
+  // ── Community dashboard blocks (/admin/community) — the people and their spaces, as one operator home ──
+  { id: 'community-structure', label: 'Structure & people', description: 'The shape of the live site and who is in it: circles, channels, events, regions, broadcasts, the roster, and the staff team, with cumulative membership growth.' },
+  { id: 'community-trust-safety', label: 'Trust & safety', description: 'The live queue, led by what needs attention now: open reports, support tickets, partner verification, and recent moderation.' },
+  { id: 'community-feed-reach', label: 'Feed reach', description: 'The open-feed switch: open the feed for a young community, or keep the reach gate on so a member sees their own circles and nearby posts.' },
+  { id: 'community-manage', label: 'Manage', description: 'One card per working surface in Community, each with a live stat and a link straight to the surface that edits it.' },
+  { id: 'community-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
+
+  // ── Audit log blocks (/admin/audit) — the append-only security trail ──
+  { id: 'audit-recent-actions', label: 'Recent actions', description: 'The 100 most recent sensitive platform actions, newest first: who did what, to whom.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -372,6 +382,23 @@ const CRM_GRAPH_MODULE_IDS = ['crm-graph-metrics', 'crm-graph-connections'] as c
 // keeps its own janitor gate (and its idempotent seedPlaybooks sync); the modules render only through it.
 const CRM_PLAYBOOKS_MODULE_IDS = ['crm-playbooks-stats', 'crm-playbooks-registry', 'crm-playbooks-runs'] as const
 
+// The Community dashboard (/admin/community), in default render order — the Structure & people band,
+// the live Trust & safety queue, the Feed reach switch, the Manage grid, then the Related areas strip.
+// Each block self-fetches (fail-safe); the page keeps its host + community-staff gate, and every linked
+// area keeps its own, so the modules render only through the gated route and never re-gate.
+const COMMUNITY_ADMIN_MODULE_IDS = [
+  'community-structure',
+  'community-trust-safety',
+  'community-feed-reach',
+  'community-manage',
+  'community-related',
+] as const
+
+// The Audit log (/admin/audit). The whole interior is one self-fetching security trail, keyed only on
+// recency with no searchParams facet, so it converts wholesale to one module. The page keeps its
+// admin gate; the module renders only through that gated route.
+const AUDIT_MODULE_IDS = ['audit-recent-actions'] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -485,6 +512,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/marketing/deliverability': MARKETING_DELIVERABILITY_MODULE_IDS,
   '/admin/crm/graph': CRM_GRAPH_MODULE_IDS,
   '/admin/crm/playbooks': CRM_PLAYBOOKS_MODULE_IDS,
+  '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
+  '/admin/audit': AUDIT_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,
