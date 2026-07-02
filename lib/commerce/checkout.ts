@@ -153,9 +153,11 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
         const p = products.find((x) => x.id === it.productId)!
         const qty = Math.max(1, Math.floor(it.qty))
         return {
+          // variant_id intentionally omitted: variants were never populated
+          // (commerce_variants is empty), so this always wrote null. Dropping the
+          // write unblocks retiring the column + table (Phase A2). See META-SCAN-STATUS.
           order_id: orderId,
           product_id: p.id,
-          variant_id: it.variantId ?? null,
           title: p.title,
           qty,
           unit_cents: p.price_cents,
