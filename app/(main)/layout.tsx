@@ -375,7 +375,10 @@ export default async function MainLayout({
   // to add a photo they have). Only pay for the status lookup when a task-cue is
   // still unseen — otherwise there's nothing to suppress.
   const TASK_CUES = ['profile_face', 'circles_find', 'practice_adopt']
-  const tourSatisfied: string[] = TASK_CUES.some((id) => !tourState.seen.includes(id))
+  // `tourSatisfied` feeds ONLY the TourProvider, which renders only when `autoPopups` is on
+  // (line ~589; the flag ships OFF). Gate the getOnboardingStatus read (5 serial round-trips)
+  // on the already-resolved flag so the shipped state skips it entirely — identical when on.
+  const tourSatisfied: string[] = autoPopups && TASK_CUES.some((id) => !tourState.seen.includes(id))
     ? (await getOnboardingStatus(profile.id)).steps.filter((s) => s.done).map((s) => s.key)
     : []
 
@@ -404,10 +407,14 @@ export default async function MainLayout({
 
   // Once chores are done, Vera keeps coaching (build item 1.3, folded into the same
   // surface — no competing card): surface the single next activation step.
-  let coachNext = chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
+  // coachNext feeds ONLY the ChoresOverlay, which renders only when `nextSteps` is on
+  // (line ~583; the flag ships OFF). Gate the whole chain (getOnboardingStatus +
+  // getFounderTasks + getActiveTraining, ~13 serial round-trips) on the already-resolved
+  // flag so the shipped state skips it entirely — output is identical when the flag is on.
+  let coachNext = nextSteps && chores?.complete ? (await getOnboardingStatus(profile.id)).current : null
   // Activation done? Hand off to Founder's First Week (build item 1.4) while it's
   // unfinished. The founder query only runs for this small, fully-activated cohort.
-  if (chores?.complete && !coachNext && !(await getFounderTasks(profile.id)).complete) {
+  if (nextSteps && chores?.complete && !coachNext && !(await getFounderTasks(profile.id)).complete) {
     coachNext = {
       key: 'log', // synthetic step — the overlay renders by copy/href, not key
       label: FOUNDER_COACH.headline,
@@ -422,7 +429,7 @@ export default async function MainLayout({
   // points at it (takes precedence — it's the freshest thing they unlocked). Query
   // gated to host+ (the management roles that receive training) so the member
   // majority never pays for it.
-  if (chores?.complete && atLeastRole(realRole, 'host')) {
+  if (nextSteps && chores?.complete && atLeastRole(realRole, 'host')) {
     const training = await getActiveTraining(profile.id)
     if (training) {
       coachNext = {
