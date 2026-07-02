@@ -7,11 +7,11 @@
 // editor's own top bar (no `fixed inset-0` blackout). Editing one block still pushes a
 // full-screen form with a back-chevron.
 //
-// It operates on the SAME Puck `Data` document + the SAME `config` (fields schemas +
-// block render) the desktop <Puck> uses, so both editors read/write one document and
+// It operates on the SAME `Data` document + the SAME `config` (fields schemas +
+// block render) the desktop editor uses, so both editors read/write one document and
 // one block library. It never imports server-only code: save + publish arrive as props
 // (the editors pass down their existing 'use server' actions), and the preview uses
-// Puck's client <Render>.
+// the in-house <BlockRender> (byte-identical to the public render path).
 //
 // AUTOSAVE: every edit updates local state immediately and schedules a debounced write
 // through `onSaveDraft` (the same draft-save each editor already owns). A quiet
@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, Eye, EyeOff, Layers, Plus, Trash2 } from 'lucide-react'
 import type { Config, Data } from '@/lib/page-editor/types'
-import { Render } from '@measured/puck'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { Button } from '@/components/ui/button'
 import {
   addBlock,
@@ -326,7 +326,7 @@ export function MobileEditor({
               <span className="text-xs font-medium uppercase tracking-wide text-subtle">Preview</span>
             </div>
             <div className="pointer-events-none">
-              <Render config={config} data={data} metadata={metadata} />
+              <BlockRender config={config} data={data} metadata={metadata} />
             </div>
           </>
         )}

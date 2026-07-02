@@ -5,7 +5,9 @@ import type { ComponentConfig } from '@/lib/page-editor/types'
 
 import { SiteImage } from '@/components/marketing/site-image'
 import { FaqList } from '@/components/marketing/marketing-ui'
-import { richParagraphs } from '@/lib/page-editor/richtext'
+import { richParagraphs, richPlainText } from '@/lib/page-editor/richtext'
+import { JsonLd } from '@/components/json-ld'
+import { faqSchema } from '@/lib/jsonld'
 import { focalField, focalClass } from '@/lib/page-editor/image-controls'
 import {
   accentize,
@@ -300,8 +302,16 @@ export function SpaceFaqBlock({
   if (faqs.length === 0) return null
   const { accent } = emphasisClasses(emphasis)
   const items = faqs.map((f) => ({ q: f.question, a: richParagraphs(f.answer) }))
+  // FAQPage structured data from the operator's LIVE Q&A, so a Puck-published Space page
+  // keeps the FAQ schema a coded page would emit (the <BlockRender> path bypasses any
+  // coded <JsonLd>). Mirrors the Accordion block: plain-text answers (schema can't hold
+  // React nodes), only well-formed Q/A pairs, node omitted when none qualify.
+  const schemaQas = faqs
+    .map((f) => ({ q: (f.question ?? '').trim(), a: richPlainText(f.answer) }))
+    .filter((qa) => qa.q && qa.a)
   return (
     <div>
+      {schemaQas.length > 0 && <JsonLd data={faqSchema(schemaQas)} />}
       <SectionTitle eyebrow={eyebrow} heading={heading} ink={ink} accent={accent} />
       <FaqList items={items} />
     </div>

@@ -16,6 +16,7 @@ import {
   MapPin,
 } from 'lucide-react'
 import { BlockRender } from '@/lib/page-editor/block-render'
+import { BlockDocJsonLd } from '@/lib/page-editor/block-seo'
 import {
   PhotoHero,
   Section,
@@ -102,6 +103,7 @@ export default async function TheCommunityPage() {
           breadcrumbSchema([{ name: 'The Community', path: '/the-community' }]),
         ]}
       />
+      {data && <BlockDocJsonLd data={data} path="/the-community" />}
       {data ? <BlockRender config={config} data={data} metadata={live ? { live } : {}} /> : <LegacyTheCommunity />}
     </>
   )

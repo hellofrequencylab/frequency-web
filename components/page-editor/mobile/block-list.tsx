@@ -14,12 +14,12 @@
 import { useRef, useState } from 'react'
 import { ChevronRight, GripVertical } from 'lucide-react'
 import type { Config, Data } from '@/lib/page-editor/types'
-import { Render } from '@measured/puck'
+import { BlockRender } from '@/lib/page-editor/block-render'
 import { blockSummary, blockTitle, itemId } from './data-ops'
 
 type Item = Data['content'][number]
 
-// Render ONE block in isolation as a low-fi preview, by handing <Render> a
+// Render ONE block in isolation as a low-fi preview, by handing <BlockRender> a
 // single-item document. Non-interactive (pointer-events off) so taps hit the row.
 // `metadata` is threaded through so asset-backed blocks (e.g. the Spotlight image /
 // gallery, which derive their URL from `metadata.spotlight.publicBase`) resolve here
@@ -28,7 +28,7 @@ function BlockPreview({ config, item, metadata }: { config: Config; item: Item; 
   const doc: Data = { root: {}, content: [item] }
   return (
     <div className="pointer-events-none max-h-40 overflow-hidden [zoom:0.5]" aria-hidden>
-      <Render config={config} data={doc} metadata={metadata} />
+      <BlockRender config={config} data={doc} metadata={metadata} />
     </div>
   )
 }

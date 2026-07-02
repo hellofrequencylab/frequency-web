@@ -3,16 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Puck, usePuck } from '@measured/puck'
-import type { Data } from '@/lib/page-editor/types'
-import '@measured/puck/puck.css'
-import '@/components/page-editor/puck-theme.css'
+import type { Data, Metadata } from '@/lib/page-editor/types'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
 import { isError } from '@/lib/action-result'
 import { publishSpaceLanding, resetSpaceLanding } from '@/app/(main)/spaces/[slug]/edit-page/actions'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { SpaceEditorProvider } from '@/lib/page-editor/space-editor-context'
+import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
 
 // THE OPERATOR EDITOR for a Space's public PAGE (multi-page model). Reuses the shared Puck
 // config + the marketing editor's publish/baseline pattern, but writes to
@@ -25,11 +23,11 @@ import { SpaceEditorProvider } from '@/lib/page-editor/space-editor-context'
 // "Published" (with a check) when the live page matches the editor. Reads Puck's
 // live document via usePuck and compares it to the last-published baseline.
 function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
-  const { appState } = usePuck()
-  const current = JSON.stringify(appState.data)
+  const doc = useEditorDoc()
+  const current = JSON.stringify(doc)
 
-  // Baseline = the document as first loaded (captured once via the initializer, so
-  // Puck's own normalisation never registers as a fake edit).
+  // Baseline = the document as first loaded (captured once via the initializer; the
+  // editor loads the doc as-is, so the initial render never registers as a fake edit).
   const [baseline, setBaseline] = useState(current)
   const [status, setStatus] = useState<'idle' | 'publishing' | 'error'>('idle')
 
@@ -38,12 +36,12 @@ function PublishButton({ slug, pageSlug }: { slug: string; pageSlug: string }) {
   async function handlePublish() {
     if (!dirty || status === 'publishing') return
     setStatus('publishing')
-    const result = await publishSpaceLanding(slug, appState.data, pageSlug)
+    const result = await publishSpaceLanding(slug, doc, pageSlug)
     if (isError(result)) {
       setStatus('error')
       return
     }
-    setBaseline(JSON.stringify(appState.data))
+    setBaseline(JSON.stringify(doc))
     setStatus('idle')
   }
 
@@ -136,7 +134,7 @@ export function SpaceLandingEditor({
   spaceContent?: unknown
 }) {
   const exitHref = `/spaces/${slug}`
-  const metadata = spaceContent ? { space: spaceContent } : undefined
+  const metadata: Metadata | undefined = spaceContent ? { space: spaceContent } : undefined
   const exitControl = (
     <Link
       href={exitHref}
@@ -149,20 +147,18 @@ export function SpaceLandingEditor({
     <SpaceEditorProvider slug={slug}>
     <ResponsiveEditor
       desktop={
-        <Puck
+        <DesktopEditor
           config={config}
           data={data}
           metadata={metadata}
           headerTitle={`Editing: ${title}`}
-          overrides={{
-            headerActions: () => (
-              <>
-                {exitControl}
-                {customized && <ResetButton slug={slug} pageSlug={pageSlug} />}
-                <PublishButton slug={slug} pageSlug={pageSlug} />
-              </>
-            ),
-          }}
+          headerActions={
+            <>
+              {exitControl}
+              {customized && <ResetButton slug={slug} pageSlug={pageSlug} />}
+              <PublishButton slug={slug} pageSlug={pageSlug} />
+            </>
+          }
         />
       }
       mobile={{
