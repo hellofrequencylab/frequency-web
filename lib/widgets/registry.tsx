@@ -73,6 +73,11 @@ import { MarketingAnalyticsCrm } from '@/components/widgets/marketing/analytics-
 import { MarketingAnalyticsEmail } from '@/components/widgets/marketing/analytics-email'
 import { MarketingDeliverabilityHealth } from '@/components/widgets/marketing/deliverability-health'
 import { MarketingDeliverabilityDeadLetters } from '@/components/widgets/marketing/deliverability-dead-letters'
+import { CrmGraphMetrics } from '@/components/widgets/crm/graph-metrics'
+import { CrmGraphConnections } from '@/components/widgets/crm/graph-connections'
+import { CrmPlaybooksStats } from '@/components/widgets/crm/playbooks-stats'
+import { CrmPlaybooksRegistry } from '@/components/widgets/crm/playbooks-registry'
+import { CrmPlaybooksRuns } from '@/components/widgets/crm/playbooks-runs'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -218,6 +223,13 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // Deliverability (/admin/marketing/deliverability) — outbox health + dead-letter recovery.
   'marketing-deliverability-health': MarketingDeliverabilityHealth,
   'marketing-deliverability-dead-letters': MarketingDeliverabilityDeadLetters,
+  // Resonance Graph (/admin/crm/graph) — the consent-first relationship + health view.
+  'crm-graph-metrics': CrmGraphMetrics,
+  'crm-graph-connections': CrmGraphConnections,
+  // Playbooks (/admin/crm/playbooks) — the saved Vera plays + their run history.
+  'crm-playbooks-stats': CrmPlaybooksStats,
+  'crm-playbooks-registry': CrmPlaybooksRegistry,
+  'crm-playbooks-runs': CrmPlaybooksRuns,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,
