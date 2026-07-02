@@ -13,6 +13,10 @@ export const LIBRARY_KINDS = [
   'flow', // a reusable multi-block Puck fragment (e.g. the LeadFunnel)
   'theme', // a token set / skin
   'app_asset', // logos, favicons, brand files
+  'app', // a reusable code feature/widget (config = { manifestKey, globalConfig, enabled })
+  'font', // a font family (file-backed + config = { family, weights, variable, fallbacks, license })
+  'token', // a design-token set / skin (config = { tokens, mode })
+  'copy', // a member-facing content string (config = { body, variables, voice })
 ] as const
 export type LibraryKind = (typeof LIBRARY_KINDS)[number]
 
