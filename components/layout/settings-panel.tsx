@@ -21,7 +21,7 @@ import {
 } from '@/lib/admin/modules/spine'
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
-import { appsForScope } from '@/lib/apps/for-scope'
+import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
 import { APPS } from '@/lib/apps/catalog'
 import type { App, AppViewer } from '@/lib/apps/types'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
@@ -142,6 +142,15 @@ export interface SearchableApp {
   Icon?: LucideIcon
 }
 
+/** An attainable-but-locked row (Phase 5 / P3): an App the viewer could plausibly unlock, shown as a
+ *  lock + one-line reason (+ optional CTA), NEVER a working editor. Fail-closed by construction. */
+export interface LockedRow {
+  id: string
+  label: string
+  reason: string
+  cta?: { label: string; href: string }
+}
+
 /** The STRUCTURED settings model the AdminBar body renders (docs/ADMIN-RAIL.md Phase 3). */
 export interface SettingsPanelModel {
   /** Whether there is anything to render at all (each chrome hides an empty bar). */
@@ -154,6 +163,8 @@ export interface SettingsPanelModel {
   pageGroup: ReactNode | null
   /** Every scoped app, for the fuzzy search index. */
   searchApps: SearchableApp[]
+  /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
+  lockedApps: LockedRow[]
   /** Thin adapter: today's flat stacked markup, rendered verbatim in the collapse case so the flat
    *  panel stays pixel-identical to before. */
   content: ReactNode
@@ -313,12 +324,27 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // The operator "Page" group — a separate drill target, never one of the entity spine categories.
   const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
 
+  // ── Phase 5 (P3): attainable-but-locked management apps for this scope + REAL viewer — an App the
+  //    viewer can't act on yet but could plausibly unlock (a plan-gated Space function). Rendered as a
+  //    lock + reason, never an editor; personal apps are caps-gated and so are never attainable-locked.
+  //    Empty over the live catalog today (no gate opts in), so this never falsely lights or crowds the
+  //    bar — it wires the render pattern fail-safely (docs/ADMIN-RAIL.md Phase 5). ──
+  const lockedApps: LockedRow[] = authed
+    ? lockedAppsForScope(scope, viewer).map((l) => ({
+        id: l.app.id,
+        label: l.app.label,
+        reason: l.reason,
+        ...(l.cta ? { cta: l.cta } : {}),
+      }))
+    : []
+
   const hasContent = categories.length > 0 || !!pageGroup
   // The personal "You" category never drives the collapse decision (it always rides along, inline in
   // the flat panel and as the lead row in the browse home). Flatten on the MANAGEMENT targets only, so
   // a single-category manager stays flat exactly as before Phase 4 — with the "You" block added on top.
+  // A locked row is a browse-home affordance, so its presence keeps the home list (never collapse).
   const managementCategories = categories.filter((c) => c.slot !== 'account')
-  const flat = shouldFlatten(managementCategories, { hasExtras: !!pageGroup })
+  const flat = shouldFlatten(managementCategories, { hasExtras: !!pageGroup }) && lockedApps.length === 0
 
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
   const searchApps: SearchableApp[] = [
@@ -335,7 +361,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }))
 
   if (!hasContent) {
-    return { hasContent: false, flat: true, categories: [], pageGroup: null, searchApps: [], content: null }
+    return { hasContent: false, flat: true, categories: [], pageGroup: null, searchApps: [], lockedApps: [], content: null }
   }
 
   // Whether any MANAGEMENT/operator content sits below the "You" block in the flat panel — drives the
@@ -373,5 +399,5 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     </div>
   )
 
-  return { hasContent: true, flat, categories, pageGroup, searchApps, content }
+  return { hasContent: true, flat, categories, pageGroup, searchApps, lockedApps, content }
 }

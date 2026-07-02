@@ -88,9 +88,10 @@ const inputBase =
   'w-full rounded-xl border border-border bg-surface px-4 py-3 text-base text-text placeholder:text-subtle transition-colors focus:border-border-strong focus:outline-none focus:ring-2 focus:ring-border-strong/25'
 
 // Only paint a preview for a known-safe image scheme — a blob: URL from
-// createObjectURL, our https upload URL, or an inline data:image. Guards the <img>
-// src sink so an unexpected/tainted value can never reach it (CodeQL js/xss-through-dom).
-const SAFE_IMG_SRC = /^(?:blob:|data:image\/|https?:\/\/)/i
+// createObjectURL or our http(s) upload URL. Guards the <img> src sink so a tainted
+// value can never reach it (CodeQL js/xss-through-dom). data: is intentionally excluded
+// (a data:image/svg+xml can carry script), and so are relative/scheme-less values.
+const SAFE_IMG_SRC = /^(?:blob:|https?:\/\/)/i
 
 function Avatar({ url, name, email, size = 'md' }: { url: string; name: string; email: string; size?: 'md' | 'lg' }) {
   const dim = size === 'lg' ? 'w-20 h-20 text-2xl' : 'w-16 h-16 text-xl'
