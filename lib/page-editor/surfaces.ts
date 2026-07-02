@@ -68,22 +68,23 @@ export const SURFACES: Record<SurfaceKey, SurfaceDef> = {
     key: 'spotlight',
     label: 'Spotlight',
     contentSource: 'profiles.meta.spotlight (SpotlightLayout)',
-    blockPreset: ['linkTree', 'content', 'media'],
     resolver:
-      'spotlightLayoutToPuck(layout) or linktreePreset() when empty, rendered by components/spotlight/puck-render.tsx',
+      'lib/spotlight/puck/resolve.ts spotlightPuckDoc({seedWhenEmpty:true}) + spotlightRenderMeta, rendered by components/spotlight/puck-render.tsx',
+    blockPreset: ['linkTree', 'content', 'media'],
     defaultTemplate: () => linktreePreset(),
   },
 
-  // ── USER — the member's own public page (people/[handle]). NEW surface: today it renders bespoke
-  // from profiles columns; Phase B additively bridges it to Puck like Spotlight (bespoke stays the
-  // fallback). Its default starter is the new identity-led, link-tree-forward member page.
+  // ── USER — the member's own public page (people/[handle]). Phase B additively renders the member's
+  // published Spotlight body in the in-app profile style (bespoke profile stays the primary render);
+  // Phase C routes it through the SAME shared resolver as spotlight, so the two surfaces show the
+  // SAME content and can never drift. Its default starter is the identity-led member page.
   user: {
     key: 'user',
     label: 'Member page',
-    contentSource: 'profiles columns today (bespoke people/[handle]); additive Puck layer planned (Phase B)',
-    blockPreset: ['profile', 'linkTree', 'dynamic'],
+    contentSource: 'profiles.meta.spotlight (same store as spotlight — the additive bridge, ADR-500 Phase B; no separate user store)',
     resolver:
-      'bespoke people/[handle] render today; Phase B bridges a stored member layout to Puck like Spotlight, bespoke stays fallback',
+      'lib/spotlight/puck/resolve.ts spotlightPuckDoc() (seedWhenEmpty:false) + spotlightRenderMeta, rendered by components/profile/profile-links-section.tsx under the bespoke people/[handle] profile',
+    blockPreset: ['profile', 'linkTree', 'dynamic'],
     defaultTemplate: () => generateDefaultProfilePage(''),
   },
 }
