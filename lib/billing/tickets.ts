@@ -234,33 +234,49 @@ export async function createTicketCheckout(opts: {
       buyer_profile_id: opts.buyerProfileId,
       ...(tier ? { ticket_type_id: tier.id } : {}),
     },
+    // Hold the seat for 30 min: the session expires so an abandoned checkout frees its
+    // reservation (matches the pending window in reserve_ticket_atomic).
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
     success_url: `${appUrl()}/events/${event.slug}?ticket=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl()}/events/${event.slug}`,
   })
 
-  // The pending row is what recordTicketFromSession flips to `succeeded` on payment. If this insert
-  // silently fails (supabase-js returns { error }), the webhook would find no row to advance and the
-  // buyer would pay for a ticket we never recorded. So check it, expire the just-created Stripe
-  // session so it can't be paid into a void, and surface an error instead of the checkout URL.
-  const { error: pendingErr } = await db().from('event_tickets').insert({
-    event_id: event.id,
-    buyer_profile_id: opts.buyerProfileId,
-    ticket_type_id: tier?.id ?? null,
-    qty,
-    amount_cents: gross,
-    platform_fee_cents: fee,
-    currency: 'usd',
-    status: 'pending',
-    stripe_checkout_session_id: session.id,
+  // Reserve capacity + record the pending row ATOMICALLY (reserve_ticket_atomic, migration
+  // 20260930000000). The old pre-check + separate insert oversold: concurrent buyers all passed
+  // `quantity - sold` before any payment settled. The RPC re-checks committed capacity
+  // (paid + in-flight pending within 30 min) under a per-tier advisory lock and inserts the
+  // pending row only if it fits. On sold-out or error, expire the session so it can't be paid
+  // into a void, and refuse the URL. The pre-check above still gives a fast sold-out UX.
+  const reserveRpc = db().rpc as unknown as (
+    name: 'reserve_ticket_atomic',
+    args: {
+      _tier_id: string | null; _event_id: string; _buyer: string; _qty: number
+      _amount_cents: number; _fee_cents: number; _currency: string; _session_id: string
+    },
+  ) => Promise<{ data: { reserved?: boolean; reason?: string } | null; error: { message: string } | null }>
+
+  const { data: reservation, error: reserveErr } = await reserveRpc('reserve_ticket_atomic', {
+    _tier_id: tier?.id ?? null,
+    _event_id: event.id,
+    _buyer: opts.buyerProfileId,
+    _qty: qty,
+    _amount_cents: gross,
+    _fee_cents: fee,
+    _currency: 'usd',
+    _session_id: session.id,
   })
-  if (pendingErr) {
-    console.error('[tickets] pending ticket insert failed', pendingErr.message)
+  if (reserveErr || !reservation?.reserved) {
+    if (reserveErr) console.error('[tickets] reserve_ticket_atomic failed', reserveErr.message)
     try {
       await stripe.checkout.sessions.expire(session.id)
     } catch {
-      // best-effort — if expiry fails the session simply lapses on its own; we still refuse the URL
+      // best-effort — an unexpired session simply lapses on its own; we still refuse the URL
     }
-    return { error: 'Could not start checkout. Please try again.' }
+    return {
+      error: reservation?.reason === 'sold_out'
+        ? 'This ticket just sold out.'
+        : 'Could not start checkout. Please try again.',
+    }
   }
 
   if (!session.url) return { error: 'Could not start checkout.' }
