@@ -87,7 +87,12 @@ export async function createFunnel(input: CreateFunnelInput): Promise<ActionResu
     label: STAGE_KIND_META[kind].label,
     position,
   }))
-  await db().from('funnel_stages').insert(stageRows)
+  const { error: stageErr } = await db().from('funnel_stages').insert(stageRows)
+  if (stageErr) {
+    // Roll back the orphan funnel so a half-built, stage-less funnel never lingers.
+    await db().from('funnels').delete().eq('id', funnelId)
+    return fail('Could not set up the funnel stages.')
+  }
 
   revalidatePath('/admin/growth/funnels')
   return ok({ id: funnelId })
@@ -127,10 +132,15 @@ export async function createFunnelFromTemplate(templateKey: string): Promise<Act
     label: s.label.slice(0, 120),
     position,
   }))
-  const { data: stages } = await db()
+  const { data: stages, error: stageErr } = await db()
     .from('funnel_stages')
     .insert(stageRows)
     .select('id, position')
+  if (stageErr) {
+    // Roll back the orphan funnel (stages/links cascade off it) — a template clone is all-or-nothing.
+    await db().from('funnels').delete().eq('id', funnelId)
+    return fail('Could not set up the funnel stages.')
+  }
   const stageByPos = new Map<number, string>()
   for (const s of (stages as { id: string; position: number }[] | null) ?? []) {
     stageByPos.set(s.position, s.id)
@@ -144,7 +154,14 @@ export async function createFunnelFromTemplate(templateKey: string): Promise<Act
       linkRows.push({ stage_id: stageId, ref_type: s.link.refType, ref_key: s.link.refKey })
     }
   })
-  if (linkRows.length) await db().from('funnel_stage_links').insert(linkRows)
+  if (linkRows.length) {
+    const { error: linkErr } = await db().from('funnel_stage_links').insert(linkRows)
+    if (linkErr) {
+      // Same all-or-nothing rule — delete the funnel (cascade clears its stages + any links).
+      await db().from('funnels').delete().eq('id', funnelId)
+      return fail('Could not seed the funnel links.')
+    }
+  }
 
   revalidatePath('/admin/growth/funnels')
   return ok({ id: funnelId })

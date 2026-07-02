@@ -125,8 +125,9 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
 
     // Claim-then-pay: the UNIQUE (rule_key, profile_id) index makes this payout
     // exactly-once for the (referrer, referred) pair.
+    const ruleKey = `referral.activated:${referredProfileId}`
     const { error: claimErr } = await db.from('reward_grants').insert({
-      rule_key: `referral.activated:${referredProfileId}`,
+      rule_key: ruleKey,
       profile_id: ref,
       reward_kind: 'zaps',
       amount: 0,
@@ -134,7 +135,14 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
     })
     if (claimErr) return false // already paid (or a transient error — retried next run)
 
-    await awardZapsForAction(ref, 'invite_accepted').catch(() => {})
+    // The claim is the lock, but the Zaps must actually land. If awardZapsForAction fails
+    // (awarded:false) or throws, release the claim so the cron re-pays on a later run instead of
+    // leaving the referrer claimed-but-unpaid (mirrors the reward claim-then-pay pattern).
+    const zapRes = await awardZapsForAction(ref, 'invite_accepted').catch(() => ({ awarded: false, amount: 0 }))
+    if (!zapRes.awarded) {
+      await db.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', ref)
+      return false
+    }
     await recordEngagementEvent({
       idempotencyKey: `referral_reward:${ref}:${referredProfileId}`,
       source: 'system',

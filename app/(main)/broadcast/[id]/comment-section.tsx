@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Trash2, MessageCircle } from 'lucide-react'
 import { addDispatchComment, deleteDispatchComment } from '../actions'
-import { getInitials } from '@/lib/utils'
+import { getInitials, relativeTime } from '@/lib/utils'
 
 type Comment = {
   id: string
@@ -17,16 +17,6 @@ type Comment = {
     handle: string
     avatar_url: string | null
   }
-}
-
-function relTime(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const m = Math.floor(diff / 60000)
-  if (m < 1)  return 'just now'
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
 }
 
 export function CommentSection({
@@ -98,7 +88,7 @@ export function CommentSection({
                   >
                     {c.author.display_name}
                   </Link>
-                  <span className="text-2xs text-subtle">{relTime(c.created_at)}</span>
+                  <span className="text-2xs text-subtle">{relativeTime(c.created_at)}</span>
                 </div>
                 <p className="text-sm text-text leading-relaxed mt-0.5 whitespace-pre-wrap break-words">
                   {c.body}

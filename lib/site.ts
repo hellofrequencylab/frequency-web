@@ -21,15 +21,15 @@ export const SITE_DESCRIPTION =
 export type NavLink = { label: string; href: string; desc?: string }
 
 // Discover dropdown — the live-community explore pages. This is the SHARED CORE:
-// the same community surfaces a member uses in-app (Circles / Events / Interests),
+// the same community surfaces a member uses in-app (Circles / Events / Channels),
 // so the public "main menu" and the in-app nav stay in sync. Naming matches the
-// in-app rail ("Interests", not "Topics").
+// in-app rail ("Channels", not "Topics" or "Interests").
 export const DISCOVER_NAV: NavLink[] = [
   { label: "Discover", href: "/discover", desc: "Everything happening near you" },
   { label: "Circles", href: "/discover/circles", desc: "Small groups around an interest" },
   { label: "Events", href: "/discover/events", desc: "Gatherings you can show up to" },
   { label: "Journeys", href: "/discover/journeys", desc: "Guided practices for a season" },
-  { label: "Interests", href: "/discover/topics", desc: "Browse by what you practice" },
+  { label: "Channels", href: "/discover/topics", desc: "Browse by what you practice" },
 ];
 
 // The six PRIMARY marketing pages, in nav order: Home, The Community, The Quest,

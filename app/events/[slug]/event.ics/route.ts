@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { eventInstant, resolveZone } from '@/lib/time/zone'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,6 +28,7 @@ type EventRow = {
   is_cancelled:  boolean
   status:        string | null
   visibility:    string | null
+  time_zone:     string | null
 }
 
 // Format a JS Date as ICS UTC stamp: YYYYMMDDTHHMMSSZ
@@ -75,7 +77,7 @@ export async function GET(
 
   const { data: rawEvent } = await admin
     .from('events')
-    .select('id, title, description, location, starts_at, ends_at, slug, is_cancelled, status, visibility')
+    .select('id, title, description, location, starts_at, ends_at, slug, is_cancelled, status, visibility, time_zone')
     .eq('slug', slug)
     .maybeSingle()
 
@@ -93,10 +95,15 @@ export async function GET(
   const isPublicVisibility = vis === 'public' || vis === 'unlisted'
   const masked = !isPublished || !isPublicVisibility || ev.is_cancelled
 
-  const start = new Date(ev.starts_at)
-  const end   = ev.ends_at
-    ? new Date(ev.ends_at)
-    : new Date(start.getTime() + 60 * 60 * 1000)  // default 1h
+  // starts_at/ends_at store the event's wall-clock as UTC PARTS. Resolve the TRUE UTC
+  // instant through the event's own zone before stamping (the old code stamped the raw
+  // wall-clock digits with a Z, so a 7pm-PT event landed 7h off in every subscriber's
+  // calendar). Emitting the true instant means each subscriber's client shows the event
+  // at the correct absolute moment in their own local zone.
+  const tz = resolveZone(ev.time_zone)
+  const start = eventInstant(ev.starts_at, tz) ?? new Date(ev.starts_at)
+  const end   = (ev.ends_at ? eventInstant(ev.ends_at, tz) : null)
+    ?? new Date(start.getTime() + 60 * 60 * 1000)  // default 1h
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://frequencylocal.com'
   const eventUrl = `${appUrl}/events/${ev.slug}`

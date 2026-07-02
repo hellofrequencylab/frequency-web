@@ -74,7 +74,7 @@ export async function createDeal(input: {
 export async function createDealForProfile(profileId: string, name: string): Promise<void> {
   const me = await requireCrm()
   const stageId = await firstStageId()
-  const { data } = await db()
+  const { data, error } = await db()
     .from('crm_deals')
     .insert({
       title: `${name || 'New'} opportunity`,
@@ -87,6 +87,8 @@ export async function createDealForProfile(profileId: string, name: string): Pro
     })
     .select('id')
     .maybeSingle()
+  // Surface a failed insert instead of silently redirecting as if the deal was created.
+  if (error) throw new Error(error.message)
   revalidatePath('/admin/growth')
   const id = (data as { id: string } | null)?.id
   if (id) redirect(`/admin/crm/deals/${id}`)

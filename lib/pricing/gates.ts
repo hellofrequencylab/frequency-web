@@ -117,9 +117,24 @@ export function mergeGate(
     enabled: true,
   }
   if (!row) return base
+  // VALIDATE the override's min_entitlement against the gate's ladder before applying it. An invalid
+  // label (a typo, a retired tier, or a value on the WRONG ladder) must NOT silently widen the gate:
+  // meetsGate ranks an unknown label as 0, so `have >= 0` is always true (allow-all) — the exact
+  // fail-OPEN this fail-safe layer must never do. Keep the code default when the override is missing
+  // or invalid, and normalize a valid plan label to its canonical SpacePlan so meetsGate's direct
+  // PLAN_RANK lookup resolves it (a legacy label would otherwise rank 0).
+  let minEntitlement = base.minEntitlement
+  const raw = row.minEntitlement
+  if (raw != null) {
+    if (base.axis === 'tier') {
+      if (TIER_RANK[raw as EntitlementTier] !== undefined) minEntitlement = raw as EntitlementTier
+    } else if (isSpacePlanLabel(raw)) {
+      minEntitlement = asSpacePlan(raw)
+    }
+  }
   return {
     axis: base.axis,
-    minEntitlement: (row.minEntitlement as EntitlementTier | SpacePlan) ?? base.minEntitlement,
+    minEntitlement,
     enabled: typeof row.enabled === 'boolean' ? row.enabled : base.enabled,
   }
 }

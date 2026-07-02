@@ -102,12 +102,15 @@ export async function createNode(input: NodeInput): Promise<ActionResult<{ id: s
 
   const geo = cleanGeo(input)
   if (geo) {
-    await db.rpc('set_node_geo', {
+    const { error: geoErr } = await db.rpc('set_node_geo', {
       p_node_id: data.id as string,
       p_lng: geo.lng,
       p_lat: geo.lat,
       p_proximity_m: geo.proximityM,
     })
+    // The node row exists, but the geofence RPC failed — surface it rather than silently
+    // dropping the proximity requirement the operator set. They can add it by editing the code.
+    if (geoErr) return fail('The code was created, but its location could not be saved. Edit the code to set it.')
   }
 
   revalidatePath('/admin/qr')
@@ -136,12 +139,14 @@ export async function updateNode(id: string, input: NodeInput): Promise<ActionRe
   // SQL fn branches on `p_lng is null`). gen-types can't see that the function's
   // params are nullable, so it types them non-null; cast to pass the intended nulls.
   const geo = cleanGeo(input)
-  await db.rpc('set_node_geo', {
+  const { error: geoErr } = await db.rpc('set_node_geo', {
     p_node_id: id,
     p_lng: geo?.lng ?? null,
     p_lat: geo?.lat ?? null,
     p_proximity_m: geo?.proximityM ?? null,
   } as unknown as { p_node_id: string; p_lng: number; p_lat: number; p_proximity_m: number })
+  // Don't revalidate/return ok as if the geofence applied when the RPC actually failed.
+  if (geoErr) return fail('Saved the code, but its location could not be updated.')
 
   revalidatePath('/admin/qr')
   return ok()

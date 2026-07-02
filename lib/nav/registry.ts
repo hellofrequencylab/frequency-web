@@ -158,7 +158,7 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
       { label: 'The Quest', href: '/the-quest', desc: 'The practice game: streaks, Zaps, and the Vault' },
       { label: 'Journeys', href: '/discover/journeys', desc: 'Guided practices for a season' },
       { label: 'Practices', href: '/discover/practices', desc: 'Browse the practices you can run' },
-      { label: 'Interests', href: '/discover/topics', desc: 'Browse by what you practice' },
+      { label: 'Channels', href: '/discover/topics', desc: 'Browse by what you practice' },
     ],
   },
   { id: 'the-lab', label: 'The Lab', href: '/the-lab' },

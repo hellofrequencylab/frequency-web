@@ -128,16 +128,25 @@ export async function setThemeStatus(id: string, status: ThemeStatus): Promise<A
 /** Make this skin theme the single global default — clears the flag on every other skin row. */
 export async function setDefaultTheme(id: string): Promise<ActionResult> {
   await gate()
-  // Clear the default on all OTHER skin themes first (the table enforces one default skin via a
-  // partial unique index), then set it on this row.
+  const db = createAdminClient()
+  // VERIFY the target is a real skin BEFORE clearing the flag on every other skin. A bad id
+  // (missing row, or an 'occasion' theme) would otherwise clear the existing default and then
+  // set it on nothing — leaving the whole app with NO default skin.
+  const { data: target } = await db.from('themes').select('id, kind').eq('id', id).maybeSingle()
+  const row = target as { id: string; kind: string } | null
+  if (!row) return fail('That theme no longer exists.')
+  if (row.kind !== 'skin') return fail('Only a skin theme can be the default.')
+
+  // Clear the default on all OTHER skin themes (the table enforces one default skin via a
+  // partial unique index), then set it on this verified row.
   const now = new Date().toISOString()
-  const cleared = await createAdminClient()
+  const cleared = await db
     .from('themes')
     .update({ is_default: false, updated_at: now } as ThemeUpdate)
     .eq('kind', 'skin')
     .neq('id', id)
   if (cleared.error) return fail('Could not update the default theme.')
-  const { error } = await createAdminClient()
+  const { error } = await db
     .from('themes')
     .update({ is_default: true, updated_at: now } as ThemeUpdate)
     .eq('id', id)

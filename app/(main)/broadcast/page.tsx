@@ -43,7 +43,7 @@ function eventDate(iso: string): string {
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
-  title: 'Community',
+  title: 'Around You',
   description: 'Everything happening around you: announcements, what’s coming up, and what’s new to join.',
 }
 

@@ -5,7 +5,7 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolvePersonalTeaseGate } from '@/lib/pricing/tease-gate'
 
-// Vault layout module: the Gem Store categories. Members can browse everything but can't spend —
+// Vault layout module: the Vault Store categories. Members can browse everything but can't spend —
 // CrewGate renders the grid muted and a click opens the upgrade lightbox; the redeem action is the
 // real authority server-side.
 const CATEGORIES = [

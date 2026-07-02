@@ -62,8 +62,11 @@ export async function awardGems(
   if (amount <= 0) return { awarded: false, amount: 0, capped: false }
 
   if (config.daily_cap != null) {
+    // Count against a UTC day boundary (created_at is stored + compared in UTC): setUTCHours makes
+    // the cap reset at a single, consistent instant for everyone rather than drifting with the
+    // server's local timezone. On a UTC host (production) this is identical to before.
     const todayStart = new Date()
-    todayStart.setHours(0, 0, 0, 0)
+    todayStart.setUTCHours(0, 0, 0, 0)
 
     const { count } = await admin
       .from('gem_transactions')

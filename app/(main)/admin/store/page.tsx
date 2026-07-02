@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { Database } from '@/lib/database.types'
 import { NewItemButton, EditItemButton, DeleteItemButton, ActiveToggle } from './store-item-controls'
 
-// Store — the gem store catalog. INDEX / TABLE (ADR-233 §3.3).
+// Store — the Vault Store catalog. INDEX / TABLE (ADR-233 §3.3).
 // CATEGORY_STYLES (hardcoded hex) is retired; StatusChip tone-map takes its place.
 
 type StoreItem = Database['public']['Tables']['store_items']['Row']

@@ -14,6 +14,7 @@ import { getProfileCapabilities } from '@/lib/core/load-capabilities'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 import { getOnboardingStatus } from '@/lib/onboarding/status'
 import { ProfileActivationWelcome } from '@/components/settings/profile-activation-welcome'
+import { LocationTimezoneCard } from '@/components/settings/location-timezone-card'
 
 export default async function ProfileSettingsPage() {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export default async function ProfileSettingsPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme')
+    .select('id, display_name, handle, bio, avatar_url, phone, city, website, meta, profile_theme, home_timezone')
     .eq('auth_user_id', user.id)
     .maybeSingle()
 
@@ -80,6 +81,7 @@ export default async function ProfileSettingsPage() {
         status={onboarding}
         name={profile.display_name ?? undefined}
       />
+      <LocationTimezoneCard currentTimezone={(profile as { home_timezone: string | null }).home_timezone} />
       <ProfileForm
         userId={user.id}
         initial={{

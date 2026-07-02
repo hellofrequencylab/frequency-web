@@ -25,7 +25,7 @@ export function PracticeDetail({
   const facts: { icon: typeof Repeat; label: string; value: string }[] = [
     { icon: Repeat, label: 'Cadence', value: practice.cadence ?? 'Your call' },
     ...(practice.duration_min ? [{ icon: Clock, label: 'Time', value: `${practice.duration_min} min` }] : []),
-    { icon: Zap, label: 'Reward per log', value: `+${zaps} zaps` },
+    { icon: Zap, label: 'Reward per log', value: `+${zaps} Zaps` },
   ]
 
   return (

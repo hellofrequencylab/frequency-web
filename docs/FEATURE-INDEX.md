@@ -82,7 +82,7 @@
 | Feature | Route | What it is | Spec |
 |---|---|---|---|
 | **Growth Studio** | `/admin/growth` | The acquisition/onboarding launchpad (absorbed Marketing, IA §10.2) | LEAD-FLOWS |
-| **Landing pages** | `/pages` · `/pages/edit/[slug]` | Block (Puck) page editor + publish | PAGE-EDITOR-SPEC · PAGE-FRAMEWORK |
+| **Landing pages** | `/pages` · `/edit/[slug]` | Block (Puck) page editor + publish | PAGE-EDITOR-SPEC · PAGE-FRAMEWORK |
 | **Onboarding sequences** | `/pages/sequences` · `…/[slug]/build` | Beat-by-beat induction **version builder** + splash editor + share/QR (ADR-162) | — |
 | **Entry points** | `/entry-points` | Crew QR campaigns that bring people in (flyers deferred) | ENTRY-POINTS |
 | **QR Studio** | `/admin/qr` | Design/route/track managed QR codes (dynamic, A/B, styles) | — |

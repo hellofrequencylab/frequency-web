@@ -86,11 +86,12 @@ export async function giftGems(
   // 20260726000000) and not yet in the generated Database types, so we widen to the
   // un-parametrised SupabaseClient. Drop after `supabase gen types` is re-run.
   const rpc: SupabaseClient = createAdminClient()
-  const { error: giftError } = await rpc.rpc('gift_gems_atomic', {
+  const { data: giftIdRaw, error: giftError } = await rpc.rpc('gift_gems_atomic', {
     _giver: fromProfileId,
     _recipient: toProfileId,
     _amount: amount,
   })
+  const giftId = typeof giftIdRaw === 'string' ? giftIdRaw : null
   if (giftError) {
     // The RPC raises a typed P0001 message on a real overspend / invalid request; map it
     // to a clean failure. A missing function (migration not yet applied) or any other DB
@@ -108,10 +109,17 @@ export async function giftGems(
     rule: 'gift',
   })
   if (!credit.awarded) {
-    // The gift is already recorded (the giver has spent). We do NOT roll it back here —
-    // the recipient credit can be reconciled, and rolling back would risk losing the
-    // giver's record. Surface a soft warning rather than pretend it failed.
-    console.error('[giftGems] recipient credit did not land', { fromProfileId, toProfileId, amount })
+    // The recipient credit didn't land — so the gift did NOT complete. The gem_gifts row (the
+    // giver's debit) is now claimed-but-undelivered: leaving it would silently cost the giver
+    // Gems the recipient never received. gift_gems_atomic returns the row id, so we can reverse
+    // exactly that gift (no race, no orphan) and report a clean failure the caller can retry.
+    console.error('[giftGems] recipient credit did not land — reversing the gift', {
+      fromProfileId,
+      toProfileId,
+      amount,
+    })
+    if (giftId) await rpc.from('gem_gifts').delete().eq('id', giftId)
+    return fail('We could not complete that gift. Your Gems were not spent.')
   }
 
   return ok({ amount, recipientId: toProfileId })

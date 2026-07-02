@@ -50,7 +50,7 @@ export default async function NodePage({
 
         <p className="mt-4 text-sm text-muted">
           {node.zaps_value > 0
-            ? `Claim this spot to earn ${node.zaps_value} zaps.`
+            ? `Claim this spot to earn ${node.zaps_value} Zaps.`
             : 'Claim this spot.'}
         </p>
 

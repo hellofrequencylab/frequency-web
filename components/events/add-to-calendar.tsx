@@ -16,14 +16,26 @@ export function buildGoogleCalendarUrl({
   endsAt,
   description,
   location,
+  timeZone,
 }: {
   title: string
   startsAt: string
   endsAt: string | null
   description?: string | null
   location?: string | null
+  /** The event's IANA zone. Passed as &ctz so Google reads the floating local time in the
+   *  event's zone instead of the viewer's. */
+  timeZone?: string | null
 }): string {
-  const fmt = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, '').replace('.000', '')
+  // starts_at/ends_at store the event's wall-clock as UTC PARTS. Emit them as FLOATING
+  // local time (YYYYMMDDTHHmmSS, no Z) so Google doesn't treat the wall clock as a UTC
+  // instant and shift it into the viewer's zone (the old toISOString kept the Z, so a 7pm
+  // event landed at noon for a Pacific viewer). &ctz then pins the zone.
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fmt = (iso: string) => {
+    const d = new Date(iso)
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`
+  }
   const start = fmt(startsAt)
   const end = endsAt
     ? fmt(endsAt)
@@ -32,6 +44,7 @@ export function buildGoogleCalendarUrl({
     action: 'TEMPLATE',
     text: title,
     dates: `${start}/${end}`,
+    ...(timeZone ? { ctz: timeZone } : {}),
     ...(description ? { details: description } : {}),
     ...(location ? { location } : {}),
   })
