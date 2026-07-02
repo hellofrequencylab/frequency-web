@@ -215,6 +215,12 @@ function LegacyTheCommunity() {
         </div>
       </Section>
 
+      <Statement tone="surface">
+        Get people together.
+        <br />
+        Do things <span className="text-primary">on purpose.</span>
+      </Statement>
+
       {/* Channels + Circles — the core mechanic, in detail */}
       <ZigZag
         img="/images/site/971634cd-1d52-4b3a-a0ab-5713d395d58a.jpg"
@@ -232,10 +238,10 @@ function LegacyTheCommunity() {
           do.
         </p>
         <p>
-          A <strong className="text-text">Circle</strong> is your people, near you.
-          A small standing group built around a Channel, with an always-on
-          virtual space, and a standing time to meet in person. Small enough that
-          you&apos;re missed when you don&apos;t show up.
+          A <strong className="text-text">Circle</strong> is your people, near you:
+          a few friends doing life on purpose. A small standing group built around a
+          Channel, with an always-on virtual space, and a standing time to meet in
+          person. Small enough that you&apos;re missed when you don&apos;t show up.
         </p>
       </ZigZag>
 
