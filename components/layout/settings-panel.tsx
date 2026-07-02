@@ -215,9 +215,18 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // Personal "You" apps — global-scope, member-level; a member's OWN account settings. Resolved
   // INDEPENDENT of the page scope (they are the same on every page) and caps-blind via
   // SELECTION_VIEWER (each self-gates + re-checks server-side, exactly like the manage modules).
-  const personalApps = authed
+  const personalGlobalApps = authed
     ? appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').filter((a) => PERSONAL_MODULE_IDS.has(a.id))
     : []
+  // Honor operator App-overrides on the personal set too. Previously the personal apps skipped
+  // applyOverrides entirely, and since they are the ONLY editable App set at global scope, the global
+  // App-overrides manager (/admin/page-layout/apps, which defaults to scope=global) was a complete
+  // no-op: disable / reorder / min_role changes saved and badged "Override", but nothing changed for
+  // any viewer. Apply the overlay when the panel's scope IS global — there `appOverrides` are the
+  // matching global-scope overrides these personal apps belong to; on an entity page the personal set
+  // stays unoverridden rather than pick up a wrong-scope override. (Threading the global overrides
+  // onto entity-scope pages so a globally-disabled personal app also hides there is a follow-up.)
+  const personalApps = scope?.kind === 'global' ? applyOverrides(personalGlobalApps) : personalGlobalApps
 
   // The management (page-scoped) editor apps, with any personal app filtered out so the global
   // scope's personal set never doubles as a management category on a global-scope page. Operator
