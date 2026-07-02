@@ -14,13 +14,13 @@ const SPACE_A = 'aaaaaaaa-0000-4000-a000-00000000000a'
 let caps = { canEditProfile: false }
 let space: { id: string } | null = { id: SPACE_A }
 
-const uploadMock = vi.fn(async (..._args: unknown[]) => ({ error: null }))
+const uploadMock = vi.fn(async () => ({ error: null }))
 const getPublicUrlMock = vi.fn(() => ({ data: { publicUrl: 'https://cdn/library-media/x.png' } }))
-const removeMock = vi.fn(async (..._args: unknown[]) => ({ error: null }))
-const searchMock = vi.fn(async (..._args: unknown[]) => [
+const removeMock = vi.fn(async () => ({ error: null }))
+const searchMock = vi.fn(async () => [
   { id: 'img1', title: 'A', url: 'https://cdn/x.png', alt: null },
 ])
-const insertMock = vi.fn(async (..._args: unknown[]): Promise<string | null> => 'new-asset-id')
+const insertMock = vi.fn(async (): Promise<string | null> => 'new-asset-id')
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
