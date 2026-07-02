@@ -73,7 +73,9 @@ the unit suite.
   - ✅ ~~notification queue claim (`lib/queue/outbox.ts`, SKIP LOCKED)~~ — `claim_outbox_jobs` (C3, #1418).
   - ✅ ~~challenge/streak read-modify-write (`lib/achievements.ts`)~~ — `advance_challenge_progress` +
     `record_streak_tick` (C4, #1420); closes challenge purse double-pay + streak lost-increment.
-  - ⏳ journey-finish Zap purse claim (`lib/quest/complete.ts`) — C5, spec ready.
+  - ✅ ~~journey-finish Zap purse claim (`lib/quest/complete.ts`)~~ — C5: purse rides its own
+    claim-then-pay `reward_grants` row, recovered on the alreadyDone path so a crash between the
+    completion row and the award self-heals. No migration (reuses the existing unique constraint).
 - **Stripe subscription event ordering**: a delayed `subscription.updated` re-grants a
   canceled tier; compare `event.created` / fetch the live sub before writing.
 
