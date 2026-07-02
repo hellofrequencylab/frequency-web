@@ -48,8 +48,9 @@ const THEME_COLOR_DARK = '#16130E'
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // No maximumScale / userScalable cap: blocking pinch-zoom fails WCAG 1.4.4 / 1.4.10
+  // (low-vision + older users on mobile could not magnify any page). Zoom stays enabled
+  // site-wide; the DAWN base font size already avoids iOS input-focus auto-zoom.
   viewportFit: "cover",
   // Matches the community canvas (--color-canvas). The pre-paint script
   // below also writes this meta dynamically so it stays correct when the

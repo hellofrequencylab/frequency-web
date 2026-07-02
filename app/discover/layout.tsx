@@ -15,7 +15,9 @@ export default function DiscoverLayout({ children }: { children: React.ReactNode
       <SiteHeader variant="light" />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
+      {/* id="main" is the target of SiteHeader's "Skip to content" link (WCAG 2.4.1 Bypass
+          Blocks) on the only indexable community surface. */}
+      <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
 
       {/* pt base + the home-indicator inset on the bottom so the legal/contact links clear it
           in a standalone PWA (env() = 0 off-device, so unchanged in a normal browser). */}

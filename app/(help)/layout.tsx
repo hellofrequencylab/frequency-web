@@ -32,7 +32,9 @@ export default async function HelpLayout({ children }: { children: React.ReactNo
       <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+      {/* id="main" is the target of MarketingHeader's "Skip to content" link (WCAG 2.4.1);
+          without it the bypass-blocks link was broken on every help page. */}
+      <main id="main" tabIndex={-1} className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
         <div className="mx-auto flex max-w-6xl gap-10 px-4 py-10 lg:px-8">
           <aside className="hidden w-64 shrink-0 lg:block">
             <div className="sticky top-24 space-y-6">
