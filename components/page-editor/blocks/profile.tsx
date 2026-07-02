@@ -39,6 +39,8 @@ import type {
   SpacePracticeItem,
   SpaceCircleItem,
 } from '@/lib/spaces/content-data'
+// PURE + client-safe (no server imports): the central profile data type + the central-wins merge.
+import { mergeField, type SpaceProfileData, type SpaceSocialLink } from '@/lib/spaces/profile-data'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILE BLOCKS (Puck content blocks, Phase 4). A profile-native block set styled
@@ -94,6 +96,13 @@ function practicesFrom(puck: PuckArg): SpacePracticesData | undefined {
 function communityFrom(puck: PuckArg): SpaceCircleItem[] | undefined {
   const space = puck?.metadata?.space as { community?: SpaceCircleItem[] } | undefined
   return space?.community
+}
+// The CENTRAL business info + story (single source of truth). Blocks read this off metadata and merge
+// it OVER their own inline props (mergeField: central wins), so editing the Business Info form once
+// updates every block + surface. Undefined in the editor / a member Spotlight (blocks use their props).
+function profileFrom(puck: PuckArg): SpaceProfileData | undefined {
+  const space = puck?.metadata?.space as { profile?: SpaceProfileData } | undefined
+  return space?.profile
 }
 
 // Shown ONLY in the editor canvas so an unfilled authored section stays visible + draggable there.
@@ -1551,7 +1560,9 @@ export const profileComponents: Record<string, ComponentConfig> = {
         <SpaceAboutBlock
           eyebrow={(eyebrow as string) || undefined}
           heading={(heading as string) || undefined}
-          body={(body as string) || undefined}
+          // Central story wins (single source): the About body comes from the Business Info form,
+          // falling back to this block's own inline copy only when the central story is empty.
+          body={mergeField(body as string, profileFrom(puck)?.about)}
           editing={puck?.isEditing}
         />
       </AnchorSection>
@@ -1839,21 +1850,27 @@ export const profileComponents: Record<string, ComponentConfig> = {
       linkLabel: '',
       linkHref: '',
     },
-    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref, puck }) => (
-      <AnchorSection anchor="contact">
-        <SpaceContactBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          address={(address as string) || undefined}
-          hours={(hours as string) || undefined}
-          phone={(phone as string) || undefined}
-          email={(email as string) || undefined}
-          linkLabel={(linkLabel as string) || undefined}
-          linkHref={(linkHref as string) || undefined}
-          editing={puck?.isEditing}
-        />
-      </AnchorSection>
-    ),
+    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref, puck }) => {
+      // Central business info wins (single source of truth): address / hours / phone / email / website
+      // come from the Business Info form, falling back to this block's inline props only when the
+      // central field is empty. So editing the address once updates it on the Contact card everywhere.
+      const central = profileFrom(puck)
+      return (
+        <AnchorSection anchor="contact">
+          <SpaceContactBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            address={mergeField(address as string, central?.address)}
+            hours={mergeField(hours as string, central?.hours)}
+            phone={mergeField(phone as string, central?.phone)}
+            email={mergeField(email as string, central?.email)}
+            linkLabel={(linkLabel as string) || undefined}
+            linkHref={mergeField(linkHref as string, central?.website)}
+            editing={puck?.isEditing}
+          />
+        </AnchorSection>
+      )
+    },
   },
 
   SpaceTeam: {
@@ -2055,14 +2072,22 @@ export const profileComponents: Record<string, ComponentConfig> = {
       ratingCount: '',
       links: [],
     },
-    render: ({ heading, rating, ratingCount, links, puck }) => (
-      <SpaceBusinessBlock
-        heading={(heading as string) || undefined}
-        rating={(rating as string) || undefined}
-        ratingCount={(ratingCount as string) || undefined}
-        links={(links as BusinessLink[]) ?? []}
-        editing={puck?.isEditing}
-      />
-    ),
+    render: ({ heading, rating, ratingCount, links, puck }) => {
+      // Central business presence wins (single source): the rating + the social links come from the
+      // Business Info form, falling back to this block's own inline props only when central is empty.
+      const central = profileFrom(puck)
+      const centralSocials = central?.socials as SpaceSocialLink[] | undefined
+      const mergedLinks: BusinessLink[] =
+        centralSocials && centralSocials.length > 0 ? centralSocials : ((links as BusinessLink[]) ?? [])
+      return (
+        <SpaceBusinessBlock
+          heading={(heading as string) || undefined}
+          rating={mergeField(rating as string, central?.rating)}
+          ratingCount={mergeField(ratingCount as string, central?.ratingCount)}
+          links={mergedLinks}
+          editing={puck?.isEditing}
+        />
+      )
+    },
   },
 }

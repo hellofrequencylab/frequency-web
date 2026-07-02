@@ -36,6 +36,8 @@ import {
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
 import { SpaceFullEditorButton } from '@/components/spaces/space-full-editor-button'
+import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
+import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -76,6 +78,7 @@ export function SpacePagePanel({
   coverScrim,
   accent,
   blocks,
+  businessInfo,
   focus,
   readOnly = false,
 }: {
@@ -94,6 +97,8 @@ export function SpacePagePanel({
   accent: string
   /** The TOP-LEVEL blocks of the ACTIVE page's doc (stored-or-default), in order, for the Blocks list. */
   blocks: SpaceBlockRow[]
+  /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
+  businessInfo: SpaceProfileData
   /** The Focus switcher echo, or null to omit it. */
   focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
@@ -187,6 +192,14 @@ export function SpacePagePanel({
             }
           />
         )}
+      </section>
+
+      {/* BUSINESS INFO: the single source of truth. Edited once here, it feeds every block that shows
+          it (Contact, Business, About) on every page and surface. This is the primary minimal-editing
+          surface, so it sits near the top of the panel. */}
+      <section>
+        <SectionHeader title="Business info" />
+        <SpaceBusinessForm slug={slug} initial={businessInfo} readOnly={readOnly} />
       </section>
 
       {/* The prominent deep-edit entry: NAVIGATES to the standalone /edit-page route (the server-rendered
