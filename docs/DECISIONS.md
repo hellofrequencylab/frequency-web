@@ -10794,9 +10794,11 @@ Rejected the direct-balance approach (the pre-v2 trigger incremented `current_se
 
 **Consequences.** §10 boundary holds: the Loom Apps lane indexes code; it never becomes a Puck-style block editor for an App, and must not be confused with ADR-500 (Puck micro-sites). Pure metadata stays cheap to import (tests load the registry without the render graph).
 
-## ADR-505: The house icon system — Iconify access layer, Phosphor house family, semantic catalog, server-rendered inline SVG
+## ADR-505: The house icon system — Iconify access layer, Lucide primary + Phosphor/Tabler gap-fill, semantic catalog, server-rendered inline SVG
 
-**Status:** Accepted (2026-07-02). Phase I (foundation) shipped; the Loom icon lane + the lucide-react migration are planned. Full guide: docs/ICONS.md.
+**Status:** Accepted (2026-07-02), amended same day (see Update). Phase I (foundation) + the Loom icon lane shipped. Full guide: docs/ICONS.md.
+
+**Update (2026-07-02) — Lucide stays PRIMARY; Iconify fills gaps; NO migration.** The owner decided to keep **Lucide as the primary family** (it is already the site's set, in ~897 files, and they like it) rather than migrate to Phosphor. So the direction is inverted from the original decision below: Lucide is added as an Iconify set too (`@iconify-json/lucide`) and the semantic catalog is **Lucide-first** (`icon('energy') → 'lucide:zap'`, `award → lucide:trophy`); Phosphor (`ph`) + Tabler (`tabler`) are the **gap-fillers** for glyphs Lucide lacks (e.g. `meditation → ph:flower-lotus`, since Lucide has no lotus). The ~897 `lucide-react` files stay AS-IS — there is **no mass migration**. The house `<Icon>` renders any of the three sets by name; client components keep using `lucide-react` directly. The `icon-sets` registry marks Lucide `house`/primary and Phosphor/Tabler `coverage`. Everything below records the original (superseded) Phosphor-house reasoning.
 
 **Context.** The site draws icons from `lucide-react` in ~893 files (268 distinct icons). Lucide is the shadcn default: permissive, tree-shakeable, and fine, but (a) it is the same icon set hundreds of products ship, so it reads generic for a brand-forward product, and (b) it under-covers the spiritual/wellness/energy/award vocabulary that Frequency leans on (Zaps, The Field, practices). The owner wants one coherent house family with distinctive coverage, unlimited modular reach, and the icon sets manageable in The Loom.
 

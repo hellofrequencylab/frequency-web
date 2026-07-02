@@ -1,25 +1,28 @@
 import { getIconData, iconToSVG } from '@iconify/utils'
 import type { IconifyJSON } from '@iconify/types'
+import lucideIcons from '@iconify-json/lucide/icons.json'
 import phIcons from '@iconify-json/ph/icons.json'
 import tablerIcons from '@iconify-json/tabler/icons.json'
 
 // The house Icon primitive (docs/ICONS.md, ADR-505). Renders any installed Iconify set by name as
-// INLINE SVG on the server, via @iconify/utils — the same way Lucide emits inline SVG, so it drops
-// into a Server Component with no client boundary and ships zero icon JS to the browser (only the
-// rendered <svg> markup for the icons actually used). Phosphor (`ph`) is the house family; Tabler
-// (`tabler`) is the coverage escape hatch. Reference icons by MEANING through lib/ui/icon-catalog.ts
-// (`icon('energy')`), not by raw name, so the house family stays swappable.
+// INLINE SVG on the server, via @iconify/utils — the same way lucide-react emits inline SVG, so it
+// drops into a Server Component with no client boundary and ships zero icon JS to the browser (only
+// the rendered <svg> markup for the icons actually used). **Lucide (`lucide`) is the PRIMARY family**
+// (the set the site already uses); Phosphor (`ph`) + Tabler (`tabler`) FILL GAPS Lucide lacks.
+// Reference icons by MEANING through lib/ui/icon-catalog.ts (`icon('energy')`), not by raw name, so
+// which set backs a meaning stays swappable.
 //
-// RSC-FIRST: this statically imports the full `ph` + `tabler` collections, so it belongs in Server
-// Components. Do NOT import it into a `'use client'` module — that would bundle the whole collection
-// JSON into client JS. The client-side path (per-icon build-time tree-shaking) is a later phase
-// (docs/ICONS.md §Migration).
+// RSC-FIRST: this statically imports the full collections, so it belongs in Server Components. Do NOT
+// import it into a `'use client'` module — that would bundle the collection JSON into client JS.
+// Client components keep using `lucide-react` directly (the primary set is unchanged); <Icon> is for
+// Server Components + the gap-fill sets.
 //
 // SECURITY: `body` passed to dangerouslySetInnerHTML comes ONLY from the resolved, build-time icon
 // data in the installed @iconify-json packages — never from `name` or any caller input. An unknown
 // `name` resolves to null and renders nothing, so there is no injection surface (js/html-injection).
 
 const COLLECTIONS: Record<string, IconifyJSON> = {
+  lucide: lucideIcons as IconifyJSON,
   ph: phIcons as IconifyJSON,
   tabler: tablerIcons as IconifyJSON,
 }
