@@ -55,10 +55,12 @@
   canceled tier; compare `event.created` / fetch the live sub before writing.
 
 ### 🟠 Medium
-- **DB retirement** (drop migrations, after confirming nothing external reads them):
-  `circle_topics`, `commerce_variants`, `menu_config`, `listing_saves`,
-  `library_renditions`, `library_usages`; RPCs `are_friends`, `get_my_{circle,hub,nexus,outpost}_id`
-  (singulars), `housing_rentals_near`.
+- ✅ ~~**DB retirement**~~ — DONE (applied + verified): dropped `circle_topics`, `menu_config`,
+  `listing_saves`, `library_renditions`, `library_usages`, `conversation_room_migration` +
+  RPCs `are_friends`, `get_my_{circle,hub,nexus,outpost}_id` (singulars), `housing_rentals_near`.
+  Each verified 0 code refs / FKs / triggers / policy deps / body callers.
+  STILL HELD: `commerce_variants` (FK + null-only code write in `lib/billing/checkout.ts` —
+  remove the write, deploy, then drop the column + table).
 - **Performance** (docs/PAGE-FRAMEWORK §5): authed `(main)/layout.tsx` serial-await tail →
   Promise.all + Suspense; `(marketing)`/`discover` layout + splash `cookies()`+`getUser()`
   defeats `revalidate` (make auth a client island); events index + messages inbox serial
