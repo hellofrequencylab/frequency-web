@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X, Check, Loader2 } from 'lucide-react'
 import { fieldClasses } from '@/components/ui/field'
 import { Button } from '@/components/ui/button'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 const ICON_COLORS: Record<string, { bg: string; text: string }> = {
   indigo: { bg: 'bg-primary-bg', text: 'text-primary-strong' },
@@ -52,6 +53,11 @@ export function CreateModal({
   error,
   children,
 }: CreateModalProps) {
+  // Trap + restore focus while open (mirrors ui/Dialog). ESC + scroll-lock stay in the
+  // effect below; the hook adds only the focus concerns this hand-rolled modal missed.
+  const panelRef = useRef<HTMLFormElement>(null)
+  useDialogFocusTrap(open, panelRef)
+
   // ESC to close + body scroll-lock while open (mirrors ui/Dialog; CreateModal keeps
   // its own bottom-sheet-on-mobile layout, which the centered Dialog can't express).
   useEffect(() => {
@@ -76,12 +82,14 @@ export function CreateModal({
       className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
     >
       <form
+        ref={panelRef}
         onSubmit={onSubmit}
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)]"
+        tabIndex={-1}
+        className="w-full sm:max-w-2xl sm:my-8 rounded-t-2xl sm:rounded-2xl border border-border bg-surface shadow-xl flex flex-col max-h-[90vh] sm:max-h-[calc(100vh-4rem)] outline-none"
       >
         {/* Mobile drag indicator */}
         <div className="sm:hidden flex justify-center pt-2.5 pb-1">

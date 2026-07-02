@@ -11,6 +11,7 @@ import { isError } from '@/lib/action-result'
 import { gatherSupportContext, contextLines } from '@/lib/support/context'
 import { TYPE_LABELS, type SupportContext, type TicketType } from '@/lib/support/types'
 import type { HelpCitation } from '@/lib/ai/help-rag'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 const TYPE_META: { key: TicketType; icon: typeof Bug }[] = [
   { key: 'bug', icon: Bug },
@@ -46,6 +47,11 @@ export function ReportDialog({
   const [asking, startAsk] = useTransition()
   const [vera, setVera] = useState<{ answer: string | null; citations: HelpCitation[]; deflected: boolean } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  // Trap + restore focus while open (mirrors ui/Dialog). ESC + scroll-lock stay in the
+  // effect below; the hook adds only the focus concerns this hand-rolled dialog missed.
+  useDialogFocusTrap(open, panelRef)
 
   // "Ask Vera before you file" — try the help center first; if it answers, the member can
   // close without filing a ticket (the support-deflection / intake side of the loop).
@@ -116,11 +122,13 @@ export function ReportDialog({
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Report an issue"
+        tabIndex={-1}
         onPaste={onPaste}
-        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border"
+        className="relative flex w-full flex-col overflow-y-auto border-border bg-canvas p-4 shadow-2xl outline-none motion-safe:animate-[slideUp_0.25s_ease-out] sm:max-h-[92vh] sm:max-w-lg sm:rounded-3xl sm:border"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <div className="mb-1 flex items-center justify-between">

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
+import { useDialogFocusTrap } from '@/components/ui/use-dialog-focus-trap'
 
 // The Studio — the one familiar "creation window" reused across the site. Anywhere
 // there's something to make (a journey today; circles, practices, events next), the
@@ -30,6 +31,11 @@ export function StudioWindow({
   footer?: ReactNode
   closeLabel?: string
 }) {
+  // Trap + restore focus while open (the "focus-trap-lite" the header promised but never
+  // implemented). Esc + scroll-lock stay in the effect below; the hook adds only focus.
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocusTrap(open, panelRef)
+
   // Esc to close + lock the page scroll behind the window while open.
   useEffect(() => {
     if (!open) return
@@ -58,7 +64,11 @@ export function StudioWindow({
     >
       {/* Desktop: size to the content (a quick "name it" create step stays a compact card),
           capped at 86vh so a full builder scrolls instead of overflowing. */}
-      <div className="flex h-full w-full flex-col overflow-hidden bg-canvas shadow-2xl sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="flex h-full w-full flex-col overflow-hidden bg-canvas shadow-2xl outline-none sm:h-auto sm:max-h-[86vh] sm:max-w-3xl sm:rounded-3xl sm:border sm:border-border"
+      >
         {/* Chrome bar */}
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary-strong">{eyebrow}</p>

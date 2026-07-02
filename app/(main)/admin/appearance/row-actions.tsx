@@ -28,11 +28,19 @@ export function ThemeRowActions({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [confirming, setConfirming] = useState(false)
+  // Previously a failed lifecycle/delete action just no-op'd (no refresh, no message),
+  // so it looked like nothing happened. Surface the reason inline.
+  const [error, setError] = useState<string | null>(null)
 
   function run(fn: () => Promise<ActionResult>) {
+    setError(null)
     start(async () => {
       const r = await fn()
-      if (!isError(r)) router.refresh()
+      if (isError(r)) {
+        setError(r.error)
+        return
+      }
+      router.refresh()
     })
   }
 
@@ -49,12 +57,15 @@ export function ThemeRowActions({
     run(() => setDefaultTheme(id))
   }
   function remove() {
+    setError(null)
     start(async () => {
       const r = await deleteTheme(id)
-      if (!isError(r)) {
-        setConfirming(false)
-        router.refresh()
+      if (isError(r)) {
+        setError(r.error)
+        return
       }
+      setConfirming(false)
+      router.refresh()
     })
   }
 
@@ -116,6 +127,12 @@ export function ThemeRowActions({
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete
         </Button>
+      )}
+
+      {error && (
+        <span role="alert" className="w-full text-right text-2xs font-medium text-danger">
+          {error}
+        </span>
       )}
     </div>
   )
