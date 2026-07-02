@@ -9,6 +9,7 @@
 // component.
 
 import { cache } from 'react'
+import type { AdminScope } from '@/lib/layout/page-chrome'
 import { getCallerProfile } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -310,4 +311,35 @@ export async function getProfileCapabilities(ownerId: string): Promise<Set<Capab
     ownerSpotlightEnabled: readSpotlightEnabled(meta),
     ownerSpotlightPublished: readSpotlightPublished(meta),
   })
+}
+
+/**
+ * The resolved capability set for a page's admin SCOPE (LP4 step B2, docs/LOOM-PLATFORM.md §5) — the
+ * server-side dispatcher the standardized admin bar reads to gate its menu on the viewer's REAL
+ * capabilities (feeding `caps` into PageAdminProvider). Dispatches on `scope.kind` to the per-entity
+ * resolver above; `scope.id` must be the entity's DB id (route slug → id resolution is the caller's
+ * job). Fail-closed: a null scope, a missing id, or a kind with no capability resolver here (e.g.
+ * channel) yields an empty set. Not yet wired into the provider — until it is, the panel selects
+ * modules caps-blind and each module self-gates server-side (the authority).
+ */
+export async function loadCapabilitiesForScope(scope: AdminScope | null): Promise<Set<Capability>> {
+  if (!scope) return new Set()
+  switch (scope.kind) {
+    case 'global':
+      return getGlobalCapabilities()
+    case 'circle':
+      return scope.id ? getCircleCapabilities(scope.id) : new Set()
+    case 'hub':
+      return scope.id ? getHubCapabilities(scope.id) : new Set()
+    case 'nexus':
+      return scope.id ? getNexusCapabilities(scope.id) : new Set()
+    case 'event':
+      return scope.id ? getEventCapabilities(scope.id) : new Set()
+    case 'practice':
+      return scope.id ? getPracticeCapabilities(scope.id) : new Set()
+    case 'profile':
+      return scope.id ? getProfileCapabilities(scope.id) : new Set()
+    default:
+      return new Set()
+  }
 }

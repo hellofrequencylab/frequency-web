@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag } from 'lucide-react'
+import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks } from 'lucide-react'
 import type { LibraryCollection } from '@/lib/library/store'
 import { createCollection, renameCollection, deleteCollection } from './collections-actions'
 
@@ -131,6 +131,13 @@ export function LoomRail({
         icon={<Images className="h-4 w-4" />}
         label="All assets"
         count={total}
+      />
+      {/* Cross-lane link into the code-drawn App catalog (LP5b, docs/LOOM-PLATFORM.md §4). */}
+      <Row
+        href="/admin/library?lane=apps"
+        active={false}
+        icon={<Blocks className="h-4 w-4" />}
+        label="Apps"
       />
 
         <SectionLabel>Type</SectionLabel>

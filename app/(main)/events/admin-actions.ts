@@ -15,9 +15,21 @@ import {
   coerceEnergyTag,
   coerceAttendanceMode,
 } from '@/lib/events/options'
-import { wallClockToIso } from '@/lib/events/datetime'
+import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
+import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
+import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
+import { approveRsvp } from '@/lib/events/rsvp-depth'
+import {
+  loadRoster,
+  loadAnalytics,
+  loadPendingApprovals,
+  type ManageGuest,
+  type PendingGuest,
+} from '@/app/(main)/events/[slug]/manage/load'
+
+const RECURRENCE_VALUES: ReadonlySet<string> = new Set(['none', 'daily', 'weekly', 'monthly'])
 
 const MAX_GALLERY_IMAGES = 12
 
@@ -466,4 +478,309 @@ export async function deleteEvent(eventId: string, slug: string): Promise<{ erro
   revalidatePath('/admin/events')
   revalidatePath('/feed')
   return {}
+}
+
+// ─── Place & Time (the 'place' spine module) ───────────────────────────────────
+// When/where lives in its own admin module (event-place-time-module). Read + write both
+// re-resolve event.editSettings server-side (the admin client bypasses RLS). The booking
+// window has no dedicated column, so it rides in events.details.rsvpWindow (a read-merge-write
+// that preserves the poster-harvest keys). time_zone / recurrence_* are on the events table.
+
+type PlaceTimeRow = {
+  id: string
+  slug: string
+  starts_at: string | null
+  ends_at: string | null
+  location: string | null
+  attendance_mode: string | null
+  online_url: string | null
+  venue_name: string | null
+  street: string | null
+  city: string | null
+  region: string | null
+  country: string | null
+  postal_code: string | null
+  geog: unknown
+  time_zone: string | null
+  recurrence_type: string | null
+  recurrence_until: string | null
+  details: Record<string, unknown> | null
+}
+
+/** The when/where + booking-window inputs the Place & Time module edits. Returns null unless
+ *  the caller holds event.editSettings (visibility is enforced here, not in the client). */
+export async function getEventPlaceTimeData(slug: string) {
+  const admin = createAdminClient()
+  // time_zone / recurrence_* / details are newer than (or outside) the generated types — read
+  // them through an untyped client (repo convention; see getEventAdminData).
+  const { data: event } = await (admin as unknown as {
+    from: (t: string) => {
+      select: (cols: string) => {
+        eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: PlaceTimeRow | null }> }
+      }
+    }
+  })
+    .from('events')
+    .select(
+      'id, slug, starts_at, ends_at, location, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, geog, time_zone, recurrence_type, recurrence_until, details',
+    )
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!event) return null
+
+  const caps = await getEventCapabilities(event.id)
+  if (!caps.has('event.editSettings')) return null
+
+  const point = pointFromGeog(event.geog)
+  const window = readRsvpWindow(event.details)
+
+  return {
+    ...event,
+    lat: point?.lat ?? null,
+    lng: point?.lng ?? null,
+    rsvpOpensAt: window.opensAt,
+    rsvpClosesAt: window.closesAt,
+  }
+}
+
+/** The booking window persisted in events.details.rsvpWindow, or a blank pair. */
+function readRsvpWindow(details: Record<string, unknown> | null): {
+  opensAt: string | null
+  closesAt: string | null
+} {
+  const w = details && typeof details === 'object' ? (details.rsvpWindow as unknown) : null
+  if (!w || typeof w !== 'object') return { opensAt: null, closesAt: null }
+  const o = w as Record<string, unknown>
+  return {
+    opensAt: typeof o.opensAt === 'string' ? o.opensAt : null,
+    closesAt: typeof o.closesAt === 'string' ? o.closesAt : null,
+  }
+}
+
+export async function updateEventPlaceTime(id: string, slug: string, fd: FormData) {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
+
+  const admin = createAdminClient()
+
+  const startsAtRaw = fd.get('starts_at') as string
+  const endsAtRaw = fd.get('ends_at') as string
+  if (startsAtRaw && endsAtRaw && new Date(endsAtRaw) < new Date(startsAtRaw)) {
+    throw new Error('End time must be after the start time.')
+  }
+  const startsAtIso = startsAtRaw ? wallClockToIso(startsAtRaw) : null
+  const endsAtIso = endsAtRaw ? wallClockToIso(endsAtRaw) : null
+
+  // Recurrence: only a recognised cadence is written (the column is CHECK-constrained); the
+  // repeat-until is a date input, validated against the start so a series with zero occurrences
+  // can't be saved.
+  const recurrenceRaw = ((fd.get('recurrence_type') as string) ?? '').trim()
+  const recurrence = RECURRENCE_VALUES.has(recurrenceRaw) ? (recurrenceRaw as RecurrenceType) : 'none'
+  const untilIso = recurrence === 'none' ? null : dateToWallClockIso(fd.get('recurrence_until') as string)
+  const recurrenceError = validateRecurrenceUntil(recurrence, startsAtIso, untilIso)
+  if (recurrenceError) throw new Error(recurrenceError)
+
+  // Time zone: only a valid IANA zone is written, else the column is left unchanged.
+  const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
+  const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
+
+  // Booking window (no dedicated column): read the current details, merge the window, write it
+  // back so the poster-harvest keys survive. Both blank clears the window.
+  const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
+  const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
+  const { data: current } = await admin.from('events').select('details').eq('id', id).maybeSingle()
+  const baseDetails = ((current as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
+    string,
+    unknown
+  >
+  const nextDetails: Record<string, unknown> = { ...baseDetails }
+  if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
+  else delete nextDetails.rsvpWindow
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({
+      // UTC-naive wall-clock kept literally (lib/events/datetime); an empty start leaves it.
+      starts_at: startsAtIso ?? undefined,
+      ends_at: endsAtIso,
+      recurrence_type: recurrence,
+      recurrence_until: untilIso,
+      ...(timeZone ? { time_zone: timeZone } : {}),
+      details: nextDetails,
+    })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+
+  // Structured address + online link + attendance mode + manual pin go through the shared
+  // geocode-on-save hook (createEvent / updateEventSettings use the same). Best-effort, so a geo
+  // miss never fails the save.
+  const address: EventAddress = {
+    venueName: ((fd.get('venue_name') as string) ?? '').trim() || null,
+    street: ((fd.get('street') as string) ?? '').trim() || null,
+    city: ((fd.get('city') as string) ?? '').trim() || null,
+    region: ((fd.get('region') as string) ?? '').trim() || null,
+    country: ((fd.get('country') as string) ?? '').trim() || null,
+    postalCode: ((fd.get('postal_code') as string) ?? '').trim() || null,
+    query: ((fd.get('location') as string) ?? '').trim() || null,
+  }
+  const onlineUrl = ((fd.get('online_url') as string) ?? '').trim() || null
+  const attendanceMode = coerceAttendanceMode(fd.get('attendance_mode'))
+
+  const latRaw = ((fd.get('lat') as string) ?? '').trim()
+  const lngRaw = ((fd.get('lng') as string) ?? '').trim()
+  const latNum = latRaw ? Number(latRaw) : NaN
+  const lngNum = lngRaw ? Number(lngRaw) : NaN
+  const point =
+    Number.isFinite(latNum) && Number.isFinite(lngNum) && Math.abs(latNum) <= 90 && Math.abs(lngNum) <= 180
+      ? { lat: latNum, lng: lngNum }
+      : null
+
+  await saveEventLocation(id, { address, attendanceMode, onlineUrl, point, geocoder: nominatimGeocoder })
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+}
+
+// ─── People (the 'people' spine module) ────────────────────────────────────────
+// RSVP roster summary, the approval queue, waitlist, and capacity. Re-uses the host Manage
+// Dashboard's read layer (loadRoster / loadAnalytics / loadPendingApprovals). Gated on
+// event.editSettings (the same principals who moderate the event); the read returns null for
+// anyone else so the module renders nothing.
+
+export interface EventPeopleData {
+  eventId: string
+  analytics: Awaited<ReturnType<typeof loadAnalytics>>
+  pending: PendingGuest[]
+  guests: ManageGuest[]
+}
+
+export async function getEventPeopleData(slug: string): Promise<EventPeopleData | null> {
+  const admin = createAdminClient()
+  const { data: ev } = await admin.from('events').select('id').eq('slug', slug).maybeSingle()
+  if (!ev) return null
+
+  const caps = await getEventCapabilities(ev.id)
+  if (!caps.has('event.editSettings')) return null
+
+  const roster = await loadRoster(ev.id)
+  const [analytics, pending] = await Promise.all([loadAnalytics(ev.id, roster), loadPendingApprovals(ev.id)])
+  // The compact module shows the first slice of the roster; the full list lives on Manage.
+  return { eventId: ev.id, analytics, pending, guests: roster.slice(0, 8) }
+}
+
+/** Host approves a guest waiting in the approval queue. Re-checks event.editSettings (the admin
+ *  client bypasses RLS, so this action is the authority). */
+export async function approveEventRsvp(
+  eventId: string,
+  slug: string,
+  profileId: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(eventId)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  await approveRsvp(eventId, profileId)
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath(`/events/${slug}/manage`)
+  return { ok: true }
+}
+
+// ─── Engage (the 'engage' spine module) ────────────────────────────────────────
+// Tickets, offerings, and check-in. A free RSVP event has no ticket price; adding one turns on
+// paid tickets (events.price_cents). Sold-ticket + check-in counts are read for the summary.
+// Read + write re-check event.editSettings.
+
+export interface EventEngageData {
+  eventId: string
+  priceCents: number | null
+  currency: string
+  ticketsSold: number
+  revenueCents: number
+  checkedIn: number
+  going: number
+}
+
+export async function getEventEngageData(slug: string): Promise<EventEngageData | null> {
+  const admin = createAdminClient()
+  const { data: ev } = await (admin as unknown as {
+    from: (t: string) => {
+      select: (cols: string) => {
+        eq: (c: string, v: string) => {
+          maybeSingle: () => Promise<{
+            data: { id: string; price_cents: number | null; currency: string | null } | null
+          }>
+        }
+      }
+    }
+  })
+    .from('events')
+    .select('id, price_cents, currency')
+    .eq('slug', slug)
+    .maybeSingle()
+  if (!ev) return null
+
+  const caps = await getEventCapabilities(ev.id)
+  if (!caps.has('event.editSettings')) return null
+
+  const [ticketsRes, goingRes, checkinRes] = await Promise.all([
+    admin.from('event_tickets').select('amount_cents, qty, status').eq('event_id', ev.id),
+    admin
+      .from('event_rsvps')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_id', ev.id)
+      .eq('status', 'going'),
+    admin
+      .from('engagement_events')
+      .select('actor_profile_id')
+      .eq('event_type', 'practice.verified')
+      .like('idempotency_key', `event_checkin:${ev.id}:%`),
+  ])
+
+  const tickets = (ticketsRes.data ?? []) as { amount_cents: number; qty: number; status: string }[]
+  const succeeded = tickets.filter((t) => t.status === 'succeeded')
+  const ticketsSold = succeeded.reduce((sum, t) => sum + (t.qty ?? 1), 0)
+  const revenueCents = succeeded.reduce((sum, t) => sum + (t.amount_cents ?? 0), 0)
+  const checkedIn = new Set(
+    ((checkinRes.data ?? []) as { actor_profile_id: string | null }[])
+      .map((r) => r.actor_profile_id)
+      .filter((v): v is string => !!v),
+  ).size
+
+  return {
+    eventId: ev.id,
+    priceCents: ev.price_cents ?? null,
+    currency: ev.currency ?? 'usd',
+    ticketsSold,
+    revenueCents,
+    checkedIn,
+    going: goingRes.count ?? 0,
+  }
+}
+
+/** Set (or clear) the event's ticket price. Blank / 0 clears it back to a free RSVP event.
+ *  Re-checks event.editSettings. Purchases still move only through the service-role checkout. */
+export async function updateEventPricing(
+  id: string,
+  slug: string,
+  fd: FormData,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  // Price arrives in whole currency units; store cents. Blank / non-positive clears to free.
+  const raw = ((fd.get('price') as string) ?? '').trim()
+  const amount = raw ? Number(raw) : NaN
+  const priceCents = Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) : null
+
+  const admin = createAdminClient()
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ price_cents: priceCents })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  return { ok: true }
 }

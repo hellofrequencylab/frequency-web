@@ -159,6 +159,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // plus the post area — is now a movable module. Each self-fetches from the request-scoped event
   // context (lib/events/active-event.ts) and self-hides when it doesn't apply.
   { id: 'event-join', label: 'Join / RSVP', description: 'The RSVP, ticket, check-in, and waitlist actions. Hidden on a cancelled event.' },
+  { id: 'event-when-where', label: 'When it runs', description: 'The repeat cadence and the booking window (when RSVPs open and close). Hidden for a one-off with no window.' },
+  { id: 'event-attendees', label: 'Waitlist', description: 'How many people are on the waitlist, with an invite to add your name. Hidden when no one is waiting.' },
+  { id: 'event-checkin', label: 'Check-in', description: 'A check-in prompt shown only while the event is happening.' },
   { id: 'event-warm-proof', label: 'Warm proof', description: 'Who is going: the avatar pile and a warm line of real attendance numbers.' },
   { id: 'event-facts', label: 'Event facts', description: 'The when card, the capacity line, and the guest list.' },
   { id: 'event-location', label: 'Location & map', description: 'The venue line and the map: the exact spot when the event is geocoded, or the hosting circle’s city-level pin.' },
@@ -402,6 +405,12 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-join',
   'event-facts',
   'event-location',
+  // Spine-paired blocks (LP-EVENT): Place & Time → when/where; People → waitlist; Engage →
+  // check-in. Each self-hides when it has nothing, so they cost one query and render nothing off
+  // their window.
+  'event-when-where',
+  'event-attendees',
+  'event-checkin',
   // Warm proof (social proof) fills the SIDE column. Its data is computed in active-event.ts and
   // its metadata says it belongs here, but it was missing from this set + the default layout, so
   // it could never render or be added from the Layout editor (site-audit BUG-1).

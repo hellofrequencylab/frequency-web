@@ -10,7 +10,11 @@ import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
-import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
+import type { AdminSlot } from '@/lib/admin/modules/registry'
+import { adminScopeFor } from '@/lib/layout/page-chrome'
+import { appsForScope } from '@/lib/apps/for-scope'
+import { APPS } from '@/lib/apps/catalog'
+import type { App, AppViewer } from '@/lib/apps/types'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff } from '@/lib/core/roles'
@@ -22,29 +26,49 @@ import { PageSettingsModule } from '@/components/admin/page-settings/page-settin
 // full-screen sheet (MobileSettingsSheet) render the SAME content from one source. Each surface
 // owns only its own chrome (header / positioning); the body is this hook.
 
-// Which scope kind an entity-detail path represents — the bridge from a URL to the admin-module
-// registry. Mirrors PageAdminBar's resolver.
-const PATH_SCOPE_KINDS: readonly { prefix: RegExp; kind: ScopeKind }[] = [
-  { prefix: /^\/circles\/[^/]+/, kind: 'circle' },
-  { prefix: /^\/hubs\/[^/]+/, kind: 'hub' },
-  { prefix: /^\/nexuses\/[^/]+/, kind: 'nexus' },
-  { prefix: /^\/events\/[^/]+/, kind: 'event' },
-  { prefix: /^\/practices\/[^/]+/, kind: 'practice' },
-  { prefix: /^\/channels\/[^/]+/, kind: 'channel' },
-  { prefix: /^\/people\/[^/]+/, kind: 'profile' },
+// The 9-spine category order (EMBEDDED-ADMIN.md; the AdminSlot union in lib/admin/modules/registry).
+// The manage modules group in this order. Kept in sync with that union.
+const SLOT_ORDER: readonly AdminSlot[] = [
+  'basics', 'place', 'people', 'layout', 'engage', 'reach', 'comms', 'safety', 'insights', 'billing', 'danger',
 ]
 
-function scopeKindForPath(pathname: string): ScopeKind | null {
-  return PATH_SCOPE_KINDS.find((e) => e.prefix.test(pathname))?.kind ?? null
+// A caps-BLIND selection viewer that passes every editor App's own gate. LP4 makes the manage-module
+// list CATALOG-DRIVEN (appsForScope over the App catalog) instead of a path-sniffing scope table, but
+// keeps selection caps-blind — each module still self-gates server-side, and the coarse `manager`
+// gate below decides whether the bar shows at all. Resolving against a viewer that holds every editor
+// capability makes the resolved id set byte-for-byte the modulesForScopeKind(kind, 'sidebar') set it
+// replaces (proven in lib/apps/for-scope.test.ts). Used only until the provider threads the viewer's
+// REAL resolved caps (the B2 follow-up).
+const SELECTION_VIEWER: AppViewer = {
+  caps: new Set(
+    APPS.flatMap((a) => (a.surfaces.editor && a.gate.system === 'capability' ? [a.gate.capability] : [])),
+  ),
 }
 
-// The sidebar ("manage") modules for this path, resolved from the registry. Each module
-// self-resolves from the pathname and re-gates server-side; selection here is by scope kind.
-function settingsModulesFor(pathname: string): ComponentType[] {
-  const kind = scopeKindForPath(pathname)
-  if (!kind) return []
-  return modulesForScopeKind(kind, 'sidebar')
-    .map((m) => MODULE_COMPONENTS[m.id])
+// The entity scope kinds — a page in one of these carries its identity through its own manage
+// modules, so the generic operator "Page" group is dropped there (see useSettingsPanel).
+const ENTITY_KINDS: ReadonlySet<string> = new Set([
+  'circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'profile',
+])
+
+/** Whether this path is an entity-detail scope (vs the operator `global` scope or a takeover). */
+function isEntityScope(pathname: string): boolean {
+  const scope = adminScopeFor(pathname)
+  return !!scope && ENTITY_KINDS.has(scope.kind)
+}
+
+// The sidebar ("manage") modules for this path, resolved from the App CATALOG (LP4 / ADR-501) and
+// grouped by 9-spine category. Each maps to its registered component; each self-resolves from the
+// pathname and re-gates server-side, so caps-blind selection is safe.
+function settingsModulesFor(pathname: string, viewer: AppViewer): ComponentType[] {
+  const scope = adminScopeFor(pathname)
+  if (!scope) return []
+  const apps = appsForScope(scope, viewer, 'editor')
+  // Group by the 9-spine category in AdminSlot order (today every manage module is 'basics', so this
+  // preserves the current single-group list). LP4 follow-up: drill-down (category rows → detail).
+  const ordered: App[] = SLOT_ORDER.flatMap((slot) => apps.filter((a) => a.category === slot))
+  return ordered
+    .map((a) => MODULE_COMPONENTS[a.id])
     .filter((C): C is ComponentType => !!C)
 }
 
@@ -72,7 +96,7 @@ export function useIsDesktop(): boolean {
  *  mobile sheet. `hasContent` lets each chrome decide whether to render at all (an empty drawer /
  *  sheet should never show). The body markup is identical across both surfaces. */
 export function useSettingsPanel(): { hasContent: boolean; content: React.ReactNode } {
-  const { role, staffRole, webRole } = usePageAdmin()
+  const { role, staffRole, webRole, caps } = usePageAdmin()
   const pathname = usePathname()
 
   // What this viewer can administer: page MANAGERS (host+ / staff — each module re-gates
@@ -80,7 +104,10 @@ export function useSettingsPanel(): { hasContent: boolean; content: React.ReactN
   const manager = meetsAccess('host', role) || staffRole != null
   const isOperator = isStaff(webRole)
 
-  const settingsModules = manager ? settingsModulesFor(pathname) : []
+  // Catalog selection uses the viewer's REAL resolved caps once the provider threads them (B2);
+  // until then the caps-blind SELECTION_VIEWER reproduces the prior modulesForScopeKind selection.
+  const viewer: AppViewer = caps ? { caps } : SELECTION_VIEWER
+  const settingsModules = manager ? settingsModulesFor(pathname, viewer) : []
   const hasSettings = settingsModules.length > 0
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null
@@ -95,8 +122,8 @@ export function useSettingsPanel(): { hasContent: boolean; content: React.ReactN
 
   // The generic "Page" group is for operator CONTENT pages. An entity-detail page owns its identity
   // through its OWN settings block above, so the generic group is dropped on every entity scope.
-  const isEntityScope = scopeKindForPath(pathname) !== null
-  const showPageSettings = isOperator && !isEntityScope
+  const entityScope = isEntityScope(pathname)
+  const showPageSettings = isOperator && !entityScope
 
   // Module-driven detail pages (circle / event) get the Layout editor (operator-only, network-wide).
   const showCircleLayout = isCircle && isOperator && isModuleRoute(pathname)

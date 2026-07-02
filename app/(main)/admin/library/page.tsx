@@ -21,6 +21,7 @@ import { LibraryUploader } from './library-uploader'
 import { LoomGrid, type LoomView } from './loom-grid'
 import { LoomRail } from './loom-rail'
 import { CreateStudio } from './create-studio'
+import { AppsLaneView } from './apps-lane-view'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -70,10 +71,19 @@ export default async function LoomStudioPage({
     view?: string
     page?: string
     similar?: string
+    lane?: string
+    surface?: string
   }>
 }) {
   const ctx = await requireAdmin('janitor')
   const sp = await searchParams
+
+  // The Apps lane (LP5b, docs/LOOM-PLATFORM.md §4): the code-drawn App catalog, indexed read-only.
+  // A code-backed lane, so it has its own catalog + preview resolver (no DB scope), like elements.
+  if ((sp.lane ?? '') === 'apps') {
+    return <AppsLaneView q={sp.q} category={sp.category} surface={sp.surface} view={sp.view} />
+  }
+
   const scope = await resolveActiveScope()
   const recraftEnabled = recraftConfigured()
 
