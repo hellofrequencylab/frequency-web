@@ -1,4 +1,4 @@
-// The unified App contract (LP1 / ADR-498, docs/LOOM-PLATFORM.md §3, §7). The ONE shape every
+// The unified App contract (LP1 / ADR-502, docs/LOOM-PLATFORM.md §3, §7). The ONE shape every
 // functional feature on the site takes — an editor module, a page block, a rail card, a code-drawn
 // element — so The Loom can browse, apply, configure, restyle, and version them all the same way.
 //

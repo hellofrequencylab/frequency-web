@@ -16,7 +16,9 @@
 >
 > **Authority order:** running code + `supabase/migrations/` > this doc > Notion.
 > **Status legend:** ✅ built · 🟡 partial / extend · 📐 designed only · 🆕 net-new · 🔒 deferred.
-> **Task IDs** (`LP#`) are stable handles. **Proposed ADRs:** 498–504 (next free is 498).
+> **Task IDs** (`LP#`) are stable handles. **Recorded ADRs:** 501 (LP2 rejected), 502 (App
+> contract), 503 (admin bar), 504 (Loom Apps lane); see §9. The early "498–500" plan numbers were
+> already taken by unrelated decisions, so the Loom work was renumbered to 501+.
 >
 > **Plugs into:** [LIBRARY.md](LIBRARY.md) (The Loom / DAM), [PAGE-FRAMEWORK.md](PAGE-FRAMEWORK.md)
 > (templates + module engine), [EMBEDDED-ADMIN.md](EMBEDDED-ADMIN.md) (the 9-category spine +
@@ -306,29 +308,30 @@ New capabilities in `lib/core/capabilities.ts`: `loom.manage`, `app.install`/`ap
 
 ## 9. Phased rollout
 
-Proposed ADRs: **498** (the App contract) · **499** (`app_instances`, placement-vs-payload split) ·
-**500** (Loom lane expansion) · **501** (standardized admin bar) · **502** (template-everywhere) ·
-**503** (per-space client RLS for Apps/Loom) · **504** (ingest + backfill).
+Recorded ADRs (the planning numbers 498–500 were already taken by unrelated decisions, so the
+Loom work was renumbered): **501** (LP2 rejected — catalog derives from registries) · **502** (the
+App contract, LP1) · **503** (standardized admin bar, LP4) · **504** (Loom Apps lane, LP5b). LP3
+(`app_instances`), LP6–LP9 have no dedicated ADR yet (shown as — below); add one when each ships.
 
 **Core now — the loop that proves the whole thing on one entity (Event):**
 
 | ID | Task | ADR |
 |---|---|---|
-| **LP1** | **App contract & catalog** — `lib/apps/{catalog,bindings,access}.ts`; superset + gate-parity tests | 498 |
+| **LP1** | **App contract & catalog** — `lib/apps/{catalog,bindings,access}.ts`; superset + gate-parity tests | 502 |
 | ~~**LP2**~~ | ~~**Registry unification** — invert `AdminModule` / `LAYOUT_MODULES` / `element-catalog` to derive from `APPS`~~ **REJECTED (ADR-501).** LP1 shipped the derive-direction *code → catalog* (`APPS` is a read-only projection of the registries), matching the platform principle "code is source of truth, Loom indexes read-only". Inverting would couple the pure catalog to the render graph for no gain; there is no drift to fix (122 ids ↔ 122 bindings, symmetric). | 501 |
-| **LP3** | **Persistence** — `app_instances` migration + gated actions; reuse `library_assets kind='app'` / `library_versions` / `library_usages` / `page_settings`; RLS Phase 1 | 499/500 |
-| **LP4** | **Standardized admin bar** — steps B0–B5; visibility = `appsForScope` non-empty; drill-down + search | 501 |
-| **LP5** | **Loom Apps lane** — `kind='app'` in Loom Studio: read-only source + version (L1), editable config/connections/gate (L2), instances (L3), style (L4); the "Used in" help index | 500 |
+| **LP3** | **Persistence** — `app_instances` migration + gated actions; reuse `library_assets kind='app'` / `library_versions` / `library_usages` / `page_settings`; RLS Phase 1 | — |
+| **LP4** | **Standardized admin bar** — steps B0–B5; visibility = `appsForScope` non-empty; drill-down + search | 503 |
+| **LP5** | **Loom Apps lane** — `kind='app'` in Loom Studio: read-only source + version (L1), editable config/connections/gate (L2), instances (L3), style (L4); the "Used in" help index | 504 |
 | **LP-EVENT** | **Event, end-to-end** — build its full 9-spine as real Apps (Place&Time, People, Engage are the 🔴 gaps); the reference other entities copy | 441 |
 
 **Full suite later:**
 
 | ID | Task | ADR |
 |---|---|---|
-| **LP6** | **Loom lane expansion** — templates/flows, brand/icons/files (light); read-only index lanes for Themes + Email; defer fonts/media/copy/connections | 500 |
-| **LP7** | **Template-everywhere** — batches C-P1→C-P4 (member browse/stream → coupled-view seams → `/admin/*` clusters → shell-only cleanup) | 502 |
-| **LP8** | **Per-space + personal Looms + client RLS** — the D5 tenancy phase; `SPACE_FUNCTIONS` `library` key; community `library.*` caps. **Gated by hardening.** | 503 |
-| **LP9** | **Ingest / backfill** — modules→Apps, layout placements→instances, theme/accent→lanes; idempotent, fail-safe, readers stay default-on-error | 504 |
+| **LP6** | **Loom lane expansion** — templates/flows, brand/icons/files (light); read-only index lanes for Themes + Email; defer fonts/media/copy/connections | — |
+| **LP7** | **Template-everywhere** — batches C-P1→C-P4 (member browse/stream → coupled-view seams → `/admin/*` clusters → shell-only cleanup) | — |
+| **LP8** | **Per-space + personal Looms + client RLS** — the D5 tenancy phase; `SPACE_FUNCTIONS` `library` key; community `library.*` caps. **Gated by hardening.** | — |
+| **LP9** | **Ingest / backfill** — modules→Apps, layout placements→instances, theme/accent→lanes; idempotent, fail-safe, readers stay default-on-error | — |
 
 **Dependency order:** LP1 → LP3 → LP4/LP5 ship the core loop (LP2 rejected, ADR-501); **LP-EVENT** rides on them as
 the reference; **LP7** (template-everywhere) is parallelizable after LP1; **LP8** waits on
@@ -374,4 +377,4 @@ FOUNDATION-HARDENING; **LP9** runs continuously once LP3 exists.
 *Owner: Daniel (Vision Steward). Synthesized 2026-07-02 from a five-track design fan-out. A named
 development track; it does not replace LIBRARY.md (canonical for the DAM), PAGE-FRAMEWORK.md
 (canonical for templates/modules), or ROLES.md (canonical for the role axes). Docs route per
-DOCS-PROTOCOL.md: this spec + ADR-498…504 → git; operator behavior → the Notion training DB.*
+DOCS-PROTOCOL.md: this spec + ADR-501…504 → git; operator behavior → the Notion training DB.*

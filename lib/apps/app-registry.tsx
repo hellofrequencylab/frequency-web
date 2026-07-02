@@ -1,4 +1,4 @@
-// The Loom's App resolver (LP5b / ADR-500, docs/LOOM-PLATFORM.md §4, docs/LIBRARY.md). Presents the
+// The Loom's App resolver (LP5b / ADR-504, docs/LOOM-PLATFORM.md §4, docs/LIBRARY.md). Presents the
 // code-drawn App catalog (lib/apps/catalog.ts `APPS`) as Loom-browsable rows the SAME way the element
 // registry presents code-drawn SVG (lib/library/element-registry.tsx): the code is the source of truth
 // and The Loom indexes it read-only, so the lane never drifts into a stale copy.
@@ -9,10 +9,12 @@
 //   • resolveAppPreview(id) → the live element render (via componentFor) where safe, else a schematic
 //                              placeholder card drawn in the Loom design language.
 //
-// SERVER-SIDE ONLY for the render path: resolveAppPreview imports lib/apps/bindings (componentFor),
-// which reaches the editor/page render layers (Server Components). Compute previews in a Server
-// Component and pass the resulting nodes to the client lane as props (the RSC "slot" pattern). The
-// pure appsAsLibraryItems() metadata is safe to type-import anywhere.
+// SERVER-SIDE ONLY for the render path: resolveAppPreview dynamically imports the ElementPreview
+// client wrapper (components/admin/library/element-preview.tsx) to draw a code-drawn element, and
+// otherwise returns a schematic placeholder. It does NOT go through lib/apps/bindings (that module is
+// the general editor/page/element render boundary; the lane's preview only needs the element node).
+// Compute previews in a Server Component and pass the resulting nodes to the client lane as props (the
+// RSC "slot" pattern). The pure appsAsLibraryItems() metadata is safe to type-import anywhere.
 
 import type { ReactNode } from 'react'
 import { REGISTRY_NAMES } from '@/lib/library/element-catalog'
@@ -68,7 +70,9 @@ function surfaceKinds(app: App): AppSurfaceKind[] {
 const CATEGORY_LABELS: Record<App['category'], string> = {
   account: 'You',
   basics: 'Basics',
-  place: 'Place',
+  // Matches SPINE_META.place (lib/admin/modules/spine.ts) so the Loom lane and the admin
+  // bar name the slot identically.
+  place: 'Place & Time',
   people: 'People',
   layout: 'Layout',
   engage: 'Engage',

@@ -26,13 +26,13 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 
   // ── My Quest blocks (/crew) — the member's season home ──
   { id: 'quest-finish-celebration', label: 'Finish celebration', description: 'The rank-up moment that greets a member after they finish a Journey.' },
-  { id: 'quest-intention', label: 'Season intention', description: "The season's theme in the operator's words — the orienting line for the page." },
+  { id: 'quest-intention', label: 'Season intention', description: "The season's theme in the operator's words. The orienting line for the page." },
   { id: 'quest-season-map', label: 'Season map', description: 'The four-Pillar gauges, rank, and season countdown.' },
-  { id: 'quest-today', label: 'Today', description: 'The one time-aware next step — the single nudge for today.' },
-  { id: 'quest-cta', label: 'Log a practice', description: 'The dominant primary action — log a practice (pinned to the thumb zone on a phone).' },
+  { id: 'quest-today', label: 'Today', description: 'The one time-aware next step. The single nudge for today.' },
+  { id: 'quest-cta', label: 'Log a practice', description: 'The dominant primary action. Log a practice (pinned to the thumb zone on a phone).' },
   { id: 'quest-my-practices', label: 'My practices', description: "A compact glance at the member's adopted practices, linking to the Practices page." },
   { id: 'quest-journeys', label: 'Your Journeys', description: "The member's adopted and built Journeys, each with its progress." },
-  { id: 'quest-next-gathering', label: 'Next gathering', description: 'The next event to show up to in person — the member’s RSVP, or the nearest community event.' },
+  { id: 'quest-next-gathering', label: 'Next gathering', description: 'The next event to show up to in person. The member’s RSVP, or the nearest community event.' },
   // PARKED: retired from My Quest (owner ask — see CREW_MODULE_IDS) and not offered on any
   // other surface today. Its meta + component stay defined so a future page can adopt it; it
   // is intentionally absent from every ROUTE_MODULE_IDS set until then.
@@ -52,10 +52,10 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'admin-practices-review', label: 'Review queue', description: 'Member-submitted practices waiting for an approve or reject decision, ordered by trust and near-duplicate signal.' },
   { id: 'admin-practices-merge', label: 'Merge duplicates', description: 'Practice pairs the library flagged as near-identical. Pick the one to keep, then fold the copy in, re-pointing every log and tag onto it.' },
   { id: 'admin-practices-attention', label: 'Needs attention', description: 'Public practices with a fixable gap (no Pillar, no image, never logged, going stale), worst quality first.' },
-  { id: 'admin-practices-library', label: 'Practice library', description: 'The full faceted curation table — filter by any signal, then tune what is public, a template, or featured. URL-driven, paginated.' },
+  { id: 'admin-practices-library', label: 'Practice library', description: 'The full faceted curation table. Filter by any signal, then tune what is public, a template, or featured. URL-driven, paginated.' },
   { id: 'admin-practices-tags', label: 'Tag governance', description: 'Promote a member tag to canonical, or merge synonyms into a canonical tag.' },
-  { id: 'admin-practices-remix-levers', label: 'Most remixed', description: 'The originals the community has remixed most — a ranked list with each one’s remix count and creator, the lever for what to seed more of.' },
-  { id: 'admin-practices-contributor-recognition', label: 'Contributors to celebrate', description: 'The members whose originals the community has remixed most, ranked — who to thank for growing the library.' },
+  { id: 'admin-practices-remix-levers', label: 'Most remixed', description: 'The originals the community has remixed most. A ranked list with each one’s remix count and creator, the lever for what to seed more of.' },
+  { id: 'admin-practices-contributor-recognition', label: 'Contributors to celebrate', description: 'The members whose originals the community has remixed most, ranked. Who to thank for growing the library.' },
 
   // ── Admin Journeys blocks (/admin/content/journeys) — the curation surface ──
   { id: 'admin-journeys-stats', label: 'Journey stats', description: 'Headline counts: library size, awaiting review, official, and active adoptions.' },
@@ -72,27 +72,27 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practices-activity', label: 'Your activity', description: 'The member’s practice as a bar chart with Days, Weeks, and Months views.' },
   { id: 'practices-balance', label: 'Pillar balance', description: 'How the member’s adopted practices spread across the four Pillars.' },
   { id: 'practices-mine', label: 'Your practices', description: 'The member’s adopted and built practices, each with its log and edit controls.' },
-  { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library — filterable by Pillar, tag, and search, paginated.' },
+  { id: 'practices-library', label: 'Practice library', description: 'The full, faceted community library, filterable by Pillar, tag, and search, paginated.' },
 
   // ── Friends blocks (/friends) — the assignable section of the people surface ──
   { id: 'friends-impact', label: 'Your impact', description: 'The member’s own private lead-funnel view: the people on Frequency because of them. Shows nothing until they’ve brought someone in.' },
 
   // ── Leaderboard blocks (/crew/leaderboard) — the consistency layer ──
-  { id: 'leaderboard-consistency', label: 'Consistency', description: 'The daily practice streak (bounded forgiveness) and the weekly show-up rhythms — how the steady person wins, beneath the board.' },
+  { id: 'leaderboard-consistency', label: 'Consistency', description: 'The daily practice streak (bounded forgiveness) and the weekly show-up rhythms. How the steady person wins, beneath the board.' },
 
   // ── Journal blocks (/journal) — the member’s captured-moments log ──
-  { id: 'journal-entries', label: 'Journal entries', description: 'The member’s captured moments grouped by day, newest first — the feed as a journal.' },
+  { id: 'journal-entries', label: 'Journal entries', description: 'The member’s captured moments grouped by day, newest first. The feed as a journal.' },
 
   // ── Library review blocks (/library/review) — the leadership approval queue ──
-  { id: 'library-review-queue', label: 'Review queue', description: 'Community submissions waiting to join the Library — approve to publish, reject to send back (Host+ only).' },
+  { id: 'library-review-queue', label: 'Review queue', description: 'Community submissions waiting to join the Library. Approve to publish, reject to send back (Host+ only).' },
 
   // ── The Vault blocks (/crew/store) — the member's earnings + the Vault Store ──
-  { id: 'vault-standing', label: 'Standing hero', description: 'The four counts — Zaps · Rank · Streak · Gems — the one way a member’s standing renders.' },
+  { id: 'vault-standing', label: 'Standing hero', description: 'The four counts, Zaps · Rank · Streak · Gems, the one way a member’s standing renders.' },
   { id: 'vault-leaderboard', label: 'Standing link', description: 'A card linking to the cooperative leaderboard and streaks.' },
   { id: 'vault-summary', label: 'Your Vault', description: 'Amplitude (the lifetime layer), the Zaps & Gems ledger, and equipped winnings.' },
-  { id: 'vault-trophies', label: 'Your Trophies', description: 'The lifetime Trophy Case — every finished Journey, kept across seasons.' },
+  { id: 'vault-trophies', label: 'Your Trophies', description: 'The lifetime Trophy Case. Every finished Journey, kept across seasons.' },
   { id: 'vault-awards', label: 'Your Awards', description: 'The badge collection, grouped by category, earned vs. secret.' },
-  { id: 'vault-store', label: 'Vault Store', description: 'The redeemable categories — cosmetics, titles, badges, membership credits (paid-gated).' },
+  { id: 'vault-store', label: 'Vault Store', description: 'The redeemable categories: cosmetics, titles, badges, membership credits (paid-gated).' },
 
   // ── Practice detail blocks (/practices/<id>) — the arrangeable body of one practice ──
   { id: 'practice-detail-stats', label: 'Practice stats', description: 'The headline band: reward, cadence, time, practising now, and times logged.' },
@@ -114,12 +114,12 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // returning null when the Space has nothing.
   { id: 'entity-getting-started', label: 'Getting started', description: 'A single composite empty shown only while a brand-new profile has no content yet.' },
   { id: 'entity-about', label: 'About', description: 'The entity’s story, in plain prose.' },
-  { id: 'entity-stats', label: 'Highlights', description: 'Live counts — sessions, offerings, practices, circles.' },
+  { id: 'entity-stats', label: 'Highlights', description: 'Live counts: sessions, offerings, practices, circles.' },
   { id: 'entity-offerings', label: 'Offerings', description: 'Upcoming sessions and events the entity hosts.' },
   { id: 'entity-practices', label: 'Practices & Journeys', description: 'The Practices and Journeys the entity shares.' },
   { id: 'entity-community', label: 'Community', description: 'The Circles the entity runs.' },
   { id: 'entity-team', label: 'Team', description: 'The people behind the entity.' },
-  { id: 'entity-cta', label: 'Book', description: 'The primary action — book a session at an open time.' },
+  { id: 'entity-cta', label: 'Book', description: 'The primary action. Book a session at an open time.' },
 
   // ── Pages workspace blocks (/pages) — the operator's "find any page and edit it" surface ──
   { id: 'pages-in-app-member', label: 'In-app pages / Member', description: 'Every member-facing page, opened in place with edit mode on.' },

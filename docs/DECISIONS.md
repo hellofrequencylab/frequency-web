@@ -10758,3 +10758,38 @@ Rejected the direct-balance approach (the pre-v2 trigger incremented `current_se
 - **It is a high-risk refactor of a shipped, wired system for no behavioural gain.** LP1→LP6 (the admin rail) and LP7 (template-everywhere) are all live on top of the current direction.
 
 **Consequences.** `docs/LOOM-PLATFORM.md`'s LP2 row is closed as *rejected/superseded by this ADR*. The contract stands: to add an App, add a module/element to its code registry — the catalog, the Loom Apps lane, and the admin rail pick it up automatically; the `APPS` projection is never hand-edited. Anyone tempted to "make Loom the source of truth for code features" should read this ADR first: Loom manages an App's **Layer-2 config/content** (editable data) and **Layer-4 tokens**, never its **Layer-1 function** (the code + its registry entry), which remains git's.
+
+## ADR-502: The unified App contract — one four-layer shape for every functional snippet (LP1)
+
+**Status:** Accepted (2026-07-02). Shipped as `lib/apps/*` (LP1, docs/LOOM-PLATFORM.md §3). Records the decision the App-contract files previously mis-cited as "ADR-498" (which is Gift Gems); the citations are corrected to this ADR.
+
+**Context.** Editor modules, page widgets, admin-rail cards, and code-drawn elements had each grown their own registry, gate check, and metadata shape. The Loom Platform needs ONE contract so every functional snippet can be cataloged, gated, placed, and styled uniformly — and so The Loom can index them the same way it indexes images. Two capability systems already existed and had to be bridged, not replaced: community `resolveCapabilities` (`lib/core/capabilities.ts`) and per-Space `spaceFunctionAccess` (`lib/spaces/functions.ts`).
+
+**Decision.** Define the **App** as a four-layer contract (`lib/apps/types.ts`), and derive the catalog from the existing code registries (see ADR-501 for the derive-direction):
+- **Layer 1 — Function** (git, read-only): the code + its registry entry. The source of truth.
+- **Layer 2 — Global config** (Loom, editable data): operator-editable fields/connections on a `library_assets kind='app'` row.
+- **Layer 3 — Instances** (per-surface placements): `app_instances` (ADR/migration LP3).
+- **Layer 4 — Style** (per-theme tokens): DAWN tokens only, never stored geometry.
+- **One bridged gate** — `AppGate` is a discriminated union over `{none | capability | spaceFunction | staff}`; `appGatePasses` (`lib/apps/access.ts`, PURE) is the single resolver both capability systems flow through, so an App is filtered/locked identically wherever it appears.
+
+**Consequences.** `lib/apps/{types,access,catalog,adapters,bindings,for-scope,app-registry,overrides}.ts` are the contract. Capabilities remain UX on the client and law on the server: every App action re-checks its gate server-side regardless of whether the client showed it. Adding a functional snippet means adding it to its code registry; the catalog, the Loom Apps lane (ADR-504), and the admin bar (ADR-503) pick it up automatically.
+
+## ADR-503: The standardized admin bar — one site-wide, role-resolved settings menu (LP4)
+
+**Status:** Accepted (2026-07-02). Shipped as `lib/apps/for-scope.ts` + `components/layout/admin-bar/*` + `components/layout/settings-panel.tsx` (LP4 + admin-rail Phases 1–7, docs/ADMIN-RAIL.md). Records the decision those files previously mis-cited as "ADR-501" (which is the catalog-derives decision); citations are corrected to this ADR.
+
+**Context.** Editing surfaces across circles, events, spaces, hubs, nexuses, practices, and personal settings each had a bespoke edit affordance. The owner's requirement: ONE settings menu for the whole site, baked into the theme chrome, whose *content* is role-resolved Apps from the catalog — personal settings for everyone, the 9-category management spine for editors, operator tools for staff. Nothing hardcoded.
+
+**Decision.** Resolve the bar's content from `appsForScope(scope, viewer, kind?)` over the ONE App catalog. Presence is unconditional for an authed viewer (the personal "You" set is never empty); the management spine appears per `(scope × role × capability)`. `showsAdminBar` is **editor-only** (`appsForScope(scope, viewer, 'editor').length > 0`) so page blocks don't falsely light the bar. The spine order is fixed (muscle memory); the rail is browse-first with a fuzzy search overlay; exactly two levels (category → detail), anything deeper routes to a Focus page; filter-before-render (hide never-eligible, lock-with-reason for attainable). One component renders it as a desktop slide-over and a mobile bottom sheet. Per-scope operator overrides are fail-safe to catalog defaults (`app_overrides`, admin-rail Phase 6).
+
+**Consequences.** `lib/layout/page-chrome.ts` registers the rail once (`global`/`scoped`/`none`); pages never toggle it. Adding a settings surface = adding an App to the catalog, not editing the shell. The bar is theme chrome, tokens only.
+
+## ADR-504: The Loom Apps lane — a read-only index over the code App catalog (LP5b)
+
+**Status:** Accepted (2026-07-02). Shipped as `lib/apps/app-registry.tsx` + `components/admin/library/element-preview.tsx` (LP5b, docs/LOOM-PLATFORM.md §4). Records the decision `app-registry.tsx` previously mis-cited as "ADR-500" (which is the Puck template system — the very system §10 requires the lane to stay separate from); the citation is corrected to this ADR.
+
+**Context.** The Loom (the DAM) should present the App catalog as browsable rows the same way it presents code-drawn SVG elements — without becoming a second source of truth for code.
+
+**Decision.** `app-registry.tsx` presents `APPS` as Loom rows read-only (`appsAsLibraryItems()` — pure metadata; `resolveAppPreview()` — a live element render where safe, else a schematic placeholder), mirroring `lib/library/element-registry.tsx` ("code is source of truth, The Loom indexes it read-only"). The preview's live-element path renders through a **client** wrapper (`ElementPreview`) passed down as an RSC slot, because `renderRegistryElement` is a client function and calling it from a Server Component throws (the LP5b crash, fixed here). The lane never edits Layer-1 code — only Layer-2 config/connections/gate, per ADR-502.
+
+**Consequences.** §10 boundary holds: the Loom Apps lane indexes code; it never becomes a Puck-style block editor for an App, and must not be confused with ADR-500 (Puck micro-sites). Pure metadata stays cheap to import (tests load the registry without the render graph).
