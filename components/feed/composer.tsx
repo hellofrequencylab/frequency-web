@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect, useCallback, type ReactNode
 import Image from 'next/image'
 import { Megaphone, ImagePlus, X, PenLine, Bold, Italic, List, Link2, Maximize2, Minimize2, ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import { createPost } from '@/app/(main)/feed/actions'
+import { isError } from '@/lib/action-result'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { EmojiPicker } from './emoji-picker'
@@ -133,6 +134,7 @@ export function Composer({
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageError, setImageError] = useState('')
+  const [postError, setPostError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const [photoSheetOpen, setPhotoSheetOpen] = useState(false)
@@ -244,6 +246,7 @@ export function Composer({
     const trimmed = body.trim()
     if ((!trimmed && !imageFile) || isPending) return
 
+    setPostError('')
     startTransition(async () => {
       let imageUrl: string | null = null
       if (imageFile) {
@@ -258,7 +261,13 @@ export function Composer({
       fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : 'feed')
       if (imageUrl) fd.set('imageUrl', imageUrl)
 
-      await createPost(fd)
+      // Keep the composed text (and image) if the write failed, so nothing is lost.
+      const res = await createPost(fd)
+      if (res && isError(res)) {
+        setPostError(res.error)
+        return
+      }
+
       setBody('')
       setIsAnnouncement(false)
       setManualHeight(null)
@@ -676,6 +685,8 @@ export function Composer({
           </button>
         </div>
       </div>
+
+      {postError && <p className="mt-2 text-xs text-danger">{postError}</p>}
     </div>
   )
 

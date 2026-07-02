@@ -49,6 +49,7 @@ export function MessageThread({
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [body, setBody] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -94,6 +95,8 @@ export function MessageThread({
     const trimmed = body.trim()
     if (!trimmed || isPending) return
 
+    setError(null)
+
     // Optimistic insert
     const optimistic: Message = {
       id: `optimistic-${Date.now()}`,
@@ -109,7 +112,15 @@ export function MessageThread({
     fd.set('body', trimmed)
 
     startTransition(async () => {
-      await sendMessage(conversationId, fd)
+      try {
+        await sendMessage(conversationId, fd)
+      } catch (err) {
+        // The send failed (e.g. the other member has been blocked) — roll back the
+        // optimistic bubble and restore the draft so the text isn't lost.
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id))
+        setBody((cur) => (cur ? cur : trimmed))
+        setError(err instanceof Error ? err.message : 'Message failed to send. Try again.')
+      }
     })
   }
 
@@ -230,6 +241,11 @@ export function MessageThread({
 
       {/* ── Composer ──────────────────────────────── */}
       <div className="shrink-0 border-t border-border bg-surface px-4 py-3">
+        {error && (
+          <p className="mb-2 text-xs text-danger" role="alert">
+            {error}
+          </p>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}

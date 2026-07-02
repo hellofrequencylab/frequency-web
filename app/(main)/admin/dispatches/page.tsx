@@ -1,14 +1,18 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
+import { isStaff as isStaffAxis } from '@/lib/core/roles'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { DispatchesClient } from './dispatches-client'
 import { BroadcastCompose } from '@/app/(main)/broadcast/broadcast-compose'
 
 export default async function AdminDispatchesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
-  const { profileId, role } = await requireAdmin('host', { staff: 'community' })
+  const { profileId, role, webRole } = await requireAdmin('host', { staff: 'community' })
   const { edit } = await searchParams
   const admin = createAdminClient()
-  const isStaff = role === 'janitor' || role === 'admin'
+  // Staff standing is the STAFF axis (web_role, ADR-208), NOT the deprecated
+  // community_role admin/janitor rungs — so a Site Admin with community_role 'member'
+  // is correctly treated as staff (full broadcast list + full audience).
+  const isStaff = isStaffAxis(webRole)
 
   // Staff (admin/janitor) see + manage every broadcast (so the "Edit broadcast"
   // button on any broadcast lands here); everyone else sees only their own.
@@ -27,7 +31,7 @@ export default async function AdminDispatchesPage({ searchParams }: { searchPara
   let hubs:    { id: string; name: string }[] = []
   let nexuses: { id: string; name: string }[] = []
 
-  if (role === 'janitor' || role === 'admin') {
+  if (isStaff) {
     // Mega-admin: all circles, hubs, nexuses
     const [cRes, hRes, nRes] = await Promise.all([
       admin.from('circles').select('id, name').order('name'),

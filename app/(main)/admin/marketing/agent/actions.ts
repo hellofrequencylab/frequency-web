@@ -28,10 +28,12 @@ export async function approveAction(id: string): Promise<void> {
   const staff = await gate()
   if (!staff) return
   const db = createAdminClient()
-  await db
+  const { error } = await db
     .from('agent_actions')
     .update({ status: 'approved', decided_by: staff.profileId, decided_at: new Date().toISOString() })
     .eq('id', id)
+  // Bail before executing — never run the action if its approval never persisted.
+  if (error) throw new Error(error.message)
   await executeAction(id) // runs through the spine
   revalidatePath('/admin/marketing/agent')
 }
@@ -40,9 +42,10 @@ export async function dismissAction(id: string): Promise<void> {
   const staff = await gate()
   if (!staff) return
   const db = createAdminClient()
-  await db
+  const { error } = await db
     .from('agent_actions')
     .update({ status: 'dismissed', decided_by: staff.profileId, decided_at: new Date().toISOString() })
     .eq('id', id)
+  if (error) throw new Error(error.message)
   revalidatePath('/admin/marketing/agent')
 }

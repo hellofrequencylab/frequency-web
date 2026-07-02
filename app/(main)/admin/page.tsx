@@ -176,9 +176,9 @@ export default async function AdminPageView() {
           writes it; sanitizeDashOrder guarantees every section appears once. */}
       {staffJanitor &&
         sectionOrder.map((id) => <Fragment key={id}>{janitorSections[id]}</Fragment>)}
-      {role === 'host' && <HostPanel profileId={profileId} />}
-      {role === 'guide' && <GuidePanel profileId={profileId} />}
-      {role === 'mentor' && <MentorPanel profileId={profileId} />}
+      {role === 'host' && <HostPanel profileId={profileId} canManage={staffJanitor} />}
+      {role === 'guide' && <GuidePanel profileId={profileId} canManage={staffJanitor} />}
+      {role === 'mentor' && <MentorPanel profileId={profileId} canManage={staffJanitor} />}
     </AdminPage>
   )
 }
@@ -702,7 +702,7 @@ const MEMBERSHIP_SELECT = `id, joined_at,
 
 // ── Host: circle + member overview ───────────────────────────────────────────
 
-async function HostPanel({ profileId }: { profileId: string }) {
+async function HostPanel({ profileId, canManage }: { profileId: string; canManage: boolean }) {
   const admin = createAdminClient()
 
   const { data: circles } = await admin
@@ -748,7 +748,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
         {members.length === 0 ? (
           <EmptyState title="No members yet. Share your circle link to get started." />
         ) : (
-          <MemberManager members={members} />
+          <MemberManager members={members} canManage={canManage} />
         )}
       </AdminSection>
     </div>
@@ -757,7 +757,7 @@ async function HostPanel({ profileId }: { profileId: string }) {
 
 // ── Guide: hub + member overview ─────────────────────────────────────────────
 
-async function GuidePanel({ profileId }: { profileId: string }) {
+async function GuidePanel({ profileId, canManage }: { profileId: string; canManage: boolean }) {
   const admin = createAdminClient()
 
   const { data: hubs } = await admin
@@ -826,7 +826,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
 
       {members.length > 0 && (
         <AdminSection title={`All members · ${members.length}`}>
-          <MemberManager members={members} />
+          <MemberManager members={members} canManage={canManage} />
         </AdminSection>
       )}
     </>
@@ -835,7 +835,7 @@ async function GuidePanel({ profileId }: { profileId: string }) {
 
 // ── Mentor: nexus overview + full member management ──────────────────────────
 
-async function MentorPanel({ profileId }: { profileId: string }) {
+async function MentorPanel({ profileId, canManage }: { profileId: string; canManage: boolean }) {
   const admin = createAdminClient()
 
   const { data: nexuses } = await admin
@@ -909,7 +909,7 @@ async function MentorPanel({ profileId }: { profileId: string }) {
 
       {members.length > 0 && (
         <AdminSection title={`All members · ${members.length}`}>
-          <MemberManager members={members} />
+          <MemberManager members={members} canManage={canManage} />
         </AdminSection>
       )}
     </>

@@ -38,10 +38,12 @@ export async function bulkSetContactConsent(
   const unique = [...new Set(ids.filter((v) => typeof v === 'string' && v.length > 0))]
   if (unique.length === 0) return { updated: 0 }
   const db = createAdminClient()
-  await db
+  const { error } = await db
     .from('contacts')
     .update({ consent_state: state, updated_at: new Date().toISOString() })
     .in('id', unique)
+  // Report 0 updated on a failed write so the client stops showing false success.
+  if (error) return { updated: 0 }
   revalidatePath('/admin/marketing/contacts')
   return { updated: unique.length }
 }
@@ -73,7 +75,7 @@ export async function updateContactFields(
     else metaUpdate.city = built.city
   }
 
-  await db
+  const { error } = await db
     .from('contacts')
     .update({
       ...built.columns,
@@ -81,6 +83,8 @@ export async function updateContactFields(
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+  // Report failure so the client stops showing a false "saved".
+  if (error) return { ok: false }
 
   revalidatePath(`/admin/marketing/contacts/${id}`)
   revalidatePath('/admin/marketing/contacts')

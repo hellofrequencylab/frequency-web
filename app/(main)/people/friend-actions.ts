@@ -29,6 +29,18 @@ function canonicalPair(a: string, b: string): { user_a_id: string; user_b_id: st
   return a < b ? { user_a_id: a, user_b_id: b } : { user_a_id: b, user_b_id: a }
 }
 
+// The member profile route is /people/[handle], NOT /people/[id] — revalidating a
+// UUID path (as this file used to) never busts the real page's cache, so the
+// target's profile stayed stale on soft-nav. Look up the handle and revalidate that
+// (mirrors people/[handle]/actions.ts).
+async function revalidateProfileByHandle(
+  admin: ReturnType<typeof createAdminClient>,
+  profileId: string,
+) {
+  const { data } = await admin.from('profiles').select('handle').eq('id', profileId).maybeSingle()
+  if (data?.handle) revalidatePath(`/people/${data.handle}`)
+}
+
 // ── sendFriendRequest ────────────────────────────────────────────────
 
 export async function sendFriendRequest(
@@ -74,7 +86,7 @@ export async function sendFriendRequest(
   }
 
   revalidatePath('/network/friends')
-  revalidatePath(`/people/${targetProfileId}`)
+  await revalidateProfileByHandle(admin, targetProfileId)
   return ok()
 }
 
@@ -107,7 +119,7 @@ export async function acceptFriendRequest(requesterProfileId: string): Promise<A
   })
 
   revalidatePath('/network/friends')
-  revalidatePath(`/people/${requesterProfileId}`)
+  await revalidateProfileByHandle(admin, requesterProfileId)
   return ok()
 }
 
@@ -144,7 +156,7 @@ export async function cancelFriendRequest(addresseeProfileId: string): Promise<A
 
   if (error) return fail(error.message)
   revalidatePath('/network/friends')
-  revalidatePath(`/people/${addresseeProfileId}`)
+  await revalidateProfileByHandle(admin, addresseeProfileId)
   return ok()
 }
 
@@ -163,7 +175,7 @@ export async function unfriend(otherProfileId: string): Promise<ActionResult> {
 
   if (error) return fail(error.message)
   revalidatePath('/network/friends')
-  revalidatePath(`/people/${otherProfileId}`)
+  await revalidateProfileByHandle(admin, otherProfileId)
   return ok()
 }
 

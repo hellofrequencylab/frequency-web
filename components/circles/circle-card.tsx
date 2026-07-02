@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Users, MapPin, Globe, Sparkles } from 'lucide-react'
-import { joinCircle } from '@/app/(main)/circles/actions'
+import { JoinCircleButton } from '@/components/circles/join-circle-button'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
@@ -155,14 +155,11 @@ export function CircleCard({ circle, isMember }: { circle: CircleCardData; isMem
             Open
           </Link>
         ) : !full ? (
-          <form action={joinCircle.bind(null, circle.id, circle.slug)}>
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-            >
-              Join
-            </button>
-          </form>
+          <JoinCircleButton
+            circleId={circle.id}
+            circleSlug={circle.slug}
+            className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+          />
         ) : (
           <span className="inline-flex rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-muted shadow-sm ring-1 ring-border">
             Full

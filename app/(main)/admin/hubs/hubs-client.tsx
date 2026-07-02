@@ -41,6 +41,7 @@ function HubForm({
   onSave,
   onCancel,
   isPending,
+  error,
 }: {
   initial?:  HubRow
   nexuses:   NexusOption[]
@@ -48,6 +49,7 @@ function HubForm({
   onSave:    (fd: FormData) => void
   onCancel:  () => void
   isPending: boolean
+  error:     string | null
 }) {
   const [name,    setName]    = useState(initial?.name ?? '')
   const [nexusId, setNexusId] = useState(initial?.nexus_id ?? '')
@@ -104,6 +106,7 @@ function HubForm({
           Cancel
         </Button>
       </div>
+      {error && <p role="alert" className="text-xs font-medium text-danger sm:col-span-2">{error}</p>}
     </form>
   )
 }
@@ -114,6 +117,9 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
   const [editingId,  setEditingId]   = useState<string | null>(
     initialEditId && hubs.some((h) => h.id === initialEditId) ? initialEditId : null,
   )
+  // updateHub throws on failure; catch it so a failed save shows a reason instead
+  // of silently closing the editor as if it worked.
+  const [error, setError] = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
 
   const columns: ColumnDef<HubRow>[] = [
@@ -152,9 +158,20 @@ export function HubsClient({ hubs, nexuses, guides, initialEditId = null }: { hu
             initial={h}
             nexuses={nexuses}
             guides={guides}
-            onSave={(fd) => { startTransition(async () => { await updateHub(h.id, fd); setEditingId(null) }) }}
-            onCancel={() => setEditingId(null)}
+            onSave={(fd) => {
+              setError(null)
+              startTransition(async () => {
+                try {
+                  await updateHub(h.id, fd)
+                  setEditingId(null)
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Could not save the hub.')
+                }
+              })
+            }}
+            onCancel={() => { setError(null); setEditingId(null) }}
             isPending={isPending}
+            error={error}
           />
         )}
         rowActions={(h) => (

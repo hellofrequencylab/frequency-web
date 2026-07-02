@@ -101,12 +101,15 @@ export async function tuneInChannel(channelId: string, slug: string) {
   if (!profileId) return
 
   const supabase = await createClient()
-  await supabase
+  const { error } = await supabase
     .from('topical_channel_memberships')
     .upsert(
       { topical_channel_id: channelId, profile_id: profileId },
       { onConflict: 'topical_channel_id,profile_id' },
     )
+  // Don't route the member into the channel as if they tuned in when the write
+  // failed — surface it (the redirect below is the "success" signal).
+  if (error) throw new Error('Could not tune you in. Please try again.')
 
   revalidatePath('/channels')
   revalidatePath(`/channels/${slug}`)
@@ -118,11 +121,12 @@ export async function tuneOutChannel(channelId: string) {
   if (!profileId) return
 
   const supabase = await createClient()
-  await supabase
+  const { error } = await supabase
     .from('topical_channel_memberships')
     .delete()
     .eq('topical_channel_id', channelId)
     .eq('profile_id', profileId)
+  if (error) throw new Error('Could not tune you out. Please try again.')
 
   revalidatePath('/channels')
   revalidatePath(`/channels/${channelId}`)

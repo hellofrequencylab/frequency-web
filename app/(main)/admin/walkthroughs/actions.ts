@@ -79,8 +79,9 @@ function toColumns(patch: WalkthroughPatch): Record<string, unknown> {
   return out
 }
 
-/** Create a fresh draft walkthrough and jump into its editor. */
-export async function createWalkthrough(input?: { name?: string }): Promise<void> {
+/** Create a fresh draft walkthrough and jump into its editor. Redirects on success
+ *  (returns nothing); returns a failure the caller can render when the insert doesn't land. */
+export async function createWalkthrough(input?: { name?: string }): Promise<ActionResult | void> {
   const me = await gate()
   const name = (input?.name ?? '').trim() || 'New walkthrough'
   const slug = await uniqueSlug(name)
@@ -89,7 +90,7 @@ export async function createWalkthrough(input?: { name?: string }): Promise<void
     .insert({ slug, name, updated_by: me, steps: [] })
     .select('id')
     .single()
-  if (error || !data) return
+  if (error || !data) return fail('Could not create the walkthrough.')
   revalidatePath(LIST_PATH)
   redirect(`${LIST_PATH}/${(data as { id: string }).id}`)
 }
@@ -98,7 +99,7 @@ export async function createWalkthrough(input?: { name?: string }): Promise<void
  *  doesn't exist yet. Each seeded slide is pre-tagged with its activation criterion so the
  *  funnel's done-detection works immediately; operators then edit the copy/order. The row
  *  ships active (it only ever renders as the persistent feed guide, never a card). */
-export async function editOnboardingWalkthrough(): Promise<void> {
+export async function editOnboardingWalkthrough(): Promise<ActionResult | void> {
   const me = await gate()
   const { data: existing } = await db()
     .from('walkthrough')
@@ -135,7 +136,7 @@ export async function editOnboardingWalkthrough(): Promise<void> {
       })
       .select('id')
       .single()
-    if (error || !data) return
+    if (error || !data) return fail('Could not open Next Steps. Please try again.')
     id = (data as { id: string }).id
   }
   revalidatePath(LIST_PATH)

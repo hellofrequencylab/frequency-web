@@ -11,6 +11,7 @@ import { sendInviteEmail } from '@/lib/email'
 import { SITE_URL } from '@/lib/site'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
 import { track } from '@/lib/analytics/track'
+import { type ActionResult, fail } from '@/lib/action-result'
 import { suggestCircleDraft, fallbackCircleSuggestion, type CircleSuggestion } from '@/lib/ai/circle-wizard'
 
 // Vera's start-a-circle assist: suggest a name + about from the chosen Interest.
@@ -26,9 +27,9 @@ export async function suggestCircle(
   return ai ?? fallbackCircleSuggestion(interest, safeType)
 }
 
-export async function joinCircle(circleId: string, circleSlug: string) {
+export async function joinCircle(circleId: string, circleSlug: string): Promise<ActionResult> {
   const myProfileId = await getMyProfileId()
-  if (!myProfileId) return
+  if (!myProfileId) return fail('Sign in to join a circle.')
 
   const admin = createAdminClient()
 
@@ -39,8 +40,8 @@ export async function joinCircle(circleId: string, circleSlug: string) {
     .eq('id', circleId)
     .maybeSingle()
 
-  if (!circle) return
-  if (circle.member_count >= circle.member_cap) return // full
+  if (!circle) return fail('This circle is no longer available.')
+  if (circle.member_count >= circle.member_cap) return fail('This circle is full.') // full
 
   // Nexus capacity only applies when the circle belongs to a hub → nexus. A
   // circle with no hub (a standalone / founding circle) has no nexus cap to
@@ -70,7 +71,7 @@ export async function joinCircle(circleId: string, circleSlug: string) {
           .eq('status', 'active')
           .eq('circles.hubs.nexus_id', hub.nexus_id)
 
-        if ((count ?? 0) >= nexus.member_cap) return // nexus at capacity
+        if ((count ?? 0) >= nexus.member_cap) return fail('This region is at capacity right now.') // nexus at capacity
       }
     }
   }
@@ -85,7 +86,7 @@ export async function joinCircle(circleId: string, circleSlug: string) {
   })
   if (error) {
     console.error('[joinCircle]', error.message)
-    return
+    return fail('Could not join this circle. Please try again.')
   }
 
   processGamificationEvent({ type: 'circle_join', profileId: myProfileId }).catch(() => {})

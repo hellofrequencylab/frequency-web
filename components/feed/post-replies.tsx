@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, Send } from 'lucide-react'
 import { createReply, fetchReplies } from '@/app/(main)/feed/actions'
+import { isError } from '@/lib/action-result'
 import { getInitials, relativeTime } from '@/lib/utils'
 import { ProfileFlair } from '@/components/profile-flair'
 import { isEndorsed } from '@/lib/season-ranks'
@@ -196,6 +197,7 @@ export function PostReplies({
   // The inline composer aimed at a specific comment (null = none open).
   const [replyTo, setReplyTo] = useState<ReplyTarget>(null)
   const [replyBody, setReplyBody] = useState('')
+  const [replyError, setReplyError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   const refresh = useCallback(async () => {
@@ -214,12 +216,18 @@ export function PostReplies({
     if (!body.trim()) return
     const text = body
     setBody('')
+    setReplyError(null)
     // The composer is always visible, so a comment can be sent while the thread is
     // collapsed — open it on submit (and mark loaded) so the new reply is seen.
     setOpen(true)
     setLoaded(true)
     startTransition(async () => {
-      await createReply(postId, text)
+      const res = await createReply(postId, text)
+      if (isError(res)) {
+        setBody(text) // restore the text so nothing is lost on a failed write
+        setReplyError(res.error)
+        return
+      }
       await refresh()
     })
   }
@@ -228,14 +236,22 @@ export function PostReplies({
     e.preventDefault()
     if (!replyBody.trim() || !replyTo) return
     const text = replyBody
+    const target = replyTo
     const parentId = replyTo.id
     setReplyBody('')
     setReplyTo(null)
+    setReplyError(null)
     setExpanded(true) // a fresh nested reply may sit under an older comment
     startTransition(async () => {
       // parent_id = the comment's id, so the server's self-reply guard keys off
       // that comment's author (reply-to-a-comment is free of self-farming).
-      await createReply(parentId, text)
+      const res = await createReply(parentId, text)
+      if (isError(res)) {
+        setReplyBody(text) // restore the draft and reopen the composer aimed here
+        setReplyTo(target)
+        setReplyError(res.error)
+        return
+      }
       await refresh()
     })
   }
@@ -349,6 +365,7 @@ export function PostReplies({
         placeholder="Add a comment…"
         reactSlot={<ReactionInlinePicker {...reactionState} />}
       />
+      {replyError && <p className="mt-1 px-1 text-2xs text-danger">{replyError}</p>}
     </div>
   )
 }

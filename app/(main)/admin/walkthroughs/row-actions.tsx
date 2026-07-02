@@ -20,31 +20,52 @@ import {
 
 export function NewWalkthroughButton() {
   const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   return (
-    <Button
-      type="button"
-      size="sm"
-      disabled={pending}
-      onClick={() => start(() => void createWalkthrough())}
-    >
-      <Plus className="h-4 w-4" aria-hidden /> {pending ? 'Creating…' : 'New walkthrough'}
-    </Button>
+    <div className="flex flex-col items-start gap-1">
+      <Button
+        type="button"
+        size="sm"
+        disabled={pending}
+        onClick={() => {
+          setError(null)
+          start(async () => {
+            // Redirects on success (returns nothing); a returned failure means the draft never saved.
+            const r = await createWalkthrough()
+            if (r && isError(r)) setError(r.error)
+          })
+        }}
+      >
+        <Plus className="h-4 w-4" aria-hidden /> {pending ? 'Creating…' : 'New walkthrough'}
+      </Button>
+      {error && <p role="alert" className="text-xs font-medium text-danger">{error}</p>}
+    </div>
   )
 }
 
 /** Opens (seeding on first use) the reserved Next Steps activation funnel. */
 export function EditNextStepsButton() {
   const [pending, start] = useTransition()
+  const [error, setError] = useState<string | null>(null)
   return (
-    <Button
-      type="button"
-      variant="secondary"
-      size="sm"
-      disabled={pending}
-      onClick={() => start(() => void editOnboardingWalkthrough())}
-    >
-      <ListChecks className="h-4 w-4" aria-hidden /> {pending ? 'Opening…' : 'Edit Next Steps'}
-    </Button>
+    <div className="flex flex-col items-start gap-1">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        disabled={pending}
+        onClick={() => {
+          setError(null)
+          start(async () => {
+            const r = await editOnboardingWalkthrough()
+            if (r && isError(r)) setError(r.error)
+          })
+        }}
+      >
+        <ListChecks className="h-4 w-4" aria-hidden /> {pending ? 'Opening…' : 'Edit Next Steps'}
+      </Button>
+      {error && <p role="alert" className="text-xs font-medium text-danger">{error}</p>}
+    </div>
   )
 }
 

@@ -139,11 +139,14 @@ export async function deleteRule(id: string): Promise<RuleResult> {
   return { ok: true }
 }
 
-export async function toggleRule(id: string, enabled: boolean): Promise<void> {
+export async function toggleRule(id: string, enabled: boolean): Promise<RuleResult> {
   const g = await gate()
-  if (!g.ok) return
+  if (!g.ok) return { ok: false, error: g.error }
 
   const db = createAdminClient()
-  await db.from('automation_rules').update({ enabled }).eq('id', id)
+  const { error } = await db.from('automation_rules').update({ enabled }).eq('id', id)
+  if (error) return { ok: false, error: error.message }
+
   revalidatePath('/admin/marketing/automations')
+  return { ok: true }
 }

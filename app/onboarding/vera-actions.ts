@@ -10,6 +10,7 @@ import { runVeraTurn } from '@/lib/ai/vera/loop'
 import { runVeraClaudeTurn, type VeraMessage } from '@/lib/ai/vera/agent-claude'
 import { executeConfirmedTool } from '@/lib/ai/vera/execute'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isError } from '@/lib/action-result'
 import { joinCircle } from '@/app/(main)/circles/actions'
 import type { EntitlementTier } from '@/lib/core/entitlement'
 import type { ConciergeStage, ProposedToolCall } from '@/lib/ai/vera/concierge'
@@ -122,6 +123,9 @@ async function joinCircleForMember(ref: string): Promise<{ ok: boolean; error?: 
     circle = (byName.data ?? [])[0] ?? null
   }
   if (!circle) return { ok: false, error: `Couldn't find a circle matching "${term}".` }
-  await joinCircle(circle.id, circle.slug) // redirects to /circles/<slug> on success
+  // Redirects to /circles/<slug> on success; returns a failure result (capacity,
+  // region cap, …) otherwise — surface it instead of reporting a false success.
+  const res = await joinCircle(circle.id, circle.slug)
+  if (res && isError(res)) return { ok: false, error: res.error }
   return { ok: true }
 }

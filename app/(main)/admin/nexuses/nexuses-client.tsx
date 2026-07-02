@@ -32,12 +32,13 @@ const STATUS_TONE: Record<string, StatusTone> = {
   archived: 'neutral',
 }
 
-function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
+function NexusForm({ initial, mentors, onSave, onCancel, isPending, error }: {
   initial?:  NexusRow
   mentors:   MentorOption[]
   onSave:    (fd: FormData) => void
   onCancel:  () => void
   isPending: boolean
+  error:     string | null
 }) {
   const [name,     setName]     = useState(initial?.name ?? '')
   const [cap,      setCap]      = useState(String(initial?.member_cap ?? 100))
@@ -89,6 +90,7 @@ function NexusForm({ initial, mentors, onSave, onCancel, isPending }: {
           Cancel
         </Button>
       </div>
+      {error && <p role="alert" className="text-xs font-medium text-danger sm:col-span-2">{error}</p>}
     </form>
   )
 }
@@ -98,6 +100,9 @@ export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexu
   const [editingId,  setEditingId]   = useState<string | null>(
     initialEditId && nexuses.some((n) => n.id === initialEditId) ? initialEditId : null,
   )
+  // updateNexus throws on failure; catch it so a failed save shows a reason instead
+  // of silently closing the editor as if it worked.
+  const [error, setError] = useState<string | null>(null)
   const [isPending,  startTransition] = useTransition()
 
   const columns: ColumnDef<NexusRow>[] = [
@@ -140,9 +145,20 @@ export function NexusesClient({ nexuses, mentors, initialEditId = null }: { nexu
           <NexusForm
             initial={n}
             mentors={mentors}
-            onSave={(fd) => { startTransition(async () => { await updateNexus(n.id, fd); setEditingId(null) }) }}
-            onCancel={() => setEditingId(null)}
+            onSave={(fd) => {
+              setError(null)
+              startTransition(async () => {
+                try {
+                  await updateNexus(n.id, fd)
+                  setEditingId(null)
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : 'Could not save the nexus.')
+                }
+              })
+            }}
+            onCancel={() => { setError(null); setEditingId(null) }}
             isPending={isPending}
+            error={error}
           />
         )}
         rowActions={(n) => (

@@ -285,7 +285,31 @@ export default async function MessagesPage({
     .filter(it => !activeIds.has(`${it.kind}:${it.id}`))
     .filter(it => filter === 'all' || (filter === 'rooms' ? it.kind === 'room' : it.kind === 'dm'))
 
-  const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0)
+  // Room unread — mirror the nav popover's per-room counting (room_messages from
+  // others since my last_read_at) so the header badge reflects rooms + DMs, not
+  // DMs alone (the header badge and the popover were disagreeing).
+  const roomReadMap: Record<string, string | null> = {}
+  for (const m of (myMemberships ?? []) as { room_id: string; last_read_at: string | null }[]) {
+    roomReadMap[m.room_id] = m.last_read_at ?? null
+  }
+  const roomUnreadCounts = joinedRoomIds.length > 0
+    ? await Promise.all(
+        joinedRoomIds.map(async (rid) => {
+          const sinceCutoff = roomReadMap[rid] ?? '1970-01-01T00:00:00Z'
+          const { count } = await supabase
+            .from('room_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('room_id', rid)
+            .neq('author_id', myProfileId)
+            .gt('created_at', sinceCutoff)
+          return count ?? 0
+        }),
+      )
+    : []
+  const roomUnread = roomUnreadCounts.reduce((sum, c) => sum + c, 0)
+
+  const totalUnread =
+    conversations.reduce((sum, c) => sum + c.unreadCount, 0) + roomUnread
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
   // The unread badge stays dynamic; only the static title text + description flow

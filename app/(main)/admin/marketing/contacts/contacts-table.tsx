@@ -27,7 +27,7 @@ const CONSENT_TONE: Record<string, StatusTone> = {
 export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [pending, start] = useTransition()
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
   const allIds = useMemo(() => contacts.map((c) => c.id), [contacts])
   const allSelected = selected.size > 0 && selected.size === allIds.length
@@ -54,7 +54,13 @@ export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
     start(async () => {
       const res = await bulkSetContactConsent(ids, state)
       setSelected(new Set())
-      setMsg(`Marked ${res.updated} contact${res.updated === 1 ? '' : 's'} ${state}.`)
+      // updated:0 against a non-empty selection means the write failed — say so
+      // rather than reporting a false "Marked 0 contacts".
+      setMsg(
+        res.updated === 0
+          ? { ok: false, text: `Could not update ${ids.length === 1 ? 'the contact' : 'those contacts'}. Please try again.` }
+          : { ok: true, text: `Marked ${res.updated} contact${res.updated === 1 ? '' : 's'} ${state}.` },
+      )
     })
   }
 
@@ -147,7 +153,11 @@ export function ContactsTable({ contacts }: { contacts: ContactCore[] }) {
           </Button>
         </div>
       )}
-      {msg && !pending && selected.size === 0 && <p className="text-xs text-success">{msg}</p>}
+      {msg && !pending && selected.size === 0 && (
+        <p role={msg.ok ? undefined : 'alert'} className={`text-xs ${msg.ok ? 'text-success' : 'text-danger'}`}>
+          {msg.text}
+        </p>
+      )}
 
       <DataTable caption="CRM contacts" rows={contacts} columns={columns} getRowId={(c) => c.id} />
     </div>
