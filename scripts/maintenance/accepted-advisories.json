@@ -1,0 +1,17 @@
+{
+  "_readme": "The accepted-risk allowlist for the scheduled maintenance sweep (docs/MAINTENANCE-AUTOMATION.md Phase 2). Supabase advisories whose NAME is in `acceptedByName`, or whose (name, target) pair is in `acceptedByTarget`, are consciously accepted and stay silent. Anything else is a NEW finding the sweep surfaces. Add an entry ONLY with a one-line rationale + an ADR/doc reference. Removing an entry re-arms the sweep for that class.",
+  "acceptedByName": {
+    "extension_in_public": "ADR-507 — pgvector/postgis/pg_trgm stay in public (type/operator providers; moving them is high-blast-radius for negligible gain).",
+    "rls_enabled_no_policy": "Deny-all is fail-closed — service-role-only tables reachable only via the admin client (scripts/rls-deny-all.txt, guarded by check:rls). Nothing exposed.",
+    "anon_security_definer_function_executable": "Definers scope via auth.uid() + pinned search_path (ADR-004); anon EXECUTE returns nothing without a session. Public feed/discover RPCs are intentionally anon-callable.",
+    "authenticated_security_definer_function_executable": "Same posture as the anon case (ADR-004); authed EXECUTE is scoped inside the function.",
+    "unused_index": "Pre-traffic noise — dropping an index the workload hasn't exercised is guessing. Revisit after real production traffic (META-SCAN-STATUS)."
+  },
+  "acceptedByTarget": {
+    "rls_disabled_in_public": ["spatial_ref_sys"]
+  },
+  "_notDeliberatelyOmitted": {
+    "auth_allow_anonymous_sign_ins": "FIXED by the owner (disabled). NOT accepted — if it comes back, the sweep must surface it.",
+    "auth_leaked_password_protection": "FIXED by the owner (enabled). NOT accepted — if it regresses, surface it."
+  }
+}
