@@ -44,3 +44,8 @@ jobs:
         run: pnpm check:authz
       - name: Canon check (member copy)
         run: pnpm check:canon
+      - name: SEO/sitemap coherence
+        run: pnpm check:seo
+      # NOTE: check:cron-freshness is intentionally NOT wired here — it is a runtime/ops
+      # SLO check (inspects live cron heartbeat state, env-dependent, advisory exit 0), not
+      # a deterministic code gate. It runs in the scheduled /maintenance sweep instead.
