@@ -50,7 +50,7 @@ export function SpaceProfileTabs({
     }`
 
   return (
-    <nav className="mt-4 -mb-px flex items-center gap-1 overflow-x-auto">
+    <nav className="flex items-center gap-1 overflow-x-auto py-2">
       {tabs.map((tab) => {
         const active = isActive(tab)
         return (
