@@ -1,4 +1,4 @@
-// The ONE role resolver for the App contract (LP1 / ADR-498, docs/LOOM-PLATFORM.md §7). PURE — no IO.
+// The ONE role resolver for the App contract (LP1 / ADR-502, docs/LOOM-PLATFORM.md §7). PURE — no IO.
 // The server seam fills `AppViewer` once per request (community + Space worlds); this module only
 // decides. Fail-closed end to end: an unknown gate, a missing predicate, a null viewer all deny.
 //

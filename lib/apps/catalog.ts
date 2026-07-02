@@ -1,4 +1,4 @@
-// THE App catalog (LP1 / ADR-498, docs/LOOM-PLATFORM.md §3, §7) — the read-direction adapter that
+// THE App catalog (LP1 / ADR-502, docs/LOOM-PLATFORM.md §3, §7) — the read-direction adapter that
 // COMPOSES the three live registries into one uniform `App[]`, so nothing live breaks while The Loom
 // gains a single source of truth for "what features exist." LP2 inverts this (the registries derive
 // FROM `APPS`); LP1 only reads them.

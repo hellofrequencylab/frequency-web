@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Workflow } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate } from '@/components/templates'
@@ -23,13 +24,21 @@ import { seedPlaybooks } from '@/lib/playbooks/seed'
 // degrades to a calm empty state, never a crash. Semantic tokens only; copy in voice (no em or en dashes).
 export const dynamic = 'force-dynamic'
 
-export default async function PlaybooksPage() {
-  await requireAdmin('janitor')
-
+// The table-sync seam, isolated in its own async component so it runs OFF the shell's render path.
+// Awaiting it inline (before the returned JSX) blocked first paint and every module <Suspense> on a
+// DB read-then-write on every request (PAGE-FRAMEWORK §5: never block the shell on slow work). Rendered
+// inside its own <Suspense fallback={null}> below, the seed resolves concurrently and renders nothing;
+// the module blocks read `playbooks` fail-safe, so they never need the seed to have finished first.
+async function PlaybooksSeed() {
   // Keep the durable `playbooks` table in sync with the CODE registry (the source of truth). Idempotent
   // + fail-safe: a re-run is a no-op, and a missing table / write error degrades silently (the code
   // registry still drives everything). This is the seam that populates the formerly-empty prod table.
   await seedPlaybooks()
+  return null
+}
+
+export default async function PlaybooksPage() {
+  await requireAdmin('janitor')
 
   return (
     <AdminTemplate
@@ -39,6 +48,9 @@ export default async function PlaybooksPage() {
       description="The saved Vera plays: each binds one prediction to one governed, reversible action. Vera drafts, you approve. Nothing member-facing ever fires on its own."
       width="wide"
     >
+      <Suspense fallback={null}>
+        <PlaybooksSeed />
+      </Suspense>
       <PageModules route="/admin/crm/playbooks" />
     </AdminTemplate>
   )

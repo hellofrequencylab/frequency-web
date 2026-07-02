@@ -75,7 +75,7 @@ function isEntityScope(pathname: string): boolean {
   return !!scope && ENTITY_KINDS.has(scope.kind)
 }
 
-// The sidebar ("manage") apps for a scope, resolved from the App CATALOG (LP4 / ADR-501). Each
+// The sidebar ("manage") apps for a scope, resolved from the App CATALOG (LP4 / ADR-503). Each
 // self-resolves from the pathname and re-gates server-side, so caps-blind selection is safe.
 function settingsAppsFor(scope: AdminScope | null, viewer: AppViewer): App[] {
   if (!scope) return []

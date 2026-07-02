@@ -1,4 +1,4 @@
-// The derivation adapters (LP1 / ADR-498, docs/LOOM-PLATFORM.md §7) — App → the legacy registry shapes.
+// The derivation adapters (LP1 / ADR-502, docs/LOOM-PLATFORM.md §7) — App → the legacy registry shapes.
 // This is the direction LP2 will call: `AdminModule` ← APPS.filter(editor).map(toAdminModule), etc., so
 // each live registry keeps its exported shape and every call site is unchanged. PURE, no IO, no React.
 //

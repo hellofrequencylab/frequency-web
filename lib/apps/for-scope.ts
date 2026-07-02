@@ -1,4 +1,4 @@
-// Scope resolution for the standardized admin bar (LP4 / ADR-501, docs/LOOM-PLATFORM.md §5). Wraps
+// Scope resolution for the standardized admin bar (LP4 / ADR-503, docs/LOOM-PLATFORM.md §5). Wraps
 // `surfacesFor` over the App catalog so the admin bar's menu IS the App catalog, resolved for a
 // concrete page scope (`adminScopeFor`) and viewer. PURE — no IO, no React.
 //

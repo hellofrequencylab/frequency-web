@@ -18,8 +18,9 @@ import type { AppGate } from '@/lib/apps/types'
 // action HERE (the completeOnboarding side-effect is never reimplemented). Config → code bindings:
 // step `type` → getStepDef, step `action` → SEQUENCE_ACTIONS.
 //
-// ADDITIVE ONLY: nothing renders this yet. The live /onboarding route still uses OnboardingForm;
-// the cutover is a separate, verified step.
+// ADDITIVE: the live /onboarding route still uses OnboardingForm; the production cutover is a
+// separate, verified step. The staff-only /onboarding/sequence-preview route renders this in
+// `preview` mode (no completeOnboarding side-effect) so a flow can be walked and verified first.
 
 /** The terminal actions a sequence may name by key (Layer-1 binding; do not reimplement). */
 const SEQUENCE_ACTIONS: Record<string, (draft: OnboardingDraft) => Promise<unknown>> = {
@@ -37,11 +38,15 @@ export function SequenceRunner({
   def,
   ctx,
   gatePasses,
+  preview = false,
 }: {
   def: SequenceDef
   ctx: SequenceStepContext
   /** Evaluate a per-step AppGate. Omitted ⇒ every gated step is shown (gates enforced upstream). */
   gatePasses?: (gate: AppGate) => boolean
+  /** Preview mode (staff sequence preview): the terminal step does NOT fire completeOnboarding, so
+   *  walking a flow never mutates the previewer's profile. It shows a "would complete here" panel. */
+  preview?: boolean
 }) {
   // Layer-3 gating: hide steps the viewer can't pass. Default sequence carries no gates.
   const steps = useMemo(
@@ -50,6 +55,7 @@ export function SequenceRunner({
   )
 
   const [index, setIndex] = useState(0)
+  const [previewDone, setPreviewDone] = useState(false)
   const [draft, setDraft] = useState<OnboardingDraft>({
     displayName: '',
     handle: ctx.initialHandle ?? '',
@@ -86,6 +92,11 @@ export function SequenceRunner({
       if (!ok) return
     }
     if (isLast) {
+      // Preview never commits: show the terminal panel instead of firing the real action.
+      if (preview) {
+        setPreviewDone(true)
+        return
+      }
       const action = step.action ? SEQUENCE_ACTIONS[step.action] : undefined
       if (!action) return
       setSubmitting(true)
@@ -103,6 +114,33 @@ export function SequenceRunner({
   }
 
   const nextLabel = isLast ? String(c.submitLabel ?? 'Continue') : 'Continue'
+
+  // Preview terminal panel: staff reached the end of the flow; in production this is where the
+  // sequence's `action` (completeOnboarding) fires. Nothing is written.
+  if (previewDone) {
+    return (
+      <WizardShell
+        step={steps.length}
+        totalSteps={steps.length}
+        stepLabel="Preview complete"
+        eyebrow={def.eyebrow}
+        title="End of the flow"
+        description={`This is where "${def.label}" finishes. In production the sequence's action runs here (join the community). Nothing was saved in preview.`}
+        onBack={() => {
+          setPreviewDone(false)
+          goTo(steps.length - 1)
+        }}
+        onNext={() => {
+          setPreviewDone(false)
+          goTo(0)
+        }}
+        nextLabel="Restart preview"
+        exit={[{ href: '/', label: 'Home' }]}
+      >
+        <div />
+      </WizardShell>
+    )
+  }
 
   return (
     <WizardShell
