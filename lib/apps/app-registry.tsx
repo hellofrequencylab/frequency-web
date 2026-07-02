@@ -184,14 +184,19 @@ export async function resolveAppPreview(appId: string): Promise<ReactNode> {
 
   // The ONLY safe live preview is a code-drawn element (pure SVG, no IO, no scope). Editor and page
   // surfaces are Server Components that fetch from request context; they are shown schematically.
-  if (app && isPreviewableApp(app)) {
-    const { componentFor } = await import('./bindings')
-    const binding = componentFor(appId)
-    if (binding?.kind === 'element') {
-      const drawn = binding.render()
-      if (drawn) {
-        return <div className="flex h-full w-full items-center justify-center p-4">{drawn}</div>
-      }
+  //
+  // `renderRegistryElement` is a CLIENT function (element-registry is 'use client'), so it cannot be
+  // invoked here on the server — doing so threw and crashed the whole lane. Instead we return a client
+  // wrapper element (`ElementPreview`) and let it render the element on the client. The wrapper is
+  // dynamically imported so this module's static graph stays free of the render layer (tests load it
+  // without pulling the client component tree). Any failure falls through to the schematic.
+  if (app && isPreviewableApp(app) && app.surfaces.element) {
+    try {
+      const { ElementPreview } = await import('@/components/admin/library/element-preview')
+      const { registry, name, pillar } = app.surfaces.element
+      return <ElementPreview registry={registry} name={name} {...(pillar !== undefined ? { pillar } : {})} />
+    } catch {
+      // fall through to the schematic on any preview-resolution failure
     }
   }
 

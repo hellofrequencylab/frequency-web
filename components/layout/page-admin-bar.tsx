@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { QrShareDropdown } from '@/components/qr/qr-share-dropdown'
 import { meetsAccess } from '@/lib/nav-areas'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
+import { openAdminBar } from '@/components/admin/open-admin-bar'
 import { isStaff } from '@/lib/core/roles'
 
 // The on-page admin control (ADR-128 rebuild, Workstream D). It is now a thin TRIGGER
@@ -77,12 +78,13 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   const bareRule = asDivider ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
   if (!manager && !isOperator && !shareable) return bareRule
 
-  // The Settings trigger — dispatches `open-settings`, which the shell-level
-  // SettingsDrawer toggles (D.6). Shown to managers + operators.
+  // The Settings trigger — opens the shell-level admin bar via the typed `open-admin-bar` event
+  // (docs/ADMIN-RAIL.md Phase 1), with no pre-scoped detail so the panel resolves this page's scope
+  // caps-blind exactly as before. Shown to managers + operators.
   const settingsTrigger = (manager || isOperator) && !isEntityDetail && !isProfile && !isSpaceProfile ? (
     <button
       type="button"
-      onClick={() => window.dispatchEvent(new Event('open-settings'))}
+      onClick={() => openAdminBar()}
       className="inline-flex shrink-0 items-center gap-1 rounded-md bg-canvas px-1.5 py-0.5 text-xs font-semibold text-muted transition-colors hover:text-text"
     >
       <Settings className="h-3.5 w-3.5" aria-hidden />

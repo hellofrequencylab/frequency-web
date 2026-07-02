@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Users, LayoutDashboard } from 'lucide-react'
+import { Users, LayoutDashboard, Settings } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { HierarchyBreadcrumb } from '@/components/hierarchy/breadcrumb'
 import { StatusBadge } from '@/components/groups/status-badge'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { InlineText } from '@/components/admin/inline/inline-text'
-import { EditNexusButton } from '@/components/nexuses/edit-nexus-button'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
 import { surfaceAccess } from '@/lib/core/viewer-hats'
 import { showsScopedInsight } from '@/lib/core/scoped-surface-ui'
@@ -126,7 +126,12 @@ export default async function NexusPage({
         actions={
           canManage ? (
             <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <EditNexusButton />
+              <OpenAdminBarButton
+                scope={{ kind: 'nexus', id: nexus.id }}
+                caps={Array.from(caps)}
+                label="Edit nexus"
+                icon={<Settings className="h-4 w-4" />}
+              />
               <Link
                 href={`/nexuses/${nexus.slug}/manage`}
                 className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"

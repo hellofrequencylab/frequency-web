@@ -4,6 +4,9 @@ import { SlidersHorizontal } from 'lucide-react'
 
 /** The window event the Space customize drawer opens on. Shared by the button + the drawer so the
  *  Server Component chrome can trigger a client drawer without prop threading. */
+// FUTURE UNIFICATION POINT (docs/ADMIN-RAIL.md): this Space customize surface is a separate rail on a
+// separate event; Phase 1 leaves it untouched. A later phase folds it into the standardized admin bar
+// (openAdminBar with a Space scope), retiring OPEN_SPACE_CUSTOMIZE.
 export const OPEN_SPACE_CUSTOMIZE = 'open-space-customize'
 
 // THE ONE CUSTOMIZE CONTROL for a Space profile (owner/admin/editor only). It replaces the three

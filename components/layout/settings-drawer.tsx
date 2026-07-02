@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
+import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
 // ── The settings drawer (ADR-128 PageAdminDock, rebuilt at the shell level) ────
 // A RESIZABLE panel that slides out over the right-rail column on the `open-settings`
@@ -50,6 +51,9 @@ export function SettingsDrawer({
   onStateChange?: (state: SettingsDrawerState) => void
 }) {
   const [open, setOpen] = useState(false)
+  // The pre-scoped detail a typed `open-admin-bar` dispatch carried (scope + caps). Undefined on the
+  // legacy bare `open-settings` path, where the panel resolves exactly as it did before.
+  const [detail, setDetail] = useState<OpenAdminBarDetail | undefined>(undefined)
   const [width, setWidth] = useState(RAIL_WIDTH)
   const [resizing, setResizing] = useState(false)
   const [hydrated, setHydrated] = useState(false)
@@ -60,7 +64,7 @@ export function SettingsDrawer({
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   const isDesktop = useIsDesktop()
-  const { hasContent, content } = useSettingsPanel()
+  const { hasContent, content } = useSettingsPanel(detail)
 
   // Hydrate persisted open + width once on mount.
   useEffect(() => {
@@ -92,13 +96,26 @@ export function SettingsDrawer({
     return () => cancelAnimationFrame(id)
   }, [open])
 
-  // Trigger seam (D.6): open on the `open-settings` window event. A second dispatch toggles it.
+  // Trigger seam. TWO listeners during the Phase-1 migration (docs/ADMIN-RAIL.md):
+  //   • legacy bare `open-settings` (D.6) — TOGGLES as it always has and clears any pre-scoped detail,
+  //     so anything still dispatching it behaves exactly as before.
+  //   • typed `open-admin-bar` — stores the dispatch's { scope, caps } and OPENS (never toggles), so a
+  //     deep-link from an "Edit" button always lands open, pointed at that scope.
   useEffect(() => {
-    function onOpen() {
+    function onLegacy() {
+      setDetail(undefined)
       setOpen((o) => !o)
     }
-    window.addEventListener('open-settings', onOpen)
-    return () => window.removeEventListener('open-settings', onOpen)
+    window.addEventListener('open-settings', onLegacy)
+    return () => window.removeEventListener('open-settings', onLegacy)
+  }, [])
+  useEffect(() => {
+    function onTyped(e: Event) {
+      setDetail((e as CustomEvent<OpenAdminBarDetail>).detail)
+      setOpen(true)
+    }
+    window.addEventListener(OPEN_ADMIN_BAR, onTyped)
+    return () => window.removeEventListener(OPEN_ADMIN_BAR, onTyped)
   }, [])
 
   // Close on Escape while open.
