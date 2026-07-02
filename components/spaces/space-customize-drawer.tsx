@@ -31,6 +31,7 @@ export function SpaceCustomizeDrawer({
   blocks,
   businessInfo,
   layoutPreset,
+  defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
   focus = null,
@@ -45,6 +46,7 @@ export function SpaceCustomizeDrawer({
   blocks: SpaceBlockRow[]
   businessInfo: SpaceProfileData
   layoutPreset: LayoutPreset
+  defaultPreset: LayoutPreset
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
   focus?: { choices: FocusChoiceLike[] } | null
@@ -111,6 +113,7 @@ export function SpaceCustomizeDrawer({
             blocks={blocks}
             businessInfo={businessInfo}
             layoutPreset={layoutPreset}
+            defaultPreset={defaultPreset}
             coverImageUrl={coverImageUrl}
             brandLogoUrl={brandLogoUrl}
             focus={focus}

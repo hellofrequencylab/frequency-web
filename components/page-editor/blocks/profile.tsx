@@ -1437,10 +1437,147 @@ function SpaceLayoutRegion({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SpaceArrangement -- the PRESET-DRIVEN region the layout templates render into
+// (lib/spaces/layout-presets.ts applyLayoutPreset). Never placed by hand in the
+// palette (it is not listed in a category); the pure display transform wraps a page's
+// flat content into ONE of these at render time so a template can arrange the same
+// content without ever touching it. Three variants + an optional full-width header row:
+//   - main-side    a wide main column (2fr) beside a narrower side rail (1fr).
+//   - two-equal    two equal columns.
+//   - three-equal  three equal columns.
+// The header slot, when present, spans full width above the grid. Pure presentation; the
+// blocks live in the slots. On mobile every grid collapses to one column.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SpaceArrangementRegion({
+  variant,
+  hasHeader,
+  sideSticky,
+  Header,
+  Main,
+  Side,
+  Col3,
+}: {
+  variant: string
+  hasHeader: boolean
+  sideSticky: boolean
+  Header: SlotComponent
+  Main: SlotComponent
+  Side: SlotComponent
+  Col3: SlotComponent
+}) {
+  // Same rhythm scale as SpaceLayoutRegion: MAIN sections get the generous stack, the fact rail a
+  // tighter one, equal content columns a middle stack. The page owns the outer vertical rhythm.
+  const MAIN_STACK = 'space-y-14'
+  const SIDE_STACK = 'space-y-6'
+  const COL_STACK = 'space-y-10'
+
+  let grid: React.ReactNode
+  if (variant === 'three-equal') {
+    grid = (
+      <div className="grid gap-10 lg:grid-cols-3 lg:gap-14">
+        <div className={COL_STACK}><Main /></div>
+        <div className={COL_STACK}><Side /></div>
+        <div className={COL_STACK}><Col3 /></div>
+      </div>
+    )
+  } else if (variant === 'two-equal') {
+    grid = (
+      <div className="grid gap-10 md:grid-cols-2 md:gap-14">
+        <div className={COL_STACK}><Main /></div>
+        <div className={COL_STACK}><Side /></div>
+      </div>
+    )
+  } else {
+    // main-side (2fr : 1fr) with an optional sticky fact rail — the business-page split.
+    const asideClass = [SIDE_STACK, sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '']
+      .filter(Boolean)
+      .join(' ')
+    grid = (
+      <div className="grid gap-10 lg:grid-cols-3 lg:gap-14">
+        <div className={`${MAIN_STACK} lg:col-span-2`}><Main /></div>
+        <aside className={asideClass}><Side /></aside>
+      </div>
+    )
+  }
+
+  return (
+    <section className="w-full">
+      {hasHeader ? (
+        <div className="space-y-12 sm:space-y-14">
+          <div className={MAIN_STACK}><Header /></div>
+          {grid}
+        </div>
+      ) : (
+        grid
+      )}
+    </section>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ComponentConfig map -- exported as profileComponents
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const profileComponents: Record<string, ComponentConfig> = {
+  // PRESET-ONLY region (see SpaceArrangementRegion). Registered so <Render> can render the template
+  // transform's output, but deliberately NOT added to a left-bar category, so it stays out of the
+  // operator's block palette.
+  SpaceArrangement: {
+    label: 'Arranged layout',
+    fields: {
+      variant: {
+        type: 'select',
+        label: 'Variant',
+        options: [
+          { label: 'Main and side', value: 'main-side' },
+          { label: 'Two columns', value: 'two-equal' },
+          { label: 'Three columns', value: 'three-equal' },
+        ],
+      },
+      hasHeader: {
+        type: 'radio',
+        label: 'Header row',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
+      sideSticky: {
+        type: 'radio',
+        label: 'Sticky side',
+        options: [
+          { label: 'Yes', value: 'yes' },
+          { label: 'No', value: 'no' },
+        ],
+      },
+      header: { type: 'slot' },
+      main: { type: 'slot' },
+      side: { type: 'slot' },
+      col3: { type: 'slot' },
+    },
+    defaultProps: {
+      variant: 'main-side',
+      hasHeader: 'no',
+      sideSticky: 'no',
+      header: [],
+      main: [],
+      side: [],
+      col3: [],
+    },
+    render: ({ variant, hasHeader, sideSticky, header: Header, main: Main, side: Side, col3: Col3 }) => (
+      <SpaceArrangementRegion
+        variant={variant as string}
+        hasHeader={hasHeader === 'yes'}
+        sideSticky={sideSticky === 'yes'}
+        Header={Header as SlotComponent}
+        Main={Main as SlotComponent}
+        Side={Side as SlotComponent}
+        Col3={Col3 as SlotComponent}
+      />
+    ),
+  },
+
   SpaceLayout: {
     label: 'Layout box (main + side)',
     fields: {
