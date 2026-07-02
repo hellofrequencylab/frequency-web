@@ -17,7 +17,9 @@ export interface Season {
   theme: string | null
   starts_at: string
   ends_at: string | null
-  status: 'upcoming' | 'active' | 'ended'
+  // 'scheduled' is the label the scheduler writes for a future season (promoteDueScheduledSeasons);
+  // 'upcoming' is kept for legacy/manual rows. Both mean "on the calendar, not yet live".
+  status: 'upcoming' | 'scheduled' | 'active' | 'ended'
 }
 
 function db(): SupabaseClient {
@@ -34,16 +36,17 @@ export async function getCurrentSeason(): Promise<Season | null> {
 }
 
 /**
- * The next season already on the calendar (status 'upcoming'), soonest first, or
- * null when none is scheduled yet. Read-only and best-effort: the season-complete
- * "what's next" beat names it when it exists, and falls back to a plain "the next
- * Quest opens soon" line when it doesn't. No side effects.
+ * The next season already on the calendar (status 'scheduled' or the legacy 'upcoming'), soonest
+ * first, or null when none is scheduled yet. The scheduler (promoteDueScheduledSeasons) writes
+ * 'scheduled', so querying 'upcoming' alone missed every real future season — match BOTH. Read-only
+ * and best-effort: the season-complete "what's next" beat names it when it exists, and falls back to
+ * a plain "the next Quest opens soon" line when it doesn't. No side effects.
  */
 export async function getUpcomingSeason(): Promise<Season | null> {
   const { data } = await db()
     .from('seasons')
     .select('id, season_number, name, theme, starts_at, ends_at, status')
-    .eq('status', 'upcoming')
+    .in('status', ['upcoming', 'scheduled'])
     .order('starts_at', { ascending: true })
     .limit(1)
     .maybeSingle()

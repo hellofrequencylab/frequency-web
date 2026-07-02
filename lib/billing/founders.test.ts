@@ -79,11 +79,15 @@ describe('grantFounderFromSession - grant correctness', () => {
     expect('locked_price_id' in patch).toBe(false)
   })
 
-  it('member: falls back to the payment intent id for the lock when no line item price is present', async () => {
+  it('member: does NOT lock a price when no line item price is present (never stores a PaymentIntent id)', async () => {
+    // Webhook path: the session isn't expanded with line_items, so there is no PRICE id to lock.
+    // We must leave locked_price_id unset (NOT fall back to the pi_… PaymentIntent id, which is not
+    // a price and would poison resolveMemberPriceId). The confirm action later sets the real price.
     const session = paidFounderSession('member', { line_items: undefined })
     await grantFounderFromSession(session)
     const patch = profilesUpdate.mock.calls[0][0] as Record<string, unknown>
-    expect(patch.locked_price_id).toBe('pi_123')
+    expect('locked_price_id' in patch).toBe(false)
+    expect(patch.is_founding_member).toBe(true)
   })
 
   it('preserves existing meta.founder sub-keys when merging', async () => {

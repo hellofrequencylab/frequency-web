@@ -153,6 +153,13 @@ export async function recordMembershipDuesFromInvoice(invoice: Stripe.Invoice): 
   const subDetails = invoice.parent?.subscription_details
   if (!subDetails) return
 
+  // Space plan / Space membership invoices are NOT personal Foundation membership dues — those
+  // subscriptions are reconciled by lib/billing/space-subscriptions.ts and their revenue is booked
+  // elsewhere (a Connect/space charge, not Foundation dues at full gross). Booking them here would
+  // double-count them as Foundation dues, so skip anything carrying a Space kind (ADR-363/246).
+  const kind = subDetails.metadata?.kind
+  if (kind === 'space_plan' || kind === 'space_membership') return
+
   // Resolve the member: the subscription metadata snapshot (authoritative), else by customer.
   let profileId: string | null = (subDetails.metadata?.profile_id as string | undefined) ?? null
   if (!profileId) {

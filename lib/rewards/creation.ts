@@ -112,12 +112,19 @@ export async function awardCreationToken(
     })
     if (error) return 0 // already granted / lost the race
 
+    // The claim is the lock, but the Gems must actually land. If the ledger write fails (or is
+    // capped / inactive → awarded:false), releasing the claim lets a later publish re-pay this
+    // token instead of leaving it claimed-but-unpaid (mirrors claimAndPay below).
     const res = await awardGems(creatorId, TOKEN_GEM_ACTION[assetType], amount, {
       rule: ruleKey,
       assetType,
       assetId,
     })
-    return res.awarded ? res.amount : 0
+    if (!res.awarded) {
+      await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', creatorId)
+      return 0
+    }
+    return res.amount
   } catch (err) {
     console.error('[awardCreationToken]', err instanceof Error ? err.message : err)
     return 0

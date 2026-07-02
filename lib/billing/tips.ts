@@ -85,7 +85,11 @@ export async function createTipCheckout(opts: {
     cancel_url: `${appUrl()}/people/${handle ?? ''}`,
   })
 
-  await db().from('tips').insert({
+  // The pending row is what recordTipFromSession flips to `succeeded` on payment. If this insert
+  // silently fails (supabase-js returns { error }), the webhook would find no row to advance and the
+  // tipper would pay for a tip we never recorded. So check it, expire the just-created Stripe session
+  // so it can't be paid into a void, and surface an error instead of the checkout URL.
+  const { error: pendingErr } = await db().from('tips').insert({
     from_profile_id: opts.fromProfileId,
     to_profile_id: opts.toProfileId,
     amount_cents: amount,
@@ -95,6 +99,15 @@ export async function createTipCheckout(opts: {
     status: 'pending',
     stripe_checkout_session_id: session.id,
   })
+  if (pendingErr) {
+    console.error('[tips] pending tip insert failed', pendingErr.message)
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch {
+      // best-effort — if expiry fails the session simply lapses on its own; we still refuse the URL
+    }
+    return { error: 'Could not start checkout. Please try again.' }
+  }
 
   if (!session.url) return { error: 'Could not start checkout.' }
   return { url: session.url }

@@ -238,7 +238,11 @@ export async function createTicketCheckout(opts: {
     cancel_url: `${appUrl()}/events/${event.slug}`,
   })
 
-  await db().from('event_tickets').insert({
+  // The pending row is what recordTicketFromSession flips to `succeeded` on payment. If this insert
+  // silently fails (supabase-js returns { error }), the webhook would find no row to advance and the
+  // buyer would pay for a ticket we never recorded. So check it, expire the just-created Stripe
+  // session so it can't be paid into a void, and surface an error instead of the checkout URL.
+  const { error: pendingErr } = await db().from('event_tickets').insert({
     event_id: event.id,
     buyer_profile_id: opts.buyerProfileId,
     ticket_type_id: tier?.id ?? null,
@@ -249,6 +253,15 @@ export async function createTicketCheckout(opts: {
     status: 'pending',
     stripe_checkout_session_id: session.id,
   })
+  if (pendingErr) {
+    console.error('[tickets] pending ticket insert failed', pendingErr.message)
+    try {
+      await stripe.checkout.sessions.expire(session.id)
+    } catch {
+      // best-effort — if expiry fails the session simply lapses on its own; we still refuse the URL
+    }
+    return { error: 'Could not start checkout. Please try again.' }
+  }
 
   if (!session.url) return { error: 'Could not start checkout.' }
   return { url: session.url }
@@ -447,6 +460,12 @@ export async function recordTicketRefund(paymentIntentId: string | null): Promis
  *  the Charge) — recordTicketRefund itself no-ops unless a matching `succeeded`
  *  ticket exists for that PaymentIntent, so non-ticket charges are harmless. */
 export async function recordTicketRefundFromCharge(charge: Stripe.Charge): Promise<void> {
+  // Only a FULL refund unwinds the ticket. A partial refund (amount_refunded < amount) must NOT flip
+  // the ticket to `refunded`, free the seat, or reverse the FULL platform fee — that would over-free
+  // capacity and over-credit the ledger for money that wasn't fully returned. Wait until the charge
+  // is fully refunded (the host-initiated full refund in refundTicket calls recordTicketRefund
+  // directly, so it is unaffected by this guard).
+  if ((charge.amount_refunded ?? 0) < (charge.amount ?? 0)) return
   const paymentIntentId =
     typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null
   await recordTicketRefund(paymentIntentId)

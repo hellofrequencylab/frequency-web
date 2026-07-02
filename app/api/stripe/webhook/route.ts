@@ -51,18 +51,33 @@ export async function POST(req: Request) {
   // crew role VALUE and moved every row to 'member', so re-writing it here would
   // re-introduce a dead enum value and re-conflate the role with the tier. Crew the
   // PAID membership and Crew the (retired) community role are fully decoupled.
-  const setTier = async (profileId: string, tier: string, customerId?: string | null) => {
+  const setTier = async (
+    profileId: string,
+    tier: string,
+    customerId?: string | null,
+    paymentStatus?: 'active' | 'past_due' | 'canceled',
+  ) => {
     // Supporter was retired as a TIER (ADR-458 / 20260915000100): membership_tier
     // collapses to ('free','crew') and Supporter becomes the is_supporter PWYW badge
     // on top of Crew. Map here so a legacy/PWYW 'supporter' event writes the allowed
     // tier + sets the badge (access-preserving), instead of violating the
     // membership_tier CHECK and failing.
     const isSupporter = tier === 'supporter'
-    const patch: { membership_tier: string; is_supporter?: boolean; stripe_customer_id?: string } = {
+    const patch: {
+      membership_tier: string
+      is_supporter?: boolean
+      stripe_customer_id?: string
+      membership_payment_status?: string
+    } = {
       membership_tier: isSupporter ? 'crew' : tier,
     }
     if (isSupporter) patch.is_supporter = true
     if (customerId) patch.stripe_customer_id = customerId
+    // Dunning state (ADR-370, migration 20260727000000): the gated member webhook is the ONLY
+    // writer of membership_payment_status; lib/pricing/dunning.ts reads it (fail-safe to 'active'
+    // when NULL). Write it alongside the tier so a past-due member gets the recovery banner
+    // without being downgraded.
+    if (paymentStatus) patch.membership_payment_status = paymentStatus
     const { error } = await admin.from('profiles').update(patch).eq('id', profileId)
     // A failed entitlement write must NOT ack 200: supabase-js returns { error } rather
     // than throwing, so an unchecked failure here would leave a paying member on 'free'
@@ -95,7 +110,8 @@ export async function POST(req: Request) {
         const profileId = s.metadata?.profile_id ?? s.client_reference_id ?? null
         const tier = s.metadata?.tier === 'supporter' ? 'supporter' : 'crew'
         const customerId = typeof s.customer === 'string' ? s.customer : s.customer?.id
-        if (profileId) await setTier(profileId, tier, customerId)
+        // A completed checkout is a successful payment → the membership is active.
+        if (profileId) await setTier(profileId, tier, customerId, 'active')
         break
       }
       case 'customer.subscription.created':
@@ -106,9 +122,28 @@ export async function POST(req: Request) {
         if (await routeSpaceSubscription(sub)) break
         const profileId = sub.metadata?.profile_id
         if (profileId) {
-          const active = sub.status === 'active' || sub.status === 'trialing'
-          const tier = active ? tierForPrice(sub.items.data[0]?.price?.id) : 'free'
-          await setTier(profileId, tier)
+          // Resolve the paid tier from the VALIDATED subscription metadata first — it is stamped
+          // at checkout (createMembershipCheckout), so it tracks the synced catalog price the
+          // member actually bought — then fall back to the env price-id map (pre-P2 compat).
+          // Guard the items index (an event could arrive with an empty items list).
+          const metaTier = sub.metadata?.tier
+          const paidTier =
+            metaTier === 'crew' || metaTier === 'supporter'
+              ? metaTier
+              : tierForPrice(sub.items?.data?.[0]?.price?.id)
+          const status = sub.status
+          if (status === 'active' || status === 'trialing') {
+            await setTier(profileId, paidTier, null, 'active')
+          } else if (status === 'past_due') {
+            // Dunning grace (ADR-370): a failed renewal must NOT instantly downgrade a paying
+            // member. Keep the paid tier and mark past_due so the recovery banner shows while
+            // Stripe retries; only a terminal state below reverts the tier.
+            await setTier(profileId, paidTier, null, 'past_due')
+          } else if (status === 'unpaid' || status === 'canceled' || status === 'incomplete_expired') {
+            // Terminal: Stripe gave up (unpaid) or the subscription ended → revert to free + canceled.
+            await setTier(profileId, 'free', null, 'canceled')
+          }
+          // incomplete / paused: no confirmed entitlement change — leave the current state as-is.
         }
         break
       }
@@ -117,7 +152,7 @@ export async function POST(req: Request) {
         // Pricing P2: a deleted Space subscription reverts the plan to free / cancels the membership.
         if (await routeSpaceSubscription(sub)) break
         const profileId = sub.metadata?.profile_id
-        if (profileId) await setTier(profileId, 'free')
+        if (profileId) await setTier(profileId, 'free', null, 'canceled')
         break
       }
     }

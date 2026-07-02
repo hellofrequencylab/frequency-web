@@ -87,13 +87,15 @@ export async function grantFounderFromSession(session: Stripe.Checkout.Session):
 
   const admin = createAdminClient()
 
-  // The concrete Stripe price id actually charged (the locked founder price). Prefer the line
-  // item's price id; the payment intent id is a safe fallback so locked_price_id is never null
-  // for a member tier (lets the founder lock resolve at a future renewal, ADR-363).
+  // The concrete Stripe PRICE id actually charged (the locked founder price). ONLY a line-item
+  // price id is a valid lock: locked_price_id must hold a Stripe *price* id (resolveMemberPriceId
+  // feeds it straight back as a checkout line item at renewal, ADR-363). A PaymentIntent id (pi_…)
+  // is NOT a price and would poison that lookup, so there is no payment_intent fallback — when the
+  // line items aren't expanded (the webhook path), we leave the lock NULL and let the success-page
+  // confirm action (which retrieves the session WITH line_items) set the real price id. A null lock
+  // is safe: resolveMemberPriceId falls back to the synced founder variant.
   const lineItems = (session.line_items?.data ?? []) as Stripe.LineItem[]
-  const chargedPriceId =
-    (typeof lineItems[0]?.price?.id === 'string' ? lineItems[0]?.price?.id : null) ??
-    (typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null)
+  const chargedPriceId = typeof lineItems[0]?.price?.id === 'string' ? lineItems[0]?.price?.id : null
 
   // Merge the founder tier into profiles.meta.founder (the existing founder meta sub-object,
   // app/(main)/founder/founder-actions.ts) so we record the tier without a new column.
