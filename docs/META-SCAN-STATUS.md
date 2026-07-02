@@ -170,11 +170,12 @@ bugs surfaced. Two things shipped from it; the rest is owner config + lower-prio
   tsc/lint/test all green after the sweep (no test referenced the removed code — confirming dead).
 - ✅ ~~**Gift Gems had no UI**~~ — DONE. The race-safe `giftGems` → `gift_gems_atomic` backend
   (ADR-305) was fully built but unreachable. Wired it: `searchGiftRecipients` (SEC-10-safe member
-  search) + `GiftGemsDialog` + a trigger in the Vault Store widget (outside the CrewGate, shown when
-  `canSpend && balance > 0`). Added `lib/rewards/gifts.test.ts` (the input-guard money-path contract,
-  previously untested). **Open policy note for the owner:** gifting is currently gated behind
-  `canSpend` (Crew) for UX consistency; the backend is tier-agnostic, so free-member gifting is a
-  one-line change if desired.
+  search) + `GiftGemsDialog` + a trigger in the Vault Store widget (outside the CrewGate). Added
+  `lib/rewards/gifts.test.ts` (the input-guard money-path contract, previously untested). **Policy
+  resolved:** gifting is open to ANY member with a spendable balance (`balance > 0`), aligning the UI
+  with the deliberately tier-agnostic backend (generosity is ungated; no spendable value is created,
+  only moved). Member-facing docs shipped: a "Gifting Gems" section in
+  `content/help/membership/the-gem-store.md` + a `docs/CHANGELOG.md` entry.
 - ⏳ **SEO owner step** — submit `sitemap.xml` to Google Search Console + Bing (needs domain
   verification creds). Note: `lib/site.ts` now falls back to the production apex
   `https://frequencylocal.com`, so canonical/OG/sitemap/JSON-LD are correct even without

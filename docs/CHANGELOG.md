@@ -12,6 +12,11 @@ Versioning follows the release tags (`vMAJOR.MINOR.PATCH`). Add changes under
 
 ### Added
 
+- **Gift Gems to another member**: send some of your spendable Gems to anyone in the
+  community. Open **Gift Gems** in the Vault Store, search for a member, choose an
+  amount, and it lands in their wallet right away with a note that it came from you.
+  Your earned total and Amplitude do not change, only your spendable balance, and you
+  can never send more than you have to spend.
 - **A soft background for Mindless**: in a Be Still sit, pick an **Ambient** loop
   (Forest, Ocean, or Drift). Tap one to hear it. It plays low under the whole
   session, fades in when you start and out when you finish, and loops with no
