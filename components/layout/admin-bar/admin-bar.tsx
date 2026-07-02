@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
+import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
 // ── The standardized admin bar (docs/ADMIN-RAIL.md Phase 2) ────────────────────
@@ -76,7 +77,10 @@ export function AdminBar({
 
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
-  const { hasContent, content } = useSettingsPanel(detail)
+  const model = useSettingsPanel(detail)
+  const { hasContent } = model
+  // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
+  const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
 
   // ── Shared trigger seam. TWO listeners during the migration (docs/ADMIN-RAIL.md): ──
   //   • legacy bare `open-settings` (D.6) — TOGGLES as it always has and clears any pre-scoped detail,
@@ -248,7 +252,9 @@ export function AdminBar({
           </div>
 
           {/* Body — scrolls. The shared settings content. */}
-          <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">{content}</div>
+          <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
+            <AdminBarBody key={resetKey} model={model} />
+          </div>
         </div>
       </aside>
     )
@@ -279,7 +285,9 @@ export function AdminBar({
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
-        <div className="min-w-0 flex-1 overflow-y-auto p-4">{content}</div>
+        <div className="min-w-0 flex-1 overflow-y-auto p-4">
+          <AdminBarBody key={resetKey} model={model} />
+        </div>
       </div>
     </div>
   )

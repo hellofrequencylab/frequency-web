@@ -37,17 +37,29 @@ describe('admin module registry', () => {
     expect(modulesFor({ kind: 'profile', ownerId: 'p1' }, caps)).toHaveLength(0)
   })
 
-  it('surfaces hub.settings only on a hub scope, only with hub.manage', () => {
+  it('surfaces the hub spine only on a hub scope, only with hub.manage', () => {
     const manage = new Set<Capability>(['hub.manage'])
-    expect(modulesFor(hubScope, manage).map((m) => m.id)).toEqual(['hub.settings'])
+    // Hub now carries the 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger,
+    // all gated hub.manage.
+    expect(modulesFor(hubScope, manage).map((m) => m.id)).toEqual([
+      'hub.settings',
+      'hub.people',
+      'hub.insights',
+      'hub.danger',
+    ])
     expect(modulesFor(hubScope, new Set<Capability>())).toHaveLength(0)
     // hub.manage must not leak the circle module, and circle caps must not leak hub.
     expect(modulesFor(circleScope, manage)).toHaveLength(0)
   })
 
-  it('surfaces nexus.settings only on a nexus scope, only with nexus.manage', () => {
+  it('surfaces the nexus spine only on a nexus scope, only with nexus.manage', () => {
     const manage = new Set<Capability>(['nexus.manage'])
-    expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual(['nexus.settings'])
+    expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual([
+      'nexus.settings',
+      'nexus.people',
+      'nexus.insights',
+      'nexus.danger',
+    ])
     expect(modulesFor(nexusScope, new Set<Capability>())).toHaveLength(0)
     expect(showsAdminPanel(nexusScope, manage)).toBe(true)
   })
@@ -64,9 +76,10 @@ describe('admin module registry', () => {
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
 
-  it('surfaces practice.settings only on a practice scope, only with practice.editSettings', () => {
+  it('surfaces the practice spine only on a practice scope, only with practice.editSettings', () => {
     const caps = new Set<Capability>(['practice.editSettings'])
-    expect(modulesFor(practiceScope, caps).map((m) => m.id)).toEqual(['practice.settings'])
+    // Practice now carries Basics + Insights (ADMIN-RAIL Phase 7), both gated practice.editSettings.
+    expect(modulesFor(practiceScope, caps).map((m) => m.id)).toEqual(['practice.settings', 'practice.insights'])
     expect(modulesFor(practiceScope, new Set<Capability>())).toHaveLength(0)
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
@@ -105,22 +118,40 @@ describe('admin module registry', () => {
       'circle.engage',
       'circle.text',
     ])
-    // Hub/Nexus reach circle/event parity for in-page edit mode (EM1-4): the SettingsDrawer
-    // selects their sidebar Basics module by scope kind, exactly as circle/event do.
-    expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual(['hub.settings'])
-    expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual(['nexus.settings'])
+    // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger,
+    // in spine order (all order 10, so declaration order holds).
+    expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual([
+      'hub.settings',
+      'hub.people',
+      'hub.insights',
+      'hub.danger',
+    ])
+    expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual([
+      'nexus.settings',
+      'nexus.people',
+      'nexus.insights',
+      'nexus.danger',
+    ])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual([
       'event.settings',
       'event.placeAndTime',
       'event.people',
       'event.engage',
     ])
-    expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual(['practice.settings'])
+    expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual([
+      'practice.settings',
+      'practice.insights',
+    ])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])
     // No sidebar leakage across kinds, and inline surface is empty today.
     expect(modulesForScopeKind('circle', 'inline')).toHaveLength(0)
     // Without a surface filter, returns every module valid on the kind.
-    expect(modulesForScopeKind('hub').map((m) => m.id)).toEqual(['hub.settings'])
+    expect(modulesForScopeKind('hub').map((m) => m.id)).toEqual([
+      'hub.settings',
+      'hub.people',
+      'hub.insights',
+      'hub.danger',
+    ])
   })
 })

@@ -7,12 +7,19 @@ import { CirclePlaceTimeModule } from './circle-place-time-module'
 import { CirclePeopleModule } from './circle-people-module'
 import { CircleEngageModule } from './circle-engage-module'
 import { HubSettingsModule } from './hub-settings-module'
+import { HubPeopleModule } from './hub-people-module'
+import { HubInsightsModule } from './hub-insights-module'
+import { HubDangerModule } from './hub-danger-module'
 import { NexusSettingsModule } from './nexus-settings-module'
+import { NexusPeopleModule } from './nexus-people-module'
+import { NexusInsightsModule } from './nexus-insights-module'
+import { NexusDangerModule } from './nexus-danger-module'
 import { EventSettingsModule } from './event-settings-module'
 import { EventPlaceTimeModule } from './event-place-time-module'
 import { EventPeopleModule } from './event-people-module'
 import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
+import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
@@ -30,11 +37,18 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.people': CirclePeopleModule,
   'circle.engage': CircleEngageModule,
   'hub.settings': HubSettingsModule,
+  'hub.people': HubPeopleModule,
+  'hub.insights': HubInsightsModule,
+  'hub.danger': HubDangerModule,
   'nexus.settings': NexusSettingsModule,
+  'nexus.people': NexusPeopleModule,
+  'nexus.insights': NexusInsightsModule,
+  'nexus.danger': NexusDangerModule,
   'event.settings': EventSettingsModule,
   'event.placeAndTime': EventPlaceTimeModule,
   'event.people': EventPeopleModule,
   'event.engage': EventEngageModule,
   'practice.settings': PracticeSettingsModule,
+  'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
 }
