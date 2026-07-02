@@ -9,7 +9,7 @@ featureKeys: [practices, gamification]
 status: published
 ---
 
-There's no separate Movement timer anymore. Moving practices live inside
+There's no separate timer for moving practices anymore. They live inside
 **[Mindless](/help/the-quest/on-air)** now, as the **Get Moving** mode.
 
 One timer, two modes. **Be Still** is for sitting: a meditation, a breath set, a

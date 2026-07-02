@@ -111,6 +111,7 @@ export function CircleMembersList({
                 <form action={startConversation.bind(null, profile.id)}>
                   <button
                     type="submit"
+                    aria-label={`Message ${profile.display_name}`}
                     title={`Message ${profile.display_name}`}
                     className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle hover:text-primary-strong hover:bg-primary-bg transition-all"
                   >

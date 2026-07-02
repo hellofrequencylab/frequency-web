@@ -42,10 +42,11 @@ export function ConversationRenameButton({
           disabled={isPending}
           className="text-xs rounded border border-border bg-surface px-2 py-0.5 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong/30 max-w-[200px]"
         />
-        <button onClick={save} disabled={isPending} className="p-0.5 text-success hover:bg-success-bg dark:hover:bg-success-bg/30 rounded">
+        <button onClick={save} disabled={isPending} aria-label="Save name" className="p-0.5 text-success hover:bg-success-bg dark:hover:bg-success-bg/30 rounded">
           {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
         </button>
         <button onClick={() => { setEditing(false); setValue(currentName ?? '') }}
+          aria-label="Cancel"
           className="p-0.5 text-subtle hover:bg-surface-elevated rounded">
           <X className="w-3.5 h-3.5" />
         </button>
