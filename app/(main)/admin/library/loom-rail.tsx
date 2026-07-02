@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks, Sparkles } from 'lucide-react'
+import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks, Sparkles, Shapes } from 'lucide-react'
 import type { LibraryCollection } from '@/lib/library/store'
 import { createCollection, renameCollection, deleteCollection } from './collections-actions'
 
@@ -151,6 +151,14 @@ export function LoomRail({
         active={false}
         icon={<Sparkles className="h-4 w-4" />}
         label="Splash"
+      />
+      {/* Cross-lane link into the Icons lane (ADR-505, docs/ICONS.md §Loom): the installed icon sets +
+          their license + the house palette, indexed read-only. Icons are code; the lane never edits one. */}
+      <Row
+        href="/admin/library?lane=icons"
+        active={false}
+        icon={<Shapes className="h-4 w-4" />}
+        label="Icons"
       />
 
         <SectionLabel>Type</SectionLabel>

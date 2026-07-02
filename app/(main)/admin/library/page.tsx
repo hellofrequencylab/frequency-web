@@ -23,6 +23,7 @@ import { LoomRail } from './loom-rail'
 import { CreateStudio } from './create-studio'
 import { AppsLaneView } from './apps-lane-view'
 import { SplashLaneView } from './splash-lane-view'
+import { IconsLaneView } from './icons-lane-view'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -91,6 +92,13 @@ export default async function LoomStudioPage({
   // DEEP-LINK OUT to the real editor — the Loom never becomes the splash block editor.
   if ((sp.lane ?? '') === 'splash') {
     return <SplashLaneView q={sp.q} section={sp.section} view={sp.view} />
+  }
+
+  // The Icons lane (docs/ICONS.md §Loom, ADR-505): indexes the installed @iconify-json sets read-only
+  // (license + count + samples) and previews the house palette. Icons are code, so the lane governs +
+  // documents; it never edits an icon.
+  if ((sp.lane ?? '') === 'icons') {
+    return <IconsLaneView />
   }
 
   const scope = await resolveActiveScope()

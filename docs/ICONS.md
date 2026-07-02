@@ -48,9 +48,9 @@ Lucide is in ~893 files; the two coexist during migration. The semantic catalog 
 3. Stand up the client-side tree-shaking path for `'use client'` surfaces.
 4. Remove `lucide-react` only when the last call is gone.
 
-## 5. Loom icon lane 🔵
+## 5. Loom icon lane ✅
 
-The icon sets will be browsable in The Loom (`kind='icon'`) the same way code-drawn elements are (`lib/library/element-registry.tsx`: code is source of truth, The Loom indexes it read-only) — search across sets, with the **per-set license shown** for the white-label license audit ADR-505 flags.
+The installed sets are browsable in The Loom at **`/admin/library?lane=icons`** (`app/(main)/admin/library/icons-lane-view.tsx`), indexed read-only from `lib/library/icon-sets.ts` the same way code-drawn elements are (`lib/library/element-registry.tsx`: code is source of truth, The Loom indexes it). The lane shows each set with its **license, count, author, and samples** (the white-label license audit ADR-505 flags) plus the **house palette** rendered through the RSC `<Icon>`. Icons are code, so the lane governs and documents; it never edits an icon. Full cross-set search over every glyph needs a client render path and is a follow-up (§4).
 
 ---
 
