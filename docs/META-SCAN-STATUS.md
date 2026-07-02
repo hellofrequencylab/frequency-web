@@ -12,7 +12,7 @@ its row here flipped to ✅.
 
 | Phase | Scope | Risk | Sign-off criteria |
 |---|---|---|---|
-| **A. commerce_variants** | ① remove the null-only `variant_id` write in `lib/billing/checkout.ts`; ② after that deploys, drop the `variant_id` column + `commerce_variants` table (migration). | Low (2-step, deploy-gated) | Column/table gone; checkout still creates orders; tests green. |
+| **A. commerce_variants** | ✅ DONE. ① removed the null-only `variant_id` write (#1411, deployed); ② dropped the `variant_id` column + `commerce_variants` table (applied, verified gone). | Low (2-step, deploy-gated) | ✅ Column/table gone; checkout unaffected; tests green. |
 | **B. Dependency hygiene** | Bump patch/minor (resend, stripe, supabase-js, lucide-react, tailwindcss, next patch, @sentry, @anthropic-ai/sdk, supabase CLI). Hold majors (eslint 10, @types/node 26). Re-run `pnpm audit`. | Low-med (build+test per batch) | Build+test green; audit ≤ prior; no major bumps. |
 | **C. Stripe / economy atomicity** | Atomic RPCs for: ticket oversell reservation (`lib/billing/tickets.ts`), gem daily-cap (`lib/gems.ts`), notification-queue SKIP-LOCKED claim (`lib/queue/outbox.ts`), challenge/streak read-modify-write (`lib/achievements.ts`), journey-finish purse claim (`lib/quest/complete.ts`); + Stripe event-ordering guard. | High (needs RPC design + concurrency tests) | Each fix has an RPC migration + a concurrency/idempotency test; `test:rls` green. |
 | **D. Performance** | Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`; make `(marketing)`/`discover`/splash auth a client island so `revalidate` ISR isn't defeated by `cookies()`; events/messages serial chains → waves. | High (architectural; shell regressions) | Before/after render trace; shell not blocked; ISR restored on public routes; tests green. |
@@ -76,11 +76,10 @@ the unit suite.
 
 ### 🟠 Medium
 - ✅ ~~**DB retirement**~~ — DONE (applied + verified): dropped `circle_topics`, `menu_config`,
-  `listing_saves`, `library_renditions`, `library_usages`, `conversation_room_migration` +
-  RPCs `are_friends`, `get_my_{circle,hub,nexus,outpost}_id` (singulars), `housing_rentals_near`.
-  Each verified 0 code refs / FKs / triggers / policy deps / body callers.
-  STILL HELD: `commerce_variants` (FK + null-only code write in `lib/billing/checkout.ts` —
-  remove the write, deploy, then drop the column + table).
+  `listing_saves`, `library_renditions`, `library_usages`, `conversation_room_migration`,
+  `commerce_variants` (+ its `variant_id` column) + RPCs `are_friends`,
+  `get_my_{circle,hub,nexus,outpost}_id` (singulars), `housing_rentals_near`.
+  Each verified 0 code refs / FKs / triggers / policy deps / body callers before drop.
 - **Performance** (docs/PAGE-FRAMEWORK §5): authed `(main)/layout.tsx` serial-await tail →
   Promise.all + Suspense; `(marketing)`/`discover` layout + splash `cookies()`+`getUser()`
   defeats `revalidate` (make auth a client island); events index + messages inbox serial
