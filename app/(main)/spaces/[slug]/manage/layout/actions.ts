@@ -186,6 +186,46 @@ export async function setSpaceImages(
 }
 
 /**
+ * Upload a Space HEADER (cover) or PROFILE (logo) image and return its public URL. The operator picks a
+ * file in the customize rail; the upload runs SERVER-SIDE with the service role, so it never depends on a
+ * live browser storage session (the fragile path that returned "new row violates row-level security
+ * policy" when the browser token failed to reach Storage). It writes to a SPACE-scoped path
+ * (spaces/<id>/covers|logos/...), so any manager/editor of the space can set it, not just the original
+ * uploader, and the object belongs to the space rather than one person's uid prefix. The public bucket
+ * serves the returned URL; the caller persists it via setSpaceImages. Owner/admin/editor-gated (staff
+ * preview fails closed). Returns the public URL or a plain error.
+ */
+export async function uploadSpaceImage(
+  slug: string,
+  kind: 'cover' | 'logo',
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  if (kind !== 'cover' && kind !== 'logo') return { error: 'Pick an image to upload.' }
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return { error: 'You do not have access to edit this page.' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
+  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
+  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const folder = kind === 'cover' ? 'covers' : 'logos'
+  const path = `spaces/${auth.spaceId}/${folder}/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  const { error } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
+  if (error) return { error: error.message }
+
+  const { data } = admin.storage.from('event-media').getPublicUrl(path)
+  return { url: data.publicUrl }
+}
+
+/**
  * Set the Hero cover SCRIM treatment ('shade' dark scrim vs 'blend' fade-to-canvas). Owner/admin/
  * editor-gated (staff preview fails closed). Only affects the Hero cover size. Returns ActionResult.
  */

@@ -29,6 +29,7 @@ export function ImageUpload({
   bucket = 'event-media',
   mode = 'url',
   disabled = false,
+  uploadFn,
 }: {
   /** A public URL (mode 'url') or a storage path (mode 'path'). */
   value: string | null
@@ -42,6 +43,10 @@ export function ImageUpload({
   bucket?: string
   mode?: 'url' | 'path'
   disabled?: boolean
+  /** Optional SERVER-side upload (a gated server action) that returns the public URL. When provided, the
+   *  file is uploaded through it instead of the browser Storage client, so the upload never depends on a
+   *  live browser session token reaching Storage. Always yields a URL, so it pairs with mode 'url'. */
+  uploadFn?: (file: File) => Promise<{ url: string } | { error: string }>
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -63,6 +68,23 @@ export function ImageUpload({
     }
 
     setBusy(true)
+
+    // Server-upload path (injected): run the upload as a gated server action, which returns the public
+    // URL. This bypasses the browser Storage client entirely, so it cannot fail on a stale/absent browser
+    // session token (the Space customize rail uses this).
+    if (uploadFn) {
+      const res = await uploadFn(file)
+      if ('error' in res) {
+        setError(`Upload failed: ${res.error}`)
+        setBusy(false)
+        return
+      }
+      // Cache-bust so a replace shows immediately.
+      onChange(`${res.url}?t=${Date.now()}`)
+      setBusy(false)
+      return
+    }
+
     const supabase = createClient()
     const {
       data: { user },
