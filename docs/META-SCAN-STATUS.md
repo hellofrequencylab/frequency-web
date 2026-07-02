@@ -13,11 +13,11 @@ its row here flipped to ✅.
 | Phase | Scope | Risk | Sign-off criteria |
 |---|---|---|---|
 | **A. commerce_variants** | ✅ DONE. ① removed the null-only `variant_id` write (#1411, deployed); ② dropped the `variant_id` column + `commerce_variants` table (applied, verified gone). | Low (2-step, deploy-gated) | ✅ Column/table gone; checkout unaffected; tests green. |
-| **B. Dependency hygiene** | Bump patch/minor (resend, stripe, supabase-js, lucide-react, tailwindcss, next patch, @sentry, @anthropic-ai/sdk, supabase CLI). Hold majors (eslint 10, @types/node 26). Re-run `pnpm audit`. | Low-med (build+test per batch) | Build+test green; audit ≤ prior; no major bumps. |
+| **B. Dependency hygiene** | ✅ DONE. Tree was already current — only `next` (16.2.9→16.2.10, exact-pinned) + `eslint-config-next` (lockstep) were behind; all other called-out packages already at latest. `postcss` deduped to the patched `8.5.16` (already in-tree via `@tailwindcss/postcss`) with a `pnpm.overrides` pin, clearing the last moderate advisory; the `uuid` vuln vanished with the Puck removal. Held majors `eslint`→10, `@types/node`→26 (Dependabot handles majors individually). **`pnpm audit`: 1 moderate → 0.** | Low-med (build+test per batch) | ✅ Build+test green; audit 0 (≤ prior); no major bumps. |
 | **C. Stripe / economy atomicity** | Atomic RPCs for: ticket oversell reservation (`lib/billing/tickets.ts`), gem daily-cap (`lib/gems.ts`), notification-queue SKIP-LOCKED claim (`lib/queue/outbox.ts`), challenge/streak read-modify-write (`lib/achievements.ts`), journey-finish purse claim (`lib/quest/complete.ts`); + Stripe event-ordering guard. | High (needs RPC design + concurrency tests) | Each fix has an RPC migration + a concurrency/idempotency test; `test:rls` green. |
 | **D. Performance** ⏳ | Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`; make `(marketing)`/`discover`/splash auth a client island so `revalidate` ISR isn't defeated by `cookies()`; events/messages serial chains → waves. **D1 shipped**: guarded the layout coach/tour reads behind their (shipped-OFF) flags + cached `getOnboardingStatus` (drops ~18 serial DB round-trips/navigation in the shipped state). **D2 shipped**: `/events` index loader — parallelized the 3 event-source reads + the 4 post-assembly reads (`Promise.all`). **D3 next**: messages/DM/room fetch waterfalls. | High (architectural; shell regressions) | Before/after render trace; shell not blocked; ISR restored on public routes; tests green. |
-| **E. @measured/puck migration** | Execute ADR-493: pin exact → in-house `<Render>` over the block registry → in-house editor → drop dep. Keep the persisted `Data` shape (zero doc migration). | High (multi-week, phased itself) | Each ADR-493 sub-phase shippable behind a flag; published-page parity. |
-| **F. Lower-priority advisors** | Consolidate 56 `multiple_permissive_policies`; enable leaked-password protection (Supabase dashboard auth setting — not a migration, needs owner toggle). | Med / config | Advisor counts drop; document the dashboard toggle for the owner. |
+| **E. @measured/puck migration** | ✅ DONE (ADR-493). In-house `BlockRender` replaced Puck's rsc `<Render>` on the read path (#1434, golden-markup parity), then the in-house editor replaced `<Puck>` and `@measured/puck` was dropped from the tree (#1435). Persisted `Data` shape unchanged (zero doc migration). | High (multi-week, phased itself) | ✅ Published-page parity proven; dep removed; tests + build green. |
+| **F. Lower-priority advisors** | ✅ policies DONE. Consolidated all `multiple_permissive_policies` (56 → 0): the 6 highest-count `{public}` tables (migration `20261004000000`) + the last 2 `{authenticated}` findings (`20261007000000`, #1438). ⚠️ leaked-password protection remains an **owner-only** dashboard toggle (Auth → Password protection; not a migration). | Med / config | ✅ Advisor `multiple_permissive_policies` 0; ⚠️ leaked-password documented for the owner. |
 
 Execution order: A → B (safe, fast) → C → D (dedicated, test-gated) → F → E (largest).
 Phases C–E are deliberately individual, verified PRs — not rushed in a batch, because their
@@ -28,7 +28,7 @@ the unit suite.
 
 | Area | State |
 |---|---|
-| Build / lint / tests | ✅ `pnpm build` compiles, lint clean, 3,313 tests pass |
+| Build / lint / tests | ✅ `pnpm build` compiles, lint clean, 3,378 tests pass |
 | Supabase migrations | ✅ all repo migrations applied to prod; zero drift |
 | Supabase advisors (initplan + unindexed FKs) | ✅ fixed + applied (`auth_rls_initplan` 6→0, unindexed FKs 13→0) |
 | Timezones (LA home, per-event zones, member location) | ✅ shipped |
@@ -36,8 +36,10 @@ the unit suite.
 | Admin data-integrity + swallowed-error feedback | ✅ shipped |
 | Naming / voice canon (bulk) | ✅ shipped |
 | Moderation gate, marketplace refund | ✅ shipped |
-| `@measured/puck` migration | ⏳ plan only (ADR-493 + `PUCK-MIGRATION-PLAN.md`); execution open |
-| a11y, performance, remaining tail | ⏳ open (see master to-do) |
+| `@measured/puck` migration | ✅ done (in-house renderer #1434 + editor #1435; dep dropped) |
+| a11y, performance, remaining tail | ✅ done (perf mediums #1436, a11y tail #1437); low-priority nits remain |
+| Dependency hygiene / `pnpm audit` | ✅ done — audit 0 vulns; majors held (see Phase B) |
+| Supabase `multiple_permissive_policies` | ✅ 56 → 0 (#1436-era + #1438) |
 
 ## Shipped (merged PRs #1392–#1399)
 
@@ -127,8 +129,13 @@ the unit suite.
     pre-launch, revisit once query patterns are real).
 - **Help-doc naming audit**: sweep `content/help/**` for retired member terms
   (e.g. `the-quest/movement.md`, `on-air.md`, `zaps-and-gems.md`).
-- **Dependencies**: minor/patch bumps (resend, stripe, supabase-js, lucide-react, tailwindcss,
-  next patch); 2 moderate transitive vulns (`postcss` via next, `uuid` via `@measured/puck`).
+- ✅ ~~**Dependencies**: minor/patch bumps + 2 moderate transitive vulns~~ — DONE (Phase B). The
+  tree was already current: only `next` 16.2.9→16.2.10 (+ `eslint-config-next` in lockstep) were
+  behind; resend/stripe/supabase-js/lucide-react/tailwindcss/@sentry/@anthropic-ai/sdk/supabase CLI
+  were all already at latest. The `uuid` vuln vanished with the `@measured/puck` removal (0 refs in
+  the lockfile); `postcss` was deduped to the patched `8.5.16` (already in-tree via
+  `@tailwindcss/postcss`) with a `pnpm.overrides` pin. **`pnpm audit`: 1 moderate → 0.** Majors held
+  (`eslint`→10, `@types/node`→26; Dependabot ships those individually).
 
 ### 🟡 Low
 - ✅ ~~Marketplace/catalog lib helpers swallow Supabase errors~~ — FIXED: `createProduct`,
