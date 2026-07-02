@@ -82,5 +82,6 @@ export async function reportStatusCounts(): Promise<Record<string, number>> {
 }
 
 export async function setReportStatus(id: string, status: ReportStatus): Promise<void> {
-  await db().from('marketplace_reports').update({ status }).eq('id', id)
+  const { error } = await db().from('marketplace_reports').update({ status }).eq('id', id)
+  if (error) throw new Error(error.message)
 }

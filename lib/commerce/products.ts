@@ -73,7 +73,7 @@ export async function getProduct(id: string): Promise<CommerceProduct | null> {
 export async function createProduct(input: ProductInput): Promise<CommerceProduct | null> {
   const title = input.title?.trim()
   if (!title || !Number.isFinite(input.priceCents) || input.priceCents < 0) return null
-  const { data } = await db()
+  const { data, error } = await db()
     .from('commerce_products')
     .insert({
       owner_kind: input.ownerKind,
@@ -93,11 +93,15 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
     })
     .select(PRODUCT_COLS)
     .maybeSingle()
+  // Surface a failed insert instead of returning null and letting the action report a
+  // silent "success" with no product created.
+  if (error) throw new Error(error.message)
   return data ? rowToProduct(data as Record<string, unknown>) : null
 }
 
 export async function setProductStatus(id: string, status: ProductStatus): Promise<void> {
-  await db().from('commerce_products').update({ status }).eq('id', id)
+  const { error } = await db().from('commerce_products').update({ status }).eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 /** A maker's own catalog (all statuses), newest first — for their storefront manager. */
@@ -152,11 +156,13 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.stock !== undefined) update.stock = patch.stock ?? null
   if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
   if (Object.keys(update).length === 0) return
-  await db().from('commerce_products').update(update).eq('id', id)
+  const { error } = await db().from('commerce_products').update(update).eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  await db().from('commerce_products').delete().eq('id', id)
+  const { error } = await db().from('commerce_products').delete().eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 /** Ownership gate for app-code authz: the profile that owns this product (or null). */

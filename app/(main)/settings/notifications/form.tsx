@@ -40,13 +40,24 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
   const [isPending, startTransition] = useTransition()
   const [savedAt, setSavedAt] = useState<number | null>(null)
 
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   function toggle(channel: string, category: NotificationCategory) {
     const key = `${channel}_${category}` as keyof NotificationPreferences
+    const prev = prefs
     const next = { ...prefs, [key]: !prefs[key] }
     setPrefs(next)
+    setSaveError(null)
     startTransition(async () => {
       const res = await saveNotificationPreferences(next)
-      if (!isError(res)) setSavedAt(Date.now())
+      if (isError(res)) {
+        // The save failed — revert the optimistic flip so the switch reflects what's
+        // actually stored, and tell the member instead of leaving a silent wrong state.
+        setPrefs(prev)
+        setSaveError(res.error || 'Could not save. Try again.')
+      } else {
+        setSavedAt(Date.now())
+      }
     })
   }
 
@@ -114,6 +125,8 @@ export function NotificationsForm({ initial }: { initial: NotificationPreference
       <div className="flex items-center gap-2 text-xs text-muted px-1">
         {isPending ? (
           <span>Saving…</span>
+        ) : saveError ? (
+          <span className="text-danger">{saveError}</span>
         ) : savedAt ? (
           <span className="flex items-center gap-1.5 text-success">
             <Check className="w-3 h-3" /> Saved
