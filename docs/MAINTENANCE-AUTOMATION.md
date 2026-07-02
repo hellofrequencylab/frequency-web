@@ -47,10 +47,10 @@ Autonomy legend: **🟢 buildable + verifiable in-repo** · **🟡 needs an owne
 
 | Phase | Deliverable | Autonomy | Status |
 |---|---|---|---|
-| **0** | This roadmap | 🟢 | ⏳ in progress |
-| **1** | `check:rls` static guard + CI (every `create table` gets RLS + a policy or a documented deny-all) | 🟢 | ⏳ |
-| **2** | Accepted-risk allowlist (`scripts/maintenance/accepted-advisories.json`) + `advisor-diff.mjs` (surfaces only new findings) + test | 🟢 (diff logic) / 🟡 (advisor fetch needs `SUPABASE_ACCESS_TOKEN` in CI) | ⏳ |
-| **3** | `maintenance.yml` scheduled workflow — runs guards + `pnpm audit` + migration hygiene, opens an **issue on delta** (default `GITHUB_TOKEN`) | 🟢 | ⏳ |
+| **0** | This roadmap | 🟢 | ✅ shipped |
+| **1** | `check:rls` static guard + CI (every `create table` gets RLS + a policy or a documented deny-all) | 🟢 | ✅ shipped — `scripts/check-rls.mjs` + `rls-deny-all.txt` (69 tables), CI-wired, 5 self-tests |
+| **2** | Accepted-risk allowlist (`scripts/maintenance/accepted-advisories.json`) + `advisor-diff.mjs` (surfaces only new findings) + test | 🟢 (diff logic) / 🟡 (advisor fetch needs `SUPABASE_ACCESS_TOKEN` in CI) | ✅ shipped — pure `diffAdvisors()` + 6 self-tests; fetch arms with the token |
+| **3** | `maintenance.yml` scheduled workflow — `pnpm audit` + advisor diff, opens an **issue on delta** (default `GITHUB_TOKEN`) | 🟢 | ✅ shipped — weekly (Mon 07:17 UTC) + manual; quiet unless there's a new finding |
 | **4** | `scripts/maintenance/sweep.mts` — the AI triage step (help-autodoc pattern): reads the diff + guard results, opens a **draft PR/issue** with the report | 🟡 (uses existing `ANTHROPIC_API_KEY`) | ⏳ |
 | **5** | Gate `db-tests` on PRs | 🔴 (precondition: a fresh full apply is green — the migration-ledger reconciliation, OPEN-THREADS A2) | 📋 owner/verification |
 | **6** | Storage orphaned-object GC cron (reference-based, dry-run first) + bucket-policy audit | 🟢 (build) / 🟡 (arming touches prod storage) | 📋 |
