@@ -14,6 +14,9 @@ import {
   CalendarDays,
   Package,
   Route,
+  Globe,
+  Video,
+  Star,
 } from 'lucide-react'
 import type { ComponentConfig } from '@measured/puck'
 
@@ -1054,6 +1057,226 @@ export function SpaceActionBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 8. SpaceSectionTitle -- a website-style large section title. Standalone titling
+// element (eyebrow kicker + big heading + optional lead), distinct from the small
+// in-card CardTitle. Use it to break a long page into named chapters. No card, no
+// anchor wrapper (it is a heading, not a section). Honest-empty: nothing on the live
+// page without a heading; a stub in the editor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SpaceSectionTitleBlock({
+  eyebrow,
+  heading,
+  subheading,
+  align,
+  ink,
+  editing,
+}: {
+  eyebrow?: string
+  heading?: string
+  subheading?: string
+  align?: string
+  ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
+}) {
+  if (!heading) {
+    if (!editing) return null
+    return <EditorStub label="Section title" hint="Add a large heading to break the page into chapters" />
+  }
+  const centered = align === 'center'
+  return (
+    <div className={centered ? 'text-center' : ''}>
+      {eyebrow && (
+        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+          {eyebrow}
+        </p>
+      )}
+      <h2 className={`mt-1.5 text-3xl font-bold tracking-tight sm:text-4xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+        {heading}
+      </h2>
+      {subheading && (
+        <p
+          className={`mt-3 max-w-2xl text-base leading-relaxed ${centered ? 'mx-auto' : ''} ${
+            ink ? 'text-on-ink-muted' : 'text-muted'
+          }`}
+        >
+          {subheading}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. SpaceCallout -- a website-style callout / banner. Bolder than the quiet SpaceCTA
+// card: a filled accent band (primary-bg surface, generous padding) with a heading, a
+// lead body, and one optional button. Use it as a prominent conversion moment. Honest-
+// empty: nothing on the live page without a heading or a button; a stub in the editor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function SpaceCalloutBlock({
+  eyebrow,
+  heading,
+  body,
+  ctaLabel,
+  ctaHref,
+  align,
+  ink,
+  editing,
+}: {
+  eyebrow?: string
+  heading?: string
+  body?: string
+  ctaLabel?: string
+  ctaHref?: string
+  align?: string
+  ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
+}) {
+  if (!heading && !ctaLabel) {
+    if (!editing) return null
+    return <EditorStub label="Callout" hint="Add a bold banner with a heading and a button" />
+  }
+  const centered = align === 'center'
+  return (
+    <div
+      className={`rounded-2xl border p-8 sm:p-10 ${ink ? 'border-white/15 bg-white/5' : 'border-primary/25 bg-primary-bg'} ${
+        centered ? 'text-center' : ''
+      }`}
+    >
+      {eyebrow && (
+        <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
+          {eyebrow}
+        </p>
+      )}
+      {heading && (
+        <h2 className={`mt-1.5 text-2xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+      )}
+      {body && (
+        <p
+          className={`mt-3 max-w-2xl text-base leading-relaxed ${centered ? 'mx-auto' : ''} ${
+            ink ? 'text-on-ink-muted' : 'text-muted'
+          }`}
+        >
+          {body}
+        </p>
+      )}
+      {ctaLabel && (
+        <div className={`mt-6 flex ${centered ? 'justify-center' : ''}`}>
+          <CtaButton href={ctaHref || '#'} label={ctaLabel} variant="primary" onInk={ink} withArrow />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. SpaceBusiness -- a "business presence" strip: operator-authored social/business
+// links, an optional star rating, and an optional review count, laid out like a
+// LinkedIn / Facebook / Yelp business header. Operator-authored (no external API), so
+// it stays client-safe. Honest-empty: nothing on the live page without at least one
+// valid link or a valid rating; a stub in the editor.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type BusinessLink = { platform?: string; url?: string }
+
+// Platform -> proper-noun label + an icon. This lucide build ships no brand marks, so we use neutral
+// icons (a globe for web destinations, a play glyph for video, a link for everything else) rather than
+// a wrong logo. The proper-noun label carries the platform's identity.
+const BUSINESS_PLATFORM_META: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  website: { label: 'Website', icon: Globe },
+  linkedin: { label: 'LinkedIn', icon: Link2 },
+  facebook: { label: 'Facebook', icon: Link2 },
+  instagram: { label: 'Instagram', icon: Link2 },
+  x: { label: 'X', icon: Link2 },
+  youtube: { label: 'YouTube', icon: Video },
+  tiktok: { label: 'TikTok', icon: Link2 },
+  yelp: { label: 'Yelp', icon: Link2 },
+  google: { label: 'Google', icon: Globe },
+}
+
+export function SpaceBusinessBlock({
+  heading,
+  rating,
+  ratingCount,
+  links,
+  ink,
+  editing,
+}: {
+  heading?: string
+  rating?: string
+  ratingCount?: string
+  links: BusinessLink[]
+  ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
+}) {
+  const shownLinks = links.filter((l) => (l.url || '').trim())
+  const ratingNum = Number(rating)
+  const hasRating = Number.isFinite(ratingNum) && ratingNum > 0
+  if (shownLinks.length === 0 && !hasRating) {
+    // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
+    if (!editing) return null
+    return (
+      <div>
+        <CardTitle heading={heading} ink={ink} />
+        <EditorStub label="Business presence" hint="Add your social links and an optional rating" />
+      </div>
+    )
+  }
+  const filled = Math.round(Math.min(5, Math.max(0, ratingNum)))
+  return (
+    <InfoCard ink={ink}>
+      <CardTitle heading={heading} ink={ink} />
+      {hasRating && (
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <span className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
+            {ratingNum.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-0.5" aria-hidden>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Star
+                key={i}
+                className={`h-5 w-5 ${
+                  i < filled ? 'fill-primary text-primary' : ink ? 'text-white/25' : 'text-border-strong'
+                }`}
+              />
+            ))}
+          </span>
+          {ratingCount && <span className={`text-sm ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{ratingCount}</span>}
+        </div>
+      )}
+      {shownLinks.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {shownLinks.map((l, i) => {
+            const meta = BUSINESS_PLATFORM_META[l.platform || 'website'] ?? BUSINESS_PLATFORM_META.website
+            const Icon = meta.icon
+            return (
+              <a
+                key={i}
+                href={(l.url as string).trim()}
+                target="_blank"
+                rel="noreferrer"
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  ink
+                    ? 'border-white/10 bg-white/5 text-on-ink hover:bg-white/10'
+                    : 'border-border/60 bg-surface/60 text-text hover:border-primary/40 hover:bg-primary-bg/20'
+                }`}
+              >
+                <Icon className={`h-4 w-4 ${ink ? 'text-primary' : 'text-primary-strong'}`} aria-hidden />
+                {meta.label}
+              </a>
+            )
+          })}
+        </div>
+      )}
+    </InfoCard>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Shared field atoms for the operator-authored list blocks.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1111,6 +1334,32 @@ const quickLinkArrayField = {
     href: { type: 'text' as const, label: 'URL' },
   },
   defaultItemProps: { label: '', href: '' },
+}
+
+// The operator-authored business/social links list (platform + url per row). Each platform
+// maps to a proper-noun label + a brand-appropriate icon at render time.
+const businessLinkArrayField = {
+  type: 'array' as const,
+  label: 'Links',
+  arrayFields: {
+    platform: {
+      type: 'select' as const,
+      label: 'Platform',
+      options: [
+        { label: 'Website', value: 'website' },
+        { label: 'LinkedIn', value: 'linkedin' },
+        { label: 'Facebook', value: 'facebook' },
+        { label: 'Instagram', value: 'instagram' },
+        { label: 'X', value: 'x' },
+        { label: 'YouTube', value: 'youtube' },
+        { label: 'TikTok', value: 'tiktok' },
+        { label: 'Yelp', value: 'yelp' },
+        { label: 'Google', value: 'google' },
+      ],
+    },
+    url: { type: 'text' as const, label: 'URL' },
+  },
+  defaultItemProps: { platform: 'website', url: '' },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1714,5 +1963,106 @@ export const profileComponents: Record<string, ComponentConfig> = {
         />
       )
     },
+  },
+
+  // A website-style large section title: a standalone titling element the operator drops in to break a
+  // long page into named chapters (distinct from the small in-card CardTitle).
+  SpaceSectionTitle: {
+    label: 'Section title',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading' },
+      subheading: { type: 'textarea', label: 'Subheading (optional)' },
+      align: {
+        type: 'radio',
+        label: 'Alignment',
+        options: [
+          { label: 'Left', value: 'left' },
+          { label: 'Center', value: 'center' },
+        ],
+      },
+    },
+    defaultProps: {
+      eyebrow: '',
+      heading: 'A section title',
+      subheading: '',
+      align: 'left',
+    },
+    render: ({ eyebrow, heading, subheading, align, puck }) => (
+      <SpaceSectionTitleBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        subheading={(subheading as string) || undefined}
+        align={align as string}
+        editing={puck?.isEditing}
+      />
+    ),
+  },
+
+  // A website-style callout / banner: a bold, filled accent band with a heading, a lead, and one
+  // optional button. A prominent conversion moment, louder than the quiet SpaceCTA card.
+  SpaceCallout: {
+    label: 'Callout banner',
+    fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
+      heading: { type: 'text', label: 'Heading' },
+      body: { type: 'textarea', label: 'Body (optional)' },
+      ctaLabel: { type: 'text', label: 'Button label (optional)' },
+      ctaHref: { type: 'text', label: 'Button link (optional)' },
+      align: {
+        type: 'radio',
+        label: 'Alignment',
+        options: [
+          { label: 'Left', value: 'left' },
+          { label: 'Center', value: 'center' },
+        ],
+      },
+    },
+    defaultProps: {
+      eyebrow: '',
+      heading: 'Ready to begin?',
+      body: '',
+      ctaLabel: 'Get started',
+      ctaHref: '#',
+      align: 'center',
+    },
+    render: ({ eyebrow, heading, body, ctaLabel, ctaHref, align, puck }) => (
+      <SpaceCalloutBlock
+        eyebrow={(eyebrow as string) || undefined}
+        heading={(heading as string) || undefined}
+        body={(body as string) || undefined}
+        ctaLabel={(ctaLabel as string) || undefined}
+        ctaHref={(ctaHref as string) || undefined}
+        align={align as string}
+        editing={puck?.isEditing}
+      />
+    ),
+  },
+
+  // A business-presence strip: operator-authored social/business links with an optional star rating and
+  // review count, laid out like a LinkedIn / Facebook / Yelp business header.
+  SpaceBusiness: {
+    label: 'Business presence',
+    fields: {
+      heading: { type: 'text', label: 'Heading (optional)' },
+      rating: { type: 'text', label: 'Rating (optional, e.g. 4.8)' },
+      ratingCount: { type: 'text', label: 'Rating count (optional, e.g. 126 reviews)' },
+      links: businessLinkArrayField,
+    },
+    defaultProps: {
+      heading: 'Find us online',
+      rating: '',
+      ratingCount: '',
+      links: [],
+    },
+    render: ({ heading, rating, ratingCount, links, puck }) => (
+      <SpaceBusinessBlock
+        heading={(heading as string) || undefined}
+        rating={(rating as string) || undefined}
+        ratingCount={(ratingCount as string) || undefined}
+        links={(links as BusinessLink[]) ?? []}
+        editing={puck?.isEditing}
+      />
+    ),
   },
 }

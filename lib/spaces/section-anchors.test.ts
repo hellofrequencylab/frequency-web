@@ -24,8 +24,8 @@ describe('listSectionBlocks', () => {
   it('expands a SpaceLayout box main-column-first then side, and tolerates junk', () => {
     const doc = generateDefaultSpacePage('Willow')
     const types = listSectionBlocks(doc).map((b) => b.type)
-    // main = Offerings -> Booking -> Events -> Reviews -> FAQ, then side = Highlights -> About -> ...
-    expect(types.slice(0, 5)).toEqual(['SpaceOfferings', 'SpaceBooking', 'SpaceEvents', 'SpaceReviews', 'SpaceFAQ'])
+    // main = Offerings -> Booking -> Events -> Practices -> Community -> ..., then side = Highlights -> About -> ...
+    expect(types.slice(0, 5)).toEqual(['SpaceOfferings', 'SpaceBooking', 'SpaceEvents', 'SpacePractices', 'SpaceCommunity'])
     expect(types).toContain('SpaceAbout')
     expect(listSectionBlocks(null)).toEqual([])
     expect(listSectionBlocks({ content: 'nope' } as never)).toEqual([])

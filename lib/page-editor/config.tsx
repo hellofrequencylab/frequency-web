@@ -72,6 +72,8 @@ export const config: Config = {
       components: [
         'SpaceLayout',
         'SpaceIdentityHeader',
+        'SpaceSectionTitle',
+        'SpaceCallout',
         'SpaceAbout',
         'SpaceHighlights',
         'SpaceStats',
@@ -83,6 +85,7 @@ export const config: Config = {
         'SpaceAction',
         'SpaceOfferings',
         'SpaceContact',
+        'SpaceBusiness',
         'SpaceTeam',
         'SpaceCTA',
       ],

@@ -61,6 +61,12 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // ("Edit profile" → /settings/profile for the owner; /admin/members for operators) and have NO
   // on-page drawer modules — so this trigger would open an EMPTY drawer. Suppress it; QR & Share stays.
   const isProfile = /^\/people\/[^/]+$/.test(pathname)
+  // SPACE PROFILES (/spaces/<slug> + its (profile) children: custom pages, /book) own their settings
+  // through the single "Customize" button in the identity row (SpaceCustomizeButton → the space-scoped
+  // customize rail). Suppress this shell cog there so a space has exactly ONE customize control. The
+  // owner console routes (manage / settings / crm / edit-page) are NOT profile routes and keep theirs.
+  const isSpaceProfile =
+    /^\/spaces\/[^/]+/.test(pathname) && !/^\/spaces\/[^/]+\/(manage|settings|crm|edit-page)(\/|$)/.test(pathname)
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
@@ -69,7 +75,7 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
 
   // The Settings trigger — dispatches `open-settings`, which the shell-level
   // SettingsDrawer toggles (D.6). Shown to managers + operators.
-  const settingsTrigger = (manager || isOperator) && !isEntityDetail && !isProfile ? (
+  const settingsTrigger = (manager || isOperator) && !isEntityDetail && !isProfile && !isSpaceProfile ? (
     <button
       type="button"
       onClick={() => window.dispatchEvent(new Event('open-settings'))}
