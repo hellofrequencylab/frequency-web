@@ -330,13 +330,14 @@ export default async function SpaceProfileChromeLayout({
           <div>{identityActions(false)}</div>
         </div>
       )}
-      {/* The menu sits in its OWN band under a hairline rule (the rule is ABOVE the lower menu line;
-          the line UNDER the menu is dropped in PageAdminBar for space profiles). */}
-      <div className="mt-5 border-t border-border">
-        <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
-      </div>
     </div>
   )
+
+  // The menu row is handed to the template's STICKY slot (not the band), so it detaches on scroll and
+  // pins directly under the global header, staying in view for the whole page (and for anchor jumps —
+  // the section targets carry scroll-margin that clears the header + this pinned bar). The band above
+  // holds only the identity; on the Hero size the identity is already on the cover, so the band is bare.
+  const stickyNav = <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
 
   return (
     <AccentScope vars={accentVars}>
@@ -359,7 +360,7 @@ export default async function SpaceProfileChromeLayout({
           ]}
         />
       )}
-      <DetailTemplate title={brandName} hero={coverNode} band={infoBand}>
+      <DetailTemplate title={brandName} hero={coverNode} band={infoBand} stickyNav={stickyNav}>
         {children}
       </DetailTemplate>
       {/* The owner-gated Customize rail — opened by the single Customize button in the identity row.
