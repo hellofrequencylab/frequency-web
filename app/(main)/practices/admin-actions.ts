@@ -143,6 +143,39 @@ export async function removePracticeCover(id: string, slug: string | null) {
   revalidatePath('/practices')
 }
 
+// ─── Insights (the 'insights' spine module) ────────────────────────────────────
+// How this practice is landing: people who kept it (adopters), logs in the last 30 days, and all-time
+// logs. Read straight from the practices_ranked view the library already maintains (adopters /
+// logs_30d / logs_total), so it costs one indexed read and needs no new plumbing. Re-checks
+// practice.editSettings server-side; returns null for anyone who can't manage the practice.
+
+export interface PracticeInsightsData {
+  adopters: number
+  logs30d: number
+  logsTotal: number
+}
+
+export async function getPracticeInsightsData(id: string): Promise<PracticeInsightsData | null> {
+  if (!UUID_RE.test(id)) return null
+
+  const caps = await getPracticeCapabilities(id)
+  if (!caps.has('practice.editSettings')) return null
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('practices_ranked')
+    .select('adopters, logs_30d, logs_total')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return { adopters: 0, logs30d: 0, logsTotal: 0 }
+
+  return {
+    adopters: data.adopters ?? 0,
+    logs30d: data.logs_30d ?? 0,
+    logsTotal: data.logs_total ?? 0,
+  }
+}
+
 /** Rename a practice's permalink. Slugifies the input, rejects empty, and ensures the
  *  new slug is unique across practices before writing. Returns the new slug so the
  *  client can redirect the page. Re-checks practice.editSettings. */
