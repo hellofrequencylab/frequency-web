@@ -3,7 +3,6 @@
 // Called from server actions after user interactions.
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/database.types'
 
 type GemAction =
   | 'post_create'
@@ -61,30 +60,22 @@ export async function awardGems(
   const amount = overrideAmount ?? config.gems_amount
   if (amount <= 0) return { awarded: false, amount: 0, capped: false }
 
-  if (config.daily_cap != null) {
-    // Count against a UTC day boundary (created_at is stored + compared in UTC): setUTCHours makes
-    // the cap reset at a single, consistent instant for everyone rather than drifting with the
-    // server's local timezone. On a UTC host (production) this is identical to before.
-    const todayStart = new Date()
-    todayStart.setUTCHours(0, 0, 0, 0)
+  // Atomic cap-check + insert under a per-(profile, action) advisory lock
+  // (award_gems_atomic, migration 20260929000000, UTC day boundary). The prior
+  // count-then-insert here was a race: N concurrent awards at cap-1 all read the same count
+  // and all inserted, over-paying past daily_cap. The RPC is not in the generated types yet,
+  // so the call is cast (repo convention for not-yet-typed DB objects).
+  const rpc = admin.rpc as unknown as (
+    name: 'award_gems_atomic',
+    args: { _profile: string; _action: string; _amount: number; _daily_cap: number | null; _metadata: Record<string, unknown> },
+  ) => Promise<{ data: { awarded?: boolean; capped?: boolean } | null; error: { message: string } | null }>
 
-    const { count } = await admin
-      .from('gem_transactions')
-      .select('id', { count: 'exact', head: true })
-      .eq('profile_id', profileId)
-      .eq('action_type', action)
-      .gte('created_at', todayStart.toISOString())
-
-    if ((count ?? 0) >= config.daily_cap) {
-      return { awarded: false, amount: 0, capped: true }
-    }
-  }
-
-  const { error } = await admin.from('gem_transactions').insert({
-    profile_id: profileId,
-    action_type: action,
-    amount,
-    metadata: (metadata ?? {}) as Database['public']['Tables']['gem_transactions']['Insert']['metadata'],
+  const { data, error } = await rpc('award_gems_atomic', {
+    _profile: profileId,
+    _action: action,
+    _amount: amount,
+    _daily_cap: config.daily_cap ?? null,
+    _metadata: metadata ?? {},
   })
 
   if (error) {
@@ -92,7 +83,8 @@ export async function awardGems(
     return { awarded: false, amount: 0, capped: false }
   }
 
-  return { awarded: true, amount, capped: false }
+  const awarded = !!data?.awarded
+  return { awarded, amount: awarded ? amount : 0, capped: !!data?.capped }
 }
 
 // Gem tiers (New → Legend) are RETIRED (Rewards Economy v2): Amplitude levels
