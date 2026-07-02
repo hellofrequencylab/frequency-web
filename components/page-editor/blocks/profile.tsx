@@ -93,24 +93,39 @@ function communityFrom(puck: PuckArg): SpaceCircleItem[] | undefined {
   return space?.community
 }
 
-// Shown in the editor canvas (no live data) so a section stays visible + draggable there.
+// Shown ONLY in the editor canvas so an unfilled authored section stays visible + draggable there.
+// The LIVE page never shows a stub: an empty section renders nothing (the config renders gate on
+// `puck.isEditing`), so a visitor never meets a dashed "add your content" box.
 function EditorStub({ label, hint }: { label: string; hint: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-surface/60 px-4 py-10 text-center text-sm text-muted">
+    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-4 py-12 text-center text-sm text-muted">
       {label}
-      <span className="mt-0.5 block text-2xs text-subtle">{hint}</span>
+      <span className="mt-1 block text-2xs text-subtle">{hint}</span>
     </div>
   )
 }
 
+// The ANCHOR seam for the pre-populated profile menu: each section-level block renders inside a
+// <section id> so the chrome's derived menu (lib/spaces/section-anchors.ts) can deep-link to it.
+// `scroll-mt` clears the app header on jump; `empty:hidden` collapses the wrapper when the block
+// renders nothing (honest-empty), so a hidden section never leaves a phantom gap in the stack.
+function AnchorSection({ anchor, children }: { anchor: string; children: React.ReactNode }) {
+  return (
+    <section id={anchor} className="scroll-mt-28 empty:hidden">
+      {children}
+    </section>
+  )
+}
+
 // One consistent card shell every Profile info card composes, so the set reads as ONE kit (matched
-// radius, surface, padding). LIGHTENED: a barely-there surface with a hairline border and no shadow,
-// so cards read as gentle groupings that blend into the page rather than hard boxes. `ink` swaps to
-// the dark-band treatment for legibility. One radius/spacing/elevation rhythm across the whole set.
+// radius, surface, padding). SOLID: a real surface with a full border and a soft shadow, so each
+// section reads as a deliberate, well-defined card that stands off the canvas (the old hairline
+// translucent treatment washed out and read as cramped). `ink` swaps to the dark-band treatment for
+// legibility. One radius/spacing/elevation rhythm across the whole set.
 function InfoCard({ children, ink, className = '' }: { children: React.ReactNode; ink?: boolean; className?: string }) {
   return (
     <div
-      className={`rounded-xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'} p-6 sm:p-7 ${className}`}
+      className={`rounded-2xl border ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'} p-6 sm:p-8 ${className}`}
     >
       {children}
     </div>
@@ -122,14 +137,16 @@ function InfoCard({ children, ink, className = '' }: { children: React.ReactNode
 function CardTitle({ eyebrow, heading, ink }: { eyebrow?: string; heading?: string; ink?: boolean }) {
   if (!eyebrow && !heading) return null
   return (
-    <div className="mb-5">
+    <div className="mb-6">
       {eyebrow && (
         <p className={`text-2xs font-bold uppercase tracking-[0.2em] ${ink ? 'text-primary' : 'text-primary-strong'}`}>
           {eyebrow}
         </p>
       )}
       {heading && (
-        <h2 className={`mt-1 text-xl font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+        <h2 className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${ink ? 'text-on-ink' : 'text-text'}`}>
+          {heading}
+        </h2>
       )}
     </div>
   )
@@ -318,13 +335,26 @@ export function SpaceAboutBlock({
   heading,
   body,
   ink,
+  editing,
 }: {
   eyebrow?: string
   heading?: string
   body?: string
   ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
 }) {
-  if (!body && !heading) return null
+  // Honest-empty: no story, no card on the LIVE page (a heading over nothing reads as broken to a
+  // visitor); the stub keeps the section placeable in the editor.
+  if (!body) {
+    if (!editing) return null
+    return (
+      <div>
+        <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
+        <EditorStub label="About" hint="Tell people who you are and what to expect" />
+      </div>
+    )
+  }
   return (
     <InfoCard ink={ink}>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
@@ -355,12 +385,12 @@ export function SpaceHighlightsBlock({ highlights, ink }: { highlights: SpaceHig
       {shown.map((s) => (
         <div
           key={s.label}
-          className={`rounded-xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
+          className={`rounded-2xl border p-6 text-center ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
         >
           <div className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
             {s.value.toLocaleString()}
           </div>
-          <div className={`mt-1 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+          <div className={`mt-1.5 text-2xs font-semibold uppercase tracking-wide ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
             {s.label}
           </div>
         </div>
@@ -437,7 +467,7 @@ export function SpaceStatsBlock({
         {shown.map((s) => (
           <div
             key={s.metric}
-            className={`rounded-xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border/60 bg-surface/60'}`}
+            className={`rounded-2xl border p-6 ${ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm'}`}
           >
             <span
               className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}
@@ -470,14 +500,19 @@ export function SpaceQuickLinksBlock({
   heading,
   links,
   ink,
+  editing,
 }: {
   eyebrow?: string
   heading?: string
   links: QuickLink[]
   ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
 }) {
   const shown = links.filter((l) => (l.label || '').trim() && (l.href || '').trim())
   if (shown.length === 0) {
+    // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
+    if (!editing) return null
     return (
       <div>
         <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
@@ -753,15 +788,17 @@ export function SpaceBookingBlock({
   // Honest: without a live booking capability (availability published), render nothing on the page.
   if (!booking?.enabled || !booking.href) return null
   return (
-    <InfoCard ink={ink} className={accent && !ink ? 'border-primary/30 bg-primary-bg/30' : ''}>
-      <div className="flex items-start gap-4">
-        <span className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
-          <CalendarCheck className="h-5 w-5" aria-hidden />
+    <InfoCard ink={ink} className={accent && !ink ? 'border-primary/25 bg-primary-bg/40' : ''}>
+      <div className="flex items-start gap-5">
+        <span className={`mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${ink ? 'bg-white/10 text-primary' : 'bg-primary-bg text-primary-strong'}`}>
+          <CalendarCheck className="h-6 w-6" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          {heading && <h2 className={`text-lg font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>}
-          {body && <p className={`mt-1 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
-          <div className="mt-4">
+          {heading && (
+            <h2 className={`text-xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{heading}</h2>
+          )}
+          {body && <p className={`mt-1.5 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{body}</p>}
+          <div className="mt-5">
             <CtaButton href={booking.href} label={ctaLabel || 'Book a time'} variant="primary" onInk={ink} withArrow />
           </div>
         </div>
@@ -782,27 +819,39 @@ export function SpaceOfferingsBlock({
   heading,
   items,
   ink,
+  editing,
 }: {
   eyebrow?: string
   heading?: string
   items: OfferingItem[]
   ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
 }) {
   const shown = items.filter((o) => o.title || o.blurb)
+  // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
+  if (shown.length === 0 && !editing) return null
   return (
     <div>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {shown.length === 0 ? (
         <EditorStub label="Offerings" hint="Add the services this space provides" />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2">
           {shown.map((o, i) => (
-            <InfoCard key={i} ink={ink}>
-              {o.title && <h3 className={`text-base font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>}
+            <div
+              key={i}
+              className={`rounded-2xl border p-6 transition-shadow ${
+                ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
+              }`}
+            >
+              {o.title && (
+                <h3 className={`text-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
+              )}
               {o.blurb && (
                 <p className={`mt-2 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
               )}
-            </InfoCard>
+            </div>
           ))}
         </div>
       )}
@@ -825,6 +874,7 @@ export function SpaceContactBlock({
   linkLabel,
   linkHref,
   ink,
+  editing,
 }: {
   eyebrow?: string
   heading?: string
@@ -835,6 +885,8 @@ export function SpaceContactBlock({
   linkLabel?: string
   linkHref?: string
   ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
 }) {
   const rows: { icon: React.ReactNode; text: React.ReactNode }[] = []
   if (address) {
@@ -854,6 +906,8 @@ export function SpaceContactBlock({
   if (linkHref) rows.push({ icon: <Link2 className="h-4 w-4" aria-hidden />, text: <a href={linkHref} className="hover:underline" target="_blank" rel="noreferrer">{linkLabel || linkHref}</a> })
 
   if (rows.length === 0) {
+    // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
+    if (!editing) return null
     return (
       <div>
         <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
@@ -888,20 +942,25 @@ export function SpaceTeamBlock({
   heading,
   members,
   ink,
+  editing,
 }: {
   eyebrow?: string
   heading?: string
   members: TeamMember[]
   ink?: boolean
+  /** Editor canvas only: keep an unfilled section visible + draggable there. */
+  editing?: boolean
 }) {
   const shown = members.filter((m) => m.name || m.role)
+  // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
+  if (shown.length === 0 && !editing) return null
   return (
     <div>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {shown.length === 0 ? (
         <EditorStub label="Team" hint="Introduce the people behind this space" />
       ) : (
-        <div className="grid gap-5 grid-cols-2 sm:grid-cols-3">
+        <div className="grid gap-6 grid-cols-2 sm:grid-cols-3">
           {shown.map((m, i) => (
             <InfoCard key={i} ink={ink} className="text-center">
               {m.avatar ? (
@@ -1075,17 +1134,19 @@ function SpaceLayoutRegion({
   Main: SlotComponent
   Side: SlotComponent
 }) {
-  // ONE standardized vertical rhythm for the profile blocks so the page breathes evenly:
-  //  - `py-12 sm:py-16` seats the block region generously below the layout-owned header and above the
-  //    page foot.
-  //  - `SPACE_STACK` (space-y-12) is the SINGLE inter-block margin, used identically in the stacked
-  //    column, the main column, and the side rail, so no two gaps disagree.
-  //  - the two-column grid gap MATCHES that rhythm (gap-12) so the cross-axis and main-axis read even.
-  const SPACE_STACK = 'space-y-12'
+  // The standardized vertical rhythm for the profile blocks, tuned so the page breathes:
+  //  - `py-10 sm:py-14` seats the block region below the layout-owned header and above the page foot.
+  //  - MAIN sections get the generous stack (`space-y-14`): each is a full content section and needs
+  //    clear separation to read as its own chapter.
+  //  - the SIDE rail gets a tighter stack (`space-y-6`): its cards are compact facts (highlights,
+  //    about, contact) that read as one grouped info column, business-page style.
+  //  - the two-column grid gap sits between the two (`gap-10 lg:gap-14`) so the columns read distinct.
+  const MAIN_STACK = 'space-y-14'
+  const SIDE_STACK = 'space-y-6'
   if (layout === 'stacked') {
     return (
-      <section className="w-full py-12 sm:py-16">
-        <div className={SPACE_STACK}>
+      <section className="w-full py-10 sm:py-14">
+        <div className={MAIN_STACK}>
           <Main />
         </div>
       </section>
@@ -1093,16 +1154,16 @@ function SpaceLayoutRegion({
   }
   const sideFirst = layout === 'side-main'
   const asideClass = [
-    SPACE_STACK,
+    SIDE_STACK,
     sideFirst ? 'lg:order-first' : '',
     sideSticky ? 'lg:sticky lg:top-24 lg:self-start' : '',
   ]
     .filter(Boolean)
     .join(' ')
   return (
-    <section className="w-full py-12 sm:py-16">
-      <div className="grid gap-12 lg:grid-cols-3">
-        <div className={`${SPACE_STACK} lg:col-span-2`}>
+    <section className="w-full py-10 sm:py-14">
+      <div className="grid gap-10 lg:grid-cols-3 lg:gap-14">
+        <div className={`${MAIN_STACK} lg:col-span-2`}>
           <Main />
         </div>
         <aside className={asideClass}>
@@ -1236,12 +1297,15 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Our story',
       body: 'Tell people who you are and what to expect.',
     },
-    render: ({ eyebrow, heading, body }) => (
-      <SpaceAboutBlock
-        eyebrow={(eyebrow as string) || undefined}
-        heading={(heading as string) || undefined}
-        body={(body as string) || undefined}
-      />
+    render: ({ eyebrow, heading, body, puck }) => (
+      <AnchorSection anchor="about">
+        <SpaceAboutBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          body={(body as string) || undefined}
+          editing={puck?.isEditing}
+        />
+      </AnchorSection>
     ),
   },
 
@@ -1310,11 +1374,12 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Quick links',
       links: [],
     },
-    render: ({ eyebrow, heading, links }) => (
+    render: ({ eyebrow, heading, links, puck }) => (
       <SpaceQuickLinksBlock
         eyebrow={(eyebrow as string) || undefined}
         heading={(heading as string) || undefined}
         links={(links as QuickLink[]) ?? []}
+        editing={puck?.isEditing}
       />
     ),
   },
@@ -1342,6 +1407,8 @@ export const profileComponents: Record<string, ComponentConfig> = {
     render: ({ eyebrow, heading, max, puck }) => {
       const events = eventsFrom(puck)
       if (events.length === 0) {
+        // Editor keeps the section placeable; the LIVE page renders nothing (honest-empty).
+        if (!puck?.isEditing) return <></>
         return (
           <div>
             <CardTitle eyebrow={(eyebrow as string) || undefined} heading={(heading as string) || undefined} />
@@ -1350,12 +1417,14 @@ export const profileComponents: Record<string, ComponentConfig> = {
         )
       }
       return (
-        <SpaceEventsBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          events={events}
-          max={Number(max) || 5}
-        />
+        <AnchorSection anchor="events">
+          <SpaceEventsBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            events={events}
+            max={Number(max) || 5}
+          />
+        </AnchorSection>
       )
     },
   },
@@ -1386,13 +1455,15 @@ export const profileComponents: Record<string, ComponentConfig> = {
         )
       }
       return (
-        <SpacePracticesBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          practicesHeading={(practicesHeading as string) || undefined}
-          journeysHeading={(journeysHeading as string) || undefined}
-          data={data}
-        />
+        <AnchorSection anchor="practices">
+          <SpacePracticesBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            practicesHeading={(practicesHeading as string) || undefined}
+            journeysHeading={(journeysHeading as string) || undefined}
+            data={data}
+          />
+        </AnchorSection>
       )
     },
   },
@@ -1419,11 +1490,13 @@ export const profileComponents: Record<string, ComponentConfig> = {
         )
       }
       return (
-        <SpaceCommunityBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          circles={circles}
-        />
+        <AnchorSection anchor="community">
+          <SpaceCommunityBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            circles={circles}
+          />
+        </AnchorSection>
       )
     },
   },
@@ -1458,13 +1531,15 @@ export const profileComponents: Record<string, ComponentConfig> = {
         )
       }
       return (
-        <SpaceBookingBlock
-          heading={(heading as string) || undefined}
-          body={(body as string) || undefined}
-          ctaLabel={(ctaLabel as string) || undefined}
-          booking={booking}
-          accent={accent === 'yes'}
-        />
+        <AnchorSection anchor="book">
+          <SpaceBookingBlock
+            heading={(heading as string) || undefined}
+            body={(body as string) || undefined}
+            ctaLabel={(ctaLabel as string) || undefined}
+            booking={booking}
+            accent={accent === 'yes'}
+          />
+        </AnchorSection>
       )
     },
   },
@@ -1481,12 +1556,15 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Offerings',
       items: [],
     },
-    render: ({ eyebrow, heading, items }) => (
-      <SpaceOfferingsBlock
-        eyebrow={(eyebrow as string) || undefined}
-        heading={(heading as string) || undefined}
-        items={(items as OfferingItem[]) ?? []}
-      />
+    render: ({ eyebrow, heading, items, puck }) => (
+      <AnchorSection anchor="offerings">
+        <SpaceOfferingsBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          items={(items as OfferingItem[]) ?? []}
+          editing={puck?.isEditing}
+        />
+      </AnchorSection>
     ),
   },
 
@@ -1512,17 +1590,20 @@ export const profileComponents: Record<string, ComponentConfig> = {
       linkLabel: '',
       linkHref: '',
     },
-    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref }) => (
-      <SpaceContactBlock
-        eyebrow={(eyebrow as string) || undefined}
-        heading={(heading as string) || undefined}
-        address={(address as string) || undefined}
-        hours={(hours as string) || undefined}
-        phone={(phone as string) || undefined}
-        email={(email as string) || undefined}
-        linkLabel={(linkLabel as string) || undefined}
-        linkHref={(linkHref as string) || undefined}
-      />
+    render: ({ eyebrow, heading, address, hours, phone, email, linkLabel, linkHref, puck }) => (
+      <AnchorSection anchor="contact">
+        <SpaceContactBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          address={(address as string) || undefined}
+          hours={(hours as string) || undefined}
+          phone={(phone as string) || undefined}
+          email={(email as string) || undefined}
+          linkLabel={(linkLabel as string) || undefined}
+          linkHref={(linkHref as string) || undefined}
+          editing={puck?.isEditing}
+        />
+      </AnchorSection>
     ),
   },
 
@@ -1538,12 +1619,15 @@ export const profileComponents: Record<string, ComponentConfig> = {
       heading: 'Meet the team',
       members: [],
     },
-    render: ({ eyebrow, heading, members }) => (
-      <SpaceTeamBlock
-        eyebrow={(eyebrow as string) || undefined}
-        heading={(heading as string) || undefined}
-        members={(members as TeamMember[]) ?? []}
-      />
+    render: ({ eyebrow, heading, members, puck }) => (
+      <AnchorSection anchor="team">
+        <SpaceTeamBlock
+          eyebrow={(eyebrow as string) || undefined}
+          heading={(heading as string) || undefined}
+          members={(members as TeamMember[]) ?? []}
+          editing={puck?.isEditing}
+        />
+      </AnchorSection>
     ),
   },
 

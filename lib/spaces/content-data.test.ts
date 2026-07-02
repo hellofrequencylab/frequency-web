@@ -43,6 +43,7 @@ import {
   getSpaceReviews,
   getSpaceFaqs,
   getSpaceContentData,
+  getSpaceSectionPresence,
   getSpacePractices,
   getSpaceCommunity,
 } from './content-data'
@@ -149,10 +150,26 @@ describe('getSpaceContentData', () => {
     expect(out.faqs).toEqual([])
   })
 
-  it('omits the live practices + community reads without an input (pre-Phase-3 call)', async () => {
-    await getSpaceContentData('space-9')
-    expect(listPracticesForSpace).not.toHaveBeenCalled()
-    expect(listCirclesForSpace).not.toHaveBeenCalled()
+  it('runs the live reads even without an input (staff preview + the anchor menu share one data path)', async () => {
+    await getSpaceContentData('space-10')
+    expect(listPracticesForSpace).toHaveBeenCalled()
+    expect(listCirclesForSpace).toHaveBeenCalled()
+  })
+})
+
+describe('getSpaceSectionPresence', () => {
+  it('reports which live sections have rows, fail-safe false elsewhere', async () => {
+    listCirclesForSpace.mockResolvedValue([
+      { id: 'c1', slug: 'c', name: 'Circle', about: null, member_count: 2, status: 'active' },
+    ])
+    const p = await getSpaceSectionPresence('space-11', null)
+    expect(p.community).toBe(true)
+    expect(p.practices).toBe(false)
+    expect(p.reviews).toBe(false)
+    expect(p.faqs).toBe(false)
+    expect(p.updates).toBe(false)
+    // No published availability + no slug: the booking anchor never shows.
+    expect(p.booking).toBe(false)
   })
 })
 
