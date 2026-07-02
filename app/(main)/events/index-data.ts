@@ -325,35 +325,36 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
        cover_image_path, recurrence_type, recurrence_until, parent_event_id, poster_path, geog,
        host:profiles!host_id ( id, display_name, handle )`
 
-  // ── (1) In-scope CIRCLE events (the original circle-anchored listing) ────────
-  let circleEvents: EventRow[] = []
-  if (myCircleIds.length > 0) {
-    let circleQuery = admin
-      .from('events')
-      .select(EVENT_SELECT)
-      .in('scope_id', myCircleIds)
-      // Browse shows only listable events: unlisted is link-only, private is
-      // host-only (RLS enforces access; THIS enforces non-listing — ADR-202).
-      .in('visibility', ['public', 'circle_only'])
-      // Only published events list — never an unpublished poster-scan draft. The admin
-      // client bypasses RLS, so this status gate (which the migration assumes) is on us.
-      .eq('status', 'published')
-      .eq('is_cancelled', false)
-      .gte('starts_at', listableFrom)
-      .lte('starts_at', future)
-      .order('starts_at', { ascending: true })
-    if (hideDemo) circleQuery = circleQuery.eq('is_demo', false)
-    const { data: rawCircle } = await circleQuery.limit(40)
-    circleEvents = (rawCircle ?? []) as unknown as EventRow[]
-  }
+  // ── The three event sources + proximity, fetched in ONE wave ────────────────
+  // (1) in-scope CIRCLE events, (2) every upcoming standalone PUBLIC event (hybrid scope,
+  // ADR-254 — proximity never gates whether a public gathering appears; the nearby_events RPC
+  // only enriches distance for the facet/sort, it never filters), and (3) the viewer's OWN
+  // hosted events (root-cause fix for "only one event shows" — a host's circle_only / unclaimed
+  // / space-adjacent gathering must still land in their library, deduped below). These reads are
+  // mutually independent (each depends only on values resolved above), so they run concurrently
+  // instead of in series; their cross-dependencies (circleIdSet filter, distance map, de-dup) are
+  // applied AFTER, on the resolved results.
+  const circleEventsP: PromiseLike<EventRow[]> = myCircleIds.length > 0
+    ? (() => {
+        let circleQuery = admin
+          .from('events')
+          .select(EVENT_SELECT)
+          .in('scope_id', myCircleIds)
+          // Browse shows only listable events: unlisted is link-only, private is
+          // host-only (RLS enforces access; THIS enforces non-listing — ADR-202).
+          .in('visibility', ['public', 'circle_only'])
+          // Only published events list — never an unpublished poster-scan draft. The admin
+          // client bypasses RLS, so this status gate (which the migration assumes) is on us.
+          .eq('status', 'published')
+          .eq('is_cancelled', false)
+          .gte('starts_at', listableFrom)
+          .lte('starts_at', future)
+          .order('starts_at', { ascending: true })
+        if (hideDemo) circleQuery = circleQuery.eq('is_demo', false)
+        return circleQuery.limit(40).then(({ data }) => (data ?? []) as unknown as EventRow[])
+      })()
+    : Promise.resolve([])
 
-  // ── (2) EVERY upcoming standalone PUBLIC event (hybrid scope, ADR-254) ───────
-  // The catalog lists ALL published, upcoming public events — proximity never gates whether a
-  // public gathering appears (that was the bug: events a host posted but no organizer claimed,
-  // or any event outside the viewer's geocell, silently vanished from the listing). When the
-  // viewer has a home location we ALSO resolve distances (for the Distance facet + sort) from
-  // the RLS-respecting nearby_events RPC, but distance only enriches; it never filters.
-  const circleIdSet = new Set(circleEvents.map((e) => e.id))
   let publicQuery = admin
     .from('events')
     .select(EVENT_SELECT)
@@ -365,54 +366,48 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .lte('starts_at', future)
     .order('starts_at', { ascending: true })
   if (hideDemo) publicQuery = publicQuery.eq('is_demo', false)
-  const { data: rawPublic } = await publicQuery.limit(200)
+  const rawPublicP = publicQuery.limit(200).then(({ data }) => (data ?? []) as unknown as EventRow[])
 
-  let distanceById = new Map<string, number | null>()
-  if (myGeocell) {
-    const nearby = await nearbyEvents(supabase, {
-      lat: myGeocell.lat,
-      lng: myGeocell.lng,
-      radiusM: 50_000,
-      limit: 200,
-    })
-    distanceById = new Map(nearby.map((n) => [n.id, n.distanceM]))
-  }
-  const publicEvents: EventRow[] = ((rawPublic ?? []) as unknown as EventRow[])
+  const distanceByIdP: Promise<Map<string, number | null>> = myGeocell
+    ? nearbyEvents(supabase, { lat: myGeocell.lat, lng: myGeocell.lng, radiusM: 50_000, limit: 200 })
+        .then((nearby) => new Map(nearby.map((n) => [n.id, n.distanceM])))
+    : Promise.resolve(new Map<string, number | null>())
+
+  const hostedEventsP: PromiseLike<EventRow[]> = myProfileId
+    ? (() => {
+        let hostedQuery = admin
+          .from('events')
+          .select(EVENT_SELECT)
+          // Events the viewer HOSTS *or* POSTED on an organizer's behalf (posted_by_profile_id) —
+          // an unclaimed posted event has host_id NULL, so a host-only filter dropped every event
+          // the viewer created until someone claimed it. Both belong in their listing.
+          .or(`host_id.eq.${myProfileId},posted_by_profile_id.eq.${myProfileId}`)
+          .eq('status', 'published')
+          .eq('is_cancelled', false)
+          // Community-scoped only: a viewer's SPACE events (scope_type 'standalone') must NOT leak
+          // into the community events index — those live on the space, not here (ADR-254).
+          .in('scope_type', ['circle', 'public'])
+          .gte('starts_at', listableFrom)
+          .lte('starts_at', future)
+          .order('starts_at', { ascending: true })
+        if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
+        return hostedQuery.limit(60).then(({ data }) => (data ?? []) as unknown as EventRow[])
+      })()
+    : Promise.resolve([])
+
+  const [circleEvents, rawPublic, distanceById, hostedEvents] = await Promise.all([
+    circleEventsP,
+    rawPublicP,
+    distanceByIdP,
+    hostedEventsP,
+  ])
+
+  // Distance enriches but never filters; the circleIdSet keeps a circle event from
+  // reappearing as a standalone public row.
+  const circleIdSet = new Set(circleEvents.map((e) => e.id))
+  const publicEvents: EventRow[] = rawPublic
     .filter((e) => !circleIdSet.has(e.id))
     .map((e) => ({ ...e, distance_m: distanceById.get(e.id) ?? null, is_public_standalone: true }))
-
-  // ── (3) The viewer's OWN hosted events ──────────────────────────────────────
-  // ROOT CAUSE of "only one event shows": the circle+public union above misses an event the
-  // viewer HOSTS unless it happens to be scoped to a circle they're a member of AND listable, or
-  // it's a standalone public event near them. So a host's own gathering (e.g. circle_only, or a
-  // circle they host but aren't a member-row of, or unlisted) never lands in the library even
-  // though they can plainly see it — and even though the "Happening soon" rail surfaces it. We add
-  // every upcoming, published, non-cancelled event the viewer hosts so the library is a superset of
-  // what they can see (the rail included). De-duped by id below; the union owns provenance/distance.
-  let hostedEvents: EventRow[] = []
-  if (myProfileId) {
-    let hostedQuery = admin
-      .from('events')
-      .select(EVENT_SELECT)
-      // Events the viewer HOSTS *or* POSTED on an organizer's behalf (posted_by_profile_id) —
-      // an unclaimed posted event has host_id NULL, so a host-only filter dropped every event
-      // the viewer created until someone claimed it. Both belong in their listing.
-      .or(`host_id.eq.${myProfileId},posted_by_profile_id.eq.${myProfileId}`)
-      .eq('status', 'published')
-      .eq('is_cancelled', false)
-      // Community-scoped only: a viewer's circle events + standalone public events
-      // belong in the library, but their SPACE events (scope_type 'standalone', a
-      // private space surface, scope_id → spaces.id) must NOT leak into the community
-      // events index — those live on the space, not here (ADR-254 keeps the two scopes
-      // distinct). Without this, every space gathering a member hosts floods /events.
-      .in('scope_type', ['circle', 'public'])
-      .gte('starts_at', listableFrom)
-      .lte('starts_at', future)
-      .order('starts_at', { ascending: true })
-    if (hideDemo) hostedQuery = hostedQuery.eq('is_demo', false)
-    const { data: rawHosted } = await hostedQuery.limit(60)
-    hostedEvents = (rawHosted ?? []) as unknown as EventRow[]
-  }
 
   // De-dupe the union by id (an event can satisfy more than one source — e.g. a public event the
   // viewer also hosts). First writer wins, so circle/public provenance + distance survive.
@@ -425,34 +420,46 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   }
   const hasAnyScope = myCircleIds.length > 0 || !!myGeocell || hostedEvents.length > 0
 
-  // Circle names + coordinates for scope_ids (only the circle-scoped events).
+  // Everything below reads only the assembled `events` list (and myProfileId), so the four
+  // remaining reads — circle names+coords, poster signed-URLs, going-counts, and the viewer's
+  // own RSVPs — are mutually independent and run in ONE wave instead of serially.
   const circleScopeIds = [...new Set(events.filter((e) => e.scope_type === 'circle').map((e) => e.scope_id))]
-  const circleNames: Record<string, string> = {}
-  const circleCoords: Record<string, { lat: number; lng: number }> = {}
-  if (circleScopeIds.length > 0) {
-    const { data: circles } = await admin
-      .from('circles')
-      .select('id, name, latitude, longitude')
-      .in('id', circleScopeIds)
-    ;(circles ?? []).forEach((c: { id: string; name: string; latitude: number | null; longitude: number | null }) => {
-      circleNames[c.id] = c.name
-      if (c.latitude != null && c.longitude != null) {
-        circleCoords[c.id] = { lat: Number(c.latitude), lng: Number(c.longitude) }
-      }
-    })
-  }
-
-  // Resolve each card's header image, mirroring the detail page's priority: the uploaded cover
-  // (cover_image_path) leads, then the original scanned poster (poster_path) as a fallback, so a
-  // poster-captured event still shows its flyer on the card instead of the date placeholder.
-  // cover_image_path lives in the PUBLIC `event-media` bucket → a plain public URL (next/image
-  // can optimize it). poster_path lives in the PRIVATE network-contacts bucket → a short-lived
-  // signed URL (the same path the detail page signs), batched in one storage call.
-  const coverUrls: Record<string, string> = {}
+  const eventIds = events.map((e) => e.id)
+  // Header-image priority mirrors the detail page: uploaded cover (public event-media URL) leads,
+  // then the scanned poster (poster_path, a short-lived signed URL from the private bucket, batched
+  // in one storage call) so a poster-captured event still shows its flyer instead of a placeholder.
   const posterPaths = events
     .filter((e) => !e.cover_image_path && e.poster_path)
     .map((e) => e.poster_path as string)
-  const posterUrlByPath = posterPaths.length > 0 ? await posterSignedUrlMap(posterPaths) : new Map<string, string>()
+
+  const [circlesRows, posterUrlByPath, rsvpRows, myRsvpRows] = await Promise.all([
+    circleScopeIds.length > 0
+      ? admin.from('circles').select('id, name, latitude, longitude').in('id', circleScopeIds)
+          .then(({ data }) => (data ?? []) as { id: string; name: string; latitude: number | null; longitude: number | null }[])
+      : Promise.resolve([] as { id: string; name: string; latitude: number | null; longitude: number | null }[]),
+    posterPaths.length > 0 ? posterSignedUrlMap(posterPaths) : Promise.resolve(new Map<string, string>()),
+    eventIds.length > 0
+      ? admin.from('event_rsvps').select('event_id').in('event_id', eventIds).eq('status', 'going')
+          .then(({ data }) => (data ?? []) as { event_id: string }[])
+      : Promise.resolve([] as { event_id: string }[]),
+    eventIds.length > 0 && myProfileId
+      ? admin.from('event_rsvps').select('event_id').in('event_id', eventIds).eq('profile_id', myProfileId).eq('status', 'going')
+          .then(({ data }) => (data ?? []) as { event_id: string }[])
+      : Promise.resolve([] as { event_id: string }[]),
+  ])
+
+  // Circle names + coordinates for the circle-scoped events.
+  const circleNames: Record<string, string> = {}
+  const circleCoords: Record<string, { lat: number; lng: number }> = {}
+  for (const c of circlesRows) {
+    circleNames[c.id] = c.name
+    if (c.latitude != null && c.longitude != null) {
+      circleCoords[c.id] = { lat: Number(c.latitude), lng: Number(c.longitude) }
+    }
+  }
+
+  // Card header images (getPublicUrl is synchronous; the signed poster URLs came from the wave).
+  const coverUrls: Record<string, string> = {}
   for (const e of events) {
     if (e.cover_image_path) {
       const { data } = admin.storage.from('event-media').getPublicUrl(e.cover_image_path)
@@ -463,31 +470,9 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     }
   }
 
-  // RSVP data.
-  const eventIds = events.map((e) => e.id)
   const rsvpCounts: Record<string, number> = {}
-  const myRsvps = new Set<string>()
-
-  if (eventIds.length > 0) {
-    const { data: rsvps } = await admin
-      .from('event_rsvps')
-      .select('event_id')
-      .in('event_id', eventIds)
-      .eq('status', 'going')
-    ;(rsvps ?? []).forEach((r: { event_id: string }) => {
-      rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1
-    })
-
-    if (myProfileId) {
-      const { data: mine } = await admin
-        .from('event_rsvps')
-        .select('event_id')
-        .in('event_id', eventIds)
-        .eq('profile_id', myProfileId)
-        .eq('status', 'going')
-      ;(mine ?? []).forEach((r: { event_id: string }) => myRsvps.add(r.event_id))
-    }
-  }
+  for (const r of rsvpRows) rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1
+  const myRsvps = new Set<string>(myRsvpRows.map((r) => r.event_id))
 
   // ── Facets (applied server-side; URL-driven so the view stays shareable) ────
   const goingCount = (e: EventRow) => rsvpCounts[e.id] ?? 0
