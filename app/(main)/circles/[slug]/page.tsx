@@ -114,27 +114,26 @@ export default async function CirclePage({
   if (!rawCircle) notFound()
   const circle = rawCircle as unknown as CircleDetail
 
-  // Fetch members
-  const { data: rawMembers } = await admin
-    .from('memberships')
-    .select(
-      `id, volunteer_role, joined_at,
-       profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, membership_tier, current_season_rank, current_streak, achievement_count )`
-    )
-    .eq('circle_id', circle.id)
-    .eq('status', 'active')
-    .order('joined_at', { ascending: true })
+  // The members read (needs circle.id) and the viewer's session (needs nothing) are independent,
+  // so fetch them together instead of letting auth.getUser() wait behind the members read.
+  const [{ data: rawMembers }, { data: { user } }] = await Promise.all([
+    admin
+      .from('memberships')
+      .select(
+        `id, volunteer_role, joined_at,
+         profile:profiles!profile_id ( id, display_name, handle, avatar_url, community_role, membership_tier, current_season_rank, current_streak, achievement_count )`
+      )
+      .eq('circle_id', circle.id)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true }),
+    supabase.auth.getUser(),
+  ])
 
   const members = (rawMembers ?? []) as unknown as MemberRow[]
 
   // Member ids — used below for the circle's engagement signals (only read for a viewer
   // who can see the health panel).
   const memberProfileIds = members.map((m) => m.profile?.id).filter(Boolean)
-
-  // Current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
 
   let myProfileId: string | null = null
   let isMember = false
