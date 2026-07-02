@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, type ComponentType } from 'react'
+import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid } from 'lucide-react'
+import { LayoutGrid, type LucideIcon } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
@@ -11,6 +11,13 @@ import { CircleQuestModule } from '@/components/admin/modules/circle-quest-modul
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
+import {
+  SPINE_ORDER,
+  SPINE_META,
+  groupIntoSpine,
+  summaryFor,
+  shouldFlatten,
+} from '@/lib/admin/modules/spine'
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope } from '@/lib/apps/for-scope'
@@ -26,12 +33,11 @@ import { PageSettingsModule } from '@/components/admin/page-settings/page-settin
 // Extracted from SettingsDrawer so BOTH the desktop slide-over (SettingsDrawer) and the mobile
 // full-screen sheet (MobileSettingsSheet) render the SAME content from one source. Each surface
 // owns only its own chrome (header / positioning); the body is this hook.
-
-// The 9-spine category order (EMBEDDED-ADMIN.md; the AdminSlot union in lib/admin/modules/registry).
-// The manage modules group in this order. Kept in sync with that union.
-const SLOT_ORDER: readonly AdminSlot[] = [
-  'basics', 'place', 'people', 'layout', 'engage', 'reach', 'comms', 'safety', 'insights', 'billing', 'danger',
-]
+//
+// LP4 / ADMIN-RAIL Phase 3: this hook now returns a STRUCTURED model — the modules grouped into the
+// 9-category spine (lib/admin/modules/spine) so the AdminBar body can render a browse-first drill-down
+// (HOME categories → CATEGORY detail → search). A thin `content` adapter keeps today's flat stacked
+// markup for the collapse case (a single populated category = pixel-identical to the old panel).
 
 // A caps-BLIND selection viewer that passes every editor App's own gate. LP4 makes the manage-module
 // list CATALOG-DRIVEN (appsForScope over the App catalog) instead of a path-sniffing scope table, but
@@ -46,6 +52,15 @@ const SELECTION_VIEWER: AppViewer = {
   ),
 }
 
+// Fallback summaries for categories that are populated ONLY by an inline extra (no catalog app), so the
+// spine's `summaryFor` returns ''. Voice canon: no em dashes.
+const EXTRA_SUMMARY: Partial<Record<AdminSlot, string>> = {
+  layout: 'Blocks and order',
+  danger: 'Cancel and delete',
+  basics: 'Page content',
+  engage: 'Challenges and quests',
+}
+
 // The entity scope kinds — a page in one of these carries its identity through its own manage
 // modules, so the generic operator "Page" group is dropped there (see useSettingsPanel).
 const ENTITY_KINDS: ReadonlySet<string> = new Set([
@@ -58,23 +73,34 @@ function isEntityScope(pathname: string): boolean {
   return !!scope && ENTITY_KINDS.has(scope.kind)
 }
 
-// The sidebar ("manage") modules for a scope, resolved from the App CATALOG (LP4 / ADR-501) and
-// grouped by 9-spine category. Each maps to its registered component; each self-resolves from the
-// pathname and re-gates server-side, so caps-blind selection is safe.
-function settingsModulesFor(scope: AdminScope | null, viewer: AppViewer): ComponentType[] {
+// The sidebar ("manage") apps for a scope, resolved from the App CATALOG (LP4 / ADR-501). Each
+// self-resolves from the pathname and re-gates server-side, so caps-blind selection is safe.
+function settingsAppsFor(scope: AdminScope | null, viewer: AppViewer): App[] {
   if (!scope) return []
-  const apps = appsForScope(scope, viewer, 'editor')
-  // Group by the 9-spine category in AdminSlot order (today every manage module is 'basics', so this
-  // preserves the current single-group list). LP4 follow-up: drill-down (category rows → detail).
-  const ordered: App[] = SLOT_ORDER.flatMap((slot) => apps.filter((a) => a.category === slot))
-  return ordered
-    .map((a) => MODULE_COMPONENTS[a.id])
-    .filter((C): C is ComponentType => !!C)
+  return appsForScope(scope, viewer, 'editor')
 }
 
 function questModuleFor(pathname: string) {
   if (/^\/circles\/[^/]+/.test(pathname)) return <CircleQuestModule />
   return null
+}
+
+/** The shared "Layout" tuner block (operator-only), parameterized by the page noun so the copy reads
+ *  naturally on either a circle or an event. Rendered both in the flat `content` and the Layout
+ *  drill-down category, so they never diverge. */
+function layoutBlock(noun: 'circle' | 'event'): ReactNode {
+  return (
+    <div className="min-w-0">
+      <div className="mb-1 flex items-center gap-2">
+        <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+        <span className="text-sm font-semibold text-text">Layout</span>
+      </div>
+      <p className="mb-2 text-xs text-muted">
+        Choose which blocks show inside the {noun} page and their order. Tunes the page, never the app shell.
+      </p>
+      <LayoutEditor />
+    </div>
+  )
 }
 
 /** True at the lg breakpoint (>= 1024px). Lets the desktop SettingsDrawer and the
@@ -92,12 +118,49 @@ export function useIsDesktop(): boolean {
   return isDesktop
 }
 
-/** Resolve the settings BODY for the current route + viewer, shared by the desktop drawer and the
- *  mobile sheet. `hasContent` lets each chrome decide whether to render at all (an empty drawer /
- *  sheet should never show). The body markup is identical across both surfaces. */
-export function useSettingsPanel(
-  detail?: OpenAdminBarDetail,
-): { hasContent: boolean; content: React.ReactNode } {
+/** One populated spine category, ready to render as a browse row + a detail screen. */
+export interface AdminCategory {
+  slot: AdminSlot
+  label: string
+  Icon: LucideIcon
+  /** One-line row summary (icon · label · summary · ›). */
+  summary: string
+  /** The detail body — the slot's module cards plus any folded inline extra. */
+  body: ReactNode
+  /** The catalog app ids that landed in this slot (empty for an extra-only category). */
+  appIds: string[]
+}
+
+/** A lightweight, searchable row for the fuzzy "Search settings" filter (P1/P6 — one catalog source
+ *  for browse + search). Covers ALL scoped apps (manage + page blocks). */
+export interface SearchableApp {
+  id: string
+  label: string
+  description?: string
+  category: AdminSlot | 'element'
+  Icon?: LucideIcon
+}
+
+/** The STRUCTURED settings model the AdminBar body renders (docs/ADMIN-RAIL.md Phase 3). */
+export interface SettingsPanelModel {
+  /** Whether there is anything to render at all (each chrome hides an empty bar). */
+  hasContent: boolean
+  /** Collapse to the flat panel (<=1 drill target) vs. show the browse home + drill-down. */
+  flat: boolean
+  /** The populated spine categories, in fixed spine order. */
+  categories: AdminCategory[]
+  /** The operator "Page" group (Layout / SEO / Status), separate from the entity spine. */
+  pageGroup: ReactNode | null
+  /** Every scoped app, for the fuzzy search index. */
+  searchApps: SearchableApp[]
+  /** Thin adapter: today's flat stacked markup, rendered verbatim in the collapse case so the flat
+   *  panel stays pixel-identical to before. */
+  content: ReactNode
+}
+
+/** Resolve the settings model for the current route + viewer, shared by the desktop drawer and the
+ *  mobile sheet. `hasContent` lets each chrome decide whether to render at all. */
+export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelModel {
   const { role, staffRole, webRole, caps: providerCaps } = usePageAdmin()
   const pathname = usePathname()
 
@@ -111,21 +174,19 @@ export function useSettingsPanel(
   const isOperator = isStaff(webRole)
 
   // The viewer for catalog selection. Precedence (docs/ADMIN-RAIL.md Phase 1):
-  //   1. detail.caps — the page resolved the REAL caps for this scope (the entity "Edit" buttons ride
-  //      them on the event), so gate the module selection on the true set.
-  //   2. providerCaps on the GLOBAL scope only — the shell threads getGlobalCapabilities() through the
-  //      provider. Those caps are the viewer's real set for the global scope, where the editor set is
-  //      empty regardless (there are no global-scoped editor Apps), so this is behavior-preserving; it
-  //      is deliberately NOT used on an entity scope, where global caps would wrongly drop the entity's
-  //      modules — those keep the caps-blind fallback until their real caps ride a detail.
+  //   1. detail.caps — the page resolved the REAL caps for this scope.
+  //   2. providerCaps on the GLOBAL scope only — the shell threads getGlobalCapabilities().
   //   3. SELECTION_VIEWER — the caps-blind fallback reproducing the prior modulesForScopeKind set.
   const viewer: AppViewer = detail?.caps
     ? { caps: new Set(detail.caps) }
     : providerCaps && scope?.kind === 'global'
       ? { caps: providerCaps }
       : SELECTION_VIEWER
-  const settingsModules = manager ? settingsModulesFor(scope, viewer) : []
-  const hasSettings = settingsModules.length > 0
+
+  const apps = manager ? settingsAppsFor(scope, viewer) : []
+  const hasSettings = apps.length > 0
+  const spineGroups = groupIntoSpine(apps)
+
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null
   // The full page-content editor (title / description / hero / CTA). ADMIN routes are excluded.
@@ -147,76 +208,117 @@ export function useSettingsPanel(
   const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
   const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
 
-  const hasContent =
-    hasSettings || !!questModule || !!contentModule || showPageSettings || showCircleLayout || showEventLayout || isEvent
+  // ── Inline extras, folded into their natural spine slot (quest→engage, layout→layout,
+  //    event danger→danger, page-content→basics). Built once; referenced by BOTH the flat `content`
+  //    adapter and the drill-down category bodies so they never diverge. ──
+  const questBlock: ReactNode = questModule ? <div className="min-w-0">{questModule}</div> : null
+  const contentBlock: ReactNode = contentModule ? <div className="min-w-0">{contentModule}</div> : null
+  const circleLayoutNode: ReactNode = showCircleLayout ? layoutBlock('circle') : null
+  const eventLayoutNode: ReactNode = showEventLayout ? layoutBlock('event') : null
+  const dangerBlock: ReactNode = isEvent ? (
+    <div className="min-w-0">
+      <EventDangerZone />
+    </div>
+  ) : null
 
-  if (!hasContent) return { hasContent: false, content: null }
+  const extrasBySlot: Partial<Record<AdminSlot, ReactNode[]>> = {}
+  const addExtra = (slot: AdminSlot, node: ReactNode) => {
+    if (!node) return
+    ;(extrasBySlot[slot] ??= []).push(node)
+  }
+  addExtra('engage', questBlock)
+  addExtra('basics', contentBlock)
+  addExtra('layout', circleLayoutNode)
+  addExtra('layout', eventLayoutNode)
+  addExtra('danger', dangerBlock)
 
-  // The page-settings column — the registry-selected sidebar modules for this scope.
+  // The page-settings column — the registry-selected sidebar modules for this scope, ordered by spine.
+  const orderedModules: { id: string; C: ComponentType }[] = spineGroups.flatMap((g) =>
+    g.appIds.flatMap((id) => {
+      const C = MODULE_COMPONENTS[id]
+      return C ? [{ id, C }] : []
+    }),
+  )
   const settingsBlock = hasSettings ? (
     <div className="min-w-0">
       <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
       <div className="space-y-6">
-        {settingsModules.map((ModuleComponent, i) => (
-          <ModuleComponent key={i} />
+        {orderedModules.map(({ id, C }) => (
+          <C key={id} />
         ))}
       </div>
     </div>
   ) : null
 
+  // ── The drill-down categories: every spine slot with an app OR a folded extra, in spine order. ──
+  const categories: AdminCategory[] = SPINE_ORDER.flatMap((slot) => {
+    const group = spineGroups.find((g) => g.slot === slot)
+    const appIds = group?.appIds ?? []
+    const extras = extrasBySlot[slot] ?? []
+    if (appIds.length === 0 && extras.length === 0) return []
+    const meta = SPINE_META[slot]
+    const summary = summaryFor(slot, apps) || EXTRA_SUMMARY[slot] || `${appIds.length + extras.length} settings`
+    const body = (
+      <div className="space-y-6">
+        {appIds.flatMap((id) => {
+          const C = MODULE_COMPONENTS[id]
+          return C ? [<C key={id} />] : []
+        })}
+        {extras.map((node, i) => (
+          <div key={`extra-${i}`}>{node}</div>
+        ))}
+      </div>
+    )
+    return [{ slot, label: meta.label, Icon: meta.Icon, summary, body, appIds }]
+  })
+
+  // The operator "Page" group — a separate drill target, never one of the entity spine categories.
+  const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
+
+  const hasContent = categories.length > 0 || !!pageGroup
+  const flat = shouldFlatten(categories, { hasExtras: !!pageGroup })
+
+  // Every scoped app (manage + page blocks), mapped to a lightweight search row (P1/P6).
+  const searchApps: SearchableApp[] = (manager || isOperator ? appsForScope(scope, viewer) : []).map(
+    (a) => ({
+      id: a.id,
+      label: a.label,
+      description: a.description,
+      category: a.category,
+      Icon: a.surfaces.editor?.Icon,
+    }),
+  )
+
+  if (!hasContent) {
+    return { hasContent: false, flat: true, categories: [], pageGroup: null, searchApps: [], content: null }
+  }
+
+  // ── The thin `content` adapter — today's flat stacked markup, verbatim, for the collapse case. ──
   const content = (
     <div className="space-y-5">
       {isCircle ? (
         <div className="space-y-6">
           {settingsBlock}
           {questModule && <div className="min-w-0">{questModule}</div>}
-          {showCircleLayout && (
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                <span className="text-sm font-semibold text-text">Layout</span>
-              </div>
-              <p className="mb-2 text-xs text-muted">
-                Choose which blocks show inside the circle page and their order. Tunes the page, never the app shell.
-              </p>
-              <LayoutEditor />
-            </div>
-          )}
+          {showCircleLayout && circleLayoutNode}
         </div>
       ) : (
         <div className="space-y-6">
           {settingsBlock}
           {questModule && <div className="min-w-0">{questModule}</div>}
           {contentModule && <div className="min-w-0">{contentModule}</div>}
-          {showEventLayout && (
-            <div className="min-w-0">
-              <div className="mb-1 flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
-                <span className="text-sm font-semibold text-text">Layout</span>
-              </div>
-              <p className="mb-2 text-xs text-muted">
-                Choose which blocks show inside the event page and their order. Tunes the page, never the app shell.
-              </p>
-              <LayoutEditor />
-            </div>
-          )}
+          {showEventLayout && eventLayoutNode}
           {/* Cancel + Delete live at the very bottom, BELOW the Layout picker — the
               destructive controls sit under everything else in the drawer. */}
-          {isEvent && (
-            <div className="min-w-0">
-              <EventDangerZone />
-            </div>
-          )}
+          {dangerBlock}
         </div>
       )}
 
       {/* The operator page-globals group, set apart by a hairline. Suppressed on entity scopes. */}
-      {showPageSettings && (hasSettings || !!questModule || !!contentModule) && (
-        <hr className="border-border" />
-      )}
-      {showPageSettings && <PageSettingsModule hideBasics={!!contentModule} />}
+      {pageGroup && (hasSettings || !!questModule || !!contentModule) && <hr className="border-border" />}
+      {pageGroup}
     </div>
   )
 
-  return { hasContent: true, content }
+  return { hasContent: true, flat, categories, pageGroup, searchApps, content }
 }

@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -137,6 +137,44 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     order: 10,
   },
+  // Hub 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
+  // Appendix A, the Hub row). All gated hub.manage; each server action re-checks it. People = the
+  // circles in this hub + the guide; Insights = the hub rollup (members, circles, average); Danger =
+  // archive the hub. Reuse-only — the same circles-by-hub read the detail page already runs, and the
+  // existing status column for archive; no new capability, no migration.
+  {
+    id: 'hub.people',
+    label: 'People',
+    desc: 'The circles in this hub, how full each is, and the guide who leads them.',
+    Icon: Users,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'people',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'hub.insights',
+    label: 'Insights',
+    desc: 'The hub at a glance: members reached, circles running, and the average per circle.',
+    Icon: BarChart3,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'insights',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'hub.danger',
+    label: 'Danger zone',
+    desc: 'Archive this hub. Its circles stay put; the hub just stops appearing in listings.',
+    Icon: Archive,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'danger',
+    surface: 'sidebar',
+    order: 10,
+  },
   {
     id: 'nexus.settings',
     label: 'Nexus settings',
@@ -145,6 +183,44 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     scopes: ['nexus'],
     requiredCapability: 'nexus.manage',
     slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  // Nexus 9-spine editor Apps (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
+  // Nexus row). All gated nexus.manage; each server action re-checks it. People = the hubs in this
+  // nexus + the mentor; Insights = the nexus rollup (members, hubs, average, capacity); Danger =
+  // archive the nexus. Reuse-only — the same hubs-by-nexus read the detail page runs, and the
+  // existing status column for archive.
+  {
+    id: 'nexus.people',
+    label: 'People',
+    desc: 'The hubs in this nexus, the members behind each, and the mentor who leads them.',
+    Icon: Users,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
+    slot: 'people',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'nexus.insights',
+    label: 'Insights',
+    desc: 'The nexus at a glance: members reached, hubs running, capacity, and the average per hub.',
+    Icon: BarChart3,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
+    slot: 'insights',
+    surface: 'sidebar',
+    order: 10,
+  },
+  {
+    id: 'nexus.danger',
+    label: 'Danger zone',
+    desc: 'Archive this nexus. Its hubs stay put; the nexus just stops appearing in listings.',
+    Icon: Archive,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
+    slot: 'danger',
     surface: 'sidebar',
     order: 10,
   },
@@ -200,6 +276,21 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     scopes: ['practice'],
     requiredCapability: 'practice.editSettings',
     slot: 'basics',
+    surface: 'sidebar',
+    order: 10,
+  },
+  // Practice 9-spine editor App (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
+  // Practice row). Insights = adoption + logging counts, read from the practices_ranked view the
+  // library already maintains; gated practice.editSettings, re-checked server-side. (Engage/rewards
+  // is deferred: the reward seam is admin-governed, not owner-gated — no reuse-only owner seam.)
+  {
+    id: 'practice.insights',
+    label: 'Insights',
+    desc: 'How this practice is landing: people who kept it, logs in the last 30 days, and all-time.',
+    Icon: BarChart3,
+    scopes: ['practice'],
+    requiredCapability: 'practice.editSettings',
+    slot: 'insights',
     surface: 'sidebar',
     order: 10,
   },
