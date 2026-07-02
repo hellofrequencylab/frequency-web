@@ -22,11 +22,12 @@ import {
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
+import { mergeAppOverrides, effectiveMinRole } from '@/lib/apps/overrides'
 import { APPS } from '@/lib/apps/catalog'
 import type { App, AppViewer } from '@/lib/apps/types'
 import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
-import { isStaff } from '@/lib/core/roles'
+import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
@@ -173,8 +174,19 @@ export interface SettingsPanelModel {
 /** Resolve the settings model for the current route + viewer, shared by the desktop drawer and the
  *  mobile sheet. `hasContent` lets each chrome decide whether to render at all. */
 export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelModel {
-  const { role, staffRole, webRole, caps: providerCaps } = usePageAdmin()
+  const { role, staffRole, webRole, caps: providerCaps, appOverrides } = usePageAdmin()
   const pathname = usePathname()
+
+  // Per-scope operator overrides for this page's admin scope (docs/ADMIN-RAIL.md Phase 6). FAIL-SAFE:
+  // absent ⇒ `{}` ⇒ the catalog defaults (identical to before overrides). Applied to the resolved
+  // management Apps below via mergeAppOverrides (drop disabled + reorder by position) then the per-App
+  // min_role render gate (reuse atLeastRole against the viewer's community role, fail-closed).
+  const overrides = appOverrides ?? {}
+  const applyOverrides = (list: App[]): App[] =>
+    mergeAppOverrides(list, overrides).filter((a) => {
+      const floor = effectiveMinRole(a.id, overrides)
+      return floor == null || atLeastRole(role, floor)
+    })
 
   // Prefer the scope the trigger already resolved (detail.scope carries the entity's DB id) over the
   // pathname; with no detail this is exactly adminScopeFor(pathname), as before.
@@ -208,8 +220,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     : []
 
   // The management (page-scoped) editor apps, with any personal app filtered out so the global
-  // scope's personal set never doubles as a management category on a global-scope page.
-  const mgmtApps = manager ? settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)) : []
+  // scope's personal set never doubles as a management category on a global-scope page. Operator
+  // overrides (Phase 6) are applied here: disabled Apps drop, `position` reorders, and the per-App
+  // min_role floor gates against the viewer's role (no-op today until overrides are threaded + saved).
+  const mgmtApps = manager
+    ? applyOverrides(settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
+    : []
 
   // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
   // "You" category above the management spine.
@@ -350,7 +366,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const searchApps: SearchableApp[] = [
     ...personalApps,
     ...(manager || isOperator
-      ? appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id))
+      ? applyOverrides(appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []),
   ].map((a) => ({
     id: a.id,
