@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { railFor, leftRailFor } from './page-chrome'
+import { railFor, leftRailFor, adminScopeFor } from './page-chrome'
 
 describe('railFor — the single source of truth for page chrome', () => {
   it('keeps the global rail on browse / stream / index pages', () => {
@@ -210,5 +210,34 @@ describe('leftRailFor — the global member left rail vs. the admin workspace', 
     expect(leftRailFor('/spaces/demo-practitioner/manage')).toBe('global')
     // The Space SETTINGS cockpit (the legacy 7-tab) keeps the global rail too.
     expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
+  })
+})
+
+describe('adminScopeFor — the single admin-scope resolver (LP4 step B0)', () => {
+  it('resolves each entity-detail prefix to its scope kind + id (the URL slug)', () => {
+    expect(adminScopeFor('/circles/sunrise-sit')).toEqual({ kind: 'circle', id: 'sunrise-sit' })
+    expect(adminScopeFor('/hubs/north')).toEqual({ kind: 'hub', id: 'north' })
+    expect(adminScopeFor('/nexuses/west')).toEqual({ kind: 'nexus', id: 'west' })
+    expect(adminScopeFor('/events/sunrise-sit')).toEqual({ kind: 'event', id: 'sunrise-sit' })
+    expect(adminScopeFor('/practices/42')).toEqual({ kind: 'practice', id: '42' })
+    expect(adminScopeFor('/channels/breathwork')).toEqual({ kind: 'channel', id: 'breathwork' })
+    expect(adminScopeFor('/people/ada')).toEqual({ kind: 'profile', id: 'ada' })
+  })
+
+  it('keeps the entity scope on deeper entity sub-routes (prefix, not end-anchored)', () => {
+    expect(adminScopeFor('/circles/sunrise-sit/manage')).toEqual({ kind: 'circle', id: 'sunrise-sit' })
+    expect(adminScopeFor('/events/sunrise-sit/manage')).toEqual({ kind: 'event', id: 'sunrise-sit' })
+  })
+
+  it('returns the operator global scope on non-entity in-app pages (incl. entity LIST routes)', () => {
+    for (const p of ['/feed', '/circles', '/events', '/admin', '/admin/menu', '/lead', '/settings', '/pages']) {
+      expect(adminScopeFor(p), p).toEqual({ kind: 'global' })
+    }
+  })
+
+  it('returns null on the full-viewport takeovers (nothing to manage)', () => {
+    for (const p of ['/on-air', '/on-air/breathe', '/scan', '/sign-in', '/print', '/print/qr']) {
+      expect(adminScopeFor(p), p).toBeNull()
+    }
   })
 })

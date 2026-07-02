@@ -19,6 +19,7 @@
 // <StreamTemplate>/<DetailTemplate>/<DashboardTemplate> (see docs/PAGE-FRAMEWORK.md §3).
 
 import { cache } from 'react'
+import type { ScopeKind } from '@/lib/admin/modules/registry'
 
 export type Rail = 'global' | 'scoped' | 'none'
 
@@ -211,6 +212,52 @@ export function railFor(pathname: string): Rail {
   if (isScopedDetail) return 'scoped'
 
   return 'global'
+}
+
+// ── The admin SCOPE resolver (LP4 / ADR-501, docs/LOOM-PLATFORM.md §5, step B0) ──────────
+//
+// The single answer to "what can be managed on this page?", the sibling of railFor. The
+// standardized admin bar reads it (via lib/apps/for-scope.ts) instead of every surface
+// path-sniffing its own scope table. It replaces the duplicate PATH_SCOPE_KINDS that lived in
+// settings-panel.tsx. Pure + client-safe like railFor (the ScopeKind import is TYPE-ONLY, erased
+// at build, so no runtime dependency on the registry reaches the client bundle).
+
+/** A page's admin scope: `kind` is the capability scope, `id` the entity's URL slug (present on an
+ *  entity-detail page, absent on the operator `global` scope). */
+export interface AdminScope {
+  kind: ScopeKind
+  id?: string
+}
+
+// Entity-detail route prefixes → the scope kind they manage; the SECOND path segment is the
+// entity id/slug. Mirrors the old settings-panel PATH_SCOPE_KINDS + PageAdminBar resolver. Prefix
+// (not end-anchored), so /circles/<id>/manage still resolves to the circle scope, as before.
+const ADMIN_SCOPE_PREFIXES: readonly { prefix: RegExp; kind: ScopeKind }[] = [
+  { prefix: /^\/circles\/([^/]+)/, kind: 'circle' },
+  { prefix: /^\/hubs\/([^/]+)/, kind: 'hub' },
+  { prefix: /^\/nexuses\/([^/]+)/, kind: 'nexus' },
+  { prefix: /^\/events\/([^/]+)/, kind: 'event' },
+  { prefix: /^\/practices\/([^/]+)/, kind: 'practice' },
+  { prefix: /^\/channels\/([^/]+)/, kind: 'channel' },
+  { prefix: /^\/people\/([^/]+)/, kind: 'profile' },
+]
+
+/** The admin scope for a page — one resolver, mirroring railFor. Returns an ENTITY scope
+ *  `{ kind, id }` on an entity-detail route (id = the URL slug); the operator `global` scope on
+ *  every other in-app content page; and `null` on a full-viewport takeover, where nothing is
+ *  manageable. Pure + client-safe like railFor. */
+export function adminScopeFor(pathname: string): AdminScope | null {
+  for (const { prefix, kind } of ADMIN_SCOPE_PREFIXES) {
+    const m = pathname.match(prefix)
+    if (m) return { kind, id: m[1] }
+  }
+  // Full-viewport takeovers read with zero app chrome — nothing to manage.
+  const isTakeover = FULL_TAKEOVER_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  )
+  if (isTakeover) return null
+  // Every other in-app page is the operator `global` scope (the page-globals group).
+  return { kind: 'global' }
 }
 
 // MINI rail — routes that keep the GLOBAL community rail but START it COLLAPSED to a thin
