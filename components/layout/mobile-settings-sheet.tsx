@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
+import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 
 // The MOBILE settings surface (< lg). The desktop SettingsDrawer slides over the right-rail
 // column, which doesn't exist on phones — so on mobile that drawer never renders and the
@@ -13,17 +14,30 @@ import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-pan
 // `lg:hidden`, so on desktop it stays display:none and the slide-over owns the experience.
 export function MobileSettingsSheet() {
   const [open, setOpen] = useState(false)
+  // The pre-scoped detail a typed `open-admin-bar` dispatch carried; undefined on the legacy path.
+  const [detail, setDetail] = useState<OpenAdminBarDetail | undefined>(undefined)
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
-  const { hasContent, content } = useSettingsPanel()
+  const { hasContent, content } = useSettingsPanel(detail)
 
-  // Toggle on the `open-settings` event (shared with the desktop SettingsDrawer).
+  // Dual trigger seam (shared with the desktop SettingsDrawer, docs/ADMIN-RAIL.md Phase 1): the legacy
+  // bare `open-settings` event TOGGLES + clears detail (exactly as before); the typed `open-admin-bar`
+  // event stores its { scope, caps } and OPENS (never toggles).
   useEffect(() => {
-    function onOpen() {
+    function onLegacy() {
+      setDetail(undefined)
       setOpen((o) => !o)
     }
-    window.addEventListener('open-settings', onOpen)
-    return () => window.removeEventListener('open-settings', onOpen)
+    window.addEventListener('open-settings', onLegacy)
+    return () => window.removeEventListener('open-settings', onLegacy)
+  }, [])
+  useEffect(() => {
+    function onTyped(e: Event) {
+      setDetail((e as CustomEvent<OpenAdminBarDetail>).detail)
+      setOpen(true)
+    }
+    window.addEventListener(OPEN_ADMIN_BAR, onTyped)
+    return () => window.removeEventListener(OPEN_ADMIN_BAR, onTyped)
   }, [])
 
   // Close on Escape.

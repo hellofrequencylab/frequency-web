@@ -65,4 +65,20 @@ describe('showsAdminBar', () => {
     expect(showsAdminBar({ kind: 'circle', id: 'c1' }, null as never)).toBe(false)
     expect(showsAdminBar(null, SELECTION_VIEWER)).toBe(false)
   })
+
+  it('is editor-only: page blocks do NOT light the bar on the global scope (the flaw guard)', () => {
+    // The operator global scope offers page blocks (gate 'none') but NO editor modules. Counting page
+    // blocks would falsely light the bar for any signed-in viewer; editor-only keeps it dark here.
+    expect(showsAdminBar({ kind: 'global' }, { caps: new Set() })).toBe(false)
+    // Even a viewer holding every editor capability has no EDITOR App on the global scope.
+    expect(showsAdminBar({ kind: 'global' }, SELECTION_VIEWER)).toBe(false)
+  })
+
+  it('still lights on an entity scope for a viewer that holds its manage gate', () => {
+    // The behavior-preservation anchor: a caps-blind selection viewer resolves the circle manage
+    // modules, so the bar shows on an entity scope exactly as before.
+    expect(showsAdminBar({ kind: 'circle', id: 'c1' }, SELECTION_VIEWER)).toBe(true)
+    // A viewer with no caps has no editor module on an entity scope → dark.
+    expect(showsAdminBar({ kind: 'circle', id: 'c1' }, { caps: new Set() })).toBe(false)
+  })
 })

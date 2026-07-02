@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Zap, Wand2 } from 'lucide-react'
+import { Zap, Wand2, Pencil } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
@@ -17,7 +17,7 @@ import { ClaimPractice } from '@/components/practice/claim-practice'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
 import { RemixPracticeButton } from '@/components/practice/remix-practice-button'
-import { EditPracticeButton } from '@/components/practices/edit-practice-button'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { UpsellTease } from '@/components/upsell/upsell-tease'
 import { resolveTierTeaseGate } from '@/lib/pricing/tease-gate'
 
@@ -138,7 +138,16 @@ export default async function PracticeDetailPage({ params }: Params) {
           )}
         </>
       }
-      actions={canManagePractice ? <EditPracticeButton /> : undefined}
+      actions={
+        canManagePractice ? (
+          <OpenAdminBarButton
+            scope={{ kind: 'practice', id: practice.id }}
+            caps={Array.from(practiceCaps)}
+            label="Edit"
+            icon={<Pencil className="h-4 w-4" />}
+          />
+        ) : undefined
+      }
     >
       {practice.header_image && (
         // Plain <img>: topical placeholder host (no next/image remote-host coupling).

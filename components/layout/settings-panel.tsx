@@ -11,7 +11,8 @@ import { CircleQuestModule } from '@/components/admin/modules/circle-quest-modul
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
-import { adminScopeFor } from '@/lib/layout/page-chrome'
+import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
+import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope } from '@/lib/apps/for-scope'
 import { APPS } from '@/lib/apps/catalog'
 import type { App, AppViewer } from '@/lib/apps/types'
@@ -57,11 +58,10 @@ function isEntityScope(pathname: string): boolean {
   return !!scope && ENTITY_KINDS.has(scope.kind)
 }
 
-// The sidebar ("manage") modules for this path, resolved from the App CATALOG (LP4 / ADR-501) and
+// The sidebar ("manage") modules for a scope, resolved from the App CATALOG (LP4 / ADR-501) and
 // grouped by 9-spine category. Each maps to its registered component; each self-resolves from the
 // pathname and re-gates server-side, so caps-blind selection is safe.
-function settingsModulesFor(pathname: string, viewer: AppViewer): ComponentType[] {
-  const scope = adminScopeFor(pathname)
+function settingsModulesFor(scope: AdminScope | null, viewer: AppViewer): ComponentType[] {
   if (!scope) return []
   const apps = appsForScope(scope, viewer, 'editor')
   // Group by the 9-spine category in AdminSlot order (today every manage module is 'basics', so this
@@ -95,19 +95,36 @@ export function useIsDesktop(): boolean {
 /** Resolve the settings BODY for the current route + viewer, shared by the desktop drawer and the
  *  mobile sheet. `hasContent` lets each chrome decide whether to render at all (an empty drawer /
  *  sheet should never show). The body markup is identical across both surfaces. */
-export function useSettingsPanel(): { hasContent: boolean; content: React.ReactNode } {
-  const { role, staffRole, webRole, caps } = usePageAdmin()
+export function useSettingsPanel(
+  detail?: OpenAdminBarDetail,
+): { hasContent: boolean; content: React.ReactNode } {
+  const { role, staffRole, webRole, caps: providerCaps } = usePageAdmin()
   const pathname = usePathname()
+
+  // Prefer the scope the trigger already resolved (detail.scope carries the entity's DB id) over the
+  // pathname; with no detail this is exactly adminScopeFor(pathname), as before.
+  const scope = detail?.scope ?? adminScopeFor(pathname)
 
   // What this viewer can administer: page MANAGERS (host+ / staff — each module re-gates
   // server-side) and platform OPERATORS (web_role admin/janitor, who get the page-level group).
   const manager = meetsAccess('host', role) || staffRole != null
   const isOperator = isStaff(webRole)
 
-  // Catalog selection uses the viewer's REAL resolved caps once the provider threads them (B2);
-  // until then the caps-blind SELECTION_VIEWER reproduces the prior modulesForScopeKind selection.
-  const viewer: AppViewer = caps ? { caps } : SELECTION_VIEWER
-  const settingsModules = manager ? settingsModulesFor(pathname, viewer) : []
+  // The viewer for catalog selection. Precedence (docs/ADMIN-RAIL.md Phase 1):
+  //   1. detail.caps — the page resolved the REAL caps for this scope (the entity "Edit" buttons ride
+  //      them on the event), so gate the module selection on the true set.
+  //   2. providerCaps on the GLOBAL scope only — the shell threads getGlobalCapabilities() through the
+  //      provider. Those caps are the viewer's real set for the global scope, where the editor set is
+  //      empty regardless (there are no global-scoped editor Apps), so this is behavior-preserving; it
+  //      is deliberately NOT used on an entity scope, where global caps would wrongly drop the entity's
+  //      modules — those keep the caps-blind fallback until their real caps ride a detail.
+  //   3. SELECTION_VIEWER — the caps-blind fallback reproducing the prior modulesForScopeKind set.
+  const viewer: AppViewer = detail?.caps
+    ? { caps: new Set(detail.caps) }
+    : providerCaps && scope?.kind === 'global'
+      ? { caps: providerCaps }
+      : SELECTION_VIEWER
+  const settingsModules = manager ? settingsModulesFor(scope, viewer) : []
   const hasSettings = settingsModules.length > 0
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null

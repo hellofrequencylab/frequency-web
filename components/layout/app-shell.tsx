@@ -64,6 +64,7 @@ import { DemoToggle } from '@/components/layout/demo-toggle'
 import { DockRevealProvider } from '@/components/sidebar/dock-reveal'
 import { railFor, leftRailFor, mergeChrome, railStartsCollapsed, isFullViewportEditor, isFullWidthEditor, type ChromeOverrides } from '@/lib/layout/page-chrome'
 import type { WebRole } from '@/lib/core/roles'
+import type { Capability } from '@/lib/core/capabilities'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { SettingsDrawer, type SettingsDrawerState } from '@/components/layout/settings-drawer'
@@ -1392,6 +1393,7 @@ export default function AppShell({
   brandLogoUrl = null,
   chromeOverrides,
   webRole = 'none',
+  caps = [],
   generation = 'balanced',
   structure = 'standard',
   occasion = 'none',
@@ -1463,6 +1465,10 @@ export default function AppShell({
   /** The viewer's STAFF web_role (ADR-208), view-as-aware ('none' under a downgrade
    *  preview). Gates the staff-only on-page "Page" settings group (admin+). */
   webRole?: WebRole
+  /** The viewer's GLOBAL-scope capabilities (getGlobalCapabilities), threaded into PageAdminProvider
+   *  for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1). Per-entity caps ride the open event
+   *  from the page that resolved them; this seam carries only the route-independent global set. */
+  caps?: Capability[]
   /** The active generation/style preset id; sets `data-generation` on the shell root. */
   generation?: string
   /** The structural layout variant the generation maps to (lib/theme/structure.ts); sets
@@ -1849,7 +1855,7 @@ export default function AppShell({
           {/* The page-admin context wraps the whole content row (not just <main>) so the
               settings drawer — mounted in the right-rail slot — can read the viewer's
               role / staffRole / webRole gates alongside the page body. */}
-          <PageAdminProvider value={{ role: gateRole, staffRole, webRole }}>
+          <PageAdminProvider value={{ role: gateRole, staffRole, webRole, caps: new Set(caps) }}>
           {/* A full-viewport editor takeover drops the max-width, gutters, and min-height so the
               editor (which owns its own top bar + full-height layout) sits truly edge-to-edge. */}
           <div className={edgeToEdge
