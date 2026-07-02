@@ -127,6 +127,38 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
 }
 
 /**
+ * Set the Space's HEADER (cover) and PROFILE (logo) images. Each is a public URL the operator uploaded
+ * through the shared ImageUpload control (or a pasted URL); an empty string CLEARS that image back to
+ * the placeholder. Written to the cover_image_url / brand_logo_url COLUMNS (mirrors setSpaceAccent's
+ * column write). Owner/admin/editor-gated (staff preview fails closed). Only the provided keys are
+ * written, so a caller can update one image without disturbing the other. Returns ActionResult.
+ */
+export async function setSpaceImages(
+  slug: string,
+  images: { coverImageUrl?: string | null; brandLogoUrl?: string | null },
+): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const patch: Record<string, unknown> = {}
+  if ('coverImageUrl' in images) patch.cover_image_url = images.coverImageUrl?.trim() || null
+  if ('brandLogoUrl' in images) patch.brand_logo_url = images.brandLogoUrl?.trim() || null
+  if (Object.keys(patch).length === 0) return ok()
+
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => {
+      update: (v: Record<string, unknown>) => { eq: (c: string, val: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { error } = await db.from('spaces').update(patch).eq('id', auth.spaceId)
+  if (error) return fail('Could not save your images. Try again.')
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
  * Set the Hero cover SCRIM treatment ('shade' dark scrim vs 'blend' fade-to-canvas). Owner/admin/
  * editor-gated (staff preview fails closed). Only affects the Hero cover size. Returns ActionResult.
  */

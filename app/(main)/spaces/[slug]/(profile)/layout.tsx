@@ -311,14 +311,18 @@ export default async function SpaceProfileChromeLayout({
   const infoBand = (
     <div>
       {!isHero && (
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="flex min-w-0 items-end gap-4">
-            <div className="-mt-12 shrink-0 sm:-mt-14">
+        // HEADER identity: the logo chip OVERLAPS the cover bottom (a single -mt lift on the chip
+        // alone, so only the logo rides up onto the image while the name + tagline sit cleanly below
+        // it). The name lockup sits to the chip's right, bottom-aligned to it; the action row sits on
+        // the same line, pushed right, wrapping under only when the row runs out of room.
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <div className="flex min-w-0 items-end gap-4 sm:gap-5">
+            <div className="-mt-16 shrink-0 sm:-mt-20">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
-            <div className="min-w-0 pb-1">{nameLockup(false)}</div>
+            <div className="min-w-0">{nameLockup(false)}</div>
           </div>
-          <div className="pb-1">{identityActions(false)}</div>
+          <div>{identityActions(false)}</div>
         </div>
       )}
       <SpaceProfileTabs tabs={tabs} adminTabs={adminTabs} />
@@ -363,6 +367,8 @@ export default async function SpaceProfileChromeLayout({
           accent={space.brandAccent ?? ''}
           blocks={readBlockRows(homeDoc)}
           businessInfo={readProfileData(space.preferences)}
+          coverImageUrl={space.coverImageUrl}
+          brandLogoUrl={space.brandLogoUrl}
         />
       )}
     </AccentScope>

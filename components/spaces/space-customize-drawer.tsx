@@ -29,6 +29,8 @@ export function SpaceCustomizeDrawer({
   accent,
   blocks,
   businessInfo,
+  coverImageUrl = null,
+  brandLogoUrl = null,
   focus = null,
 }: {
   slug: string
@@ -40,6 +42,8 @@ export function SpaceCustomizeDrawer({
   accent: string
   blocks: SpaceBlockRow[]
   businessInfo: SpaceProfileData
+  coverImageUrl?: string | null
+  brandLogoUrl?: string | null
   focus?: { choices: FocusChoiceLike[] } | null
 }) {
   const [open, setOpen] = useState(false)
@@ -103,6 +107,8 @@ export function SpaceCustomizeDrawer({
             accent={accent}
             blocks={blocks}
             businessInfo={businessInfo}
+            coverImageUrl={coverImageUrl}
+            brandLogoUrl={brandLogoUrl}
             focus={focus}
           />
         </div>

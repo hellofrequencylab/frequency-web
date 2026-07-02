@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Config } from '@measured/puck'
 
 // The STANDARDIZED block library, shared by BOTH the editor (<Puck>) and the
@@ -24,6 +25,17 @@ import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 import { profileComponents } from '@/components/page-editor/blocks/profile'
 
 export const config: Config = {
+  // ROOT render: on a SPACE page (identified by the injected `metadata.space`) the profile blocks are
+  // a FLAT top-level list (no SpaceLayout wrapper — so each block is individually editable), so the
+  // root supplies the vertical rhythm between them here. Every OTHER surface (marketing, splash, member
+  // Spotlight) passes children straight through untouched, so their self-spacing sections are unchanged.
+  root: {
+    render: ({ children, puck }: { children: ReactNode; puck?: { metadata?: Record<string, unknown> } }) => {
+      const isSpace = !!puck?.metadata?.space
+      if (!isSpace) return <>{children}</>
+      return <div className="space-y-12 py-8 sm:space-y-14 sm:py-10">{children}</div>
+    },
+  },
   components: {
     ...headingComponents,
     ...primitivesComponents,
