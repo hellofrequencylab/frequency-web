@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -18,6 +18,10 @@ export type ScopeKind = Scope['kind']
 
 /** The 9-category spine (EMBEDDED-ADMIN.md / ADR-137) — a module's category. */
 export type AdminSlot =
+  // Personal "You" section (ADMIN-RAIL.md Phase 4). NOT one of the 9 management categories: it holds
+  // a signed-in member's OWN account settings and renders ABOVE the management spine. Deliberately
+  // omitted from SPINE_ORDER's management run — spine.ts places it first, on its own.
+  | 'account'
   | 'basics'
   | 'place'
   | 'people'
@@ -309,6 +313,31 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // profile's name/handle/bio now lives in the dedicated Edit Profile flow
   // (/settings/profile for the owner; the full member manager for moderators), so
   // the profile settings column no longer surfaces a person-settings box.
+
+  // ── Personal "You" apps (ADMIN-RAIL.md Phase 4) ─────────────────────────────────────────────────
+  // Global-scope, member-gated editor Apps that apply to every signed-in viewer for their OWN account.
+  // They make the admin bar's editor set non-empty for any authed member, so the bar becomes the
+  // always-available site-wide settings menu. Each wraps an EXISTING /settings/* form (reuse, never
+  // rewrite); the underlying settings actions enforce auth server-side via the (main) layout. The
+  // 'account' slot renders ABOVE the management spine (spine.ts). Gated `account.manage` — held by
+  // every signed-in viewer on the global scope, denied to signed-out visitors (fail-closed).
+  //
+  // Only Appearance ships wrapped today: its ThemeSwitcher is fully self-sufficient in the drawer (it
+  // reads the resolved axes from the shell root and writes via its own server actions). Account,
+  // Profile, Notifications, Connections, and Billing each need server-fetched initial state (blocked
+  // list / profile row / prefs / Stripe portal) with no client-callable getter to reuse, so they stay
+  // as their existing /settings/* pages — the "You" row is a page-routed App for those (Phase-4 note).
+  {
+    id: 'account.appearance',
+    label: 'Appearance',
+    desc: 'Your palette, feel, and seasonal accent. Saved to this browser.',
+    Icon: Palette,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    order: 10,
+  },
 ] as const
 
 /** The modules to render for a scope, given the viewer's resolved capabilities. */
@@ -352,3 +381,14 @@ export function modulesForScopeKind(kind: ScopeKind, surface?: AdminSurface): Ad
 export function moduleById(id: string): AdminModule | undefined {
   return ADMIN_MODULES.find((m) => m.id === id)
 }
+
+/**
+ * The ids of the personal "You" modules (ADMIN-RAIL.md Phase 4) — the global-scope editor modules
+ * that apply to a signed-in viewer's OWN account. Derived from the catalog (a module is personal iff
+ * it attaches to the `global` scope), so registering one new personal row here needs no extra wiring.
+ * The settings panel resolves these INDEPENDENT of the page scope and excludes them from the page's
+ * management categories, so the global scope's personal set never doubles as a management column.
+ */
+export const PERSONAL_MODULE_IDS: ReadonlySet<string> = new Set(
+  ADMIN_MODULES.filter((m) => m.scopes.includes('global')).map((m) => m.id),
+)

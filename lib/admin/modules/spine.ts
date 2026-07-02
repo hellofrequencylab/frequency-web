@@ -10,6 +10,7 @@
 
 import type { LucideIcon } from 'lucide-react'
 import {
+  CircleUser,
   Info,
   MapPin,
   Users,
@@ -25,8 +26,11 @@ import {
 import type { AdminSlot } from './registry'
 
 /** The fixed spine order (P5 — fixed order = muscle memory). Mirrors the AdminSlot union; the browse
- *  list, grouping, and drop-empty all walk it, so a slot's rank is declared once, here. */
+ *  list, grouping, and drop-empty all walk it, so a slot's rank is declared once, here. The personal
+ *  'account' ("You") slot leads, so a signed-in member's own settings sit ABOVE the management spine
+ *  (ADMIN-RAIL.md Phase 4) — it is NOT one of the 9 management categories, just first in the walk. */
 export const SPINE_ORDER: readonly AdminSlot[] = [
+  'account',
   'basics',
   'place',
   'people',
@@ -49,6 +53,7 @@ export interface SpineMeta {
 /** Noun labels + icons for every spine slot (docs/EMBEDDED-ADMIN.md §2 — "settings as questions",
  *  named as short nouns). Labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes). */
 export const SPINE_META: Record<AdminSlot, SpineMeta> = {
+  account: { label: 'You', Icon: CircleUser },
   basics: { label: 'Basics', Icon: Info },
   place: { label: 'Place & Time', Icon: MapPin },
   people: { label: 'People', Icon: Users },
@@ -61,6 +66,11 @@ export const SPINE_META: Record<AdminSlot, SpineMeta> = {
   billing: { label: 'Billing', Icon: CreditCard },
   danger: { label: 'Danger', Icon: AlertTriangle },
 }
+
+/** The personal "You" section chrome (ADMIN-RAIL.md Phase 4) — the header shown above the management
+ *  spine. An alias of the 'account' slot meta, exported so the settings panel labels the section from
+ *  one place. Voice canon: no em dashes. */
+export const PERSONAL_META: SpineMeta = SPINE_META.account
 
 /** The minimal App shape the spine helpers read — `id` + which spine `category` it sits in. */
 interface SpineApp {
@@ -84,6 +94,16 @@ export function groupIntoSpine(apps: readonly SpineApp[]): SpineGroup[] {
     const appIds = apps.filter((a) => a.category === slot).map((a) => a.id)
     return appIds.length ? [{ slot, appIds }] : []
   })
+}
+
+/**
+ * The personal "You" group (ADMIN-RAIL.md Phase 4): the ordered ids of the personal apps, kept
+ * SEPARATE from the 9-category management spine. Filters to the 'account' slot so a caller can pass a
+ * mixed list and get just the personal run, in input order (the caller orders personal apps by their
+ * editor `order`). A tiny pure seam so the "You" section is built + tested like groupIntoSpine.
+ */
+export function groupPersonal(apps: readonly SpineApp[]): string[] {
+  return apps.filter((a) => a.category === 'account').map((a) => a.id)
 }
 
 /** The App shape `summaryFor` reads — `label` + `category`. */

@@ -48,6 +48,12 @@ export type Capability =
   | 'task.claim'
   // profile
   | 'profile.edit'
+  // account — every signed-in member manages their OWN account (the "You" personal
+  // settings: appearance, notifications, connections, …). Resolved on the GLOBAL scope
+  // for any authenticated viewer (self-account only); it gates the standardized admin
+  // bar's personal "You" section (docs/ADMIN-RAIL.md Phase 4). UX on the client; each
+  // underlying settings action still enforces auth server-side via the (main) layout.
+  | 'account.manage'
   // spotlight — a member's opt-in public mini-site (docs/NAMING.md "Spotlight page").
   // OFF for everyone by default. `enable` = a Crew+ OWNER may turn their OWN Spotlight
   // on (self-serve setup); `manage` = the owner of an enabled Spotlight (or a janitor)
@@ -149,6 +155,11 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
 
   switch (scope.kind) {
     case 'global': {
+      // Every signed-in member may manage their OWN account (the "You" personal settings).
+      // Self-account only — an anonymous viewer (no profileId) never holds it, so the
+      // admin bar's personal section is fail-closed for signed-out visitors (Phase 4).
+      if (profileId) caps.add('account.manage')
+
       // Staff (admin/janitor) reach the Admin tab. Admin entry is the STAFF axis,
       // not the community ladder (host+ stewardship lives in per-scope caps below).
       if (isStaff) caps.add('admin.access')

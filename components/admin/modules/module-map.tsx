@@ -21,6 +21,7 @@ import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
+import { PersonalAppearanceModule } from './personal-appearance-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
 // (lib/admin/modules/registry.ts) stays pure metadata — it must, because the module
@@ -51,4 +52,6 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'practice.settings': PracticeSettingsModule,
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
+  // Personal "You" apps (ADMIN-RAIL.md Phase 4) — self-account settings for any signed-in viewer.
+  'account.appearance': PersonalAppearanceModule,
 }

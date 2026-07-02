@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest'
 import {
   SPINE_ORDER,
   SPINE_META,
+  PERSONAL_META,
   groupIntoSpine,
+  groupPersonal,
   summaryFor,
   shouldFlatten,
 } from './spine'
@@ -50,6 +52,30 @@ describe('groupIntoSpine', () => {
 
   it('returns [] for no apps', () => {
     expect(groupIntoSpine([])).toEqual([])
+  })
+
+  it('emits the personal "You" (account) slot FIRST, above the management spine (Phase 4)', () => {
+    // account leads SPINE_ORDER, so a personal app + a management app group with 'You' on top.
+    const apps = [app('acc', 'account'), app('b', 'basics'), app('p', 'people')]
+    expect(groupIntoSpine(apps).map((g) => g.slot)).toEqual(['account', 'basics', 'people'])
+  })
+})
+
+describe('personal "You" grouping (Phase 4)', () => {
+  it('PERSONAL_META is the account slot chrome: labelled "You", no em dash', () => {
+    expect(PERSONAL_META).toBe(SPINE_META.account)
+    expect(PERSONAL_META.label).toBe('You')
+    expect(PERSONAL_META.label).not.toMatch(/—/)
+    expect(PERSONAL_META.Icon).toBeTruthy()
+  })
+
+  it('groupPersonal returns only the account-slot ids, in input order', () => {
+    const apps = [app('acc1', 'account'), app('b', 'basics'), app('acc2', 'account')]
+    expect(groupPersonal(apps)).toEqual(['acc1', 'acc2'])
+  })
+
+  it('groupPersonal is empty when there are no personal apps', () => {
+    expect(groupPersonal([app('b', 'basics')])).toEqual([])
   })
 })
 
