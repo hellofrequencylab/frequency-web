@@ -121,6 +121,7 @@ export function SpaceLandingEditor({
   data,
   customized = false,
   pageSlug = 'home',
+  spaceContent,
 }: {
   slug: string
   title: string
@@ -129,8 +130,12 @@ export function SpaceLandingEditor({
   customized?: boolean
   /** Which profile page this editor edits + publishes to (default Home). */
   pageSlug?: string
+  /** The SAME central content the public landing injects, so the editor renders blocks with the
+   *  operator's REAL data (WYSIWYG) rather than empty placeholders. Passed as Puck `metadata.space`. */
+  spaceContent?: unknown
 }) {
   const exitHref = `/spaces/${slug}`
+  const metadata = spaceContent ? { space: spaceContent } : undefined
   const exitControl = (
     <Link
       href={exitHref}
@@ -146,6 +151,7 @@ export function SpaceLandingEditor({
         <Puck
           config={config}
           data={data}
+          metadata={metadata}
           headerTitle={`Editing: ${title}`}
           overrides={{
             headerActions: () => (
@@ -161,6 +167,7 @@ export function SpaceLandingEditor({
       mobile={{
         config,
         data,
+        metadata,
         title,
         // Space landings persist only on Publish (same model as the desktop editor), so
         // no draft-only save. Publish re-checks the owner/admin/editor gate server-side;

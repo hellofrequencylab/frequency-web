@@ -68,6 +68,10 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   const isSpaceProfile =
     /^\/spaces\/[^/]+/.test(pathname) && !/^\/spaces\/[^/]+\/(manage|settings|crm|edit-page)(\/|$)/.test(pathname)
 
+  // Space profiles draw their OWN hairline ABOVE the nav menu and want NO line UNDER it (owner
+  // directive), so this shell divider is suppressed there entirely — no rule, no controls.
+  if (isSpaceProfile) return null
+
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.
   const bareRule = asDivider ? <div className="mb-5 border-b border-border sm:mb-6" /> : null
