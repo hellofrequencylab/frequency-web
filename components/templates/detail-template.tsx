@@ -33,6 +33,7 @@ export function DetailTemplate({
   back,
   band,
   tabs,
+  stickyNav,
   children,
 }: {
   /** A fully custom hero node rendered ABOVE the context header band. The escape hatch for a
@@ -59,6 +60,11 @@ export function DetailTemplate({
    *  page `<h1>` itself; `title` is then ignored for rendering. */
   band?: React.ReactNode
   tabs?: DetailTab[]
+  /** OPTIONAL sticky menu band rendered as a direct child of the page root (NOT inside the short
+   *  header), so it pins under the global header and STAYS pinned for the whole scroll — its containing
+   *  block is the full-height page, not the header. Used by the Space profile for its persistent sub-nav.
+   *  When set, it draws its own top+bottom hairline and replaces the default `tabs`/divider treatment. */
+  stickyNav?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -113,8 +119,8 @@ export function DetailTemplate({
           </div>
         )}
 
-        {/* Context tabs */}
-        {tabs && tabs.length > 0 && (
+        {/* Context tabs (the non-sticky default; a page using `stickyNav` passes its menu there instead). */}
+        {!stickyNav && tabs && tabs.length > 0 && (
           <nav className="flex items-center gap-1 mt-4 -mb-px overflow-x-auto">
             {tabs.map((tab) => (
               <Link
@@ -133,7 +139,17 @@ export function DetailTemplate({
         )}
       </header>
 
-      {/* The header's hairline rule, with the on-page "Settings" split inline on it (one line). */}
+      {/* The STICKY sub-nav band (Space profile): a direct child of the page root so it pins under the
+          global header and stays pinned across the whole scroll. It owns its hairlines + an opaque canvas
+          backdrop so content scrolls cleanly beneath it. Sits below the header's z-30. */}
+      {stickyNav && (
+        <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-y border-border bg-canvas/95 backdrop-blur-sm">
+          {stickyNav}
+        </div>
+      )}
+
+      {/* The header's hairline rule, with the on-page "Settings" split inline on it (one line). It
+          self-suppresses on Space profiles, so the sticky band above is the only rule there. */}
       <PageAdminBar asDivider />
 
       {/* Body — usually a Stream or Index */}

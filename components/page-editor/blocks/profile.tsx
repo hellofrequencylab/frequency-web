@@ -119,11 +119,13 @@ function EditorStub({ label, hint }: { label: string; hint: string }) {
 
 // The ANCHOR seam for the pre-populated profile menu: each section-level block renders inside a
 // <section id> so the chrome's derived menu (lib/spaces/section-anchors.ts) can deep-link to it.
-// `scroll-mt` clears the app header on jump; `empty:hidden` collapses the wrapper when the block
-// renders nothing (honest-empty), so a hidden section never leaves a phantom gap in the stack.
+// `scroll-mt` clears BOTH the global header AND the sticky profile sub-nav pinned beneath it on jump,
+// so an anchored section lands just below the persistent menu (which stays in view) rather than hidden
+// under it; `empty:hidden` collapses the wrapper when the block renders nothing (honest-empty), so a
+// hidden section never leaves a phantom gap in the stack.
 function AnchorSection({ anchor, children }: { anchor: string; children: React.ReactNode }) {
   return (
-    <section id={anchor} className="scroll-mt-28 empty:hidden">
+    <section id={anchor} className="scroll-mt-36 empty:hidden">
       {children}
     </section>
   )
