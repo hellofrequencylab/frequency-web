@@ -108,7 +108,11 @@ export function isSafeRoute(pathname: string): boolean {
 // empty right gutter). They fall through to 'global' below like every other member surface. Only a
 // surface whose body truly scrolls sideways belongs in this list.
 const DASHBOARD_NONE_PATTERNS: RegExp[] = [
-  /^\/spaces\/[^/]+\/crm$/, // a Space's CRM board (paid, owner/admin-gated) — horizontal stage board
+  // NOTE: the Space CRM board (/spaces/<slug>/crm) USED to drop the right rail here (a horizontal stage
+  // board reads edge to edge). Owner directive (2026-07): the CRM keeps the GLOBAL community rail like
+  // every other member surface — its default People/Cockpit views are vertical and read fine beside the
+  // rail, and the Pipeline view simply scrolls horizontally within its (narrower) column. So it now
+  // falls through to 'global' in railFor; only the full-WIDTH editors below still drop the rail.
   // The Space LANDING editor (/spaces/<slug>/edit-page, ADR-476/472) is a FULL-WIDTH editor: it drops
   // BOTH rails so the Puck builder (left components · canvas · right fields) uses the whole width, but
   // it KEEPS the site header (owner directive, 2026-07: "full page with the main header still
