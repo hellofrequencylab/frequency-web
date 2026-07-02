@@ -157,17 +157,37 @@ export async function decideApplication(input: DecideInput, accept: boolean): Pr
   }
 
   // ── Accept ──────────────────────────────────────────────────────────────────
-  const handoff = await runAcceptHandoff(app, input.starterTemplateId ?? null)
-
-  await admin
+  // Claim-then-effect (data integrity): stamp `accepted` BEFORE creating the Starter Circle,
+  // conditioned on the row still carrying its pre-decision status, and abort if the claim fails
+  // or is lost. Previously the handoff ran first and the status write's error was never checked —
+  // so a silently-failed update left status at `in_review`, and a re-accept re-ran runAcceptHandoff,
+  // minting a DUPLICATE Starter Circle. The conditional claim also makes concurrent accepts safe.
+  const { data: claimed, error: claimErr } = await admin
     .from('applications')
     .update({
       status: 'accepted',
       reviewed_by: input.reviewerProfileId,
       decided_at: now,
       decision_reason: input.reason?.trim()?.slice(0, 500) || null,
-      handoff: (handoff as unknown) ?? null,
     })
+    .eq('id', app.id)
+    .eq('status', app.status)
+    .select('id')
+    .maybeSingle()
+  if (claimErr) throw new Error('Could not record the decision. No Circle was created.')
+  if (!claimed) {
+    // Another accept won the claim (or the row moved on): do NOT create a second Circle.
+    const fresh = await getApplication(app.id)
+    return { status: 'accepted', handoff: fresh?.handoff ?? null }
+  }
+
+  const handoff = await runAcceptHandoff(app, input.starterTemplateId ?? null)
+
+  // Record the handoff detail on the already-claimed row. Best-effort: the claim above is the
+  // idempotency guard, so a failure here can never cause a duplicate Circle on a later re-accept.
+  await admin
+    .from('applications')
+    .update({ handoff: (handoff as unknown) ?? null })
     .eq('id', app.id)
 
   try {

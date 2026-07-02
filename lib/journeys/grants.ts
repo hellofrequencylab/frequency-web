@@ -113,7 +113,14 @@ export async function grantExtraCreditZaps(
     .insert({ rule_key: ruleKey, profile_id: profileId, reward_kind: 'zaps', amount: amt, detail: label.slice(0, 200) })
   if (error) return 0 // already granted / lost the race
   const res = await awardZaps(profileId, amt, { actionType: 'journey_extra_credit', metadata: { rule: ruleKey, label } })
-  return res.awarded ? res.amount : 0
+  if (!res.awarded) {
+    // Release the claim so a retry can pay. Without this the reward_grants row blocks every
+    // future attempt while nothing was ever awarded — the bonus is stranded (mirrors the
+    // claim-then-pay recovery used by the quest-finish purse, C5).
+    await admin.from('reward_grants').delete().eq('rule_key', ruleKey).eq('profile_id', profileId)
+    return 0
+  }
+  return res.amount
 }
 
 /** If `itemId` is an extra-credit block on this plan, pay its bonus Zaps (idempotent). Loads the

@@ -7,6 +7,8 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { atLeastRole } from '@/lib/core/roles'
+import { getStaffMember } from '@/lib/staff'
+import { staffCan } from '@/lib/core/staff-roles'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { updateTicketFields, addStaffMessage, getTicketAdmin, type TicketUpdate } from '@/lib/support/store'
 import { TICKET_PRIORITIES, type TicketPriority } from '@/lib/support/types'
@@ -17,8 +19,14 @@ import { retrieveHelpChunks } from '@/lib/ai/help-rag'
 async function requireAgent(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
   if (!me) return 'Sign in first.'
-  if (!atLeastRole(me.community_role, 'host')) return 'Support console is staff-only.'
-  return { id: me.id }
+  // Same additive, fail-closed union the page gates on (requireAdmin('host', { staff: 'members' })):
+  // community host+ OR a staff member holding the `members` domain. Without the staff arm, a
+  // platform-staff agent (community_role 'member', the normal case under ADR-208) passed the page
+  // gate but every action here returned "staff-only" — mirrors feed/report-actions.ts resolveModerator.
+  if (atLeastRole(me.community_role, 'host')) return { id: me.id }
+  const staff = await getStaffMember().catch(() => null)
+  if (staffCan(staff?.role, 'members', 'write')) return { id: me.id }
+  return 'Support console is staff-only.'
 }
 
 export async function setTicketFields(id: string, patch: TicketUpdate): Promise<ActionResult> {
