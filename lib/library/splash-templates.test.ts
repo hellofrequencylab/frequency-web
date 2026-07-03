@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { SPLASH_TEMPLATES, listSplashTemplates, splashTemplateById } from './splash-templates'
+import { SPLASH_TEMPLATES, listSplashTemplates, splashTemplateById, splashUsageHref } from './splash-templates'
 import { LIBRARY_KINDS } from './types'
 
 // Locks the seeded splash-template catalog that the Loom Studio Splash lane CATALOGS
@@ -43,5 +43,28 @@ describe('splash template catalog', () => {
         expect(s).not.toMatch(/[—–]/)
       }
     }
+  })
+})
+
+describe('splashUsageHref (the "Used in" deep-link OUT)', () => {
+  it('a page usage deep-links OUT to the Puck micro-site editor at /edit/<slug>', () => {
+    expect(splashUsageHref('page', 'home')).toBe('/edit/home')
+    expect(splashUsageHref('page', 'spaces')).toBe('/edit/spaces')
+  })
+
+  it('🔴 §10: the deep-link never targets inside the Loom library lane', () => {
+    const href = splashUsageHref('page', 'home')
+    expect(href?.startsWith('/admin/library')).toBe(false)
+  })
+
+  it('a null ref_id has no target', () => {
+    expect(splashUsageHref('page', null)).toBeNull()
+  })
+
+  it('contexts with no single splash editor route resolve to null (rendered as plain text)', () => {
+    expect(splashUsageHref('space_brand', 'abc')).toBeNull()
+    expect(splashUsageHref('spotlight', 'abc')).toBeNull()
+    expect(splashUsageHref('email', 'abc')).toBeNull()
+    expect(splashUsageHref('other', 'abc')).toBeNull()
   })
 })

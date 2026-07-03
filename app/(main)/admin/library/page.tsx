@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Images, Search, ChevronLeft, ChevronRight, LayoutGrid, Grid2x2, List } from 'lucide-react'
+import { Images, Search, ChevronLeft, ChevronRight, LayoutGrid, Grid2x2, List, Sparkles } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { LIBRARY_KINDS } from '@/lib/library/types'
@@ -23,6 +23,7 @@ import { LoomRail } from './loom-rail'
 import { CreateStudio } from './create-studio'
 import { AppsLaneView } from './apps-lane-view'
 import { SplashLaneView } from './splash-lane-view'
+import { splashTemplates } from '@/lib/library/splash-registry'
 import { IconsLaneView } from './icons-lane-view'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
@@ -198,6 +199,19 @@ export default async function LoomStudioPage({
   }
   const pageHref = (n: number) => hrefWith({ page: n > 1 ? n : undefined })
 
+  // Cross-lane discovery: the Splash lane lives behind ?lane=splash, so a top-level search (or a
+  // template/flow type filter) would otherwise miss its code-backed catalog. Surface matching splash
+  // templates as a small labeled strip that links INTO the lane. Read-only + additive; the DB grid
+  // below is untouched (docs/LOOM-PLATFORM.md §4).
+  const splashLaneMatches =
+    q || kind === 'template' || kind === 'flow'
+      ? splashTemplates().filter(
+          (t) =>
+            (!kind || t.kind === kind) &&
+            (!q || `${t.title} ${t.description}`.toLowerCase().includes(q.toLowerCase())),
+        )
+      : []
+
   return (
     <AdminTemplate
       title="Loom Studio"
@@ -297,6 +311,27 @@ export default async function LoomStudioPage({
           }
         >
           <div>
+            {splashLaneMatches.length > 0 && (
+              <div className="mb-6 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+                <div className="mb-3 flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-primary-strong" aria-hidden />
+                  <p className="font-display text-xs uppercase tracking-wide text-subtle">From the Splash lane</p>
+                  <span className="text-xs text-subtle">{splashLaneMatches.length}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {splashLaneMatches.map((t) => (
+                    <Link
+                      key={t.id}
+                      href={`/admin/library?lane=splash&section=templates&q=${encodeURIComponent(t.title)}`}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-sm text-text hover:bg-surface-elevated"
+                    >
+                      <span className="truncate">{t.title}</span>
+                      <span className="shrink-0 text-2xs uppercase tracking-wide text-subtle">{t.kind}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             {assets.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border-strong px-6 py-16 text-center">
                 <Images className="mx-auto mb-3 h-8 w-8 text-subtle" aria-hidden />
