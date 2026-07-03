@@ -83,7 +83,7 @@ export const SURFACES: Record<SurfaceKey, SurfaceDef> = {
     label: 'Member page',
     contentSource: 'profiles.meta.spotlight (same store as spotlight — the additive bridge, ADR-500 Phase B; no separate user store)',
     resolver:
-      'lib/spotlight/puck/resolve.ts spotlightPuckDoc() (seedWhenEmpty:false) + spotlightRenderMeta, rendered by components/profile/profile-links-section.tsx under the bespoke people/[handle] profile',
+      'MemberProfileModules (per-block member render, U3) via components/profile/profile-spotlight-blocks.tsx under the people/[handle] profile; the standalone /spotlight page uses the same renderer',
     blockPreset: ['profile', 'linkTree', 'dynamic'],
     defaultTemplate: () => generateDefaultProfilePage(''),
   },

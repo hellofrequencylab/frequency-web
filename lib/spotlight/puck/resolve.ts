@@ -13,7 +13,7 @@ import { linktreePreset } from '@/lib/page-editor/templates/linktree'
 //
 // It exists because the member's Spotlight now renders on MORE THAN ONE surface: the standalone
 // Signal page (components/spotlight/puck-render.tsx) AND the in-app member profile
-// (components/profile/profile-links-section.tsx, Phase B). Before this module each built the meta
+// (components/profile/profile-spotlight-blocks.tsx, decomposed into per-block modules). Before this module each built the meta
 // object + bridged the layout INLINE, so the two copies could silently drift — a stat added to one
 // surface and forgotten on the other would break the owner's principle ("the content always comes
 // from the same database, shown distinctly per surface"). Now both surfaces resolve through here,

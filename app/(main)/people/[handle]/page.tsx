@@ -43,7 +43,7 @@ import { PrivateContactPanel } from '@/components/connections/private-contact-pa
 import { DetailTemplate } from '@/components/templates'
 import { ProfileCover } from '@/components/profile/profile-cover'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
-import { ProfileLinksSection } from '@/components/profile/profile-links-section'
+import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 
 export default async function ProfilePage({
   params,
@@ -466,12 +466,13 @@ export default async function ProfilePage({
           {/* Staff-only: this member's support history, wired into the console. */}
           {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
 
-          {/* More about this member — their published Spotlight (bio-link) content, rendered
-              in the in-app profile style (ADR-500 Phase B). Additive + fail-safe: renders
-              nothing when they have no published Spotlight. Behind Suspense so it never
-              blocks the profile's first byte. */}
+          {/* The member's published Spotlight content, DECOMPOSED into individual profile blocks
+              (ADR-508 continuation) — each Spotlight block is its own block here, not one "More about"
+              box, arranged with the profile in mind (the bio + stats the profile already shows are
+              dropped). Additive + fail-safe: renders nothing when they have no published Spotlight.
+              Behind Suspense so it never blocks the profile's first byte. */}
           <Suspense fallback={null}>
-            <ProfileLinksSection handle={handle} />
+            <ProfileSpotlightBlocks handle={handle} />
           </Suspense>
 
           {/* Composer + timeline. */}
