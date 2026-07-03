@@ -6,7 +6,7 @@ import type { Data } from '@/lib/page-editor/types'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
 import { config } from '@/lib/page-editor/config'
-import { publishPage, unpublishPage } from '@/app/edit/actions'
+import { publishPage, unpublishPage } from '@/app/(main)/edit/actions'
 import { ResponsiveEditor } from '@/components/page-editor/mobile/responsive-editor'
 import { DesktopEditor, useEditorDoc } from '@/components/page-editor/desktop/desktop-editor'
 
