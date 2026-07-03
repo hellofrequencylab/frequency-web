@@ -159,6 +159,10 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Audit log blocks (/admin/audit) — the append-only security trail ──
   { id: 'audit-recent-actions', label: 'Recent actions', description: 'The 100 most recent sensitive platform actions, newest first: who did what, to whom.' },
 
+  // ── Structure roster blocks (/admin/hubs, /admin/nexuses) — the editable network tables ──
+  { id: 'admin-hubs-roster', label: 'Hub roster', description: 'The editable table of every hub with its nexus, guide, circle count, and status. Edit a row inline; the "no hubs yet" first-use empty leads when the table is empty.' },
+  { id: 'admin-nexuses-roster', label: 'Nexus roster', description: 'The editable table of every nexus with its hub count, member cap, mentor, and status. Edit a row inline; the "no nexuses yet" first-use empty leads when the table is empty.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -402,6 +406,17 @@ const COMMUNITY_ADMIN_MODULE_IDS = [
 // admin gate; the module renders only through that gated route.
 const AUDIT_MODULE_IDS = ['audit-recent-actions'] as const
 
+// The Hubs admin page (/admin/hubs). The whole interior is one self-fetching roster (the editable hub
+// table + its first-use empty). Its only page facet is the ?edit=<id> deep-link, which the module reads
+// from the x-search request header (the admin-practices-library seam), so it converts wholesale to one
+// module. The page keeps its guide + structure-staff gate.
+const ADMIN_HUBS_MODULE_IDS = ['admin-hubs-roster'] as const
+
+// The Nexuses admin page (/admin/nexuses). The whole interior is one self-fetching roster (the editable
+// nexus table + its first-use empty), keyed only on the ?edit=<id> deep-link read from the x-search
+// header, so it converts wholesale to one module. The page keeps its mentor + structure-staff gate.
+const ADMIN_NEXUSES_MODULE_IDS = ['admin-nexuses-roster'] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -522,6 +537,8 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/crm/playbooks': CRM_PLAYBOOKS_MODULE_IDS,
   '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,
+  '/admin/hubs': ADMIN_HUBS_MODULE_IDS,
+  '/admin/nexuses': ADMIN_NEXUSES_MODULE_IDS,
   '/journeys': JOURNEYS_MODULE_IDS,
   '/friends': FRIENDS_MODULE_IDS,
   '/crew/leaderboard': LEADERBOARD_MODULE_IDS,

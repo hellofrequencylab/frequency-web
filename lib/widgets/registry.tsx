@@ -85,6 +85,8 @@ import { CommunityFeedReach } from '@/components/widgets/community/feed-reach'
 import { CommunityManage } from '@/components/widgets/community/manage'
 import { CommunityRelated } from '@/components/widgets/community/related'
 import { AuditRecentActions } from '@/components/widgets/audit/recent-actions'
+import { AdminHubsRoster } from '@/components/widgets/admin/admin-hubs-roster'
+import { AdminNexusesRoster } from '@/components/widgets/admin/admin-nexuses-roster'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -247,6 +249,9 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'community-related': CommunityRelated,
   // Audit log (/admin/audit) — the append-only security trail.
   'audit-recent-actions': AuditRecentActions,
+  // Structure rosters (/admin/hubs, /admin/nexuses) — the editable network tables.
+  'admin-hubs-roster': AdminHubsRoster,
+  'admin-nexuses-roster': AdminNexusesRoster,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,

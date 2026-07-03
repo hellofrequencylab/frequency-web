@@ -1,39 +1,20 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
-import { NexusesClient } from './nexuses-client'
+import { AdminTemplate } from '@/components/templates'
+import { PageModules } from '@/components/widgets/page-modules'
 import { NewNexusCompose } from '@/components/compose/new-nexus-compose'
 
-
-export default async function AdminNexusesPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
+// NEXUSES — the editable network roster, module-driven (ADR-270/294): the page owns the AdminTemplate
+// header + the "New nexus" compose action, then renders <PageModules>, which lays out the nexus roster
+// as one self-fetching, fail-safe RSC (components/widgets/admin/admin-nexuses-roster.tsx). The
+// ?edit=<id> deep-link is read inside the module from the x-search request header (the admin-practices-
+// library seam), so the interior needs no page prop. The header action keeps its own outpost fetch (the
+// compose dropdown). requireAdmin('mentor', { staff: 'structure' }) gates the whole route; the module
+// renders only through it and never re-gates.
+export default async function AdminNexusesPage() {
   await requireAdmin('mentor', { staff: 'structure' })
-  const { edit } = await searchParams
 
   const admin = createAdminClient()
-  const { data: rawNexuses } = await admin
-    .from('nexuses')
-    .select(`id, name, status, member_cap, mentor_id,
-             mentor:profiles!mentor_id ( id, display_name ),
-             hubs ( id )`)
-    .order('name')
-
-  type RawNexusRow = {
-    id: string; name: string; status: string; member_cap: number; mentor_id: string | null;
-    mentor: { id: string; display_name: string } | null; hubs: { id: string }[];
-  }
-  const typedRawNexuses = (rawNexuses ?? []) as unknown as RawNexusRow[]
-  const nexuses = typedRawNexuses.map((n) => ({
-    ...n,
-    _hub_count: n.hubs?.length ?? 0,
-  }))
-
-  const { data: mentors } = await admin
-    .from('profiles')
-    .select('id, display_name')
-    .eq('community_role', 'mentor')
-    .eq('is_active', true)
-    .order('display_name')
-
   const { data: outposts } = await admin
     .from('outposts')
     .select('id, name')
@@ -47,9 +28,7 @@ export default async function AdminNexusesPage({ searchParams }: { searchParams:
       actions={<NewNexusCompose outposts={outposts ?? []} />}
       width="wide"
     >
-      <AdminSection>
-        <NexusesClient nexuses={nexuses} mentors={mentors ?? []} initialEditId={edit ?? null} />
-      </AdminSection>
+      <PageModules route="/admin/nexuses" />
     </AdminTemplate>
   )
 }
