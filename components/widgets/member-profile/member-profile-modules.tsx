@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { defaultMemberLayout } from '@/lib/entity-blocks/context'
+import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import {
   resolveMemberBlockData,
   toMemberEntity,
@@ -51,30 +53,47 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
 export function MemberProfileModules({
   member,
   layout,
+  grid,
 }: {
   /** The member's already-resolved Spotlight (from getPublishedSpotlight — the ONE reader). */
   member: SpotlightData
   /** Override the registry default order (e.g. a caller-supplied layout). Omitted = the fresh
-   *  member default (defaultMemberLayout). */
+   *  member default (defaultMemberLayout). Ignored when `grid` is supplied. */
   layout?: string[]
+  /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout). When present its
+   *  template + slots drive the render; otherwise the flat single-column `layout` is used. */
+  grid?: EntityLayout | null
 }) {
   const identity = toMemberEntity(member)
   const data = resolveMemberBlockData(member)
-  const resolved = layout ?? defaultMemberLayout()
 
-  // `@container/profile`: blocks size to THIS slot's width, not the viewport, so the module render drops
-  // cleanly into any column (the preview body, or a future block-picker canvas).
-  return (
-    <div className="@container/profile space-y-14">
-      {resolved.map((id) => {
-        const Block = MEMBER_PROFILE_BLOCKS[id]
-        if (!Block) return null
-        return (
-          <Suspense key={id} fallback={null}>
-            <Block member={identity} data={data} />
-          </Suspense>
-        )
-      })}
-    </div>
-  )
+  const renderBlock = (id: string) => {
+    const Block = MEMBER_PROFILE_BLOCKS[id]
+    if (!Block) return null
+    return (
+      <Suspense key={id} fallback={null}>
+        <Block member={identity} data={data} />
+      </Suspense>
+    )
+  }
+
+  // GRID path: lay the visible per-slot blocks into the chosen template. Fail-safe: unknown ids drop.
+  if (grid && grid.template) {
+    return (
+      <div className="@container/profile">
+        <EntityGrid
+          template={grid.template}
+          slot={(slotId) => {
+            const row = layoutSlots(grid).find((r) => r.slot === slotId)
+            return row ? row.ids.map(renderBlock) : null
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Flat single-column fallback (U2a). `@container/profile`: blocks size to THIS slot's width, not the
+  // viewport, so the module render drops cleanly into any column.
+  const resolved = layout ?? defaultMemberLayout()
+  return <div className="@container/profile space-y-14">{resolved.map(renderBlock)}</div>
 }

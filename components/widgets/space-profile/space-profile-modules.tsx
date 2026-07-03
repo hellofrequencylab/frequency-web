@@ -4,6 +4,8 @@ import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
+import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 
 import { AboutBlock } from './about'
 import { HighlightsBlock } from './highlights'
@@ -50,17 +52,28 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
   business: BusinessBlock,
 }
 
+/** The unified grid vocabulary keys blocks by registry id; this S1 renderer keys by ProfileBlockId. The
+ *  only divergence is `stats` (unified) vs `highlights` (S1); every other shared id matches. Unified
+ *  content ids (heading/text/...) have no space section here and fail-safe to null. */
+function toProfileBlockId(id: string): ProfileBlockId | null {
+  const normalized = id === 'stats' ? 'highlights' : id
+  return normalized in SPACE_PROFILE_BLOCKS ? (normalized as ProfileBlockId) : null
+}
+
 export async function SpaceProfileModules({
   space,
   layout,
+  grid,
 }: {
   space: SpaceProfileContext
   /** Override the derived layout (e.g. a caller-supplied order). Omitted = the operator's saved
-   *  block-picker layout merged over the fresh default (effectiveProfileLayout), fail-safe. */
+   *  block-picker layout merged over the fresh default (effectiveProfileLayout), fail-safe. Ignored when
+   *  `grid` is supplied. */
   layout?: ProfileBlockId[]
+  /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout) in the unified block
+   *  vocabulary. When present its template + slots drive the render; otherwise the flat list is used. */
+  grid?: EntityLayout | null
 }) {
-  const resolved = layout ?? effectiveProfileLayout(space, space.preferences)
-
   // ONE request-cached pass for every section's live data, with the SAME identity/profile inputs the
   // live Puck landing feeds, so the preview shows the operator's real content (not editor placeholders).
   const data = await getSpaceContentData(space.id, {
@@ -74,19 +87,34 @@ export async function SpaceProfileModules({
     profile: space.profile,
   })
 
-  // `@container/profile`: the sections size to THIS slot's width, not the viewport, so the module render
-  // drops cleanly into any column (the staff preview body, or a future block-picker canvas).
-  return (
-    <div className="@container/profile space-y-14">
-      {resolved.map((id) => {
-        const Block = SPACE_PROFILE_BLOCKS[id]
-        if (!Block) return null
-        return (
-          <Suspense key={id} fallback={null}>
-            <Block space={space} data={data} />
-          </Suspense>
-        )
-      })}
-    </div>
-  )
+  const renderBlock = (id: string) => {
+    const blockId = id.length === 0 ? null : toProfileBlockId(id)
+    if (!blockId) return null
+    const Block = SPACE_PROFILE_BLOCKS[blockId]
+    return (
+      <Suspense key={id} fallback={null}>
+        <Block space={space} data={data} />
+      </Suspense>
+    )
+  }
+
+  // GRID path (U2b): lay the visible per-slot blocks into the chosen template. Fail-safe: unknown ids drop.
+  if (grid && grid.template) {
+    return (
+      <div className="@container/profile">
+        <EntityGrid
+          template={grid.template}
+          slot={(slotId) => {
+            const row = layoutSlots(grid).find((r) => r.slot === slotId)
+            return row ? row.ids.map(renderBlock) : null
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Flat single-column fallback (S2). `@container/profile`: the sections size to THIS slot's width, not
+  // the viewport, so the module render drops cleanly into any column.
+  const resolved = layout ?? effectiveProfileLayout(space, space.preferences)
+  return <div className="@container/profile space-y-14">{resolved.map((id) => renderBlock(id))}</div>
 }
