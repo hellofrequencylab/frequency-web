@@ -79,3 +79,12 @@ export function listSplashTemplates(): readonly SplashTemplate[] {
 export function splashTemplateById(id: string): SplashTemplate | null {
   return SPLASH_TEMPLATES.find((t) => t.id === id) ?? null
 }
+
+/** A DEEP-LINK OUT for a where-referenced usage row (the "Used in" index reads public.library_usages
+ *  via lib/library/splash-registry). A `page` usage opens the Puck micro-site editor at /edit/<slug>;
+ *  the other contexts (space_brand / spotlight / email / other) have no single splash editor route we
+ *  can safely target, so they render as a plain label. Never links inside the Loom (§10). Pure. */
+export function splashUsageHref(context: string, refId: string | null): string | null {
+  if (!refId) return null
+  return context === 'page' ? `/edit/${refId}` : null
+}

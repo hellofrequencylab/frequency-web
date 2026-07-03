@@ -14,8 +14,8 @@ import {
   QrCode,
   Target,
 } from 'lucide-react'
-import type { SplashTemplate } from '@/lib/library/splash-templates'
-import type { LiveSplash } from '@/lib/library/splash-registry'
+import { splashUsageHref, type SplashTemplate } from '@/lib/library/splash-templates'
+import type { LiveSplash, SplashUsage } from '@/lib/library/splash-registry'
 
 // The Loom Studio Splash lane (docs/LOOM-PLATFORM.md §4, docs/PAGE-FRAMEWORK.md §10). Renders the
 // code-drawn splash CATALOG (templates) as browse cards, and the GOVERNANCE list (live splashes) as
@@ -26,8 +26,12 @@ import type { LiveSplash } from '@/lib/library/splash-registry'
 // plain link OUT (the Puck micro-site editor, or the QR studio). The Loom catalogs + governs; it is
 // never the splash block editor.
 
-/** A splash template plus its precomputed preview node (resolved in the Server Component). */
-export type SplashTemplateCard = SplashTemplate & { preview: ReactNode }
+/** A splash template plus its precomputed preview node (resolved in the Server Component) and its
+ *  "Used in" index (public.library_usages, resolved server-side by sourceSlug). */
+export type SplashTemplateCard = SplashTemplate & { preview: ReactNode; usages: SplashUsage[] }
+
+/** A live splash plus its "Used in" index (public.library_usages, resolved server-side). */
+export type LiveSplashCard = LiveSplash & { usages: SplashUsage[] }
 
 const KIND_META: Record<SplashTemplate['kind'], { label: string; Icon: typeof LayoutTemplate }> = {
   template: { label: 'Template', Icon: LayoutTemplate },
@@ -79,13 +83,15 @@ export function SplashLane({
   view = 'cards',
 }: {
   templates: SplashTemplateCard[]
-  live: LiveSplash[]
+  live: LiveSplashCard[]
   /** Which halves to render: all | templates | live | qr | micro. */
   show?: 'all' | 'templates' | 'live' | 'qr' | 'micro'
   view?: 'cards' | 'list'
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
+  const [openLiveId, setOpenLiveId] = useState<string | null>(null)
   const selected = templates.find((t) => t.id === openId) ?? null
+  const selectedLive = live.find((l) => l.id === openLiveId) ?? null
 
   const showTemplates = show === 'all' || show === 'templates'
   const showLive = show === 'all' || show === 'live' || show === 'qr' || show === 'micro'
@@ -170,7 +176,14 @@ export function SplashLane({
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-muted">
                     <SourceIcon className="h-3 w-3" aria-hidden /> {sourceLabel}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-text" title={l.title}>{l.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenLiveId(l.id)}
+                    className="min-w-0 flex-1 truncate text-left text-sm text-text hover:underline"
+                    title={l.title}
+                  >
+                    {l.title}
+                  </button>
                   <StatusChip status={l.status} />
                   {l.target && (
                     <span className="hidden min-w-0 max-w-[14rem] items-center gap-1 truncate text-xs text-subtle sm:inline-flex" title={l.target}>
@@ -202,7 +215,43 @@ export function SplashLane({
       )}
 
       {selected && <TemplateDrawer template={selected} onClose={() => setOpenId(null)} />}
+      {selectedLive && <LiveSplashDrawer splash={selectedLive} onClose={() => setOpenLiveId(null)} />}
     </div>
+  )
+}
+
+/** The "Used in" index (public.library_usages): each surface a splash asset lands on, deep-linked OUT
+ *  to its editor when one exists (a page usage → the Puck micro-site editor). Empty → a quiet line. */
+function UsageList({ usages }: { usages: SplashUsage[] }) {
+  if (usages.length === 0) {
+    return <p className="text-sm text-subtle">Not referenced yet</p>
+  }
+  return (
+    <ul className="space-y-1.5">
+      {usages.map((u, i) => {
+        const href = splashUsageHref(u.context, u.refId)
+        const label = u.refId ?? u.context
+        return (
+          <li
+            key={`${u.context}:${u.refId ?? ''}:${u.blockId ?? ''}:${i}`}
+            className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
+          >
+            <span className="shrink-0 rounded-full border border-border bg-surface-elevated px-2 py-0.5 text-2xs font-medium uppercase tracking-wide text-subtle">
+              {u.context}
+            </span>
+            {href ? (
+              <Link href={href} className="inline-flex items-center gap-1 font-medium text-primary-strong hover:underline">
+                {label}
+                <ExternalLink className="h-3 w-3 text-subtle" aria-hidden />
+              </Link>
+            ) : (
+              <span className="min-w-0 truncate text-text" title={label}>{label}</span>
+            )}
+            {u.blockId && <span className="text-xs text-subtle">block {u.blockId}</span>}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -263,6 +312,82 @@ function TemplateDrawer({ template, onClose }: { template: SplashTemplateCard; o
               <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
             </Link>
           </Field>
+
+          <Field label="Used in">
+            <UsageList usages={template.usages} />
+          </Field>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LiveSplashDrawer({ splash, onClose }: { splash: LiveSplashCard; onClose: () => void }) {
+  const { label: sourceLabel, Icon: SourceIcon } = SOURCE_META[splash.source]
+  const when = fmtDate(splash.schedule)
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Live splash">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-slat/40" />
+      <div className="relative flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface shadow-pop">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h2 className="font-display text-lg uppercase text-text">Live splash</h2>
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-subtle hover:bg-surface-elevated" aria-label="Close">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-5 p-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <h3 className="min-w-0 flex-1 truncate text-base font-semibold text-text" title={splash.title}>
+                {splash.title}
+              </h3>
+              <StatusChip status={splash.status} />
+            </div>
+            <p className="inline-flex items-center gap-1.5 text-xs text-subtle">
+              <SourceIcon className="h-3.5 w-3.5" aria-hidden /> {sourceLabel}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <Field label="Source">{sourceLabel}</Field>
+            <Field label="Status">{splash.status}</Field>
+            {splash.target && (
+              <Field label="Target">
+                <span className="inline-flex items-center gap-1.5 break-words">
+                  <Target className="h-3.5 w-3.5 shrink-0 text-subtle" aria-hidden /> {splash.target}
+                </span>
+              </Field>
+            )}
+            {when && (
+              <Field label="Schedule">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock className="h-3.5 w-3.5 text-subtle" aria-hidden /> {when}
+                </span>
+              </Field>
+            )}
+          </div>
+
+          {/* The only action DEEP-LINKS OUT to the real editor; the Loom never edits the splash here (§10). */}
+          <Field label="Edit">
+            <Link
+              href={splash.editHref}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated"
+              title={splash.editLabel}
+            >
+              <PencilLine className="h-3.5 w-3.5" aria-hidden /> {splash.editLabel}
+              <ExternalLink className="h-3.5 w-3.5 text-subtle" aria-hidden />
+            </Link>
+          </Field>
+
+          <Field label="Used in">
+            <UsageList usages={splash.usages} />
+          </Field>
+
+          <p className="text-xs text-subtle">
+            Editing opens the real editor: the Puck page editor for a micro-site, the QR studio for a QR
+            splash. The Loom catalogs and governs; it does not edit the splash here.
+          </p>
         </div>
       </div>
     </div>
