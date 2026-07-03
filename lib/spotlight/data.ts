@@ -9,6 +9,8 @@ import {
 import { validateSpotlightLayout, validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import type { SpotlightLayout, SpotlightBackground } from '@/lib/spotlight/blocks/schema'
 import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
+import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import { getTopFriendsForOwner, type TopFriend } from './top-friends'
 import { SPOTLIGHT_SELECT, type SpotlightRow } from './privacy'
 
@@ -39,6 +41,10 @@ export interface SpotlightData {
   /** The member's ordered Top Friends (the "Top 8"), resolved server-side from the
    *  spotlight_top_friends table joined to each friend's public profile. Empty when none. */
   topFriends: TopFriend[]
+  /** The member's saved unified GRID layout (ADR-508 U2b), read fail-safe off meta.entityGrid. Null when
+   *  absent / malformed so the module render falls back to the fresh member default. DELIBERATELY
+   *  separate from the live Puck nodes (meta.spotlight.*): reading it never affects the Puck render. */
+  grid: EntityLayout | null
 }
 
 /**
@@ -96,6 +102,10 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
   // The ordered Top Friends grid (resolved to each friend's public profile fields).
   const topFriends = await getTopFriendsForOwner(g.id)
 
+  // The member's saved unified grid layout (U3 module render), read fail-safe off the SAME meta blob the
+  // publish/layout gate already loaded — no extra query. Never returned raw; only the parsed layout.
+  const grid = readMemberGridLayout(g.meta)
+
   return {
     profile: row as unknown as SpotlightRow,
     hostedEvents: (events ?? []) as SpotlightHostedEvent[],
@@ -104,5 +114,6 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
     theme,
     totalZaps,
     topFriends,
+    grid,
   }
 }

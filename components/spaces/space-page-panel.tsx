@@ -8,12 +8,13 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  LayoutGrid,
   Loader2,
   Pencil,
   Plus,
   Trash2,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonClasses } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
@@ -159,6 +160,22 @@ export function SpacePagePanel({
         <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
           {error}
         </p>
+      )}
+
+      {/* PRIMARY EDIT (ADR-508 U3): the block-picker GRID editor is now the primary way to arrange this
+          profile — it drives the LIVE page render. The full Puck page builder is demoted to Advanced,
+          below. NAVIGATES to the standalone grid route so a fresh navigation always fetches current chunks. */}
+      {!readOnly && (
+        <section>
+          <Link href={`/spaces/${slug}/settings/profile/grid`} className={buttonClasses('primary', 'md')}>
+            <LayoutGrid className="h-4 w-4" aria-hidden />
+            Edit your profile
+          </Link>
+          <p className="mt-2 text-sm text-muted">
+            Arrange your profile into a grid. Pick a layout, then drag each block into a column or turn it
+            off.
+          </p>
+        </section>
       )}
 
       {/* PAGES: the operator-defined nav. Pick the page you are editing, rename / reorder / delete, or
