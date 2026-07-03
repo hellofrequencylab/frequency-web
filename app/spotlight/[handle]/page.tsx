@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPublishedSpotlight } from '@/lib/spotlight/data'
-import { SpotlightPage } from '@/components/spotlight/spotlight-page'
+import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
+import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
+import { defaultMemberLayout } from '@/lib/entity-blocks/context'
+import { mergeEntityLayout } from '@/lib/entity-blocks/layout'
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -45,6 +48,15 @@ export default async function SpotlightRoute({
   if (!data) notFound()
   const name = data.profile.display_name || `@${data.profile.handle}`
   const path = `/spotlight/${data.profile.handle}`
+
+  // ADR-508 U3 LIVE CUTOVER: the block body now renders through the MODULE ENGINE (the block-picker
+  // grid), NOT Puck. The identity header + theme + background + join CTA stay in the shared SpotlightShell
+  // (unchanged look); only the body swaps to <MemberProfileModules>. REVERSIBLE: nothing deletes
+  // meta.spotlight (the stored Puck layout) — reverting is a one-line swap back to <SpotlightPage>.
+  // The EFFECTIVE GRID: the fresh member default with the member's saved grid (meta.entityGrid, read into
+  // data.grid) merged over it. FAIL-SAFE: a null saved grid leaves the fresh default. `showBio={false}`:
+  // the `about` block renders the bio, so the header must not repeat it.
+  const grid = mergeEntityLayout(defaultMemberLayout(), data.grid, 'member')
   return (
     <>
       <JsonLd
@@ -53,7 +65,9 @@ export default async function SpotlightRoute({
           breadcrumbSchema([{ name: 'Spotlight', path }]),
         ]}
       />
-      <SpotlightPage data={data} />
+      <SpotlightShell data={data} showJoinCta showBio={false}>
+        <MemberProfileModules member={data} grid={grid} />
+      </SpotlightShell>
     </>
   )
 }

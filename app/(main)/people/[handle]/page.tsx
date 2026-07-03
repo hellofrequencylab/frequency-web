@@ -295,7 +295,7 @@ export default async function ProfilePage({
   // (where they design + publish it). Falls back to nothing until it's turned on.
   const ownerSpotlightLink = spotlightEnabled ? (
     <Link
-      href={spotlightPublished ? `/spotlight/${profile.handle}` : '/settings/profile/spotlight'}
+      href={spotlightPublished ? `/spotlight/${profile.handle}` : `/people/${profile.handle}/profile-preview/edit`}
       className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
     >
       <Sparkles className="h-3.5 w-3.5" />

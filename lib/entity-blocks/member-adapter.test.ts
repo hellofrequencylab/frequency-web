@@ -39,6 +39,7 @@ function data(layout: SpotlightLayout, over: Partial<SpotlightData> = {}): Spotl
     theme: { header: { show: false, height: 0, focusY: 50 } } as unknown as SpotlightData['theme'],
     totalZaps: 1234,
     topFriends: [{ profileId: 'f1', handle: 'bob', displayName: 'Bob', avatarUrl: null }],
+    grid: null,
     ...over,
   }
 }

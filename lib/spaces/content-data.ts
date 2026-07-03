@@ -29,6 +29,7 @@ import { listEventsForSpace } from '@/lib/events/store'
 import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
+import { spaceRoleRank } from '@/lib/spaces/membership'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
 
@@ -143,6 +144,19 @@ export type SpaceFaqItem = {
   answer: string
 }
 
+/** One person on a Space's TEAM — an active member holding an operator role (editor / moderator /
+ *  admin), joined to their public profile. The Team block reads these off the data bag. Plain shape so
+ *  the block imports nothing server-only. */
+export type SpaceTeamMember = {
+  profileId: string
+  /** Display name, or `@handle` fallback, never blank. */
+  name: string
+  handle: string | null
+  avatarUrl: string | null
+  /** The space role ('admin' | 'moderator' | 'editor'), for an optional role chip. */
+  role: string
+}
+
 /** Everything the Space content blocks read, keyed under `metadata.space`. Every field is present
  *  and fail-safe (empty when there are no rows), so a block renders nothing rather than throwing. */
 export type SpaceContentData = {
@@ -170,6 +184,9 @@ export type SpaceContentData = {
   /** The Space's live active Circles the SpaceCommunity block lists. Empty when none; undefined in the
    *  editor / a member Spotlight. */
   community?: SpaceCircleItem[]
+  /** The Space's TEAM — active members with an operator role (editor / moderator / admin), for the Team
+   *  block. Empty when the operator has added no team (honest-empty; the block renders nothing). */
+  team?: SpaceTeamMember[]
   /** The CENTRAL, single-source profile data (business info + story) every authored block reads off,
    *  so editing it once updates every surface (lib/spaces/profile-data.ts). Undefined in the editor /
    *  a member Spotlight (the blocks fall back to their own inline props). */
@@ -318,18 +335,20 @@ export interface SpaceContentInput {
  *  (which injects the same rows into the blocks) both read through here, so the two never disagree
  *  AND the queries run once per request. React.cache: per-request, primitive-keyed. */
 const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) => {
-  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community] = await Promise.all([
-    getSpaceUpdates(spaceId),
-    getSpaceReviews(spaceId),
-    getSpaceFaqs(spaceId),
-    getSpaceHighlights(spaceId),
-    getSpaceStats(spaceId),
-    getSpaceUpcomingEvents(spaceId),
-    getSpaceBookingInfo(spaceId, slug),
-    getSpacePractices(spaceId),
-    getSpaceCommunity(spaceId),
-  ])
-  return { updates, reviews, faqs, highlights, stats, events, booking, practices, community }
+  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
+    await Promise.all([
+      getSpaceUpdates(spaceId),
+      getSpaceReviews(spaceId),
+      getSpaceFaqs(spaceId),
+      getSpaceHighlights(spaceId),
+      getSpaceStats(spaceId),
+      getSpaceUpcomingEvents(spaceId),
+      getSpaceBookingInfo(spaceId, slug),
+      getSpacePractices(spaceId),
+      getSpaceCommunity(spaceId),
+      getSpaceTeam(spaceId),
+    ])
+  return { updates, reviews, faqs, highlights, stats, events, booking, practices, community, team }
 })
 
 /** Which live sections currently have real rows, for the pre-populated anchor menu (the chrome shows
@@ -355,7 +374,7 @@ export async function getSpaceContentData(
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const { updates, reviews, faqs, highlights, stats, events, booking, practices, community } =
+  const { updates, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
     await getSpaceLiveContent(spaceId, slug)
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -379,6 +398,7 @@ export async function getSpaceContentData(
     booking,
     practices,
     community,
+    team,
     profile: input?.profile,
     layoutPreset: input?.layoutPreset,
   }
@@ -487,6 +507,61 @@ export async function getSpacePractices(spaceId: string): Promise<SpacePractices
     }
   } catch {
     return { practices: [], journeys: [] }
+  }
+}
+
+// How many team members the Team block surfaces, and the operator roles that count as "team" (a viewer
+// is a follower/member, not staff). Kept in lock-step with the space-role ladder (lib/spaces/membership).
+const TEAM_CAP = 24
+const TEAM_ROLES = ['admin', 'moderator', 'editor'] as const
+
+type TeamRow = Row & {
+  member?: { display_name?: unknown; handle?: unknown; avatar_url?: unknown } | null
+}
+
+/** The people who RUN a Space, for the Team block: active `space_members` holding an operator role
+ *  (editor / moderator / admin), joined to each person's public profile, ordered by authority (admin
+ *  first). Reads the not-yet-typed table via the untyped admin handle (ADR-246). The Space OWNER has no
+ *  membership row (spaces.owner_profile_id), so this is exactly the team the operator has added — never
+ *  invented. FAIL-SAFE to [] (a brand-new / soloed Space renders no Team section). */
+export async function getSpaceTeam(spaceId: string): Promise<SpaceTeamMember[]> {
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          eq: (c: string, v: string) => {
+            eq: (c: string, v: string) => {
+              in: (c: string, v: readonly string[]) => {
+                limit: (n: number) => Promise<{ data: TeamRow[] | null }>
+              }
+            }
+          }
+        }
+      }
+    }
+    const { data } = await admin
+      .from('space_members')
+      .select('profile_id, role, member:profiles!profile_id ( display_name, handle, avatar_url )')
+      .eq('space_id', spaceId)
+      .eq('status', 'active')
+      .in('role', TEAM_ROLES)
+      .limit(TEAM_CAP)
+    const rows = (data ?? []) as TeamRow[]
+    return rows
+      .map((r) => {
+        const handle = strOrNull(r.member?.handle)
+        return {
+          profileId: str(r.profile_id),
+          role: str(r.role),
+          name: str(r.member?.display_name) || (handle ? `@${handle}` : 'Member'),
+          handle,
+          avatarUrl: strOrNull(r.member?.avatar_url),
+        }
+      })
+      .filter((m) => m.profileId.length > 0)
+      .sort((a, b) => spaceRoleRank(b.role) - spaceRoleRank(a.role))
+  } catch {
+    return []
   }
 }
 
