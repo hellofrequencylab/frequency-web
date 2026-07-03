@@ -25,6 +25,7 @@ import { AppsLaneView } from './apps-lane-view'
 import { SplashLaneView } from './splash-lane-view'
 import { splashTemplates } from '@/lib/library/splash-registry'
 import { IconsLaneView } from './icons-lane-view'
+import { SequenceLaneView } from './sequence-lane-view'
 
 // Loom Studio — the admin surface for The Loom asset library. A full-width header (create +
 // context + search + sort + view mode) sits above two vertically-aligned columns: a folder rail
@@ -77,6 +78,7 @@ export default async function LoomStudioPage({
     lane?: string
     surface?: string
     section?: string
+    edit?: string
   }>
 }) {
   const ctx = await requireAdmin('janitor')
@@ -100,6 +102,13 @@ export default async function LoomStudioPage({
   // documents; it never edits an icon.
   if ((sp.lane ?? '') === 'icons') {
     return <IconsLaneView />
+  }
+
+  // The Onboarding flows lane (docs/LOOM-PLATFORM.md §3): CREATE / EDIT / PUBLISH / VERSION managed
+  // onboarding flows (library_assets kind='sequence'), feeding the resolver + runner that were already
+  // built and dormant. Edits the SequenceDef config only (Layer-2 data), never a Puck block tree.
+  if ((sp.lane ?? '') === 'sequence') {
+    return <SequenceLaneView q={sp.q} editId={sp.edit} />
   }
 
   const scope = await resolveActiveScope()
