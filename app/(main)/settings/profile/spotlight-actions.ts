@@ -29,6 +29,8 @@ import {
   deleteOneTopFriend,
   getOwnerTopFriendIds,
 } from '@/lib/spotlight/top-friends'
+import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
+import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 
 // Save the member's Spotlight block layout. Owner-only and SESSION-DERIVED — there is
 // NO target-id parameter, so a caller can only ever write their own row (mirrors
@@ -61,6 +63,38 @@ export async function saveSpotlightLayout(rawLayout: unknown): Promise<{ error?:
   revalidatePath('/settings/profile/spotlight')
   const handle = (me as { handle?: string }).handle
   if (handle) revalidatePath(`/spotlight/${handle}`)
+  return {}
+}
+
+// ── Unified grid layout (ADR-508, U2b) ────────────────────────────────────────
+// Save the member's GRID block-picker layout (the shared entity-block editor). Owner-only and
+// SESSION-DERIVED (no target id, like saveSpotlightLayout) so a caller can only ever write their own
+// row. The layout is SANITIZED to unified member block ids before persist (never trust the wire) and
+// stored at meta.entityGrid, DELIBERATELY SEPARATE from the live Spotlight nodes (meta.spotlight.layout /
+// theme / background) so nothing the public Puck Spotlight renders is touched. This is an additive
+// preview surface, so it does NOT require Spotlight to be enabled.
+export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+
+  const safe = sanitizeEntityLayout(rawLayout, 'member')
+  const nextMeta = withMemberGridLayout((me as { meta?: unknown }).meta, safe)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) return { error: error.message }
+
+  const handle = (me as { handle?: string }).handle
+  if (handle) revalidatePath(`/people/${handle}/profile-preview/edit`)
   return {}
 }
 

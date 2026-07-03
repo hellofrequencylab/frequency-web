@@ -21,7 +21,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
-import type { SavedProfileLayout } from '@/lib/spaces/profile-layout'
+import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** Keep only valid, de-duplicated ProfileBlockIds from an unknown array (defense in depth on the wire). */
@@ -51,14 +51,20 @@ async function updateSpacePreferences(spaceId: string, preferences: Record<strin
 }
 
 /**
- * Persist the block-picker layout (order + hidden) for a Space. Owner/admin/editor-gated server-side
- * via resolveSpaceManageAccess (fail-closed: a staff preview cannot write). The client layout is
- * sanitized to known ProfileBlockIds only, then merged into spaces.preferences.profileLayout without
- * disturbing other preferences keys. Returns ActionResult; on success revalidates the profile + preview.
+ * Persist the block-picker layout for a Space. Owner/admin/editor-gated server-side via
+ * resolveSpaceManageAccess (fail-closed: a staff preview cannot write). Accepts BOTH shapes at the same
+ * spaces.preferences.profileLayout node:
+ *   • the S3 FLAT shape ({order,hidden}) — sanitized to known ProfileBlockIds (the S3 vertical editor);
+ *   • the U2b GRID shape ({template,slots,hidden}) — sanitized to unified space block ids (the grid
+ *     editor). A grid write never emits `order`, so the S3 read path falls back to its fresh default and
+ *     nothing the S3 preview renders is disturbed.
+ * The chosen node fully replaces preferences.profileLayout, preserving every OTHER preferences key. An
+ * empty layout clears the node (back to the fresh default). Returns ActionResult; on success revalidates
+ * the profile + preview.
  */
 export async function saveSpaceProfileLayout(
   spaceId: string,
-  layout: SavedProfileLayout,
+  layout: EntityLayout,
 ): Promise<ActionResult> {
   const caller = await getCallerProfile()
 
@@ -70,20 +76,27 @@ export async function saveSpaceProfileLayout(
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return fail('You do not have permission to edit this space.')
 
-  // Never trust the wire: keep only known block ids.
-  const order = sanitizeIds(layout?.order)
-  const hidden = sanitizeIds(layout?.hidden)
+  // Never trust the wire. A grid write (template / slots present) sanitizes to unified space ids; a flat
+  // S3 write sanitizes to ProfileBlockIds. `node` is the value stored at preferences.profileLayout, or
+  // null to clear it.
+  let node: Record<string, unknown> | null
+  if (layout && (layout.template || layout.slots)) {
+    node = sanitizeEntityLayout(layout, 'space') as Record<string, unknown> | null
+  } else {
+    const order = sanitizeIds(layout?.order)
+    const hidden = sanitizeIds(layout?.hidden)
+    const flat: Record<string, unknown> = {}
+    if (order.length) flat.order = order
+    if (hidden.length) flat.hidden = hidden
+    node = Object.keys(flat).length ? flat : null
+  }
 
-  // Merge into the existing preferences blob, preserving every other key. A layout with no order and
-  // nothing hidden clears the node entirely (back to the fresh default).
+  // Merge into the existing preferences blob, preserving every other key.
   const current =
     space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
       ? { ...(space.preferences as Record<string, unknown>) }
       : {}
-  const node: SavedProfileLayout = {}
-  if (order.length) node.order = order
-  if (hidden.length) node.hidden = hidden
-  if (Object.keys(node).length) current.profileLayout = node
+  if (node) current.profileLayout = node
   else delete current.profileLayout
 
   if (!(await updateSpacePreferences(space.id, current))) {
@@ -91,6 +104,7 @@ export async function saveSpaceProfileLayout(
   }
 
   revalidatePath(`/spaces/${space.slug}/settings/profile`)
+  revalidatePath(`/spaces/${space.slug}/settings/profile/grid`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
   return ok()
 }
