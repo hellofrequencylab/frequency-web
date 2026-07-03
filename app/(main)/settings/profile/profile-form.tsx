@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { getInitials } from '@/lib/utils'
 import { Check, Loader2, Sparkles, ExternalLink } from 'lucide-react'
 import { updateProfile, uploadProfileImageAction, setSpotlightPublished, setMySpotlightEnabled } from './actions'
-import { ProfileThemePicker } from '@/components/spotlight/profile-theme-picker'
 import { HeaderEditor } from './header-editor'
 import { LocationAutocomplete } from '@/components/admin/location-autocomplete'
 
@@ -527,10 +526,9 @@ export function ProfileForm({
             </div>
           </div>
 
-          <ProfileThemePicker initialTheme={initial.profileTheme} />
-
           {/* PRIMARY (ADR-508 U3): the block-picker GRID editor drives the LIVE Spotlight now, so it is
-              the primary way to build the page. The classic Puck builder stays reachable, demoted below. */}
+              the primary way to build the page. The classic Puck builder stays reachable, demoted below.
+              The theme picker was removed (owner) — the Spotlight now reads the profile's own styling. */}
           <Link
             href={`/people/${initial.handle}/profile-preview/edit`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"

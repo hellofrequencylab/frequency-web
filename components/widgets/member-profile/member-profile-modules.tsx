@@ -54,6 +54,7 @@ export function MemberProfileModules({
   member,
   layout,
   grid,
+  className = '@container/profile space-y-14',
 }: {
   /** The member's already-resolved Spotlight (from getPublishedSpotlight — the ONE reader). */
   member: SpotlightData
@@ -63,6 +64,10 @@ export function MemberProfileModules({
   /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout). When present its
    *  template + slots drive the render; otherwise the flat single-column `layout` is used. */
   grid?: EntityLayout | null
+  /** The FLAT-path wrapper classes. Defaults to the standalone Spotlight rhythm (`space-y-14`); a
+   *  caller embedding the blocks in a denser column (the in-app profile) passes a tighter gap. Must keep
+   *  `@container/profile` so blocks size to the column. Ignored on the grid path. */
+  className?: string
 }) {
   const identity = toMemberEntity(member)
   const data = resolveMemberBlockData(member)
@@ -95,5 +100,5 @@ export function MemberProfileModules({
   // Flat single-column fallback (U2a). `@container/profile`: blocks size to THIS slot's width, not the
   // viewport, so the module render drops cleanly into any column.
   const resolved = layout ?? defaultMemberLayout()
-  return <div className="@container/profile space-y-14">{resolved.map(renderBlock)}</div>
+  return <div className={className}>{resolved.map(renderBlock)}</div>
 }
