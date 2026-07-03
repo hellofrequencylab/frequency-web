@@ -7,7 +7,9 @@ import {
   ArrowRight,
   ArrowDown,
   ArrowUp,
+  ArrowUpRight,
   Check,
+  Globe,
   LayoutGrid,
   Loader2,
   Pencil,
@@ -29,6 +31,7 @@ import {
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
+  setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
@@ -82,6 +85,7 @@ export function SpacePagePanel({
   defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
+  websitePublished = false,
   focus,
   readOnly = false,
 }: {
@@ -110,6 +114,8 @@ export function SpacePagePanel({
   coverImageUrl?: string | null
   /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
   brandLogoUrl?: string | null
+  /** Whether the Space's external website (/sites/<slug>) is currently published. */
+  websitePublished?: boolean
   /** The Focus switcher echo, or null to omit it. */
   focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
@@ -248,6 +254,46 @@ export function SpacePagePanel({
             </p>
             <SpaceFullEditorButton slug={slug} pageSlug={activePageSlug} variant="quiet" />
           </div>
+        </section>
+      )}
+
+      {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own
+          link, reading the same content as your profile. Fail-closed: unpublished, only you can reach it. */}
+      {!readOnly && (
+        <section>
+          <SectionHeader title="External website" />
+          <p className="-mt-2 mb-3 text-sm text-muted">
+            Publish your Home page as a standalone website with its own link. It shows the same content as
+            your profile, so you edit once and it stays in sync.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant={websitePublished ? 'secondary' : 'primary'}
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => setWebsitePublished(slug, !websitePublished))}
+            >
+              <Globe className="h-4 w-4" aria-hidden />
+              {websitePublished ? 'Unpublish website' : 'Publish website'}
+            </Button>
+            {websitePublished && (
+              <Link
+                href={`/sites/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline"
+              >
+                View website
+                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            {websitePublished
+              ? 'Your website is live and anyone with the link can view it.'
+              : 'Your website is off. Publish it to share a public link.'}
+          </p>
         </section>
       )}
 

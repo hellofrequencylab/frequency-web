@@ -13,6 +13,7 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { readWebsitePublished } from '@/lib/spaces/website'
 import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
@@ -381,6 +382,7 @@ export default async function SpaceProfileChromeLayout({
           defaultPreset={readSpaceLayoutDefault(space.preferences)}
           coverImageUrl={space.coverImageUrl}
           brandLogoUrl={space.brandLogoUrl}
+          websitePublished={readWebsitePublished(space.preferences)}
         />
       )}
     </AccentScope>

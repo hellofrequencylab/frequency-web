@@ -34,6 +34,7 @@ export function SpaceCustomizeDrawer({
   defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
+  websitePublished = false,
   focus = null,
 }: {
   slug: string
@@ -49,6 +50,7 @@ export function SpaceCustomizeDrawer({
   defaultPreset: LayoutPreset
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
+  websitePublished?: boolean
   focus?: { choices: FocusChoiceLike[] } | null
 }) {
   const [open, setOpen] = useState(false)
@@ -116,6 +118,7 @@ export function SpaceCustomizeDrawer({
             defaultPreset={defaultPreset}
             coverImageUrl={coverImageUrl}
             brandLogoUrl={brandLogoUrl}
+            websitePublished={websitePublished}
             focus={focus}
           />
         </div>

@@ -19,6 +19,7 @@ import {
 } from '@/lib/spaces/profile-pages'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { readWebsitePublished } from '@/lib/spaces/website'
 import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -121,6 +122,7 @@ export default async function SpacePageSettingsPage({
         defaultPreset={readSpaceLayoutDefault(space.preferences)}
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}
+        websitePublished={readWebsitePublished(space.preferences)}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />
