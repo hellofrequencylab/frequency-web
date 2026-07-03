@@ -115,7 +115,7 @@ function TopFriendsView({ title, friends, cardStyle, headingFont }: {
   )
 }
 
-function BlockView({
+export function BlockView({
   block, stats, topFriends, cardStyle, headingFont,
 }: {
   block: SpotlightBlock
