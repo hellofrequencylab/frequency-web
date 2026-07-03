@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { getInitials } from '@/lib/utils'
+import { type StepType } from './step-types'
 
 // ── The draft the flow accumulates + the per-request context the steps read ────────────────
 
@@ -433,7 +434,7 @@ function ReviewStep({ draft, ctx }: StepViewProps) {
 
 // ── The registry ──────────────────────────────────────────────────────────────────────────────
 
-export const STEP_REGISTRY: Record<string, StepDef> = {
+export const STEP_REGISTRY: Record<StepType, StepDef> = {
   identity: {
     type: 'identity',
     label: 'You',
@@ -463,15 +464,14 @@ export const STEP_REGISTRY: Record<string, StepDef> = {
   },
 }
 
-/** Every registered step type. */
-export const STEP_TYPES = Object.keys(STEP_REGISTRY)
-
 /** Resolve a step type to its code definition, or undefined for an unknown type. */
 export function getStepDef(type: string): StepDef | undefined {
-  return STEP_REGISTRY[type]
+  return STEP_REGISTRY[type as StepType]
 }
 
-/** The terminal action keys a sequence's last step may reference. The runner binds each key to
- *  its real server action (do not reimplement); config only ever names a key from this list. */
-export const SEQUENCE_ACTION_KEYS = ['completeOnboarding'] as const
-export type SequenceActionKey = (typeof SEQUENCE_ACTION_KEYS)[number]
+// The registry's known TYPES + terminal ACTION keys live in the pure, server-safe sibling
+// (step-types.ts) so the sequence write layer can consult them without importing this 'use client'
+// module. Re-exported here to keep the historical import site (getStepDef + SEQUENCE_ACTION_KEYS from
+// step-registry) working unchanged. STEP_REGISTRY is typed Record<StepType, StepDef>, so TS flags any
+// drift between the two.
+export { STEP_TYPES, SEQUENCE_ACTION_KEYS, type StepType, type SequenceActionKey } from './step-types'

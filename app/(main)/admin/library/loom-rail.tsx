@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks, Sparkles, Shapes } from 'lucide-react'
+import { Images, Layers, Folder, FolderPlus, Pencil, Trash2, Tag, Blocks, Sparkles, Shapes, Route } from 'lucide-react'
 import type { LibraryCollection } from '@/lib/library/store'
 import { createCollection, renameCollection, deleteCollection } from './collections-actions'
 
@@ -159,6 +159,15 @@ export function LoomRail({
         active={false}
         icon={<Shapes className="h-4 w-4" />}
         label="Icons"
+      />
+      {/* Cross-lane link into the Onboarding flows lane (docs/LOOM-PLATFORM.md §3): the managed
+          kind='sequence' flows — create / edit / publish / version. Distinct from the beta splash
+          funnels under the Splash lane; this governs the step-by-step new-member flow. */}
+      <Row
+        href="/admin/library?lane=sequence"
+        active={false}
+        icon={<Route className="h-4 w-4" />}
+        label="Onboarding flows"
       />
 
         <SectionLabel>Type</SectionLabel>
