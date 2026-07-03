@@ -1,5 +1,30 @@
 import { describe, it, expect } from 'vitest'
-import { parseEntityLayout, mergeEntityLayout, layoutSlots, type EntityLayout } from './layout'
+import {
+  parseEntityLayout,
+  mergeEntityLayout,
+  sanitizeEntityLayout,
+  layoutSlots,
+  type EntityLayout,
+} from './layout'
+
+describe('slot-key injection guard (CodeQL remote property injection)', () => {
+  it('drops unknown / dangerous slot keys on parse', () => {
+    const parsed = parseEntityLayout({
+      slots: { __proto__: ['about'], constructor: ['about'], bogus: ['about'] },
+    })
+    expect(parsed?.slots).toBeUndefined()
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+
+  it('keeps a known slot key on parse', () => {
+    expect(parseEntityLayout({ slots: { main: ['about'] } })?.slots).toEqual({ main: ['about'] })
+  })
+
+  it('drops unknown slot keys on sanitize', () => {
+    const clean = sanitizeEntityLayout({ slots: { __proto__: ['about'], main: ['about'] } }, 'space')
+    expect(Object.keys(clean?.slots ?? {})).toEqual(['main'])
+  })
+})
 
 // The member palette (about/stats/links/topfriends + content blocks) and space-only ids drive the
 // kind-filtering cases below. Ids used: 'about','stats','links','topfriends' (member), 'offerings'

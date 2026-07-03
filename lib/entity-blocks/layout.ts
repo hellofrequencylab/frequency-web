@@ -4,8 +4,20 @@ import {
   slotIds,
   defaultSlotId,
   DEFAULT_TEMPLATE,
+  TEMPLATES,
   type TemplateId,
 } from '@/lib/widgets/templates'
+
+// The ONLY property names accepted as slot keys: the union of every template's slot ids. A saved
+// layout is user-originated, so writing a slot object keyed by its raw keys is remote property
+// injection (CodeQL js/remote-property-injection: a bad key like `__proto__` could pollute the
+// prototype). Gating every slot-key write on this allowlist makes the written property name a fixed,
+// safe value and drops any unknown slot as garbage.
+const KNOWN_SLOT_IDS: ReadonlySet<string> = new Set(TEMPLATES.flatMap((t) => t.slots.map((s) => s.id)))
+
+function isKnownSlotId(id: string): boolean {
+  return KNOWN_SLOT_IDS.has(id)
+}
 
 // The GRID layout model for the unified entity-block system (ADR-508, U2b). Generalizes S3's
 // single-column SavedProfileLayout (lib/spaces/profile-layout.ts, {order?,hidden?}) to carry a GRID: a
@@ -52,6 +64,7 @@ export function parseEntityLayout(raw: unknown): EntityLayout | null {
   if (o.slots && typeof o.slots === 'object' && !Array.isArray(o.slots)) {
     const slots: Record<string, string[]> = {}
     for (const [slotId, ids] of Object.entries(o.slots as Record<string, unknown>)) {
+      if (!isKnownSlotId(slotId)) continue
       const clean = strArr(ids)
       if (clean.length) slots[slotId] = clean
     }
@@ -145,6 +158,7 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
   if (parsed.slots) {
     const slots: Record<string, string[]> = {}
     for (const [slot, ids] of Object.entries(parsed.slots)) {
+      if (!isKnownSlotId(slot)) continue
       const clean = ids.filter(keep)
       if (clean.length) slots[slot] = clean
     }
