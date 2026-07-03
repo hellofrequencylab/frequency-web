@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { railFor, leftRailFor, adminScopeFor } from './page-chrome'
+import {
+  railFor,
+  leftRailFor,
+  adminScopeFor,
+  isFullWidthEditor,
+  isFullViewportEditor,
+} from './page-chrome'
 
 describe('railFor — the single source of truth for page chrome', () => {
   it('keeps the global rail on browse / stream / index pages', () => {
@@ -239,5 +245,29 @@ describe('adminScopeFor — the single admin-scope resolver (LP4 step B0)', () =
     for (const p of ['/on-air', '/on-air/breathe', '/scan', '/sign-in', '/print', '/print/qr']) {
       expect(adminScopeFor(p), p).toBeNull()
     }
+  })
+})
+
+describe('full-width editors — fullscreen builder, main header KEPT (ADR-508 U4-A)', () => {
+  // The marketing page editor (/edit/<slug>) and the Space landing editor (/spaces/<slug>/edit-page)
+  // fill the whole content width — both rails drop — but the site header stays (owner directive). So
+  // they are full-WIDTH (isFullWidthEditor) but NOT full-VIEWPORT takeovers (which also hide the header).
+  it('marks the marketing + space editors as full-width, header-keeping', () => {
+    for (const p of ['/edit/home', '/edit/spaces', '/spaces/demo-practitioner/edit-page']) {
+      expect(isFullWidthEditor(p), p).toBe(true)
+      expect(isFullViewportEditor(p), p).toBe(false) // header is NOT hidden
+      expect(railFor(p), p).toBe('none') // both rails dropped
+    }
+  })
+
+  it('does not treat a normal page as a full-width editor', () => {
+    for (const p of ['/edit', '/feed', '/spaces/demo-practitioner', '/pages']) {
+      expect(isFullWidthEditor(p), p).toBe(false)
+    }
+  })
+
+  it('keeps the member Spotlight builder a full-VIEWPORT takeover (header hidden)', () => {
+    expect(isFullViewportEditor('/settings/profile/spotlight')).toBe(true)
+    expect(isFullWidthEditor('/settings/profile/spotlight')).toBe(false)
   })
 })

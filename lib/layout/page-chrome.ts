@@ -120,6 +120,12 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // showing") — so it is NOT a full-viewport takeover (which also hides the header). The header-keeping
   // + left-nav-dropping half lives in isFullWidthEditor + the shell; this entry drops the right rail.
   /^\/spaces\/[^/]+\/edit-page$/,
+  // The MARKETING page editor (/edit/<slug>, ADR-508 U4-A) is the same kind of FULL-WIDTH editor as the
+  // Space landing editor: the in-house Puck-free builder (components/page-editor/editor.tsx) fills the
+  // whole width, so both rails drop, but the site header STAYS (owner directive: "fullscreen experience
+  // with the main header still visible"). The header-keeping + left-nav-dropping half lives in
+  // isFullWidthEditor + the shell; this entry drops the right rail.
+  /^\/edit\/[^/]+$/,
   // The "Build your Spotlight" Puck editor (/settings/profile/spotlight): the same full-viewport
   // editor takeover. Its desktop <Puck> owns the surface and its mobile control dock needs the whole
   // viewport, so it drops the member right rail here (and the mobile bottom nav via
@@ -154,7 +160,9 @@ export function isFullViewportEditor(pathname: string): boolean {
 // Space landing editor (/spaces/<slug>/edit-page) is one: the operator edits their profile with the
 // Puck builder edge to edge, but the top header stays so they never feel out of the app (owner
 // directive, 2026-07: "full page with the main header still showing"). Pattern match (exact surface).
-const FULL_WIDTH_EDITOR_PATTERNS: RegExp[] = [/^\/spaces\/[^/]+\/edit-page$/]
+// The marketing page editor (/edit/<slug>, ADR-508 U4-A) joins it: the same fullscreen builder with the
+// main header kept, now that the route lives under (main) and mounts the shell.
+const FULL_WIDTH_EDITOR_PATTERNS: RegExp[] = [/^\/spaces\/[^/]+\/edit-page$/, /^\/edit\/[^/]+$/]
 
 /** Whether `pathname` is a FULL-WIDTH editor: the shell drops both rails + page gutters (like a
  *  takeover) so the builder fills the width, but KEEPS the site header (not a full-viewport takeover).
