@@ -389,6 +389,17 @@ export interface OnAirPrefs {
   haptics?: boolean
   /** Ambient background loop slug (AMBIENT_TRACKS), or null/absent for none. */
   ambientTrack?: string | null
+  /** The warm-up countdown before a sit begins, in seconds: 3 | 5 | 10. Default 5
+   *  (the original pre-roll). Drives the armed pre-roll on the live screen. */
+  warmupSec?: number
+}
+
+/** The selectable warm-up lengths (seconds). The setup selector offers these three. */
+export const WARMUP_PRESETS = [3, 5, 10] as const
+
+/** Clamp a stored / input warm-up to one of the offered presets, defaulting to 5. */
+export function clampWarmupSec(v: number | undefined): number {
+  return v === 3 || v === 5 || v === 10 ? v : 5
 }
 
 export const DEFAULT_PREFS: OnAirPrefs = {
@@ -398,6 +409,7 @@ export const DEFAULT_PREFS: OnAirPrefs = {
   bellVolume: 'medium',
   endBell: true,
   bellEveryMin: 1,
+  warmupSec: 5,
 }
 
 // ---------------------------------------------------------------------------

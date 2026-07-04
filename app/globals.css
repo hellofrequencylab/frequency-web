@@ -995,6 +995,20 @@ h1, h2, h3, h4, h5, h6 {
   .animate-wiggle { animation: none; }
 }
 
+/* ── On Air warm-up flash (the "one" count into a sit / run begin) ─────────────
+   A single full-screen wash that fades out as the timer starts. Semantic-token
+   colored at the call site; fully suppressed under reduced-motion. */
+@keyframes warmup-flash {
+  from { opacity: 0.85; }
+  to   { opacity: 0; }
+}
+.animate-warmup-flash {
+  animation: warmup-flash 0.7s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-warmup-flash { animation: none; opacity: 0; }
+}
+
 /* ── Marquee strip (marketing) ─────────────────────────────────────────────── */
 @keyframes marquee {
   from { transform: translateX(0); }

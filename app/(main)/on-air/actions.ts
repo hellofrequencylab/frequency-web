@@ -81,6 +81,8 @@ export interface CompleteSessionInput {
   haptics?: boolean
   /** Ambient loop slug, null = none. */
   ambientTrack?: string | null
+  /** The warm-up countdown length (3 | 5 | 10s), remembered with the rest of the setup. */
+  warmupSec?: number
 }
 
 export async function completeSession(
@@ -109,6 +111,15 @@ export async function completeSession(
     seconds,
     started_at: input.startedAt,
   })
+
+  // Logging ENDS the run: drop the server-authoritative active timer session (ADR-521)
+  // so it never resumes after the sit is banked. Self-scoped (profile_id), best-effort
+  // (a failure never blocks the log; the client also clears its localStorage cache).
+  try {
+    await admin.from('practice_timer_sessions' as never).delete().eq('profile_id', profileId)
+  } catch {
+    // clearing the active-session row is a safety net, never a blocker
+  }
 
   // Remember the setup so tomorrow opens ready (zero-config repeat), and keep
   // the lifetime airtime counter (hosted PostgREST has aggregates off, so the
@@ -147,6 +158,11 @@ export async function completeSession(
       haptics: typeof input.haptics === 'boolean' ? input.haptics : prior.haptics,
       // null = the member turned it off (persist that); undefined = keep prior.
       ambientTrack: input.ambientTrack === undefined ? prior.ambientTrack : input.ambientTrack,
+      // The warm-up length (3 | 5 | 10s), clamped to a valid preset; keep prior otherwise.
+      warmupSec:
+        input.warmupSec === 3 || input.warmupSec === 5 || input.warmupSec === 10
+          ? input.warmupSec
+          : prior.warmupSec,
     }
     await admin
       .from('profiles')
