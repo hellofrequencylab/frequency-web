@@ -119,6 +119,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     'space.offerings',
     'space.engage.crm',
     'space.autonomy',
+    'space.pipeline',
     'space.services',
     'space.reach',
     'space.comms',
@@ -175,6 +176,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     const ids = spaceSurfacesFor('practitioner', onlyCrm).map((s) => s.id)
     expect(ids).toContain('space.engage.crm')
     expect(ids).toContain('space.autonomy') // the autonomy control rides the crm gate
+    expect(ids).toContain('space.pipeline') // the editable pipeline rides the crm gate
     expect(ids).not.toContain('space.comms') // email gate denied
     expect(ids).not.toContain('space.offerings') // no usable commerce function
     expect(ids).toContain('space.basics') // always-on
@@ -186,6 +188,19 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  // ADR-517 Phase F2: the editable pipeline gets an inline, crm-gated rail module (audit GAP 1). Lock its
+  // row shape so the rail mounts it as an inline body control beside the CRM tools, for every type.
+  it('declares the space.pipeline rail module inline + crm-gated in the engage slot', () => {
+    const pipeline = SPACE_SURFACES.find((s) => s.id === 'space.pipeline')
+    expect(pipeline).toBeTruthy()
+    expect(pipeline!.render).toBe('inline')
+    expect(pipeline!.requiredFunction).toBe('crm')
+    expect(pipeline!.slot).toBe('engage')
+    expect(pipeline!.tier).toBe('primary')
+    expect(pipeline!.placement ?? 'inline').toBe('inline')
+    expect(pipeline!.types).toContain('*')
+  })
+
   // THE THREE-TIER RAIL AXIS (ADR-514 three-tier reorg): each Space surface carries a `tier` band +
   // within-band `priority` so the standardized rail can group STANDARD (identity) → PRIMARY (importance)
   // → EXTRA (under "More"). These lock the exact assignment the owner directive specified.
@@ -195,6 +210,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.layout': { tier: 'standard', priority: 20 },
       'space.mode': { tier: 'standard', priority: 30 },
       'space.engage.crm': { tier: 'primary', priority: 10 },
+      'space.pipeline': { tier: 'primary', priority: 12 },
       'space.autonomy': { tier: 'primary', priority: 15 },
       'space.people': { tier: 'primary', priority: 20 },
       'space.offerings': { tier: 'primary', priority: 30 },
@@ -241,6 +257,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.services',
       'space.people',
       'space.autonomy',
+      'space.pipeline',
       'space.danger',
     ])
 

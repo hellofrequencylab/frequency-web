@@ -34,6 +34,7 @@ import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceModeModule } from './space-mode-module'
 import { SpacePageModule } from './space-page-module'
 import { SpaceAutonomyModule } from './space-autonomy-module'
+import { SpacePipelineModule } from './space-pipeline-module'
 import { PersonalProfileModule } from './personal-profile-module'
 import { PersonalSpotlightModule } from './personal-spotlight-module'
 import { PersonalLayoutModule } from './personal-layout-module'
@@ -90,6 +91,8 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'space.layout': SpacePageModule,
   // Vera autonomy (ADR-517 Phase F): an inline owner-gated control that reuses setSpaceAutonomy.
   'space.autonomy': SpaceAutonomyModule,
+  // Pipeline (ADR-517 Phase F2): an inline owner-gated stage preview that links into the full editor.
+  'space.pipeline': SpacePipelineModule,
   // Personal "You" apps (ADMIN-RAIL.md Phase 4 / ADR-515 Phase 2) — self-account settings for any
   // signed-in viewer. The rail BODY is just three inline surfaces: Profile (identity), a condensed
   // Spotlight, and a Layout link, each a thin wrapper that self-fetches its read-gated bundle
