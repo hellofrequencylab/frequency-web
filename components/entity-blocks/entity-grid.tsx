@@ -1,83 +1,52 @@
 import type { ReactNode } from 'react'
-import type { TemplateId } from '@/lib/widgets/templates'
+import type { RowDef } from '@/lib/entity-blocks/layout'
 
-// The presentational interior GRID for the unified entity-block renderers (ADR-508, U2b). Mirrors the
-// module-engine TemplateGrid (components/widgets/page-modules.tsx) so a member (Spotlight) or space
-// (Spaces) grid layout lays its slots out identically. Each slot is its OWN container context
-// (`@container`, Tailwind v4) so a block sizes to where it lands (wide in `main`, compact in `side`) via
-// container-query variants, and columns collapse to one on small screens. Presentational + server-safe
+// The presentational interior GRID for the unified entity-block renderers (ADR-508 → ADR-516 Phase A).
+// DATA-DRIVEN: it renders a freeform RowDef[] (the source of truth going forward) instead of switching on
+// a fixed template id. Each row is a band of `columns` EQUAL columns; a 1-column row emits its block
+// DIRECTLY into the shared `@container space-y-6` stack (so the single-column default renders byte-
+// identically to the pre-ADR-516 `single` template: N 1-col rows === N stacked blocks in one container).
+// A multi-column row is a CSS grid whose cells each carry their OWN `@container` (Tailwind v4) so a block
+// sizes to where it lands and the columns collapse to one on small screens. Presentational + server-safe
 // (no hooks / no 'use client'), so a Server Component renderer drops it in directly. Fail-safe by
-// construction: an empty slot renders nothing.
+// construction: an empty cell (null slot) or an id the caller does not know renders nothing.
+
+/** Column class per row width: stack on mobile, N-up at the sm/lg breakpoint (capped at 4). */
+const GRID_COLS: Record<number, string> = {
+  2: 'sm:grid-cols-2',
+  3: 'sm:grid-cols-2 lg:grid-cols-3',
+  4: 'sm:grid-cols-2 lg:grid-cols-4',
+}
 
 export function EntityGrid({
-  template,
-  slot,
+  rows,
+  renderBlock,
 }: {
-  template: TemplateId
-  /** Render the blocks for a slot id (returns null / empty for an empty slot). */
-  slot: (id: string) => ReactNode
+  /** The effective freeform rows (from resolveRows). */
+  rows: RowDef[]
+  /** Render a single block by its id (returns null / empty when the caller does not render it). The
+   *  returned node MUST carry its own React key (the callers wrap each block in a keyed <Suspense>). */
+  renderBlock: (blockId: string) => ReactNode
 }) {
-  switch (template) {
-    case 'main-side':
-      return (
-        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-          <div className="@container space-y-6 lg:col-span-3">{slot('main')}</div>
-          <div className="@container order-first space-y-6 lg:order-none lg:col-span-2">{slot('side')}</div>
-        </div>
-      )
-    case 'two-col':
-      return (
-        <div className="space-y-6">
-          <div className="@container space-y-6">{slot('top')}</div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="@container space-y-6">{slot('col-1')}</div>
-            <div className="@container space-y-6">{slot('col-2')}</div>
+  return (
+    <div className="@container space-y-6">
+      {rows.map((row) => {
+        // A full-width row emits its block directly into the stack — no wrapper — so the default
+        // single-column layout is byte-identical to what the `single` template rendered before.
+        if (row.columns === 1) {
+          const id = row.slots[0]
+          return id ? renderBlock(id) : null
+        }
+        return (
+          <div key={row.id} className={`grid gap-6 ${GRID_COLS[row.columns] ?? ''}`}>
+            {row.slots.map((id, i) => (
+              <div key={`${row.id}-${i}`} className="@container space-y-6">
+                {id ? renderBlock(id) : null}
+              </div>
+            ))}
           </div>
-        </div>
-      )
-    case 'three-col':
-      return (
-        <div className="space-y-6">
-          <div className="@container space-y-6">{slot('top')}</div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="@container space-y-6">{slot('col-1')}</div>
-            <div className="@container space-y-6">{slot('col-2')}</div>
-            <div className="@container space-y-6">{slot('col-3')}</div>
-          </div>
-        </div>
-      )
-    case 'header-side':
-      return (
-        <div className="space-y-6">
-          <div className="@container space-y-6">{slot('header')}</div>
-          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-            <div className="@container space-y-6 lg:col-span-3">{slot('main')}</div>
-            <div className="@container space-y-6 lg:col-span-2">{slot('side')}</div>
-          </div>
-        </div>
-      )
-    case 'header-two-col':
-      return (
-        <div className="space-y-6">
-          <div className="@container space-y-6">{slot('header')}</div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="@container space-y-6">{slot('col-1')}</div>
-            <div className="@container space-y-6">{slot('col-2')}</div>
-          </div>
-        </div>
-      )
-    case 'header-main-side-footer':
-      return (
-        <div className="space-y-6">
-          <div className="@container space-y-6">{slot('header')}</div>
-          <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-            <div className="@container space-y-6 lg:col-span-3">{slot('main')}</div>
-            <div className="@container space-y-6 lg:col-span-2">{slot('side')}</div>
-          </div>
-          <div className="@container space-y-6">{slot('footer')}</div>
-        </div>
-      )
-    default:
-      return <div className="@container space-y-6">{slot('main')}</div>
-  }
+        )
+      })}
+    </div>
+  )
 }

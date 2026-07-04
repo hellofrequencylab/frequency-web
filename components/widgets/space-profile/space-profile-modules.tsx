@@ -5,7 +5,7 @@ import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
-import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 
@@ -138,17 +138,11 @@ export async function SpaceProfileModules({
     )
   }
 
-  // GRID path (U2b): lay the visible per-slot blocks into the chosen template. Fail-safe: unknown ids drop.
-  if (grid && grid.template) {
+  // GRID path (ADR-516): resolve the effective freeform rows and render them. Fail-safe: unknown ids drop.
+  if (grid) {
     return (
       <div className="@container/profile">
-        <EntityGrid
-          template={grid.template}
-          slot={(slotId) => {
-            const row = layoutSlots(grid).find((r) => r.slot === slotId)
-            return row ? row.ids.map(renderBlock) : null
-          }}
-        />
+        <EntityGrid rows={resolveRows(grid, 'space')} renderBlock={renderBlock} />
       </div>
     )
   }
