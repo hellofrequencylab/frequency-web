@@ -47,7 +47,7 @@ import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { chime, endChime, countBeep } from '@/lib/timer-audio'
-import { bellToneBySlug } from '@/lib/on-air'
+import { bellToneBySlug, clampWarmupSec } from '@/lib/on-air'
 import { FREE_SIT_ID } from '@/lib/on-air/session-data'
 import type { OnAirPractice } from './session'
 import {
@@ -80,6 +80,12 @@ import {
   liveElapsedSeconds,
   type LiveSessionRecord,
 } from '@/lib/on-air/live-session'
+import {
+  pushActiveSession,
+  pauseActiveSession,
+  resumeActiveSession,
+  clearActiveSession,
+} from '@/lib/on-air/active-session'
 
 // What a saved Movement run carries beyond the shared record fields: the config the plan is
 // rebuilt from. Everything else (startedAt, pausedAt, practiceId, banked, target) is on the record.
@@ -129,10 +135,18 @@ function phaseTone(kind: PhaseKind): { text: string; ring: string; bg: string; l
 
 /** The takeover shell, matching the Mindless Overlay (fixed, dvh-sized so the
  *  controls never hide behind mobile browser chrome). */
-function Overlay({ children }: { children: React.ReactNode }) {
+function Overlay({ children, flash = false }: { children: React.ReactNode; flash?: boolean }) {
   return (
     <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
+      {/* The warm-up "one" flash as the run begins. Semantic tokens (move accent); hidden under
+          prefers-reduced-motion. */}
+      {flash && (
+        <div
+          aria-hidden
+          className="animate-warmup-flash pointer-events-none fixed inset-0 z-[70] bg-move/40 motion-reduce:hidden"
+        />
+      )}
     </div>
   )
 }
@@ -152,6 +166,8 @@ export function MovementSession({
   secondsTarget,
   practicedToday = 0,
   autoStart = false,
+  warmupSec: warmupSecProp,
+  resumeRecord,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -173,6 +189,11 @@ export function MovementSession({
   autoStart?: boolean
   /** Distinct members with a practice log today (presence line, shown at >=3). */
   practicedToday?: number
+  /** The member's warm-up length pref (seconds), shared with the sit (item #10). Default 5. */
+  warmupSec?: number
+  /** The server-authoritative active session (ADR-521): when present and no localStorage record
+   *  exists, the run resumes as RUNNING on mount (cross-device), never a prompt. */
+  resumeRecord?: LiveSessionRecord | null
   /** Overlay mode: leaving CLOSES the overlay via this callback instead of navigating. */
   onExit?: () => void
   /** The unified-door mode this session is showing ('move'). Only meaningful with onModeChange. */
@@ -375,14 +396,20 @@ export function MovementSession({
     }
   }
 
+  // The member's warm-up length (item #10): shared with the sit via the prefs prop. Default 5.
+  const warmupSec = clampWarmupSec(warmupSecProp)
+
   // --- live state -----------------------------------------------------------
   const [startedAt, setStartedAt] = useState(0)
   const [elapsed, setElapsed] = useState(0)
   const [pausedAt, setPausedAt] = useState<number | null>(null)
+  // The warm-up pre-roll before a run begins (mirrors the sit): null = not counting.
+  const [preroll, setPreroll] = useState<number | null>(null)
+  // The full-screen warm-up flash as the "one" count lands. Auto-clears.
+  const [flash, setFlash] = useState(false)
+  // After an automatic (no-gesture) resume, a small non-blocking chip to re-arm sound.
+  const [needRestore, setNeedRestore] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
-  // A run recovered from localStorage after a reload/discard, awaiting Resume or Discard. Surfaced
-  // over the setup screen so a dropped run is never silently lost (the owner-chosen Resume prompt).
-  const [resumePrompt, setResumePrompt] = useState<LiveSessionRecord<MovementSetup> | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
@@ -506,32 +533,63 @@ export function MovementSession({
     return () => clearInterval(id)
   }, [stage, startedAt, pausedAt, plan, resumeOffset, walkIntervalMin, runIntervalMin, stretchIntervalMin])
 
-  // --- crash-safe persistence (lib/on-air/live-session) ---------------------
-  // On mount, surface any saved Movement run as a Resume prompt. Done in an effect (post-hydration)
-  // so it never mismatches the server-rendered setup screen. A reload after a tab discard lands here.
+  // The warm-up pre-roll (item #10): tick down, buzz each second (a stronger pulse + flash on the
+  // final "one"), then begin() to unpause the run. The Start tap opened the run armed/paused.
   useEffect(() => {
-    const rec = loadLiveSession<MovementSetup>('movement')
+    if (stage !== 'live' || preroll === null) return
+    if (preroll <= 0) {
+      begin()
+      return
+    }
+    const isOne = preroll === 1
+    buzz(isOne ? [30, 80, 30] : 15)
+    countBeep(audio.current, 1, isOne)
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (rec) setResumePrompt(rec)
+    if (isOne) setFlash(true)
+    const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, preroll])
+
+  // Clear the warm-up flash after it plays (the CSS animation is 0.7s; reduced-motion hides it).
+  useEffect(() => {
+    if (!flash) return
+    const id = setTimeout(() => setFlash(false), 750)
+    return () => clearTimeout(id)
+  }, [flash])
+
+  // --- persistence + global resume (lib/on-air/live-session + active-session) ------
+  // On mount, if a run is already going, RESUME IT AS RUNNING (ADR-521) — never a prompt. The
+  // localStorage record is the fast same-browser cache; the server `resumeRecord` (fetched by
+  // MindlessProvider) carries it CROSS-DEVICE. Either re-opens the run and computes elapsed from
+  // the wall-clock startedAt; the auto path re-acquires audio/screen only best-effort.
+  useEffect(() => {
+    const rec =
+      loadLiveSession<MovementSetup>('movement') ??
+      (resumeRecord as LiveSessionRecord<MovementSetup> | null) ??
+      null
+    if (rec) resumeFromRecord(rec, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // AUTO-START (a practice-select launch): skip setup and begin the movement immediately, on the
   // initial practice's configured mode + plan (already seeded in state above). Fires ONCE on mount,
-  // only when there's a real practice to run and no crash-recovered run is waiting (that surfaces its
-  // own Resume prompt and must win). Manual entry points pass autoStart=false and still show setup.
+  // only when there's a real practice to run and no recovered / server-active run is waiting (that
+  // auto-resumes above). Manual entry points pass autoStart=false and still show setup.
   const autoStartedRef = useRef(false)
   useEffect(() => {
     if (!autoStart || autoStartedRef.current) return
     autoStartedRef.current = true
-    if (loadLiveSession<MovementSetup>('movement')) return // a recovered run owns the screen
+    if (loadLiveSession<MovementSetup>('movement') || resumeRecord) return // a run already owns the screen
     if (!initialId) return
     void start()
     // Run once on mount; mode + plan are the seeded state for the launched practice.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // While live, persist the running record on every state change + a 30s heartbeat (the freshness
-  // stamp tracks liveness). The wall-clock startedAt is what lets a reload recover the exact elapsed.
+  // While live (including warm-up), persist the localStorage cache on every state change + a 30s
+  // heartbeat. The wall-clock startedAt is what lets a reload recover the exact elapsed. The SERVER
+  // active session is written from the lifecycle transitions (start / begin / pause / resume).
   useEffect(() => {
     if (stage !== 'live') return
     const write = () =>
@@ -577,12 +635,18 @@ export function MovementSession({
   // Resume a recovered run: rebuild the config, restore the exact wall clock, and seed the cue
   // trackers to the current phase so the part already done is not replayed. Audio + wake lock are
   // re-acquired on this tap (a gesture), so the screen re-locks just like a fresh start.
-  function resumeFromRecord(rec: LiveSessionRecord<MovementSetup>) {
-    try {
-      audio.current = audio.current ?? new AudioContext()
-      void audio.current.resume()
-    } catch {
-      // cues are a nicety
+  //
+  // `viaGesture` = the resume rides a user tap (audio + wake lock re-acquire). The global auto-resume
+  // on load passes false: the clock resumes immediately, but audio/screen re-acquire best-effort, so
+  // a "Tap to restore sound" chip is offered.
+  function resumeFromRecord(rec: LiveSessionRecord<MovementSetup>, viaGesture = true) {
+    if (viaGesture) {
+      try {
+        audio.current = audio.current ?? new AudioContext()
+        void audio.current.resume()
+      } catch {
+        // cues are a nicety
+      }
     }
     applyMovementConfig(rec.setup.config)
     setPracticeId(rec.practiceId)
@@ -590,6 +654,7 @@ export function MovementSession({
     setTargetSec(rec.secondsTarget ?? undefined)
     setStartedAt(rec.startedAt)
     setPausedAt(rec.pausedAt)
+    setPreroll(null)
     setElapsed(liveElapsedSeconds(rec))
     // Seed the cue trackers to the resumed position so nothing already passed re-fires.
     const recPlan = buildPlan(rec.setup.config)
@@ -601,15 +666,32 @@ export function MovementSession({
     lastBeep.current = -1
     lastWalkMinute.current = pos.phase.kind === 'work' ? Math.floor(pos.phaseElapsed / 60) : 0
     endCued.current = pos.done
-    setResumePrompt(null)
+    // Offer the sound-restore chip when we couldn't take a gesture (a running, unpaused resume).
+    setNeedRestore(!viaGesture && rec.pausedAt === null)
     setStage('live')
+    // Re-write the server row so a localStorage-only recovery becomes cross-device too (idempotent).
+    pushActiveSession({
+      kind: 'movement',
+      practiceId: rec.practiceId,
+      startedAt: rec.startedAt,
+      pausedAt: rec.pausedAt,
+      resumeFromSec: rec.resumeFromSec,
+      secondsTarget: rec.secondsTarget,
+      setup: rec.setup,
+    })
     void acquireQuiet()
   }
 
-  // Discard a recovered run and start fresh (drops the saved record).
-  function discardResume() {
-    clearLiveSession('movement')
-    setResumePrompt(null)
+  // Restore audio + screen on the next tap after an automatic resume. Best-effort; clears the chip.
+  function restoreCues() {
+    try {
+      audio.current = audio.current ?? new AudioContext()
+      void audio.current.resume()
+    } catch {
+      // cues are a nicety
+    }
+    void acquireQuiet()
+    setNeedRestore(false)
   }
 
   // --- transitions ----------------------------------------------------------
@@ -626,12 +708,39 @@ export function MovementSession({
     lastBeep.current = -1
     lastWalkMinute.current = 0
     endCued.current = false
+    setFlash(false)
+    setNeedRestore(false)
     const now = Date.now()
     setStartedAt(now)
     setElapsed(0)
-    setPausedAt(null)
+    // Open ARMED with the warm-up pre-roll (item #10): paused from the first millisecond, the
+    // countdown ticks, then begin() unpauses. Same shape as the sit.
+    setPausedAt(now)
+    setPreroll(warmupSec)
     setStage('live')
+    // Open the server-authoritative active session immediately (ADR-521), even through warm-up.
+    pushActiveSession({
+      kind: 'movement',
+      practiceId: practice?.logsAs ?? practiceId,
+      startedAt: now,
+      pausedAt: now,
+      resumeFromSec: resumeOffset,
+      secondsTarget: typeof targetSec === 'number' ? targetSec : null,
+      setup: { config },
+    })
     void acquireQuiet()
+  }
+
+  // Begin the run now: end the pre-roll and unpause from the armed state (shift startedAt so elapsed
+  // starts at zero). Called by the warm-up reaching 0.
+  function begin() {
+    setPreroll(null)
+    if (pausedAt !== null) {
+      const shifted = startedAt + (Date.now() - pausedAt)
+      setStartedAt(shifted)
+      resumeActiveSession(shifted)
+    }
+    setPausedAt(null)
   }
 
   // The chooser pick (C.2): SELECT the practice (seed its mode + tuning + resume) and return to
@@ -647,10 +756,14 @@ export function MovementSession({
 
   function togglePause() {
     if (pausedAt === null) {
-      setPausedAt(Date.now())
+      const now = Date.now()
+      setPausedAt(now)
+      pauseActiveSession(now)
     } else {
-      setStartedAt((s) => s + (Date.now() - pausedAt))
+      const shifted = startedAt + (Date.now() - pausedAt)
+      setStartedAt(shifted)
       setPausedAt(null)
+      resumeActiveSession(shifted)
     }
   }
 
@@ -670,8 +783,10 @@ export function MovementSession({
   }
 
   async function finishWith(seconds: number) {
-    // The run is ending: drop the crash-recovery record so it never re-prompts.
+    // The run is ending: drop the crash-recovery cache + the server active session (completeSession
+    // also clears the row server-side as the authoritative end).
     clearLiveSession('movement')
+    clearActiveSession()
     setStage('saving')
     await releaseQuiet()
     const result = await completeSession({
@@ -695,8 +810,9 @@ export function MovementSession({
   }
 
   function leave() {
-    // Leaving is an explicit exit: drop the crash-recovery record.
+    // Leaving is an explicit exit: drop the crash-recovery cache + the server active session.
     clearLiveSession('movement')
+    clearActiveSession()
     void exitAppFullscreen()
     if (onExit) {
       onExit()
@@ -715,39 +831,6 @@ export function MovementSession({
   }
 
   // --- screens --------------------------------------------------------------
-  // A run recovered from a reload/discard: offer to pick it up where it left off, or drop it. Shown
-  // over the setup screen so a dropped run is never silently lost.
-  if (resumePrompt) {
-    const modeLabel = MOVEMENT_MODES.find((m) => m.mode === resumePrompt.setup.config.mode)?.label ?? 'Get Moving session'
-    const elapsedSec = liveElapsedSeconds(resumePrompt)
-    return (
-      <Overlay>
-        <CenterScreen>
-          <MovementArt className="block h-10" />
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-move">Pick up where you left off</p>
-          <p className="max-w-xs text-center text-sm text-muted">
-            Your {modeLabel} is still going, {fmt(elapsedSec)} in. Resume and the clock carries on.
-          </p>
-          <div className="flex w-full max-w-xs flex-col items-center gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => resumeFromRecord(resumePrompt)}
-              className="w-full rounded-full bg-move px-6 py-3 text-sm font-bold text-on-move transition-colors hover:bg-move-hover"
-            >
-              Resume
-            </button>
-            <button
-              type="button"
-              onClick={discardResume}
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
-            >
-              Discard and start fresh
-            </button>
-          </div>
-        </CenterScreen>
-      </Overlay>
-    )
-  }
 
   if (stage === 'reveal' && payload) {
     return (
@@ -812,15 +895,24 @@ export function MovementSession({
     // shift is felt before it lands. Open-ended Play never rings.
     const closing = pos.remaining !== null && pos.remaining > 0 && pos.remaining <= 3
     const clockText = pos.remaining === null ? fmt(pos.phaseElapsed) : fmt(pos.remaining)
+    const warming = preroll !== null
 
     return (
-      <Overlay>
+      <Overlay flash={flash}>
         {/* The clock block centers vertically; the action bar docks at the bottom and
             stays visible (LAYOUT directive). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))]">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
             <MovementArt className="block h-5" /> Get Moving
           </p>
+
+          {/* Warm up: a prominent countdown before the run begins (item #10). */}
+          {warming && (
+            <div className="flex flex-col items-center gap-1" aria-live="polite">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-move">Warm up</p>
+              <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
+            </div>
+          )}
 
           {/* The phase chip — color-coded, with the round counter for Strength. */}
           <span
@@ -853,6 +945,16 @@ export function MovementSession({
           {resumeOffset > 0 && (
             <p className="text-2xs text-subtle">Picking up where you left off.</p>
           )}
+          {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). */}
+          {needRestore && (
+            <button
+              type="button"
+              onClick={restoreCues}
+              className="rounded-full border border-move/50 bg-move-bg/40 px-3 py-1.5 text-xs font-medium text-move transition-colors hover:bg-move-bg/60"
+            >
+              Tap to restore sound
+            </button>
+          )}
         </div>
 
         {/* Docked action bar — always visible, even as the screen scrolls. */}
@@ -860,6 +962,7 @@ export function MovementSession({
           <button
             type="button"
             onClick={() => {
+              if (warming) { begin(); return } // skip the warm-up, begin now
               if (ended) {
                 void finish()
                 return
@@ -868,7 +971,7 @@ export function MovementSession({
             }}
             className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
+            {warming ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"

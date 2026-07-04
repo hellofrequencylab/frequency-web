@@ -204,6 +204,7 @@ export async function loadOnAirSessionData(
     bellEveryMin: stored.bellEveryMin ?? DEFAULT_PREFS.bellEveryMin,
     haptics: stored.haptics,
     ambientTrack: stored.ambientTrack,
+    warmupSec: stored.warmupSec ?? DEFAULT_PREFS.warmupSec,
   }
 
   // A SPECIFIC entry pre-selects THAT practice so the setup opens already in its mode: a practice

@@ -28,11 +28,12 @@ import { X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
 import { loadOnAirSession } from '@/app/(main)/on-air/actions'
+import { getActiveTimerSession } from '@/app/(main)/on-air/timer-session-actions'
 import type { OnAirSessionData } from '@/lib/on-air/session-data'
 import { OnAirSession } from '@/components/on-air/session'
 import { MovementSession } from '@/components/on-air/movement-session'
 import { LotusIcon } from '@/components/on-air/icons'
-import { loadLiveSession } from '@/lib/on-air/live-session'
+import { loadLiveSession, type LiveSessionRecord } from '@/lib/on-air/live-session'
 import type { MovementMode } from '@/lib/movement'
 
 /** The two member-facing modes of the one timer: the sit ('still', "Be Still") and
@@ -157,6 +158,9 @@ function routeInitialMode(
 export function MindlessProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [state, setState] = useState<OverlayState>({ phase: 'closed' })
+  // The server-authoritative active session (ADR-521), fetched on load. Passed to the matching
+  // engine so a timer running on ANOTHER device resumes here as RUNNING (never a prompt).
+  const [serverResume, setServerResume] = useState<LiveSessionRecord | null>(null)
 
   // Closing the overlay refreshes the page underneath so anything the sit just changed (a practice
   // logged, the streak) lands without a navigation — e.g. a Journey step's "logged today" gating
@@ -240,17 +244,30 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state])
 
-  // Crash recovery (preserves #984): a tab discard drops a running sit (its React state is gone),
-  // but the record survives in localStorage. On the next app load, re-open the overlay so the
-  // session can surface its Resume prompt. Both engines persist under their OWN kind ('mindless' /
-  // 'movement'), so open in the matching mode and the right engine mounts + re-prompts. Movement
-  // wins if (improbably) both exist. Runs once on mount; only ONE door opens (no double-open).
+  // Global resume (ADR-521, preserves #984): on app load, if a timer is already running, re-open
+  // the overlay in the matching mode so the engine RESUMES IT AS RUNNING (never a prompt). Two
+  // sources, in order: the localStorage record (fast, same-browser) auto-resumes the engine
+  // directly; else the SERVER active session (cross-device) is fetched and passed down as
+  // `serverResume`. Runs once on mount; only ONE door opens. Movement wins if both kinds exist.
   useEffect(() => {
     if (loadLiveSession('movement')) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       openInternal(undefined, 'move')
-    } else if (loadLiveSession('mindless')) {
+      return
+    }
+    if (loadLiveSession('mindless')) {
       openInternal(undefined, 'still')
+      return
+    }
+    // No local record: ask the server whether a run is active on another device.
+    let live = true
+    void getActiveTimerSession().then((res) => {
+      if (!live || isError(res) || !res.data) return
+      setServerResume(res.data)
+      openInternal(undefined, res.data.kind === 'movement' ? 'move' : 'still')
+    })
+    return () => {
+      live = false
     }
   }, [openInternal])
 
@@ -336,6 +353,10 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             secondsTarget={state.resume?.secondsTarget}
             // A practice-select launch skips setup and begins the countdown immediately.
             autoStart={state.autoStart}
+            // The member's warm-up length pref, shared with the sit (item #10).
+            warmupSec={state.data.prefs.warmupSec}
+            // Cross-device resume (ADR-521): the server active run, if it is a movement run.
+            resumeRecord={serverResume?.kind === 'movement' ? serverResume : null}
             onExit={close}
             // The Be Still | Get Moving toggle: passing onModeChange tells the session it's inside
             // the unified door (the standalone /on-air route omits it, so no toggle there).
@@ -352,6 +373,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             secondsTarget={state.resume?.secondsTarget}
             // A practice-select launch skips setup and begins the countdown immediately.
             autoStart={state.autoStart}
+            // Cross-device resume (ADR-521): the server active run, if it is a sit.
+            resumeRecord={serverResume?.kind === 'mindless' ? serverResume : null}
             onExit={close}
             mode={state.mode}
             onModeChange={setMode}

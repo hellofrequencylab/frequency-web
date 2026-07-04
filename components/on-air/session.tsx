@@ -28,7 +28,7 @@ import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon
 import { completeSession } from '@/app/(main)/on-air/actions'
 import { isError } from '@/lib/action-result'
 import { requestAppFullscreen, exitAppFullscreen } from '@/lib/fullscreen'
-import { chime, endChime } from '@/lib/timer-audio'
+import { chime, endChime, countBeep } from '@/lib/timer-audio'
 import {
   AMBIENT_TRACKS,
   BELL_INTERVALS,
@@ -40,12 +40,14 @@ import {
   DURATION_PRESETS,
   SESSION_MODE_META,
   SESSION_MODE_ORDER,
+  WARMUP_PRESETS,
   ambientTrackBySlug,
   bellToneBySlug,
   bellVolumeScale,
   breathPositionAt,
   buildCustomPattern,
   clampMinutes,
+  clampWarmupSec,
   engineForMode,
   isBreathMode,
   modeForMindless,
@@ -73,6 +75,12 @@ import {
   liveElapsedSeconds,
   type LiveSessionRecord,
 } from '@/lib/on-air/live-session'
+import {
+  pushActiveSession,
+  pauseActiveSession,
+  resumeActiveSession,
+  clearActiveSession,
+} from '@/lib/on-air/active-session'
 import { FREE_SIT_ID } from '@/lib/on-air/session-data'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
@@ -91,6 +99,9 @@ interface MindlessSetup {
   bellEveryMin: number
   haptics: boolean
   ambientTrack: string | null
+  /** The chosen warm-up length (seconds), so a recovered run keeps its warm-up. Optional
+   *  for back-compat with records written before warm-up was selectable. */
+  warmupSec?: number
 }
 
 export interface OnAirPractice {
@@ -166,10 +177,18 @@ function readSavedSetup(): Partial<SavedSetup> | null {
  *  hides the End controls behind the browser toolbar. (The browser's own chrome
  *  can't be removed by a web page on iOS Safari — that needs the installed PWA,
  *  manifest `display: standalone`.) */
-function Overlay({ children }: { children: React.ReactNode }) {
+function Overlay({ children, flash = false }: { children: React.ReactNode; flash?: boolean }) {
   return (
     <div className="fixed inset-x-0 top-0 z-50 h-[100dvh] overflow-y-auto bg-canvas">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col px-6 py-5">{children}</div>
+      {/* The warm-up "one" flash: a full-screen wash as the sit begins. Semantic tokens
+          only (no hex); hidden entirely under prefers-reduced-motion (motion-reduce). */}
+      {flash && (
+        <div
+          aria-hidden
+          className="animate-warmup-flash pointer-events-none fixed inset-0 z-[70] bg-primary/40 motion-reduce:hidden"
+        />
+      )}
     </div>
   )
 }
@@ -219,6 +238,7 @@ export function OnAirSession({
   resumeFromSec,
   secondsTarget,
   autoStart = false,
+  resumeRecord,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -238,6 +258,10 @@ export function OnAirSession({
    *  initial practice's routed mode + length. Off (the default) for the manual On Air entry points,
    *  which still open to setup. A 'log' (Just Log) practice or an empty list never auto-starts. */
   autoStart?: boolean
+  /** The server-authoritative active session (ADR-521), fetched by MindlessProvider on load.
+   *  When present and no localStorage record exists, the engine resumes it as RUNNING on mount
+   *  (cross-device), never as a prompt. */
+  resumeRecord?: LiveSessionRecord | null
   /** Overlay mode (the global Mindless launcher): when set, leaving the session
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
@@ -341,6 +365,8 @@ export function OnAirSession({
   const [bellEveryMin, setBellEveryMin] = useState(prefs.bellEveryMin ?? 1)
   const [haptics, setHaptics] = useState(prefs.haptics ?? false)
   const [ambientSlug, setAmbientSlug] = useState<string | null>(prefs.ambientTrack ?? null)
+  // The warm-up countdown length (3 / 5 / 10s), selectable on setup. Seeds from prefs.
+  const [warmupSec, setWarmupSec] = useState(() => clampWarmupSec(prefs.warmupSec))
   // Mobile-only: the cue settings collapse so the primary controls (mode, minutes, Tune out) stay
   // above the fold on a phone. Always expanded on desktop (the two-column layout has the room).
   const [cuesOpen, setCuesOpen] = useState(false)
@@ -376,10 +402,13 @@ export function OnAirSession({
   // The 5s auto-start countdown shown before a sit begins (P14). null = not counting; the Start
   // button overrides it (begin() now).
   const [preroll, setPreroll] = useState<number | null>(null)
+  // The full-screen warm-up flash as the "one" count lands (item #8). Auto-clears.
+  const [flash, setFlash] = useState(false)
+  // After an AUTOMATIC (no-gesture) resume, audio + wake lock can't re-acquire without a tap.
+  // The clock resumes immediately; this shows a small non-blocking "Tap to restore sound" chip
+  // when sound was configured, so the member can re-arm it. Cleared on the tap (item #4).
+  const [needRestore, setNeedRestore] = useState(false)
   const [payload, setPayload] = useState<RevealPayload | null>(null)
-  // A sit recovered from localStorage after a reload/discard, awaiting Resume or Discard. Surfaced
-  // over the setup screen so a dropped sit is never silently lost (the owner-chosen Resume prompt).
-  const [resumePrompt, setResumePrompt] = useState<LiveSessionRecord<MindlessSetup> | null>(null)
   const wakeLock = useRef<{ release: () => Promise<void> } | null>(null)
   const finishing = useRef(false)
   const audio = useRef<AudioContext | null>(null)
@@ -614,19 +643,33 @@ export function OnAirSession({
     else stopAmbient()
   }
 
-  // The 5s auto-start pre-roll: tick down once a second, then begin() automatically. Re-runs each
-  // tick with a fresh closure, so begin() reads the current armed pausedAt. The Start button calls
-  // begin() directly to skip ahead.
+  // The warm-up pre-roll (item #7-9): tick down once a second, then begin() automatically. Each
+  // second buzzes (a tick pulse, a stronger pulse on "one") and optionally beeps; the "one" count
+  // fires the full-screen flash as the sit begins. Re-runs each tick with a fresh closure, so
+  // begin() reads the current armed pausedAt. The Start button calls begin() directly to skip ahead.
   useEffect(() => {
     if (stage !== 'live' || preroll === null) return
     if (preroll <= 0) {
       begin()
       return
     }
+    // This warm-up second's cue: a stronger pulse + flash on the final "one", a tick otherwise.
+    const isOne = preroll === 1
+    if (haptics) buzz(isOne ? [30, 80, 30] : 15)
+    if (bell) countBeep(audio.current, 1, isOne)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isOne) setFlash(true)
     const id = setTimeout(() => setPreroll((n) => (n === null ? null : n - 1)), 1000)
     return () => clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, preroll])
+
+  // Clear the warm-up flash after it plays (the CSS animation is 0.7s; reduced-motion hides it).
+  useEffect(() => {
+    if (!flash) return
+    const id = setTimeout(() => setFlash(false), 750)
+    return () => clearTimeout(id)
+  }, [flash])
 
   // --- transitions -------------------------------------------------------------
 
@@ -635,13 +678,40 @@ export function OnAirSession({
   // the mode state write has landed.
   const activeModeRef = useRef<SessionMode>(mode)
 
-  // --- crash-safe persistence (lib/on-air/live-session) ---------------------
-  // On mount, surface any saved sit as a Resume prompt (post-hydration, so it never mismatches the
-  // server-rendered setup screen). A reload after a tab discard lands here.
+  // The MindlessSetup payload the crash-recovery record + the server active session are rebuilt
+  // from. Takes the running minutes (start() passes its override before the state write lands).
+  function buildMindlessSetup(runMinutes: number): MindlessSetup {
+    return {
+      mode: activeModeRef.current,
+      minutes: runMinutes,
+      patternSlug,
+      customIn,
+      customHold,
+      customOut,
+      bell,
+      bellToneSlug,
+      bellVolume,
+      endBell,
+      bellEveryMin,
+      haptics,
+      ambientTrack: ambientSlug,
+      warmupSec,
+    }
+  }
+
+  // --- persistence + global resume (lib/on-air/live-session + active-session) ------
+  // On mount, if a sit is already running, RESUME IT AS RUNNING (ADR-521) — never a prompt. The
+  // localStorage record is the fast same-browser cache; the server-authoritative `resumeRecord`
+  // (fetched by MindlessProvider) carries the run CROSS-DEVICE. Either one re-opens the engine and
+  // computes elapsed from the wall-clock startedAt. The auto path re-acquires audio/screen only
+  // best-effort (no gesture), surfacing a small "Tap to restore sound" chip if needed.
   useEffect(() => {
-    const rec = loadLiveSession<MindlessSetup>('mindless')
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (rec) setResumePrompt(rec)
+    const rec =
+      loadLiveSession<MindlessSetup>('mindless') ??
+      (resumeRecord as LiveSessionRecord<MindlessSetup> | null) ??
+      null
+    if (rec) resumeFromRecord(rec, false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // AUTO-START (a practice-select launch): skip the setup screen and arm the countdown immediately,
@@ -653,7 +723,8 @@ export function OnAirSession({
   useEffect(() => {
     if (!autoStart || autoStartedRef.current) return
     autoStartedRef.current = true
-    if (loadLiveSession<MindlessSetup>('mindless')) return // a recovered sit owns the screen
+    // A recovered / server-active sit owns the screen (it auto-resumes running above).
+    if (loadLiveSession<MindlessSetup>('mindless') || resumeRecord) return
     if (!initialId) return
     if (mode === 'log') return // a Just Log practice has no countdown to auto-run
     void start({ practiceId: initialId, mode, minutes })
@@ -661,11 +732,13 @@ export function OnAirSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // While a sit is genuinely running (live, past the pre-roll), persist the record on every state
-  // change + a 30s heartbeat. The wall-clock startedAt is what lets a reload recover the exact
-  // elapsed. Cleared on finish / leave / discard.
+  // While a sit is live (INCLUDING warm-up, so a reset during the pre-roll still recovers — item
+  // #5), persist the localStorage cache on every state change + a 30s heartbeat. The wall-clock
+  // startedAt is what lets a reload recover the exact elapsed. The SERVER active session is written
+  // from the lifecycle transitions (start / begin / pause / resume), not this heartbeat. Cleared on
+  // finish / leave.
   useEffect(() => {
-    if (stage !== 'live' || preroll !== null) return
+    if (stage !== 'live') return
     const write = () =>
       saveLiveSession<MindlessSetup>({
         kind: 'mindless',
@@ -676,28 +749,16 @@ export function OnAirSession({
         // The live resume target tracks the SELECTED practice (selectPractice / finishTheRest /
         // the open-arg fallback), not just the open-arg, so a chooser-picked partial recovers right.
         secondsTarget: resumeTarget.current > 0 ? resumeTarget.current : null,
-        setup: {
-          mode: activeModeRef.current,
-          minutes,
-          patternSlug,
-          customIn,
-          customHold,
-          customOut,
-          bell,
-          bellToneSlug,
-          bellVolume,
-          endBell,
-          bellEveryMin,
-          haptics,
-          ambientTrack: ambientSlug,
-        },
+        setup: buildMindlessSetup(minutes),
       })
     write()
     const id = setInterval(write, 30_000)
     return () => clearInterval(id)
+    // buildMindlessSetup closes over exactly the primitive cue/mode deps already listed here, so
+    // listing it (a per-render function) would only thrash the effect. Deps are complete otherwise.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     stage,
-    preroll,
     startedAt,
     pausedAt,
     practiceId,
@@ -714,14 +775,19 @@ export function OnAirSession({
     bellEveryMin,
     haptics,
     ambientSlug,
+    warmupSec,
   ])
 
   // Resume a recovered sit: rebuild the mode + cue settings, restore the exact wall clock, and seed
   // the cue trackers to the current position so nothing already passed re-fires. Audio + wake lock
   // are re-acquired on this tap (a gesture), so the screen re-locks like a fresh start.
-  function resumeFromRecord(rec: LiveSessionRecord<MindlessSetup>) {
+  //
+  // `viaGesture` = the resume rides a user tap (audio + wake lock can re-acquire). The global
+  // auto-resume on load passes false: the clock resumes immediately, but audio/screen can only
+  // re-acquire best-effort, so a "Tap to restore sound" chip is offered when sound was configured.
+  function resumeFromRecord(rec: LiveSessionRecord<MindlessSetup>, viaGesture = true) {
     const s = rec.setup
-    if (s.bell) {
+    if (viaGesture && s.bell) {
       try {
         audio.current = audio.current ?? new AudioContext()
         void audio.current.resume()
@@ -744,9 +810,10 @@ export function OnAirSession({
     setBellEveryMin(s.bellEveryMin)
     setHaptics(s.haptics)
     setAmbientSlug(s.ambientTrack)
-    // Re-arm ambience on the resume tap (a gesture, so audio unlocks); a quick
-    // fade-in since the sit is already mid-flight.
-    playAmbient(s.ambientTrack, 1.5)
+    setWarmupSec(clampWarmupSec(s.warmupSec))
+    // Re-arm ambience only on a gesture (audio needs a tap to unlock). On an auto-resume the
+    // chip below restores it. A quick fade-in since the sit is already mid-flight.
+    if (viaGesture) playAmbient(s.ambientTrack, 1.5)
     resumeBanked.current = rec.resumeFromSec
     resumeTarget.current = rec.secondsTarget ?? 0
     const total = s.minutes * 60
@@ -758,15 +825,29 @@ export function OnAirSession({
     lastPhase.current = null
     lastMinute.current = Math.floor(elapsed / 60)
     endCued.current = total - elapsed <= 0
-    setResumePrompt(null)
+    // Offer the sound-restore chip only when audio was configured AND we couldn't take a gesture.
+    setNeedRestore(!viaGesture && (s.bell || !!s.ambientTrack) && rec.pausedAt === null)
     setStage('live')
+    // Re-write the server row so a localStorage-only recovery becomes cross-device too (idempotent).
+    pushActiveSession({
+      kind: 'mindless',
+      practiceId: rec.practiceId,
+      startedAt: rec.startedAt,
+      pausedAt: rec.pausedAt,
+      resumeFromSec: rec.resumeFromSec,
+      secondsTarget: rec.secondsTarget,
+      setup: s,
+    })
     void acquireQuiet()
   }
 
-  // Discard a recovered sit and start fresh (drops the saved record).
-  function discardResume() {
-    clearLiveSession('mindless')
-    setResumePrompt(null)
+  // Restore audio + screen on the next tap after an automatic resume (the gesture the auto path
+  // couldn't take). Best-effort; clears the chip regardless.
+  function restoreCues() {
+    ensureCtx()
+    playAmbient(ambientSlug, 1.2)
+    void acquireQuiet()
+    setNeedRestore(false)
   }
 
   // Begin a sit. The chooser (C.5) passes an override so a freshly picked practice
@@ -807,8 +888,21 @@ export function OnAirSession({
     setPausedAt(now)
     setRemaining(activeMinutes * 60)
     setOvertime(0)
-    setPreroll(5)
+    setFlash(false)
+    setNeedRestore(false)
+    setPreroll(warmupSec)
     setStage('live')
+    // Open the server-authoritative active session immediately (armed/paused through warm-up), so a
+    // reset even during warm-up recovers, cross-device (ADR-521). resumeTarget mirrors a top-up.
+    pushActiveSession({
+      kind: 'mindless',
+      practiceId: practice?.logsAs ?? activeId,
+      startedAt: now,
+      pausedAt: now,
+      resumeFromSec: resumeBanked.current,
+      secondsTarget: resumeTarget.current > 0 ? resumeTarget.current : null,
+      setup: buildMindlessSetup(activeMinutes),
+    })
     void acquireQuiet()
   }
 
@@ -855,18 +949,27 @@ export function OnAirSession({
   // armed span so elapsed starts at zero). Called by the 5s countdown reaching 0 or the Start button.
   function begin() {
     setPreroll(null)
-    if (pausedAt !== null) setStartedAt((s) => s + (Date.now() - pausedAt))
+    if (pausedAt !== null) {
+      const shifted = startedAt + (Date.now() - pausedAt)
+      setStartedAt(shifted)
+      // The warm-up ends: unpause the server active session at the shifted wall clock (ADR-521).
+      resumeActiveSession(shifted)
+    }
     setPausedAt(null)
   }
 
   function togglePause() {
     if (pausedAt === null) {
-      setPausedAt(Date.now())
+      const now = Date.now()
+      setPausedAt(now)
       ambient.current?.pause()
+      pauseActiveSession(now)
     } else {
-      setStartedAt((s) => s + (Date.now() - pausedAt))
+      const shifted = startedAt + (Date.now() - pausedAt)
+      setStartedAt(shifted)
       setPausedAt(null)
       ambient.current?.resume()
+      resumeActiveSession(shifted)
     }
   }
 
@@ -894,8 +997,10 @@ export function OnAirSession({
     practiceIdOverride?: string,
     modeOverride?: SessionMode,
   ) {
-    // The sit is ending: drop the crash-recovery record so it never re-prompts.
+    // The sit is ending: drop the crash-recovery cache + the server active session (completeSession
+    // also clears the row server-side as the authoritative end).
     clearLiveSession('mindless')
+    clearActiveSession()
     stopAmbient()
     setStage('saving')
     await releaseQuiet()
@@ -927,6 +1032,7 @@ export function OnAirSession({
       bellEveryMin,
       haptics,
       ambientTrack: ambientSlug,
+      warmupSec,
     })
     finishing.current = false
     if (isError(result)) {
@@ -939,53 +1045,15 @@ export function OnAirSession({
 
   // --- screens -------------------------------------------------------------------
 
-  // A sit recovered from a reload/discard: offer to pick it up where it left off, or drop it. Shown
-  // over the setup screen so a dropped sit is never silently lost.
-  if (resumePrompt) {
-    const s = resumePrompt.setup
-    const label = SESSION_MODE_META[s.mode]?.label ?? 'sit'
-    const el = liveElapsedSeconds(resumePrompt)
-    const mm = Math.floor(el / 60)
-    const ss = el % 60
-    return (
-      <Overlay>
-        <CenterScreen>
-          <LotusIcon className="h-8 w-8 text-primary" />
-          <p className="text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
-            Pick up where you left off
-          </p>
-          <p className="max-w-xs text-center text-sm text-muted">
-            Your {label} is still going, {mm}:{String(ss).padStart(2, '0')} in. Resume and the clock carries on.
-          </p>
-          <div className="flex w-full max-w-xs flex-col items-center gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => resumeFromRecord(resumePrompt)}
-              className="w-full rounded-full bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
-            >
-              Resume
-            </button>
-            <button
-              type="button"
-              onClick={discardResume}
-              className="rounded-full px-4 py-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
-            >
-              Discard and start fresh
-            </button>
-          </div>
-        </CenterScreen>
-      </Overlay>
-    )
-  }
-
   // Drop the takeover. In overlay mode (the global Mindless launcher) that means
   // closing the overlay in place — no navigation. On the /on-air route (no
   // onExit) it returns to the screen the member came FROM (where they hit the
   // Zap button or the board's radio); direct entries (PWA shortcut, typed URL)
   // have no app history, so they land on the feed instead of exiting the app.
   function leave() {
-    // Leaving is an explicit exit: drop the crash-recovery record.
+    // Leaving is an explicit exit: drop the crash-recovery cache + the server active session.
     clearLiveSession('mindless')
+    clearActiveSession()
     stopAmbient()
     // Drop true fullscreen if the launcher's open gesture entered it (C.1-3); the
     // dvh takeover that remains is torn down by the unmount below.
@@ -1127,7 +1195,7 @@ export function OnAirSession({
     const overLabel = `+${om}:${String(os).padStart(2, '0')}`
     const cue = ended ? liveDepthCue(resumeBanked.current + minutes * 60 + overtime) : null
     return (
-      <Overlay>
+      <Overlay flash={flash}>
         {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
             tappable on a short screen (owner layout directive, item #5). */}
         <div className="flex flex-1 flex-col items-center justify-center gap-5 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
@@ -1186,9 +1254,21 @@ export function OnAirSession({
               />
             )}
             {preroll !== null && (
-              <p className="animate-pulse text-sm font-bold uppercase tracking-[0.3em] text-primary-strong">
-                Starting in {preroll}
-              </p>
+              <div className="flex flex-col items-center gap-1" aria-live="polite">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-primary-strong">Warm up</p>
+                <p className="text-7xl font-semibold tabular-nums text-primary-strong">{preroll}</p>
+              </div>
+            )}
+            {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). The
+                clock is already running; this is optional. */}
+            {needRestore && (
+              <button
+                type="button"
+                onClick={restoreCues}
+                className="rounded-full border border-primary/50 bg-primary-bg/40 px-3 py-1.5 text-xs font-medium text-primary-strong transition-colors hover:bg-primary-bg/60"
+              >
+                Tap to restore sound
+              </button>
             )}
           </div>
         </div>
@@ -1206,7 +1286,7 @@ export function OnAirSession({
             }}
             className="min-w-44 rounded-full bg-primary px-10 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover"
           >
-            {ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
+            {preroll !== null ? 'Begin now' : ended ? 'Finish' : paused ? 'Resume' : 'Pause'}
           </button>
           <button
             type="button"
@@ -1472,6 +1552,28 @@ export function OnAirSession({
                 label="Vibration"
                 title="A small tap at each phase change. Not every phone supports it."
               />
+            </div>
+            {/* Warm up: the countdown before the sit begins (item #6). 3 / 5 / 10 seconds. */}
+            <div className="mt-3">
+              <SubLabel>Warm up</SubLabel>
+              <div className="mt-1.5 grid grid-cols-3 gap-2" role="group" aria-label="Warm up length">
+                {WARMUP_PRESETS.map((w) => (
+                  <button
+                    key={w}
+                    type="button"
+                    aria-pressed={w === warmupSec}
+                    onClick={() => setWarmupSec(w)}
+                    className={`rounded-xl border px-2 py-1.5 text-xs tabular-nums transition-colors ${
+                      w === warmupSec
+                        ? 'border-primary bg-primary-bg/40 font-semibold text-text'
+                        : 'border-border text-muted hover:bg-surface-elevated'
+                    }`}
+                  >
+                    {w}s
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-2xs text-subtle">A short countdown to settle before the clock starts.</p>
             </div>
             {bell && (
               <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
