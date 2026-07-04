@@ -11,6 +11,8 @@ import { ProfileForm } from '@/app/(main)/settings/profile/profile-form'
 // getProfileRailData re-gates on the authed user and returns null when signed out, so a signed-out viewer
 // sees nothing (the fail-safe). The form's own updateProfile re-checks auth server-side; nothing is
 // rewritten here. (The page's QR card, onboarding welcome, and location card stay on the full page.)
+// hideSpotlight is set (ADR-515 Phase 2): the big Spotlight block is represented by the condensed
+// `account.spotlight` section instead, so the form suppresses it in the rail.
 
 type Data = NonNullable<Awaited<ReturnType<typeof getProfileRailData>>>
 
@@ -48,7 +50,7 @@ export function PersonalProfileModule() {
         </h3>
         {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
       </header>
-      <ProfileForm userId={data.userId} initial={data.initial} />
+      <ProfileForm userId={data.userId} initial={data.initial} hideSpotlight />
     </section>
   )
 }

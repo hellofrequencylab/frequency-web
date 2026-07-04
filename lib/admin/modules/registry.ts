@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -391,7 +391,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // (/settings/profile for the owner; the full member manager for moderators), so
   // the profile settings column no longer surfaces a person-settings box.
 
-  // ── Personal "You" apps (ADMIN-RAIL.md Phase 4) ─────────────────────────────────────────────────
+  // ── Personal "You" apps (ADMIN-RAIL.md Phase 4; ADR-515 Phase 2 — the personal rail) ────────────────
   // Global-scope, member-gated editor Apps that apply to every signed-in viewer for their OWN account.
   // They make the admin bar's editor set non-empty for any authed member, so the bar becomes the
   // always-available site-wide settings menu. Each wraps an EXISTING /settings/* form (reuse, never
@@ -399,14 +399,13 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // 'account' slot renders ABOVE the management spine (spine.ts). Gated `account.manage` — held by
   // every signed-in viewer on the global scope, denied to signed-out visitors (fail-closed).
   //
-  // CONFIG surfaces render INLINE ("everything in view", the owner directive — ADR-514 Phase D), each a
-  // thin `'use client'` wrapper that mounts the EXISTING /settings/* form via a read-gated getter
-  // (app/(main)/settings/rail-getters.ts), mirroring the Space inline wrappers. The getter re-gates on
-  // the authed viewer and returns null when signed out, so the flattened bar never weakens a gate
-  // (fail-safe); each form's own action still re-checks auth server-side. FEATURE WORKFLOWS link out:
-  //   • account.billing  → /settings/billing  (a billing/portal workflow, not config).
-  //   • account.privacy  → /settings/account   (blocked-members management + data export + account
-  //                        deletion — a composite management page, no single reusable inline form).
+  // ADR-515 Phase 2 REVERSES ADR-514 Phase C/D's inlining of the secondary account surfaces. The owner
+  // directive: the rail is ONLY the page's own core admin. So the personal BODY is just three inline
+  // surfaces — Profile (identity), a condensed Spotlight, and a Layout link — while Appearance,
+  // Notifications, Connections and location, Account and privacy, and Plan and billing are `placement:
+  // 'bank'`: they LEAVE the sidebar body and render as bottom-bank buttons that link out to their
+  // /settings/* page (resolved via hrefForEntitySurface). Every getter still re-gates on the authed
+  // viewer and returns null when signed out, so the flattened bar never weakens a gate (fail-safe).
   {
     id: 'account.profile',
     label: 'Profile',
@@ -421,6 +420,46 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'standard',
     priority: 10,
   },
+  // The condensed Spotlight section (ADR-515 Phase 2): a compact status + enable/publish control, sitting
+  // just under Profile in the "You" section. The full Spotlight block (theme, classic builder) stays on
+  // /settings/profile; the ProfileForm inside the rail suppresses it (hideSpotlight). Self-fetches
+  // getProfileRailData; renders nothing when the viewer cannot enable Spotlight (fail-safe).
+  {
+    id: 'account.spotlight',
+    label: 'Spotlight',
+    desc: 'Your shareable page: turn it on, build it, and publish when ready.',
+    Icon: Sparkles,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 15,
+    tier: 'standard',
+    priority: 15,
+  },
+  // The Layout link (ADR-515 Phase 2 — "a layout chooser in every rail"): the member's profile grid
+  // editor, surfaced as a compact rail entry. An inline module self-fetches the handle (the destination
+  // /people/<handle>/profile-preview/edit is not resolvable from the global scope alone) and renders a
+  // link. Renders nothing when signed out / no handle (fail-safe).
+  {
+    id: 'account.layout',
+    label: 'Layout',
+    desc: 'Arrange the blocks on your profile page.',
+    Icon: LayoutGrid,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'layout',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 17,
+    tier: 'primary',
+    priority: 20,
+  },
+  // ── Bank surfaces (ADR-515 Phase 2): the secondary account surfaces leave the body and render as
+  //    bottom-bank buttons, each linking to its /settings/* page via hrefForEntitySurface. `render:
+  //    'link'` is honest (they link out) but moot for a bank item (settings-panel resolves the bank by
+  //    href, not by render), and `tier`/`priority` are dropped (a bank item is not banded). ──
   {
     id: 'account.appearance',
     label: 'Appearance',
@@ -430,10 +469,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'account.manage',
     slot: 'account',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 20,
-    tier: 'primary',
-    priority: 10,
+    placement: 'bank',
   },
   {
     id: 'account.notifications',
@@ -444,10 +482,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'account.manage',
     slot: 'account',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 30,
-    tier: 'primary',
-    priority: 20,
+    placement: 'bank',
   },
   {
     id: 'account.connections',
@@ -458,10 +495,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'account.manage',
     slot: 'account',
     surface: 'sidebar',
-    render: 'inline',
+    render: 'link',
     order: 40,
-    tier: 'primary',
-    priority: 30,
+    placement: 'bank',
   },
   {
     id: 'account.privacy',
@@ -474,8 +510,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'link',
     order: 50,
-    tier: 'extra',
-    priority: 10,
+    placement: 'bank',
   },
   {
     id: 'account.billing',
@@ -488,8 +523,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'link',
     order: 60,
-    tier: 'extra',
-    priority: 20,
+    placement: 'bank',
   },
 ] as const
 

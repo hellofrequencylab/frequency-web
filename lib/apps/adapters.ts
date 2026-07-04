@@ -36,6 +36,9 @@ export function toAdminModule(app: App): AdminModule {
     // (byte-for-byte, exactly like `render` — the three-tier rail axis, ADR-514 three-tier reorg).
     ...(editor.tier !== undefined ? { tier: editor.tier } : {}),
     ...(editor.priority !== undefined ? { priority: editor.priority } : {}),
+    // `placement` (the uniform-rail axis, ADR-515) round-trips the same way — carried back only when the
+    // source tagged a surface `bank` (a bank surface leaves the banded body, so it holds no tier/priority).
+    ...(editor.placement !== undefined ? { placement: editor.placement } : {}),
   }
   // `desc` is optional on AdminModule; include it only when the source carried one (byte-for-byte).
   return app.description !== undefined ? { ...adminModule, desc: app.description } : adminModule
