@@ -144,7 +144,6 @@ export async function setSpaceProfileTemplate(slug: string, template: TemplateId
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/settings/profile/grid`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

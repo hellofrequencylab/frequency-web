@@ -18,11 +18,12 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
-import { getSpaceById } from '@/lib/spaces/store'
+import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { type ActionResult, ok, fail } from '@/lib/action-result'
+import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
+import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 
 /** Keep only valid, de-duplicated ProfileBlockIds from an unknown array (defense in depth on the wire). */
 function sanitizeIds(value: unknown): ProfileBlockId[] {
@@ -76,11 +77,11 @@ export async function saveSpaceProfileLayout(
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return fail('You do not have permission to edit this space.')
 
-  // Never trust the wire. A grid write (template / slots present) sanitizes to unified space ids; a flat
-  // S3 write sanitizes to ProfileBlockIds. `node` is the value stored at preferences.profileLayout, or
-  // null to clear it.
+  // Never trust the wire. A grid write (freeform ROWS from the in-rail builder, ADR-516 Phase D, or the
+  // legacy template / slots) sanitizes to unified space ids; a flat S3 write sanitizes to ProfileBlockIds.
+  // `node` is the value stored at preferences.profileLayout, or null to clear it.
   let node: Record<string, unknown> | null
-  if (layout && (layout.template || layout.slots)) {
+  if (layout && (layout.rows || layout.template || layout.slots)) {
     node = sanitizeEntityLayout(layout, 'space') as Record<string, unknown> | null
   } else {
     const order = sanitizeIds(layout?.order)
@@ -104,7 +105,27 @@ export async function saveSpaceProfileLayout(
   }
 
   revalidatePath(`/spaces/${space.slug}/settings/profile`)
-  revalidatePath(`/spaces/${space.slug}/settings/profile/grid`)
+  // The in-rail builder lives on the profile ROOT (ADR-516 Phase D), so revalidate THERE so the
+  // server-rendered layout reconciles on the next visit (the live preview already repaints from context
+  // during the session — no round-trip).
+  revalidatePath(`/spaces/${space.slug}`)
   revalidatePath(`/spaces/${space.slug}/profile-preview`)
   return ok()
+}
+
+/**
+ * Slug-keyed grid save for the in-rail Space page builder (ADR-516 Phase D). The shared EntityLayoutStore
+ * mounts on the Space profile ROOT (which knows the slug, not the DB id), so this thin wrapper resolves the
+ * Space by slug and delegates to saveSpaceProfileLayout, which OWNER-gates (resolveSpaceManageAccess) and
+ * SANITIZES the rows server-side. Returns the `{ error? }` shape the store's debounced flush expects.
+ */
+export async function saveSpaceGridLayout(
+  slug: string,
+  layout: BuilderLayout,
+): Promise<{ error?: string }> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return { error: 'Space not found.' }
+  const res = await saveSpaceProfileLayout(space.id, layout as EntityLayout)
+  return isError(res) ? { error: res.error } : {}
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import {
   GripVertical,
   ChevronUp,
@@ -16,7 +16,7 @@ import {
   Check,
   Loader2,
 } from 'lucide-react'
-import { blocksForKind, entityBlockById, type EntityBlockDef } from '@/lib/entity-blocks/registry'
+import { blocksForKind, entityBlockById, type EntityKind } from '@/lib/entity-blocks/registry'
 import {
   starterRows,
   STARTER_LAYOUTS,
@@ -38,28 +38,52 @@ import {
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
+import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { useProfileLayout } from './profile-layout-context'
 import { BlockPicker } from './block-picker'
 
-// THE IN-RAIL PROFILE PAGE BUILDER (ADR-516 Phase C). An OUTLINE editor, not a mini-canvas: the live
-// profile page behind this same-route slide-over is the WYSIWYG surface (LiveProfileGrid). Rows are
-// collapsible strips with a drag handle, a [1][2][3][4] column control, a collapse chevron and a row menu;
-// each column slot is a pill holding a block (with its own control cluster) or a "+ Add block" picker. A
-// Bench tray holds the blocks not shown. Everything edits the SHARED ProfileLayoutContext, so a change
-// repaints the page instantly and persists debounced. Reorder is available THREE ways — drag, up/down
-// arrows, and a "Move to" menu — with a real keyboard grab + aria-live pattern (the primary touch / AT
-// path). Member-only this phase. Semantic DAWN tokens, no hex, voice canon (no em dashes).
+// THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space). An OUTLINE
+// editor, not a mini-canvas: the live profile/space page behind this same-route slide-over is the WYSIWYG
+// surface (LiveProfileGrid). Rows are collapsible strips with a drag handle, a [1][2][3][4] column control,
+// a collapse chevron and a row menu; each column slot is a pill holding a block (with its own control
+// cluster) or a "+ Add block" picker. A Bench tray holds the blocks not shown. Everything edits the SHARED
+// entity-layout store, so a change repaints the page instantly and persists debounced. Reorder is available
+// THREE ways — drag, up/down arrows, and a "Move to" menu — with a real keyboard grab + aria-live pattern
+// (the primary touch / AT path). ONE component drives both kinds: it is parameterized by `kind`, the seed
+// loader, and the self-owner match id, and guards on the store's `kind` so it never seeds the wrong store.
+// Space blocks locked behind a function the space lacks are held out of the picker + bench (lockedIds).
+// Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
 const label = (id: string): string => entityBlockById(id)?.label ?? id
 
 type Grab = { kind: 'row'; id: string } | { kind: 'block'; id: string } | null
 
-export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
+/** The serializable seed the builder self-fetches: the resolved rows + hidden set, whether the surface has
+ *  ever been customized, the owner-match id (the page it may edit), and any function-locked block ids. */
+export interface BuilderRailData {
+  matchId: string | null
+  rows: RowDef[]
+  hidden: string[]
+  customized: boolean
+  lockedIds?: string[]
+}
+
+export function EntityPageBuilder({
+  pageId,
+  kind,
+  loadRailData,
+}: {
+  /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
+  pageId: string
+  kind: EntityKind
+  /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing). */
+  loadRailData: () => Promise<BuilderRailData | null>
+}) {
   const store = useProfileLayout()
-  const palette = useMemo<EntityBlockDef[]>(() => blocksForKind('member'), [])
 
   const [loading, setLoading] = useState(true)
-  const [ownHandle, setOwnHandle] = useState<string | null>(null)
+  const [matchId, setMatchId] = useState<string | null>(null)
+  const [lockedIds, setLockedIds] = useState<string[]>([])
   const [customized, setCustomized] = useState(false)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -72,19 +96,21 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
   const dragRow = useRef<string | null>(null)
 
   // Seed the shared store from the persisted layout (idempotent — the live preview may have seeded first).
+  // Only seed a store of the SAME kind, so a builder mounted beside the wrong provider never pollutes it.
   useEffect(() => {
     let active = true
-    getMemberLayoutRailData().then((d) => {
+    loadRailData().then((d) => {
       if (!active) return
-      setOwnHandle(d?.handle ?? null)
+      setMatchId(d?.matchId ?? null)
+      setLockedIds(d?.lockedIds ?? [])
       setCustomized(!!d?.customized)
-      if (d) store?.seed(d.rows, d.hidden)
+      if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
     })
     return () => {
       active = false
     }
-  }, [store])
+  }, [store, kind, loadRailData])
 
   const say = useCallback((msg: string) => setAnnounce(msg), [])
   const mutate = useCallback(
@@ -98,11 +124,16 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
   if (loading) {
     return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
-  // Own profile only: the builder edits YOUR page, so it belongs on your own /people/<handle> (fail-safe).
-  if (!store || !ownHandle || ownHandle !== pageHandle) return null
+  // Owner + kind gate: the builder edits THIS page's layout, so it mounts only on the page whose match id
+  // the read-gated seed returned (your own /people/<handle>, or a Space you manage), and only against a
+  // store of its own kind (fail-safe: a non-owner / wrong-kind store renders nothing).
+  if (!store || store.kind !== kind || !matchId || matchId !== pageId) return null
 
+  const lockedSet = new Set(lockedIds)
+  const palette = blocksForKind(kind).filter((b) => !lockedSet.has(b.id))
   const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden }
-  const bench = store.bench
+  // The derived bench, minus any function-locked block the space cannot offer yet (never on the page).
+  const bench = store.bench.filter((id) => !lockedSet.has(id))
   const placed = placedIds(layout.rows)
 
   // Every empty slot, as a move target (reading order) — powers the "Move to" menus + bench "Place in".
@@ -168,7 +199,7 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
   }
 
   function onStarter(id: StarterId) {
-    mutate({ rows: starterRows('member', id), hidden: [] })
+    mutate({ rows: starterRows(kind, id), hidden: [] })
     say(`Started from the ${id} layout.`)
   }
   function onBlank() {
@@ -282,14 +313,14 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
         <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-3">
           <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Start with a layout</p>
           <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(STARTER_LAYOUTS.member) as StarterId[]).map((id) => (
+            {(Object.keys(STARTER_LAYOUTS[kind]) as StarterId[]).map((id) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => onStarter(id)}
                 className="group rounded-lg border border-border bg-surface p-1.5 text-left transition-colors hover:border-primary"
               >
-                <StarterThumb rows={STARTER_LAYOUTS.member[id]} />
+                <StarterThumb rows={STARTER_LAYOUTS[kind][id]} />
                 <span className="mt-1 block text-center text-2xs font-medium capitalize text-muted group-hover:text-text">
                   {id}
                 </span>
@@ -518,6 +549,30 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
       />
     </section>
   )
+}
+
+/** The MEMBER page builder — the caller's own /people/<handle> layout. Kept as the Phase C export name so
+ *  the personal Layout rail module + its wiring are unchanged; it adapts the member seed getter into the
+ *  generic shape (matchId = the handle; member blocks are never function-locked). */
+export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
+  const load = useCallback(async (): Promise<BuilderRailData | null> => {
+    const d = await getMemberLayoutRailData()
+    return d ? { matchId: d.handle, rows: d.rows, hidden: d.hidden, customized: d.customized } : null
+  }, [])
+  return <EntityPageBuilder pageId={pageHandle} kind="member" loadRailData={load} />
+}
+
+/** The SPACE page builder — a Space's public-profile layout, mounted in the `space.layout` rail surface on
+ *  the Space profile ROOT (ADR-516 Phase D). Adapts the owner-gated space seed getter (matchId = the slug;
+ *  function-locked blocks are held out of the picker + bench). */
+export function SpacePageBuilder({ slug }: { slug: string }) {
+  const load = useCallback(async (): Promise<BuilderRailData | null> => {
+    const d = await getSpaceLayoutRailData(slug)
+    return d
+      ? { matchId: d.slug, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: d.lockedIds }
+      : null
+  }, [slug])
+  return <EntityPageBuilder pageId={slug} kind="space" loadRailData={load} />
 }
 
 // ── The per-block control cluster ──

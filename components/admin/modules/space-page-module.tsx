@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutGrid } from 'lucide-react'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
+import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
 
 // SPACE PAGE — the inline editor module for the standardized admin bar (ADR-514). Mirrors
 // circle-settings-module: reads the Space slug from the live path (and which page's blocks to edit from
@@ -12,6 +13,12 @@ import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 // the EXISTING SpacePagePanel inline (pages, business info, cover size, cover style, theme/accent, and
 // the focus echo). The getter re-gates server-side and returns null when the viewer cannot manage this
 // Space, so a non-manager sees nothing here (the fail-safe). Every write re-gates in its own action.
+//
+// ADR-516 Phase D: on the Space profile ROOT (where the shared space-layout store is mounted) the
+// SpacePageBuilder mounts ABOVE the panel — the freeform rows/slots outline editor that repaints the live
+// page behind the slide-over. It self-guards to a space store on the matching slug, so on every other
+// Space surface (manage / settings, where the member store is mounted) it renders nothing and only the
+// panel shows.
 
 type Data = NonNullable<Awaited<ReturnType<typeof getSpacePageData>>>
 
@@ -59,6 +66,9 @@ export function SpacePageModule() {
           Your pages, cover, accent, and block order. Open the full editor to add and edit any block.
         </p>
       </header>
+      {/* The in-rail page builder (ADR-516 Phase D) — mounts only on the Space profile root, where the
+          space-layout store wraps both this rail and the live page it edits. */}
+      <SpacePageBuilder slug={data.slug} />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}

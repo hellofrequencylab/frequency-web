@@ -6,6 +6,7 @@ import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { blocksForKind } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 
@@ -64,6 +65,53 @@ function toProfileBlockId(id: string): ProfileBlockId | null {
   return normalized in SPACE_PROFILE_BLOCKS ? (normalized as ProfileBlockId) : null
 }
 
+type SpaceAuthored = ReturnType<typeof resolveSpaceAuthoredContent>
+
+/** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame). CONTENT ids
+ *  render the operator's authored blocks; DATA ids render live space data. Shared by the live render and
+ *  the render-all-once node map. Unknown / empty id → null. */
+function renderSpaceBlock(
+  id: string,
+  space: SpaceProfileContext,
+  data: SpaceContentData,
+  authored: SpaceAuthored,
+): React.ReactNode {
+  if (id.length === 0) return null
+  const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
+  if (ContentBlock) {
+    return (
+      <Suspense key={id} fallback={null}>
+        <ContentBlock content={authored} />
+      </Suspense>
+    )
+  }
+  const blockId = toProfileBlockId(id)
+  if (!blockId) return null
+  const Block = SPACE_PROFILE_BLOCKS[blockId]
+  return (
+    <Suspense key={id} fallback={null}>
+      <Block space={space} data={data} />
+    </Suspense>
+  )
+}
+
+/**
+ * Render EVERY candidate space block once, server-side, into a node map keyed by unified block id (ADR-516
+ * Phase D — the space mirror of renderMemberBlockNodes). This is what makes the in-rail builder's
+ * bench↔page placement instant: the node already exists, so placing/benching a block just moves it in the
+ * LiveProfileGrid — no round-trip. Each block already sits in its own <Suspense fallback={null}> and
+ * renders nothing when its slice is absent, so an unplaced block is cheap and fail-safe.
+ */
+export function renderSpaceBlockNodes(
+  space: SpaceProfileContext,
+  data: SpaceContentData,
+  authored: SpaceAuthored,
+): Record<string, React.ReactNode> {
+  const nodes: Record<string, React.ReactNode> = {}
+  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored)
+  return nodes
+}
+
 export async function SpaceProfileModules({
   space,
   layout,
@@ -116,26 +164,8 @@ export async function SpaceProfileModules({
     )
 
   const renderBlock = (id: string) => {
-    if (id.length === 0) return null
-    // CONTENT ids render the operator's own authored blocks; DATA ids render live space data.
-    const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
-    if (ContentBlock) {
-      return wrap(
-        id,
-        <Suspense key={id} fallback={null}>
-          <ContentBlock content={authored} />
-        </Suspense>,
-      )
-    }
-    const blockId = toProfileBlockId(id)
-    if (!blockId) return null
-    const Block = SPACE_PROFILE_BLOCKS[blockId]
-    return wrap(
-      id,
-      <Suspense key={id} fallback={null}>
-        <Block space={space} data={data} />
-      </Suspense>,
-    )
+    const node = renderSpaceBlock(id, space, data, authored)
+    return node === null ? null : wrap(id, node)
   }
 
   // GRID path (ADR-516): resolve the effective freeform rows and render them. Fail-safe: unknown ids drop.
