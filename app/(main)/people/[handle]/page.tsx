@@ -11,6 +11,7 @@ import { type ProfileTab } from './profile-tabs'
 import { getInitials } from '@/lib/utils'
 import { isEndorsed, rankProgress, seasonRankStyle, type RankDef, type SeasonRank } from '@/lib/season-ranks'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { FriendButton, type FriendState } from './friend-button'
 import { BlockButton } from './block-button'
 import { hasBlocked } from '@/lib/blocking'
@@ -306,13 +307,14 @@ export default async function ProfilePage({
 
   const ownerActions = (
     <>
-      <Link
-        href="/settings/profile"
+      {/* Edit profile opens the side admin rail (identity editor + the in-rail page builder) on the
+          profile's own page; the full /settings/profile form stays reachable from inside the rail. */}
+      <OpenAdminBarButton
+        scope={{ kind: 'profile', id: profileId }}
+        label="Edit profile"
+        icon={<Pencil className="h-3.5 w-3.5" />}
         className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Edit profile
-      </Link>
+      />
       {ownerSpotlightLink}
       {vcardEnabled && (
         <a
