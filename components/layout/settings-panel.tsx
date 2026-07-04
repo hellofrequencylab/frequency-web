@@ -459,16 +459,20 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   //    any `placement: 'bank'` surface, resolved to its href via the same maps the body uses (Space →
   //    hrefForSurface; core/personal → hrefForEntitySurface). Empty-safe; nothing is tagged `bank` yet, so
   //    `bankSurfaceLinks` is empty and the bank is purely the fixed per-scope areas (additive, non-breaking).
+  // The bank's console/settings hrefs are URL-slug-keyed, but an OpenAdminBarButton carries the entity's
+  // DB id on `scope.id` (the slug≠id detail contract), so `/{section}/<id>/manage` would 404. Read the
+  // slug from the LIVE PATH (adminScopeFor's id IS the URL segment; spaceSlug for a Space) and pass it to
+  // the bank for EVERY entity scope. A slug-corrected scope also feeds hrefForEntitySurface so a future
+  // core-entity `placement:'bank'` surface resolves correctly. Global/profile scopes have no path slug.
+  const pathSlug: string | null = spaceSlug ?? adminScopeFor(pathname)?.id ?? null
+  const bankScope: AdminScope | null = scope && pathSlug ? { ...scope, id: pathSlug } : scope
   const bankSurfaceLinks: BankLink[] = bankSurfaceApps.flatMap((a) => {
     const Icon = a.surfaces.editor?.Icon
     if (!Icon) return []
-    const href = spaceSlug ? hrefForSurface(a.id, spaceSlug) : hrefForEntitySurface(a.id, scope)
+    const href = spaceSlug ? hrefForSurface(a.id, spaceSlug) : hrefForEntitySurface(a.id, bankScope)
     return href ? [{ label: a.label, icon: Icon, href }] : []
   })
-  // The Space scope carries the DB id on `scope.id`; the bank needs the URL slug for its Space hrefs, so
-  // swap in the path-derived slug for the bank call (every other scope's id already IS its URL slug).
-  const bankScope: AdminScope | null = scope && isSpace && spaceSlug ? { ...scope, id: spaceSlug } : scope
-  const bank: BankLink[] = bankForScope(bankScope, { isStaff: isOperator }, bankSurfaceLinks)
+  const bank: BankLink[] = bankForScope(scope, { isStaff: isOperator }, bankSurfaceLinks, pathSlug)
 
   if (!hasContent) {
     return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank }

@@ -2,16 +2,16 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import { Check, ChevronRight, Users } from 'lucide-react'
+import { Check, Users } from 'lucide-react'
 import { moduleById } from '@/lib/admin/modules/registry'
 import { getEventPeopleData, approveEventRsvp, type EventPeopleData } from '@/app/(main)/events/admin-actions'
 
 // In-place "People" module (ENTITY-MANAGEMENT-OVERHAUL §4, the 'people' spine cell). Renders in
 // the page admin dock on /events/[slug]; the server returns null unless the caller holds
 // event.editSettings, so the module shows nothing for anyone else. Summarises the RSVP roster
-// (going / maybe / waitlist / +1s), the capacity fill, and the approval queue, and links to the
-// full Manage Dashboard for deeper work.
+// (going / maybe / waitlist / +1s), the capacity fill, and the approval queue. The "open the guest
+// dashboard" affordance moved to the rail's bottom BANK (ADR-515 Phase 4 — "Manage dashboard" is the
+// canonical console button there), so this module keeps only the inline approve/counts work.
 
 export function EventPeopleModule() {
   const pathname = usePathname()
@@ -148,18 +148,6 @@ export function EventPeopleModule() {
         )}
 
         {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
-
-        <Link
-          href={`/events/${slug}/manage`}
-          className="mt-5 flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
-        >
-          <Users className="h-5 w-5 shrink-0 text-primary-strong" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-text">Open the guest dashboard</span>
-            <span className="block text-xs text-muted">The full roster, +1s, check-in, and questions.</span>
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
-        </Link>
       </section>
     </div>
   )

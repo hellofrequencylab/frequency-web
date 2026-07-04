@@ -148,6 +148,44 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 40,
   },
+  // This week's practice (ADR-515 Phase 4, the CIRCLE rail). The host-assigned practice is an on-screen
+  // function (the "This week's practice" card in the page body + the members' log button), so the rail gets
+  // its own control for it — the picker extracted out of Circle Quest into a first-class engage module.
+  // Gated circle.assignTask (the engage authority; its read action re-checks the SAME capability), and the
+  // set action stays gated circle.editSettings (co-granted to a circle leader, so never weaker).
+  {
+    id: 'circle.practice',
+    label: "This week's practice",
+    desc: 'Set the practice your circle does together this week. It shows on the circle page for members to log.',
+    Icon: Sparkles,
+    scopes: ['circle'],
+    requiredCapability: 'circle.assignTask',
+    slot: 'engage',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 12,
+    tier: 'primary',
+    priority: 45,
+  },
+  // Circle insights (ADR-515 Phase 4). Circle health is an on-screen readout (zaps earned here, active
+  // streaks, new this week), so the rail carries an at-a-glance insights module — INLINE, mirroring
+  // hub.insights / nexus.insights / practice.insights (a circle has no standalone insights page, so there
+  // is no non-circular bank destination; see ADR-515 Phase 4). Gated circle.editSettings; the read action
+  // re-checks it and returns null for anyone else (fail-safe).
+  {
+    id: 'circle.insights',
+    label: 'Insights',
+    desc: 'Your circle at a glance: Zaps earned here, active streaks, and who joined this week.',
+    Icon: BarChart3,
+    scopes: ['circle'],
+    requiredCapability: 'circle.editSettings',
+    slot: 'insights',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 14,
+    tier: 'extra',
+    priority: 10,
+  },
   {
     id: 'circle.text',
     label: 'Page text',

@@ -23,12 +23,13 @@ describe('gate parity — surfacesFor(editor) reproduces modulesFor', () => {
   it('circle manager sees both circle editor modules, in order', () => {
     const scope: Scope = { kind: 'circle', circleId: 'c1', hostId: null }
     assertParity(scope, ['circle.editSettings'])
-    // Order guarantee, editSettings-gated cells only (Place & Time shares the gate; People +
-    // Engage need circle.moderate / circle.assignTask, so a plain editSettings holder omits them).
+    // Order guarantee, editSettings-gated cells only (Place & Time + Insights share the gate; People +
+    // Engage + This week's practice need circle.moderate / circle.assignTask, so a plain editSettings
+    // holder omits them). Insights (order 14, ADR-515 Phase 4) sorts between Place & Time and Page text.
     const ids = surfacesFor(APPS, { on: 'scopeKind', kind: 'circle' }, viewer(['circle.editSettings']), 'editor').map(
       (a) => a.id,
     )
-    expect(ids).toEqual(['circle.settings', 'circle.placeAndTime', 'circle.text'])
+    expect(ids).toEqual(['circle.settings', 'circle.placeAndTime', 'circle.insights', 'circle.text'])
   })
 
   it('circle non-manager sees no editor modules', () => {

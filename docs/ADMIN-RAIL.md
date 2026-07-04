@@ -307,8 +307,12 @@ keeps it.
 3. **The Space rail (Phase 3, shipped)** — §5.8: the Space's public-profile editors stay inline; its
    back-office destinations (CRM · Email · QR · Insights · Billing) move to `placement: 'bank'`, and the
    structural template chooser is surfaced inline in the Page panel.
-4. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
-5. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
+4. **The circle + event rails (Phase 4, shipped)** — §5.9: the circle gets a first-class This-week's-practice
+   picker + an inline Insights readout, and its create quick-actions (New event · New announcement) move to
+   the bank; the event's Manage dashboard is the bank's canonical console button; both layout choosers are
+   owner-visible.
+5. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
+6. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
 
 ### 5.8 The Space rail (Phase 3, shipped)
 
@@ -351,6 +355,42 @@ server-side (`authorizeEditor` → `canEditProfile`, staff preview fails closed)
 profile" own-page link. `TemplateThumbnail` is reused from the layout editor (now exported);
 `readProfileTemplate` (`manage/layout/preferences.ts`) feeds the current choice to the panel through
 `getSpacePageData` and the `/manage/layout` page.
+
+### 5.9 The circle + event rails (Phase 4, shipped)
+
+The owner directive: **the rail body is the page's own core admin — one control for every on-screen
+function; the second layer / back-office and the create paths go to the bottom bank; every rail carries the
+layout chooser.**
+
+**Circle.** Two on-screen functions had no rail control, so each gets one:
+
+| Surface | id | Placement | Why |
+|---|---|---|---|
+| This week's practice | `circle.practice` | inline (engage, primary) | the host-assigned practice paints on the circle page (the "This week's practice" card + member log) — the picker, extracted out of Circle Quest into its own module |
+| Insights | `circle.insights` | inline (extra) | circle health (Zaps earned here · active streaks · new this week) is an on-screen readout; mirrors hub/nexus/practice insights |
+
+The circle **bank** is **Manage console · New event · New announcement** — the two create quick-actions
+(`/events/new?circle=<id>` · `/broadcast?compose=true&scope=<id>`) mirror the header `CircleHostMenu`
+exactly, keyed on the same circle id the scope carries. **Deviation (stated):** the plan named an Insights
+*bank link*, but a circle has **no standalone insights page** — pointing a bank button at `/circles/<slug>`
+is circular and the health panel has no anchor, so per the plan's own fallback Insights is an **inline**
+health module instead. `circle.practice` re-checks `circle.assignTask` (the engage authority + the SAME
+capability it declares); setting the practice reuses `setCirclePracticeAction`, which re-checks
+`circle.editSettings` (co-granted to a circle leader — so the write gate is never weaker than the read gate).
+`circle.insights` re-checks `circle.editSettings`. Both render nothing for anyone else (fail-safe). Neither is
+tagged `placement: 'bank'`, so the "core entities render inline" invariant holds.
+
+**Event.** The rail body keeps Settings · Place & Time · People · Engage inline and the Danger zone inline
+(de-emphasized — never banked). The **bank** is a single **Manage dashboard** (`/events/<slug>/manage`) — the
+second-layer console that already carries the roster, approvals, questionnaire, sent Dispatches, AND the
+analytics, so Insights folds into it (a separate Insights button would dedupe to the same href) and the
+on-page Dispatch composer stays the compose path (there is no standalone dispatch-compose route). The
+`EventPeopleModule`'s in-body "Open the guest dashboard" link-card was **removed** — the canonical "open the
+dashboard" affordance is now the bank button; the module keeps only the inline approve/counts work.
+
+**Layout choosers.** Both are owner-visible per the keystone de-operatorization (§5.4): the injection is gated
+on the ENTITY EDIT capability (`viewer.caps.has('circle.editSettings')` / `event.editSettings`) behind the
+`isModuleRoute` guard, and renders as a proper `layout`-slot primary section — not the staff `isOperator` axis.
 
 ---
 
