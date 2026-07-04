@@ -102,6 +102,7 @@ import { CrmCockpitStats } from '@/components/widgets/crm/cockpit-stats'
 import { CrmRising } from '@/components/widgets/crm/rising'
 import { CrmTrust } from '@/components/widgets/crm/trust'
 import { CrmToday } from '@/components/widgets/crm/today'
+import { CrmMembersRoster } from '@/components/widgets/crm/members-roster'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -294,6 +295,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'crm-trust': CrmTrust,
   // Vera Today (/admin/crm/today) — the person-plus-action inbox.
   'crm-today': CrmToday,
+  // Resonance CRM members (/admin/crm/members) — the standalone member-viewer, keyed on the URL facet.
+  'crm-members-roster': CrmMembersRoster,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,

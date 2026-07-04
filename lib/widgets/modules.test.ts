@@ -178,6 +178,17 @@ describe('moduleIdsForScope', () => {
     expect(t).not.toContain('community-pulse')
   })
 
+  it('the CRM members page (/admin/crm/members) resolves its one roster block via the exact route, distinct from the cockpit', () => {
+    const m = moduleIdsForScope('/admin/crm/members')
+    expect(m).toBe(ROUTE_MODULE_IDS['/admin/crm/members'])
+    expect(m).toEqual(['crm-members-roster'])
+    // The nested exact route wins over the /admin/crm cockpit set: the cockpit's own crm-members
+    // block never leaks here (nor this roster into the cockpit), and never the global default.
+    expect(m).not.toContain('crm-members')
+    expect(m).not.toContain('community-pulse')
+    expect(moduleIdsForScope('/admin/crm')).not.toContain('crm-members-roster')
+  })
+
   it('the Gamification page (/admin/gamification) resolves its seven blocks, in order, no leakage', () => {
     const g = moduleIdsForScope('/admin/gamification')
     expect(g).toBe(ROUTE_MODULE_IDS['/admin/gamification'])
@@ -212,9 +223,15 @@ describe('moduleIdsForScope', () => {
 
 // MODULE_ROUTES ⇄ ROUTE_MODULE_IDS (ADR-270/294): a route only offers the on-page Layout editor when
 // it is in MODULE_ROUTES, and it only has blocks to arrange when it has a set in ROUTE_MODULE_IDS. The
-// four LP7 admin dashboards must be wired in both, so the editor matches the page's real content.
+// LP7 admin routes must be wired in both, so the editor matches the page's real content.
 describe('module route registration (LP7 admin dashboards)', () => {
-  const LP7_ROUTES = ['/admin/operations', '/admin/growth', '/admin/crm', '/admin/crm/today'] as const
+  const LP7_ROUTES = [
+    '/admin/operations',
+    '/admin/growth',
+    '/admin/crm',
+    '/admin/crm/today',
+    '/admin/crm/members',
+  ] as const
 
   it('each converted route is registered in MODULE_ROUTES and declares its own module set', () => {
     for (const route of LP7_ROUTES) {

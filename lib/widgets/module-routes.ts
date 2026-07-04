@@ -23,6 +23,7 @@ export const MODULE_ROUTES: readonly string[] = [
   '/admin/growth',
   '/admin/crm',
   '/admin/crm/today',
+  '/admin/crm/members',
   '/admin/gamification',
   '/admin/audit',
   '/admin/hubs',
