@@ -9,6 +9,7 @@ import {
 } from './registry'
 import type { Capability } from '@/lib/core/capabilities'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import type { RailTier } from '@/lib/admin/modules/spine'
 
 // EM1-1 / EM1-3: the entity registry's selection is pure — which surfaces a viewer sees
 // is (entity × the capabilities they hold for that scope), filtered + spine-ordered.
@@ -277,6 +278,43 @@ describe('entity registry · spaceSurfacesFor', () => {
   it('has unique Space surface ids', () => {
     const ids = SPACE_SURFACES.map((s) => s.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  // THE THREE-TIER RAIL AXIS (ADR-514 three-tier reorg): each Space surface carries a `tier` band +
+  // within-band `priority` so the standardized rail can group STANDARD (identity) → PRIMARY (importance)
+  // → EXTRA (under "More"). These lock the exact assignment the owner directive specified.
+  describe('three-tier rail tags', () => {
+    const TIERS: Record<string, { tier: RailTier; priority: number }> = {
+      'space.basics': { tier: 'standard', priority: 10 },
+      'space.layout': { tier: 'standard', priority: 20 },
+      'space.mode': { tier: 'standard', priority: 30 },
+      'space.engage.crm': { tier: 'primary', priority: 10 },
+      'space.people': { tier: 'primary', priority: 20 },
+      'space.offerings': { tier: 'primary', priority: 30 },
+      'space.services': { tier: 'primary', priority: 40 },
+      'space.comms': { tier: 'primary', priority: 50 },
+      'space.reach': { tier: 'extra', priority: 10 },
+      'space.insights': { tier: 'extra', priority: 20 },
+      'space.billing': { tier: 'extra', priority: 30 },
+      'space.danger': { tier: 'extra', priority: 99 },
+    }
+
+    it('tags every Space surface with the specified band + priority', () => {
+      for (const s of SPACE_SURFACES) {
+        expect(TIERS[s.id], `missing tier expectation for ${s.id}`).toBeTruthy()
+        expect({ tier: s.tier, priority: s.priority }, s.id).toEqual(TIERS[s.id])
+      }
+    })
+
+    it('puts CRM at the head of the primary band (right under the standard block)', () => {
+      const crm = SPACE_SURFACES.find((s) => s.id === 'space.engage.crm')!
+      expect(crm.tier).toBe('primary')
+      expect(crm.priority).toBe(10)
+    })
+
+    it('keeps Danger in the extra band (obscured under "More", never expanded at top)', () => {
+      expect(SPACE_SURFACES.find((s) => s.id === 'space.danger')!.tier).toBe('extra')
+    })
   })
 
   // THE OFFERINGS VISIBILITY GATE (the deeper Offerings merge): space.offerings is null-gated (it

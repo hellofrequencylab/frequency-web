@@ -252,6 +252,13 @@ export interface SpaceSurface {
    *  (Basics / Mode / Page) render inline; every feature workflow (Members / CRM / Offerings / Services /
    *  QR / Email / Insights / Billing / Danger) links out to its full page. */
   render: 'inline' | 'link'
+  /** The three-tier rail axis (ADR-514 three-tier reorg): which band this surface renders in on the
+   *  standardized admin rail — `standard` (identity: profile / page / mode, inline at the very top),
+   *  `primary` (most-used management, ordered by importance) or `extra` (obscured under the "More"
+   *  disclosure). ORTHOGONAL to `render`. */
+  tier?: 'standard' | 'primary' | 'extra'
+  /** Order WITHIN a tier (lower = higher up). Defaults to the surface's spine position when omitted. */
+  priority?: number
 }
 
 /**
@@ -279,6 +286,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // is always present for a manager). Every type.
   {
     id: 'space.basics',
+    tier: 'standard',
+    priority: 10,
     slot: 'basics',
     label: 'Basics',
     desc: 'Name, brand, about, and who can find this space.',
@@ -291,6 +300,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // Mode is FREE framing, never a gate, so it sits in the spine alongside Basics for every console type.
   {
     id: 'space.mode',
+    tier: 'standard',
+    priority: 30,
     slot: 'basics',
     label: 'Mode and focus',
     desc: 'Pick how this space runs, see what the preset turns on, and adjust it.',
@@ -305,6 +316,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // console type. (The stable id stays `space.layout` so the spine order + console binding are unchanged.)
   {
     id: 'space.layout',
+    tier: 'standard',
+    priority: 20,
     slot: 'layout',
     label: 'Page',
     desc: 'Set your layout, cover, accent, and block order, or open the full editor.',
@@ -322,6 +335,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // so a type with zero commerce functions (lab / partner / coaching / root) never shows an empty card.
   {
     id: 'space.offerings',
+    tier: 'primary',
+    priority: 30,
     slot: 'engage',
     label: 'Offerings',
     desc: 'Everything people can book, join, support, or attend, in one place.',
@@ -332,6 +347,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // People — the team roster and the role each member holds. Every type.
   {
     id: 'space.people',
+    tier: 'primary',
+    priority: 20,
     slot: 'people',
     label: 'Members',
     desc: 'See who is on your team and the role each one holds.',
@@ -344,6 +361,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // the `crm` types, so the surface gate and the function gate stay the same check.
   {
     id: 'space.engage.crm',
+    tier: 'primary',
+    priority: 10,
     slot: 'engage',
     label: 'CRM',
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
@@ -358,6 +377,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // any space may list services, so it is always present for a manager on every console type.
   {
     id: 'space.services',
+    tier: 'primary',
+    priority: 40,
     slot: 'engage',
     label: 'Services',
     desc: 'Your storefront store items and their pricing, listed publicly or kept private.',
@@ -374,6 +395,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // Reach — QR codes for the space and the landing pages they open to. Every type.
   {
     id: 'space.reach',
+    tier: 'extra',
+    priority: 10,
     slot: 'reach',
     label: 'QR codes',
     desc: 'Create codes for your space and the landing page they open to.',
@@ -385,6 +408,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // it; the types that compose an email surface are practitioner, business, and organization.
   {
     id: 'space.comms',
+    tier: 'primary',
+    priority: 50,
     slot: 'comms',
     label: 'Email',
     desc: 'Write a campaign, pick who gets it, and send or schedule it.',
@@ -397,6 +422,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // Every console type that has the QR surface has the insights view beside it.
   {
     id: 'space.insights',
+    tier: 'extra',
+    priority: 20,
     slot: 'insights',
     label: 'Insights',
     desc: 'See how your codes and pages are performing.',
@@ -408,6 +435,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // so every console type shows it.
   {
     id: 'space.billing',
+    tier: 'extra',
+    priority: 30,
     slot: 'billing',
     label: 'Plan and billing',
     desc: 'See your current plan and what each plan unlocks.',
@@ -419,6 +448,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // console, like the legacy cockpit; no per-tool function.
   {
     id: 'space.danger',
+    tier: 'extra',
+    priority: 99,
     slot: 'danger',
     label: 'Danger zone',
     desc: 'Delete this space and everything it owns. This cannot be undone.',

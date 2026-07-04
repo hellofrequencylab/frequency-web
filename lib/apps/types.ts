@@ -141,8 +141,21 @@ export interface App {
      *  in the dock). `render` is a SEPARATE axis (the inline-first rail, ADR below): how the STANDARDIZED
      *  admin bar draws this editor — `inline` mounts its editor component in the flattened bar
      *  ("everything in view"); `link` draws a compact link-row out to the feature's own management page.
-     *  Config surfaces render inline; only feature workflows link out. */
-    editor?: { surface: 'inline' | 'sidebar'; Icon: LucideIcon; order: number; render: 'inline' | 'link' }
+     *  Config surfaces render inline; only feature workflows link out.
+     *
+     *  `tier` + `priority` are the THREE-TIER rail axis (ADR-514 three-tier reorg): `tier` groups an
+     *  editor into `standard` (identity/profile, rendered inline at the very top), `primary` (the
+     *  most-used management surfaces, ordered by importance) or `extra` (obscured under a "More"
+     *  disclosure). `priority` orders editors WITHIN a tier (lower = higher up); it defaults to `order`.
+     *  ORTHOGONAL to `render`: the inline-vs-link decision still dispatches purely on `render`. */
+    editor?: {
+      surface: 'inline' | 'sidebar'
+      Icon: LucideIcon
+      order: number
+      render: 'inline' | 'link'
+      tier?: 'standard' | 'primary' | 'extra'
+      priority?: number
+    }
     page?: { defaultTemplate?: TemplateId; defaultSlot?: string }
     rail?: { side: 'left' | 'right' }
     /** A code-drawn element's render config. `registry` + `name` are the config a `library_assets`

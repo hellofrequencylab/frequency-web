@@ -106,6 +106,88 @@ export function groupPersonal(apps: readonly SpineApp[]): string[] {
   return apps.filter((a) => a.category === 'account').map((a) => a.id)
 }
 
+// ── The three-tier rail axis (ADR-514 three-tier reorg) ─────────────────────────────────────────────
+// The owner directive: reorder the rail by importance into three bands — STANDARD content (identity /
+// profile) inline at the very top, PRIMARY features next (ordered by importance), and EXTRA features
+// obscured under a "More" disclosure. This is a SEPARATE axis from the spine `category` (which names the
+// noun bucket) and from `render` (inline vs link-row): a band groups categories by frequency/importance.
+
+/** The three rail bands, top to bottom. */
+export type RailTier = 'standard' | 'primary' | 'extra'
+
+/** The fixed render order of the bands: standard (inline, top) → primary → extra (under "More"). */
+export const TIER_ORDER: readonly RailTier[] = ['standard', 'primary', 'extra'] as const
+
+/** The minimal app shape the tier helpers read — the spine `category`, plus the optional band + within
+ *  band `priority` and whether the app is a personal "You" app (so "You" leads its band). */
+interface TierApp {
+  id: string
+  category: AdminSlot | 'element'
+  tier?: RailTier
+  priority?: number
+  personal?: boolean
+}
+
+/**
+ * The FAIL-SAFE band for an app (ADR-514 three-tier reorg): the explicit `tier` tag wins; an untagged
+ * app defaults to `primary`, EXCEPT an untagged `danger` surface, which is forced to `extra` so a
+ * destructive surface can never render expanded at the top. Pure + tested (spine.test.ts).
+ */
+export function tierForApp(a: { category: AdminSlot | 'element'; tier?: RailTier }): RailTier {
+  if (a.tier) return a.tier
+  return a.category === 'danger' ? 'extra' : 'primary'
+}
+
+/** One populated (tier, slot) section: its band, its spine slot, and the ordered ids of its apps. */
+export interface TierSlotGroup {
+  tier: RailTier
+  slot: AdminSlot
+  appIds: string[]
+}
+
+/**
+ * Group scoped apps into the three-tier rail (ADR-514 three-tier reorg): partition by `tier` (fail-safe
+ * defaults via `tierForApp`), then WITHIN each band sort by `priority` (personal-before-management, then
+ * fixed spine order, then input order as tiebreaks) so "You" leads its band and importance orders the
+ * rest; then group into per-slot sections in first-appearance order. Bands emit in TIER_ORDER, so the
+ * result is standard sections, then primary, then extra. Non-spine ('element') apps are ignored. The
+ * (tier, slot) pair keys each section — a slot may appear in more than one band (e.g. personal "You"
+ * splits Profile→standard, Appearance→primary, Billing→extra), so the tier disambiguates.
+ */
+export function groupIntoTiers(apps: readonly TierApp[]): TierSlotGroup[] {
+  const groups: TierSlotGroup[] = []
+  for (const tier of TIER_ORDER) {
+    const band = apps
+      .map((a, i) => ({ a, i }))
+      .filter(({ a }) => a.category !== 'element' && tierForApp(a) === tier)
+      .sort((x, y) => {
+        const px = x.a.priority ?? 0
+        const py = y.a.priority ?? 0
+        if (px !== py) return px - py
+        const persX = x.a.personal ? 0 : 1
+        const persY = y.a.personal ? 0 : 1
+        if (persX !== persY) return persX - persY
+        const sx = SPINE_ORDER.indexOf(x.a.category as AdminSlot)
+        const sy = SPINE_ORDER.indexOf(y.a.category as AdminSlot)
+        if (sx !== sy) return sx - sy
+        return x.i - y.i
+      })
+      .map(({ a }) => a)
+    const bySlot = new Map<AdminSlot, string[]>()
+    const order: AdminSlot[] = []
+    for (const a of band) {
+      const slot = a.category as AdminSlot
+      if (!bySlot.has(slot)) {
+        order.push(slot)
+        bySlot.set(slot, [])
+      }
+      bySlot.get(slot)!.push(a.id)
+    }
+    for (const slot of order) groups.push({ tier, slot, appIds: bySlot.get(slot)! })
+  }
+  return groups
+}
+
 /** The App shape `summaryFor` reads — `label` + `category`. */
 interface SummaryApp {
   label: string

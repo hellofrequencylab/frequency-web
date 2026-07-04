@@ -94,6 +94,35 @@ personal feature workflows (Account and privacy, Billing) `link` out through `hr
 
 **Entities on the rail (all of them).** `circle · event · hub · nexus · practice · profile` open the rail via `OpenAdminBarButton` with a Capability-gated scope. **Space** joined them (ADR-513): a Space profile's owner "Customize" trigger opens the SAME rail pointed at a `space` scope, whose editor Apps come from `SPACE_SURFACES` keyed by `{ on:'spaceType' }` + a `spaceFunction`/`none` gate (Space authority is SpaceRole + `spaceFunctionAccess`, never a `Capability`, so it carries `spaceFns` on the trigger detail instead of caps). Its **config** surfaces (Basics / Mode / Page) render **inline** and its **feature workflows** render as **link-rows** into the existing `/spaces/<slug>/settings/*` sub-pages, per each surface's `render` classification (§2.1, ADR-514); the full-page `/manage` console is NOT converged (they share sub-pages via the one `hrefForSurface` map, not chrome). Basics / Page / Mode / Services / Danger are gate `none`, so an owner always sees a non-empty rail. This retired the bespoke `SpaceCustomizeButton`/`SpaceCustomizeDrawer` + `OPEN_SPACE_CUSTOMIZE`.
 
+### 2.2 Three tiers — standard · primary · extra (ADR-514 three-tier reorg)
+
+The owner directive: **the menu is correct but disorganized — reorder by most-used/importance.** So the flat
+spine list is banded into **three tiers** (a SEPARATE axis from the spine `category` noun and from `render`),
+each editor carrying `surfaces.editor.tier: 'standard' | 'primary' | 'extra'` + a within-tier `priority`:
+
+| Tier | What lives here | How it renders |
+|---|---|---|
+| **standard** | Identity / profile — the entity's Basics + Page + Mode, and the member's own Profile. "Standard content at top." | Inline editors, at the **very top**, always expanded. |
+| **primary** | The most-used management surfaces, ordered by `priority` (importance). For a Space, **CRM leads** (priority 10, right under the standard block), then Members · Offerings · Services · Email; for the member, Appearance · Notifications · Connections. | Inline editors and/or `link` rows, expanded, below standard. |
+| **extra** | Everything else — analytics/Insights, Reach/QR, Billing, and **Danger** — obscured so it never crowds the top. | Folded into **one** native `<details>` **"More"** disclosure at the very bottom, default **CLOSED**. |
+
+- **`tier` + `render` stay ORTHOGONAL.** `tier` decides the band; `render` (inline vs `SurfaceLinkRow`) still
+  decides how a surface draws. A standard-tier surface can be inline (Basics) and a primary-tier one a link (CRM).
+- **The pure seam** is `lib/admin/modules/spine.ts`: `TIER_ORDER`, `tierForApp` (the fail-safe resolver), and
+  `groupIntoTiers` (partition → sort within band by `priority`, with **personal-before-management** and fixed
+  spine order as tiebreaks so **"You" leads each band** → group into per-`(tier, slot)` sections). `settings-panel`
+  feeds it the resolved editor Apps + the folded inline extras (page-content → standard, quest/Layout → primary,
+  event Danger → extra); `admin-bar-body` renders standard + primary inline, then the "More" `<details>`.
+- **Fail-safe defaults.** An untagged surface → `primary`; an untagged **`danger`** surface is forced to `extra`
+  (a destructive surface can never render expanded at top). `priority` defaults to the editor's `order`.
+- **Danger stays reachable.** Danger sits in the extra band under a **closed** "More", but it is always mounted
+  (its section is in the DOM even while collapsed) and stays in the search index; picking a Danger (or any
+  extra-band) result in search **opens "More" first**, then scrolls to it. The label is the plain noun **"More"**
+  (sentence case, no em dash — CONTENT-VOICE §10).
+- **A slot may span bands.** The personal "You" (account) slot splits across all three (Profile → standard,
+  Appearance/Notifications/Connections → primary, Account-and-privacy/Billing → extra); the `${tier}:${slot}` ref
+  key keeps each section unique.
+
 ---
 
 ## 3. The phases (each shippable, gated `tsc && lint && test`)
