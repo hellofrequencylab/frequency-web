@@ -222,4 +222,62 @@ Phases 1–5 touch the coupled core (`settings-panel`, `admin-bar`, `app-shell`,
 
 ---
 
-*Synthesized 2026-07-02 from three implementation-planning passes + a menu-management best-practice research pass. A named track under the Loom Platform; routes per DOCS-PROTOCOL.md (this spec + ADRs → git).*
+## 5. The uniform rail contract (ADR-515) — the `placement` axis + bottom bank + sticky search
+
+The redesign directive: **every rail obeys ONE contract.** A sticky search pinned to the top, the first
+content section as the top of the box, core settings inline, a promotable second layer to a fixed bottom
+bank of primary areas, and an owner-visible layout chooser. **Phase 1 (the keystone, shipped) establishes
+the MECHANISM without mass re-tagging** — later phases opt surfaces onto it.
+
+### 5.1 The `placement: 'inline' | 'bank'` axis
+
+A FOURTH editor axis (orthogonal to `surface`, `render`, and `tier`), on `surfaces.editor.placement`,
+carried from `AdminModule.placement` / `SpaceSurface.placement` through the catalog exactly like `render`:
+
+- **`inline`** (the default everywhere) — the surface renders in the rail BODY via `render`/`tier`, unchanged.
+- **`bank`** — the surface is promoted into the bottom BANK button-grid instead of the body; `settings-panel`
+  resolves its href (Space → `hrefForSurface`; core/personal → `hrefForEntitySurface`) and merges it in.
+
+Nothing is tagged `bank` yet, so the body path is byte-for-byte as before (non-breaking); tagging the
+second-layer surfaces is a later phase.
+
+### 5.2 The bottom bank — `lib/admin/rail-bank.ts`
+
+`bankForScope(scope, viewer, extra)` (pure, unit-tested) returns the FIXED per-scope primary-area
+quick-links MERGED with any `placement: 'bank'` surface links:
+
+| Scope | Bank |
+|---|---|
+| **space** | Manage console · CRM · Insights · Billing (via `hrefForSurface`, slug from `scope.id`) |
+| **personal / global / profile** | All settings · Billing; + Operator · CRM · Insights when `viewer.isStaff` |
+| **event / hub / nexus / circle / practice** | the `/{section}/<slug>/manage` console |
+| **channel / unknown / null** | `[]` (empty-safe) |
+
+Fail-safe: de-dupes by href, **never admits a Danger / destructive href**, returns `[]` for a null/unknown
+scope. `admin-bar-body` renders it as a bordered `grid grid-cols-2` of button links (min 44px, focus ring)
+under a plain **"Go to"** label, as the LAST block in the browse branch (hidden in search), only when non-empty.
+
+### 5.3 Sticky search + start-at-first-section
+
+The search wrapper is `sticky top-0 z-20` with a `bg-surface` backdrop bleeding over the scroll
+container's `p-4`/`p-5` padding (negative margins), kept mounted in both search + browse states. The chrome
+"Settings" title header collapses to **just the close button** on desktop + mobile, so the sticky search +
+first content section are the top of the rail.
+
+### 5.4 Owner-visible layout chooser
+
+The circle/event Layout / template chooser is de-operatorized: gated on the ENTITY EDIT capability
+(`viewer.caps.has('circle.editSettings')` / `event.editSettings`), not the staff `isOperator` axis (the
+`isModuleRoute` guard stays), so it is an owner-visible guaranteed section on the scopes that have one.
+
+### 5.5 Phased rollout
+
+1. **Keystone (this PR)** — the `placement` axis, `bankForScope`, sticky search, collapsed header,
+   owner-visible layout chooser, and the `event/hub/nexus` manage-console href seam. Non-breaking.
+2. **Tag surfaces to `bank`** — move the second-layer feature workflows onto `placement: 'bank'` per scope.
+3. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
+4. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
+
+---
+
+*Synthesized 2026-07-02 from three implementation-planning passes + a menu-management best-practice research pass; §5 added 2026-07-04 (ADR-515). A named track under the Loom Platform; routes per DOCS-PROTOCOL.md (this spec + ADRs → git).*

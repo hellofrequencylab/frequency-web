@@ -147,7 +147,13 @@ export interface App {
      *  editor into `standard` (identity/profile, rendered inline at the very top), `primary` (the
      *  most-used management surfaces, ordered by importance) or `extra` (obscured under a "More"
      *  disclosure). `priority` orders editors WITHIN a tier (lower = higher up); it defaults to `order`.
-     *  ORTHOGONAL to `render`: the inline-vs-link decision still dispatches purely on `render`. */
+     *  ORTHOGONAL to `render`: the inline-vs-link decision still dispatches purely on `render`.
+     *
+     *  `placement` is the UNIFORM-RAIL axis (ADR-515): where a surface lives on the standardized rail —
+     *  `inline` (the default) renders it in the body via `render`/`tier`; `bank` promotes it into the
+     *  bottom BANK button-grid (the fixed per-scope quick-links) instead of the body. Default `inline`
+     *  everywhere; nothing is tagged `bank` yet (later phases opt surfaces in). ORTHOGONAL to `render`
+     *  and `tier`: a `bank` surface skips the body entirely and resolves a plain href. */
     editor?: {
       surface: 'inline' | 'sidebar'
       Icon: LucideIcon
@@ -155,6 +161,7 @@ export interface App {
       render: 'inline' | 'link'
       tier?: 'standard' | 'primary' | 'extra'
       priority?: number
+      placement?: 'inline' | 'bank'
     }
     page?: { defaultTemplate?: TemplateId; defaultSlot?: string }
     rail?: { side: 'left' | 'right' }

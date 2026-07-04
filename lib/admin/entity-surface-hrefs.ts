@@ -48,13 +48,17 @@ export function hrefForEntitySurface(appId: string, scope: EntitySurfaceScope | 
       return '/settings/appearance'
   }
 
-  // Core-entity surfaces (circle / hub / nexus / event / practice / channel) are ALL `render: 'inline'`
-  // today — each entity's inline module IS its dedicated editor, and where a deeper feature-workflow page
-  // exists the inline module already deep-links to it. So no core-entity id resolves here yet. When one is
-  // warranted, add a case keyed on the entity's URL slug (below), mirroring the Space map (hrefForSurface).
+  // Core-entity surfaces (event / hub / nexus) resolve to their OWNER MANAGE CONSOLE, keyed on the
+  // entity's URL slug (`scope.id`). This is the seam the module comment anticipated: a surface tagged
+  // `placement: 'bank'` (ADR-515 uniform rail) needs a resolvable href for the bottom bank, and each of
+  // these entities has a full `/{entity}/<slug>/manage` console. Circle + practice consoles are thin, so
+  // their surfaces stay body-inline (no bank href here); every core surface still renders `inline` today,
+  // so this only feeds the bank resolver, never a dead body row. Fail-safe: no slug ⇒ null.
   const entitySlug = scope?.id ?? null
   if (entitySlug) {
-    // No core-entity surface is classified `link` today, so nothing resolves off the slug yet.
+    if (appId.startsWith('event.')) return `/events/${entitySlug}/manage`
+    if (appId.startsWith('hub.')) return `/hubs/${entitySlug}/manage`
+    if (appId.startsWith('nexus.')) return `/nexuses/${entitySlug}/manage`
   }
   return null
 }

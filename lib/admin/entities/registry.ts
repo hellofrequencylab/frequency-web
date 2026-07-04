@@ -259,6 +259,10 @@ export interface SpaceSurface {
   tier?: 'standard' | 'primary' | 'extra'
   /** Order WITHIN a tier (lower = higher up). Defaults to the surface's spine position when omitted. */
   priority?: number
+  /** The uniform-rail placement axis (ADR-515): `inline` (default) renders the surface in the rail
+   *  BODY; `bank` promotes it into the bottom bank button-grid (the fixed per-scope quick-links)
+   *  instead. Default `inline` everywhere; nothing is tagged `bank` yet (later phases opt in). */
+  placement?: 'inline' | 'bank'
 }
 
 /**
