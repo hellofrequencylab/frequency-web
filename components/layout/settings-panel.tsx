@@ -12,7 +12,7 @@ import { CircleQuestModule } from '@/components/admin/modules/circle-quest-modul
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
-import { SPINE_ORDER, SPINE_META, groupIntoSpine } from '@/lib/admin/modules/spine'
+import { SPINE_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
@@ -149,6 +149,9 @@ export function useIsDesktop(): boolean {
  *  lightweight header (SPINE_META label + Icon) followed by that slot's nodes — inline editors and/or
  *  feature-workflow link-rows, interspersed in spine order, all in view at once. */
 export interface AdminSection {
+  /** The rail band this section renders in (ADR-514 three-tier reorg): standard (inline, top) /
+   *  primary (ordered by importance) / extra (under the "More" disclosure). */
+  tier: RailTier
   slot: AdminSlot
   label: string
   Icon: LucideIcon
@@ -164,6 +167,9 @@ export interface SearchableApp {
   description?: string
   category: AdminSlot | 'element'
   Icon?: LucideIcon
+  /** The rail band the app's section lives in (ADR-514 three-tier reorg), so a search reveal can open
+   *  the "More" disclosure when the picked app is in the `extra` band before scrolling to it. */
+  tier: RailTier
 }
 
 /** An attainable-but-locked row (Phase 5 / P3): an App the viewer could plausibly unlock, shown as a
@@ -181,7 +187,9 @@ export interface LockedRow {
 export interface SettingsPanelModel {
   /** Whether there is anything to render at all (each chrome hides an empty bar). */
   hasContent: boolean
-  /** The populated spine sections, in fixed spine order — rendered as headers + their nodes, all open. */
+  /** The populated sections, ordered by band then importance (ADR-514 three-tier reorg): standard
+   *  sections first, then primary, then extra — the body renders standard + primary inline and folds
+   *  the extra sections into ONE "More" disclosure at the bottom. Each is a header + its nodes. */
   sections: AdminSection[]
   /** The operator "Page" group (Layout / SEO / Status), separate from the entity spine. */
   pageGroup: ReactNode | null
@@ -277,8 +285,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     : manager
       ? applyOverrides(settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []
-  // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
-  // "You" section above the management spine.
+  // Personal first, then management — groupIntoTiers keeps personal "You" leading each band (personal-
+  // before-management is a sort tiebreak), so the "You" section heads its tier above the management spine.
   const apps = [...personalApps, ...mgmtApps]
   const appById = new Map(apps.map((a) => [a.id, a]))
 
@@ -287,26 +295,24 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // compact link-row OUT to its own page; an `inline` surface mounts its editor component in the bar.
   // This lets a Space mix inline config editors (Basics / Mode / Page) with link-rows (Members / CRM /
   // Offerings / …). Each inline module self-gates server-side and renders null when unauthorized.
-  const nodesForAppIds = (appIds: string[]): ReactNode[] =>
-    appIds.flatMap((id) => {
-      const app = appById.get(id)
-      if (!app) return []
-      if (app.surfaces.editor?.render === 'link') {
-        // Space link-rows resolve their href via hrefForSurface (Danger + unmapped fall back to the
-        // /manage console, so every row is a working link). Core/personal link surfaces resolve via
-        // hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal "You" feature workflows
-        // (Account and privacy, Billing) → their /settings/* page; every core entity stays `inline`, so
-        // no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
-        const href = spaceSlug
-          ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
-          : hrefForEntitySurface(id, scope)
-        return href ? [<SurfaceLinkRow key={id} app={app} href={href} />] : []
-      }
-      const C = MODULE_COMPONENTS[id]
-      return C ? [<C key={id} />] : []
-    })
-
-  const spineGroups = groupIntoSpine(apps)
+  // ORTHOGONAL to the three-tier axis below: `render` decides inline-vs-link; `tier` decides the band.
+  const nodeForApp = (id: string): ReactNode | null => {
+    const app = appById.get(id)
+    if (!app) return null
+    if (app.surfaces.editor?.render === 'link') {
+      // Space link-rows resolve their href via hrefForSurface (Danger + unmapped fall back to the
+      // /manage console, so every row is a working link). Core/personal link surfaces resolve via
+      // hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal "You" feature workflows
+      // (Account and privacy, Billing) → their /settings/* page; every core entity stays `inline`, so
+      // no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
+      const href = spaceSlug
+        ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
+        : hrefForEntitySurface(id, scope)
+      return href ? <SurfaceLinkRow key={id} app={app} href={href} /> : null
+    }
+    const C = MODULE_COMPONENTS[id]
+    return C ? <C key={id} /> : null
+  }
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
   const questModule = manager ? questModuleFor(pathname) : null
@@ -330,7 +336,10 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
 
   // ── Inline extras, folded into their natural spine slot (quest→engage, layout→layout,
-  //    event danger→danger, page-content→basics). Interspersed with the slot's apps in spine order. ──
+  //    event danger→danger, page-content→basics), each pinned to a rail band (ADR-514 three-tier reorg):
+  //    page-content is identity (standard); quest + the Layout tuner are management features (primary);
+  //    the event Danger zone is destructive (extra, under "More"). A synthetic priority (90) sorts each
+  //    extra after the real apps of its slot. ──
   const questBlock: ReactNode = questModule ? <div className="min-w-0">{questModule}</div> : null
   const contentBlock: ReactNode = contentModule ? <div className="min-w-0">{contentModule}</div> : null
   const circleLayoutNode: ReactNode = showCircleLayout ? layoutBlock('circle') : null
@@ -341,32 +350,60 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     </div>
   ) : null
 
-  const extrasBySlot: Partial<Record<AdminSlot, ReactNode[]>> = {}
-  const addExtra = (slot: AdminSlot, node: ReactNode) => {
-    if (!node) return
-    ;(extrasBySlot[slot] ??= []).push(node)
-  }
-  addExtra('engage', questBlock)
-  addExtra('basics', contentBlock)
-  addExtra('layout', circleLayoutNode)
-  addExtra('layout', eventLayoutNode)
-  addExtra('danger', dangerBlock)
+  const allExtraItems: { slot: AdminSlot; tier: RailTier; priority: number; node: ReactNode }[] = [
+    { slot: 'engage', tier: 'primary', priority: 90, node: questBlock },
+    { slot: 'basics', tier: 'standard', priority: 90, node: contentBlock },
+    { slot: 'layout', tier: 'primary', priority: 90, node: circleLayoutNode },
+    { slot: 'layout', tier: 'primary', priority: 90, node: eventLayoutNode },
+    { slot: 'danger', tier: 'extra', priority: 99, node: dangerBlock },
+  ]
+  const extraItems = allExtraItems.filter((x) => x.node != null)
 
-  // ── The flat, spine-ordered sections (inline-first rail, ADR-514): every spine slot with an app OR a
-  //    folded extra becomes ONE section — a header (SPINE_META label + Icon) followed by that slot's
-  //    nodes, inline editors and/or link-rows interspersed in spine order. Personal "You" leads (account
-  //    slot is first in SPINE_ORDER), then the management spine. All rendered at once, all in view. ──
-  const sections: AdminSection[] = SPINE_ORDER.flatMap((slot) => {
-    const group = spineGroups.find((g) => g.slot === slot)
-    const appIds = group?.appIds ?? []
-    const extras = extrasBySlot[slot] ?? []
-    if (appIds.length === 0 && extras.length === 0) return []
-    const meta = SPINE_META[slot]
-    const nodes: ReactNode[] = [
-      ...nodesForAppIds(appIds),
-      ...extras.map((node, i) => <div key={`extra-${slot}-${i}`}>{node}</div>),
-    ]
-    return [{ slot, label: meta.label, Icon: meta.Icon, nodes }]
+  // ── The three-tier sections (ADR-514 three-tier reorg). Every editor app + folded extra becomes a
+  //    tier-tagged rail item; groupIntoTiers partitions them into STANDARD (inline, top) → PRIMARY
+  //    (ordered by importance) → EXTRA (under "More"), and within each band orders by priority with
+  //    personal "You" leading. Each populated (tier, slot) pair is one section (a SPINE_META header +
+  //    its nodes). The (tier, slot) key stays unique even when a slot spans bands (personal "You"
+  //    splits Profile→standard, Appearance→primary, Billing→extra). Node ids resolve through nodeById. ──
+  interface RailItem {
+    id: string
+    category: AdminSlot | 'element'
+    tier?: RailTier
+    priority?: number
+    personal?: boolean
+  }
+  const railItems: RailItem[] = []
+  const nodeById = new Map<string, ReactNode>()
+  for (const app of apps) {
+    const node = nodeForApp(app.id)
+    if (node == null) continue
+    nodeById.set(app.id, node)
+    railItems.push({
+      id: app.id,
+      category: app.category,
+      tier: app.surfaces.editor?.tier,
+      priority: app.surfaces.editor?.priority ?? app.surfaces.editor?.order,
+      personal: PERSONAL_MODULE_IDS.has(app.id),
+    })
+  }
+  extraItems.forEach((x, i) => {
+    const id = `extra:${x.slot}:${i}`
+    nodeById.set(id, <div key={id}>{x.node}</div>)
+    railItems.push({ id, category: x.slot, tier: x.tier, priority: x.priority, personal: false })
+  })
+
+  const sections: AdminSection[] = groupIntoTiers(railItems).map((g) => {
+    const meta = SPINE_META[g.slot]
+    return {
+      tier: g.tier,
+      slot: g.slot,
+      label: meta.label,
+      Icon: meta.Icon,
+      nodes: g.appIds.flatMap((id) => {
+        const node = nodeById.get(id)
+        return node != null ? [node] : []
+      }),
+    }
   })
 
   // The operator "Page" group — rendered below the sections, set apart by a hairline. Suppressed on
@@ -401,6 +438,9 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     description: a.description,
     category: a.category,
     Icon: a.surfaces.editor?.Icon,
+    // The band the app's section lives in (fail-safe defaults), so a search reveal opens "More" when
+    // the picked app is in the `extra` band before scrolling to it (ADR-514 three-tier reorg).
+    tier: tierForApp({ category: a.category, tier: a.surfaces.editor?.tier }),
   }))
 
   if (!hasContent) {

@@ -5,6 +5,7 @@ import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES } from '@/lib/widgets/modules'
 import { REGISTRY_NAMES, TEMPLATE_PILLARS } from '@/lib/library/element-catalog'
 import { SPACE_SURFACES } from '@/lib/admin/entities/registry'
+import { groupIntoTiers, tierForApp } from '@/lib/admin/modules/spine'
 
 // LP1 superset conformance + adapter round-trip (docs/LOOM-PLATFORM.md §7): every existing registry id
 // maps to EXACTLY ONE App and derives back byte-for-byte, so LP2 can flip the source of truth safely.
@@ -91,6 +92,54 @@ describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () =
     for (const id of LINK) expect(renderById.get(id), id).toBe('link')
     // Every Space surface is accounted for above (no unclassified surface slipped in).
     expect(SPACE_SURFACES.map((s) => s.id).sort()).toEqual([...INLINE, ...LINK].sort())
+  })
+})
+
+// The three-tier rail axis (ADR-514 three-tier reorg) flows through the catalog exactly like `render`:
+// each editor App carries its source registry's `tier` + `priority` onto `surfaces.editor`, and the
+// fail-safe defaults (untagged → primary; untagged danger → extra) live in the pure `tierForApp` seam.
+describe('three-tier rail axis flows through the catalog', () => {
+  it('carries each AdminModule tier/priority onto its editor App', () => {
+    for (const m of ADMIN_MODULES) {
+      const app = APPS.find((a) => a.id === m.id && a.surfaces.editor)!
+      expect(app.surfaces.editor?.tier, m.id).toBe(m.tier)
+      expect(app.surfaces.editor?.priority, m.id).toBe(m.priority)
+    }
+  })
+
+  it('carries each Space surface tier/priority onto its editor App', () => {
+    for (const s of SPACE_SURFACES) {
+      const app = APPS.find((a) => a.id === s.id && a.surfaces.editor)!
+      expect(app.surfaces.editor?.tier, s.id).toBe(s.tier)
+      expect(app.surfaces.editor?.priority, s.id).toBe(s.priority)
+    }
+  })
+
+  it('every editor App is tagged with a band + priority (no untagged rail surface shipped)', () => {
+    for (const a of APPS.filter((x) => x.surfaces.editor)) {
+      expect(a.surfaces.editor?.tier, a.id).toBeTruthy()
+      expect(typeof a.surfaces.editor?.priority, a.id).toBe('number')
+    }
+  })
+
+  it('applies the fail-safe defaults on an UNTAGGED surface (untagged → primary; untagged danger → extra)', () => {
+    // The pure resolver the settings panel uses: an untagged surface defaults to primary, but an
+    // untagged danger surface is forced to extra so a destructive surface never renders expanded at top.
+    expect(tierForApp({ category: 'people' })).toBe('primary')
+    expect(tierForApp({ category: 'danger' })).toBe('extra')
+  })
+
+  // DANGER REACHABILITY (risk hold): a destructive surface must stay reachable — it lands in the EXTRA
+  // band (under "More") AND stays in the catalog the search index is built from.
+  it('keeps a Danger surface in the extra group AND in the search index (catalog)', () => {
+    const danger = SPACE_SURFACES.find((s) => s.id === 'space.danger')!
+    // In the catalog (the search index source) as an editor App.
+    const app = APPS.find((a) => a.id === 'space.danger' && a.surfaces.editor)
+    expect(app).toBeTruthy()
+    // And it groups into the extra band, never standard/primary.
+    const groups = groupIntoTiers([{ id: danger.id, category: danger.slot, tier: danger.tier, priority: danger.priority }])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].tier).toBe('extra')
   })
 })
 

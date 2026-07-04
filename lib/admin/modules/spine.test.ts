@@ -7,6 +7,10 @@ import {
   groupPersonal,
   summaryFor,
   shouldFlatten,
+  TIER_ORDER,
+  tierForApp,
+  groupIntoTiers,
+  type RailTier,
 } from './spine'
 import type { AdminSlot } from './registry'
 
@@ -92,6 +96,104 @@ describe('summaryFor', () => {
 
   it('is empty for a slot with no catalog apps', () => {
     expect(summaryFor('layout', [app('a', 'basics', 'Basics')])).toBe('')
+  })
+})
+
+// ── The three-tier rail axis (ADR-514 three-tier reorg) — pure grouping + the fail-safe defaults. ──
+const tierApp = (
+  id: string,
+  category: AdminSlot | 'element',
+  opts: { tier?: RailTier; priority?: number; personal?: boolean } = {},
+) => ({ id, category, ...opts })
+
+describe('tierForApp (fail-safe band defaults)', () => {
+  it('honors an explicit tier tag', () => {
+    expect(tierForApp({ category: 'basics', tier: 'standard' })).toBe('standard')
+    expect(tierForApp({ category: 'people', tier: 'extra' })).toBe('extra')
+  })
+
+  it('defaults an untagged surface to primary', () => {
+    expect(tierForApp({ category: 'people' })).toBe('primary')
+    expect(tierForApp({ category: 'basics' })).toBe('primary')
+  })
+
+  it('forces an untagged danger surface to extra (never expanded at top)', () => {
+    expect(tierForApp({ category: 'danger' })).toBe('extra')
+  })
+
+  it('an explicit tag still wins on a danger surface', () => {
+    // A deliberately-tagged danger keeps its tag; only an UNTAGGED danger is forced to extra.
+    expect(tierForApp({ category: 'danger', tier: 'extra' })).toBe('extra')
+  })
+})
+
+describe('TIER_ORDER', () => {
+  it('is standard → primary → extra (importance order, top to bottom)', () => {
+    expect(TIER_ORDER).toEqual(['standard', 'primary', 'extra'])
+  })
+})
+
+describe('groupIntoTiers', () => {
+  it('partitions apps into bands in TIER_ORDER (standard, then primary, then extra)', () => {
+    const apps = [
+      tierApp('p', 'people', { tier: 'primary', priority: 10 }),
+      tierApp('d', 'danger', { tier: 'extra', priority: 99 }),
+      tierApp('b', 'basics', { tier: 'standard', priority: 10 }),
+    ]
+    expect(groupIntoTiers(apps).map((g) => g.tier)).toEqual(['standard', 'primary', 'extra'])
+  })
+
+  it('orders sections within a band by priority (first-appearance of a slot)', () => {
+    const apps = [
+      tierApp('crm', 'engage', { tier: 'primary', priority: 10 }),
+      tierApp('ppl', 'people', { tier: 'primary', priority: 20 }),
+      tierApp('svc', 'engage', { tier: 'primary', priority: 40 }),
+      tierApp('mail', 'comms', { tier: 'primary', priority: 50 }),
+    ]
+    const groups = groupIntoTiers(apps)
+    // engage first (its min priority 10), then people (20), then comms (50); engage folds crm+svc.
+    expect(groups.map((g) => g.slot)).toEqual(['engage', 'people', 'comms'])
+    expect(groups[0].appIds).toEqual(['crm', 'svc'])
+  })
+
+  it('keeps personal "You" leading its band (personal-before-management tiebreak)', () => {
+    // A personal app and a management app tie on priority; the personal one leads.
+    const apps = [
+      tierApp('crm', 'engage', { tier: 'primary', priority: 10 }),
+      tierApp('appearance', 'account', { tier: 'primary', priority: 10, personal: true }),
+    ]
+    const groups = groupIntoTiers(apps)
+    expect(groups[0].slot).toBe('account')
+    expect(groups.map((g) => g.slot)).toEqual(['account', 'engage'])
+  })
+
+  it('lets one slot span two bands with a unique (tier, slot) each (personal "You" split)', () => {
+    const apps = [
+      tierApp('profile', 'account', { tier: 'standard', priority: 10, personal: true }),
+      tierApp('appearance', 'account', { tier: 'primary', priority: 10, personal: true }),
+      tierApp('billing', 'account', { tier: 'extra', priority: 20, personal: true }),
+    ]
+    const groups = groupIntoTiers(apps)
+    expect(groups.map((g) => `${g.tier}:${g.slot}`)).toEqual([
+      'standard:account',
+      'primary:account',
+      'extra:account',
+    ])
+  })
+
+  it('applies the fail-safe: an untagged danger app lands in the extra band', () => {
+    const groups = groupIntoTiers([tierApp('d', 'danger')])
+    expect(groups).toHaveLength(1)
+    expect(groups[0].tier).toBe('extra')
+    expect(groups[0].slot).toBe('danger')
+  })
+
+  it('ignores non-spine (element) apps', () => {
+    expect(groupIntoTiers([tierApp('el', 'element', { tier: 'primary' })])).toEqual([])
+  })
+
+  it('returns [] for no apps', () => {
+    expect(groupIntoTiers([])).toEqual([])
   })
 })
 

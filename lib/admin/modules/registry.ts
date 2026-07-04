@@ -73,6 +73,12 @@ export interface AdminModule {
   render: 'inline' | 'link'
   /** Vertical order within a slot. */
   order: number
+  /** The three-tier rail axis (ADR-514 three-tier reorg): which band this module renders in —
+   *  `standard` (identity/profile, inline at the very top), `primary` (most-used management, ordered
+   *  by importance) or `extra` (obscured under the "More" disclosure). ORTHOGONAL to `render`. */
+  tier?: 'standard' | 'primary' | 'extra'
+  /** Order WITHIN a tier (lower = higher up). Defaults to `order` when omitted. */
+  priority?: number
 }
 
 export const ADMIN_MODULES: readonly AdminModule[] = [
@@ -87,6 +93,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   // Circle 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
   // Appendix A, the Circle row). Each is gated per Appendix A and its server action re-checks the
@@ -105,6 +113,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 20,
   },
   {
     id: 'circle.people',
@@ -117,6 +127,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 30,
   },
   {
     id: 'circle.engage',
@@ -129,6 +141,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 40,
   },
   {
     id: 'circle.text',
@@ -141,6 +155,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 15,
+    tier: 'standard',
+    priority: 20,
   },
   {
     id: 'hub.settings',
@@ -153,6 +169,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   // Hub 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
   // Appendix A, the Hub row). All gated hub.manage; each server action re-checks it. People = the
@@ -170,6 +188,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 30,
   },
   {
     id: 'hub.insights',
@@ -182,6 +202,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'extra',
+    priority: 10,
   },
   {
     id: 'hub.danger',
@@ -194,6 +216,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'extra',
+    priority: 99,
   },
   {
     id: 'nexus.settings',
@@ -206,6 +230,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   // Nexus 9-spine editor Apps (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
   // Nexus row). All gated nexus.manage; each server action re-checks it. People = the hubs in this
@@ -223,6 +249,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 30,
   },
   {
     id: 'nexus.insights',
@@ -235,6 +263,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'extra',
+    priority: 10,
   },
   {
     id: 'nexus.danger',
@@ -247,6 +277,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'extra',
+    priority: 99,
   },
   {
     id: 'event.settings',
@@ -259,6 +291,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   {
     id: 'event.placeAndTime',
@@ -271,6 +305,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 20,
   },
   {
     id: 'event.people',
@@ -283,6 +319,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 30,
   },
   {
     id: 'event.engage',
@@ -295,6 +333,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'primary',
+    priority: 40,
   },
   {
     id: 'practice.settings',
@@ -307,6 +347,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   // Practice 9-spine editor App (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
   // Practice row). Insights = adoption + logging counts, read from the practices_ranked view the
@@ -323,6 +365,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'extra',
+    priority: 10,
   },
   {
     id: 'channel.settings',
@@ -335,6 +379,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   // The profile "Person settings" module was retired (ADR-133/PX.5): editing a
   // profile's name/handle/bio now lives in the dedicated Edit Profile flow
@@ -368,6 +414,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
+    tier: 'standard',
+    priority: 10,
   },
   {
     id: 'account.appearance',
@@ -380,6 +428,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 20,
+    tier: 'primary',
+    priority: 10,
   },
   {
     id: 'account.notifications',
@@ -392,6 +442,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 30,
+    tier: 'primary',
+    priority: 20,
   },
   {
     id: 'account.connections',
@@ -404,6 +456,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 40,
+    tier: 'primary',
+    priority: 30,
   },
   {
     id: 'account.privacy',
@@ -416,6 +470,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'link',
     order: 50,
+    tier: 'extra',
+    priority: 10,
   },
   {
     id: 'account.billing',
@@ -428,6 +484,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'link',
     order: 60,
+    tier: 'extra',
+    priority: 20,
   },
 ] as const
 

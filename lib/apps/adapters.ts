@@ -32,6 +32,10 @@ export function toAdminModule(app: App): AdminModule {
     surface: editor.surface,
     render: editor.render,
     order: editor.order,
+    // `tier` / `priority` are optional on AdminModule; carried back only when the source held them
+    // (byte-for-byte, exactly like `render` — the three-tier rail axis, ADR-514 three-tier reorg).
+    ...(editor.tier !== undefined ? { tier: editor.tier } : {}),
+    ...(editor.priority !== undefined ? { priority: editor.priority } : {}),
   }
   // `desc` is optional on AdminModule; include it only when the source carried one (byte-for-byte).
   return app.description !== undefined ? { ...adminModule, desc: app.description } : adminModule
