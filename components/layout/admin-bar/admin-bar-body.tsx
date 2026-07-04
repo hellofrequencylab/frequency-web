@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, Lock, Search, Settings } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { ChevronDown, Lock, Settings } from 'lucide-react'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, type RailTier } from '@/lib/admin/modules/spine'
 import type {
@@ -10,6 +11,9 @@ import type {
   SearchableApp,
 } from '@/components/layout/settings-panel'
 import { HubRail } from '@/components/layout/admin-bar/hub-rail'
+import { railArchetypeFor } from '@/lib/layout/page-chrome'
+import { scoreResult, rankResults, orderByRelevance, contextualEntrySlot } from '@/lib/admin/rail-intel'
+import { getProfileCompletenessRail } from '@/app/(main)/settings/rail-getters'
 
 // ── The AdminBar BODY (docs/ADMIN-RAIL.md — inline-first rail, ADR-514; three-tier reorg) ────────────
 // A band-ordered scrolling list. Each populated (tier, slot) pair is a lightweight section header
@@ -48,26 +52,71 @@ function sectionKey(tier: RailTier, slot: AdminSlot): string {
   return `${tier}:${slot}`
 }
 
-export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
-  const [query, setQuery] = useState('')
+export function AdminBarBody({
+  model,
+  query,
+  onQueryChange,
+}: {
+  model: SettingsPanelModel
+  /** The "Search settings" query, owned by the panel shell (rendered in the fixed top bar, ADR-516 Phase E). */
+  query: string
+  onQueryChange: (value: string) => void
+}) {
   // Whether the "More" (extra-band) disclosure is open. Default CLOSED; a search reveal of an extra-band
   // app opens it before scrolling so the collapsed item is revealed.
   const [moreOpen, setMoreOpen] = useState(false)
+
+  const pathname = usePathname()
+  const archetype = railArchetypeFor(pathname)
 
   // Section elements by (tier:slot) key, so a search result can scroll to its section once the list
   // remounts (a slot can live in two bands, so the key carries the band).
   const sectionRefs = useRef(new Map<string, HTMLElement>())
   // The section a just-picked search result wants to reveal (consumed after the query clears).
   const pendingScrollRef = useRef<string | null>(null)
+  // Whether the contextual-entry scroll has already run for this mount (so it lands ONCE on open).
+  const didEnterRef = useRef(false)
+
+  // ── Rail intelligence (ADR-516 Phase E) over EXISTING signals only ──────────────────────────────────
+  // The authed viewer's profile completeness, fetched fail-safely ONLY when a personal "You" (account)
+  // section is present. An incomplete profile floats that section to the top (relevance ranking) and
+  // boosts its search results. A missing signal → today's order (the fetch never blocks, defaults false).
+  const hasAccountSection = model.sections.some((s) => s.slot === 'account')
+  const [profileIncomplete, setProfileIncomplete] = useState(false)
+  useEffect(() => {
+    if (!hasAccountSection) return
+    let active = true
+    getProfileCompletenessRail()
+      .then((d) => {
+        if (active && d) setProfileIncomplete(d.percent < 100)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [hasAccountSection])
 
   const q = query.trim().toLowerCase()
-  const results = useMemo(
-    () => (q ? model.searchApps.filter((a) => appMatches(a, q)) : []),
-    [q, model.searchApps],
-  )
+  // Search-result scoring (ADR-516 Phase E): filter by the fuzzy match, then rank exact/prefix label match
+  // > current-page scope (the app's section is mounted here) > incomplete area > everything else. Stable,
+  // in-memory, no new data — a tie keeps today's order.
+  const results = useMemo(() => {
+    if (!q) return []
+    const matched = model.searchApps.filter((a) => appMatches(a, q))
+    return rankResults(matched, (a) =>
+      scoreResult(q, a.label, {
+        onPage: model.sections.some((s) => s.tier === a.tier && s.slot === a.category),
+        incomplete: a.category === 'account' && profileIncomplete,
+      }),
+    )
+  }, [q, model.searchApps, model.sections, profileIncomplete])
 
   // Standard + primary render inline; the extra band folds into the one "More" disclosure at the bottom.
-  const inlineSections = model.sections.filter((s) => s.tier !== 'extra')
+  // Relevance ranking (Phase E): an incomplete "You" section floats to the top, band/tier order the tiebreak.
+  const inlineSections = orderByRelevance(
+    model.sections.filter((s) => s.tier !== 'extra'),
+    (s) => s.slot === 'account' && profileIncomplete,
+  )
   const extraSections = model.sections.filter((s) => s.tier === 'extra')
   // The honest "hidden items" count for the "More" badge — the tucked individual settings (nodes),
   // not the section headers, so a Billing + Danger viewer reads "2", not "1 group".
@@ -86,21 +135,32 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
     }
   }, [q])
 
+  // Contextual entry (ADR-516 Phase E): when the rail opens on a page, land it scrolled to the most
+  // relevant section for the archetype (e.g. the profile builder lands on Layout). Runs ONCE per mount,
+  // never while searching, and fails safe — an unknown archetype or a missing target leaves the top in view.
+  useEffect(() => {
+    if (q || didEnterRef.current) return
+    const slot = contextualEntrySlot(archetype)
+    if (!slot) {
+      didEnterRef.current = true
+      return
+    }
+    const target = model.sections.find((s) => s.slot === slot)
+    if (!target) return
+    const el = sectionRefs.current.get(sectionKey(target.tier, target.slot))
+    if (el) {
+      el.scrollIntoView({ block: 'start' })
+      didEnterRef.current = true
+    }
+  }, [q, archetype, model.sections])
+
   function revealSection(app: SearchableApp) {
     if (app.category === 'element') return
     // Open "More" BEFORE clearing the query when the target lives in the extra band, so its section is
     // mounted-and-visible by the time the scroll effect runs (a closed <details> hides its content).
     if (app.tier === 'extra') setMoreOpen(true)
     pendingScrollRef.current = sectionKey(app.tier, app.category)
-    setQuery('')
-  }
-
-  function onKeyDown(e: React.KeyboardEvent) {
-    // Escape clears a query before the chrome closes the bar (P7).
-    if (e.key === 'Escape' && query) {
-      setQuery('')
-      e.stopPropagation()
-    }
+    onQueryChange('')
   }
 
   // One section: a header (SPINE_META label + Icon) followed by its nodes, ref-keyed by band + slot.
@@ -132,24 +192,10 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
   }
 
   return (
-    <div onKeyDown={onKeyDown} className="space-y-4">
-      {/* Sticky search (ADR-515 uniform rail) — pinned to the top of the admin box, present on scroll.
-          The negative margins bleed the bg-surface backdrop over the scroll container's p-4/p-5 padding so
-          scrolled content never peeks above or beside it. Kept mounted in BOTH search + browse states. */}
-      <div className="sticky top-0 z-20 -mx-4 -mt-4 bg-surface px-4 pb-3 pt-4 sm:-mx-5 sm:-mt-5 sm:px-5 sm:pt-5">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search settings"
-            placeholder="Search settings"
-            className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-11 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-      </div>
-
+    // The "Search settings" input now lives in the panel's fixed top bar (admin-bar.tsx), ABOVE this scroll
+    // region — so nothing renders above the search on scroll (ADR-516 Phase E). This body renders only the
+    // results / sections below it.
+    <div className="space-y-4">
       {q ? (
         // ── SEARCH results — a flat list across all scoped apps (derived filter, not a screen). ──
         <div aria-live="polite" className="space-y-1">
