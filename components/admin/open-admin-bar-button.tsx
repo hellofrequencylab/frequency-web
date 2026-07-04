@@ -2,6 +2,8 @@
 
 import type { AdminScope } from '@/lib/layout/page-chrome'
 import type { Capability } from '@/lib/core/capabilities'
+import type { SpaceType } from '@/lib/spaces/types'
+import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { openAdminBar } from './open-admin-bar'
 
 // The ONE trigger for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1). It collapses the former
@@ -16,6 +18,8 @@ const DEFAULT_CLASS =
 export function OpenAdminBarButton({
   scope,
   caps,
+  spaceType,
+  spaceFns,
   label,
   icon,
   className,
@@ -24,6 +28,10 @@ export function OpenAdminBarButton({
   scope?: AdminScope
   /** The viewer's caps already resolved for `scope` (the page passes `Array.from(entityCaps)`). */
   caps?: Capability[]
+  /** For a `space` scope (ENTITY-MANAGEMENT / PR C): the Space's type + the per-Space functions this
+   *  viewer may use, so the panel resolves the Space's editor Apps by type + function (not by Capability). */
+  spaceType?: SpaceType
+  spaceFns?: SpaceFunctionKey[]
   /** The button label (voice canon: no em dashes). */
   label: string
   /** A pre-rendered icon element (e.g. `<Settings className="h-4 w-4" />`); crosses the RSC boundary
@@ -34,7 +42,7 @@ export function OpenAdminBarButton({
   return (
     <button
       type="button"
-      onClick={() => openAdminBar({ scope, caps })}
+      onClick={() => openAdminBar({ scope, caps, spaceType, spaceFns })}
       className={className ?? DEFAULT_CLASS}
     >
       {icon}

@@ -4,6 +4,7 @@ import { toAdminModule, toLayoutMeta, toElementDef } from './adapters'
 import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES } from '@/lib/widgets/modules'
 import { REGISTRY_NAMES, TEMPLATE_PILLARS } from '@/lib/library/element-catalog'
+import { SPACE_SURFACES } from '@/lib/admin/entities/registry'
 
 // LP1 superset conformance + adapter round-trip (docs/LOOM-PLATFORM.md §7): every existing registry id
 // maps to EXACTLY ONE App and derives back byte-for-byte, so LP2 can flip the source of truth safely.
@@ -31,9 +32,36 @@ describe('editor superset ← ADMIN_MODULES', () => {
     }
   })
 
-  it('editor Apps map 1:1 with ADMIN_MODULES (no extra editor Apps)', () => {
+  it('editor Apps are exactly ADMIN_MODULES + the Space surface lane (no extra editor Apps)', () => {
+    // The editor lane is ADMIN_MODULES (capability-gated) PLUS the Space surface lane (spaceType-scoped,
+    // spaceFunction/none-gated — ENTITY-MANAGEMENT / PR C). A Space surface is NOT an AdminModule (it lives
+    // outside the Capability spine), so it adds its own editor App keyed by id.
     const editorIds = APPS.filter((a) => a.surfaces.editor).map((a) => a.id).sort()
-    expect(editorIds).toEqual(ADMIN_MODULES.map((m) => m.id).sort())
+    const want = [...ADMIN_MODULES.map((m) => m.id), ...SPACE_SURFACES.map((s) => s.id)].sort()
+    expect(editorIds).toEqual(want)
+  })
+})
+
+describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () => {
+  const spaceEditorApps = APPS.filter(
+    (a) => a.surfaces.editor && a.scopes.some((s) => s.on === 'spaceType'),
+  )
+
+  it('one editor App per Space surface, keyed by the surface id', () => {
+    expect(spaceEditorApps.map((a) => a.id).sort()).toEqual(SPACE_SURFACES.map((s) => s.id).sort())
+  })
+
+  it('bridges each surface onto the App gate: a functioned surface → spaceFunction, else none', () => {
+    for (const s of SPACE_SURFACES) {
+      const app = spaceEditorApps.find((a) => a.id === s.id)!
+      if (s.requiredFunction) {
+        expect(app.gate).toEqual({ system: 'spaceFunction', fn: s.requiredFunction })
+      } else {
+        expect(app.gate).toEqual({ system: 'none' })
+      }
+      // Placement is by Space TYPE (never a scopeKind) — this is the dormant {on:'spaceType'} plumbing.
+      expect(app.scopes.every((sc) => sc.on === 'spaceType')).toBe(true)
+    }
   })
 })
 

@@ -3,6 +3,8 @@ import { Circle } from 'lucide-react'
 import { appsForScope, showsAdminBar, lockedAppsForScope, isAttainableGate } from './for-scope'
 import { APPS } from './catalog'
 import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
+import { spaceSurfacesFor } from '@/lib/admin/entities/registry'
+import type { SpaceType } from '@/lib/spaces/types'
 import type { App, AppViewer } from './types'
 
 // LP4 (docs/LOOM-PLATFORM.md §5). appsForScope wraps surfacesFor over the App catalog: editor apps
@@ -43,6 +45,45 @@ describe('appsForScope — editor apps preserve modulesForScopeKind behavior (LP
   it('fail-closed: a null scope or null viewer yields []', () => {
     expect(appsForScope(null, SELECTION_VIEWER, 'editor')).toEqual([])
     expect(appsForScope({ kind: 'circle' }, null as never, 'editor')).toEqual([])
+  })
+})
+
+describe('appsForScope — Space editor apps reproduce spaceSurfacesFor (ENTITY-MANAGEMENT / PR C)', () => {
+  // A Space profile resolves its editor apps by spaceType + the viewer's per-Space functions, so
+  // appsForScope({ kind:'space', spaceType }, viewerHoldingEveryFn, 'editor') reproduces the same spine
+  // surfaces the /manage console renders via spaceSurfacesFor(type, canUse) — the behavior-preservation
+  // guarantee that lets the standardized rail replace the bespoke SpaceCustomizeDrawer. A viewer holding
+  // EVERY function is the clean parity case (the Offerings surface, gate 'none', shows in both then; for a
+  // type with zero commerce functions spaceSurfacesFor hides Offerings while the rail keeps its link, so we
+  // check the offering-bearing types where the two align exactly, id AND order).
+  const everyFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => true }
+  const OFFERING_TYPES: SpaceType[] = ['practitioner', 'business', 'organization', 'event_space']
+
+  it('matches spaceSurfacesFor id + order for each offering-bearing type', () => {
+    for (const type of OFFERING_TYPES) {
+      const got = appsForScope({ kind: 'space', id: 'x', spaceType: type }, everyFn, 'editor').map((a) => a.id)
+      const want = spaceSurfacesFor(type, () => true).map((s) => s.id)
+      expect(got, type).toEqual(want)
+    }
+  })
+
+  it('gates on the viewer functions: a no-function viewer keeps only the always-on floor', () => {
+    // With no functions the functioned surfaces (members, crm, qr, email, billing) drop; the always-on
+    // (gate 'none') floor — Basics / Mode / Page / Services / Danger, plus Offerings (gate 'none') — stays,
+    // so the owner NEVER sees an empty rail (the fail-safe). Compare against the SAME null-function console.
+    const noFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => false }
+    const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, noFn, 'editor').map((a) => a.id)
+    expect(got).toContain('space.basics')
+    expect(got).toContain('space.danger')
+    expect(got).not.toContain('space.people') // members function absent
+  })
+
+  it('fail-closed: an untyped Space scope (path-derived, no type) resolves nothing', () => {
+    expect(appsForScope({ kind: 'space', id: 'x' }, everyFn, 'editor')).toEqual([])
+  })
+
+  it('a Space scope carries no layout-module page blocks', () => {
+    expect(appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, everyFn, 'page')).toEqual([])
   })
 })
 

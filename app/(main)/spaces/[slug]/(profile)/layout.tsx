@@ -2,17 +2,15 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { QrCode } from 'lucide-react'
+import { QrCode, SlidersHorizontal } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess, SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
-import { readProfilePages, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
-import { readProfileData } from '@/lib/spaces/profile-data'
-import { readWebsitePublished } from '@/lib/spaces/website'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
@@ -21,8 +19,7 @@ import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage
 import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
-import { SpaceCustomizeButton } from '@/components/spaces/space-customize-button'
-import { SpaceCustomizeDrawer } from '@/components/spaces/space-customize-drawer'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { SpaceManageBoard } from '@/app/(main)/spaces/[slug]/manage/manage-board'
 import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
@@ -142,13 +139,24 @@ export default async function SpaceProfileChromeLayout({
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
 
+  // The per-Space FUNCTIONS this viewer may use — resolved the SAME way the /manage console does
+  // (spaceFunctionAccess over the viewer's space role; a staff previewer sees them all), so the
+  // standardized admin rail gates the Space's surfaces exactly as the console does. Only computed for a
+  // manager (the Customize trigger is owner-gated), so a visitor never pays the space-capabilities read.
+  let spaceFns: SpaceFunctionKey[] = []
+  if (canSeeAsOwner) {
+    const spaceCaps = await getSpaceCapabilities(space, caller?.id ?? null)
+    spaceFns = SPACE_FUNCTIONS.filter(
+      (fn) => manage.staffViewing || spaceFunctionAccess(space, fn.key, spaceCaps.role),
+    ).map((fn) => fn.key)
+  }
+
   const base = `/spaces/${space.slug}`
 
   // The profile sub-nav (Home + section anchors + custom pages, plus the operator's Manage/CRM links)
   // is built by the shared helper — the SAME menu the owner shell layouts (manage / crm) render, so the
   // sticky bar reads as one persistent nav across profile ↔ Manage ↔ CRM. Active state stays client-side
   // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
-  const pages = readProfilePages(space.preferences)
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
   // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
@@ -165,15 +173,20 @@ export default async function SpaceProfileChromeLayout({
   const coverScrim = readCoverScrim(space.preferences)
   const heroOnInk = coverScrim === 'shade'
 
-  // The ONE owner affordance (Customize): the three old controls (Edit profile · Customize page · the
-  // divider Settings cog) all opened the same shell settings rail, so they collapse to a single button
-  // that opens it (SpaceCustomizeButton dispatches `open-space-customize`). Inside the rail the core page
-  // settings live, plus an "Edit fullscreen" button into the Puck editor. Never shown to a visitor.
+  // The ONE owner affordance (Customize): opens the STANDARDIZED admin rail (openAdminBar) pointed at this
+  // Space's scope — the SAME rail chrome circles / events / hubs / nexuses use (ENTITY-MANAGEMENT / PR C),
+  // replacing the bespoke SpaceCustomizeDrawer. It resolves the Space's 9-spine surfaces as browse-first
+  // link-rows into the existing /settings/* sub-pages, gated on the viewer's per-Space functions (spaceFns)
+  // + the always-on floor. Owner-gated (canSeeAsOwner), so a visitor never sees it and never triggers it.
   const ownerTools = (onInk = false) =>
     canSeeAsOwner ? (
-      <SpaceCustomizeButton
-        className={ownerToolClasses(onInk)}
+      <OpenAdminBarButton
+        scope={{ kind: 'space', id: space.id }}
+        spaceType={space.type}
+        spaceFns={spaceFns}
         label={manage.staffViewing ? 'Customize (staff)' : 'Customize'}
+        icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
+        className={ownerToolClasses(onInk)}
       />
     ) : null
 
@@ -361,25 +374,9 @@ export default async function SpaceProfileChromeLayout({
       <DetailTemplate title={brandName} hero={coverNode} band={infoBand} stickyNav={stickyNav}>
         {children}
       </DetailTemplate>
-      {/* The owner-gated Customize rail — opened by the single Customize button in the identity row.
-          Space-scoped + re-gated in every action; carries the core page settings + the fullscreen
-          editor button. Rendered only for a manager, so a visitor never ships the drawer. */}
-      {canSeeAsOwner && (
-        <SpaceCustomizeDrawer
-          slug={space.slug}
-          brandName={brandName}
-          pages={pages}
-          maxPages={MAX_PROFILE_PAGES}
-          coverSize={coverSize}
-          coverScrim={coverScrim}
-          accent={space.brandAccent ?? ''}
-          businessInfo={readProfileData(space.preferences)}
-          coverImageUrl={space.coverImageUrl}
-          brandLogoUrl={space.brandLogoUrl}
-          websitePublished={readWebsitePublished(space.preferences)}
-          canManagePages={spaceCanUseFullWebsite(space)}
-        />
-      )}
+      {/* The owner Customize rail is now the STANDARDIZED admin bar (mounted site-wide by the shell), opened
+          by the owner-gated Customize button in the identity row via openAdminBar — no per-profile drawer to
+          mount here anymore (ENTITY-MANAGEMENT / PR C). */}
     </AccentScope>
   )
 }

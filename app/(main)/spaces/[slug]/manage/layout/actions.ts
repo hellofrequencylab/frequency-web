@@ -22,7 +22,7 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { withProfileData, type ProfileDataPatch } from '@/lib/spaces/profile-data'
+import { withProfileData, type ProfileDataPatch, type SpaceOffering } from '@/lib/spaces/profile-data'
 import {
   withLayoutPreset,
   withSpaceLayoutDefault,
@@ -184,6 +184,31 @@ export async function setSpaceBusinessInfo(slug: string, patch: ProfileDataPatch
   // The profile data shows across every public profile route (Home + custom pages + the Spotlight),
   // so revalidate the whole space layout, not just the landing.
   revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Save the Space's SERVICES catalog (the storefront store items) as a whole list. Written to
+ * preferences.profileData.offerings through the SAME single-source normalizer as the business info
+ * (withProfileData re-parses every row fail-safe, coercing prices + dropping unknown enums), so a
+ * listed service shows on the public storefront and a private one stays direct-link only. This is a
+ * FOCUSED patch: it touches only the offerings node, preserving every other profileData + preferences
+ * key. Owner/admin/editor-gated (staff preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceServices(slug: string, services: SpaceOffering[]): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const list = Array.isArray(services) ? services : []
+  const next = withProfileData(auth.preferences, { offerings: list } as ProfileDataPatch)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not save your services. Try again.')
+  }
+
+  // Services show on the public storefront (every profile route) + the manage surfaces.
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/settings/services`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

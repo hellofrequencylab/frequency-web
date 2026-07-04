@@ -22,6 +22,8 @@
 import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES, ROUTE_MODULE_IDS } from '@/lib/widgets/modules'
 import type { ElementRegistry, PillarSlug } from '@/lib/library/element-catalog'
+import { SPACE_SURFACES } from '@/lib/admin/entities/registry'
+import { SPINE_ORDER, SPINE_META } from '@/lib/admin/modules/spine'
 import type { App } from './types'
 
 // ── editor Apps ← ADMIN_MODULES ───────────────────────────────────────────────────────────────────
@@ -144,8 +146,36 @@ const ELEMENT_APPS: App[] = ELEMENT_SEEDS.map((e): App => ({
   version: 1,
 }))
 
+// ── Space editor Apps ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C) ────────────────────────────────────
+// A Space profile lives OUTSIDE the community Capability spine (SpaceRole + spaceFunctionAccess, not a
+// Capability), so its manageable surfaces (lib/admin/entities/registry.ts SPACE_SURFACES) become editor
+// Apps keyed by `{ on:'spaceType' }` + a `spaceFunction` gate — the dormant Space App plumbing the
+// contract already carried ({on:'spaceType'} scope, {system:'spaceFunction'} gate, AppViewer.canUseSpaceFn).
+// This lights the standardized admin rail for a Space's owner "Customize" trigger, resolving the same
+// 9-spine surfaces spaceSurfacesFor(type, canUse) drives the /manage console with. Spine-SORTED so the
+// resolved order matches spaceSurfacesFor (which spine-sorts too); the Icon is the surface's spine-slot
+// icon (SPINE_META) — the rail renders these as link-rows into the existing /settings/* sub-pages, so a
+// glanceable per-category icon is all it needs. requiredFunction null ⇒ gate 'none' (Basics / Page / Mode /
+// Services / Danger are always-on for a manager, the fail-safe floor); a functioned surface ⇒ its spaceFunction gate.
+const SPACE_EDITOR_APPS: App[] = [...SPACE_SURFACES]
+  .sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
+  .map((s, i): App => ({
+    id: s.id,
+    label: s.label,
+    description: s.desc,
+    category: s.slot,
+    scopes: s.types.map((type) => ({ on: 'spaceType' as const, type })),
+    gate: s.requiredFunction
+      ? { system: 'spaceFunction', fn: s.requiredFunction }
+      : { system: 'none' },
+    surfaces: { editor: { surface: 'sidebar', Icon: SPINE_META[s.slot].Icon, order: (i + 1) * 10 } },
+    themeable: false,
+    status: 'final',
+    version: 1,
+  }))
+
 /** THE catalog — the composed, uniform view of every feature. LP2 will invert the registries onto it. */
-export const APPS: readonly App[] = [...EDITOR_APPS, ...PAGE_APPS, ...ELEMENT_APPS]
+export const APPS: readonly App[] = [...EDITOR_APPS, ...PAGE_APPS, ...ELEMENT_APPS, ...SPACE_EDITOR_APPS]
 
 /** Look an App up by id. */
 export function appById(id: string): App | undefined {

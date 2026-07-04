@@ -65,14 +65,17 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // on-page drawer modules — so this trigger would open an EMPTY drawer. Suppress it; QR & Share stays.
   const isProfile = /^\/people\/[^/]+$/.test(pathname)
   // SPACE PROFILES (/spaces/<slug> + its (profile) children: custom pages, /book) own their settings
-  // through the single "Customize" button in the identity row (SpaceCustomizeButton → the space-scoped
-  // customize rail). Suppress this shell cog there so a space has exactly ONE customize control. The
-  // owner console routes (manage / settings / crm / edit-page) are NOT profile routes and keep theirs.
+  // through the single owner "Customize" button in the identity row, which now opens the STANDARDIZED
+  // admin bar (openAdminBar, pointed at the Space scope — ENTITY-MANAGEMENT / PR C), not the retired
+  // bespoke customize drawer. This shell cog stays suppressed there so a space has exactly ONE customize
+  // control. The owner console routes (manage / settings / crm / edit-page) are NOT profile routes and
+  // keep theirs.
   const isSpaceProfile =
     /^\/spaces\/[^/]+/.test(pathname) && !/^\/spaces\/[^/]+\/(manage|settings|crm|edit-page)(\/|$)/.test(pathname)
 
   // Space profiles draw their OWN hairline ABOVE the nav menu and want NO line UNDER it (owner
-  // directive), so this shell divider is suppressed there entirely — no rule, no controls.
+  // directive), so this shell divider is suppressed there entirely — no rule, no controls. (This
+  // returns before the settingsTrigger below, so that trigger never renders on a Space profile.)
   if (isSpaceProfile) return null
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
@@ -86,7 +89,8 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // surfaces that mount their OWN settings entry into the same drawer — entity-detail leaves (their
   // "Edit X" button), member profiles (the profile rail), and Space profiles (the Customize button) —
   // so a page never shows two settings triggers; the "You" section is reached from that button there.
-  const settingsTrigger = authed && !isEntityDetail && !isProfile && !isSpaceProfile ? (
+  // (Space profiles already returned null above, so they need no guard here.)
+  const settingsTrigger = authed && !isEntityDetail && !isProfile ? (
     <button
       type="button"
       onClick={() => openAdminBar()}

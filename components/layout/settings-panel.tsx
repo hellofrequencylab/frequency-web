@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutGrid, type LucideIcon } from 'lucide-react'
+import { ArrowRight, LayoutGrid, type LucideIcon } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
@@ -29,6 +30,7 @@ import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
+import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
 // content) plus the operator "Page" group (Layout / SEO / Status), resolved from the pathname.
@@ -64,10 +66,46 @@ const EXTRA_SUMMARY: Partial<Record<AdminSlot, string>> = {
 }
 
 // The entity scope kinds — a page in one of these carries its identity through its own manage
-// modules, so the generic operator "Page" group is dropped there (see useSettingsPanel).
+// modules, so the generic operator "Page" group is dropped there (see useSettingsPanel). `space` joins
+// them (ENTITY-MANAGEMENT / PR C): a Space profile owns its identity through its own 9-spine surfaces.
 const ENTITY_KINDS: ReadonlySet<string> = new Set([
-  'circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'profile',
+  'circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'profile', 'space',
 ])
+
+/** Extract the Space slug from a `/spaces/<slug>/...` path. The rail's Space link-rows deep-link into
+ *  `/spaces/<slug>/settings/*` via hrefForSurface, and the AdminBar detail carries the DB id (not the
+ *  slug) on `scope.id`, so the slug is read from the live path. Null off a Space route. */
+function spaceSlugFromPath(pathname: string): string | null {
+  const m = pathname.match(/^\/spaces\/([^/]+)/)
+  return m ? m[1] : null
+}
+
+/** One Space surface as a compact link-row into its EXISTING `/settings/*` sub-page (ENTITY-MANAGEMENT /
+ *  PR C, option (a) rendering): the rail deep-links, it never inlines the editor. Danger (no sub-page) and
+ *  any unmapped id fall back to the `/manage` console, where the delete control lives, so every row is a
+ *  working link. Mirrors the console's SectionRow chrome (tokens only). */
+function SpaceSurfaceRow({ app, slug }: { app: App; slug: string }) {
+  const href = hrefForSurface(app.id, slug) ?? `/spaces/${slug}/manage`
+  const Icon = app.surfaces.editor?.Icon
+  return (
+    <Link
+      href={href}
+      title={app.description}
+      className="group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
+    >
+      {Icon && (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
+          <Icon className="h-3.5 w-3.5" aria-hidden />
+        </span>
+      )}
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{app.label}</span>
+      <ArrowRight
+        className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
+        aria-hidden
+      />
+    </Link>
+  )
+}
 
 /** Whether this path is an entity-detail scope (vs the operator `global` scope or a takeover). */
 function isEntityScope(pathname: string): boolean {
@@ -190,7 +228,17 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
 
   // Prefer the scope the trigger already resolved (detail.scope carries the entity's DB id) over the
   // pathname; with no detail this is exactly adminScopeFor(pathname), as before.
-  const scope = detail?.scope ?? adminScopeFor(pathname)
+  const rawScope = detail?.scope ?? adminScopeFor(pathname)
+  // A Space scope carries its TYPE (from the Customize trigger detail) so appsForScope can resolve the
+  // Space's editor Apps by `{ on:'spaceType', type }` (Space authority is SpaceRole + per-Space function,
+  // not a Capability). A path-derived Space scope has no type, so the panel resolves Space Apps ONLY when
+  // opened from the typed trigger — the shell's generic cog is suppressed on Space profiles anyway.
+  const scope: AdminScope | null =
+    rawScope && rawScope.kind === 'space' && detail?.spaceType
+      ? { ...rawScope, spaceType: detail.spaceType }
+      : rawScope
+  const isSpace = scope?.kind === 'space'
+  const spaceSlug = isSpace ? spaceSlugFromPath(pathname) : null
 
   // What this viewer can administer: page MANAGERS (host+ / staff — each module re-gates
   // server-side) and platform OPERATORS (web_role admin/janitor, who get the page-level group).
@@ -203,9 +251,15 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   //   3. SELECTION_VIEWER — the caps-blind fallback reproducing the prior modulesForScopeKind set.
   const viewer: AppViewer = detail?.caps
     ? { caps: new Set(detail.caps) }
-    : providerCaps && scope?.kind === 'global'
-      ? { caps: providerCaps }
-      : SELECTION_VIEWER
+    : isSpace
+      ? // A Space carries NO community caps; its editor Apps gate on the per-Space functions the trigger
+        // resolved (spaceFunctionAccess over the viewer's space role, staff preview seeing all). The
+        // always-on floor (Basics / Page / Mode / Services / Danger, gate 'none') shows regardless, so the
+        // owner never opens an empty rail (the fail-safe).
+        { caps: new Set(), canUseSpaceFn: (fn) => (detail?.spaceFns ?? []).includes(fn) }
+      : providerCaps && scope?.kind === 'global'
+        ? { caps: providerCaps }
+        : SELECTION_VIEWER
 
   // Any signed-in viewer (role != null; a visitor preview is null, matching that preview). The
   // personal "You" set makes the editor set non-empty for every authed member → the bar is always
@@ -232,9 +286,29 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // scope's personal set never doubles as a management category on a global-scope page. Operator
   // overrides (Phase 6) are applied here: disabled Apps drop, `position` reorders, and the per-App
   // min_role floor gates against the viewer's role (no-op today until overrides are threaded + saved).
-  const mgmtApps = manager
-    ? applyOverrides(settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
-    : []
+  // Space bypasses the community `manager` gate: a Space owner may be a plain community member, so its
+  // authority is the SpaceRole ladder (encoded in the trigger's spaceFns + the always-on floor), not the
+  // host+/staff community gate. The Customize trigger is owner-gated at the source, and each surface's
+  // sub-page re-checks its own gate server-side. Space Apps are never personal, so no PERSONAL filter.
+  const mgmtApps = isSpace
+    ? applyOverrides(settingsAppsFor(scope, viewer))
+    : manager
+      ? applyOverrides(settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
+      : []
+  // A Space renders its surfaces as link-rows (option (a)); every other scope renders its module cards.
+  const mgmtAppById = new Map(mgmtApps.map((a) => [a.id, a]))
+  const nodesForAppIds = (appIds: string[]): ReactNode[] => {
+    if (isSpace && spaceSlug) {
+      return appIds.flatMap((id) => {
+        const app = mgmtAppById.get(id)
+        return app ? [<SpaceSurfaceRow key={id} app={app} slug={spaceSlug} />] : []
+      })
+    }
+    return appIds.flatMap((id) => {
+      const C = MODULE_COMPONENTS[id]
+      return C ? [<C key={id} />] : []
+    })
+  }
 
   // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
   // "You" category above the management spine.
@@ -287,22 +361,14 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   addExtra('layout', eventLayoutNode)
   addExtra('danger', dangerBlock)
 
-  // The page-settings column — the registry-selected MANAGEMENT sidebar modules for this scope,
-  // ordered by spine (personal apps are rendered separately in the "You" block below, never here).
-  const orderedModules: { id: string; C: ComponentType }[] = groupIntoSpine(mgmtApps).flatMap((g) =>
-    g.appIds.flatMap((id) => {
-      const C = MODULE_COMPONENTS[id]
-      return C ? [{ id, C }] : []
-    }),
-  )
+  // The page-settings column — the MANAGEMENT surfaces for this scope, ordered by spine (personal apps
+  // are rendered separately in the "You" block below, never here). Module cards for an entity scope; the
+  // Space's link-rows for a Space scope (nodesForAppIds branches). Only shown in the flat/collapse case.
+  const orderedMgmtIds: string[] = groupIntoSpine(mgmtApps).flatMap((g) => g.appIds)
   const settingsBlock = hasSettings ? (
     <div className="min-w-0">
       <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-      <div className="space-y-6">
-        {orderedModules.map(({ id, C }) => (
-          <C key={id} />
-        ))}
-      </div>
+      <div className={isSpace ? 'space-y-1.5' : 'space-y-6'}>{nodesForAppIds(orderedMgmtIds)}</div>
     </div>
   ) : null
 
@@ -333,11 +399,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     const meta = SPINE_META[slot]
     const summary = summaryFor(slot, apps) || EXTRA_SUMMARY[slot] || `${appIds.length + extras.length} settings`
     const body = (
-      <div className="space-y-6">
-        {appIds.flatMap((id) => {
-          const C = MODULE_COMPONENTS[id]
-          return C ? [<C key={id} />] : []
-        })}
+      <div className={isSpace ? 'space-y-1.5' : 'space-y-6'}>
+        {nodesForAppIds(appIds)}
         {extras.map((node, i) => (
           <div key={`extra-${i}`}>{node}</div>
         ))}
@@ -374,7 +437,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
   const searchApps: SearchableApp[] = [
     ...personalApps,
-    ...(manager || isOperator
+    ...(manager || isOperator || isSpace
       ? applyOverrides(appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []),
   ].map((a) => ({
