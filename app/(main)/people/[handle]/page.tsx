@@ -472,7 +472,7 @@ export default async function ProfilePage({
               dropped). Additive + fail-safe: renders nothing when they have no published Spotlight.
               Behind Suspense so it never blocks the profile's first byte. */}
           <Suspense fallback={null}>
-            <ProfileSpotlightBlocks handle={handle} />
+            <ProfileSpotlightBlocks handle={handle} owner={isOwner} />
           </Suspense>
 
           {/* Composer + timeline. */}

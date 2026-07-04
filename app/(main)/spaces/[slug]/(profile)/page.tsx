@@ -1,7 +1,8 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modules'
 import { blocksForKind } from '@/lib/entity-blocks/registry'
@@ -47,7 +48,21 @@ async function SpaceProfileBody({ slug }: { slug: string }) {
       : null
   const grid = mergeEntityLayout(paletteIds, parseEntityLayout(rawLayout), 'space')
 
-  return <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
+  // OWNER click-to-edit (Spaces item 6): resolve the SAME owner signal the (profile) chrome layout uses
+  // (resolveSpaceManageAccess → canManage || staffViewing), so the person who can manage this Space sees a
+  // hover pencil on each block that deep-links to the existing grid editor. A visitor / non-owner gets no
+  // editHref, so the render below stays byte-identical to before. Only a manager pays the caller read.
+  const caller = await getCallerProfile()
+  const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
+  const canSeeAsOwner = manage.canManage || manage.staffViewing
+
+  return (
+    <SpaceProfileModules
+      space={toProfileContext(space)}
+      grid={grid}
+      editHref={canSeeAsOwner ? () => `/spaces/${space.slug}/settings/profile/grid` : undefined}
+    />
+  )
 }
 
 export default async function SpaceLandingPage({ params }: { params: Promise<{ slug: string }> }) {
