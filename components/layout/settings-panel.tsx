@@ -28,6 +28,7 @@ import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
+import { bankForScope, type BankLink } from '@/lib/admin/rail-bank'
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
 // content) plus the operator "Page" group (Layout / SEO / Status), resolved from the pathname.
@@ -177,6 +178,10 @@ export interface SettingsPanelModel {
   searchApps: SearchableApp[]
   /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
   lockedApps: LockedRow[]
+  /** The bottom BANK quick-links (ADR-515 uniform rail): the fixed per-scope primary areas (manage
+   *  console, CRM, Insights, Billing, operator) MERGED with any `placement: 'bank'` surface, rendered as
+   *  a button-grid pinned at the foot of the rail. Empty-safe; the body renders it only when non-empty. */
+  bank: BankLink[]
 }
 
 /** Resolve the settings model for the current route + viewer, shared by the desktop drawer and the
@@ -270,6 +275,14 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const apps = [...personalApps, ...mgmtApps]
   const appById = new Map(apps.map((a) => [a.id, a]))
 
+  // ── ADR-515 uniform rail: split the resolved apps by the `placement` axis. `inline` (the default)
+  //    feeds the existing section / nodeForApp BODY path (unchanged); `bank` promotes the surface into the
+  //    bottom bank button-grid instead. Nothing is tagged `bank` yet (later phases opt surfaces in), so
+  //    `bankSurfaceApps` is empty and the body path is byte-for-byte as before — the change is non-breaking.
+  const isBankPlacement = (a: App) => a.surfaces.editor?.placement === 'bank'
+  const inlineApps = apps.filter((a) => !isBankPlacement(a))
+  const bankSurfaceApps = apps.filter(isBankPlacement)
+
   // THE single render decision point (inline-first rail, ADR-514). Per app, branch on its editor
   // `render` classification, NOT on the entity kind: a `link` surface is a feature workflow drawn as a
   // compact link-row OUT to its own page; an `inline` surface mounts its editor component in the bar.
@@ -320,10 +333,13 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const entityScope = isEntityScope(pathname)
   const showPageSettings = isOperator && !entityScope
 
-  // Module-driven detail pages (circle / event) get the Layout editor (operator-only, network-wide).
-  const showCircleLayout = isCircle && isOperator && isModuleRoute(pathname)
+  // Module-driven detail pages (circle / event) get the Layout / template chooser. De-operatorized
+  // (ADR-515): gated on the ENTITY EDIT capability (the owner sees it), NOT the staff `isOperator` axis,
+  // so the template chooser is a guaranteed owner-visible section on the scopes that have one. The
+  // `isModuleRoute` guard stays (the page must render <PageModules> for its blocks to be real).
+  const showCircleLayout = isCircle && isModuleRoute(pathname) && viewer.caps.has('circle.editSettings')
   const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
-  const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
+  const showEventLayout = isEvent && isModuleRoute(pathname) && viewer.caps.has('event.editSettings')
 
   // ── Inline extras, folded into their natural spine slot (quest→engage, layout→layout,
   //    event danger→danger, page-content→basics), each pinned to a rail band (ADR-514 three-tier reorg):
@@ -364,7 +380,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }
   const railItems: RailItem[] = []
   const nodeById = new Map<string, ReactNode>()
-  for (const app of apps) {
+  for (const app of inlineApps) {
     const node = nodeForApp(app.id)
     if (node == null) continue
     nodeById.set(app.id, node)
@@ -439,9 +455,24 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     tier: tierForApp({ category: a.category, tier: a.surfaces.editor?.tier }),
   }))
 
+  // ── ADR-515 uniform rail: the bottom BANK. The FIXED per-scope quick-links (bankForScope) merged with
+  //    any `placement: 'bank'` surface, resolved to its href via the same maps the body uses (Space →
+  //    hrefForSurface; core/personal → hrefForEntitySurface). Empty-safe; nothing is tagged `bank` yet, so
+  //    `bankSurfaceLinks` is empty and the bank is purely the fixed per-scope areas (additive, non-breaking).
+  const bankSurfaceLinks: BankLink[] = bankSurfaceApps.flatMap((a) => {
+    const Icon = a.surfaces.editor?.Icon
+    if (!Icon) return []
+    const href = spaceSlug ? hrefForSurface(a.id, spaceSlug) : hrefForEntitySurface(a.id, scope)
+    return href ? [{ label: a.label, icon: Icon, href }] : []
+  })
+  // The Space scope carries the DB id on `scope.id`; the bank needs the URL slug for its Space hrefs, so
+  // swap in the path-derived slug for the bank call (every other scope's id already IS its URL slug).
+  const bankScope: AdminScope | null = scope && isSpace && spaceSlug ? { ...scope, id: spaceSlug } : scope
+  const bank: BankLink[] = bankForScope(bankScope, { isStaff: isOperator }, bankSurfaceLinks)
+
   if (!hasContent) {
-    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [] }
+    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank }
   }
 
-  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps }
+  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps, bank }
 }

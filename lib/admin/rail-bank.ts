@@ -1,0 +1,125 @@
+// The uniform-rail BOTTOM BANK (ADR-515) — the fixed per-scope quick-links pinned as a button-grid at
+// the foot of every admin rail. It answers "where do I go from here?": the primary AREAS a manager
+// jumps to for this scope (the manage console, CRM, Insights, Billing, the operator workspace), as
+// opposed to the inline settings the rail edits in place.
+//
+// PURE + client-safe (no React, no IO): the standardized admin rail imports it into the client bundle.
+// The base per-scope links are FIXED (declared here); `settings-panel` MERGES any surface tagged
+// `placement: 'bank'` (ADR-515) as extra links, resolved to their href through the same maps the body
+// uses (hrefForSurface / hrefForEntitySurface). Fail-safe by construction: empty-safe for an unknown or
+// null scope, de-dupes by href, and NEVER admits a destructive / Danger link (the bank is navigation,
+// never a place to delete from).
+
+import type { LucideIcon } from 'lucide-react'
+import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck } from 'lucide-react'
+import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
+import type { AdminScope } from '@/lib/layout/page-chrome'
+
+/** One bank quick-link: a plain label, a Lucide icon, and a resolved in-app href. */
+export interface BankLink {
+  label: string
+  icon: LucideIcon
+  href: string
+}
+
+/** The viewer facts the bank reads. Staff/operator unlocks the operator-workspace links on the
+ *  personal/global bank. Kept minimal + serializable-shaped so any caller can supply it. */
+export interface BankViewer {
+  /** The web_role staff axis (operator). Omitted / false ⇒ no operator links. */
+  isStaff?: boolean
+}
+
+/** The URL section for an entity kind whose `/{section}/<slug>/manage` console the bank links to. */
+const SECTION_FOR_KIND: Partial<Record<string, string>> = {
+  circle: 'circles',
+  event: 'events',
+  hub: 'hubs',
+  nexus: 'nexuses',
+  practice: 'practices',
+}
+
+/** Whether an href points at a destructive surface — the bank never admits one (fail-safe). */
+function isDangerHref(href: string): boolean {
+  return /(?:^|\/)(?:danger|delete)(?:$|[/?#])/i.test(href)
+}
+
+/** Append a link only when its href resolved (a null href draws nothing, never a dead button). */
+function pushLink(out: BankLink[], label: string, icon: LucideIcon, href: string | null | undefined): void {
+  if (href) out.push({ label, icon, href })
+}
+
+/** The FIXED base bank for a scope, before any `placement: 'bank'` surfaces merge in. */
+function baseBank(scope: AdminScope | null, viewer: BankViewer): BankLink[] {
+  if (!scope) return []
+  switch (scope.kind) {
+    // A Space: its owner console + the primary paid workspaces (CRM · Insights · Billing), resolved
+    // through hrefForSurface so a route rename is a one-line map change. Slug from scope.id.
+    case 'space': {
+      const slug = scope.id
+      if (!slug) return []
+      const out: BankLink[] = [
+        { label: 'Manage console', icon: Settings, href: `/spaces/${slug}/manage` },
+      ]
+      pushLink(out, 'CRM', Users, hrefForSurface('space.engage.crm', slug))
+      pushLink(out, 'Insights', BarChart3, hrefForSurface('space.insights', slug))
+      pushLink(out, 'Billing', CreditCard, hrefForSurface('space.billing', slug))
+      return out
+    }
+    // The personal / global scope (and a person profile): the member's own settings + billing, plus the
+    // operator workspace links for staff.
+    case 'global':
+    case 'profile': {
+      const out: BankLink[] = [
+        { label: 'All settings', icon: Settings, href: '/settings' },
+        { label: 'Billing', icon: CreditCard, href: '/settings/billing' },
+      ]
+      if (viewer.isStaff) {
+        out.push(
+          { label: 'Operator', icon: ShieldCheck, href: '/admin' },
+          { label: 'CRM', icon: Users, href: '/admin/crm' },
+          { label: 'Insights', icon: BarChart3, href: '/admin/insights' },
+        )
+      }
+      return out
+    }
+    // A core entity with a full owner console: one Manage link into `/{section}/<slug>/manage`. Circle +
+    // practice consoles are thin, so their bank is just that console (their insights/relevant hubs live
+    // inside it) — 1 link is intentional; the inline body carries the rest.
+    case 'circle':
+    case 'event':
+    case 'hub':
+    case 'nexus':
+    case 'practice': {
+      const id = scope.id
+      const section = SECTION_FOR_KIND[scope.kind]
+      if (!id || !section) return []
+      return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${id}/manage` }]
+    }
+    // Unknown / bank-less scopes (e.g. channel) get an empty bank gracefully.
+    default:
+      return []
+  }
+}
+
+/**
+ * The bank quick-links for a page `scope` + `viewer`, MERGED with any `placement: 'bank'` surface links
+ * the caller resolved (`extra`). De-dupes by href (a base link and a bank surface pointing at the same
+ * place collapse to one) and drops any destructive href (Danger is never in the bank). Returns `[]`
+ * gracefully for a null / unknown scope. PURE + unit-tested.
+ */
+export function bankForScope(
+  scope: AdminScope | null,
+  viewer: BankViewer = {},
+  extra: readonly BankLink[] = [],
+): BankLink[] {
+  const seen = new Set<string>()
+  const out: BankLink[] = []
+  for (const link of [...baseBank(scope, viewer), ...extra]) {
+    if (!link || !link.href) continue
+    if (isDangerHref(link.href)) continue
+    if (seen.has(link.href)) continue
+    seen.add(link.href)
+    out.push(link)
+  }
+  return out
+}

@@ -132,16 +132,21 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
 
   return (
     <div onKeyDown={onKeyDown} className="space-y-4">
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Search settings"
-          placeholder="Search settings"
-          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+      {/* Sticky search (ADR-515 uniform rail) — pinned to the top of the admin box, present on scroll.
+          The negative margins bleed the bg-surface backdrop over the scroll container's p-4/p-5 padding so
+          scrolled content never peeks above or beside it. Kept mounted in BOTH search + browse states. */}
+      <div className="sticky top-0 z-20 -mx-4 -mt-4 bg-surface px-4 pb-3 pt-4 sm:-mx-5 sm:-mt-5 sm:px-5 sm:pt-5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search settings"
+            placeholder="Search settings"
+            className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
       </div>
 
       {q ? (
@@ -259,6 +264,30 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
                 {extraSections.map(renderSection)}
               </div>
             </details>
+          )}
+
+          {/* ── The bottom BANK (ADR-515 uniform rail): the fixed per-scope quick-links (manage console,
+              CRM, Insights, Billing, operator) MERGED with any placement:"bank" surface, a button-grid
+              pinned as the LAST block. Browse branch only (hidden in search); rendered only when non-empty. ── */}
+          {model.bank.length > 0 && (
+            <div className="min-w-0 space-y-2 pt-2">
+              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Go to</p>
+              <div className="grid grid-cols-2 gap-2">
+                {model.bank.map((link) => {
+                  const Icon = link.icon
+                  return (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="flex min-h-[44px] items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary motion-reduce:transition-none"
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-subtle" aria-hidden />
+                      <span className="min-w-0 truncate">{link.label}</span>
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
           )}
         </>
       )}

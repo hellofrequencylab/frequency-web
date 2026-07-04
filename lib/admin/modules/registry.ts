@@ -79,6 +79,10 @@ export interface AdminModule {
   tier?: 'standard' | 'primary' | 'extra'
   /** Order WITHIN a tier (lower = higher up). Defaults to `order` when omitted. */
   priority?: number
+  /** The uniform-rail placement axis (ADR-515): `inline` (default) renders the surface in the rail
+   *  BODY; `bank` promotes it into the bottom bank button-grid (the fixed per-scope quick-links)
+   *  instead. Default `inline` everywhere; nothing is tagged `bank` yet (later phases opt in). */
+  placement?: 'inline' | 'bank'
 }
 
 export const ADMIN_MODULES: readonly AdminModule[] = [

@@ -46,6 +46,8 @@ const EDITOR_APPS: App[] = ADMIN_MODULES.map((m): App => ({
       // The three-tier rail axis (ADR-514 three-tier reorg), carried through exactly like `render`.
       ...(m.tier !== undefined ? { tier: m.tier } : {}),
       ...(m.priority !== undefined ? { priority: m.priority } : {}),
+      // The uniform-rail placement axis (ADR-515), carried through exactly like `render`/`tier`.
+      ...(m.placement !== undefined ? { placement: m.placement } : {}),
     },
   },
   themeable: false,
@@ -187,6 +189,8 @@ const SPACE_EDITOR_APPS: App[] = [...SPACE_SURFACES]
         // The three-tier rail axis (ADR-514 three-tier reorg), carried through exactly like `render`.
         ...(s.tier !== undefined ? { tier: s.tier } : {}),
         ...(s.priority !== undefined ? { priority: s.priority } : {}),
+        // The uniform-rail placement axis (ADR-515), carried through exactly like `render`/`tier`.
+        ...(s.placement !== undefined ? { placement: s.placement } : {}),
       },
     },
     themeable: false,

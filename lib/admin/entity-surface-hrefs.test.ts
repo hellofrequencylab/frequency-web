@@ -33,10 +33,19 @@ describe('hrefForEntitySurface', () => {
     }
   })
 
-  it('fail-safe: an unknown id or a core-entity id resolves to null (draws nothing, never a dead row)', () => {
-    // No core-entity surface is classified `link` today (each renders its inline module), so none resolves.
+  it('resolves event/hub/nexus core-entity surfaces to their owner manage console (ADR-515 bank seam)', () => {
+    // These consoles are full owner workspaces, so a `placement: 'bank'` surface resolves its bank href here.
+    expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBe('/events/x/manage')
+    expect(hrefForEntitySurface('hub.insights', { kind: 'hub', id: 'north' })).toBe('/hubs/north/manage')
+    expect(hrefForEntitySurface('nexus.people', { kind: 'nexus', id: 'core' })).toBe('/nexuses/core/manage')
+  })
+
+  it('fail-safe: an unknown id, a thin-console entity, or no slug resolves to null (never a dead row)', () => {
+    // Circle + practice consoles are thin, so their surfaces are NOT wired to a bank console href.
     expect(hrefForEntitySurface('circle.people', { kind: 'circle', id: 'sunrise-sit' })).toBeNull()
-    expect(hrefForEntitySurface('event.people', { kind: 'event', id: 'x' })).toBeNull()
+    expect(hrefForEntitySurface('practice.insights', { kind: 'practice', id: 'p1' })).toBeNull()
+    // No slug ⇒ nothing to key on.
+    expect(hrefForEntitySurface('event.people', { kind: 'event' })).toBeNull()
     expect(hrefForEntitySurface('nope', null)).toBeNull()
   })
 })
