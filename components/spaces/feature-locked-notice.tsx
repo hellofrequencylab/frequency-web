@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CreditCard, Lock, SlidersHorizontal } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
+import { FeatureTierUpsell } from '@/components/pricing/feature-tier-upsell'
 
 // FEATURE LOCKED notice (per-space-roles Phase 2). The calm state a Space settings surface renders when
 // the per-Space function gate (spaceFunctionAccess) says the viewer cannot use the tool. It is a tasteful
@@ -21,6 +22,8 @@ export function FeatureLockedNotice({
   label,
   reason,
   canManageMembers,
+  featureKey,
+  currentPlan,
 }: {
   brandName: string
   /** The Space slug, for the Features-and-access / billing link. */
@@ -33,6 +36,11 @@ export function FeatureLockedNotice({
   reason: 'disabled' | 'plan' | 'role'
   /** Whether THIS viewer (owner / admin) can open Features and access / billing to change it. */
   canManageMembers: boolean
+  /** The pricing feature-gate key (e.g. 'space_email'). When set on a PLAN gap for a manager, the
+   *  reusable FeatureTierRange (ADR-518 Phase G) shows the tier ladder + placeholder price points. */
+  featureKey?: string
+  /** The Space's current plan, for the tier range highlight. */
+  currentPlan?: string | null
 }) {
   const title =
     reason === 'disabled'
@@ -77,7 +85,21 @@ export function FeatureLockedNotice({
     </Link>
   )
 
+  // After freemium (ADR-518 Phase G): on a PLAN gap, a manager who can act sees the reusable tier range
+  // (the ladder + placeholder price points + an upgrade CTA that only navigates, never charges). It is a
+  // no-op for a feature with no ladder. A non-manager is not shown it (they cannot change the plan).
+  const showRange = reason === 'plan' && canManageMembers && !!featureKey
+
   return (
-    <EmptyState icon={Lock} variant="permission" title={title} description={description} action={action} />
+    <>
+      <EmptyState icon={Lock} variant="permission" title={title} description={description} action={action} />
+      {showRange && (
+        <FeatureTierUpsell
+          featureKey={featureKey!}
+          currentTier={currentPlan}
+          upgradeHref={`/spaces/${slug}/settings/billing`}
+        />
+      )}
+    </>
   )
 }

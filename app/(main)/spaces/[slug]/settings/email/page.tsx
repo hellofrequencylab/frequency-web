@@ -89,6 +89,9 @@ export default async function SpaceEmailPage({
           // Plan-gated: no entitlement -> a plan nudge; entitlement present but role too low -> a team note.
           reason={spaceHasEntitlement(space, 'email') ? 'role' : 'plan'}
           canManageMembers={caps.canManageMembers}
+          // ADR-518 Phase G: the tier range + placeholder price points on the plan gap.
+          featureKey="space_email"
+          currentPlan={space.plan}
         />
       </FocusTemplate>
     )
