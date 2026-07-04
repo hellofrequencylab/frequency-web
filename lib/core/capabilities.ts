@@ -109,6 +109,16 @@ export type Scope =
       /** True if the viewer manages the practice's parent space (caller-computed). */
       viewerManagesScope?: boolean
     }
+  | {
+      // A Space (lib/spaces/*) is a scope KIND for placement + the admin rail, but it lives OUTSIDE
+      // the community Capability world: its authority is the per-Space role ladder + spaceFunctionAccess
+      // (SpaceRole + spaces.entitlements/feature_roles), never a `Capability`. So this scope carries only
+      // its id and the resolver grants an EMPTY capability set for it (the Space rail gates on spaceFns,
+      // carried on the AdminBar detail, not on this set). See lib/admin/entities/registry.ts SPACE_SURFACES.
+      kind: 'space'
+      /** The Space's DB id (spaces.id). */
+      id: string
+    }
 
 export interface Viewer {
   /** profiles.id, or null when anonymous. */
@@ -286,6 +296,14 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       const leadsPractice =
         (!!profileId && scope.ownerId === profileId) || isStaff || scope.viewerManagesScope === true
       if (leadsPractice) caps.add('practice.editSettings')
+      break
+    }
+
+    case 'space': {
+      // A Space's authority is its per-Space role ladder + spaceFunctionAccess (lib/spaces/*), NOT a
+      // community Capability — so the community resolver grants NOTHING here. The standardized admin rail
+      // gates the Space's surfaces on spaceFns (SpaceRole + entitlements), carried on the AdminBar detail,
+      // never on this empty set. Present as an explicit case so this switch stays exhaustive (no default).
       break
     }
   }

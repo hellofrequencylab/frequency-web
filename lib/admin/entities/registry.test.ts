@@ -112,7 +112,7 @@ describe('entity registry · spaceSurfacesFor', () => {
   // It shows only when the type has an offering the viewer can use, and it sorts in the engage slot
   // BEFORE CRM (declaration order within the shared slot).
 
-  it('gives a practitioner the full spine in order: basics, mode, people, layout, offerings, CRM, reach, comms, insights, danger', () => {
+  it('gives a practitioner the full spine in order: basics, mode, people, layout, offerings, CRM, services, reach, comms, insights, danger', () => {
     const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
     expect(ids).toEqual([
       'space.basics',
@@ -121,6 +121,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.layout',
       'space.offerings',
       'space.engage.crm',
+      'space.services',
       'space.reach',
       'space.comms',
       'space.insights',
@@ -128,6 +129,8 @@ describe('entity registry · spaceSurfacesFor', () => {
     ])
     // The old individual commerce surface ids are gone; Offerings carries them now.
     expect(ids).not.toContain('space.place')
+    // Services (the storefront store items) sorts right AFTER CRM within the shared engage slot.
+    expect(ids.indexOf('space.services')).toBe(ids.indexOf('space.engage.crm') + 1)
   })
 
   it('gives an organization the Offerings (donations + enrollment) + billing spine, never the practitioner-only CRM', () => {
@@ -138,6 +141,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.people',
       'space.layout',
       'space.offerings',
+      'space.services',
       'space.reach',
       'space.comms',
       'space.insights',
@@ -161,6 +165,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.layout',
       'space.offerings',
       'space.engage.crm',
+      'space.services',
       'space.reach',
       'space.comms',
       'space.insights',
@@ -179,6 +184,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.people',
       'space.layout',
       'space.offerings',
+      'space.services',
       'space.reach',
       'space.insights',
       'space.billing',
@@ -190,7 +196,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(ids).not.toContain('space.comms')
   })
 
-  it('gives lab + partner the universal four spine: members, QR, insights, billing (no Offerings, no role-specific engage)', () => {
+  it('gives lab + partner the universal four spine plus the always-on Services surface (no Offerings, no role-specific engage)', () => {
     for (const type of ['lab', 'partner'] as const) {
       const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
       expect(ids).toEqual([
@@ -198,26 +204,30 @@ describe('entity registry · spaceSurfacesFor', () => {
         'space.mode',
         'space.people',
         'space.layout',
+        'space.services',
         'space.reach',
         'space.insights',
         'space.billing',
         'space.danger',
       ])
-      // No Offerings (lab/partner have zero commerce functions), no engage / comms surface.
+      // No Offerings (lab/partner have zero commerce functions), no engage / comms surface. Services is
+      // FREE profile framing (null-gated), so any type carries it.
       expect(ids).not.toContain('space.offerings')
       expect(ids).not.toContain('space.comms')
       expect(ids.some((id) => id.startsWith('space.engage'))).toBe(false)
     }
   })
 
-  it('falls back to only the always-on Basics + Mode + Layout + Danger when the viewer can use no tool', () => {
-    // Mode and focus + Layout are both null-gated (FREE framing, never a per-tool gate), so they render
-    // for a manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3 / ADR-472).
+  it('falls back to only the always-on Basics + Mode + Layout + Services + Danger when the viewer can use no tool', () => {
+    // Mode and focus + Layout + Services are all null-gated (FREE framing, never a per-tool gate), so they
+    // render for a manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3 /
+    // ADR-472). Services sorts in the engage slot, between Layout and Danger.
     for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
       expect(spaceSurfacesFor(type, deny).map((s) => s.id)).toEqual([
         'space.basics',
         'space.mode',
         'space.layout',
+        'space.services',
         'space.danger',
       ])
     }
@@ -253,6 +263,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.people',
       'space.layout',
       'space.engage.crm',
+      'space.services',
       'space.reach',
       'space.insights',
       'space.billing',

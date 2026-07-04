@@ -339,6 +339,19 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'crm',
     types: ['practitioner', 'business', 'coaching'],
   },
+  // Services (the storefront store items) — the operator's catalog of services with full pricing +
+  // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
+  // storefront (components/widgets/space-profile/offerings.tsx). Declared right AFTER CRM so it sorts
+  // after it within the shared engage slot. `requiredFunction: null` (FREE profile framing, like Page):
+  // any space may list services, so it is always present for a manager on every console type.
+  {
+    id: 'space.services',
+    slot: 'engage',
+    label: 'Services',
+    desc: 'Your storefront store items and their pricing, listed publicly or kept private.',
+    requiredFunction: null,
+    types: ['*'],
+  },
   // NOTE (the deeper Offerings merge): the five separate commerce surfaces that used to live here
   // (space.engage.memberships / donations / enroll / tickets and space.safety.checkin) plus the Place &
   // Time surface (space.place) collapsed into the ONE `space.offerings` surface declared above. Their

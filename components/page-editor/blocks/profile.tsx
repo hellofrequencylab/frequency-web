@@ -40,7 +40,17 @@ import type {
   SpaceCircleItem,
 } from '@/lib/spaces/content-data'
 // PURE + client-safe (no server imports): the central profile data type + the central-wins merge.
-import { mergeField, type SpaceProfileData, type SpaceSocialLink } from '@/lib/spaces/profile-data'
+import {
+  mergeField,
+  formatServicePrice,
+  formatServiceDuration,
+  formatServiceDeposit,
+  formatServicePackage,
+  isServiceListed,
+  type SpaceOffering,
+  type SpaceProfileData,
+  type SpaceSocialLink,
+} from '@/lib/spaces/profile-data'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROFILE BLOCKS (Puck content blocks, Phase 4). A profile-native block set styled
@@ -822,11 +832,15 @@ export function SpaceBookingBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. SpaceOfferings -- the services the space provides, as a card grid. Operator
-// authored (title + blurb per card); the editor placeholder shows when empty.
+// 4. SpaceOfferings -- the services the space provides, rendered as a STOREFRONT
+// card grid: each listed service shows its price, duration, deposit, and package,
+// on top of the title + blurb. Operator authored; the editor placeholder shows
+// when empty. PRIVATE services never render here (they are direct-link only).
 // ─────────────────────────────────────────────────────────────────────────────
 
-type OfferingItem = { title?: string; blurb?: string }
+/** A block-level service item. The central catalog rows are full SpaceOfferings; a legacy inline block
+ *  prop is just a { title, blurb }, which coerces cleanly (every pricing field is optional). */
+type OfferingItem = Partial<SpaceOffering> & { title?: string; blurb?: string }
 
 export function SpaceOfferingsBlock({
   eyebrow,
@@ -842,7 +856,9 @@ export function SpaceOfferingsBlock({
   /** Editor canvas only: keep an unfilled section visible + draggable there. */
   editing?: boolean
 }) {
-  const shown = items.filter((o) => o.title || o.blurb)
+  // Storefront: only LISTED services (visibility unset / 'listed') render publicly; private ones are
+  // reachable by direct link only. A row still needs a title or blurb to be worth a card.
+  const shown = items.filter((o) => isServiceListed(o as SpaceOffering) && (o.title || o.blurb))
   // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
   if (shown.length === 0 && !editing) return null
   return (
@@ -852,21 +868,47 @@ export function SpaceOfferingsBlock({
         <EditorStub label="Offerings" hint="Add the services this space provides" />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
-          {shown.map((o, i) => (
-            <div
-              key={i}
-              className={`rounded-2xl border p-6 transition-shadow ${
-                ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
-              }`}
-            >
-              {o.title && (
-                <h3 className={`text-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
-              )}
-              {o.blurb && (
-                <p className={`mt-2 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
-              )}
-            </div>
-          ))}
+          {shown.map((o, i) => {
+            const price = formatServicePrice(o as SpaceOffering)
+            const duration = formatServiceDuration(o.durationMinutes)
+            const deposit = formatServiceDeposit(o as SpaceOffering)
+            const pkg = formatServicePackage(o as SpaceOffering)
+            const meta = [duration, pkg].filter(Boolean)
+            return (
+              <div
+                key={i}
+                className={`flex flex-col rounded-2xl border p-6 transition-shadow ${
+                  ink ? 'border-white/10 bg-white/5' : 'border-border bg-surface shadow-sm hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  {o.title && (
+                    <h3 className={`text-lg font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>{o.title}</h3>
+                  )}
+                  {price && (
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold ${
+                        ink ? 'bg-white/10 text-on-ink' : 'bg-primary-bg text-primary-strong'
+                      }`}
+                    >
+                      {price}
+                    </span>
+                  )}
+                </div>
+                {meta.length > 0 && (
+                  <p className={`mt-1 text-xs font-medium ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>
+                    {meta.join(' · ')}
+                  </p>
+                )}
+                {o.blurb && (
+                  <p className={`mt-2 text-sm leading-relaxed ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{o.blurb}</p>
+                )}
+                {deposit && (
+                  <p className={`mt-auto pt-3 text-xs ${ink ? 'text-on-ink-muted' : 'text-muted'}`}>{deposit}</p>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

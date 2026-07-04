@@ -11,6 +11,8 @@
 import type { AdminScope } from '@/lib/layout/page-chrome'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
 import type { Capability } from '@/lib/core/capabilities'
+import type { SpaceType } from '@/lib/spaces/types'
+import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 
 /** The typed window event the standardized admin bar opens on. */
 export const OPEN_ADMIN_BAR = 'open-admin-bar'
@@ -28,6 +30,15 @@ export interface OpenAdminBarDetail {
   slot?: AdminSlot
   /** A single App to open (deep-link, Phase 3). */
   appId?: string
+  /** For a `space` scope (ENTITY-MANAGEMENT / PR C): the Space's type, so the panel can resolve its
+   *  editor Apps by `{ on:'spaceType', type }` (a Space's surfaces are keyed by type + per-Space
+   *  function, not by Capability). Serializable — a plain enum crossing the CustomEvent boundary. */
+  spaceType?: SpaceType
+  /** For a `space` scope: the per-Space FUNCTIONS this viewer may use on the Space (the owner "Customize"
+   *  trigger resolves them the SAME way the /manage console does — spaceFunctionAccess over the viewer's
+   *  space role, staff preview seeing all). The panel builds `canUseSpaceFn` from this list to gate the
+   *  Space editor Apps. Serializable (a string[] of function keys). Absent ⇒ only the always-on floor. */
+  spaceFns?: SpaceFunctionKey[]
 }
 
 /** Open the standardized admin bar, optionally pre-scoped. Client-only (uses `window`). */

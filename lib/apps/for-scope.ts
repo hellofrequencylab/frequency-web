@@ -66,6 +66,17 @@ export function appsForScope(
   kind?: AppSurfaceKind,
 ): App[] {
   if (!scope || !viewer) return []
+  // A Space profile resolves its EDITOR apps by `{ on:'spaceType', type }` (Space authority is SpaceRole +
+  // spaceFunctionAccess, carried on the viewer's `canUseSpaceFn`, never a Capability). It has no layout-
+  // module page blocks, so a `page` query is empty and the default (no kind) is editor-only. The Space's
+  // `type` rides on the scope (the Customize trigger sets it; a path-derived Space scope omits it, so an
+  // untyped Space scope resolves nothing — the rail only opens Space-scoped from that typed trigger). This
+  // reproduces spaceSurfacesFor(type, canUse) for a viewer holding the same functions (see for-scope.test.ts).
+  if (scope.kind === 'space') {
+    const type = scope.spaceType
+    if (!type) return []
+    return surfacesFor(APPS, { on: 'spaceType', type }, viewer, kind === undefined ? 'editor' : kind)
+  }
   if (kind === 'page') return pageAppsForScope(scope, viewer)
   if (kind) return surfacesFor(APPS, { on: 'scopeKind', kind: scope.kind }, viewer, kind)
   return [

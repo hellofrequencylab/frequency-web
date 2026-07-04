@@ -11,6 +11,7 @@ import {
   type LucideIcon,
   QrCode,
   Sparkles,
+  Store,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -19,6 +20,13 @@ import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceSurface } from '@/lib/admin/entities/registry'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
+
+// hrefForSurface was LIFTED to the pure lib module (lib/spaces/surface-hrefs.ts) so the client-side
+// admin rail's Space link-rows (components/layout/settings-panel.tsx) can reuse the SAME map without
+// dragging this Server Component's server deps (deleteSpace, DangerDelete) into the client bundle.
+// Re-exported so console.test.ts + every existing caller keep importing it from './console' unchanged.
+export { hrefForSurface }
 
 // The render boundary for the Space owner console (ADR-441 EM1-3, reworked for the grouped Dashboard IA).
 // The page (an RSC) resolves the Space + gates server-side and hands this the gated spine surfaces (in
@@ -39,48 +47,6 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 //
 // This is a Server Component (no client state needed): the sections are links, and the one interactive
 // control (Danger's delete) is the existing client <DangerDelete> rendered with a bound server action.
-
-/** Map a surface id to the sub-page it opens, given the Space slug. Danger has no href (it renders
- *  its delete control inline); an unmapped id is skipped (defensive, should not happen).
- *
- *  EVERY href here must target a NON-redirecting sub-page. The /settings INDEX redirects every console
- *  type back to /manage (isConsoleSpaceType), so a section pointed at the bare index would loop
- *  /settings → /manage → the console. Basics therefore opens its own /settings/basics editor (the
- *  profile form), not the index. Exported PURE so the no-loop guarantee is unit-tested (console.test.ts). */
-export function hrefForSurface(id: string, slug: string): string | null {
-  const base = `/spaces/${slug}`
-  switch (id) {
-    case 'space.basics':
-      // The dedicated basics editor, NOT the /settings index (which redirects console types to /manage,
-      // looping "Open basics" straight back to this console).
-      return `${base}/settings/basics`
-    case 'space.mode':
-      return `${base}/manage/mode`
-    case 'space.layout':
-      return `${base}/manage/layout`
-    case 'space.offerings':
-      // The ONE adaptive commerce surface (the deeper Offerings merge): it stacks whichever of
-      // availability / memberships / donations / enrollment / tickets / check-in apply to this type.
-      return `${base}/settings/offerings`
-    case 'space.people':
-      return `${base}/settings/members`
-    case 'space.engage.crm':
-      return `${base}/crm`
-    case 'space.reach':
-      return `${base}/settings/qr`
-    case 'space.comms':
-      return `${base}/settings/email`
-    case 'space.insights':
-      // Analytics live alongside the QR codes surface today (no standalone insights sub-page yet).
-      return `${base}/settings/qr`
-    case 'space.billing':
-      return `${base}/settings/billing`
-    case 'space.danger':
-      return null
-    default:
-      return null
-  }
-}
 
 // ── Grouping + iconography (pure metadata) ───────────────────────────────────────────────────────────
 //
@@ -121,6 +87,7 @@ const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
   'space.people': 'people',
   'space.engage.crm': 'people',
   'space.offerings': 'offerings',
+  'space.services': 'offerings',
   'space.comms': 'reach',
   'space.reach': 'reach',
   'space.billing': 'billing',
@@ -134,6 +101,7 @@ const ICON_FOR: Record<string, LucideIcon> = {
   'space.mode': Sparkles,
   'space.layout': LayoutTemplate,
   'space.offerings': HandCoins,
+  'space.services': Store,
   'space.people': Users,
   'space.engage.crm': Briefcase,
   'space.reach': QrCode,

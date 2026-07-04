@@ -20,6 +20,7 @@
 
 import { cache } from 'react'
 import type { ScopeKind } from '@/lib/admin/modules/registry'
+import type { SpaceType } from '@/lib/spaces/types'
 
 export type Rail = 'global' | 'scoped' | 'none'
 
@@ -235,6 +236,11 @@ export function railFor(pathname: string): Rail {
 export interface AdminScope {
   kind: ScopeKind
   id?: string
+  /** For a `space` scope only: the Space's type, so the admin rail can resolve its editor Apps by
+   *  `{ on:'spaceType', type }` (a Space's surfaces are keyed by type + per-Space function, not by
+   *  Capability). Absent on every other kind and on a path-derived Space scope (the URL can't know the
+   *  type); the Space "Customize" trigger carries it on the AdminBar detail. Serializable (a plain enum). */
+  spaceType?: SpaceType
 }
 
 // Entity-detail route prefixes → the scope kind they manage; the SECOND path segment is the
@@ -248,6 +254,10 @@ const ADMIN_SCOPE_PREFIXES: readonly { prefix: RegExp; kind: ScopeKind }[] = [
   { prefix: /^\/practices\/([^/]+)/, kind: 'practice' },
   { prefix: /^\/channels\/([^/]+)/, kind: 'channel' },
   { prefix: /^\/people\/([^/]+)/, kind: 'profile' },
+  // A Space profile (/spaces/<slug> + tabs, and the owner sub-surfaces). id = the URL slug (NOT the
+  // DB id); the Space "Customize" trigger passes the DB id + type on the AdminBar detail instead. Last
+  // so the more specific member routes above never shadow it (they don't overlap /spaces anyway).
+  { prefix: /^\/spaces\/([^/]+)/, kind: 'space' },
 ]
 
 /** The admin scope for a page — one resolver, mirroring railFor. Returns an ENTITY scope
