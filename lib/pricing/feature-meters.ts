@@ -44,6 +44,12 @@ import type { GateAxis } from './gates'
  *  feature-tiers.ts is the flag for the PRICES). */
 export const PLACEHOLDER_ALLOWANCES = true
 
+/** @placeholder The fraction of a tier's allowance at which an inline usage meter shows a quiet "Upgrade"
+ *  nudge (ADR-520 P2). 0.8 = the nudge appears once usage crosses 80% of the allowance. Informational
+ *  only, it blocks nothing. THIS IS A PREVIEW VALUE the owner tunes for go-live, the single constant the
+ *  inline meters read. */
+export const USAGE_UPGRADE_THRESHOLD = 0.8
+
 /** The sentinel for an UNLIMITED allowance (a tier with no cap on this dimension). PURE data, so the
  *  ladder + `withinAllowance` treat `null` as "never blocked". */
 export type Allowance = number | null // a numeric cap, or null = unlimited

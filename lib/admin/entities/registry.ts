@@ -355,11 +355,14 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'link',
   },
-  // People — the team roster and the role each member holds. Every type.
+  // AUDIENCE group (Space menu regroup, ADR-520) — Members, CRM, and Vera autonomy sit together as
+  // "everyone this space works with." The 7-group Space IA re-purposes the `people` spine slot as the
+  // Audience section (the rail relabels the header via SPACE_GROUP_META); the per-scope slot→label map
+  // keeps every OTHER scope's "People" header unchanged. Members leads the group.
   {
     id: 'space.people',
     tier: 'primary',
-    priority: 20,
+    priority: 10,
     slot: 'people',
     label: 'Members',
     desc: 'See who is on your team and the role each one holds.',
@@ -367,50 +370,44 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'link',
   },
-  // Engage — the CRM pipeline. UNIVERSAL (ADR-517 Phase F): the `crm` function is available to every
-  // Space, so the surface offers it to every console type (`types: ['*']`). The surface gate and the
-  // function gate stay the same check (`spaceFunctionAccess(space, 'crm', role)`, now universally true
-  // for a manager); the freemium TIER seam governs usage/limits once billing is live.
+  // CRM — the pipeline. UNIVERSAL (ADR-517 Phase F): the `crm` function is available to every Space, so
+  // the surface offers it to every console type. In the Audience group (ADR-520). Kept INLINE (a live
+  // usage card, ADR-520 P2) so its metered usage is visible in the rail body — the "usage is the visible
+  // monetization surface" directive; the fixed base bank still carries a CRM quick-link, so it is reachable
+  // both ways. The freemium meter (space_crm, contacts) surfaces on the card via SURFACE_SUMMARIES.
   {
     id: 'space.engage.crm',
     tier: 'primary',
-    priority: 10,
-    slot: 'engage',
+    priority: 15,
+    slot: 'people',
     label: 'CRM',
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
     requiredFunction: 'crm',
     types: ['*'],
     render: 'link',
-    // BANK (ADR-515 Phase 3): the CRM board is a private back-office workflow, never on the public
-    // profile, so it leaves the rail body for the bottom bank.
-    placement: 'bank',
   },
   // Vera autonomy (Resonance Engine Phase 3 · ADR-384; rail control ADR-517 Phase F). How much Vera does
-  // on its own for this Space (suggest-only vs run the safe stuff). An INLINE owner-gated control in the
-  // rail body that reuses setSpaceAutonomy; its module getter re-gates canManageMembers (owner/admin), and
-  // requiredFunction 'crm' sits it beside the CRM tools (universal, so it shows for every console type).
+  // on its own for this Space. An INLINE owner-gated control that reuses setSpaceAutonomy; its module
+  // getter re-gates canManageMembers (owner/admin). In the Audience group (ADR-520), beside the CRM tools.
   {
     id: 'space.autonomy',
     tier: 'primary',
-    priority: 15,
-    slot: 'engage',
+    priority: 20,
+    slot: 'people',
     label: 'Vera autonomy',
     desc: 'Choose how much Vera does on its own for this space.',
     requiredFunction: 'crm',
     types: ['*'],
     render: 'inline',
   },
-  // Pipeline (ADR-517 Phase F2 · audit GAP 1) — the editable CRM pipeline gets an admin function in the
-  // bar: an INLINE owner-gated stage preview (renders the current stages compactly) that links into the
-  // full editor on the CRM board's Pipeline view. Gated by the SAME `crm` function as the CRM surface, so
-  // it sits beside the CRM tools (universal, shows for every console type). Its module getter re-gates
-  // manage access + crm, and every stage write re-gates the same authority (lib/crm/stages.ts), so this is
-  // convenience over an unchanged gate. Stays INLINE in the rail body (a pipeline paints on the console).
+  // Pipeline (ADR-517 Phase F2 · audit GAP 1) — the editable CRM pipeline: an INLINE owner-gated stage
+  // preview that links into the full editor on the CRM board's Pipeline view. Gated by the SAME `crm`
+  // function. In the Audience group (ADR-520), after the autonomy control.
   {
     id: 'space.pipeline',
     tier: 'primary',
-    priority: 12,
-    slot: 'engage',
+    priority: 25,
+    slot: 'people',
     label: 'Pipeline',
     desc: 'Your CRM stages. Rename, reorder, and set what each one means.',
     requiredFunction: 'crm',
@@ -439,40 +436,42 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // section BODIES still exist (each settings sub-page's ./section.tsx) and are composed as stacked
   // sections on /settings/offerings; the old routes redirect there anchored to their section.
 
-  // Reach — QR codes for the space and the landing pages they open to. Every type.
+  // REACH group (ADR-520) — QR codes + Email, "get your space in front of people." Both are back-office
+  // destinations (they never paint on the public profile), so both are `placement: 'bank'`: the whole Reach
+  // group promotes into the bottom bank rather than rendering a rail-body section. Email moves onto the
+  // `reach` slot so Reach is one section header (the `comms` slot is unused for Space now).
   {
     id: 'space.reach',
-    tier: 'extra',
-    priority: 10,
+    tier: 'primary',
+    priority: 50,
     slot: 'reach',
     label: 'QR codes',
     desc: 'Create codes for your space and the landing page they open to.',
     requiredFunction: 'qr',
     types: ['*'],
     render: 'link',
-    // BANK (ADR-515 Phase 3): QR codes are a back-office destination, not a block that paints on the
-    // public profile, so they render as a bottom-bank button.
+    // BANK (ADR-515 Phase 3 / ADR-520): a back-office destination, so it renders as a bottom-bank button.
     placement: 'bank',
   },
-  // Comms — write a campaign, pick who gets it, and send or schedule it. UNIVERSAL (ADR-517 Phase F):
-  // the `email` function is available to every Space, so the surface offers it to every console type.
+  // Email — write a campaign, pick who gets it, and send or schedule it. UNIVERSAL (ADR-517 Phase F).
+  // In the Reach group (ADR-520), banked beside QR codes.
   {
     id: 'space.comms',
     tier: 'primary',
-    priority: 50,
-    slot: 'comms',
+    priority: 55,
+    slot: 'reach',
     label: 'Email',
     desc: 'Write a campaign, pick who gets it, and send or schedule it.',
     requiredFunction: 'email',
     types: ['*'],
     render: 'link',
-    // BANK (ADR-515 Phase 3): campaign composition never paints on the public page, so Email leaves the
-    // rail body for the bottom bank.
+    // BANK (ADR-515 Phase 3): campaign composition never paints on the public page, so Email is banked.
     placement: 'bank',
   },
-  // Insights — the space's analytics. Carried by the QR function today (the analytics surface lives
-  // beside QR codes); a dedicated insights function lands when its own surface is built (Pass 2).
-  // Every console type that has the QR surface has the insights view beside it.
+  // GROWTH group (ADR-520) — Insights + Plan and usage, "how the space is doing and where you sit on the
+  // ladder." Both banked back-office destinations. The `insights` spine slot is re-purposed as the Growth
+  // section (SPACE_GROUP_META relabels it for the Space scope only). Insights gets its OWN href distinct
+  // from QR (ADR-520 P3, surface-hrefs) so both stay reachable in the bank.
   {
     id: 'space.insights',
     tier: 'extra',
@@ -486,15 +485,16 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     // BANK (ADR-515 Phase 3): analytics are a back-office destination, so Insights renders in the bank.
     placement: 'bank',
   },
-  // Billing — the plan ladder and what each plan unlocks. UNIVERSAL (ADR-517 Phase F): every console type
-  // shows it (the freemium tier is where usage/limits land, so every Space needs the billing surface).
+  // Plan and usage — the reframed billing hub (ADR-519 / ADR-520 P3): the current plan PLUS the usage-meter
+  // ladder for every metered feature ("where am I on the ladder"). UNIVERSAL (ADR-517 Phase F). In the
+  // Growth group (`insights` slot); banked. Not a lock: usage as a nudge, never a wall.
   {
     id: 'space.billing',
     tier: 'extra',
     priority: 30,
-    slot: 'billing',
-    label: 'Plan and billing',
-    desc: 'See your current plan and what each plan unlocks.',
+    slot: 'insights',
+    label: 'Plan and usage',
+    desc: 'See your current plan and how much of each tool you are using.',
     requiredFunction: 'billing',
     types: ['*'],
     render: 'link',

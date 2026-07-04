@@ -42,25 +42,25 @@ describe('bankForScope', () => {
     expect(bank.every((l) => !!l.label && l.icon != null && !!l.href)).toBe(true)
   })
 
-  it('space bank absorbs the Phase 3 back-office surfaces (CRM · Email · QR · Insights · Billing)', () => {
-    // ADR-515 Phase 3: CRM / Email / QR codes / Insights / Billing are `placement: 'bank'` Space surfaces
-    // now, so the panel resolves each to its href via hrefForSurface and merges them as extras (exactly as
-    // it does here). CRM / Insights / Billing dedupe against the fixed base bank; Email + QR are new.
-    // Insights currently shares the QR page (/settings/qr — no standalone insights route yet), so the two
-    // collapse to ONE button by the href de-dupe.
+  it('space bank absorbs the back-office surfaces, with Insights split from QR (ADR-520)', () => {
+    // The banked Space surfaces (ADR-520): Email · QR codes · Insights · Plan and usage (CRM is now an
+    // inline usage card, not banked — the fixed base bank still carries a CRM link). The panel resolves each
+    // to its href via hrefForSurface and merges them as extras (exactly as it does here). Insights now has
+    // its OWN href (/settings/qr#scans, ADR-520 P3), so it NO LONGER collapses into the QR codes button.
     const slug = 'sunrise'
     const icon = bankForScope({ kind: 'global' })[0].icon
-    const bankSurfaceIds = ['space.engage.crm', 'space.comms', 'space.reach', 'space.insights', 'space.billing']
+    const bankSurfaceIds = ['space.comms', 'space.reach', 'space.insights', 'space.billing']
     const extras: BankLink[] = bankSurfaceIds.map((id) => ({ label: id, icon, href: hrefForSurface(id, slug)! }))
 
     const bank = bankForScope({ kind: 'space', id: slug }, {}, extras)
     const h = hrefs(bank)
     expect(h).toContain(`/spaces/${slug}/manage`) // the console (base)
-    expect(h).toContain(`/spaces/${slug}/crm`) // CRM
+    expect(h).toContain(`/spaces/${slug}/crm`) // CRM (fixed base bank)
     expect(h).toContain(`/spaces/${slug}/settings/email`) // Email
-    expect(h).toContain(`/spaces/${slug}/settings/qr`) // QR codes (Insights shares this page)
-    expect(h).toContain(`/spaces/${slug}/settings/billing`) // Billing
-    // Every href is unique (QR + Insights collapse to one), and Danger is never admitted.
+    expect(h).toContain(`/spaces/${slug}/settings/qr`) // QR codes
+    expect(h).toContain(`/spaces/${slug}/settings/qr#scans`) // Insights, its own href now (no dedupe with QR)
+    expect(h).toContain(`/spaces/${slug}/settings/billing`) // Plan and usage
+    // Every href is unique (QR and Insights are two distinct buttons now), and Danger is never admitted.
     expect(new Set(h).size).toBe(h.length)
     expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
   })

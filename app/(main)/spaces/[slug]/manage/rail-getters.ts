@@ -319,6 +319,42 @@ export async function getSpaceModeData(slug: string): Promise<SpaceModeData | nu
   return { slug, view, readOnly: staffViewing && !canManage }
 }
 
+// ── Starter chip (Space menu regroup, ADR-520) ───────────────────────────────────────────────────────
+// The compact "Starter: {preset}" chip pinned under Identity in the Space rail. A Starter (the Space Mode)
+// arranges the page + suggests a pipeline; every tool stays available; it can change any time. This is a
+// FREE framing, never a gate — so this getter only reads the current preset label and re-gates on manage
+// access alone (a non-manager gets null → the chip renders nothing). READ-ONLY + serializable.
+
+interface SpaceStarterChipData {
+  slug: string
+  /** The current Starter (Mode/Focus) preset label, e.g. "Coach" or "Studio". */
+  label: string
+}
+
+/** The Starter chip's data, or null when the viewer cannot manage this Space / the type has no Mode
+ *  (fail-safe → the chip renders nothing). Re-gates on manage access; Mode is free framing, so there is
+ *  no per-tool function gate. */
+export async function getSpaceStarterChip(slug: string): Promise<SpaceStarterChipData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+  if (!isConsoleSpaceType(space.type)) return null
+
+  const mode = resolveMode(space.type, space.modeVariant)
+  if (!mode) return null
+
+  return { slug: space.slug, label: mode.focusLabel || mode.modeLabel }
+}
+
 // ── Vera autonomy (space.autonomy) ───────────────────────────────────────────────────────────────────
 // The inline rail control for the per-Space Vera autonomy dial (Resonance Engine Phase 3 · ADR-384;
 // rail control ADR-517 Phase F GAP 2). Reuses the existing setSpaceAutonomy write; this getter only
@@ -443,12 +479,13 @@ export async function getSpaceMembersSummary(slug: string): Promise<{ count: num
 }
 
 /** "N in your pipeline" — the Space's CRM deals. Gated on manage access + the `crm` function. The lean
- *  read (getDeals, one query) over the 4-read funnel. Fail-safe. */
-export async function getSpaceCrmSummary(slug: string): Promise<{ count: number } | null> {
+ *  read (getDeals, one query) over the 4-read funnel. Returns the Space plan `tier` too, so the inline
+ *  usage meter (ADR-520 P2) can place the count against the plan's allowance. Fail-safe. */
+export async function getSpaceCrmSummary(slug: string): Promise<{ count: number; tier: string } | null> {
   const space = await resolveSummarySpace(slug, 'crm')
   if (!space) return null
   const deals = await getDeals(space.id)
-  return { count: deals.length }
+  return { count: deals.length, tier: (space.plan ?? 'free').toLowerCase() }
 }
 
 /** "N services listed" — publicly listed storefront offerings. Gated on manage access alone (Services is
@@ -462,11 +499,11 @@ export async function getSpaceServicesSummary(slug: string): Promise<{ count: nu
 
 /** "N campaigns" — the Space's email campaigns. Gated on manage access + the `email` function (and
  *  listSpaceCampaigns self-gates + fails safe to []). Fail-safe. */
-export async function getSpaceCampaignsSummary(slug: string): Promise<{ count: number } | null> {
+export async function getSpaceCampaignsSummary(slug: string): Promise<{ count: number; tier: string } | null> {
   const space = await resolveSummarySpace(slug, 'email')
   if (!space) return null
   const campaigns = await listSpaceCampaigns(space.id)
-  return { count: campaigns.length }
+  return { count: campaigns.length, tier: (space.plan ?? 'free').toLowerCase() }
 }
 
 // ── The Space Hub (ADR-516 Phase B) ──────────────────────────────────────────────────────────────────

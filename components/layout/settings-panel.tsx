@@ -14,8 +14,9 @@ import { SurfaceLinkRow } from '@/components/admin/modules/surface-link-row'
 import { SurfaceSummaryCard } from '@/components/admin/modules/surface-summary-card'
 import { SURFACE_SUMMARIES } from '@/components/admin/modules/surface-summaries'
 import { SpaceIdentityStrip } from '@/components/admin/modules/space-identity-strip'
+import { SpaceStarterChip } from '@/components/admin/modules/space-starter-chip'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
-import { SPINE_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
+import { SPINE_META, SPACE_GROUP_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
 import { adminScopeFor, railArchetypeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { HubSpec } from '@/components/layout/admin-bar/hub-rail'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
@@ -175,6 +176,10 @@ export interface SettingsPanelModel {
    *  CLIENT-built model — it never rides the serializable OpenAdminBarDetail. Self-fetches + fail-safe:
    *  renders nothing for a non-manager. */
   identityStrip: ReactNode | null
+  /** The compact Space "Starter: {preset}" chip (ADR-520), pinned just under the identity strip for a
+   *  Space scope; null otherwise. Demotes Space Mode from a settings section to a glanceable chip. Self-
+   *  fetches + fail-safe (renders nothing for a non-manager). */
+  starterChip: ReactNode | null
   /** Every scoped app, for the fuzzy search index. */
   searchApps: SearchableApp[]
   /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
@@ -313,6 +318,9 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }
   const inlineApps = apps.filter((a) => {
     if (isBankPlacement(a)) return false
+    // The Space Starter chip (ADR-520): Mode is pulled OUT of the section list and rendered as a compact
+    // "Starter: {preset}" chip under Identity, so its full editor surface never renders as a rail section.
+    if (isSpace && a.id === 'space.mode') return false
     if (!surfacesMatch(a)) return false
     // The Hub shows stats, never an inline PERSONAL editor. The surface predicate already drops the
     // personal editors on most hub pages (they only match /people/* + /settings/profile); this also
@@ -451,7 +459,10 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   })
 
   const sections: AdminSection[] = groupIntoTiers(railItems).map((g) => {
-    const meta = SPINE_META[g.slot]
+    // The Space menu regroup (ADR-520): a Space relabels each spine-slot section into its member-facing
+    // GROUP header (Identity · Page · Audience · Offerings & money · Reach · Growth · Danger) via the
+    // per-scope SPACE_GROUP_META. Every OTHER scope keeps its SPINE_META header untouched.
+    const meta = (isSpace ? SPACE_GROUP_META[g.slot] : undefined) ?? SPINE_META[g.slot]
     return {
       tier: g.tier,
       slot: g.slot,
@@ -474,12 +485,22 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // serializable OpenAdminBarDetail (the slug comes from the live path).
   const identityStrip: ReactNode = isSpace && spaceSlug ? <SpaceIdentityStrip slug={spaceSlug} /> : null
 
+  // The Space Starter chip (ADR-520): a compact "Starter: {preset}" chip pinned under the identity strip,
+  // demoting Space Mode from a settings section to a glanceable chip with a "Change" affordance. Self-
+  // fetches + fail-safe (renders nothing for a non-manager), like the identity strip.
+  const starterChip: ReactNode = isSpace && spaceSlug ? <SpaceStarterChip slug={spaceSlug} /> : null
+
   // ── Phase 5 (P3): attainable-but-locked management apps for this scope + REAL viewer — an App the
   //    viewer can't act on yet but could plausibly unlock (a plan-gated Space function). Rendered as a
   //    lock + reason, never an editor; personal apps are caps-gated and so are never attainable-locked.
   //    Empty over the live catalog today (no gate opts in), so this never falsely lights or crowds the
   //    bar — it wires the render pattern fail-safely (docs/ADMIN-RAIL.md Phase 5). ──
-  const lockedApps: LockedRow[] = authed
+  // RETIRED for a Space (ADR-517 universal functions · ADR-520): under universal Space functions nothing
+  // is locked for a Space, and the monetization model is metered usage, not feature locks — so a Space
+  // surface must NEVER render as a lock/unlock band. The lock path stays for the personal / core-entity
+  // axis (a plan-gated capability there), where an attainable gate can still exist. Empty over the live
+  // catalog today regardless, but this makes the "no lock on a Space" rule explicit + fail-safe.
+  const lockedApps: LockedRow[] = authed && !isSpace
     ? lockedAppsForScope(scope, viewer).map((l) => ({
         id: l.app.id,
         label: l.app.label,
@@ -540,8 +561,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const bank: BankLink[] = bankForScope(scope, { isStaff: isOperator }, bankSurfaceLinks, pathSlug)
 
   if (!hasContent) {
-    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank, hub: null }
+    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, starterChip: null, searchApps: [], lockedApps: [], bank, hub: null }
   }
 
-  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps, bank, hub }
+  return { hasContent: true, sections, pageGroup, identityStrip, starterChip, searchApps, lockedApps, bank, hub }
 }

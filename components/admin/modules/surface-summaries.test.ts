@@ -34,6 +34,15 @@ describe('SURFACE_SUMMARIES — the card-vs-plain-link rule', () => {
       expect(typeof entry.format).toBe('function')
     }
   })
+
+  // ADR-520 P2: the metered surfaces carry a feature-meter key so the card can show a usage line; the
+  // non-metered ones (Members / Services) do not.
+  it('carries a meterKey on the metered surfaces (CRM contacts, Email sends) and none on the rest', () => {
+    expect(SURFACE_SUMMARIES['space.engage.crm'].meterKey).toBe('space_crm')
+    expect(SURFACE_SUMMARIES['space.comms'].meterKey).toBe('space_email')
+    expect(SURFACE_SUMMARIES['space.people'].meterKey).toBeUndefined()
+    expect(SURFACE_SUMMARIES['space.services'].meterKey).toBeUndefined()
+  })
 })
 
 describe('SURFACE_SUMMARIES — the stat copy', () => {
