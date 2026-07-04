@@ -34,6 +34,9 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { readCoverSize, readCoverScrim, readProfileTemplate } from './layout/preferences'
+import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
+import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
+import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 import type { TemplateId } from '@/lib/widgets/templates'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
@@ -191,6 +194,55 @@ export async function getSpacePageData(
     canManagePages: spaceCanUseFullWebsite(space),
     focus: focusChoices.length > 0 ? { choices: focusChoices } : null,
     readOnly: staffViewing && !canManage,
+  }
+}
+
+// ── The in-rail Space page builder seed (ADR-516 Phase D) ────────────────────────────────────────────
+// The Space builder + the owner's live page preview seed the shared entity-layout store from the SAME
+// persisted layout (spaces.preferences.profileLayout), resolved to the freeform rows for the space kind.
+// RE-GATES on manage access (canManage; a staff previewer cannot edit the page, so gets no builder) and
+// returns NULL otherwise (fail-safe → the builder renders nothing). READ-ONLY + serializable (RowDef is
+// plain data), so the client builder self-fetches it exactly like the personal Layout getter.
+
+interface SpaceLayoutRailData {
+  /** The Space slug — the builder guards that this matches the page it is mounted on (self-owner). */
+  slug: string
+  /** The persisted freeform rows (resolveRows over the saved profileLayout → the basic starter when empty). */
+  rows: RowDef[]
+  /** The persisted hidden block ids (blocks kept in place but off the render). */
+  hidden: string[]
+  /** Whether the space has ever saved a layout (else the resolved rows are the default seed → show starters). */
+  customized: boolean
+  /** Space blocks locked behind a function this space does not have on — held out of the picker + bench. */
+  lockedIds: string[]
+}
+
+/** The Space's own resolved profile-page layout for the builder, or null when the viewer cannot manage
+ *  this Space (fail-safe → the builder renders nothing). */
+export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutRailData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
+  if (!canManage) return null
+
+  const prefs = space.preferences
+  const rawLayout =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
+      ? (prefs as Record<string, unknown>).profileLayout
+      : null
+  const saved = parseEntityLayout(rawLayout)
+  const { lockedIds } = partitionSpaceBlocks(enabledFunctionKeys(space))
+
+  return {
+    slug: space.slug,
+    rows: resolveRows(saved, 'space'),
+    hidden: saved?.hidden ?? [],
+    customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
+    lockedIds,
   }
 }
 

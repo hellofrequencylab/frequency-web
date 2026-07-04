@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation'
 
-// SPACE PROFILE LAYOUT (legacy list editor, RETIRED — ADR-508 U3). The single-column list editor that
-// used to live here is retired in favor of the ONE standard profile selector: the grid block-picker at
-// ./grid, the same editor every other entity uses (components/entity-blocks/block-grid-editor.tsx),
-// which writes preferences.profileLayout the live Home render reads. This route now permanently forwards
-// to the grid editor so any saved bookmark / inbound link lands on the standard selector.
+// SPACE PROFILE LAYOUT (legacy list editor, RETIRED — ADR-508 U3, forward updated ADR-516 Phase D). The
+// single-column list editor that used to live here is retired in favor of the IN-RAIL Space page builder
+// (the `space.layout` rail surface on the profile root), so this route permanently forwards to the profile
+// where the builder lives.
 
 export default async function SpaceProfileLayoutPage({
   params,
@@ -12,5 +11,5 @@ export default async function SpaceProfileLayoutPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  redirect(`/spaces/${slug}/settings/profile/grid`)
+  redirect(`/spaces/${slug}`)
 }

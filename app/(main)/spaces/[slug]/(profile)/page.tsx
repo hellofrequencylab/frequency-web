@@ -8,6 +8,7 @@ import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modu
 import { blocksForKind } from '@/lib/entity-blocks/registry'
 import { parseEntityLayout, mergeEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
+import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-preview'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 
 // The profile's HOME page body (ADR-508 U3 LIVE CUTOVER). The Home body now renders through the
@@ -29,11 +30,12 @@ async function SpaceProfileBody({ slug }: { slug: string }) {
   // Re-stamp the active Space so any dynamic block reads THIS tenant's rows (mirrors the preview path).
   setActiveSpace(space)
 
-  // The EFFECTIVE GRID: the operator's saved grid merged over the fresh default. The valid-id universe
-  // (the append order AND the allowlist mergeEntityLayout drops unknown placements against) MUST match
-  // the grid EDITOR's palette exactly (settings/profile/grid), or a block the operator placed there would
-  // silently vanish on the live page — so build the defaultIds identically: every space block minus the
-  // feature-locked ones (a DATA block whose required function is off). The saved node lives at
+  // The EFFECTIVE GRID (the VISITOR render path): the operator's saved grid merged over the fresh default.
+  // The valid-id universe (the append order AND the allowlist mergeEntityLayout drops unknown placements
+  // against) MUST match the in-rail Space builder's palette exactly (partitionSpaceBlocks), or a block the
+  // operator placed there would silently vanish on the live page — so build the defaultIds identically:
+  // every space block minus the feature-locked ones (a DATA block whose required function is off). The
+  // owner sees the live OwnerSpaceLayoutPreview instead (below). The saved node lives at
   // preferences.profileLayout (shared with the S3 list editor — parseEntityLayout reads the grid shape
   // AND the flat back-compat `order`). FAIL-SAFE: a malformed / absent node parses to null so the fresh
   // default stands, identical to what the editor shows.
@@ -48,21 +50,18 @@ async function SpaceProfileBody({ slug }: { slug: string }) {
       : null
   const grid = mergeEntityLayout(paletteIds, parseEntityLayout(rawLayout), 'space')
 
-  // OWNER click-to-edit (Spaces item 6): resolve the SAME owner signal the (profile) chrome layout uses
-  // (resolveSpaceManageAccess → canManage || staffViewing), so the person who can manage this Space sees a
-  // hover pencil on each block that deep-links to the existing grid editor. A visitor / non-owner gets no
-  // editHref, so the render below stays byte-identical to before. Only a manager pays the caller read.
+  // OWNER live preview (ADR-516 Phase D): the person who can manage this Space edits its page from the rail
+  // (the in-rail SpacePageBuilder), and this body is the WYSIWYG surface — OwnerSpaceLayoutPreview renders
+  // every block once and lets the shared space-layout store rearrange them live. A visitor / non-owner gets
+  // the plain server render (SpaceProfileModules), byte-identical to before. Only a manager pays the extra
+  // read (OwnerSpaceLayoutPreview re-gates + fails safe to null).
   const caller = await getCallerProfile()
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
 
-  return (
-    <SpaceProfileModules
-      space={toProfileContext(space)}
-      grid={grid}
-      editHref={canSeeAsOwner ? () => `/spaces/${space.slug}/settings/profile/grid` : undefined}
-    />
-  )
+  if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
+
+  return <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
 }
 
 export default async function SpaceLandingPage({ params }: { params: Promise<{ slug: string }> }) {

@@ -170,18 +170,18 @@ export function SpacePagePanel({
         </p>
       )}
 
-      {/* PRIMARY EDIT (ADR-508 U3): the block-picker GRID editor is now the primary way to arrange this
-          profile — it drives the LIVE page render. The full Puck page builder is demoted to Advanced,
-          below. NAVIGATES to the standalone grid route so a fresh navigation always fetches current chunks. */}
+      {/* PRIMARY EDIT (ADR-516 Phase D): the freeform rows page builder is now the primary way to arrange
+          this profile, and it lives IN THE RAIL on the profile itself — the live page previews every change.
+          This links to the profile, where the builder mounts in the Page rail surface. */}
       {!readOnly && (
         <section>
-          <Link href={`/spaces/${slug}/settings/profile/grid`} className={buttonClasses('primary', 'md')}>
+          <Link href={`/spaces/${slug}`} className={buttonClasses('primary', 'md')}>
             <LayoutGrid className="h-4 w-4" aria-hidden />
-            Edit your profile
+            Arrange your page
           </Link>
           <p className="mt-2 text-sm text-muted">
-            Arrange your profile into a grid. Pick a layout, then drag each block into a column or turn it
-            off.
+            Open your page and use the Page panel to arrange your blocks into rows and columns. Every change
+            previews live.
           </p>
         </section>
       )}
