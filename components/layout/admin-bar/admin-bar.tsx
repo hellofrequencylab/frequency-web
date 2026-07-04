@@ -237,21 +237,19 @@ export function AdminBar({
 
         {/* The panel cover is full column height, but its CONTENT sticks to the viewport. */}
         <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] flex max-h-[calc(100vh-3.5rem)] flex-col">
-          {/* Header — collapsed to just the close button (ADR-515 uniform rail): the "Settings" title is
-              dropped so the sticky search + first content section are the top of the rail. */}
-          <div className="flex h-10 shrink-0 items-center justify-end border-b border-border pl-5 pr-3">
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close settings"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
-            >
-              <X className="h-4 w-4" aria-hidden />
-            </button>
-          </div>
+          {/* Close — floats over the top-right of the sticky search so the search bar IS the top of the
+              rail, with no empty header band above it (ADR-516: kill the transparent gap). */}
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Close settings"
+            className="absolute right-3 top-3.5 z-30 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
 
-          {/* Body — scrolls. The shared settings content. */}
+          {/* Body — scrolls. The sticky search inside is the top of the rail. */}
           <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
             <AdminBarBody key={resetKey} model={model} />
           </div>
@@ -274,18 +272,16 @@ export function AdminBar({
       />
       {/* Sheet — full-width on a phone (w-full), a right-side sheet on a tablet (max-w-md). */}
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
-        {/* Header — collapsed to just the close button (ADR-515 uniform rail): the "Settings" title is
-            dropped so the sticky search + first content section are the top of the sheet. */}
-        <div className="flex h-12 shrink-0 items-center justify-end border-b border-border pl-5 pr-3">
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close settings"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-        </div>
+        {/* Close — floats over the sticky search's top-right, so the search is the top of the sheet with
+            no empty header band above it (ADR-516: kill the transparent gap). */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close settings"
+          className="absolute right-3 top-4 z-30 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text"
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
         <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={resetKey} model={model} />
         </div>
