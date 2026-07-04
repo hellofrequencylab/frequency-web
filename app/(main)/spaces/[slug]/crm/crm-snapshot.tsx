@@ -1,12 +1,12 @@
 import Link from 'next/link'
-import { ArrowRight, Briefcase, CircleDollarSign, ListChecks, Lock } from 'lucide-react'
+import { ArrowRight, Briefcase, CircleDollarSign, Gauge, ListChecks } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, getContacts, countOpenTasks, computeMetrics, formatMoney } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
-import { FeatureTierUpsell } from '@/components/pricing/feature-tier-upsell'
+import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
 
 // COMPACT CRM SNAPSHOT for the profile fold-out (ADR-361 P3, CRM-STRATEGY §6/§7). A deliberately
 // SMALL read-only peek at a Space's CRM, meant to sit inside a cramped inline fold-out on the profile.
@@ -89,22 +89,22 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
   )
 }
 
-// The small calm upsell shown to an owner/admin whose plan does not include CRM. Same tone as the
-// board's locked state, trimmed to fit the fold-out, with a link to this space's billing. For a manager
-// it also shows the reusable tier range + placeholder price points (ADR-518 Phase G); the CTA never
-// charges.
+// The small calm usage nudge shown to an owner/admin (metered model, ADR-519). The CRM is available to
+// every space; this is a "you're on the free allowance, move up for more" nudge, trimmed to fit the
+// fold-out, with a link to this space's billing. Nothing is locked. For a manager it also shows the
+// reusable usage-meter range + placeholder allowances (the CTA only navigates, never charges).
 function CrmUpsell({ slug, plan, canManage }: { slug: string; plan?: string | null; canManage?: boolean }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 rounded-lg bg-surface-elevated p-2 text-muted">
-          <Lock className="h-4 w-4" aria-hidden />
+          <Gauge className="h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-semibold text-text">Unlock a CRM for this space</p>
+          <p className="text-sm font-semibold text-text">Grow your Space CRM</p>
           <p className="text-xs text-muted">
             Turn the people you meet into a pipeline you can work: stages, deals, and contacts you bring
-            over from My Contacts. It is part of a paid plan for this space.
+            over from My Contacts. Every space gets it. Move up a plan for a higher allowance as you grow.
           </p>
           <Link
             href={`/spaces/${slug}/settings/billing`}
@@ -116,7 +116,7 @@ function CrmUpsell({ slug, plan, canManage }: { slug: string; plan?: string | nu
         </div>
       </div>
       {canManage && (
-        <FeatureTierUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
+        <FeatureMeterUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
       )}
     </section>
   )

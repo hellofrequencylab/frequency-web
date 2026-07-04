@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { Briefcase, CircleDollarSign, ListChecks, Lock, Trophy } from 'lucide-react'
+import { Briefcase, CircleDollarSign, Gauge, ListChecks, Lock, Trophy } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -20,7 +20,7 @@ import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
-import { FeatureTierUpsell } from '@/components/pricing/feature-tier-upsell'
+import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
 import { AiDepthUpsell } from './ai-depth-upsell'
@@ -281,7 +281,7 @@ function LockedCrm({
   slug: string
   type: SpaceType
   reason: 'not-admin' | 'no-entitlement'
-  /** The Space's current plan, for the tier range highlight (ADR-518 Phase G). */
+  /** The Space's current plan, for the meter range highlight (ADR-519). */
   plan?: string | null
   /** Whether the viewer can act on the plan (owner / admin), so the range only shows to them. */
   canManage?: boolean
@@ -289,7 +289,7 @@ function LockedCrm({
   const description =
     reason === 'not-admin'
       ? 'The CRM is for the people who run this space. Ask an admin to bring you onto the team, or open the space.'
-      : 'A CRM turns the people you meet into a pipeline you can work: stages, deals, and contacts you bring over from My Contacts. It is part of a paid plan for this space.'
+      : 'A CRM turns the people you meet into a pipeline you can work: stages, deals, and contacts you bring over from My Contacts. Every space gets it. Move up a plan for a higher allowance as you grow.'
 
   return (
     <DashboardTemplate
@@ -299,9 +299,9 @@ function LockedCrm({
       width="default"
     >
       <EmptyState
-        icon={Lock}
+        icon={reason === 'not-admin' ? Lock : Gauge}
         variant="permission"
-        title={reason === 'not-admin' ? 'This is a team tool' : 'Unlock a CRM for this space'}
+        title={reason === 'not-admin' ? 'This is a team tool' : 'Do more with your Space CRM'}
         description={description}
         action={
           reason === 'not-admin' ? (
@@ -322,13 +322,14 @@ function LockedCrm({
         }
       />
       {reason === 'no-entitlement' && canManage && (
-        // ADR-518 Phase G: the reusable tier range + placeholder price points (an upgrade CTA that only
-        // navigates, never charges). Shown only to a manager who can change the plan.
-        <FeatureTierUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
+        // ADR-519 (metered model): the reusable usage-meter range + placeholder allowances (an "upgrade
+        // for more" CTA that only navigates, never charges). Shown only to a manager who can change the
+        // plan. Nothing is locked; higher tiers just raise the allowance.
+        <FeatureMeterUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
       )}
       {reason === 'no-entitlement' && (
         <p className="mt-4 text-center text-xs text-subtle">
-          Want it turned on? Reach out and we will set up the plan for your space.
+          Want a higher allowance? Reach out and we will set up the right plan for your space.
         </p>
       )}
     </DashboardTemplate>

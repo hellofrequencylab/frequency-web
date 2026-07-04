@@ -85,8 +85,9 @@ export function tierLabelOnAxis(axis: GateAxis, tier: string): string {
   return ENTITLEMENT_LABEL[tier as EntitlementTier] ?? tier
 }
 
-/** The placeholder price cents for a tier on its axis. PURE. */
-function tierPriceCents(axis: GateAxis, tier: string): number {
+/** The placeholder price cents for a tier on its axis. PURE. (Exported so the sibling meter ladder,
+ *  lib/pricing/feature-meters.ts, prices its rungs from the SAME placeholder maps — one price source.) */
+export function tierPriceCents(axis: GateAxis, tier: string): number {
   if (axis === 'plan') return PLACEHOLDER_SPACE_PRICE_CENTS[tier as SpacePlan] ?? 0
   return PLACEHOLDER_MEMBER_PRICE_CENTS[tier as EntitlementTier] ?? 0
 }
