@@ -33,7 +33,8 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverSize, readCoverScrim } from './layout/preferences'
+import { readCoverSize, readCoverScrim, readProfileTemplate } from './layout/preferences'
+import type { TemplateId } from '@/lib/widgets/templates'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import {
@@ -125,6 +126,7 @@ interface SpacePageData {
   coverSize: ReturnType<typeof readCoverSize>
   coverScrim: ReturnType<typeof readCoverScrim>
   accent: string
+  profileTemplate: TemplateId
   businessInfo: SpaceProfileData
   coverImageUrl: string | null
   brandLogoUrl: string | null
@@ -181,6 +183,7 @@ export async function getSpacePageData(
     coverSize,
     coverScrim,
     accent: space.brandAccent ?? '',
+    profileTemplate: readProfileTemplate(space.preferences),
     businessInfo: readProfileData(space.preferences),
     coverImageUrl: space.coverImageUrl ?? null,
     brandLogoUrl: space.brandLogoUrl ?? null,

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { bankForScope, type BankLink } from './rail-bank'
+import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 
 // bankForScope returns the FIXED primary-area quick-links for a scope (ADR-515 uniform rail), merged
 // with any `placement: 'bank'` surface links, de-duped by href, and NEVER a destructive/Danger link.
@@ -14,6 +15,29 @@ describe('bankForScope', () => {
     expect(hrefs(bank)).toContain('/spaces/sunrise/crm') // hrefForSurface('space.engage.crm')
     expect(hrefs(bank)).toContain('/spaces/sunrise/settings/billing')
     expect(bank.every((l) => !!l.label && l.icon != null && !!l.href)).toBe(true)
+  })
+
+  it('space bank absorbs the Phase 3 back-office surfaces (CRM · Email · QR · Insights · Billing)', () => {
+    // ADR-515 Phase 3: CRM / Email / QR codes / Insights / Billing are `placement: 'bank'` Space surfaces
+    // now, so the panel resolves each to its href via hrefForSurface and merges them as extras (exactly as
+    // it does here). CRM / Insights / Billing dedupe against the fixed base bank; Email + QR are new.
+    // Insights currently shares the QR page (/settings/qr — no standalone insights route yet), so the two
+    // collapse to ONE button by the href de-dupe.
+    const slug = 'sunrise'
+    const icon = bankForScope({ kind: 'global' })[0].icon
+    const bankSurfaceIds = ['space.engage.crm', 'space.comms', 'space.reach', 'space.insights', 'space.billing']
+    const extras: BankLink[] = bankSurfaceIds.map((id) => ({ label: id, icon, href: hrefForSurface(id, slug)! }))
+
+    const bank = bankForScope({ kind: 'space', id: slug }, {}, extras)
+    const h = hrefs(bank)
+    expect(h).toContain(`/spaces/${slug}/manage`) // the console (base)
+    expect(h).toContain(`/spaces/${slug}/crm`) // CRM
+    expect(h).toContain(`/spaces/${slug}/settings/email`) // Email
+    expect(h).toContain(`/spaces/${slug}/settings/qr`) // QR codes (Insights shares this page)
+    expect(h).toContain(`/spaces/${slug}/settings/billing`) // Billing
+    // Every href is unique (QR + Insights collapse to one), and Danger is never admitted.
+    expect(new Set(h).size).toBe(h.length)
+    expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
   })
 
   it('space with no slug → empty (fail-safe, no dead buttons)', () => {

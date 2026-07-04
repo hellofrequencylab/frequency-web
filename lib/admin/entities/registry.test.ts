@@ -317,6 +317,51 @@ describe('entity registry · spaceSurfacesFor', () => {
     })
   })
 
+  // THE UNIFORM-RAIL PLACEMENT AXIS (ADR-515 Phase 3, the SPACE rail). The owner directive: a feature
+  // that PAINTS on the public Space profile keeps its editor INLINE in the rail body; a back-office
+  // DESTINATION becomes a BOTTOM-BANK button (placement: 'bank'). Danger is NEVER banked (a destructive
+  // action must not be a quick-link) — it stays inline + de-emphasized. These lock that exact split.
+  describe('uniform-rail placement tags', () => {
+    // The surfaces that leave the body for the bottom bank (back-office destinations).
+    const BANK = new Set(['space.engage.crm', 'space.comms', 'space.reach', 'space.insights', 'space.billing'])
+    // The surfaces that stay INLINE in the body (paint on the profile) — plus Danger, which is inline by
+    // rule even though it is a back-office action (destructive must never be a quick-link).
+    const INLINE = new Set([
+      'space.basics',
+      'space.mode',
+      'space.layout',
+      'space.offerings',
+      'space.services',
+      'space.people',
+      'space.danger',
+    ])
+
+    it('banks CRM, Email, QR codes, Insights, and Plan and billing (the back-office destinations)', () => {
+      for (const s of SPACE_SURFACES) {
+        if (BANK.has(s.id)) expect(s.placement, s.id).toBe('bank')
+      }
+      // The full banked set is exactly those five.
+      expect(SPACE_SURFACES.filter((s) => s.placement === 'bank').map((s) => s.id).sort()).toEqual(
+        [...BANK].sort(),
+      )
+    })
+
+    it('keeps every profile-painting surface INLINE (default placement), and never banks Danger', () => {
+      for (const s of SPACE_SURFACES) {
+        if (INLINE.has(s.id)) expect(s.placement ?? 'inline', s.id).toBe('inline')
+      }
+      // Danger is inline by rule (destructive is never a bottom-bank quick-link).
+      expect(SPACE_SURFACES.find((s) => s.id === 'space.danger')!.placement ?? 'inline').toBe('inline')
+    })
+
+    it('every Space surface is tagged either inline (default) or bank, and the two sets are disjoint + total', () => {
+      for (const s of SPACE_SURFACES) {
+        expect(BANK.has(s.id) || INLINE.has(s.id), s.id).toBe(true)
+      }
+      expect(BANK.size + INLINE.size).toBe(SPACE_SURFACES.length)
+    })
+  })
+
   // THE OFFERINGS VISIBILITY GATE (the deeper Offerings merge): space.offerings is null-gated (it
   // adapts) but must NOT show as an always-on surface — a type with zero commerce functions never
   // opens an empty Offerings card. It shows only when the type has an offering the viewer can use.

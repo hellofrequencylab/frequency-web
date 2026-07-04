@@ -26,7 +26,7 @@ type ScopeChoice = 'page' | 'section' | 'global'
 // operator picks a LAYOUT by clicking its picture, not by reading a name. The proportions match the
 // renderer (components/widgets/page-modules.tsx): main + side is the 3:2 split, etc. `active` tints
 // the blocks with the brand colour so the chosen layout reads at a glance.
-function TemplateThumbnail({ id, active }: { id: TemplateId; active: boolean }) {
+export function TemplateThumbnail({ id, active }: { id: TemplateId; active: boolean }) {
   const box = `rounded-[2px] ${active ? 'bg-primary/70' : 'bg-border-strong'}`
   const row = 'flex flex-1 gap-0.5'
   const frame = 'flex h-9 w-14'
