@@ -152,6 +152,19 @@ each editor carrying `surfaces.editor.tier: 'standard' | 'primary' | 'extra'` + 
   Appearance/Notifications/Connections → primary, Account-and-privacy/Billing → extra); the `${tier}:${slot}` ref
   key keeps each section unique.
 
+**Polish (Phase 3, ADR-514).**
+- **"More (N)".** The extra `<details>` summary shows a count badge of the tucked settings (summed `nodes`,
+  not headers) plus a `ChevronDown` that rotates via the native `group-open:rotate-180`; the badge carries an
+  `aria-label` ("N more settings") so the bare digit has an accessible name.
+- **Slim inline Page panel.** `SpacePagePanel` leads with the quick tweaks (grid, cover, cover style, accent,
+  focus) and tucks the three heavy sections (Pages, Business info, External website) behind one local
+  **"More page settings"** `<details>`. A closed `<details>` keeps its children mounted, so every control stays
+  reachable, keyboard-operable, and reachable by a read-only staff previewer — no server/getter/registry change.
+- **Mobile + a11y.** Disclosure summaries are `py-3` (44px tap target) and the identity strip "Edit" link is a
+  `min-h-[44px]` target; both mobile bottom-sheet and desktop slide-over render the same body, so the tiers +
+  "More" scroll inside the sheet's own overflow (never clipped). Empty tiers/strip/"More" already degrade to
+  nothing (guarded upstream), so no orphan headers.
+
 ---
 
 ## 3. The phases (each shippable, gated `tsc && lint && test`)

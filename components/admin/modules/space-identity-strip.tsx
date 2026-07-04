@@ -71,7 +71,7 @@ export function SpaceIdentityStrip({ slug }: { slug: string }) {
         <p className="truncate text-sm font-semibold text-text">{data.name}</p>
         <Link
           href={`/spaces/${data.slug}/settings/basics`}
-          className="text-xs font-medium text-primary hover:underline"
+          className="inline-flex min-h-[44px] items-center text-xs font-medium text-primary hover:underline"
         >
           Edit
         </Link>
