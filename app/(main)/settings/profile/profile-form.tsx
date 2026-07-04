@@ -531,11 +531,11 @@ export function ProfileForm({
             </div>
           </div>
 
-          {/* PRIMARY (ADR-508 U3): the block-picker GRID editor drives the LIVE Spotlight now, so it is
-              the primary way to build the page. The classic Puck builder stays reachable, demoted below.
-              The theme picker was removed (owner) — the Spotlight now reads the profile's own styling. */}
+          {/* PRIMARY (ADR-516 Phase C): the page BUILDER now lives inline in the rail on your own profile.
+              Open your profile and the rail's Layout section is the full rows/slots builder, previewing every
+              change live. The classic Puck builder stays reachable, demoted below. */}
           <Link
-            href={`/people/${initial.handle}/profile-preview/edit`}
+            href={`/people/${initial.handle}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)

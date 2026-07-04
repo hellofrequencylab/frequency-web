@@ -131,7 +131,7 @@ export function PersonalSpotlightModule() {
 
           {handle && (
             <Link
-              href={`/people/${handle}/profile-preview/edit`}
+              href={`/people/${handle}`}
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
             >
               <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page

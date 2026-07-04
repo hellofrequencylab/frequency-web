@@ -619,10 +619,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     // Spotlight is part of the member's own profile identity, so it mounts alongside Profile (ADR-516).
     surfaces: [/^\/people\/[^/]+/, /^\/settings\/profile(?:$|\/)/],
   },
-  // The Layout link (ADR-515 Phase 2 — "a layout chooser in every rail"): the member's profile grid
-  // editor, surfaced as a compact rail entry. An inline module self-fetches the handle (the destination
-  // /people/<handle>/profile-preview/edit is not resolvable from the global scope alone) and renders a
-  // link. Renders nothing when signed out / no handle (fail-safe).
+  // The Layout builder (ADR-516 Phase C — was a link-row in ADR-515 Phase 2): on the member's OWN
+  // /people/<handle> this inline module renders the FULL rows/slots ProfilePageBuilder, editing the shared
+  // ProfileLayoutContext so the page behind the slide-over previews every change live. Self-fetches the
+  // handle + saved layout; renders nothing unless the page is the viewer's own profile (fail-safe).
   {
     id: 'account.layout',
     label: 'Layout',

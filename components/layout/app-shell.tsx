@@ -69,6 +69,7 @@ import type { Capability } from '@/lib/core/capabilities'
 import { SearchOverlay } from '@/components/search/search-overlay'
 import { PageAdminProvider } from '@/components/layout/page-admin-context'
 import { AdminBar, type AdminBarState } from '@/components/layout/admin-bar/admin-bar'
+import { ProfileLayoutProvider } from '@/components/entity-blocks/profile-layout-context'
 import { MindlessProvider, useMindless } from '@/components/on-air/mindless'
 import { MovementProvider } from '@/components/on-air/movement'
 import { LotusIcon } from '@/components/on-air/icons'
@@ -1861,6 +1862,10 @@ export default function AppShell({
               settings drawer — mounted in the right-rail slot — can read the viewer's
               role / staffRole / webRole gates alongside the page body. */}
           <PageAdminProvider value={{ role: gateRole, staffRole, webRole, caps: new Set(caps), appOverrides }}>
+          {/* The shared profile-layout store (ADR-516 Phase C) wraps BOTH the page body and the admin rail
+              so the in-rail Profile builder and the owner's LiveProfileGrid preview share one client store —
+              edits repaint the page instantly, no round-trip. Inert until the owner's profile seeds it. */}
+          <ProfileLayoutProvider>
           {/* A full-viewport editor takeover drops the max-width, gutters, and min-height so the
               editor (which owns its own top bar + full-height layout) sits truly edge-to-edge. */}
           <div className={edgeToEdge
@@ -2016,6 +2021,7 @@ export default function AppShell({
               </div>
             )}
           </div>
+          </ProfileLayoutProvider>
           {/* Mobile settings surface (< lg): the AdminBar mounted in the rail column above self-hosts
               its mobile half through a portal to <body> (it escapes the hidden lg:flex column), so there
               is no separate mobile mount here — exactly one AdminBar renders per route (the live rail

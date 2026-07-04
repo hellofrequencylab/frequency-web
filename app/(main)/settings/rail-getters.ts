@@ -23,6 +23,8 @@ import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spot
 import { computeCompleteness } from '@/lib/profile/completeness'
 import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
+import { readMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
+import { resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 
 // ── Profile (account.profile / account.spotlight / account.layout) ─────────────────────────────────────
 // The ProfileForm prop bundle the /settings/profile page assembles (profile/page.tsx). Re-gated on the
@@ -175,5 +177,45 @@ export async function getMemberHubData(): Promise<MemberHubData | null> {
     streak: (row.current_streak as number | null) ?? 0,
     connections: count ?? 0,
     planLabel: ENTITLEMENT_LABEL[tier],
+  }
+}
+
+// ── The in-rail Profile page builder seed (ADR-516 Phase C) ──────────────────────────────────────────
+// The builder + the live page preview seed the shared ProfileLayoutContext from the SAME persisted layout,
+// resolved to the freeform rows. RE-GATES on the authed viewer (reads only the caller's own row) and
+// returns NULL when signed out (fail-safe → the builder renders nothing). READ-ONLY + serializable (RowDef
+// is plain data), so the client builder module self-fetches it exactly like the other rail getters.
+
+export interface MemberLayoutRailData {
+  handle: string | null
+  /** The persisted freeform rows (resolveRows over the saved entityGrid → the basic starter when empty). */
+  rows: RowDef[]
+  /** The persisted hidden block ids (blocks kept in place but off the render). */
+  hidden: string[]
+  /** Whether the member has ever saved a layout (else the resolved rows are the default seed → show starters). */
+  customized: boolean
+}
+
+/** The member's own resolved profile-page layout for the builder, or null when signed out (fail-safe). */
+export async function getMemberLayoutRailData(): Promise<MemberLayoutRailData | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return null
+
+  const saved = readMemberGridLayout((profile as { meta?: unknown }).meta)
+  return {
+    handle: (profile as { handle?: string | null }).handle ?? null,
+    rows: resolveRows(saved, 'member'),
+    hidden: saved?.hidden ?? [],
+    customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
   }
 }

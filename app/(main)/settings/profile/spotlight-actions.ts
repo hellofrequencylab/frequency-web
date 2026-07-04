@@ -67,12 +67,14 @@ export async function saveSpotlightLayout(rawLayout: unknown): Promise<{ error?:
 }
 
 // ── Unified grid layout (ADR-508, U2b) ────────────────────────────────────────
-// Save the member's GRID block-picker layout (the shared entity-block editor). Owner-only and
-// SESSION-DERIVED (no target id, like saveSpotlightLayout) so a caller can only ever write their own
-// row. The layout is SANITIZED to unified member block ids before persist (never trust the wire) and
-// stored at meta.entityGrid, DELIBERATELY SEPARATE from the live Spotlight nodes (meta.spotlight.layout /
-// theme / background) so nothing the public Puck Spotlight renders is touched. This is an additive
-// preview surface, so it does NOT require Spotlight to be enabled.
+// Save the member's GRID layout — the freeform ROWS from the in-rail Profile page builder (ADR-516
+// Phase C) as well as the legacy template/slots shape. Owner-only and SESSION-DERIVED (no target id, like
+// saveSpotlightLayout) so a caller can only ever write their own row. The layout is SANITIZED to unified
+// member block ids before persist (sanitizeEntityLayout runs sanitizeRows over any `rows` field: columns
+// clamped to 1-4, cells kept only for known member blocks, deduped, unsafe row ids regenerated — the wire
+// is never trusted) and stored at meta.entityGrid, DELIBERATELY SEPARATE from the live Spotlight nodes
+// (meta.spotlight.layout / theme / background) so nothing the public Puck Spotlight renders is touched.
+// This is an additive builder surface, so it does NOT require Spotlight to be enabled.
 export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -93,8 +95,11 @@ export async function saveMemberGridLayout(rawLayout: unknown): Promise<{ error?
     .eq('auth_user_id', user.id)
   if (error) return { error: error.message }
 
+  // The builder now lives inline on the member's own profile (/people/<handle>), so revalidate THERE so
+  // the server-rendered layout reconciles on the member's next visit (the live preview already repaints
+  // from context during the session — no round-trip). The legacy /profile-preview/edit route is gone.
   const handle = (me as { handle?: string }).handle
-  if (handle) revalidatePath(`/people/${handle}/profile-preview/edit`)
+  if (handle) revalidatePath(`/people/${handle}`)
   return {}
 }
 
