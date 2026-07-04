@@ -27,6 +27,7 @@ import {
   setSpaceCoverSize,
   setSpaceCoverScrim,
   setSpaceAccent,
+  setSpaceProfileTemplate,
   createSpacePage,
   renameSpacePage,
   reorderSpacePages,
@@ -36,6 +37,8 @@ import {
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
+import { TemplateThumbnail } from '@/components/admin/page-settings/layout-editor'
+import { TEMPLATES, type TemplateId } from '@/lib/widgets/templates'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
@@ -77,6 +80,7 @@ export function SpacePagePanel({
   coverSize,
   coverScrim,
   accent,
+  profileTemplate,
   businessInfo,
   coverImageUrl = null,
   brandLogoUrl = null,
@@ -98,6 +102,9 @@ export function SpacePagePanel({
   coverScrim: CoverScrim
   /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
   accent: string
+  /** The Space profile's chosen structural grid template (single / main-side / …), for the inline
+   *  layout chooser. Default-safe upstream (readProfileTemplate) to the single-column template. */
+  profileTemplate: TemplateId
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
   /** The Space's current header (cover) image URL, for the Business info form's upload control. */
@@ -119,6 +126,9 @@ export function SpacePagePanel({
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  // The structural grid template, seeded from the server prop and updated optimistically so the chosen
+  // tile tints at once (the inline module self-fetches once on mount, so it does not re-read on refresh).
+  const [template, setTemplate] = useState<TemplateId>(profileTemplate)
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     setError(null)
@@ -215,6 +225,54 @@ export function SpacePagePanel({
           </Link>
         </section>
       )}
+
+      {/* LAYOUT: the structural grid template the profile arranges into (single column, main + side, and
+          so on). Pick the shape by clicking its picture; the full drag-and-drop block editor stays behind
+          "Edit your profile" above. Writes only the `template` node, so your block placements are kept.
+          Leads the quick tweaks (ADR-515 Phase 3, the owner directive: every admin bar carries the layout
+          chooser). */}
+      <section>
+        <SectionHeader title="Layout" />
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          The shape your profile arranges into. Pick a layout, then arrange your blocks in the full editor.
+        </p>
+        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
+          {TEMPLATES.map((t) => {
+            const active = template === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                disabled={readOnly || pending || active}
+                onClick={() => {
+                  setTemplate(t.id)
+                  run(() => setSpaceProfileTemplate(slug, t.id))
+                }}
+                aria-pressed={active}
+                title={t.description}
+                className={cn(
+                  'flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors disabled:cursor-default motion-reduce:transition-none',
+                  active
+                    ? 'border-primary bg-primary-bg/40 ring-1 ring-primary'
+                    : 'border-border bg-surface hover:border-border-strong',
+                )}
+              >
+                <span className="flex h-9 w-14 items-center justify-center">
+                  <TemplateThumbnail id={t.id} active={active} />
+                </span>
+                <span
+                  className={cn(
+                    'text-center text-2xs font-semibold leading-tight',
+                    active ? 'text-primary-strong' : 'text-muted',
+                  )}
+                >
+                  {t.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
       {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
       <section>

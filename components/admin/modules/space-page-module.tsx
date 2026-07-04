@@ -67,6 +67,7 @@ export function SpacePageModule() {
         coverSize={data.coverSize}
         coverScrim={data.coverScrim}
         accent={data.accent}
+        profileTemplate={data.profileTemplate}
         businessInfo={data.businessInfo}
         coverImageUrl={data.coverImageUrl}
         brandLogoUrl={data.brandLogoUrl}

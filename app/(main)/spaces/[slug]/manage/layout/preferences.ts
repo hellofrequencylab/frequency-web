@@ -3,6 +3,22 @@
 // synchronous helper exported there fails the production build). Imported by both the
 // action and its unit test.
 
+import { parseEntityLayout } from '@/lib/entity-blocks/layout'
+import { DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
+
+// ── PROFILE GRID TEMPLATE (the interior shape) ─────────────────────────────────────────────────────
+// The block-picker profile is arranged into a structural TEMPLATE (single column, main + side, etc.),
+// stored at preferences.profileLayout.template (the EntityLayout node the grid editor writes). The Page
+// panel's inline structural chooser (ADR-515 Phase 3) reads it to tint the chosen tile. Fail-safe to the
+// single-column DEFAULT_TEMPLATE for any missing / malformed value.
+
+/** Read the operator's chosen profile grid template off a raw preferences blob. Default-safe. PURE. */
+export function readProfileTemplate(preferences: unknown): TemplateId {
+  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return DEFAULT_TEMPLATE
+  const node = (preferences as Record<string, unknown>).profileLayout
+  return parseEntityLayout(node)?.template ?? DEFAULT_TEMPLATE
+}
+
 // ── COVER SIZE (Header vs Hero) ──────────────────────────────────────────────────────────────────
 // The public Space header's cover band has two sizes: a compact `header` band (the default) and a
 // tall `hero` band. It rides the same untyped `preferences` tail as the layout override, read by the

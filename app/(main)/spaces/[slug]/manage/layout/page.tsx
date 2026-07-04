@@ -15,7 +15,7 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverScrim, readProfileTemplate } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { FocusTemplate } from '@/components/templates'
@@ -107,6 +107,7 @@ export default async function SpacePageSettingsPage({
         coverSize={coverSize}
         coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
+        profileTemplate={readProfileTemplate(space.preferences)}
         businessInfo={readProfileData(space.preferences)}
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}

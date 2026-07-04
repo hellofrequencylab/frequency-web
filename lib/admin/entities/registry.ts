@@ -261,7 +261,10 @@ export interface SpaceSurface {
   priority?: number
   /** The uniform-rail placement axis (ADR-515): `inline` (default) renders the surface in the rail
    *  BODY; `bank` promotes it into the bottom bank button-grid (the fixed per-scope quick-links)
-   *  instead. Default `inline` everywhere; nothing is tagged `bank` yet (later phases opt in). */
+   *  instead. Default `inline`. Phase 3 (the SPACE rail) opts the back-office feature workflows in:
+   *  CRM · Email · QR · Insights · Billing leave the body for the bank (the owner directive: a feature
+   *  that paints on the public profile is INLINE; a back-office destination is a BOTTOM-BANK button).
+   *  Danger is NEVER banked (destructive must not be a quick-link) — it stays inline + de-emphasized. */
   placement?: 'inline' | 'bank'
 }
 
@@ -373,6 +376,9 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'crm',
     types: ['practitioner', 'business', 'coaching'],
     render: 'link',
+    // BANK (ADR-515 Phase 3): the CRM board is a private back-office workflow, never on the public
+    // profile, so it leaves the rail body for the bottom bank.
+    placement: 'bank',
   },
   // Services (the storefront store items) — the operator's catalog of services with full pricing +
   // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
@@ -407,6 +413,9 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'qr',
     types: ['*'],
     render: 'link',
+    // BANK (ADR-515 Phase 3): QR codes are a back-office destination, not a block that paints on the
+    // public profile, so they render as a bottom-bank button.
+    placement: 'bank',
   },
   // Comms — write a campaign, pick who gets it, and send or schedule it. The `email` function gates
   // it; the types that compose an email surface are practitioner, business, and organization.
@@ -420,6 +429,9 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'email',
     types: ['practitioner', 'business', 'organization'],
     render: 'link',
+    // BANK (ADR-515 Phase 3): campaign composition never paints on the public page, so Email leaves the
+    // rail body for the bottom bank.
+    placement: 'bank',
   },
   // Insights — the space's analytics. Carried by the QR function today (the analytics surface lives
   // beside QR codes); a dedicated insights function lands when its own surface is built (Pass 2).
@@ -434,6 +446,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'qr',
     types: ['practitioner', 'business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
     render: 'link',
+    // BANK (ADR-515 Phase 3): analytics are a back-office destination, so Insights renders in the bank.
+    placement: 'bank',
   },
   // Billing — the plan ladder and what each plan unlocks. The `billing` function is universal ('*'),
   // so every console type shows it.
@@ -447,9 +461,13 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     requiredFunction: 'billing',
     types: ['business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
     render: 'link',
+    // BANK (ADR-515 Phase 3): billing is a back-office destination, so it renders in the bottom bank
+    // (deduped against the base bank's fixed Billing link by href).
+    placement: 'bank',
   },
   // Danger — delete this space (owner-grade, permanent). Gated by manage access + owner check in the
-  // console, like the legacy cockpit; no per-tool function.
+  // console, like the legacy cockpit; no per-tool function. Stays INLINE (default placement) as the
+  // de-emphasized last item in the body: destructive must NEVER be a bottom-bank quick-link (ADR-515).
   {
     id: 'space.danger',
     tier: 'extra',

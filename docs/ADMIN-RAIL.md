@@ -304,10 +304,53 @@ keeps it.
    owner-visible layout chooser, and the `event/hub/nexus` manage-console href seam. Non-breaking.
 2. **The personal "You" rail (Phase 2, shipped)** — §5.6: Profile/Spotlight/Layout inline; the secondary
    account surfaces to the bank (reverses ADR-514 Phase C+D).
-3. **Tag entity/Space surfaces to `bank`** — move the remaining second-layer feature workflows onto
-   `placement: 'bank'` per scope.
+3. **The Space rail (Phase 3, shipped)** — §5.8: the Space's public-profile editors stay inline; its
+   back-office destinations (CRM · Email · QR · Insights · Billing) move to `placement: 'bank'`, and the
+   structural template chooser is surfaced inline in the Page panel.
 4. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
 5. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
+
+### 5.8 The Space rail (Phase 3, shipped)
+
+The owner directive (verified survey): **if a feature paints on the public Space profile, its editor is
+INLINE in the rail; if it is a back-office destination, it is a BOTTOM-BANK button.** So the Space rail
+body carries the identity + everything the visitor sees, and the private workflows move to the bank.
+
+| Surface | id | Placement | Why |
+|---|---|---|---|
+| Basics | `space.basics` | inline (standard) | name / logo / cover / tagline / contact — the profile head |
+| Mode and focus | `space.mode` | inline (standard) | how the space runs, framing the whole page |
+| Page | `space.layout` | inline (standard) | layout / cover / accent / blocks — plus the new inline template chooser |
+| Offerings | `space.offerings` | inline (primary) | the Book CTA + offerings block paint on the profile |
+| Services | `space.services` | inline (primary) | the storefront paints on the profile (keeps its summary card) |
+| Members | `space.people` | inline (primary) | the Team block paints on the profile (keeps its summary card) |
+| CRM | `space.engage.crm` | **bank** | the pipeline board is private back-office, never on the public page |
+| Email | `space.comms` | **bank** | campaign composition never on the public page |
+| QR codes | `space.reach` | **bank** | a back-office destination |
+| Insights | `space.insights` | **bank** | analytics, a back-office destination |
+| Plan and billing | `space.billing` | **bank** | a back-office destination (dedupes the base bank Billing) |
+| Danger zone | `space.danger` | inline (de-emphasized) | destructive must NEVER be a quick-link — stays the last body item |
+
+So the Space rail body reads: **identity strip → Basics → Mode → Page → Offerings → Services → Members →
+[Danger, de-emphasized]**, and the bottom bank is **Manage console · CRM · Email · QR · Insights ·
+Billing** (the fixed `bankForScope` base — Manage / CRM / Insights / Billing — MERGED with the
+`placement: 'bank'` surfaces' hrefs, de-duped by href). Note: Insights currently shares the QR page
+(`/settings/qr`, no standalone insights route yet), so QR + Insights collapse to one bank button by the
+href de-dupe; both destinations are reachable. `settings-panel` resolves each banked surface's href via
+`hrefForSurface(id, slug)` (slug from the live path) and passes them as the `extra` arg to `bankForScope`,
+which drops any Danger href — so Danger can never reach the bank even by mistake.
+
+**The inline template chooser.** The owner directive: *every admin bar should carry the layout chooser
+with the multiple templates.* The 7 structural `TEMPLATES` (`lib/widgets/templates.ts`) previously lived
+only inside the standalone grid editor; a COMPACT `TemplateThumbnail` picker now leads the Page panel's
+quick tweaks (`components/spaces/space-page-panel.tsx`, above cover size). Picking a tile writes the chosen
+`template` onto `preferences.profileLayout` (the same `EntityLayout` node `mergeEntityLayout` reads) via a
+new `setSpaceProfileTemplate(slug, template)` action (`manage/layout/actions.ts`) that re-gates the owner
+server-side (`authorizeEditor` → `canEditProfile`, staff preview fails closed) and preserves every other
+`profileLayout` key (slots / hidden / order). The full drag-and-drop grid editor stays the deep "Edit your
+profile" own-page link. `TemplateThumbnail` is reused from the layout editor (now exported);
+`readProfileTemplate` (`manage/layout/preferences.ts`) feeds the current choice to the panel through
+`getSpacePageData` and the `/manage/layout` page.
 
 ---
 
