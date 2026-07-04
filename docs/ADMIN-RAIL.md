@@ -252,7 +252,8 @@ quick-links MERGED with any `placement: 'bank'` surface links:
 | **space** | Manage console · CRM · Insights · Billing (via `hrefForSurface`, slug from `scope.id`) |
 | **personal / global / profile** | All settings · Billing; + Operator · CRM · Insights when `viewer.isStaff` |
 | **event / hub / nexus / circle / practice** | the `/{section}/<slug>/manage` console |
-| **channel / unknown / null** | `[]` (empty-safe) |
+| **channel** | `/admin/channels` · `/admin/moderation` when `viewer.isStaff` (operator-curated, no per-channel console); `[]` otherwise |
+| **unknown / null** | `[]` (empty-safe) |
 
 Fail-safe: de-dupes by href, **never admits a Danger / destructive href**, returns `[]` for a null/unknown
 scope. `admin-bar-body` renders it as a bordered `grid grid-cols-2` of button links (min 44px, focus ring)
@@ -267,9 +268,13 @@ first content section are the top of the rail.
 
 ### 5.4 Owner-visible layout chooser
 
-The circle/event Layout / template chooser is de-operatorized: gated on the ENTITY EDIT capability
-(`viewer.caps.has('circle.editSettings')` / `event.editSettings`), not the staff `isOperator` axis (the
-`isModuleRoute` guard stays), so it is an owner-visible guaranteed section on the scopes that have one.
+The circle/event/**practice** Layout / template chooser is de-operatorized: gated on the ENTITY EDIT
+capability (`viewer.caps.has('circle.editSettings')` / `event.editSettings` / `practice.editSettings`), not
+the staff `isOperator` axis (the `isModuleRoute` guard stays), so it is an owner-visible guaranteed section on
+the `<PageModules>`-driven scopes. Scopes whose detail page is HAND-BUILT (hub / nexus) have no arrangeable
+block set, so instead of a broken picker they carry a minimal `*.layout` registry module — a labelled Layout
+affordance that states the page uses a standard fixed layout and links to the Manage console (§5.10). Channel
+detail is not module-driven and is operator-curated, so it is a genuine exception with no layout chooser.
 
 ### 5.6 The personal "You" rail (Phase 2, shipped) — REVERSES ADR-514 Phase C+D
 
@@ -311,7 +316,9 @@ keeps it.
    picker + an inline Insights readout, and its create quick-actions (New event · New announcement) move to
    the bank; the event's Manage dashboard is the bank's canonical console button; both layout choosers are
    owner-visible.
-5. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
+5. **The hub / nexus / practice / channel rails (Phase 5, shipped)** — §5.10: practice gets the real
+   owner-visible LayoutEditor; hub + nexus get a minimal Layout affordance (their pages are hand-built);
+   channel gets a staff in-place Edit trigger + an operator `/admin` bank. Journey is Phase 6.
 6. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
 
 ### 5.8 The Space rail (Phase 3, shipped)
@@ -391,6 +398,41 @@ dashboard" affordance is now the bank button; the module keeps only the inline a
 **Layout choosers.** Both are owner-visible per the keystone de-operatorization (§5.4): the injection is gated
 on the ENTITY EDIT capability (`viewer.caps.has('circle.editSettings')` / `event.editSettings`) behind the
 `isModuleRoute` guard, and renders as a proper `layout`-slot primary section — not the staff `isOperator` axis.
+
+### 5.10 The hub / nexus / practice / channel rails (Phase 5, shipped)
+
+Same owner directive as §5.9. Each entity keeps its existing inline body (Settings · People · Insights ·
+Danger, all inline and de-emphasized where destructive) and gains the missing layout affordance; nothing new
+is banked.
+
+| Scope | Rail body (inline) | Layout chooser | Bank |
+|---|---|---|---|
+| **hub** | Settings · People · **Layout** · Insights · Danger | `hub.layout` — minimal affordance (hand-built page → no arrangeable blocks), links to the Manage console | Manage console (base `bankForScope`) |
+| **nexus** | Settings · People · **Layout** · Insights · Danger | `nexus.layout` — same minimal affordance, links to the Manage console | Manage console |
+| **practice** | Settings (embeds Danger delete) · **Layout** · Insights | REAL `LayoutEditor` — the practice page IS `<PageModules>`-driven, so the circle/event injection generalizes to it (`settings-panel.tsx`, `layoutBlock('practice')`, gated `practice.editSettings` + `isModuleRoute`) | Manage console |
+| **channel** | Settings · Insights (both staff-gated) | none — channel detail is not module-driven and is operator-curated (a genuine, stated exception) | `/admin/channels` · `/admin/moderation` (staff) |
+
+**Hub / nexus Layout.** Their detail pages are hand-built (fixed sections: identity → insight → circles/hubs),
+NOT `<PageModules>`-driven, so there is no block set to reorder. Rather than fabricate a broken picker, each
+gets a minimal `*.layout` registry module (`hub-layout-module.tsx` / `nexus-layout-module.tsx`, `layout`-slot,
+primary) that self-fetches `getHubAdminData` / `getNexusAdminData` (null unless the manage capability, so it
+renders nothing otherwise — fail-safe), states the page uses a standard fixed layout, and links to the Manage
+console where the sections + settings live. Honest affordance, not a dead control.
+
+**Practice Layout.** The practice detail body is module-driven (stats · intro · guide · tags · used-in), so the
+circle/event `layoutBlock` injection generalizes to a third noun (`'practice'`): a real `LayoutEditor`, gated
+owner-visible on `practice.editSettings` behind the `isModuleRoute` guard (identical de-operatorization to
+§5.4). It renders exactly when the practice settings module does (host+/staff owner), so no gate is weakened.
+
+**Channel.** Topical channels are platform-curated — there is no per-channel owner, so `channel.manage` is
+staff-only and the member page had no admin trigger. The detail page now mounts an `OpenAdminBarButton`
+`scope={{ kind: 'channel', id }}` gated on `channel.manage` (resolved via the new `getChannelCapabilities`),
+so a staff viewer reaches the single Channel settings module — plus a new staff **Insights** readout
+(`channel.insights`, tuned-in + circles, reusing the same tables the detail page counts) — in place. Its
+**bank** is a new `case 'channel'` in `bankForScope`: staff → the operator `/admin/channels` directory +
+`/admin/moderation` (channels are governed from the `/admin` hub, not a per-entity console); a non-staff
+viewer never reaches the rail, so the bank is `[]`. Channel detail is not `<PageModules>`-driven, so it gets
+NO layout chooser — a genuine exception, not a forced broken picker.
 
 ---
 

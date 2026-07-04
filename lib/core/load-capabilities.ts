@@ -276,6 +276,14 @@ export async function getEventCapabilities(eventId: string): Promise<Set<Capabil
   })
 }
 
+/** What the caller can do on a specific topical Channel. Channels are platform-curated
+ *  (no per-channel owner), so channel.manage goes to staff only — the resolver adds it
+ *  when the viewer is staff. Used by the channel detail page to gate its staff-only
+ *  in-place Edit trigger (ADR-515 Phase 5). */
+export async function getChannelCapabilities(channelId: string): Promise<Set<Capability>> {
+  return resolveCapabilities(await currentViewer(), { kind: 'channel', channelId })
+}
+
 /** What the caller can do on a specific Practice. practice.editSettings goes to its
  *  creator (owner), platform staff, or whoever manages its parent space. */
 export async function getPracticeCapabilities(practiceId: string): Promise<Set<Capability>> {

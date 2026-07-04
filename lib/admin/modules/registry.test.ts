@@ -40,11 +40,12 @@ describe('admin module registry', () => {
 
   it('surfaces the hub spine only on a hub scope, only with hub.manage', () => {
     const manage = new Set<Capability>(['hub.manage'])
-    // Hub now carries the 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger,
-    // all gated hub.manage.
+    // Hub carries the 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger, plus the
+    // ADR-515 Phase 5 Layout affordance (between People and Insights), all gated hub.manage.
     expect(modulesFor(hubScope, manage).map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.layout',
       'hub.insights',
       'hub.danger',
     ])
@@ -58,6 +59,7 @@ describe('admin module registry', () => {
     expect(modulesFor(nexusScope, manage).map((m) => m.id)).toEqual([
       'nexus.settings',
       'nexus.people',
+      'nexus.layout',
       'nexus.insights',
       'nexus.danger',
     ])
@@ -187,17 +189,20 @@ describe('admin module registry', () => {
       'circle.insights',
       'circle.text',
     ])
-    // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger,
-    // in spine order (all order 10, so declaration order holds).
+    // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7) + the ADR-515 Phase 5 Layout
+    // affordance: Basics, People, Layout, Insights, Danger, in spine order (all order 10, so declaration
+    // order holds).
     expect(modulesForScopeKind('hub', 'sidebar').map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.layout',
       'hub.insights',
       'hub.danger',
     ])
     expect(modulesForScopeKind('nexus', 'sidebar').map((m) => m.id)).toEqual([
       'nexus.settings',
       'nexus.people',
+      'nexus.layout',
       'nexus.insights',
       'nexus.danger',
     ])
@@ -211,6 +216,12 @@ describe('admin module registry', () => {
       'practice.settings',
       'practice.insights',
     ])
+    // Channel carries its Basics settings + the ADR-515 Phase 5 Insights readout, both staff-gated
+    // (channel.manage).
+    expect(modulesForScopeKind('channel', 'sidebar').map((m) => m.id)).toEqual([
+      'channel.settings',
+      'channel.insights',
+    ])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])
     // No sidebar leakage across kinds, and inline surface is empty today.
@@ -219,6 +230,7 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('hub').map((m) => m.id)).toEqual([
       'hub.settings',
       'hub.people',
+      'hub.layout',
       'hub.insights',
       'hub.danger',
     ])

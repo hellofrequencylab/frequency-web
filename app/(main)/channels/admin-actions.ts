@@ -32,6 +32,43 @@ export async function getChannelAdminData(idOrSlug: string) {
   return channel ?? null
 }
 
+// ─── Insights (the 'insights' spine cell, ADR-515 Phase 5) ──────────────────────
+// The channel at a glance: how many members are tuned in and how many circles are practicing it — the
+// same two readouts the detail page shows. Staff (admin+) only; returns null otherwise, so the rail module
+// renders no chrome for non-operators. Reuses the SAME tables the channel detail page counts.
+
+export interface ChannelInsightsData {
+  tunedIn: number
+  circleCount: number
+}
+
+export async function getChannelInsightsData(idOrSlug: string): Promise<ChannelInsightsData | null> {
+  if (!(await isChannelManager())) return null
+
+  const admin = createAdminClient()
+  const matchField = UUID_RE.test(idOrSlug) ? 'id' : 'slug'
+  const { data: channel } = await admin
+    .from('topical_channels')
+    .select('id')
+    .eq(matchField, idOrSlug)
+    .maybeSingle()
+  if (!channel) return null
+
+  const [{ count: tunedIn }, { count: circleCount }] = await Promise.all([
+    admin
+      .from('topical_channel_memberships')
+      .select('id', { count: 'exact', head: true })
+      .eq('topical_channel_id', channel.id),
+    admin
+      .from('circles')
+      .select('id', { count: 'exact', head: true })
+      .eq('topical_channel_id', channel.id)
+      .neq('status', 'archived'),
+  ])
+
+  return { tunedIn: tunedIn ?? 0, circleCount: circleCount ?? 0 }
+}
+
 /** Patch a topical channel's curated fields in place. Staff (admin+) only. */
 export async function updateChannelSettings(id: string, fd: FormData) {
   if (!(await isChannelManager())) throw new Error('Unauthorized')

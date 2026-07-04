@@ -11,7 +11,7 @@
 // never a place to delete from).
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone } from 'lucide-react'
+import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone, Hash, ShieldAlert } from 'lucide-react'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 
@@ -124,7 +124,19 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
       if (!urlSlug || !section) return []
       return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${urlSlug}/manage` }]
     }
-    // Unknown / bank-less scopes (e.g. channel) get an empty bank gracefully.
+    // A CHANNEL (ADR-515 Phase 5): topical channels are OPERATOR-CURATED (no per-channel owner — the
+    // settings module gates on staff), so unlike the owner-console entities the channel has no per-entity
+    // `/{section}/<slug>/manage` console. Its bank leans on the operator `/admin` hub instead: the channels
+    // directory (where staff create / edit / archive channels) and Moderation (review + resolve reports).
+    // Staff-only — a non-staff viewer never reaches the channel rail, so a null bank is the fail-safe.
+    case 'channel': {
+      if (!viewer.isStaff) return []
+      return [
+        { label: 'Channels', icon: Hash, href: '/admin/channels' },
+        { label: 'Moderation', icon: ShieldAlert, href: '/admin/moderation' },
+      ]
+    }
+    // Unknown / bank-less scopes get an empty bank gracefully.
     default:
       return []
   }
