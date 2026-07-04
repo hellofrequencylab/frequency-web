@@ -51,7 +51,7 @@ export async function ProfileSpotlightBlocks({ handle, owner = false }: { handle
       member={data}
       layout={profileSpotlightLayout()}
       className="@container/profile space-y-6"
-      editHref={owner ? () => `/people/${handle}/profile-preview/edit` : undefined}
+      editHref={owner ? () => `/people/${handle}` : undefined}
     />
   )
 }

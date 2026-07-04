@@ -51,6 +51,27 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   divider: DividerBlock,
 }
 
+/**
+ * Render EVERY candidate member block once, server-side, into a node map keyed by block id (ADR-516
+ * Phase C). This is what makes the in-rail builder's bench↔page placement instant: the node already
+ * exists, so placing/benching a block just moves it in the LiveProfileGrid — no round-trip. Each block
+ * fetches its data server-side already, so rendering the few unplaced ones is cheap. Fail-safe: each block
+ * sits in its own <Suspense fallback={null}> and renders nothing when its slice is absent.
+ */
+export function renderMemberBlockNodes(member: SpotlightData): Record<string, React.ReactNode> {
+  const identity = toMemberEntity(member)
+  const data = resolveMemberBlockData(member)
+  const nodes: Record<string, React.ReactNode> = {}
+  for (const [id, Block] of Object.entries(MEMBER_PROFILE_BLOCKS)) {
+    nodes[id] = (
+      <Suspense key={id} fallback={null}>
+        <Block member={identity} data={data} />
+      </Suspense>
+    )
+  }
+  return nodes
+}
+
 export function MemberProfileModules({
   member,
   layout,

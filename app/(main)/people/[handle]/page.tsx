@@ -44,6 +44,7 @@ import { DetailTemplate } from '@/components/templates'
 import { ProfileCover } from '@/components/profile/profile-cover'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
+import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
 
 export default async function ProfilePage({
   params,
@@ -295,7 +296,7 @@ export default async function ProfilePage({
   // (where they design + publish it). Falls back to nothing until it's turned on.
   const ownerSpotlightLink = spotlightEnabled ? (
     <Link
-      href={spotlightPublished ? `/spotlight/${profile.handle}` : `/people/${profile.handle}/profile-preview/edit`}
+      href={spotlightPublished ? `/spotlight/${profile.handle}` : `/settings/profile/spotlight`}
       className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-elevated hover:text-text"
     >
       <Sparkles className="h-3.5 w-3.5" />
@@ -466,13 +467,18 @@ export default async function ProfilePage({
           {/* Staff-only: this member's support history, wired into the console. */}
           {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
 
-          {/* The member's published Spotlight content, DECOMPOSED into individual profile blocks
-              (ADR-508 continuation) — each Spotlight block is its own block here, not one "More about"
-              box, arranged with the profile in mind (the bio + stats the profile already shows are
-              dropped). Additive + fail-safe: renders nothing when they have no published Spotlight.
-              Behind Suspense so it never blocks the profile's first byte. */}
+          {/* The member's page-builder content (ADR-508 → ADR-516 Phase C). For the OWNER this is the
+              LIVE PREVIEW of their freeform grid layout (the WYSIWYG surface the in-rail builder edits, in
+              sync via the shared ProfileLayoutContext). For a visitor it stays the flat Spotlight decompose
+              (each block its own section, the bio + stats the profile already shows dropped). Both are
+              additive + fail-safe (render nothing without a published Spotlight) and stream behind Suspense
+              so they never block the profile's first byte. */}
           <Suspense fallback={null}>
-            <ProfileSpotlightBlocks handle={handle} owner={isOwner} />
+            {isOwner ? (
+              <OwnerProfileLayoutPreview handle={handle} />
+            ) : (
+              <ProfileSpotlightBlocks handle={handle} owner={false} />
+            )}
           </Suspense>
 
           {/* Composer + timeline. */}
