@@ -162,6 +162,9 @@ export interface App {
       tier?: 'standard' | 'primary' | 'extra'
       priority?: number
       placement?: 'inline' | 'bank'
+      /** The per-module SURFACE predicate (ADR-516 Phase B): routes on which this editor's SUBJECT
+       *  lives; the rail mounts the inline editor only where the path matches. Absent = anywhere. */
+      surfaces?: readonly RegExp[]
     }
     page?: { defaultTemplate?: TemplateId; defaultSlot?: string }
     rail?: { side: 'left' | 'right' }

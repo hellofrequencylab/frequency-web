@@ -9,6 +9,7 @@ import type {
   SettingsPanelModel,
   SearchableApp,
 } from '@/components/layout/settings-panel'
+import { HubRail } from '@/components/layout/admin-bar/hub-rail'
 
 // ── The AdminBar BODY (docs/ADMIN-RAIL.md — inline-first rail, ADR-514; three-tier reorg) ────────────
 // A band-ordered scrolling list. Each populated (tier, slot) pair is a lightweight section header
@@ -199,6 +200,12 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
               nothing for a non-manager); non-search branch only, so search results stay unaffected. */}
           {model.identityStrip}
 
+          {/* ── The Hub (ADR-516 Phase B): on the `hub` archetype the body IS the stats + quick-links Hub
+              (member or Space), promoted from the pinned foot. Rendered ABOVE any operator page-management
+              sections, which survive on a content hub. The Hub owns the bank, so the foot bank below is
+              suppressed when a Hub is present (no duplicate "Go to" grid). ── */}
+          {model.hub && <HubRail spec={model.hub} bank={model.bank} />}
+
           <div className="space-y-6">{inlineSections.map(renderSection)}</div>
 
           {/* The operator page-globals group, set apart by a hairline. Suppressed on entity scopes. */}
@@ -269,7 +276,7 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
           {/* ── The bottom BANK (ADR-515 uniform rail): the fixed per-scope quick-links (manage console,
               CRM, Insights, Billing, operator) MERGED with any placement:"bank" surface, a button-grid
               pinned as the LAST block. Browse branch only (hidden in search); rendered only when non-empty. ── */}
-          {model.bank.length > 0 && (
+          {!model.hub && model.bank.length > 0 && (
             <div className="min-w-0 space-y-2 pt-2">
               <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Go to</p>
               <div className="grid grid-cols-2 gap-2">

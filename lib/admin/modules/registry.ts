@@ -83,6 +83,12 @@ export interface AdminModule {
    *  BODY; `bank` promotes it into the bottom bank button-grid (the fixed per-scope quick-links)
    *  instead. Default `inline` everywhere; nothing is tagged `bank` yet (later phases opt in). */
   placement?: 'inline' | 'bank'
+  /** The per-module SURFACE predicate (ADR-516 Phase B): the routes on which this function's SUBJECT
+   *  lives, so the rail mounts the inline editor ONLY where the path matches. ABSENT = anywhere (today's
+   *  behavior, so scope-gated management modules are unaffected). Applied to the personal "You" set so a
+   *  member's own Profile/Spotlight/Layout editors mount on their own profile page and the profile
+   *  settings page, NOT on /settings or a random content page (mismatches A + B). */
+  surfaces?: readonly RegExp[]
 }
 
 export const ADMIN_MODULES: readonly AdminModule[] = [
@@ -589,6 +595,9 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 10,
     tier: 'standard',
     priority: 10,
+    // The Profile editor's subject is the member's own page — it mounts on their /people/<handle> and
+    // on the /settings/profile editor page (ADR-516 Phase B), never on /settings or a content page.
+    surfaces: [/^\/people\/[^/]+/, /^\/settings\/profile(?:$|\/)/],
   },
   // The condensed Spotlight section (ADR-515 Phase 2): a compact status + enable/publish control, sitting
   // just under Profile in the "You" section. The full Spotlight block (theme, classic builder) stays on
@@ -607,6 +616,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 15,
     tier: 'standard',
     priority: 15,
+    // Spotlight is part of the member's own profile identity, so it mounts alongside Profile (ADR-516).
+    surfaces: [/^\/people\/[^/]+/, /^\/settings\/profile(?:$|\/)/],
   },
   // The Layout link (ADR-515 Phase 2 — "a layout chooser in every rail"): the member's profile grid
   // editor, surfaced as a compact rail entry. An inline module self-fetches the handle (the destination
@@ -625,6 +636,8 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 17,
     tier: 'primary',
     priority: 20,
+    // The Layout editor arranges the member's own profile page, so it belongs only on that page (ADR-516).
+    surfaces: [/^\/people\/[^/]+/],
   },
   // ── Bank surfaces (ADR-515 Phase 2): the secondary account surfaces leave the body and render as
   //    bottom-bank buttons, each linking to its /settings/* page via hrefForEntitySurface. `render:

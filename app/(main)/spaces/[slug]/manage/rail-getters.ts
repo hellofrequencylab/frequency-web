@@ -351,3 +351,56 @@ export async function getSpaceCampaignsSummary(slug: string): Promise<{ count: n
   const campaigns = await listSpaceCampaigns(space.id)
   return { count: campaigns.length }
 }
+
+// ── The Space Hub (ADR-516 Phase B) ──────────────────────────────────────────────────────────────────
+// The stats bundle the Space settings/manage Hub rail shows (components/layout/admin-bar/hub-rail.tsx),
+// sourced from the SAME summary reads the manage rail already runs + the Space's plan label. RE-GATES on
+// manage access (resolveSummarySpace) and returns NULL for a non-manager (fail-safe → the Hub shows only
+// the bank). Each function-gated tile (Members/Pipeline) drops to null when the viewer cannot use that
+// tool, so the Hub shows only the stats this viewer can source. READ-ONLY.
+
+/** The billing-plan label seam (spaces.plan → a member-facing label). A small map, since there is no
+ *  existing Space-tier label helper (the plan feeds gates, not copy). Unknown/absent plan reads "Free". */
+const SPACE_PLAN_LABEL: Record<string, string> = {
+  free: 'Free',
+  practitioner: 'Practitioner',
+  business: 'Business',
+  organization: 'Organization',
+  whitelabel: 'White label',
+}
+
+export interface SpaceHubData {
+  slug: string
+  /** Active members, or null when the viewer cannot use the Members tool (tile dropped). */
+  members: number | null
+  /** CRM deals in the pipeline, or null when the viewer cannot use the CRM tool (tile dropped). */
+  pipeline: number | null
+  /** Publicly listed storefront offerings (free profile framing; always available to a manager). */
+  services: number | null
+  /** Whether the public page is published. */
+  published: boolean
+  /** The Space plan label (Free / Practitioner / Business / …). */
+  planLabel: string
+}
+
+/** The Space Hub's stats, or null when the viewer cannot manage this Space (fail-safe). Reuses the cached
+ *  Space row + the manage summary getters (React.cache dedupes the Space read across them). */
+export async function getSpaceHubData(slug: string): Promise<SpaceHubData | null> {
+  const space = await resolveSummarySpace(slug, null)
+  if (!space) return null
+
+  const [members, pipeline, services] = await Promise.all([
+    getSpaceMembersSummary(slug),
+    getSpaceCrmSummary(slug),
+    getSpaceServicesSummary(slug),
+  ])
+
+  return {
+    slug: space.slug,
+    members: members?.count ?? null,
+    pipeline: pipeline?.count ?? null,
+    services: services?.count ?? null,
+    published: readWebsitePublished(space.preferences),
+    planLabel: SPACE_PLAN_LABEL[(space.plan ?? 'free').toLowerCase()] ?? 'Free',
+  }
+}

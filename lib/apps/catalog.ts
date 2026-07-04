@@ -48,6 +48,8 @@ const EDITOR_APPS: App[] = ADMIN_MODULES.map((m): App => ({
       ...(m.priority !== undefined ? { priority: m.priority } : {}),
       // The uniform-rail placement axis (ADR-515), carried through exactly like `render`/`tier`.
       ...(m.placement !== undefined ? { placement: m.placement } : {}),
+      // The per-module surface predicate (ADR-516 Phase B), carried through by reference.
+      ...(m.surfaces !== undefined ? { surfaces: m.surfaces } : {}),
     },
   },
   themeable: false,
@@ -191,6 +193,9 @@ const SPACE_EDITOR_APPS: App[] = [...SPACE_SURFACES]
         ...(s.priority !== undefined ? { priority: s.priority } : {}),
         // The uniform-rail placement axis (ADR-515), carried through exactly like `render`/`tier`.
         ...(s.placement !== undefined ? { placement: s.placement } : {}),
+        // The per-module surface predicate (ADR-516 Phase B), carried through by reference (unused by any
+        // Space surface this phase — present for symmetry).
+        ...(s.surfaces !== undefined ? { surfaces: s.surfaces } : {}),
       },
     },
     themeable: false,

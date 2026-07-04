@@ -266,6 +266,10 @@ export interface SpaceSurface {
    *  that paints on the public profile is INLINE; a back-office destination is a BOTTOM-BANK button).
    *  Danger is NEVER banked (destructive must not be a quick-link) — it stays inline + de-emphasized. */
   placement?: 'inline' | 'bank'
+  /** The per-module SURFACE predicate (ADR-516 Phase B): routes on which this surface's SUBJECT lives;
+   *  the rail mounts the inline editor only where the path matches. Absent = anywhere (today's behavior).
+   *  Unused by any Space surface this phase — present for symmetry with the personal-module predicate. */
+  surfaces?: readonly RegExp[]
 }
 
 /**

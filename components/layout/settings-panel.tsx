@@ -16,7 +16,8 @@ import { SURFACE_SUMMARIES } from '@/components/admin/modules/surface-summaries'
 import { SpaceIdentityStrip } from '@/components/admin/modules/space-identity-strip'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
-import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
+import { adminScopeFor, railArchetypeFor, type AdminScope } from '@/lib/layout/page-chrome'
+import type { HubSpec } from '@/components/layout/admin-bar/hub-rail'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
 import { mergeAppOverrides, effectiveMinRole } from '@/lib/apps/overrides'
@@ -182,6 +183,10 @@ export interface SettingsPanelModel {
    *  console, CRM, Insights, Billing, operator) MERGED with any `placement: 'bank'` surface, rendered as
    *  a button-grid pinned at the foot of the rail. Empty-safe; the body renders it only when non-empty. */
   bank: BankLink[]
+  /** The Hub spec (ADR-516 Phase B): non-null on the `hub` archetype (a settings index or a generic
+   *  content page). When set, the body renders the stats + quick-links Hub INSTEAD of inline editors (the
+   *  personal editor never doubles the page's own form). Null on builder/manage archetypes. */
+  hub: HubSpec | null
 }
 
 /** Resolve the settings model for the current route + viewer, shared by the desktop drawer and the
@@ -241,12 +246,28 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // available (ADMIN-RAIL.md Phase 4). Fail-closed: signed-out ⇒ role null ⇒ no personal apps.
   const authed = role != null
 
+  // ── ADR-516 Phase B: the rail ARCHETYPE (page shape), the second axis beside scope. ──
+  //   • 'hub'     — a settings index or a generic content page: render the stats + quick-links Hub, NO
+  //                 inline editors (fixes A/B/C — the profile editor no longer paints on /settings or a
+  //                 random page, and /settings/profile no longer doubles its own ProfileForm).
+  //   • 'builder' — the member's own profile / a Space profile root: inline editors DO mount.
+  //   • 'manage'  — an entity-detail scope: that entity's inline editors mount.
+  const archetype = railArchetypeFor(pathname)
+  const isHub = archetype === 'hub'
+
+  // The personal "You" set belongs ONLY to the member's own global/profile context (fix E): it must NOT
+  // be injected onto a non-global entity scope (a Space Customize rail, a circle/event page, …), where
+  // the rail is that entity's own management surface. `profile` counts as personal context — a member's
+  // own /people/<handle> is where their Profile/Spotlight/Layout editors belong.
+  const personalContext = scope?.kind === 'global' || scope?.kind === 'profile'
+
   // Personal "You" apps — global-scope, member-level; a member's OWN account settings. Resolved
   // INDEPENDENT of the page scope (they are the same on every page) and caps-blind via
   // SELECTION_VIEWER (each self-gates + re-checks server-side, exactly like the manage modules).
-  const personalGlobalApps = authed
-    ? appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').filter((a) => PERSONAL_MODULE_IDS.has(a.id))
-    : []
+  const personalGlobalApps =
+    authed && personalContext
+      ? appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').filter((a) => PERSONAL_MODULE_IDS.has(a.id))
+      : []
   // Honor operator App-overrides on the personal set too. Previously the personal apps skipped
   // applyOverrides entirely, and since they are the ONLY editable App set at global scope, the global
   // App-overrides manager (/admin/page-layout/apps, which defaults to scope=global) was a complete
@@ -280,7 +301,26 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   //    bottom bank button-grid instead. Nothing is tagged `bank` yet (later phases opt surfaces in), so
   //    `bankSurfaceApps` is empty and the body path is byte-for-byte as before — the change is non-breaking.
   const isBankPlacement = (a: App) => a.surfaces.editor?.placement === 'bank'
-  const inlineApps = apps.filter((a) => !isBankPlacement(a))
+  // ── ADR-516 Phase B: the per-module SURFACE predicate. An inline editor mounts only where its subject
+  //    lives. A module with no predicate keeps today's behavior (anywhere its scope matches) — so the
+  //    scope-gated management editors (mgmtApps) are UNTOUCHED; only the personal "You" set carries a
+  //    predicate, so a member's Profile/Spotlight/Layout mount on their profile page (+ /settings/profile)
+  //    and nowhere else. On the `hub` archetype NO inline editor mounts at all (the Hub replaces them). ──
+  const surfacesMatch = (a: App): boolean => {
+    const surfaces = a.surfaces.editor?.surfaces
+    if (!surfaces || surfaces.length === 0) return true
+    return surfaces.some((re) => re.test(pathname))
+  }
+  const inlineApps = apps.filter((a) => {
+    if (isBankPlacement(a)) return false
+    if (!surfacesMatch(a)) return false
+    // The Hub shows stats, never an inline PERSONAL editor. The surface predicate already drops the
+    // personal editors on most hub pages (they only match /people/* + /settings/profile); this also
+    // drops them on /settings/profile (fix C — the page body IS the ProfileForm there). Operator
+    // page-management (contentModule / the Page group below) is separate and survives on content hubs.
+    if (isHub && PERSONAL_MODULE_IDS.has(a.id)) return false
+    return true
+  })
   const bankSurfaceApps = apps.filter(isBankPlacement)
 
   // THE single render decision point (inline-first rail, ADR-514). Per app, branch on its editor
@@ -331,7 +371,11 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // The generic "Page" group is for operator CONTENT pages. An entity-detail page owns its identity
   // through its OWN settings block above, so the generic group is dropped on every entity scope.
   const entityScope = isEntityScope(pathname)
-  const showPageSettings = isOperator && !entityScope
+  // Fix D (ADR-516 Phase B): the Page group is nonsensical on a SETTINGS hub — the member settings tree
+  // (/settings*) and a Space's settings/manage console — so it is suppressed there. It still shows for
+  // operators on a real CONTENT hub (a browse index, /feed, …), which is also a `hub` archetype.
+  const isSettingsHub = isHub && (scope?.kind === 'space' || /^\/settings(?:$|\/)/.test(pathname))
+  const showPageSettings = isOperator && !entityScope && !isSettingsHub
 
   // Module-driven detail pages (circle / event) get the Layout / template chooser. De-operatorized
   // (ADR-515): gated on the ENTITY EDIT capability (the owner sees it), NOT the staff `isOperator` axis,
@@ -444,7 +488,20 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       }))
     : []
 
-  const hasContent = sections.length > 0 || !!pageGroup
+  // ── ADR-516 Phase B: the Hub spec. On the `hub` archetype the body renders a stats + quick-links Hub
+  //    (member or Space) instead of inline editors. Member Hub on a global-scope hub (settings tree or a
+  //    generic content page); Space Hub on a Space settings/manage console. Null on builder/manage, and
+  //    for a signed-out viewer (fail-safe). The Hub self-fetches its stats through read-gated getters. ──
+  const hub: HubSpec | null =
+    isHub && authed
+      ? scope?.kind === 'space' && spaceSlug
+        ? { kind: 'space', slug: spaceSlug }
+        : scope?.kind === 'global'
+          ? { kind: 'member' }
+          : null
+      : null
+
+  const hasContent = sections.length > 0 || !!pageGroup || !!hub
 
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
   const searchApps: SearchableApp[] = [
@@ -483,8 +540,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const bank: BankLink[] = bankForScope(scope, { isStaff: isOperator }, bankSurfaceLinks, pathSlug)
 
   if (!hasContent) {
-    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank }
+    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank, hub: null }
   }
 
-  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps, bank }
+  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps, bank, hub }
 }
