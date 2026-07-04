@@ -47,8 +47,10 @@ export function hrefForSurface(id: string, slug: string): string | null {
     case 'space.comms':
       return `${base}/settings/email`
     case 'space.insights':
-      // Analytics live alongside the QR codes surface today (no standalone insights sub-page yet).
-      return `${base}/settings/qr`
+      // Analytics live alongside the QR codes surface today (no standalone insights sub-page yet), but
+      // Insights gets its OWN href anchored to the Scans section (ADR-520 P3) so it does NOT dedupe against
+      // the QR codes bank button (they used to collapse to one) and both stay reachable.
+      return `${base}/settings/qr#scans`
     case 'space.billing':
       return `${base}/settings/billing`
     case 'space.danger':

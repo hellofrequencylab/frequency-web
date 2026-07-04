@@ -109,17 +109,19 @@ describe('entity registry · spaceSurfacesFor', () => {
   // A canUse predicate that denies every tool (a low role): only the null-gated surfaces render.
   const deny = (): boolean => false
 
-  // The ONE full spine every console type resolves under universal functions (slot order; declaration
-  // order within a slot). Autonomy is an inline control in the engage slot, right after CRM.
+  // The ONE full spine every console type resolves under universal functions, in registry SPINE_ORDER
+  // (basics, people, layout, engage, reach, insights, danger), declaration order within a slot. The Space
+  // menu regroup (ADR-520) moved CRM / autonomy / pipeline onto the `people` slot (Audience group), Email
+  // onto `reach` (with QR), and billing onto `insights` (with Insights).
   const FULL_SPINE = [
     'space.basics',
     'space.mode',
     'space.people',
-    'space.layout',
-    'space.offerings',
     'space.engage.crm',
     'space.autonomy',
     'space.pipeline',
+    'space.layout',
+    'space.offerings',
     'space.services',
     'space.reach',
     'space.comms',
@@ -190,12 +192,12 @@ describe('entity registry · spaceSurfacesFor', () => {
 
   // ADR-517 Phase F2: the editable pipeline gets an inline, crm-gated rail module (audit GAP 1). Lock its
   // row shape so the rail mounts it as an inline body control beside the CRM tools, for every type.
-  it('declares the space.pipeline rail module inline + crm-gated in the engage slot', () => {
+  it('declares the space.pipeline rail module inline + crm-gated in the people/Audience slot (ADR-520)', () => {
     const pipeline = SPACE_SURFACES.find((s) => s.id === 'space.pipeline')
     expect(pipeline).toBeTruthy()
     expect(pipeline!.render).toBe('inline')
     expect(pipeline!.requiredFunction).toBe('crm')
-    expect(pipeline!.slot).toBe('engage')
+    expect(pipeline!.slot).toBe('people')
     expect(pipeline!.tier).toBe('primary')
     expect(pipeline!.placement ?? 'inline').toBe('inline')
     expect(pipeline!.types).toContain('*')
@@ -205,18 +207,21 @@ describe('entity registry · spaceSurfacesFor', () => {
   // within-band `priority` so the standardized rail can group STANDARD (identity) → PRIMARY (importance)
   // → EXTRA (under "More"). These lock the exact assignment the owner directive specified.
   describe('three-tier rail tags', () => {
+    // ADR-520: the 7-group order via (tier, priority). Standard: Identity(10), Page(20) [Starter chip 30].
+    // Primary: Audience (Members 10, CRM 15, autonomy 20, pipeline 25), Offerings & money (Offerings 30,
+    // Services 40), Reach (QR 50, Email 55). Extra: Growth (Insights 20, Plan and usage 30), Danger (99).
     const TIERS: Record<string, { tier: RailTier; priority: number }> = {
       'space.basics': { tier: 'standard', priority: 10 },
       'space.layout': { tier: 'standard', priority: 20 },
       'space.mode': { tier: 'standard', priority: 30 },
-      'space.engage.crm': { tier: 'primary', priority: 10 },
-      'space.pipeline': { tier: 'primary', priority: 12 },
-      'space.autonomy': { tier: 'primary', priority: 15 },
-      'space.people': { tier: 'primary', priority: 20 },
+      'space.people': { tier: 'primary', priority: 10 },
+      'space.engage.crm': { tier: 'primary', priority: 15 },
+      'space.autonomy': { tier: 'primary', priority: 20 },
+      'space.pipeline': { tier: 'primary', priority: 25 },
       'space.offerings': { tier: 'primary', priority: 30 },
       'space.services': { tier: 'primary', priority: 40 },
-      'space.comms': { tier: 'primary', priority: 50 },
-      'space.reach': { tier: 'extra', priority: 10 },
+      'space.reach': { tier: 'primary', priority: 50 },
+      'space.comms': { tier: 'primary', priority: 55 },
       'space.insights': { tier: 'extra', priority: 20 },
       'space.billing': { tier: 'extra', priority: 30 },
       'space.danger': { tier: 'extra', priority: 99 },
@@ -229,10 +234,14 @@ describe('entity registry · spaceSurfacesFor', () => {
       }
     })
 
-    it('puts CRM at the head of the primary band (right under the standard block)', () => {
+    it('puts Members (Audience) at the head of the primary band, CRM right after (ADR-520)', () => {
+      const members = SPACE_SURFACES.find((s) => s.id === 'space.people')!
       const crm = SPACE_SURFACES.find((s) => s.id === 'space.engage.crm')!
+      expect(members.tier).toBe('primary')
+      expect(members.priority).toBe(10)
       expect(crm.tier).toBe('primary')
-      expect(crm.priority).toBe(10)
+      expect(crm.priority).toBe(15)
+      expect(members.priority!).toBeLessThan(crm.priority!)
     })
 
     it('keeps Danger in the extra band (obscured under "More", never expanded at top)', () => {
@@ -245,10 +254,12 @@ describe('entity registry · spaceSurfacesFor', () => {
   // DESTINATION becomes a BOTTOM-BANK button (placement: 'bank'). Danger is NEVER banked (a destructive
   // action must not be a quick-link) — it stays inline + de-emphasized. These lock that exact split.
   describe('uniform-rail placement tags', () => {
-    // The surfaces that leave the body for the bottom bank (back-office destinations).
-    const BANK = new Set(['space.engage.crm', 'space.comms', 'space.reach', 'space.insights', 'space.billing'])
-    // The surfaces that stay INLINE in the body (paint on the profile) — plus Danger, which is inline by
-    // rule even though it is a back-office action (destructive must never be a quick-link).
+    // The surfaces that leave the body for the bottom bank (back-office destinations). ADR-520: CRM is now
+    // an INLINE usage card (its metered usage must be visible in the rail body), so it is NO LONGER banked;
+    // the Reach group (Email · QR) and the Growth group (Insights · Plan and usage) stay banked.
+    const BANK = new Set(['space.comms', 'space.reach', 'space.insights', 'space.billing'])
+    // The surfaces that stay INLINE in the body (paint on the profile, or carry a visible usage card) —
+    // plus Danger, which is inline by rule even though it is a back-office action (never a quick-link).
     const INLINE = new Set([
       'space.basics',
       'space.mode',
@@ -256,16 +267,17 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.offerings',
       'space.services',
       'space.people',
+      'space.engage.crm',
       'space.autonomy',
       'space.pipeline',
       'space.danger',
     ])
 
-    it('banks CRM, Email, QR codes, Insights, and Plan and billing (the back-office destinations)', () => {
+    it('banks Email, QR codes, Insights, and Plan and usage (the back-office destinations, ADR-520)', () => {
       for (const s of SPACE_SURFACES) {
         if (BANK.has(s.id)) expect(s.placement, s.id).toBe('bank')
       }
-      // The full banked set is exactly those five.
+      // The full banked set is exactly those four (CRM left the bank for an inline usage card).
       expect(SPACE_SURFACES.filter((s) => s.placement === 'bank').map((s) => s.id).sort()).toEqual(
         [...BANK].sort(),
       )

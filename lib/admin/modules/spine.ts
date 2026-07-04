@@ -22,6 +22,8 @@ import {
   BarChart3,
   CreditCard,
   AlertTriangle,
+  HandCoins,
+  TrendingUp,
 } from 'lucide-react'
 import type { AdminSlot } from './registry'
 
@@ -71,6 +73,26 @@ export const SPINE_META: Record<AdminSlot, SpineMeta> = {
  *  spine. An alias of the 'account' slot meta, exported so the settings panel labels the section from
  *  one place. Voice canon: no em dashes. */
 export const PERSONAL_META: SpineMeta = SPINE_META.account
+
+// ── The Space menu regroup (ADR-520) — 7 member-facing groups over the 9-slot spine ─────────────────
+// The Space rail is re-grouped from the engineering 9-slot spine into 7 member-facing GROUPS. Rather than
+// invent a parallel grouping key, each group re-purposes ONE distinct spine slot for the Space scope, and
+// the section header is relabelled from this per-scope map (the rail applies it ONLY when the scope is a
+// Space, so every other scope's SPINE_META header is untouched). The slot→group mapping:
+//   Identity → basics · Page → layout · Audience → people · Offerings & money → engage ·
+//   Reach → reach · Growth → insights · Danger → danger.
+// The Starter chip (space.mode) is pulled OUT of the section list and pinned under Identity as a chip, so
+// it is not a group here. Labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes; "&" is allowed, as
+// in "Place & Time"). Owner-approved group names.
+export const SPACE_GROUP_META: Partial<Record<AdminSlot, SpineMeta>> = {
+  basics: { label: 'Identity', Icon: Info },
+  layout: { label: 'Page', Icon: LayoutGrid },
+  people: { label: 'Audience', Icon: Users },
+  engage: { label: 'Offerings & money', Icon: HandCoins },
+  reach: { label: 'Reach', Icon: Share2 },
+  insights: { label: 'Growth', Icon: TrendingUp },
+  danger: { label: 'Danger', Icon: AlertTriangle },
+}
 
 /** The minimal App shape the spine helpers read — `id` + which spine `category` it sits in. */
 interface SpineApp {

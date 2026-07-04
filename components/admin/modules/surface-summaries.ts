@@ -19,11 +19,17 @@ import {
 // nouns, no em dashes (docs/CONTENT-VOICE.md §10).
 
 export interface SurfaceSummaryEntry {
-  /** The read-gated getter — returns `{ count }` for a manager who can use the tool, else null (fail-safe
-   *  → the card degrades to a plain link-row). */
-  getter: (slug: string) => Promise<{ count: number } | null>
+  /** The read-gated getter — returns `{ count }` (plus, for a metered surface, the Space's current plan
+   *  `tier` for the usage meter) for a manager who can use the tool, else null (fail-safe → the card
+   *  degrades to a plain link-row). */
+  getter: (slug: string) => Promise<{ count: number; tier?: string } | null>
   /** The glanceable stat copy for a resolved count (correct singular/plural, no em dashes). */
   format: (n: { count: number }) => string
+  /** OPTIONAL feature-meter key (ADR-520 P2, lib/pricing/feature-meters.ts). When set AND the getter
+   *  returns a `tier`, the card renders a thin inline usage line (count against the tier's allowance) with
+   *  a quiet fill bar and an "Upgrade" nudge once usage crosses USAGE_UPGRADE_THRESHOLD. Informs, never
+   *  blocks. The count is the live proxy for the metered dimension (e.g. CRM deals for contacts). */
+  meterKey?: string
 }
 
 export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
@@ -34,6 +40,9 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
   'space.engage.crm': {
     getter: getSpaceCrmSummary,
     format: (n) => (n.count === 1 ? '1 in your pipeline' : `${n.count} in your pipeline`),
+    // The CRM contacts meter (ADR-519). CRM stays an inline card in the Audience group (ADR-520) so this
+    // usage line is visible in the rail body. The pipeline count is the live proxy for contacts.
+    meterKey: 'space_crm',
   },
   'space.services': {
     getter: getSpaceServicesSummary,
@@ -42,5 +51,8 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
   'space.comms': {
     getter: getSpaceCampaignsSummary,
     format: (n) => (n.count === 1 ? '1 campaign' : `${n.count} campaigns`),
+    // The Email sends meter (ADR-519). Email is banked in the Reach group (ADR-520), so this line shows
+    // only if Email is ever surfaced as a body card; its ladder also lives in the Plan and usage hub.
+    meterKey: 'space_email',
   },
 }

@@ -99,7 +99,7 @@ export default async function SpaceQrPage({
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
 
       <div className="space-y-10">
-        <section>
+        <section id="scans" className="scroll-mt-20">
           <SectionHeader title="Scans" />
           <Suspense fallback={<StatsSkeleton />}>
             <SpaceScanStats spaceId={space.id} />

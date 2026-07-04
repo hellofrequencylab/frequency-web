@@ -11036,3 +11036,56 @@ Rejected the direct-balance approach (the pre-v2 trigger incremented `current_se
 **Optional usage readout.** `FeatureMeterRange` accepts a `usage` prop and renders "X of N used" via the pure `allowanceReadout`. It is not wired to a live count on the CRM upsell surfaces because those render BEFORE any CRM data is fetched (the nudge shows when a space has no CRM data yet), so no cheap count is in hand there. The capability is built and tested; wire a count in where one is already fetched (e.g. the working CRM board's deal/contact counts) if a live readout is wanted.
 
 **Consequences.** The freemium ladder now reads as allowances, not unlocks, via one config + one component; the lock surfaces are usage nudges. `feature-tiers.ts` stays as the price/tier source and still backs non-metered on/off capabilities through the fallback. Gate green: `tsc --noEmit`, eslint (touched files), the pricing/spaces/components vitest (1014 pass in scope; 2 new test files, 24 new tests), check:canon, check:authz. No gate weakened — the selector is display + navigation only, the manager-only checks reuse `caps.canManageMembers`, no write path was added, and `withinAllowance` cannot block while billing is off.
+
+## ADR-520: The Space menu regroup — 7 member-facing groups over the 9-slot spine, Mode demoted to a Starter chip, usage the visible monetization surface, no lock path for a Space
+
+**Status:** Accepted (2026-07-04). Owner item 5. Reorganizes the Space admin rail now that ADR-517 made every Space function universal and ADR-519 made monetization metered. IA/display only — no gate weakened, no scope but `space` touched, no migration. Builds on ADR-514/515/516 (the standardized rail) + ADR-519 (usage meters).
+
+**Context.** The Space rail rendered the engineering 9-slot spine (Basics · Place · People · Layout · Engage · Reach · Comms · Safety · Insights · Billing · Danger) as section headers. Post-ADR-517 nothing is type-gated and nothing is locked for a Space; post-ADR-519 the value story is "use more of a tool", not "unlock a tool". The spine headers no longer match how a member thinks about running a Space, and the rail still carried a lock/unlock band (empty, but present) and buried usage.
+
+**Decision — the 7 groups (approach: per-scope slot→label relabel, NOT a new grouping key).** Each member-facing GROUP re-purposes ONE distinct spine slot for the Space scope; the rail relabels that slot's section header from `SPACE_GROUP_META` (lib/admin/modules/spine.ts) **only when the scope is a Space**, so every other scope's SPINE_META header is untouched. This reuses the whole existing tier/section/search plumbing (which keys on `slot`) with zero new grouping axis. Group order in the rail is driven by (tier, priority), not spine order, so the 7 groups render exactly:
+
+| Group (rail header) | Spine slot | Tier | Surfaces | Placement |
+| --- | --- | --- | --- | --- |
+| **Identity** | basics | standard | Basics (+ identity strip) | inline |
+| **Page** | layout | standard | Page builder | inline |
+| **Audience** | people | primary | Members (card), CRM (usage card), Vera autonomy, Pipeline | inline (CRM also in base bank) |
+| **Offerings & money** | engage | primary | Offerings, Services | inline |
+| **Reach** | reach | primary | QR codes, Email | bank (group is bank-only) |
+| **Growth** | insights | extra | Insights, Plan and usage | bank (group is bank-only) |
+| **Danger** | danger | extra | Danger zone | inline, under "More" |
+
+**Before → after surface map** (SPACE_SURFACES row edits, lib/admin/entities/registry.ts):
+
+| Surface | before (slot · tier · priority · placement) | after |
+| --- | --- | --- |
+| space.basics | basics · standard · 10 · inline | unchanged |
+| space.mode | basics · standard · 30 · inline | **pulled to Starter chip** (excluded from sections) |
+| space.layout (Page) | layout · standard · 20 · inline | unchanged |
+| space.people (Members) | people · primary · 20 · inline | people · primary · **10** |
+| space.engage.crm (CRM) | engage · primary · 10 · **bank** | **people** · primary · **15** · **inline** |
+| space.autonomy | engage · primary · 15 · inline | **people** · primary · **20** |
+| space.pipeline | engage · primary · 12 · inline | **people** · primary · **25** |
+| space.offerings | engage · primary · 30 · inline | unchanged |
+| space.services | engage · primary · 40 · inline | unchanged |
+| space.reach (QR) | reach · **extra · 10** · bank | reach · **primary · 50** · bank |
+| space.comms (Email) | **comms** · primary · 50 · bank | **reach** · primary · **55** · bank |
+| space.insights | insights · extra · 20 · bank | unchanged (own href now, below) |
+| space.billing → **"Plan and usage"** | **billing** · extra · 30 · bank | **insights** · extra · 30 · bank, relabeled |
+| space.danger | danger · extra · 99 · inline | unchanged |
+
+**Starter chip.** `space.mode` is pulled OUT of the section list and rendered as a compact "Starter: {preset}" chip pinned just under the Identity strip (`components/admin/modules/space-starter-chip.tsx`, self-fetching via the read-gated `getSpaceStarterChip`, fail-safe to nothing for a non-manager), with a "Change" affordance to `/manage/mode`. On-canon reframe: a Starter arranges your page and suggests a pipeline; every tool stays available; change any time. It is still `space.mode` — just presented as a chip, never a settings section.
+
+**Retired: the Space lock path.** Under ADR-517 nothing is locked for a Space and the model is metered usage, so a Space surface must never render as a lock. `useSettingsPanel` now computes `lockedApps` only when `!isSpace` (the path stays for the personal / core-entity axis). It was already empty over the live catalog (Space apps are `{on:'spaceType'}`-scoped, which `lockedAppsForScope` never matches); this makes the "no lock on a Space" rule explicit.
+
+**Usage the visible monetization surface (ADR-519 reuse).** (a) **Inline meter on the CRM card.** CRM is kept an INLINE usage card in Audience (the deviation from a literal "CRM → bank": usage must be visible in the body per the directive; it still appears as a base-bank quick-link). `SurfaceSummaryCard` gained an optional `meterKey`: when set and the getter returns the Space `tier`, the card shows a thin `count / allowance unit` line with a quiet fill bar and a subtle "Upgrade" nudge once usage crosses `USAGE_UPGRADE_THRESHOLD = 0.8` (a single constant in feature-meters.ts, **flagged for owner tuning**). The live count is the cheap proxy for the metered dimension (CRM deals ≈ contacts). `space_crm` is wired to CRM, `space_email` to Email (Email is banked, so its card only shows if surfaced; its ladder lives in the hub). (b) **The "Plan and usage" hub (P3).** `space.billing` is reframed to "Plan and usage": the billing page now mounts `FeatureMeterRange` for EVERY plan-axis metered feature under a "Usage" section — the single "where am I on the ladder" answer, current plan highlighted, nothing charged/blocked. (c) **Insights / QR href split (P3).** `hrefForSurface('space.insights')` now returns `/settings/qr#scans` (a `#scans` anchor added to the QR page's Scans section) so Insights no longer dedupes into the QR codes bank button — both stay reachable.
+
+**P4 (page-aware foregrounding) — DEFERRED, documented.** Leading a Space sub-page's rail with that page's group requires threading the Space `type` onto path-derived sub-page scopes (today the Space management rail resolves only from the profile-root "Customize" trigger, which carries the typed detail; a path-derived Space scope has no type, so `appsForScope` returns [] and no Space rail resolves on `/settings/*`). That is deeper plumbing than P1-P3 warranted, and the strategy allowed shipping P1-P3 and leaving P4 as a follow-up. Follow-up: carry the type on sub-page scopes + a sub-page→group map feeding `contextualEntrySlot`/`railArchetypeFor`.
+
+**Other scopes unchanged.** SPINE_META is untouched (only the Space-scoped `SPACE_GROUP_META` overlay was added); `SPINE_ORDER` is untouched; only SPACE_SURFACES rows changed. The core `ENTITY_SURFACES`/`ADMIN_MODULES` and every non-space rail (member/circle/event/hub/nexus/practice/channel/journey) render identically. The `/manage` console groups by surface id (its own CONSOLE_GROUP_FOR), so it is unaffected by the slot remaps.
+
+**Authz.** Unchanged — IA/display only. Every rail getter stays owner-gated (`resolveSpaceManageAccess` + the same per-Space function its sub-page re-checks); the Starter chip getter re-gates on manage access; the CRM card getter re-gates manage + `crm`; no write path added; a11y preserved (semantic tokens, radiogroup meters, fill bars `aria-hidden`).
+
+**Migration?** NONE.
+
+**Consequences.** The Space rail reads as 7 member-facing groups with usage visible where it matters; Mode is a one-line Starter chip; a Space never shows a lock. Gate green: `tsc --noEmit`, eslint (touched files), the lib/admin · components/admin · components/layout · components/spaces · app/(main)/spaces · lib/pricing vitest (all pass; registry/rail-bank/surface-summaries tests updated for the new grouping, 1 new starter-chip surface + 1 meter test added), check:canon, check:authz. No gate weakened.

@@ -20,6 +20,9 @@ import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SpacePlanPicker } from './plan-picker'
 import { SpaceLoadoutPicker } from './loadout-picker'
 import { WhitelabelRequest } from './whitelabel-request'
+import { SectionHeader } from '@/components/ui/section-header'
+import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
+import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 
 // SPACE PLAN AND BILLING (Pricing P3, ADR-363/364). The owner-facing space plan ladder. It shows the
 // current plan, the four paid plans with their OPERATOR-SET prices (getPricingValues(), never
@@ -35,8 +38,12 @@ import { WhitelabelRequest } from './whitelabel-request'
 // re-gate on canManage server-side. No em dashes (CONTENT-VOICE §10).
 
 export const metadata = {
-  title: 'Plan and billing',
+  title: 'Plan and usage',
 }
+
+// The plan-axis usage meters (ADR-519 / ADR-520 P3): every metered Space feature, so the Plan and usage
+// hub is the single "where am I on the ladder" answer. Personal (tier-axis) meters are excluded.
+const PLAN_USAGE_METERS = Object.values(FEATURE_METERS).filter((m) => m.axis === 'plan')
 
 export default async function SpaceBillingPage({
   params,
@@ -126,8 +133,8 @@ export default async function SpaceBillingPage({
   return (
     <FocusTemplate
       eyebrow={brandName}
-      title="Plan and billing"
-      description="Pick the plan that fits what you run here. Each plan unlocks more tools for your space."
+      title="Plan and usage"
+      description="See your current plan and how much of each tool you are using. Every tool is available on every plan. You pay to use more as you grow, never to unlock."
       width="wide"
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
@@ -137,6 +144,24 @@ export default async function SpaceBillingPage({
           <p className="text-xs font-semibold uppercase tracking-widest text-subtle">Current plan</p>
           <p className="mt-1 text-lg font-bold text-text">{SPACE_PLAN_LABEL[currentPlan]}</p>
         </div>
+
+        {/* USAGE METERS (ADR-519 / ADR-520 P3): the ladder for every metered tool in one place, the
+            current plan highlighted. Nothing charges or blocks (billing is on hold); the meters are
+            informational. This is the single "where am I on the ladder" answer. */}
+        <section>
+          <SectionHeader title="Usage" />
+          <div className="space-y-4">
+            {PLAN_USAGE_METERS.map((ladder) => (
+              <FeatureMeterRange
+                key={ladder.featureKey}
+                ladder={ladder}
+                currentTier={currentPlan}
+                upgradeHref={`/spaces/${space.slug}/settings/billing`}
+                live={billingIsLive}
+              />
+            ))}
+          </div>
+        </section>
 
         {/* The seat counter (Phase D, ADR-465): X of Y operator seats used. A preview while billing is
             OFF; reflects the real allowance + enforcement when live. The "add a seat" control is the
