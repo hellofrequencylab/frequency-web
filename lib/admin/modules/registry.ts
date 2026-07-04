@@ -480,6 +480,82 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'extra',
     priority: 10,
   },
+  // ── Journey rail (ADR-515 Phase 6, the net-new Journey scope) ────────────────────────────────────
+  // A Journey's core editable functions, surfaced in the standardized rail exactly like the other
+  // entities. All gated journey.editSettings (author OR staff OR parent-scope manager — see
+  // capabilities.ts); each wrapped module self-fetches getJourneyRailData(slug), which re-gates and
+  // returns null otherwise, so every row renders nothing for a non-owner (fail-safe). Settings mounts
+  // the self-contained JourneySettings editor INLINE; the block-tree Builder + Advanced/page_config is
+  // DATA-HEAVY, so Layout is a minimal affordance that links out to the full-page builder (the hub/nexus
+  // pattern), NOT a forced inline picker. Export is a light inline control; Danger is inline (NEVER banked).
+  {
+    id: 'journey.settings',
+    label: 'Journey settings',
+    desc: 'Identity, delivery, rewards, discovery, how the Circle gathers, and publishing. Edited in place.',
+    Icon: Sparkles,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'basics',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 10,
+    tier: 'standard',
+    priority: 10,
+  },
+  // Layout (the 'layout' spine cell). Every rail carries a layout affordance (the owner directive), but a
+  // Journey's arrangeable structure is the Phase → Module → Lesson block tree + the page_config, which is
+  // DATA-HEAVY (blocks, practices, pillars, Vera review). Mounting it inline with fabricated props would be
+  // a broken picker, so — exactly like hub.layout / nexus.layout — this is a minimal, honest affordance:
+  // it links to the full-page builder where the tree + advanced layout live.
+  {
+    id: 'journey.builder',
+    label: 'Builder and layout',
+    desc: 'Arrange the Phase, Module, and Lesson structure and the discovery layout in the full-page builder.',
+    Icon: LayoutGrid,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'layout',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 20,
+    tier: 'primary',
+    priority: 50,
+  },
+  // Export (the 'reach' spine cell). A light, self-contained control (JourneyExport takes only the slug):
+  // saves a portable copy of the Journey to travel to another Space or a Hook cohort. Inline; not banked
+  // (it is a mutating client action with no navigable route, not a quick-link destination).
+  {
+    id: 'journey.export',
+    label: 'Export',
+    desc: 'Save a portable copy of this Journey to import into another Space.',
+    Icon: Archive,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'reach',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 30,
+    tier: 'extra',
+    priority: 10,
+  },
+  // Danger zone (the 'danger' spine cell). Delete the Journey and everyone's progress. INLINE and
+  // de-emphasized — a destructive action is NEVER a bank quick-link (the bank drops any Danger href by
+  // construction; keeping it inline is the belt-and-braces).
+  {
+    id: 'journey.danger',
+    label: 'Danger zone',
+    desc: 'Delete this Journey and all member progress on it. This cannot be undone.',
+    Icon: Archive,
+    scopes: ['journey'],
+    requiredCapability: 'journey.editSettings',
+    slot: 'danger',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 40,
+    tier: 'extra',
+    priority: 99,
+  },
+
   // The profile "Person settings" module was retired (ADR-133/PX.5): editing a
   // profile's name/handle/bio now lives in the dedicated Edit Profile flow
   // (/settings/profile for the owner; the full member manager for moderators), so

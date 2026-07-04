@@ -61,7 +61,7 @@ NEW axis, distinct from ADR-138's `surface: 'inline' | 'sidebar'` tune-vs-manage
 single decision point in `settings-panel`'s `nodesForAppIds`:
 
 - **`inline`** — mount the App's editor component in the bar (`MODULE_COMPONENTS[id]`). Every **core
-  entity** module (`circle · hub · nexus · event · practice · channel`) is `inline`: each entity's module
+  entity** module (`circle · hub · nexus · event · practice · channel · journey`) is `inline`: each entity's module
   IS its dedicated editor (the `/manage` + `/settings` consoles merely re-compose the SAME module
   components), and where a deeper feature-workflow page exists (e.g. the event guest dashboard) the inline
   module already deep-links to it — so keeping them inline satisfies "everything in view" without a
@@ -253,6 +253,7 @@ quick-links MERGED with any `placement: 'bank'` surface links:
 | **personal / global / profile** | All settings · Billing; + Operator · CRM · Insights when `viewer.isStaff` |
 | **event / hub / nexus / circle / practice** | the `/{section}/<slug>/manage` console |
 | **channel** | `/admin/channels` · `/admin/moderation` when `viewer.isStaff` (operator-curated, no per-channel console); `[]` otherwise |
+| **journey** | **Open builder** → `/journeys/<slug>/edit` (a Journey's console IS its full-page builder; slug-keyed, §5.11) |
 | **unknown / null** | `[]` (empty-safe) |
 
 Fail-safe: de-dupes by href, **never admits a Danger / destructive href**, returns `[]` for a null/unknown
@@ -318,8 +319,12 @@ keeps it.
    owner-visible.
 5. **The hub / nexus / practice / channel rails (Phase 5, shipped)** — §5.10: practice gets the real
    owner-visible LayoutEditor; hub + nexus get a minimal Layout affordance (their pages are hand-built);
-   channel gets a staff in-place Edit trigger + an operator `/admin` bank. Journey is Phase 6.
-6. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
+   channel gets a staff in-place Edit trigger + an operator `/admin` bank.
+6. **The net-new Journey rail (Phase 6, shipped — THE FINAL PHASE)** — §5.11: Journey gains its first
+   standardized rail (a new `journey.editSettings` capability + `journey` scope): Settings inline, a
+   link-out Builder/Layout affordance (the block tree is data-heavy), Export inline, Danger inline; the bank
+   is the full-page builder.
+7. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
 
 ### 5.8 The Space rail (Phase 3, shipped)
 
@@ -433,6 +438,47 @@ so a staff viewer reaches the single Channel settings module — plus a new staf
 `/admin/moderation` (channels are governed from the `/admin` hub, not a per-entity console); a non-staff
 viewer never reaches the rail, so the bank is `[]`. Channel detail is not `<PageModules>`-driven, so it gets
 NO layout chooser — a genuine exception, not a forced broken picker.
+
+### 5.11 The Journey rail (Phase 6, shipped) — THE FINAL PHASE
+
+Same owner directive as §5.9/§5.10. Journey was the one core editable entity with no standardized rail (only
+the global `journey.create` gate existed). Phase 6 adds the net-new `journey` scope + a `journey.editSettings`
+capability, then wires the rail exactly like the other entities.
+
+| Scope | Rail body (inline) | Layout affordance | Bank |
+|---|---|---|---|
+| **journey** | **Settings** (`JourneySettings`, self-contained → inline) · Export (`JourneyExport`) · **Danger** (`JourneyDangerZone`, inline, never banked) | **Builder and layout** (`journey.builder`) — a minimal link-out to the full-page builder (the block tree is data-heavy) | **Open builder** → `/journeys/<slug>/edit` |
+
+**Capability + scope.** `journey.editSettings` joins the `Capability` union and `{ kind: 'journey'; journeyId;
+authorId; viewerManagesScope? }` joins `Scope` (`lib/core/capabilities.ts`); the resolver's `case 'journey'`
+grants it to the author (`journey_plans.author_id`) OR staff OR a parent-scope manager, mirroring the
+event/practice cases. `getJourneyCapabilities(journeyId)` (`lib/core/load-capabilities.ts`, mirrors
+`getPracticeCapabilities`) resolves it live and is wired into `loadCapabilitiesForScope`. `adminScopeFor` gains
+`/^\/journeys\/([^/]+)/` → `journey` (2nd segment = slug, like circles); the bare `/journeys` index falls
+through to `global`, and `/journeys/mine` · `/journeys/new` resolve to a journey scope whose getters fail-safe
+to null. The `/journeys/<slug>/edit` mini-rail (immersive builder starts collapsed) is orthogonal, untouched.
+
+**The 4 registry rows** (all gated `journey.editSettings`, all `render: 'inline'`, `placement` unset) each
+mount a thin wrapper (`components/admin/modules/journey-{settings,builder,export,danger}-module.tsx`) that
+self-fetches ONE read-gated getter, `getJourneyRailData(slug)` (`app/(main)/journeys/admin-actions.ts`), which
+re-resolves `journey.editSettings` and returns null otherwise — so every row renders nothing for a non-owner
+(fail-safe); the underlying autosave/delete/export actions each re-check ownership server-side (`assertOwner`),
+so no write gate is weakened.
+
+**Deviation, stated (the data-heavy exception).** The Journey Builder + Advanced/`page_config` are data-heavy
+(blocks · practices · pillars · Vera review, built for the full-page edit route), so `journey.builder` LINKS
+OUT to `/journeys/<slug>/edit` rather than mounting a real `LayoutEditor` inline — the allowed fallback for a
+non-`<PageModules>`-driven surface (identical in spirit to hub/nexus's minimal Layout in §5.10), preferred over
+a fabricated broken picker. So `settings-panel.tsx`'s `layoutBlock` is NOT extended to `'journey'`. By contrast
+`JourneySettings` IS self-contained given its props, so it mounts truly inline — the "lightweight Settings
+inline" the directive prefers. Export stays inline (not banked): the bank is pure navigation and export is a
+mutating client action with no navigable route.
+
+**Trigger.** A published-journey author is redirected to the LEARN page (`/journeys/<slug>/page.tsx`), so
+`app/(main)/journeys/[slug]/learn/page.tsx` mounts an `OpenAdminBarButton scope={{ kind: 'journey', id:
+plan.id }}` (DB id on `scope.id`; the bank resolves the slug from the path) gated on `getJourneyCapabilities`,
+so an author OR an operator reaches the rail in place — mirroring the channel page. No new migration (reuses
+`journey_plans.author_id`).
 
 ---
 

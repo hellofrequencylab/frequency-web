@@ -253,6 +253,13 @@ const ADMIN_SCOPE_PREFIXES: readonly { prefix: RegExp; kind: ScopeKind }[] = [
   { prefix: /^\/events\/([^/]+)/, kind: 'event' },
   { prefix: /^\/practices\/([^/]+)/, kind: 'practice' },
   { prefix: /^\/channels\/([^/]+)/, kind: 'channel' },
+  // A Journey (ADR-515 Phase 6). The 2nd segment is the slug (as for circles), so /journeys/<slug>,
+  // /journeys/<slug>/learn, and /journeys/<slug>/edit all resolve to the journey scope. The bare index
+  // (/journeys) has no 2nd segment and falls through to `global`; the sibling list routes (/journeys/mine,
+  // /journeys/new) resolve to a journey scope whose module getters fail-safe to null (no plan by that
+  // slug), so they show no rail chrome. The /journeys/<slug>/edit MINI-RAIL behavior is orthogonal (a
+  // separate MINI_RAIL_PATTERNS concern below) and is untouched.
+  { prefix: /^\/journeys\/([^/]+)/, kind: 'journey' },
   { prefix: /^\/people\/([^/]+)/, kind: 'profile' },
   // A Space profile (/spaces/<slug> + tabs, and the owner sub-surfaces). id = the URL slug (NOT the
   // DB id); the Space "Customize" trigger passes the DB id + type on the AdminBar detail instead. Last

@@ -59,7 +59,7 @@ const SELECTION_VIEWER: AppViewer = {
 // modules, so the generic operator "Page" group is dropped there (see useSettingsPanel). `space` joins
 // them (ENTITY-MANAGEMENT / PR C): a Space profile owns its identity through its own 9-spine surfaces.
 const ENTITY_KINDS: ReadonlySet<string> = new Set([
-  'circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'profile', 'space',
+  'circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'journey', 'profile', 'space',
 ])
 
 /** Extract the Space slug from a `/spaces/<slug>/...` path. The rail's Space link-rows deep-link into

@@ -164,6 +164,21 @@ describe('bankForScope', () => {
     expect(staff.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
   })
 
+  it('journey → the full-page builder, slug-keyed, no danger href (ADR-515 Phase 6)', () => {
+    // A Journey's console IS its builder (/journeys/<slug>/edit), so the bank links there. Slug-keyed:
+    // the console link uses the 4th-arg URL slug over scope.id (the slug≠id detail contract).
+    const dbId = 'abababab-cdcd-efef-0000-111122223333'
+    const slug = 'sleep-reset'
+    const bank = bankForScope({ kind: 'journey', id: dbId }, {}, [], slug)
+    expect(hrefs(bank)).toEqual([`/journeys/${slug}/edit`])
+    expect(bank[0].label).toBe('Open builder')
+    expect(hrefs(bank).some((x) => x.includes(dbId))).toBe(false)
+    // Falls back to scope.id when no path slug is supplied.
+    expect(hrefs(bankForScope({ kind: 'journey', id: 'j1' }))).toEqual(['/journeys/j1/edit'])
+    // Navigation only — the builder is not a destructive href.
+    expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
+  })
+
   it('null / unknown scope → [] gracefully', () => {
     expect(bankForScope(null)).toEqual([])
   })

@@ -26,6 +26,10 @@ import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
 import { ChannelInsightsModule } from './channel-insights-module'
+import { JourneySettingsModule } from './journey-settings-module'
+import { JourneyBuilderModule } from './journey-builder-module'
+import { JourneyExportModule } from './journey-export-module'
+import { JourneyDangerModule } from './journey-danger-module'
 import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceModeModule } from './space-mode-module'
 import { SpacePageModule } from './space-page-module'
@@ -67,6 +71,14 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
   'channel.insights': ChannelInsightsModule,
+  // Journey rail (ADR-515 Phase 6). Settings mounts the self-contained JourneySettings editor inline;
+  // Builder/Layout links out to the full-page builder (the block tree is data-heavy — the hub/nexus
+  // pattern); Export is a light inline control; Danger is inline (never banked). Each self-fetches its
+  // read-gated bundle (getJourneyRailData) and renders nothing for a non-owner.
+  'journey.settings': JourneySettingsModule,
+  'journey.builder': JourneyBuilderModule,
+  'journey.export': JourneyExportModule,
+  'journey.danger': JourneyDangerModule,
   // Space inline config surfaces (inline-first rail, ADR-514). These are the SPACE_SURFACES whose
   // `render` is 'inline' — Basics / Mode / Page — each a thin wrapper that self-fetches its read-gated
   // data and mounts the existing editor in the flattened bar. The Space's feature workflows (Members,

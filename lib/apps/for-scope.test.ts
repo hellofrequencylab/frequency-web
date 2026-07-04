@@ -21,7 +21,7 @@ const SELECTION_VIEWER: AppViewer = {
   ),
 }
 
-const ENTITY_KINDS: ScopeKind[] = ['circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'profile']
+const ENTITY_KINDS: ScopeKind[] = ['circle', 'hub', 'nexus', 'event', 'practice', 'channel', 'journey', 'profile']
 
 describe('appsForScope — editor apps preserve modulesForScopeKind behavior (LP4 B1)', () => {
   it('resolves the SAME editor-module id set AND order as modulesForScopeKind(kind, "sidebar")', () => {

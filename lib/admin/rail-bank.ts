@@ -11,7 +11,7 @@
 // never a place to delete from).
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone, Hash, ShieldAlert } from 'lucide-react'
+import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone, Hash, ShieldAlert, PencilRuler } from 'lucide-react'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 
@@ -36,6 +36,7 @@ const SECTION_FOR_KIND: Partial<Record<string, string>> = {
   hub: 'hubs',
   nexus: 'nexuses',
   practice: 'practices',
+  journey: 'journeys',
 }
 
 /** Whether an href points at a destructive surface — the bank never admits one (fail-safe). */
@@ -123,6 +124,15 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
       const section = SECTION_FOR_KIND[scope.kind]
       if (!urlSlug || !section) return []
       return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${urlSlug}/manage` }]
+    }
+    // A JOURNEY (ADR-515 Phase 6): a Journey's "console" IS its full-page builder — the immersive
+    // Phase → Module → Lesson structure editor at /journeys/<slug>/edit (identity + delivery + publish
+    // settings live alongside the block tree there). The block tree is data-heavy, so instead of a thin
+    // per-entity /manage console the bank links straight into the builder. Slug-keyed (console/edit routes
+    // are slug-keyed; the OpenAdminBarButton carries the DB id on scope.id, so we use slug ?? scope.id).
+    case 'journey': {
+      if (!urlSlug) return []
+      return [{ label: 'Open builder', icon: PencilRuler, href: `/journeys/${urlSlug}/edit` }]
     }
     // A CHANNEL (ADR-515 Phase 5): topical channels are OPERATOR-CURATED (no per-channel owner — the
     // settings module gates on staff), so unlike the owner-console entities the channel has no per-entity

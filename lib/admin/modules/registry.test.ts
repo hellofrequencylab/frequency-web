@@ -87,6 +87,28 @@ describe('admin module registry', () => {
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
   })
 
+  it('surfaces the journey rail only on a journey scope, only with journey.editSettings (ADR-515 Phase 6)', () => {
+    const journeyScope: Scope = { kind: 'journey', journeyId: 'j1', authorId: 'a1' }
+    const caps = new Set<Capability>(['journey.editSettings'])
+    // Settings (basics), Builder/Layout (layout), Export (reach), Danger (danger) — in `order`.
+    expect(modulesFor(journeyScope, caps).map((m) => m.id)).toEqual([
+      'journey.settings',
+      'journey.builder',
+      'journey.export',
+      'journey.danger',
+    ])
+    expect(modulesFor(journeyScope, new Set<Capability>())).toHaveLength(0)
+    // No leakage across kinds.
+    expect(modulesFor(circleScope, caps)).toHaveLength(0)
+    expect(modulesFor(journeyScope, new Set<Capability>(['circle.editSettings']))).toHaveLength(0)
+    // Every journey row renders INLINE in the body (no bank tag) and re-uses the one journey capability.
+    const journeyMods = ADMIN_MODULES.filter((m) => m.scopes.includes('journey'))
+    expect(journeyMods.every((m) => m.render === 'inline' && m.placement !== 'bank')).toBe(true)
+    expect(journeyMods.every((m) => m.requiredCapability === 'journey.editSettings')).toBe(true)
+    // Danger is present and sits in the danger slot (never banked).
+    expect(moduleById('journey.danger')?.slot).toBe('danger')
+  })
+
   it('returns modules ordered by their `order` field', () => {
     const caps = new Set<Capability>(ADMIN_MODULES.map((m) => m.requiredCapability))
     const circleMods = modulesFor(circleScope, caps)
@@ -221,6 +243,13 @@ describe('admin module registry', () => {
     expect(modulesForScopeKind('channel', 'sidebar').map((m) => m.id)).toEqual([
       'channel.settings',
       'channel.insights',
+    ])
+    // Journey carries its ADR-515 Phase 6 rail: Settings, Builder/Layout, Export, Danger, in `order`.
+    expect(modulesForScopeKind('journey', 'sidebar').map((m) => m.id)).toEqual([
+      'journey.settings',
+      'journey.builder',
+      'journey.export',
+      'journey.danger',
     ])
     // person.settings was retired (covered by Edit Profile), so profile has no sidebar module.
     expect(modulesForScopeKind('profile', 'sidebar').map((m) => m.id)).toEqual([])
