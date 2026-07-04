@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { moduleIdsForScope, moduleMeta, ROUTE_MODULE_IDS } from './modules'
 import { COMPONENT_IDS } from './registry'
+import { MODULE_ROUTES } from './module-routes'
 
 // The global community set — the default everywhere ('*'). (The LAYOUT_MODULE_IDS alias was
 // removed in Phase 0.5a; '*' is the single source of the default.)
@@ -141,6 +142,42 @@ describe('moduleIdsForScope', () => {
     expect(moduleIdsForScope('/crew/*')).toEqual(GLOBAL)
   })
 
+  it('the Operations dashboard (/admin/operations) resolves its blocks, in order, no leakage', () => {
+    const o = moduleIdsForScope('/admin/operations')
+    expect(o).toBe(ROUTE_MODULE_IDS['/admin/operations'])
+    // Default render order: the AI & assistant KPIs, the platform stats, the Manage grid, then Related.
+    expect(o).toEqual(['operations-ai', 'operations-platform', 'operations-manage', 'operations-related'])
+    // A distinct exact route — it never inherits the global community blocks.
+    expect(o).not.toContain('community-pulse')
+  })
+
+  it('the Growth dashboard (/admin/growth) resolves its blocks, in order, no leakage', () => {
+    const g = moduleIdsForScope('/admin/growth')
+    expect(g).toBe(ROUTE_MODULE_IDS['/admin/growth'])
+    // Default render order: funnel & activation, pipeline, expansion, the Manage grid, then Related.
+    expect(g).toEqual(['growth-funnel', 'growth-pipeline', 'growth-expansion', 'growth-manage', 'growth-related'])
+    expect(g).not.toContain('community-pulse')
+  })
+
+  it('the Resonance CRM cockpit (/admin/crm) resolves its blocks, in order, distinct from Today', () => {
+    const c = moduleIdsForScope('/admin/crm')
+    expect(c).toBe(ROUTE_MODULE_IDS['/admin/crm'])
+    // VIEWER-FIRST (ADR-459): the member block leads, then the health cockpit, rising pool, backtest.
+    expect(c).toEqual(['crm-members', 'crm-cockpit-stats', 'crm-rising', 'crm-trust'])
+    // The index and Vera Today are DISTINCT exact routes — neither leaks into the other.
+    expect(c).not.toContain('crm-today')
+    expect(c).not.toContain('community-pulse')
+  })
+
+  it('the Vera Today page (/admin/crm/today) resolves its one block via the exact route, not the CRM index set', () => {
+    const t = moduleIdsForScope('/admin/crm/today')
+    expect(t).toBe(ROUTE_MODULE_IDS['/admin/crm/today'])
+    expect(t).toEqual(['crm-today'])
+    // The nested exact route wins over the /admin/crm cockpit set (and never the global default).
+    expect(t).not.toContain('crm-members')
+    expect(t).not.toContain('community-pulse')
+  })
+
   it('an entity profile tab resolves the family module set via the /spaces/* section scope', () => {
     // Every /spaces/<slug>/<tab> shares one family set keyed at '/spaces/*' (ENTITY-SPACES §B.2):
     // the index profile, a tab, and a different slug all resolve the same set, never the global one.
@@ -152,6 +189,21 @@ describe('moduleIdsForScope', () => {
     expect(family).toContain('entity-cta')
     // No leakage: a profile never offers the global community blocks.
     expect(family).not.toContain('community-pulse')
+  })
+})
+
+// MODULE_ROUTES ⇄ ROUTE_MODULE_IDS (ADR-270/294): a route only offers the on-page Layout editor when
+// it is in MODULE_ROUTES, and it only has blocks to arrange when it has a set in ROUTE_MODULE_IDS. The
+// four LP7 admin dashboards must be wired in both, so the editor matches the page's real content.
+describe('module route registration (LP7 admin dashboards)', () => {
+  const LP7_ROUTES = ['/admin/operations', '/admin/growth', '/admin/crm', '/admin/crm/today'] as const
+
+  it('each converted route is registered in MODULE_ROUTES and declares its own module set', () => {
+    for (const route of LP7_ROUTES) {
+      expect(MODULE_ROUTES, `missing MODULE_ROUTES entry for ${route}`).toContain(route)
+      expect(ROUTE_MODULE_IDS[route], `missing ROUTE_MODULE_IDS set for ${route}`).toBeDefined()
+      expect((ROUTE_MODULE_IDS[route] ?? []).length).toBeGreaterThan(0)
+    }
   })
 })
 

@@ -88,6 +88,20 @@ import { AuditRecentActions } from '@/components/widgets/audit/recent-actions'
 import { AdminHubsRoster } from '@/components/widgets/admin/admin-hubs-roster'
 import { AdminNexusesRoster } from '@/components/widgets/admin/admin-nexuses-roster'
 import { AdminModerationQueue } from '@/components/widgets/admin/admin-moderation-queue'
+import { OperationsAi } from '@/components/widgets/operations/ai-area'
+import { OperationsPlatform } from '@/components/widgets/operations/platform-area'
+import { OperationsManage } from '@/components/widgets/operations/manage'
+import { OperationsRelated } from '@/components/widgets/operations/related'
+import { GrowthFunnel } from '@/components/widgets/growth/funnel-area'
+import { GrowthPipeline } from '@/components/widgets/growth/pipeline-area'
+import { GrowthExpansion } from '@/components/widgets/growth/expansion-area'
+import { GrowthManage } from '@/components/widgets/growth/manage'
+import { GrowthRelated } from '@/components/widgets/growth/related'
+import { CrmMembers } from '@/components/widgets/crm/cockpit-members'
+import { CrmCockpitStats } from '@/components/widgets/crm/cockpit-stats'
+import { CrmRising } from '@/components/widgets/crm/rising'
+import { CrmTrust } from '@/components/widgets/crm/trust'
+import { CrmToday } from '@/components/widgets/crm/today'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -255,6 +269,24 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'admin-nexuses-roster': AdminNexusesRoster,
   // Moderation queue (/admin/moderation) — the community report queue.
   'admin-moderation-queue': AdminModerationQueue,
+  // Operations dashboard (/admin/operations) — the platform machine as one operator home.
+  'operations-ai': OperationsAi,
+  'operations-platform': OperationsPlatform,
+  'operations-manage': OperationsManage,
+  'operations-related': OperationsRelated,
+  // Growth dashboard (/admin/growth) — the growth engine as one operator home.
+  'growth-funnel': GrowthFunnel,
+  'growth-pipeline': GrowthPipeline,
+  'growth-expansion': GrowthExpansion,
+  'growth-manage': GrowthManage,
+  'growth-related': GrowthRelated,
+  // Resonance CRM (/admin/crm) — the Platform Resonance CRM cockpit (ADR-459).
+  'crm-members': CrmMembers,
+  'crm-cockpit-stats': CrmCockpitStats,
+  'crm-rising': CrmRising,
+  'crm-trust': CrmTrust,
+  // Vera Today (/admin/crm/today) — the person-plus-action inbox.
+  'crm-today': CrmToday,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,

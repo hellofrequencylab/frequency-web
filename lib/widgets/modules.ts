@@ -166,6 +166,28 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Moderation queue block (/admin/moderation) — the community report queue ──
   { id: 'admin-moderation-queue', label: 'Report queue', description: 'The pending community reports, newest first, each with its target preview and (for member reports) the prior-report count. The "queue is clear" empty leads when nothing is waiting.' },
 
+  // ── Operations dashboard blocks (/admin/operations) — the platform machine as one operator home ──
+  { id: 'operations-ai', label: 'AI & assistant', description: 'The AI master switch, the agent actions awaiting review, and the help gaps Vera could not answer. Assistant figures cover the last 7 days.' },
+  { id: 'operations-platform', label: 'Platform', description: 'The platform keys: published pages, the audit trail, and whether demo content is present, over the last 7 days.' },
+  { id: 'operations-manage', label: 'Manage', description: 'One card per working surface in Operations, each with a live stat and a link straight to the surface that edits it.' },
+  { id: 'operations-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
+
+  // ── Growth dashboard blocks (/admin/growth) — the growth engine as one operator home ──
+  { id: 'growth-funnel', label: 'Funnel & activation', description: 'New members joining, and how many reach the North-Star moment (a verified practice) within their first week, over the activation funnel.' },
+  { id: 'growth-pipeline', label: 'Pipeline', description: 'Open deals, their value, and the follow-ups due so nothing stalls.' },
+  { id: 'growth-expansion', label: 'Expansion', description: 'Where local member density is crossing the threshold that justifies opening the next Lab.' },
+  { id: 'growth-manage', label: 'Manage', description: 'One card per working surface across Acquisition, CRM, and Marketing, each with a live stat and a link to edit it.' },
+  { id: 'growth-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
+
+  // ── Resonance CRM blocks (/admin/crm) — the Platform Resonance CRM cockpit (ADR-459) ──
+  { id: 'crm-members', label: 'Members', description: 'The whole scored roster, most-recent first, with the hero sort and live search. Open anyone to see their roles, funnels, pipeline, and recent touches.' },
+  { id: 'crm-cockpit-stats', label: 'Health cockpit', description: 'The computed verdict, the live health stat row, the who-needs-attention worklist, and the lifecycle funnel.' },
+  { id: 'crm-rising', label: 'About to resonate', description: 'The overlooked pool worth a reach-out: members with room to move who are not yet resonant.' },
+  { id: 'crm-trust', label: 'Score trustworthiness', description: 'A backtest of the churn risk calls against what actually happened, so you know whether to trust the scores.' },
+
+  // ── Vera Today block (/admin/crm/today) — the person-plus-action inbox ──
+  { id: 'crm-today', label: 'Today', description: 'Vera Today: the person-plus-action cards the model says matter most, each one tap, plus the you-are-at-zero empty.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -426,6 +448,47 @@ const ADMIN_NEXUSES_MODULE_IDS = ['admin-nexuses-roster'] as const
 // host + community-staff gate; the module renders only through that gated route, so it never re-gates.
 const ADMIN_MODERATION_MODULE_IDS = ['admin-moderation-queue'] as const
 
+// The Operations dashboard (/admin/operations), in default render order — the AI & assistant KPIs, the
+// platform/system-health stats, the Manage grid (one card per working sub-page), then the Related areas
+// strip. Each block self-fetches (fail-safe); the page keeps its janitor + platform-staff gate, and
+// every linked area keeps its own, so the modules render only through the gated route and never re-gate.
+const OPERATIONS_MODULE_IDS = [
+  'operations-ai',
+  'operations-platform',
+  'operations-manage',
+  'operations-related',
+] as const
+
+// The Growth dashboard (/admin/growth), in default render order — the funnel & activation KPIs, the deal
+// pipeline, expansion readiness, the Manage grid (one card per working sub-page across Acquisition, CRM,
+// and Marketing), then the Related areas strip. Each block self-fetches (fail-safe); the page keeps its
+// marketing-staff gate and every tool sub-route re-gates, so the modules render only through the gated
+// route and never re-gate.
+const GROWTH_MODULE_IDS = [
+  'growth-funnel',
+  'growth-pipeline',
+  'growth-expansion',
+  'growth-manage',
+  'growth-related',
+] as const
+
+// The Resonance CRM cockpit (/admin/crm), in default render order (ADR-459) — the VIEWER-FIRST member
+// block leads, then the health cockpit (verdict + live stat row + worklist + funnel, one shared fetch),
+// the rising-members pool, and the score-trustworthiness backtest. Each block self-fetches (fail-safe);
+// the page keeps its janitor gate, so the modules render only through the gated route and never re-gate.
+// The member drilldowns live on /admin/crm/members (its own route, out of this set).
+const CRM_COCKPIT_MODULE_IDS = [
+  'crm-members',
+  'crm-cockpit-stats',
+  'crm-rising',
+  'crm-trust',
+] as const
+
+// The Vera Today page (/admin/crm/today). The whole interior is one self-fetching, janitor-gated block
+// (the five person-plus-action cards + the you-are-at-zero empty), keyed only on the model's scores with
+// no searchParams facet, so it converts wholesale to one module. The page keeps its janitor gate.
+const CRM_TODAY_MODULE_IDS = ['crm-today'] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -545,6 +608,10 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/crm/graph': CRM_GRAPH_MODULE_IDS,
   '/admin/crm/playbooks': CRM_PLAYBOOKS_MODULE_IDS,
   '/admin/community': COMMUNITY_ADMIN_MODULE_IDS,
+  '/admin/operations': OPERATIONS_MODULE_IDS,
+  '/admin/growth': GROWTH_MODULE_IDS,
+  '/admin/crm': CRM_COCKPIT_MODULE_IDS,
+  '/admin/crm/today': CRM_TODAY_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,
   '/admin/hubs': ADMIN_HUBS_MODULE_IDS,
   '/admin/nexuses': ADMIN_NEXUSES_MODULE_IDS,
