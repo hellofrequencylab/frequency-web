@@ -16,7 +16,7 @@ function app(id: string): App {
     category: 'basics',
     scopes: [{ on: 'scopeKind', kind: 'circle' }],
     gate: { system: 'none' },
-    surfaces: { editor: { surface: 'sidebar', Icon: Circle, order: 0 } },
+    surfaces: { editor: { surface: 'sidebar', Icon: Circle, order: 0, render: 'inline' } },
     themeable: false,
     status: 'final',
     version: 1,

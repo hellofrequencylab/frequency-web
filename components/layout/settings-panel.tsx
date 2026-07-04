@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowRight, LayoutGrid, type LucideIcon } from 'lucide-react'
@@ -12,14 +12,7 @@ import { CircleQuestModule } from '@/components/admin/modules/circle-quest-modul
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
-import {
-  SPINE_ORDER,
-  SPINE_META,
-  PERSONAL_META,
-  groupIntoSpine,
-  summaryFor,
-  shouldFlatten,
-} from '@/lib/admin/modules/spine'
+import { SPINE_ORDER, SPINE_META, groupIntoSpine } from '@/lib/admin/modules/spine'
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
 import type { OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
 import { appsForScope, lockedAppsForScope } from '@/lib/apps/for-scope'
@@ -38,10 +31,11 @@ import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 // full-screen sheet (MobileSettingsSheet) render the SAME content from one source. Each surface
 // owns only its own chrome (header / positioning); the body is this hook.
 //
-// LP4 / ADMIN-RAIL Phase 3: this hook now returns a STRUCTURED model — the modules grouped into the
-// 9-category spine (lib/admin/modules/spine) so the AdminBar body can render a browse-first drill-down
-// (HOME categories → CATEGORY detail → search). A thin `content` adapter keeps today's flat stacked
-// markup for the collapse case (a single populated category = pixel-identical to the old panel).
+// Inline-first rail (ADR-514): this hook returns a STRUCTURED model — the modules grouped into the
+// 9-category spine (lib/admin/modules/spine) as a single FLAT list of `sections` the AdminBar body
+// renders all at once ("everything in view"). Each app renders per its editor `render` classification:
+// an `inline` config surface mounts its editor component; a `link` feature workflow draws a compact
+// link-row out to its own page. The search box filters this flat list (no two-level drill-down).
 
 // A caps-BLIND selection viewer that passes every editor App's own gate. LP4 makes the manage-module
 // list CATALOG-DRIVEN (appsForScope over the App catalog) instead of a path-sniffing scope table, but
@@ -54,15 +48,6 @@ const SELECTION_VIEWER: AppViewer = {
   caps: new Set(
     APPS.flatMap((a) => (a.surfaces.editor && a.gate.system === 'capability' ? [a.gate.capability] : [])),
   ),
-}
-
-// Fallback summaries for categories that are populated ONLY by an inline extra (no catalog app), so the
-// spine's `summaryFor` returns ''. Voice canon: no em dashes.
-const EXTRA_SUMMARY: Partial<Record<AdminSlot, string>> = {
-  layout: 'Blocks and order',
-  danger: 'Cancel and delete',
-  basics: 'Page content',
-  engage: 'Challenges and quests',
 }
 
 // The entity scope kinds — a page in one of these carries its identity through its own manage
@@ -80,12 +65,13 @@ function spaceSlugFromPath(pathname: string): string | null {
   return m ? m[1] : null
 }
 
-/** One Space surface as a compact link-row into its EXISTING `/settings/*` sub-page (ENTITY-MANAGEMENT /
- *  PR C, option (a) rendering): the rail deep-links, it never inlines the editor. Danger (no sub-page) and
- *  any unmapped id fall back to the `/manage` console, where the delete control lives, so every row is a
- *  working link. Mirrors the console's SectionRow chrome (tokens only). */
-function SpaceSurfaceRow({ app, slug }: { app: App; slug: string }) {
-  const href = hrefForSurface(app.id, slug) ?? `/spaces/${slug}/manage`
+/** One editor surface as a compact link-row OUT to its own management page (inline-first rail, ADR-514).
+ *  A surface classified `render: 'link'` is a FEATURE WORKFLOW (Members / CRM / Offerings / QR / Email /
+ *  Insights / Billing / Danger, …) that the bar deep-links into rather than inlining — config surfaces
+ *  render inline instead. Entity-agnostic: it takes a resolved `href` (Space link-rows resolve it via
+ *  hrefForSurface; core/personal entities are all inline in this PR, so no core href map exists yet).
+ *  Mirrors the console's SectionRow chrome (tokens only, no hex). */
+function SurfaceLinkRow({ app, href }: { app: App; href: string }) {
   const Icon = app.surfaces.editor?.Icon
   return (
     <Link
@@ -158,17 +144,15 @@ export function useIsDesktop(): boolean {
   return isDesktop
 }
 
-/** One populated spine category, ready to render as a browse row + a detail screen. */
-export interface AdminCategory {
+/** One populated spine section, rendered inline in the flattened bar (inline-first rail, ADR-514): a
+ *  lightweight header (SPINE_META label + Icon) followed by that slot's nodes — inline editors and/or
+ *  feature-workflow link-rows, interspersed in spine order, all in view at once. */
+export interface AdminSection {
   slot: AdminSlot
   label: string
   Icon: LucideIcon
-  /** One-line row summary (icon · label · summary · ›). */
-  summary: string
-  /** The detail body — the slot's module cards plus any folded inline extra. */
-  body: ReactNode
-  /** The catalog app ids that landed in this slot (empty for an extra-only category). */
-  appIds: string[]
+  /** The slot's rendered nodes: inline editor components, link-rows, and any folded inline extra. */
+  nodes: ReactNode[]
 }
 
 /** A lightweight, searchable row for the fuzzy "Search settings" filter (P1/P6 — one catalog source
@@ -190,23 +174,20 @@ export interface LockedRow {
   cta?: { label: string; href: string }
 }
 
-/** The STRUCTURED settings model the AdminBar body renders (docs/ADMIN-RAIL.md Phase 3). */
+/** The STRUCTURED settings model the AdminBar body renders (docs/ADMIN-RAIL.md — inline-first rail,
+ *  ADR-514). A single flat, spine-ordered list of sections, everything in view; the search box filters
+ *  it. No two-level drill-down. */
 export interface SettingsPanelModel {
   /** Whether there is anything to render at all (each chrome hides an empty bar). */
   hasContent: boolean
-  /** Collapse to the flat panel (<=1 drill target) vs. show the browse home + drill-down. */
-  flat: boolean
-  /** The populated spine categories, in fixed spine order. */
-  categories: AdminCategory[]
+  /** The populated spine sections, in fixed spine order — rendered as headers + their nodes, all open. */
+  sections: AdminSection[]
   /** The operator "Page" group (Layout / SEO / Status), separate from the entity spine. */
   pageGroup: ReactNode | null
   /** Every scoped app, for the fuzzy search index. */
   searchApps: SearchableApp[]
   /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
   lockedApps: LockedRow[]
-  /** Thin adapter: today's flat stacked markup, rendered verbatim in the collapse case so the flat
-   *  panel stays pixel-identical to before. */
-  content: ReactNode
 }
 
 /** Resolve the settings model for the current route + viewer, shared by the desktop drawer and the
@@ -295,25 +276,32 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     : manager
       ? applyOverrides(settingsAppsFor(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []
-  // A Space renders its surfaces as link-rows (option (a)); every other scope renders its module cards.
-  const mgmtAppById = new Map(mgmtApps.map((a) => [a.id, a]))
-  const nodesForAppIds = (appIds: string[]): ReactNode[] => {
-    if (isSpace && spaceSlug) {
-      return appIds.flatMap((id) => {
-        const app = mgmtAppById.get(id)
-        return app ? [<SpaceSurfaceRow key={id} app={app} slug={spaceSlug} />] : []
-      })
-    }
-    return appIds.flatMap((id) => {
+  // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
+  // "You" section above the management spine.
+  const apps = [...personalApps, ...mgmtApps]
+  const appById = new Map(apps.map((a) => [a.id, a]))
+
+  // THE single render decision point (inline-first rail, ADR-514). Per app, branch on its editor
+  // `render` classification, NOT on the entity kind: a `link` surface is a feature workflow drawn as a
+  // compact link-row OUT to its own page; an `inline` surface mounts its editor component in the bar.
+  // This lets a Space mix inline config editors (Basics / Mode / Page) with link-rows (Members / CRM /
+  // Offerings / …). Each inline module self-gates server-side and renders null when unauthorized.
+  const nodesForAppIds = (appIds: string[]): ReactNode[] =>
+    appIds.flatMap((id) => {
+      const app = appById.get(id)
+      if (!app) return []
+      if (app.surfaces.editor?.render === 'link') {
+        // Space link-rows resolve their href via hrefForSurface (Danger + unmapped fall back to the
+        // /manage console, so every row is a working link). Core/personal surfaces are all `inline` in
+        // this PR, so no core hrefForEntitySurface(id, scope) exists yet — TODO: add it when core/personal
+        // link-outs land (the deferred follow-up) so a link surface off a non-Space scope resolves too.
+        const href = spaceSlug ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage` : null
+        return href ? [<SurfaceLinkRow key={id} app={app} href={href} />] : []
+      }
       const C = MODULE_COMPONENTS[id]
       return C ? [<C key={id} />] : []
     })
-  }
 
-  // Personal first, then management — SPINE_ORDER leads with 'account', so groupIntoSpine emits the
-  // "You" category above the management spine.
-  const apps = [...personalApps, ...mgmtApps]
-  const hasSettings = mgmtApps.length > 0
   const spineGroups = groupIntoSpine(apps)
 
   const isCircle = manager && /^\/circles\/[^/]+/.test(pathname)
@@ -338,8 +326,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const showEventLayout = isEvent && isOperator && isModuleRoute(pathname)
 
   // ── Inline extras, folded into their natural spine slot (quest→engage, layout→layout,
-  //    event danger→danger, page-content→basics). Built once; referenced by BOTH the flat `content`
-  //    adapter and the drill-down category bodies so they never diverge. ──
+  //    event danger→danger, page-content→basics). Interspersed with the slot's apps in spine order. ──
   const questBlock: ReactNode = questModule ? <div className="min-w-0">{questModule}</div> : null
   const contentBlock: ReactNode = contentModule ? <div className="min-w-0">{contentModule}</div> : null
   const circleLayoutNode: ReactNode = showCircleLayout ? layoutBlock('circle') : null
@@ -361,55 +348,25 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   addExtra('layout', eventLayoutNode)
   addExtra('danger', dangerBlock)
 
-  // The page-settings column — the MANAGEMENT surfaces for this scope, ordered by spine (personal apps
-  // are rendered separately in the "You" block below, never here). Module cards for an entity scope; the
-  // Space's link-rows for a Space scope (nodesForAppIds branches). Only shown in the flat/collapse case.
-  const orderedMgmtIds: string[] = groupIntoSpine(mgmtApps).flatMap((g) => g.appIds)
-  const settingsBlock = hasSettings ? (
-    <div className="min-w-0">
-      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Page settings</p>
-      <div className={isSpace ? 'space-y-1.5' : 'space-y-6'}>{nodesForAppIds(orderedMgmtIds)}</div>
-    </div>
-  ) : null
-
-  // The personal "You" block — the personal module forms under a "You" header. Rendered at the TOP of
-  // the flat panel (when the panel collapses) so a plain member opens straight into their own
-  // settings; in the browse home the "You" category row carries the same forms as its drill target.
-  const personalModules: { id: string; C: ComponentType }[] = personalApps.flatMap((a) => {
-    const C = MODULE_COMPONENTS[a.id]
-    return C ? [{ id: a.id, C }] : []
-  })
-  const personalBlock: ReactNode = personalModules.length ? (
-    <div className="min-w-0">
-      <p className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">{PERSONAL_META.label}</p>
-      <div className="space-y-6">
-        {personalModules.map(({ id, C }) => (
-          <C key={id} />
-        ))}
-      </div>
-    </div>
-  ) : null
-
-  // ── The drill-down categories: every spine slot with an app OR a folded extra, in spine order. ──
-  const categories: AdminCategory[] = SPINE_ORDER.flatMap((slot) => {
+  // ── The flat, spine-ordered sections (inline-first rail, ADR-514): every spine slot with an app OR a
+  //    folded extra becomes ONE section — a header (SPINE_META label + Icon) followed by that slot's
+  //    nodes, inline editors and/or link-rows interspersed in spine order. Personal "You" leads (account
+  //    slot is first in SPINE_ORDER), then the management spine. All rendered at once, all in view. ──
+  const sections: AdminSection[] = SPINE_ORDER.flatMap((slot) => {
     const group = spineGroups.find((g) => g.slot === slot)
     const appIds = group?.appIds ?? []
     const extras = extrasBySlot[slot] ?? []
     if (appIds.length === 0 && extras.length === 0) return []
     const meta = SPINE_META[slot]
-    const summary = summaryFor(slot, apps) || EXTRA_SUMMARY[slot] || `${appIds.length + extras.length} settings`
-    const body = (
-      <div className={isSpace ? 'space-y-1.5' : 'space-y-6'}>
-        {nodesForAppIds(appIds)}
-        {extras.map((node, i) => (
-          <div key={`extra-${i}`}>{node}</div>
-        ))}
-      </div>
-    )
-    return [{ slot, label: meta.label, Icon: meta.Icon, summary, body, appIds }]
+    const nodes: ReactNode[] = [
+      ...nodesForAppIds(appIds),
+      ...extras.map((node, i) => <div key={`extra-${slot}-${i}`}>{node}</div>),
+    ]
+    return [{ slot, label: meta.label, Icon: meta.Icon, nodes }]
   })
 
-  // The operator "Page" group — a separate drill target, never one of the entity spine categories.
+  // The operator "Page" group — rendered below the sections, set apart by a hairline. Suppressed on
+  // every entity scope (an entity owns its identity through its own sections above).
   const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
 
   // ── Phase 5 (P3): attainable-but-locked management apps for this scope + REAL viewer — an App the
@@ -426,13 +383,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       }))
     : []
 
-  const hasContent = categories.length > 0 || !!pageGroup
-  // The personal "You" category never drives the collapse decision (it always rides along, inline in
-  // the flat panel and as the lead row in the browse home). Flatten on the MANAGEMENT targets only, so
-  // a single-category manager stays flat exactly as before Phase 4 — with the "You" block added on top.
-  // A locked row is a browse-home affordance, so its presence keeps the home list (never collapse).
-  const managementCategories = categories.filter((c) => c.slot !== 'account')
-  const flat = shouldFlatten(managementCategories, { hasExtras: !!pageGroup }) && lockedApps.length === 0
+  const hasContent = sections.length > 0 || !!pageGroup
 
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
   const searchApps: SearchableApp[] = [
@@ -449,43 +400,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }))
 
   if (!hasContent) {
-    return { hasContent: false, flat: true, categories: [], pageGroup: null, searchApps: [], lockedApps: [], content: null }
+    return { hasContent: false, sections: [], pageGroup: null, searchApps: [], lockedApps: [] }
   }
 
-  // Whether any MANAGEMENT/operator content sits below the "You" block in the flat panel — drives the
-  // hairline that sets the personal section apart from the rest.
-  const hasBelowPersonal =
-    hasSettings || !!questModule || !!contentModule || !!pageGroup || isEvent || showCircleLayout || showEventLayout
-
-  // ── The thin `content` adapter — the personal "You" block on top, then today's flat stacked
-  //    management markup verbatim, for the collapse case. ──
-  const content = (
-    <div className="space-y-5">
-      {personalBlock}
-      {personalBlock && hasBelowPersonal && <hr className="border-border" />}
-      {isCircle ? (
-        <div className="space-y-6">
-          {settingsBlock}
-          {questModule && <div className="min-w-0">{questModule}</div>}
-          {showCircleLayout && circleLayoutNode}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {settingsBlock}
-          {questModule && <div className="min-w-0">{questModule}</div>}
-          {contentModule && <div className="min-w-0">{contentModule}</div>}
-          {showEventLayout && eventLayoutNode}
-          {/* Cancel + Delete live at the very bottom, BELOW the Layout picker — the
-              destructive controls sit under everything else in the drawer. */}
-          {dangerBlock}
-        </div>
-      )}
-
-      {/* The operator page-globals group, set apart by a hairline. Suppressed on entity scopes. */}
-      {pageGroup && (hasSettings || !!questModule || !!contentModule) && <hr className="border-border" />}
-      {pageGroup}
-    </div>
-  )
-
-  return { hasContent: true, flat, categories, pageGroup, searchApps, lockedApps, content }
+  return { hasContent: true, sections, pageGroup, searchApps, lockedApps }
 }

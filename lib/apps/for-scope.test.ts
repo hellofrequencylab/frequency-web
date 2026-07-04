@@ -147,7 +147,7 @@ const editorApp = (id: string, kind: ScopeKind, gate: App['gate']): App => ({
   category: 'basics',
   scopes: [{ on: 'scopeKind', kind }],
   gate,
-  surfaces: { editor: { surface: 'sidebar', Icon: Circle, order: 0 } },
+  surfaces: { editor: { surface: 'sidebar', Icon: Circle, order: 0, render: 'inline' } },
   themeable: false,
   status: 'final',
   version: 1,

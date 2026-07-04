@@ -137,7 +137,12 @@ export interface App {
   config?: readonly AppConfigField[]
   /** Which surfaces it presents (one or more). */
   surfaces: {
-    editor?: { surface: 'inline' | 'sidebar'; Icon: LucideIcon; order: number }
+    /** The editor surface. `surface` is ADR-138's tune-vs-manage axis (inline on the page vs manage
+     *  in the dock). `render` is a SEPARATE axis (the inline-first rail, ADR below): how the STANDARDIZED
+     *  admin bar draws this editor — `inline` mounts its editor component in the flattened bar
+     *  ("everything in view"); `link` draws a compact link-row out to the feature's own management page.
+     *  Config surfaces render inline; only feature workflows link out. */
+    editor?: { surface: 'inline' | 'sidebar'; Icon: LucideIcon; order: number; render: 'inline' | 'link' }
     page?: { defaultTemplate?: TemplateId; defaultSlot?: string }
     rail?: { side: 'left' | 'right' }
     /** A code-drawn element's render config. `registry` + `name` are the config a `library_assets`

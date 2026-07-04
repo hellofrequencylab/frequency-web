@@ -64,6 +64,11 @@ export interface AdminModule {
   slot: AdminSlot
   /** Which surface renders it — inline (tune) or sidebar (manage). ADR-138. */
   surface: AdminSurface
+  /** How the STANDARDIZED admin bar draws this editor (inline-first rail, ADR below): `inline` mounts
+   *  the editor component in the flattened bar ("everything in view"); `link` draws a compact link-row
+   *  out to the feature's own management page. A SEPARATE axis from `surface` (tune-vs-manage, ADR-138):
+   *  every core/personal module renders inline (behavior-preserving); only feature workflows link out. */
+  render: 'inline' | 'link'
   /** Vertical order within a slot. */
   order: number
 }
@@ -78,6 +83,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'circle.editSettings',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   // Circle 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
@@ -95,6 +101,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'circle.editSettings',
     slot: 'place',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -106,6 +113,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'circle.moderate',
     slot: 'people',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -117,6 +125,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'circle.assignTask',
     slot: 'engage',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -128,6 +137,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'circle.editSettings',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 15,
   },
   {
@@ -139,6 +149,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'hub.manage',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   // Hub 9-spine editor Apps (ADMIN-RAIL.md Phase 7, LP-EVENT recipe; ENTITY-MANAGEMENT-OVERHAUL
@@ -155,6 +166,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'hub.manage',
     slot: 'people',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -166,6 +178,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'hub.manage',
     slot: 'insights',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -177,6 +190,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'hub.manage',
     slot: 'danger',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -188,6 +202,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'nexus.manage',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   // Nexus 9-spine editor Apps (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
@@ -204,6 +219,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'nexus.manage',
     slot: 'people',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -215,6 +231,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'nexus.manage',
     slot: 'insights',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -226,6 +243,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'nexus.manage',
     slot: 'danger',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -237,6 +255,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'event.editSettings',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -248,6 +267,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'event.editSettings',
     slot: 'place',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -259,6 +279,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'event.editSettings',
     slot: 'people',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -270,6 +291,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'event.editSettings',
     slot: 'engage',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -281,6 +303,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'practice.editSettings',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   // Practice 9-spine editor App (ADMIN-RAIL.md Phase 7; ENTITY-MANAGEMENT-OVERHAUL Appendix A, the
@@ -296,6 +319,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'practice.editSettings',
     slot: 'insights',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   {
@@ -307,6 +331,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'channel.manage',
     slot: 'basics',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
   // The profile "Person settings" module was retired (ADR-133/PX.5): editing a
@@ -336,6 +361,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     requiredCapability: 'account.manage',
     slot: 'account',
     surface: 'sidebar',
+    render: 'inline',
     order: 10,
   },
 ] as const

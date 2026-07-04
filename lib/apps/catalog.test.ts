@@ -63,6 +63,35 @@ describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () =
       expect(app.scopes.every((sc) => sc.on === 'spaceType')).toBe(true)
     }
   })
+
+  it('carries each surface `render` onto the editor App (inline-first rail, ADR-514)', () => {
+    for (const s of SPACE_SURFACES) {
+      const app = spaceEditorApps.find((a) => a.id === s.id)!
+      expect(app.surfaces.editor?.render, s.id).toBe(s.render)
+    }
+  })
+
+  it('classifies config surfaces INLINE and every feature workflow as a LINK', () => {
+    // The owner directive (ADR-514): the standardized rail renders config inline ("everything in view")
+    // and links out ONLY for feature workflows. Basics / Mode / Page are config; the rest are workflows.
+    const renderById = new Map(SPACE_SURFACES.map((s) => [s.id, s.render]))
+    const INLINE = ['space.basics', 'space.mode', 'space.layout']
+    const LINK = [
+      'space.offerings',
+      'space.services',
+      'space.people',
+      'space.engage.crm',
+      'space.reach',
+      'space.comms',
+      'space.insights',
+      'space.billing',
+      'space.danger',
+    ]
+    for (const id of INLINE) expect(renderById.get(id), id).toBe('inline')
+    for (const id of LINK) expect(renderById.get(id), id).toBe('link')
+    // Every Space surface is accounted for above (no unclassified surface slipped in).
+    expect(SPACE_SURFACES.map((s) => s.id).sort()).toEqual([...INLINE, ...LINK].sort())
+  })
 })
 
 describe('page superset ← LAYOUT_MODULES', () => {

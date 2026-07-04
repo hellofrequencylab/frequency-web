@@ -42,15 +42,46 @@ The design decisions this plan commits to, each grounded in current best practic
   │  THIS <ENTITY>  (when scoped) Basics · Place&Time · People · …     │  ← 9-spine mgmt Apps
   │  OPERATOR       (staff)       Page · Layout · …                    │  ← operator Apps
   └────────────────────────────────────────────────────────────────────┘
-        every row → drill to that category's Apps (the existing module cards)
+        one FLAT list — each category is a header, its Apps rendered under it, all in view
         content = appsForScope(scope, viewer) over the ONE App catalog (Loom)
 ```
+
+### 2.1 Inline-first, flattened (ADR-514 — supersedes the two-level drill-down)
+
+The owner directive: **the rail renders settings INLINE ("everything in view"); only feature workflows
+link out to a management page.** So the bar is a single flat, spine-ordered scrolling list — each
+populated category is a lightweight header (`SPINE_META` label + Icon) followed by its Apps, rendered at
+once. Categories are headers, not drill targets (the old HOME→CATEGORY drill-down and the single-category
+collapse are gone). The **search box** stays pinned at the top as a *filter* over the flat list (P1/P6 —
+the Hick's-Law mitigation for a taller bar); picking a result scrolls to that App's section. The model
+sheds `flat`/`categories`/`content` for an ordered `sections: { slot, label, Icon, nodes }[]`.
+
+**The `render` classification.** Each editor App carries `surfaces.editor.render: 'inline' | 'link'` (a
+NEW axis, distinct from ADR-138's `surface: 'inline' | 'sidebar'` tune-vs-manage meaning). It is the
+single decision point in `settings-panel`'s `nodesForAppIds`:
+
+- **`inline`** — mount the App's editor component in the bar (`MODULE_COMPONENTS[id]`). Every core /
+  personal module (`circle · hub · nexus · event · practice · channel · account.*`) is `inline` — they
+  already rendered inline, now inside the flattened bar. A Space's **config** surfaces — **Basics · Mode
+  and focus · Page** — are `inline` too: thin `'use client'` wrappers (`space-basics-module` /
+  `space-mode-module` / `space-page-module`) that read the slug from the path, call a read-gated getter
+  (`getSpaceBasicsData` / `getSpaceModeData` / `getSpacePageData` in `manage/rail-getters.ts`), and mount
+  the EXISTING `SpaceSettingsForm` / `ModeSettings` / `SpacePagePanel`. Each getter re-gates server-side
+  (`resolveSpaceManageAccess` + the surface's own function check) and returns `null` for a non-manager,
+  so the wrapper renders nothing — the flatten never weakens a gate (fail-safe).
+- **`link`** — draw a compact `SurfaceLinkRow` OUT to the App's own page (an entity-agnostic row taking a
+  resolved href). A Space's **feature workflows** — Members · CRM · Offerings · Services · QR · Email ·
+  Insights · Billing · Danger — are `link`; their href comes from `hrefForSurface(id, slug)`.
+
+This fixed the ADR-513 regression (a Space showed *every* surface as a link-row, losing the inline
+Customize drawer). Core/personal entities are all `inline` in this PR (behavior-preserving); a
+`hrefForEntitySurface` for core/personal link-outs is the deferred follow-up.
 
 - **Presence** is unconditional for an authed viewer (the personal set is never empty → the "hide when empty" rule yields "always shown" for free).
 - **Content** is `appsForScope(scope, viewer)` — the same catalog that feeds the Loom Apps lane. Personal Apps are `scope: global`, member-gated; management Apps are entity-scoped, capability-gated.
 - **One component** renders it as a right-rail slide-over (lg+) and a bottom sheet (<lg).
 
-**Entities on the rail (all of them).** `circle · event · hub · nexus · practice · profile` open the rail via `OpenAdminBarButton` with a Capability-gated scope. **Space** joined them (ADR-513): a Space profile's owner "Customize" trigger opens the SAME rail pointed at a `space` scope, whose editor Apps come from `SPACE_SURFACES` keyed by `{ on:'spaceType' }` + a `spaceFunction`/`none` gate (Space authority is SpaceRole + `spaceFunctionAccess`, never a `Capability`, so it carries `spaceFns` on the trigger detail instead of caps). Its surfaces render as browse-first **link-rows** into the existing `/spaces/<slug>/settings/*` sub-pages; the full-page `/manage` console is NOT converged (they share sub-pages via the one `hrefForSurface` map, not chrome). Basics / Page / Mode / Services / Danger are gate `none`, so an owner always sees a non-empty rail. This retired the bespoke `SpaceCustomizeButton`/`SpaceCustomizeDrawer` + `OPEN_SPACE_CUSTOMIZE`. Deferred: inline Space editors in the rail (a later Phase 3).
+**Entities on the rail (all of them).** `circle · event · hub · nexus · practice · profile` open the rail via `OpenAdminBarButton` with a Capability-gated scope. **Space** joined them (ADR-513): a Space profile's owner "Customize" trigger opens the SAME rail pointed at a `space` scope, whose editor Apps come from `SPACE_SURFACES` keyed by `{ on:'spaceType' }` + a `spaceFunction`/`none` gate (Space authority is SpaceRole + `spaceFunctionAccess`, never a `Capability`, so it carries `spaceFns` on the trigger detail instead of caps). Its **config** surfaces (Basics / Mode / Page) render **inline** and its **feature workflows** render as **link-rows** into the existing `/spaces/<slug>/settings/*` sub-pages, per each surface's `render` classification (§2.1, ADR-514); the full-page `/manage` console is NOT converged (they share sub-pages via the one `hrefForSurface` map, not chrome). Basics / Page / Mode / Services / Danger are gate `none`, so an owner always sees a non-empty rail. This retired the bespoke `SpaceCustomizeButton`/`SpaceCustomizeDrawer` + `OPEN_SPACE_CUSTOMIZE`.
 
 ---
 
