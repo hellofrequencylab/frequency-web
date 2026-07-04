@@ -49,11 +49,15 @@ describe('resolveProfileLayout', () => {
     expect(layout.indexOf('booking')).toBeLessThan(layout.indexOf('team'))
   })
 
-  it('omits booking when availability is not offered by the type', () => {
-    const layout = resolveProfileLayout({ type: 'coaching', entitlements: {} })
-    expect(layout).not.toContain('booking')
+  it('gates booking by the availability function, not the space type', () => {
+    // Under universal functions coaching offers availability, so booking appears; turning the function
+    // OFF drops it. Type never gates the block set (the per-type gate was retired for grid uniformity).
+    expect(resolveProfileLayout({ type: 'coaching', entitlements: {} })).toContain('booking')
+    expect(
+      resolveProfileLayout({ type: 'coaching', entitlements: { availability: false } }),
+    ).not.toContain('booking')
     // A coaching space still offers members-gated team.
-    expect(layout).toContain('team')
+    expect(resolveProfileLayout({ type: 'coaching', entitlements: {} })).toContain('team')
   })
 
   it('omits team when the members function is turned off', () => {
@@ -62,8 +66,8 @@ describe('resolveProfileLayout', () => {
     expect(layout).toContain('booking')
   })
 
-  it('includes the business block only for business / organization types', () => {
+  it('includes the universal business block regardless of type (per-type gate retired)', () => {
     expect(resolveProfileLayout({ type: 'business', entitlements: {} })).toContain('business')
-    expect(resolveProfileLayout({ type: 'practitioner', entitlements: {} })).not.toContain('business')
+    expect(resolveProfileLayout({ type: 'practitioner', entitlements: {} })).toContain('business')
   })
 })

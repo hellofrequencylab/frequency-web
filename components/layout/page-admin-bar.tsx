@@ -55,11 +55,14 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   const authed = role != null
   const manager = meetsAccess('host', role) || staffRole != null
   const shareable = isShareable(pathname)
-  // Entity DETAIL pages render their OWN "Edit X" button in the header (which opens the same drawer
-  // and is gated on entity OWNERSHIP, not this bar's community-role manager gate — so it shows for a
-  // plain-member host/owner the gear would miss). Suppress this bar's duplicate Settings trigger
-  // there so a page has exactly ONE settings button. QR & Share stays.
-  const isEntityDetail = /^\/(circles|events|practices)\/[^/]+$/.test(pathname)
+  // Entity DETAIL pages render their OWN "Edit X" / "Manage" button in the header (which opens the same
+  // drawer and is gated on entity OWNERSHIP, not this bar's community-role manager gate — so it shows for
+  // a plain-member host/owner the gear would miss). Suppress this bar's duplicate Settings trigger there
+  // so a page has exactly ONE settings button. Covers every entity-detail leaf that mounts its own
+  // OpenAdminBarButton: circles/events/practices plus the hub/nexus/channel/journey detail roots (each of
+  // those pages now renders its own trigger, so the generic caps-blind cog would otherwise double up).
+  // QR & Share stays.
+  const isEntityDetail = /^\/(circles|events|practices|hubs|nexuses|channels|journeys)\/[^/]+$/.test(pathname)
   // Member PROFILES (/people/<handle>) route their settings to the dedicated Settings RAIL
   // ("Edit profile" → /settings/profile for the owner; /admin/members for operators) and have NO
   // on-page drawer modules — so this trigger would open an EMPTY drawer. Suppress it; QR & Share stays.

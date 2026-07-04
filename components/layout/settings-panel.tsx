@@ -318,9 +318,9 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }
   const inlineApps = apps.filter((a) => {
     if (isBankPlacement(a)) return false
-    // The Space Starter chip (ADR-520): Mode is pulled OUT of the section list and rendered as a compact
-    // "Starter: {preset}" chip under Identity, so its full editor surface never renders as a rail section.
-    if (isSpace && a.id === 'space.mode') return false
+    // NOTE: `space.mode` needs no explicit filter here — it is `render: 'inline'` but has NO bound
+    // MODULE_COMPONENT (Mode is edited via the Starter chip → /manage/mode, ADR-520), so nodeForApp
+    // returns null for it and the railItems loop drops it. The chip renders Mode independently below.
     if (!surfacesMatch(a)) return false
     // The Hub shows stats, never an inline PERSONAL editor. The surface predicate already drops the
     // personal editors on most hub pages (they only match /people/* + /settings/profile); this also

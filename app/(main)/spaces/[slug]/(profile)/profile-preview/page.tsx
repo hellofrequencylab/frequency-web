@@ -5,7 +5,9 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { PageHeading } from '@/components/templates'
-import { toProfileContext } from '@/lib/spaces/profile-modules'
+import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modules'
+import { blocksForKind } from '@/lib/entity-blocks/registry'
+import { parseEntityLayout, mergeEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 
 // STAFF-PREVIEW: the module-engine (block-picker) render of a space profile, shown BESIDE the live Puck
@@ -45,6 +47,21 @@ export default async function SpaceProfilePreviewPage({
   )
   if (!canManage && !staffViewing) notFound()
 
+  // Render through the SAME function-only grid the LIVE page uses (the (profile)/page.tsx visitor path),
+  // NOT the flat type-shaped fallback: the operator's saved grid merged over the function-filtered
+  // blocksForKind('space') palette. This keeps the preview and the live page uniform (the palette gates
+  // on the space's live functions only, never its type), so the preview validates the real render.
+  const enabled = enabledFunctionKeys(space)
+  const paletteIds = blocksForKind('space')
+    .filter((b) => b.requiresFunction == null || enabled.has(b.requiresFunction))
+    .map((b) => b.id)
+  const prefs = space.preferences
+  const rawLayout =
+    prefs && typeof prefs === 'object' && !Array.isArray(prefs)
+      ? (prefs as Record<string, unknown>).profileLayout
+      : null
+  const grid = mergeEntityLayout(paletteIds, parseEntityLayout(rawLayout), 'space')
+
   return (
     <div className="space-y-8">
       <PageHeading
@@ -52,7 +69,7 @@ export default async function SpaceProfilePreviewPage({
         description="A module-rendered view of this profile, off Puck. Staff preview only, nothing live changes."
         adminBar={false}
       />
-      <SpaceProfileModules space={toProfileContext(space)} />
+      <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
     </div>
   )
 }

@@ -31,7 +31,6 @@ import { JourneyBuilderModule } from './journey-builder-module'
 import { JourneyExportModule } from './journey-export-module'
 import { JourneyDangerModule } from './journey-danger-module'
 import { SpaceBasicsModule } from './space-basics-module'
-import { SpaceModeModule } from './space-mode-module'
 import { SpacePageModule } from './space-page-module'
 import { SpaceAutonomyModule } from './space-autonomy-module'
 import { SpacePipelineModule } from './space-pipeline-module'
@@ -87,7 +86,8 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
   // link-row instead, so they are NOT in this map.
   'space.basics': SpaceBasicsModule,
-  'space.mode': SpaceModeModule,
+  // `space.mode` intentionally has NO inline component: Mode is edited via the Starter chip → /manage/mode
+  // (ADR-520), never as a rail section. The surface stays in the registry for the console link + chip only.
   'space.layout': SpacePageModule,
   // Vera autonomy (ADR-517 Phase F): an inline owner-gated control that reuses setSpaceAutonomy.
   'space.autonomy': SpaceAutonomyModule,

@@ -59,29 +59,29 @@ describe('hrefForSurface (console section targets never loop)', () => {
   })
 })
 
-// Every gated surface must map to exactly one render group, and every group must be one of the known
-// clusters. A new surface with no group assignment falls back to 'space' (defensive) — this test
-// makes that fallback VISIBLE so a future surface gets a real home instead of silently landing in
-// the Space group. The compressed IA: five tight sections (Space · People · Offerings · Reach ·
-// Billing and insights) plus Danger.
-describe('groupForSurface (every surface clusters into a known group)', () => {
-  const KNOWN_GROUPS = ['space', 'people', 'offerings', 'reach', 'billing', 'danger']
+// The console clusters by spine SLOT into the SAME 7 groups the admin rail uses (ADR-520, SPACE_GROUP_META:
+// Identity=basics · Page=layout · Audience=people · Offerings & money=engage · Reach=reach · Growth=insights
+// · Danger=danger). Every declared surface must land in one of those seven slots, so the console and rail
+// agree on the IA.
+describe('groupForSurface (every surface clusters into one of the 7 ADR-520 slots)', () => {
+  const KNOWN_SLOTS = ['basics', 'layout', 'people', 'engage', 'reach', 'insights', 'danger']
+  const byId = (id: string) => SPACE_SURFACES.find((s) => s.id === id) as SpaceSurface
 
-  it('assigns every declared surface to a known group', () => {
+  it('assigns every declared surface to a known slot group', () => {
     for (const surface of SPACE_SURFACES) {
-      expect(KNOWN_GROUPS).toContain(groupForSurface(surface.id))
+      expect(KNOWN_SLOTS).toContain(groupForSurface(surface))
     }
   })
 
-  it('keeps identity-defining surfaces (Basics, Mode) in the Space group, Danger in danger', () => {
-    expect(groupForSurface('space.basics')).toBe('space')
-    expect(groupForSurface('space.mode')).toBe('space')
-    expect(groupForSurface('space.danger')).toBe('danger')
+  it('keeps identity-defining surfaces (Basics, Mode) in Identity (basics), Danger in danger', () => {
+    expect(groupForSurface(byId('space.basics'))).toBe('basics')
+    expect(groupForSurface(byId('space.mode'))).toBe('basics')
+    expect(groupForSurface(byId('space.danger'))).toBe('danger')
   })
 
-  it('folds Money + Insights into the single Billing and insights group', () => {
-    expect(groupForSurface('space.billing')).toBe('billing')
-    expect(groupForSurface('space.insights')).toBe('billing')
+  it('folds Insights + Plan and usage into the single Growth group (insights slot)', () => {
+    expect(groupForSurface(byId('space.billing'))).toBe('insights')
+    expect(groupForSurface(byId('space.insights'))).toBe('insights')
   })
 })
 
@@ -96,16 +96,17 @@ describe('Mode is a secondary signal: Basics/identity is never demoted below mod
   // An emphasis that loudly promotes CRM + bookings, the exact shape that used to bury Basics.
   const emphasis: SpaceFunctionKey[] = ['crm', 'availability', 'email']
 
-  it('keeps Basics + Mode in the Space group, which renders before every other group', () => {
-    expect(groupForSurface('space.basics')).toBe('space')
-    expect(groupForSurface('space.mode')).toBe('space')
-    // CRM lands in people, the unified Offerings surface in offerings — both AFTER the Space group.
-    expect(groupForSurface('space.engage.crm')).toBe('people')
-    expect(groupForSurface('space.offerings')).toBe('offerings')
+  it('keeps Basics + Mode in the Identity (basics) group, which renders before every other group', () => {
+    const byId = (id: string) => SPACE_SURFACES.find((s) => s.id === id) as SpaceSurface
+    expect(groupForSurface(byId('space.basics'))).toBe('basics')
+    expect(groupForSurface(byId('space.mode'))).toBe('basics')
+    // CRM lands in Audience (people), the unified Offerings surface in Offerings & money (engage).
+    expect(groupForSurface(byId('space.engage.crm'))).toBe('people')
+    expect(groupForSurface(byId('space.offerings'))).toBe('engage')
   })
 
-  it('does not move Basics below an emphasized surface when ordering within the Space group', () => {
-    const identityGroup = practitionerSurfaces.filter((s) => groupForSurface(s.id) === 'space')
+  it('does not move Basics below an emphasized surface when ordering within the Identity group', () => {
+    const identityGroup = practitionerSurfaces.filter((s) => s.slot === 'basics')
     const ordered = orderWithinGroupByEmphasis(identityGroup, emphasis)
     const basicsIdx = ordered.findIndex((s) => s.id === 'space.basics')
     const modeIdx = ordered.findIndex((s) => s.id === 'space.mode')
@@ -116,8 +117,8 @@ describe('Mode is a secondary signal: Basics/identity is never demoted below mod
   })
 
   it('within a functional group, an emphasized surface sorts ahead of an un-emphasized one', () => {
-    // The people group for a practitioner: members (no emphasis) + CRM (emphasized first).
-    const peopleGroup = practitionerSurfaces.filter((s) => groupForSurface(s.id) === 'people')
+    // The Audience group (people slot) for a practitioner: members (no emphasis) + CRM (emphasized first).
+    const peopleGroup = practitionerSurfaces.filter((s) => s.slot === 'people')
     const ordered = orderWithinGroupByEmphasis(peopleGroup, emphasis)
     const crmIdx = ordered.findIndex((s) => s.id === 'space.engage.crm')
     const membersIdx = ordered.findIndex((s) => s.id === 'space.people')

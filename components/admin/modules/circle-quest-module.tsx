@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CircleChallenges } from '@/components/admin/modules/circle-challenges'
 import { getCircleAdminData } from '@/app/(main)/circles/admin-actions'
 import type { CircleQuestItem } from '@/app/(main)/circles/admin-actions'
 
-// In-place "Circle Quest" admin module. Lists the Journeys, Practices, and Challenges this group has
+// In-place "Circle Quest" admin module. Lists (read-only) the Journeys and Practices this group has
 // adopted. Self-loads via getCircleAdminData, which returns null unless the caller holds
 // circle.editSettings — so a viewer who can't manage this circle sees nothing here. The "This week's
 // practice" picker was extracted into its own rail module (circle.practice, ADR-515 Phase 4), so it no
-// longer lives here (it would otherwise render twice in the engage section).
+// longer lives here (it would otherwise render twice in the engage section). The adopt/drop CHALLENGE
+// editor was likewise de-duplicated out: challenges are edited in exactly ONE place, the first-class
+// `circle.engage` module (getCircleEngageData), so mounting CircleChallenges here too was the "excess
+// editing options" the owner flagged — same fix as the practice picker above.
 
 type CircleData = NonNullable<Awaited<ReturnType<typeof getCircleAdminData>>>
 
@@ -48,18 +50,12 @@ export function CircleQuestModule() {
       <header className="space-y-1">
         <h3 className="text-sm font-bold text-text">Circle Quest</h3>
         <p className="text-sm text-muted">
-          The journeys, practices, and challenges your group has taken on.
+          The journeys and practices your group has taken on.
         </p>
       </header>
 
       <QuestList label="Journeys" items={data.adoptedJourneys} empty="No journeys adopted yet" />
       <QuestList label="Practices" items={data.adoptedPractices} empty="No practices adopted yet" />
-      <CircleChallenges
-        circleId={data.id}
-        slug={data.slug}
-        adopted={data.adoptedChallenges}
-        adoptable={data.adoptableChallenges}
-      />
     </section>
   )
 }

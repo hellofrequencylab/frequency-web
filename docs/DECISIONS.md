@@ -11125,3 +11125,51 @@ Rejected the direct-balance approach (the pre-v2 trigger incremented `current_se
 **Follow-up (deferred, NOT in this change).** The public `/spotlight/<handle>` Puck page is a separate mini-site with its own published gate; unifying it onto the same grid engine is a later pass.
 
 **Consequences.** Owner-preview and visitor-view show the SAME page; every member's in-app profile has a uniform look independent of tier / publish. Gate green: `tsc --noEmit`, eslint (touched files), vitest (`components/` · `lib/` · `app/(main)/people/` · `app/(main)/settings/`), check:canon, check:authz. Tests updated: member starter layouts (basic/minimal/mutation), a new chrome-block registry assertion.
+## ADR-523: Admin-rail wiring cleanup (D1-D4, stale space-preview registry, console IA unify)
+
+**Status:** Accepted · corroborated by the touched files below
+**Context:** An audit surfaced a batch of small admin-rail wiring inconsistencies, all
+anchor-verified. None change authorization; each is a mechanical dedup/retire.
+**Decision (SAFE subset applied):**
+
+- **D1 — duplicate rail trigger.** `page-admin-bar.tsx` `isEntityDetail` only matched
+  `circles|events|practices`, so on `hubs|nexuses|channels|journeys` detail pages (which now
+  mount their own `OpenAdminBarButton`) the generic shell cog ALSO fired. Extended the regex
+  to include those four so the generic caps-blind cog is suppressed wherever a page owns its
+  trigger (single-trigger parity with circles/events/practices).
+- **D2 — dead `space.mode` inline module.** `SpaceModeModule` never rendered (the rail
+  unconditionally filtered `space.mode` out of `inlineApps`). Deleted the component, its
+  `module-map` entry + import, the `getSpaceModeData` getter (+ now-unused imports), and the
+  filter line (nodeForApp returns null for a component-less inline app, so it drops on its own).
+  KEPT the `space.mode` SPACE_SURFACES row — it still feeds the console link, `surface-hrefs`,
+  the Starter chip's Change affordance, and the `catalog.test` INLINE assertion. Mode is edited
+  via the Starter chip → `/manage/mode`. Also deleted the orphaned `lib/apps/bindings.tsx`
+  (`componentFor` seam, zero importers).
+- **D3 — duplicate circle challenge editor.** `CircleQuestModule` mounted `CircleChallenges`
+  (adopt/drop) in the SAME engage slot as the first-class `circle.engage` module. Dropped that
+  mount (kept the read-only Journeys/Practices lists), mirroring the earlier practice-picker
+  dedup, so challenges are editable in exactly one place.
+- **D4 — journey detail trigger parity.** Added an owner/operator-gated
+  `OpenAdminBarButton scope={{ kind: 'journey', id: plan.id }}` to the journey DETAIL page's
+  actions slot (gated on `getJourneyCapabilities(...).has('journey.editSettings')`), mirroring
+  `/learn`, so the scoped journey rail is reachable from the root page, not only the player.
+- **Stale space-preview fork retired.** The staff `/profile-preview` render passed no `grid`, so
+  it fell through to the TYPE-shaped `defaultProfileLayout` while the live page renders the
+  FUNCTION-only grid. Fixed the preview to compute + pass the same grid the live page uses
+  (`blocksForKind('space')` filtered by `requiresFunction`), and retired the per-TYPE gate from
+  `defaultProfileLayout` (now function-only, matching the live palette) so the flat fallback is
+  uniform too. Fixed the stale "nothing live reads this yet" comment (it IS live). Files stay
+  (their `ProfileBlockId`/`profileBlockById`/`PROFILE_BLOCKS`/`toProfileContext` exports are used
+  elsewhere), so only the type gates were removed, per the audit's conditional.
+- **Console IA unified to the ADR-520 7 groups.** `manage/console.tsx` still rendered the
+  pre-ADR-520 5-group IA (Space · People · Offerings · Reach · Billing and insights · Danger).
+  Re-grouped it to cluster by spine SLOT and label from the shared `SPACE_GROUP_META` (Identity ·
+  Page · Audience · Offerings & money · Reach · Growth · Danger), so the console and the in-rail
+  bar agree. Same links/targets; grouping/label change only.
+
+**Authz.** Unchanged. check:authz passes.
+**Consequences.** Live renders verified unchanged where intended: the live space profile page
+still passes its own grid (untouched); the Starter chip still reads `getSpaceStarterChip` (kept).
+Gate green: `tsc --noEmit`, eslint (touched files), vitest (`components/` · `lib/admin/` ·
+`app/(main)/` · `lib/apps/`, 401 pass; plus the updated `profile-blocks*` + `console` tests),
+check:canon, check:authz. No em dashes in touched copy; semantic tokens only.
