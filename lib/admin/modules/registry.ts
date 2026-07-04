@@ -233,6 +233,26 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'primary',
     priority: 30,
   },
+  // Hub layout (ADR-515 Phase 5, the 'layout' spine cell). Every rail carries a layout chooser (the owner
+  // directive). The hub detail page is HAND-BUILT (fixed sections: identity → insight → circles), NOT
+  // <PageModules>-driven, so there is no arrangeable block set to reorder — a real LayoutEditor would be a
+  // broken picker. Instead this is a minimal, honest Layout affordance: it states the page uses a standard
+  // fixed layout and links to the Manage console (where the hub's sections + settings live). Gated hub.manage;
+  // the module self-fetches getHubAdminData (null for anyone else), so it renders nothing when unauthorized.
+  {
+    id: 'hub.layout',
+    label: 'Layout',
+    desc: 'The hub page uses a standard, fixed layout. Manage its sections from the console.',
+    Icon: LayoutGrid,
+    scopes: ['hub'],
+    requiredCapability: 'hub.manage',
+    slot: 'layout',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 10,
+    tier: 'primary',
+    priority: 50,
+  },
   {
     id: 'hub.insights',
     label: 'Insights',
@@ -293,6 +313,24 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 10,
     tier: 'primary',
     priority: 30,
+  },
+  // Nexus layout (ADR-515 Phase 5). Same treatment as hub.layout: the nexus detail page is hand-built (fixed
+  // sections: identity → insight → hubs), not <PageModules>-driven, so this is the minimal Layout affordance
+  // pointing at the Manage console rather than a broken picker. Gated nexus.manage; self-fetches
+  // getNexusAdminData (null for anyone else), fail-safe.
+  {
+    id: 'nexus.layout',
+    label: 'Layout',
+    desc: 'The nexus page uses a standard, fixed layout. Manage its sections from the console.',
+    Icon: LayoutGrid,
+    scopes: ['nexus'],
+    requiredCapability: 'nexus.manage',
+    slot: 'layout',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 10,
+    tier: 'primary',
+    priority: 50,
   },
   {
     id: 'nexus.insights',
@@ -422,6 +460,24 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     render: 'inline',
     order: 10,
     tier: 'standard',
+    priority: 10,
+  },
+  // Channel insights (ADR-515 Phase 5). The channel page carries an on-screen readout ("X tuned in · Y circles
+  // practicing"), so the staff rail gets an at-a-glance module mirroring hub/nexus/circle/practice insights.
+  // A cheap read (tuned-in count + circle count) reusing the same tables the detail page queries. Gated
+  // channel.manage (staff); getChannelInsightsData returns null for anyone else (fail-safe).
+  {
+    id: 'channel.insights',
+    label: 'Insights',
+    desc: 'The channel at a glance: how many are tuned in and how many circles are practicing it.',
+    Icon: BarChart3,
+    scopes: ['channel'],
+    requiredCapability: 'channel.manage',
+    slot: 'insights',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 10,
+    tier: 'extra',
     priority: 10,
   },
   // The profile "Person settings" module was retired (ADR-133/PX.5): editing a

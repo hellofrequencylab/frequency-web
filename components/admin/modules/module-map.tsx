@@ -10,10 +10,12 @@ import { CirclePracticeModule } from './circle-practice-module'
 import { CircleInsightsModule } from './circle-insights-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { HubPeopleModule } from './hub-people-module'
+import { HubLayoutModule } from './hub-layout-module'
 import { HubInsightsModule } from './hub-insights-module'
 import { HubDangerModule } from './hub-danger-module'
 import { NexusSettingsModule } from './nexus-settings-module'
 import { NexusPeopleModule } from './nexus-people-module'
+import { NexusLayoutModule } from './nexus-layout-module'
 import { NexusInsightsModule } from './nexus-insights-module'
 import { NexusDangerModule } from './nexus-danger-module'
 import { EventSettingsModule } from './event-settings-module'
@@ -23,6 +25,7 @@ import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
+import { ChannelInsightsModule } from './channel-insights-module'
 import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceModeModule } from './space-mode-module'
 import { SpacePageModule } from './space-page-module'
@@ -48,10 +51,12 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.insights': CircleInsightsModule,
   'hub.settings': HubSettingsModule,
   'hub.people': HubPeopleModule,
+  'hub.layout': HubLayoutModule,
   'hub.insights': HubInsightsModule,
   'hub.danger': HubDangerModule,
   'nexus.settings': NexusSettingsModule,
   'nexus.people': NexusPeopleModule,
+  'nexus.layout': NexusLayoutModule,
   'nexus.insights': NexusInsightsModule,
   'nexus.danger': NexusDangerModule,
   'event.settings': EventSettingsModule,
@@ -61,6 +66,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'practice.settings': PracticeSettingsModule,
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
+  'channel.insights': ChannelInsightsModule,
   // Space inline config surfaces (inline-first rail, ADR-514). These are the SPACE_SURFACES whose
   // `render` is 'inline' — Basics / Mode / Page — each a thin wrapper that self-fetches its read-gated
   // data and mounts the existing editor in the flattened bar. The Space's feature workflows (Members,

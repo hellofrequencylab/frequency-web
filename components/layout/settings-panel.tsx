@@ -91,7 +91,7 @@ function questModuleFor(pathname: string) {
 /** The shared "Layout" tuner block (operator-only), parameterized by the page noun so the copy reads
  *  naturally on either a circle or an event. Rendered both in the flat `content` and the Layout
  *  drill-down category, so they never diverge. */
-function layoutBlock(noun: 'circle' | 'event'): ReactNode {
+function layoutBlock(noun: 'circle' | 'event' | 'practice'): ReactNode {
   return (
     <div className="min-w-0">
       <div className="mb-1 flex items-center gap-2">
@@ -340,6 +340,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const showCircleLayout = isCircle && isModuleRoute(pathname) && viewer.caps.has('circle.editSettings')
   const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
   const showEventLayout = isEvent && isModuleRoute(pathname) && viewer.caps.has('event.editSettings')
+  // The practice detail page IS <PageModules>-driven (ADR-116: stats · intro · guide · tags · used-in),
+  // shared across every /practices/<id> via the '/practices/*' scope — so a REAL LayoutEditor applies, just
+  // like circle/event. De-operatorized the same way (ADR-515 Phase 5): owner-visible, gated on the ENTITY
+  // EDIT capability (practice.editSettings) behind the isModuleRoute guard, NOT the staff isOperator axis.
+  const isPractice = manager && /^\/practices\/[^/]+/.test(pathname)
+  const showPracticeLayout = isPractice && isModuleRoute(pathname) && viewer.caps.has('practice.editSettings')
 
   // ── Inline extras, folded into their natural spine slot (quest→engage, layout→layout,
   //    event danger→danger, page-content→basics), each pinned to a rail band (ADR-514 three-tier reorg):
@@ -350,6 +356,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const contentBlock: ReactNode = contentModule ? <div className="min-w-0">{contentModule}</div> : null
   const circleLayoutNode: ReactNode = showCircleLayout ? layoutBlock('circle') : null
   const eventLayoutNode: ReactNode = showEventLayout ? layoutBlock('event') : null
+  const practiceLayoutNode: ReactNode = showPracticeLayout ? layoutBlock('practice') : null
   const dangerBlock: ReactNode = isEvent ? (
     <div className="min-w-0">
       <EventDangerZone />
@@ -361,6 +368,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     { slot: 'basics', tier: 'standard', priority: 90, node: contentBlock },
     { slot: 'layout', tier: 'primary', priority: 90, node: circleLayoutNode },
     { slot: 'layout', tier: 'primary', priority: 90, node: eventLayoutNode },
+    { slot: 'layout', tier: 'primary', priority: 90, node: practiceLayoutNode },
     { slot: 'danger', tier: 'extra', priority: 99, node: dangerBlock },
   ]
   const extraItems = allExtraItems.filter((x) => x.node != null)

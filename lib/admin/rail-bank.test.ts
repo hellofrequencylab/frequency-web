@@ -153,8 +153,18 @@ describe('bankForScope', () => {
     expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
   })
 
+  it('channel → the operator /admin channels area + Moderation, staff-only (ADR-515 Phase 5)', () => {
+    // A channel is operator-curated (no per-channel owner console), so its bank leans on the /admin hub.
+    // A non-staff viewer never reaches the channel rail, so a null viewer yields [] (fail-safe).
+    expect(bankForScope({ kind: 'channel', id: 'c' })).toEqual([])
+    const staff = bankForScope({ kind: 'channel', id: 'c' }, { isStaff: true })
+    expect(hrefs(staff)).toEqual(['/admin/channels', '/admin/moderation'])
+    expect(staff.map((l) => l.label)).toEqual(['Channels', 'Moderation'])
+    // Navigation only — no destructive href.
+    expect(staff.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
+  })
+
   it('null / unknown scope → [] gracefully', () => {
     expect(bankForScope(null)).toEqual([])
-    expect(bankForScope({ kind: 'channel', id: 'c' })).toEqual([])
   })
 })

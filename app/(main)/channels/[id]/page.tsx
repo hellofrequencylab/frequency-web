@@ -13,6 +13,7 @@ import {
   Circle as CircleIcon,
   MapPin,
   Hash,
+  Settings,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -21,7 +22,8 @@ import { TuneInButton, TunedInButton } from '../channel-toggle'
 import { Composer } from '@/components/feed/composer'
 import { FeedList } from '@/components/feed/feed-list'
 import { NewCircleCompose } from '@/components/compose/new-circle-compose'
-import { canCreate } from '@/lib/core/load-capabilities'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { canCreate, getChannelCapabilities } from '@/lib/core/load-capabilities'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { ChannelCover } from '@/components/channels/channel-cover'
 import { ModuleCard } from '@/components/modules/module-card'
@@ -144,6 +146,13 @@ export default async function ChannelPage({
 
   const circles = (rawCircles ?? []) as unknown as CircleRow[]
 
+  // Staff-only in-place Edit (ADR-515 Phase 5): topical channels are platform-curated, so channel.manage
+  // resolves to staff only. When held, the header carries the standardized admin-bar trigger so the single
+  // Channel settings module (+ the staff Insights readout) is reachable in place — mirroring how circle /
+  // event mount OpenAdminBarButton. Every module re-gates server-side, so this is UX, never the authority.
+  const channelCaps = await getChannelCapabilities(channel.id)
+  const canManageChannel = channelCaps.has('channel.manage')
+
   const Icon = CATEGORY_ICON[channel.category] ?? Radio
   const accent = CATEGORY_ACCENT[channel.category] ?? 'text-muted bg-surface'
 
@@ -193,6 +202,14 @@ export default async function ChannelPage({
         actions={
           myProfileId ? (
             <>
+              {canManageChannel && (
+                <OpenAdminBarButton
+                  scope={{ kind: 'channel', id: channel.id }}
+                  caps={Array.from(channelCaps)}
+                  label="Edit"
+                  icon={<Settings className="h-4 w-4" />}
+                />
+              )}
               {channelRoomId && (
                 <Link
                   href={`/messages/r/${channelRoomId}`}
