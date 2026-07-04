@@ -16,7 +16,7 @@ import {
   Check,
   Loader2,
 } from 'lucide-react'
-import { blocksForKind, entityBlockById, type EntityKind } from '@/lib/entity-blocks/registry'
+import { blocksForKind, entityBlockById, MEMBER_CHROME_BLOCK_IDS, type EntityKind } from '@/lib/entity-blocks/registry'
 import {
   starterRows,
   STARTER_LAYOUTS,
@@ -553,11 +553,15 @@ export function EntityPageBuilder({
 
 /** The MEMBER page builder — the caller's own /people/<handle> layout. Kept as the Phase C export name so
  *  the personal Layout rail module + its wiring are unchanged; it adapts the member seed getter into the
- *  generic shape (matchId = the handle; member blocks are never function-locked). */
+ *  generic shape (matchId = the handle). The chrome-owned blocks (about/stats, ADR-522) are locked out of
+ *  the palette + bench so a member cannot add a duplicate of the bio / Standing card the profile already
+ *  renders. */
 export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getMemberLayoutRailData()
-    return d ? { matchId: d.handle, rows: d.rows, hidden: d.hidden, customized: d.customized } : null
+    return d
+      ? { matchId: d.handle, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: [...MEMBER_CHROME_BLOCK_IDS] }
+      : null
   }, [])
   return <EntityPageBuilder pageId={pageHandle} kind="member" loadRailData={load} />
 }

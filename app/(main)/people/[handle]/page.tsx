@@ -469,17 +469,18 @@ export default async function ProfilePage({
           {/* Staff-only: this member's support history, wired into the console. */}
           {!isOwner && atLeastRole(myRole, 'host') && <MemberSupportPanel profileId={profileId} />}
 
-          {/* The member's page-builder content (ADR-508 → ADR-516 Phase C). For the OWNER this is the
-              LIVE PREVIEW of their freeform grid layout (the WYSIWYG surface the in-rail builder edits, in
-              sync via the shared ProfileLayoutContext). For a visitor it stays the flat Spotlight decompose
-              (each block its own section, the bio + stats the profile already shows dropped). Both are
-              additive + fail-safe (render nothing without a published Spotlight) and stream behind Suspense
-              so they never block the profile's first byte. */}
+          {/* The member's page-builder content (ADR-508 → ADR-516 Phase C → ADR-522). ONE engine: both
+              branches render the member's freeform grid (resolveRows over meta.entityGrid). For the OWNER
+              it is the LIVE PREVIEW (the WYSIWYG surface the in-rail builder edits, in sync via the shared
+              ProfileLayoutContext); for a VISITOR it is a STATIC render of the identical grid — same
+              arrangement / columns / hidden choices. DECOUPLED from the Spotlight publish gate: it renders
+              for every member (default starter when they never opened the builder), not just published
+              Crew+. Fail-safe + streamed behind Suspense so they never block the profile's first byte. */}
           <Suspense fallback={null}>
             {isOwner ? (
               <OwnerProfileLayoutPreview handle={handle} />
             ) : (
-              <ProfileSpotlightBlocks handle={handle} owner={false} />
+              <ProfileSpotlightBlocks handle={handle} />
             )}
           </Suspense>
 

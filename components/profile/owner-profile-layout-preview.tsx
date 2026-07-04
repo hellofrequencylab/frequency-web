@@ -1,9 +1,9 @@
-import { getPublishedSpotlight } from '@/lib/spotlight/data'
+import { getMemberProfileModules } from '@/lib/spotlight/data'
 import { resolveRows } from '@/lib/entity-blocks/layout'
 import { renderMemberBlockNodes } from '@/components/widgets/member-profile/member-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 
-// THE OWNER'S LIVE PAGE PREVIEW (ADR-516 Phase C). On the member's OWN profile this renders their
+// THE OWNER'S LIVE PAGE PREVIEW (ADR-516 Phase C; ADR-522). On the member's OWN profile this renders their
 // entity-grid layout through the LiveProfileGrid, seeded from the persisted rows. Every candidate member
 // block is rendered ONCE here, server-side, into a keyed node map; the client grid arranges those nodes by
 // the shared ProfileLayoutContext, so the in-rail builder's edits repaint this region INSTANTLY (no
@@ -11,13 +11,15 @@ import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 //
 // This is the WYSIWYG surface the builder edits (the same-route slide-over sits over it). It is the member
 // (self) preview only — the public Spotlight still renders through Puck (ADR-508), nothing live changes.
-// FAIL-SAFE: a member with no published Spotlight (no resolvable block data) renders nothing, and the
-// builder in the rail still works on its own.
+// DECOUPLED FROM THE PUBLISH GATE (ADR-522): reads through getMemberProfileModules so the grid shows for
+// EVERY owner regardless of tier / meta.spotlight.published — the visitor view (ProfileSpotlightBlocks)
+// renders the SAME resolved grid, so owner-preview and visitor-view match. FAIL-SAFE: a missing / inactive
+// member renders nothing, and resolveRows falls back to the default starter when the saved grid is empty.
 
 export async function OwnerProfileLayoutPreview({ handle }: { handle: string }) {
-  let data: Awaited<ReturnType<typeof getPublishedSpotlight>> = null
+  let data: Awaited<ReturnType<typeof getMemberProfileModules>> = null
   try {
-    data = await getPublishedSpotlight(handle)
+    data = await getMemberProfileModules(handle)
   } catch {
     data = null
   }

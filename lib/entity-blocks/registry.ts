@@ -83,6 +83,13 @@ export function blockSupportsKind(block: EntityBlockDef, kind: EntityKind): bool
   return block.kinds.includes(kind)
 }
 
+/** Block ids the MEMBER profile CHROME already renders canonically (ADR-522): the bio in the identity
+ *  band and the Zaps/Gems/Streak/Rank in the Standing card. They stay valid registry member blocks (so
+ *  the generic layout mechanics + a SPACE profile's own about/highlights are untouched), but the in-app
+ *  member builder holds them OUT of its palette + bench so a member cannot add a duplicate of the chrome.
+ *  The member starter layouts omit them too, so a fresh member never double-renders. */
+export const MEMBER_CHROME_BLOCK_IDS: readonly string[] = ['about', 'stats']
+
 /** Every block available to an entity kind, in default order. The kind-specific default LAYOUT (which
  *  of these show by default, gated by space functions) is resolved per surface in U2/U3; this is the
  *  full palette the block-picker offers. */

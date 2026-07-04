@@ -4,6 +4,7 @@ import {
   entityBlockById,
   blockSupportsKind,
   blocksForKind,
+  MEMBER_CHROME_BLOCK_IDS,
 } from './registry'
 import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
 
@@ -64,6 +65,18 @@ describe('unified entity-block registry', () => {
     for (const id of ['about', 'stats', 'heading', 'links']) {
       expect(member).toContain(id)
       expect(space).toContain(id)
+    }
+  })
+
+  it('member chrome blocks (about/stats) stay valid member+space registry blocks (ADR-522)', () => {
+    // They are held out of the in-app MEMBER builder palette at the builder layer (lockedIds), NOT the
+    // registry — so a SPACE profile keeps its own about/highlights and the generic layout mechanics are
+    // unchanged. The chrome (bio band + Standing card) is what makes them redundant on a MEMBER profile.
+    for (const id of MEMBER_CHROME_BLOCK_IDS) {
+      const block = entityBlockById(id)
+      expect(block, `unknown chrome block ${id}`).not.toBeNull()
+      expect(blockSupportsKind(block!, 'member')).toBe(true)
+      expect(blockSupportsKind(block!, 'space')).toBe(true)
     }
   })
 })

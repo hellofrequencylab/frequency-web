@@ -378,12 +378,14 @@ export type StarterId = 'basic' | 'showcase' | 'minimal'
 const r = (id: string, columns: RowColumns, slots: (string | null)[]): RowDef => ({ id, columns, slots })
 
 const MEMBER_STARTERS: Record<StarterId, readonly RowDef[]> = {
-  // The legacy member default (about, stats, links, topfriends) stacked — a no-op visual change.
-  basic: [r('r0', 1, ['about']), r('r1', 1, ['stats']), r('r2', 1, ['links']), r('r3', 1, ['topfriends'])],
-  // A full-width identity header over 2-up content.
-  showcase: [r('r0', 1, ['about']), r('r1', 2, ['stats', 'links']), r('r2', 2, ['topfriends', null])],
-  // Just the identity blurb.
-  minimal: [r('r0', 1, ['about'])],
+  // The in-app member default (ADR-522): `about` + `stats` are NOT here — the profile chrome already
+  // renders the bio (identity band) and the Zaps/Gems/Streak/Rank (Standing card), so the member grid
+  // leads with the blocks the chrome does NOT own: links, then Top Friends.
+  basic: [r('r0', 1, ['links']), r('r1', 1, ['topfriends'])],
+  // Links + Top Friends 2-up.
+  showcase: [r('r0', 2, ['links', 'topfriends'])],
+  // Just the bio-link row.
+  minimal: [r('r0', 1, ['links'])],
 }
 
 const SPACE_STARTERS: Record<StarterId, readonly RowDef[]> = {
