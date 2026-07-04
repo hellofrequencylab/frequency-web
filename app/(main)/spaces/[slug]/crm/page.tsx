@@ -210,7 +210,10 @@ export default async function SpaceCrmBoardPage({
       {activeView === 'pipeline' && (
         <>
           <Suspense fallback={<BoardSkeleton />}>
-            <SpacePipeline spaceId={space.id} />
+            {/* Editable stages (ADR-517 Phase F2): a manager gets the owner-only "Edit stages" control;
+                the stage actions re-gate + space-scope by slug, so this is convenience over an unchanged
+                gate. A non-manager still reaches here read-only (the board itself gates on canUseCrm). */}
+            <SpacePipeline spaceId={space.id} slug={space.slug} editable={caps.canEditProfile} />
           </Suspense>
 
           {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. */}

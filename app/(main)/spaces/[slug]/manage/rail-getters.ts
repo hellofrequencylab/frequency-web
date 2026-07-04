@@ -27,7 +27,8 @@ import {
 import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { listSpaceMembers } from '@/lib/spaces/membership'
-import { getDeals } from '@/lib/crm/pipeline'
+import { getDeals, getStages, type StageKind } from '@/lib/crm/pipeline'
+import { resolveStageManagerAccess } from '@/lib/crm/stages'
 import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
 import {
   readProfilePages,
@@ -352,6 +353,31 @@ export async function getSpaceAutonomyData(slug: string): Promise<SpaceAutonomyD
   if (!caps.canManageMembers) return null
 
   return { slug: space.slug, level: spaceAutonomyLevel(space) }
+}
+
+// ── Pipeline (space.pipeline) ────────────────────────────────────────────────────────────────────────
+// The compact stage list for the inline rail Pipeline module (ADR-517 Phase F2 · audit GAP 1: "the on
+// screen pipeline gets an admin function in the bar"). Re-gates EXACTLY like the stage write actions
+// (lib/crm/stages.ts requireStageManager): manage access (canManage; a staff previewer is not canManage,
+// so gets nothing) PLUS the `crm` function. Returns null for anyone who cannot edit the pipeline, so the
+// inline module renders nothing — the editor authority is never widened. READ-ONLY + serializable.
+
+interface SpacePipelineData {
+  slug: string
+  /** The Space's stages, in order (id + name + kind), for the compact rail preview. */
+  stages: { id: string; name: string; kind: StageKind }[]
+}
+
+/** The rail Pipeline module's data, or null when the viewer cannot edit this Space's pipeline. Re-gates
+ *  through the EXACT same seam the stage writes use (resolveStageManagerAccess: manage access + the crm
+ *  function; a staff previewer / non-manager gets null), so the inline module never widens the editor
+ *  authority. Fail-safe -> the module renders nothing. */
+export async function getSpacePipelineData(slug: string): Promise<SpacePipelineData | null> {
+  const access = await resolveStageManagerAccess(slug)
+  if (!access) return null
+
+  const stages = await getStages(access.spaceId)
+  return { slug: access.slug, stages: stages.map((s) => ({ id: s.id, name: s.name, kind: s.kind })) }
 }
 
 // ── Rail summary getters (Phase 2 "keep it in the rail") ─────────────────────────────────────────────

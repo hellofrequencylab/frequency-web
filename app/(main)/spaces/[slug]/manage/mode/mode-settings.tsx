@@ -148,7 +148,8 @@ export function ModeSettings({
       <section>
         <SectionHeader title="Suggested pipeline" />
         <p className="-mt-2 mb-3 text-sm text-muted">
-          The starting stages your CRM seeds. Switching keeps a pipeline you have already edited.
+          The starting stages your CRM seeds. Edit them any time on your pipeline board, and switching
+          focus keeps a pipeline you have already changed.
         </p>
         <div className="flex flex-wrap gap-2">
           {view.pipeline.map((s) => (

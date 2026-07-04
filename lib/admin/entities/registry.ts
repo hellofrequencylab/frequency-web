@@ -400,6 +400,23 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'inline',
   },
+  // Pipeline (ADR-517 Phase F2 · audit GAP 1) — the editable CRM pipeline gets an admin function in the
+  // bar: an INLINE owner-gated stage preview (renders the current stages compactly) that links into the
+  // full editor on the CRM board's Pipeline view. Gated by the SAME `crm` function as the CRM surface, so
+  // it sits beside the CRM tools (universal, shows for every console type). Its module getter re-gates
+  // manage access + crm, and every stage write re-gates the same authority (lib/crm/stages.ts), so this is
+  // convenience over an unchanged gate. Stays INLINE in the rail body (a pipeline paints on the console).
+  {
+    id: 'space.pipeline',
+    tier: 'primary',
+    priority: 12,
+    slot: 'engage',
+    label: 'Pipeline',
+    desc: 'Your CRM stages. Rename, reorder, and set what each one means.',
+    requiredFunction: 'crm',
+    types: ['*'],
+    render: 'inline',
+  },
   // Services (the storefront store items) — the operator's catalog of services with full pricing +
   // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
   // storefront (components/widgets/space-profile/offerings.tsx). Declared right AFTER CRM so it sorts
