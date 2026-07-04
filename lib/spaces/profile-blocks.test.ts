@@ -41,14 +41,16 @@ describe('defaultProfileLayout (fresh default from type + enabled functions)', (
     expect(layout).toContain('about') // universal content stays
   })
 
-  it('respects space-type restrictions', () => {
-    // business: no booking (practitioner-only), yes business-presence block
-    const biz = defaultProfileLayout('business', fns('availability', 'members'))
-    expect(biz).not.toContain('booking')
-    expect(biz).toContain('business')
-    // practitioner: no business-presence block, but offerings applies (no required function)
-    const prac = defaultProfileLayout('practitioner', fns())
-    expect(prac).not.toContain('business')
+  it('gates by function only, never by space type (the per-type gate was retired)', () => {
+    // Same enabled functions => the SAME block set for any type: booking follows the `availability`
+    // function; business + offerings are universal content (no required function). This locks the
+    // function-only palette the live grid path (blocksForKind('space')) also uses.
+    const withFns = fns('availability', 'members')
+    const biz = defaultProfileLayout('business', withFns)
+    const prac = defaultProfileLayout('practitioner', withFns)
+    expect(biz).toEqual(prac)
+    expect(prac).toContain('booking') // availability on => booking, on any type
+    expect(prac).toContain('business') // universal content, on any type
     expect(prac).toContain('offerings')
   })
 

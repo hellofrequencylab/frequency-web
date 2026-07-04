@@ -33,8 +33,9 @@ import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authore
 // never blocks the ones above it (PAGE-FRAMEWORK §5), and each block is FAIL-SAFE (renders nothing when
 // its data is absent), so the whole render degrades to an empty column rather than a broken page.
 //
-// STAFF-PREVIEW ONLY: nothing live reads this yet — the live profile stays the Puck landing
-// (components/spaces/space-landing.tsx). This validates the module render beside it.
+// LIVE: this IS the space profile Home body (ADR-508 U3 cutover) — the (profile)/page.tsx visitor render
+// mounts it with the operator's effective GRID, and the staff /profile-preview route mounts it the same
+// way. Both feed the function-only palette (blocksForKind('space')), so the two renders stay uniform.
 
 type BlockComponent = (props: { space: SpaceProfileContext; data: SpaceContentData }) => React.ReactNode
 

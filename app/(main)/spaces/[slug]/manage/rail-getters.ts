@@ -24,7 +24,7 @@ import {
   spaceAutonomyLevel,
   type AutonomyLevel,
 } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { listSpaceMembers } from '@/lib/spaces/membership'
 import { getDeals, getStages, type StageKind } from '@/lib/crm/pipeline'
@@ -47,13 +47,9 @@ import {
   resolveMode,
   listVariantsForType,
   modeHasFocusChoice,
-  readModePreferences,
-  effectiveNavEmphasis,
-  effectiveLabel,
 } from '@/lib/spaces/modes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
 import type { FocusChoiceLike } from '@/components/spaces/space-page-panel'
-import type { ModeView, FocusChoice, ModuleRow } from './mode/mode-settings'
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
 // The SpaceSettingsForm prop bundle the /settings/basics page assembles (basics/page.tsx). Read-gated on
@@ -250,74 +246,11 @@ export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutR
   }
 }
 
-// ── Mode and focus (space.mode) ────────────────────────────────────────────────────────────────────
-// The ModeSettings view model the /manage/mode page assembles (manage/mode/page.tsx). Read-gated on
-// manage access; every write re-gates the owner/admin role in its own action, so readOnly is UX.
-
-interface SpaceModeData {
-  slug: string
-  view: ModeView
-  readOnly: boolean
-}
-
-/** The Mode editor's data, or null when the viewer cannot manage this Space / the type has no Mode
- *  (fail-safe). Re-gates exactly like manage/mode/page.tsx. */
-export async function getSpaceModeData(slug: string): Promise<SpaceModeData | null> {
-  const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
-
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
-  if (!space) return null
-
-  const { canManage, staffViewing } = await resolveSpaceManageAccess(
-    space,
-    viewerProfileId,
-    caller?.webRole,
-  )
-  if (!canManage && !staffViewing) return null
-  if (!isConsoleSpaceType(space.type)) return null
-
-  const mode = resolveMode(space.type, space.modeVariant)
-  if (!mode) return null
-  const prefs = readModePreferences(space.preferences)
-
-  const focusChoices: FocusChoice[] = modeHasFocusChoice(space.type)
-    ? listVariantsForType(space.type).map((m) => ({
-        variant: m.variant,
-        label: m.focusLabel,
-        tagline: m.tagline,
-        active: m.variant === mode.variant,
-      }))
-    : []
-
-  const emphasis = effectiveNavEmphasis(mode, prefs)
-  const modules: ModuleRow[] = emphasis.map((fn) => {
-    const def = spaceFunctionDef(fn)
-    const override = effectiveLabel(prefs, fn)
-    return {
-      fn,
-      label: override ?? def?.label ?? fn,
-      defaultLabel: def?.label ?? fn,
-      overridden: override !== null,
-      suggestedOn: (prefs.toggles?.[fn] ?? mode.defaultToggles.includes(fn)) === true,
-    }
-  })
-
-  const view: ModeView = {
-    modeLabel: mode.modeLabel,
-    focusLabel: mode.focusLabel,
-    tagline: mode.tagline,
-    pipeline: mode.pipeline.map((s) => ({ name: s.name, kind: s.kind })),
-    lexicon: mode.lexicon,
-    recommendedAddons: mode.recommendedAddons.map((k) => k),
-    nextBestActions: mode.nextBestActions.map((a) => ({ label: a.label })),
-    modules,
-    focusChoices,
-    hasOverrides: Object.keys(prefs).length > 0,
-  }
-
-  return { slug, view, readOnly: staffViewing && !canManage }
-}
+// NOTE: Space Mode is edited via the Starter chip → /manage/mode (getSpaceStarterChip below + the full
+// /manage/mode page), NOT an inline rail module. The former `getSpaceModeData` getter + its
+// `SpaceModeModule` (which the rail unconditionally filtered out of the section list, so it never
+// rendered) were removed as dead wiring — the `space.mode` surface stays in the registry only for the
+// console link + the Starter chip's "Change" affordance.
 
 // ── Starter chip (Space menu regroup, ADR-520) ───────────────────────────────────────────────────────
 // The compact "Starter: {preset}" chip pinned under Identity in the Space rail. A Starter (the Space Mode)

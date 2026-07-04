@@ -21,6 +21,8 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { DangerDelete } from '@/components/admin/danger-delete'
 import { deleteSpace } from '@/lib/spaces/provision'
 import type { SpaceSurface } from '@/lib/admin/entities/registry'
+import type { AdminSlot } from '@/lib/admin/modules/registry'
+import { SPACE_GROUP_META } from '@/lib/admin/modules/spine'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 
@@ -38,12 +40,13 @@ export { hrefForSurface }
 // /spaces/[slug]/settings sub-page (or the CRM board / Mode settings), so this stays a pure
 // harmonization of navigation onto the unified spine.
 //
-// DESIGN (this rework):
-//   • Space LEADS, always, at the top — never demoted below the mode-emphasized modules (the bug the old
-//     emphasis-reorder caused: it promoted bookings/CRM above the space's own identity).
-//   • The 9-category spine is compressed into five tight clusters plus Danger (Space · People ·
-//     Offerings · Reach · Billing and insights · Danger zone), each a titled cluster of compact cards
-//     with a per-surface icon, rather than one long flat list.
+// DESIGN:
+//   • Identity LEADS, always, at the top — never demoted below the mode-emphasized modules (the bug the
+//     old emphasis-reorder caused: it promoted bookings/CRM above the space's own identity).
+//   • The console clusters by spine SLOT into the SAME 7 member-facing groups the admin rail uses
+//     (ADR-520, via the shared SPACE_GROUP_META): Identity · Page · Audience · Offerings & money · Reach ·
+//     Growth · Danger — each a titled cluster of compact cards with a per-surface icon. This unifies the
+//     two owner surfaces (console + rail) onto one IA, replacing the pre-ADR-520 5-group console.
 //   • Mode is a SECONDARY signal: a surface a Mode emphasizes gets a quiet "Suggested for your mode" tag
 //     and sorts first WITHIN its group. Nothing is dropped; every gated surface still appears.
 //
@@ -52,52 +55,24 @@ export { hrefForSurface }
 
 // ── Grouping + iconography (pure metadata) ───────────────────────────────────────────────────────────
 //
-// The console renders its sections in titled GROUPS rather than one flat list. A group is keyed by a
-// stable id; every surface id is assigned to exactly one group (CONSOLE_GROUP_FOR). The groups render in
-// CONSOLE_GROUPS order, with Space first (so the space's own identity always leads) and the Danger zone
-// last. A surface whose id is not mapped falls back to 'space' (defensive; never expected).
-//
-// This is the COMPRESSED IA: the seven prior clusters collapse into five tight top-level sections plus
-// Danger. Space folds in identity + how it runs + the public page; People holds the team + contacts;
-// Offerings gathers everything bookable, joinable, supportable, or attendable (check-in rides along with
-// attendance); Reach pairs email + QR; Billing and insights pairs the plan with how the space performs.
+// The console renders its sections in the SAME 7 member-facing GROUPS the admin rail uses (ADR-520): the
+// console clusters by each surface's spine SLOT and labels the group from the shared SPACE_GROUP_META
+// (Identity · Page · Audience · Offerings & money · Reach · Growth · Danger), so the two owner surfaces
+// (this full-page console + the in-rail bar) never disagree on the IA. The groups render in
+// SPACE_CONSOLE_GROUPS order (Identity leads so the space's own identity is first; Danger trails). Every
+// SPACE_SURFACES slot maps to one of these seven, so nothing is orphaned.
 
-type GroupId = 'space' | 'people' | 'offerings' | 'reach' | 'billing' | 'danger'
-
-interface ConsoleGroup {
-  id: GroupId
-  title: string
-  /** One plain line under the group title (CONTENT-VOICE: no em dashes). */
-  blurb: string
-}
-
-/** The group spine, in render order. Space leads; Danger trails. */
-const CONSOLE_GROUPS: readonly ConsoleGroup[] = [
-  { id: 'space', title: 'Space', blurb: 'Your identity, how it runs, and your public page.' },
-  { id: 'people', title: 'People', blurb: 'Your members, your team, and who shows up.' },
-  { id: 'offerings', title: 'Offerings', blurb: 'Everything people can book, join, support, or attend.' },
-  { id: 'reach', title: 'Reach', blurb: 'Get your space in front of people and stay in touch.' },
-  { id: 'billing', title: 'Billing and insights', blurb: 'Your plan, what it unlocks, and how the space is performing.' },
-  { id: 'danger', title: 'Danger zone', blurb: 'Permanent actions for this space.' },
+/** The 7 Space console groups, in render order — the SPACE_GROUP_META slots (ADR-520). Identity leads;
+ *  Danger trails. Each group's header label + icon come from SPACE_GROUP_META. */
+const SPACE_CONSOLE_GROUPS: readonly AdminSlot[] = [
+  'basics', // Identity
+  'layout', // Page
+  'people', // Audience
+  'engage', // Offerings & money
+  'reach', // Reach
+  'insights', // Growth
+  'danger', // Danger
 ]
-
-/** Which group each surface id belongs to. The console reads this to cluster the flat spine. */
-const CONSOLE_GROUP_FOR: Record<string, GroupId> = {
-  'space.basics': 'space',
-  'space.mode': 'space',
-  'space.layout': 'space',
-  'space.people': 'people',
-  'space.engage.crm': 'people',
-  'space.autonomy': 'people',
-  'space.pipeline': 'people',
-  'space.offerings': 'offerings',
-  'space.services': 'offerings',
-  'space.comms': 'reach',
-  'space.reach': 'reach',
-  'space.billing': 'billing',
-  'space.insights': 'billing',
-  'space.danger': 'danger',
-}
 
 /** The per-section icon (lucide). Keeps the cards scannable at a glance. */
 const ICON_FOR: Record<string, LucideIcon> = {
@@ -117,9 +92,9 @@ const ICON_FOR: Record<string, LucideIcon> = {
   'space.danger': Trash2,
 }
 
-/** The group a surface belongs to (defensive default: space). PURE. */
-export function groupForSurface(id: string): GroupId {
-  return CONSOLE_GROUP_FOR[id] ?? 'space'
+/** The console group (spine slot) a surface belongs to. PURE. */
+export function groupForSurface(surface: SpaceSurface): AdminSlot {
+  return surface.slot
 }
 
 /**
@@ -249,14 +224,14 @@ function DangerRow({
  *  multi-column grid cell (break-inside-avoid keeps a group whole). No blurb — the console is
  *  consolidated to fit without scrolling. */
 function GroupCluster({
-  group,
+  title,
   surfaces,
   slug,
   emphasis,
   canDelete,
   spaceId,
 }: {
-  group: ConsoleGroup
+  title: string
   surfaces: SpaceSurface[]
   slug: string
   emphasis: readonly SpaceFunctionKey[]
@@ -265,7 +240,7 @@ function GroupCluster({
 }) {
   return (
     <section className="break-inside-avoid">
-      <SectionHeader title={group.title} />
+      <SectionHeader title={title} />
       <ul className="-mt-1 space-y-1.5">
         {surfaces.map((surface) => {
           if (surface.id === 'space.danger') {
@@ -303,12 +278,12 @@ export function SpaceManageConsole({
   canDelete: boolean
   spaceId: string
 }) {
-  // Bucket the flat spine into its groups, preserving incoming (spine) order within each bucket, then
-  // apply the Mode emphasis WITHIN each bucket only. Render the groups in CONSOLE_GROUPS order; a group
-  // with no surfaces for this Space type renders nothing.
-  const byGroup = new Map<GroupId, SpaceSurface[]>()
+  // Bucket the flat spine by SPINE SLOT (the 7-group IA, ADR-520), preserving incoming (spine) order
+  // within each bucket, then apply the Mode emphasis WITHIN each bucket only. Render the groups in
+  // SPACE_CONSOLE_GROUPS order; a group with no surfaces for this Space type renders nothing.
+  const byGroup = new Map<AdminSlot, SpaceSurface[]>()
   for (const surface of surfaces) {
-    const g = groupForSurface(surface.id)
+    const g = surface.slot
     const list = byGroup.get(g) ?? []
     list.push(surface)
     byGroup.set(g, list)
@@ -319,15 +294,17 @@ export function SpaceManageConsole({
   // group keeps it whole within a column.
   return (
     <div className="gap-x-6 [column-gap:1.5rem] sm:columns-2 xl:columns-3">
-      {CONSOLE_GROUPS.map((group) => {
-        const inGroup = byGroup.get(group.id)
+      {SPACE_CONSOLE_GROUPS.map((slot) => {
+        const inGroup = byGroup.get(slot)
         if (!inGroup || inGroup.length === 0) return null
+        const meta = SPACE_GROUP_META[slot]
+        if (!meta) return null
         // The Danger group keeps its single row; every other group orders within itself by emphasis.
-        const ordered = group.id === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
+        const ordered = slot === 'danger' ? inGroup : orderWithinGroupByEmphasis(inGroup, emphasis)
         return (
-          <div key={group.id} className="mb-5 break-inside-avoid">
+          <div key={slot} className="mb-5 break-inside-avoid">
             <GroupCluster
-              group={group}
+              title={meta.label}
               surfaces={ordered}
               slug={slug}
               emphasis={emphasis}

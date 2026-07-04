@@ -64,25 +64,20 @@ export function profileBlockById(id: string): ProfileBlockDef | null {
   return PROFILE_BLOCKS.find((b) => b.id === id) ?? null
 }
 
-/** Whether a block applies to a space type (its `types` includes the type or the `'*'` wildcard). */
-function appliesToType(block: ProfileBlockDef, type: SpaceType): boolean {
-  return block.types.includes('*') || block.types.includes(type)
-}
-
 /**
- * The FRESH-DEFAULT ordered profile layout for a space: every registry block that applies to the
- * space's type AND (has no required function, or its required function is enabled). This is what a
- * space's profile shows before any editor customization, and the fail-safe the saved layout falls back
- * to. Pure: pass the type and the set of enabled function keys (resolve those with
- * `spaceFunctionEnabled` in the caller).
+ * The FRESH-DEFAULT ordered profile layout for a space: every registry block whose required function is
+ * enabled (or that has none). FUNCTION-ONLY — the stale per-TYPE gate was retired so this matches the
+ * live grid palette (blocksForKind('space') filtered by requiresFunction), which never gates by type;
+ * the two render paths stay uniform. Pure: pass the set of enabled function keys (resolve those with
+ * `spaceFunctionEnabled` in the caller). The `type` param is kept for signature stability (its callers
+ * pass it), but no longer restricts the block set.
  */
 export function defaultProfileLayout(
   type: SpaceType,
   enabledFunctions: ReadonlySet<SpaceFunctionKey>,
 ): ProfileBlockId[] {
-  return PROFILE_BLOCKS.filter(
-    (b) => appliesToType(b, type) && (b.requiresFunction === null || enabledFunctions.has(b.requiresFunction)),
-  )
+  void type
+  return PROFILE_BLOCKS.filter((b) => b.requiresFunction === null || enabledFunctions.has(b.requiresFunction))
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((b) => b.id)

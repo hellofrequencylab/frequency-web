@@ -2,9 +2,11 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers } from 'lucide-react'
+import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { getCallerProfile } from '@/lib/auth'
+import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
 import { getPillars, pillarsById as indexPillars } from '@/lib/pillars'
 import { accentColor, accentTint } from '@/lib/studio/accents'
@@ -121,6 +123,14 @@ export default async function JourneyPlanPage({
   // the optional blocks: story, pillar balance, social proof are opt-out-able).
   const enabled = new Set(enabledWidgets(plan.page_config, 'discovery').map((w) => w.id))
 
+  // The standardized admin rail trigger, mirroring /learn (:183) so the scoped Journey rail is reachable
+  // from the detail/root page too, not only the player. journey.editSettings resolves to the author,
+  // platform staff, or a parent-scope manager (getJourneyCapabilities) — every module re-gates
+  // server-side, so this is UX, never the authority. PageAdminBar suppresses its own generic cog on
+  // /journeys/<slug> (isEntityDetail), so this is the single trigger here.
+  const journeyCaps = await getJourneyCapabilities(plan.id)
+  const canManageJourney = journeyCaps.has('journey.editSettings')
+
   const enrollProps = {
     planId: plan.id,
     slug: plan.slug,
@@ -203,7 +213,19 @@ export default async function JourneyPlanPage({
         </span>
       }
       actions={
-        <EnrollCta {...enrollProps} layout="inline" />
+        canManageJourney ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <OpenAdminBarButton
+              scope={{ kind: 'journey', id: plan.id }}
+              caps={Array.from(journeyCaps)}
+              label="Manage"
+              icon={<SlidersHorizontal className="h-4 w-4" />}
+            />
+            <EnrollCta {...enrollProps} layout="inline" />
+          </div>
+        ) : (
+          <EnrollCta {...enrollProps} layout="inline" />
+        )
       }
     >
       {/* Two-column body: a readable main column + an interior STICKY rail (distinct from
