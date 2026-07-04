@@ -9,6 +9,7 @@ import {
   ArrowUp,
   ArrowUpRight,
   Check,
+  ChevronDown,
   Globe,
   LayoutGrid,
   Loader2,
@@ -175,107 +176,6 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* PAGES: the operator-defined nav. Pick the page you are editing, rename / reorder / delete, or
-          add a new one. Home is your required main page (never deletable, always first). */}
-      <section>
-        <SectionHeader title="Pages" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          {canManagePages
-            ? 'The pages in your profile nav. Pick one to edit its blocks below, or add, rename, reorder, and delete pages. Home is your main page and always comes first.'
-            : 'Your profile is one continuous page. Add more pages with your own website to build a full multi-page site.'}
-        </p>
-        <ul className="space-y-2">
-          {pages.map((page) => (
-            <PageRow
-              key={page.slug}
-              page={page}
-              active={page.slug === activePageSlug}
-              isFirstCustom={!page.system && custom[0]?.slug === page.slug}
-              isLastCustom={!page.system && custom[custom.length - 1]?.slug === page.slug}
-              readOnly={readOnly}
-              pending={pending}
-              onSelect={() => switchTo(page.slug)}
-              onRename={(label) => run(() => renameSpacePage(slug, page.slug, label))}
-              onMove={(dir) => movePage(page.slug, dir)}
-              onDelete={() =>
-                run(() => deleteSpacePage(slug, page.slug), () => {
-                  // If the page being edited was deleted, fall back to Home.
-                  if (page.slug === activePageSlug) switchTo('home')
-                  else router.refresh()
-                })
-              }
-            />
-          ))}
-        </ul>
-        {!readOnly &&
-          (canManagePages ? (
-            <AddPageRow
-              atCap={atCap}
-              maxPages={maxPages}
-              pending={pending}
-              onAdd={(label) =>
-                run(() => createSpacePage(slug, label), (createdSlug) => switchTo(createdSlug))
-              }
-            />
-          ) : (
-            <AddPagesUpsell slug={slug} />
-          ))}
-      </section>
-
-      {/* BUSINESS INFO: the single source of truth. Edited once here, it feeds every block that shows
-          it (Contact, Business, About) on every page and surface. This is the primary minimal-editing
-          surface, so it sits near the top of the panel. */}
-      <section>
-        <SectionHeader title="Business info" />
-        <SpaceBusinessForm
-          slug={slug}
-          initial={businessInfo}
-          initialCoverUrl={coverImageUrl}
-          initialLogoUrl={brandLogoUrl}
-          readOnly={readOnly}
-        />
-      </section>
-
-      {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own
-          link, reading the same content as your profile. Fail-closed: unpublished, only you can reach it. */}
-      {!readOnly && (
-        <section>
-          <SectionHeader title="External website" />
-          <p className="-mt-2 mb-3 text-sm text-muted">
-            Publish your Home page as a standalone website with its own link. It shows the same content as
-            your profile, so you edit once and it stays in sync.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant={websitePublished ? 'secondary' : 'primary'}
-              size="sm"
-              disabled={pending}
-              onClick={() => run(() => setWebsitePublished(slug, !websitePublished))}
-            >
-              <Globe className="h-4 w-4" aria-hidden />
-              {websitePublished ? 'Unpublish website' : 'Publish website'}
-            </Button>
-            {websitePublished && (
-              <Link
-                href={`/sites/${slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline"
-              >
-                View website
-                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-              </Link>
-            )}
-          </div>
-          <p className="mt-2 text-xs text-muted">
-            {websitePublished
-              ? 'Your website is live and anyone with the link can view it.'
-              : 'Your website is off. Publish it to share a public link.'}
-          </p>
-        </section>
-      )}
-
       {/* Type / focus echo (the full mode settings live at /manage/mode). */}
       {focus && focus.choices.length > 0 && (
         <section>
@@ -435,6 +335,121 @@ export function SpacePagePanel({
           })}
         </div>
       </section>
+
+      {/* MORE PAGE SETTINGS: the heavier, less-frequent controls (pages, business info, external website)
+          tucked behind ONE disclosure so the panel LEADS with the quick tweaks (grid, cover, accent,
+          focus). A closed <details> keeps its children mounted, so every control stays reachable +
+          keyboard-operable + reachable by a read-only staff previewer. Default closed. */}
+      <details className="group rounded-lg border border-border">
+        <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+          More page settings
+          <ChevronDown
+            className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+            aria-hidden
+          />
+        </summary>
+        <div className="space-y-8 border-t border-border px-3 pb-3 pt-6">
+          {/* PAGES: the operator-defined nav. Pick the page you are editing, rename / reorder / delete, or
+              add a new one. Home is your required main page (never deletable, always first). */}
+          <section>
+            <SectionHeader title="Pages" />
+            <p className="-mt-2 mb-3 text-sm text-muted">
+              {canManagePages
+                ? 'The pages in your profile nav. Pick one to edit its blocks below, or add, rename, reorder, and delete pages. Home is your main page and always comes first.'
+                : 'Your profile is one continuous page. Add more pages with your own website to build a full multi-page site.'}
+            </p>
+            <ul className="space-y-2">
+              {pages.map((page) => (
+                <PageRow
+                  key={page.slug}
+                  page={page}
+                  active={page.slug === activePageSlug}
+                  isFirstCustom={!page.system && custom[0]?.slug === page.slug}
+                  isLastCustom={!page.system && custom[custom.length - 1]?.slug === page.slug}
+                  readOnly={readOnly}
+                  pending={pending}
+                  onSelect={() => switchTo(page.slug)}
+                  onRename={(label) => run(() => renameSpacePage(slug, page.slug, label))}
+                  onMove={(dir) => movePage(page.slug, dir)}
+                  onDelete={() =>
+                    run(() => deleteSpacePage(slug, page.slug), () => {
+                      // If the page being edited was deleted, fall back to Home.
+                      if (page.slug === activePageSlug) switchTo('home')
+                      else router.refresh()
+                    })
+                  }
+                />
+              ))}
+            </ul>
+            {!readOnly &&
+              (canManagePages ? (
+                <AddPageRow
+                  atCap={atCap}
+                  maxPages={maxPages}
+                  pending={pending}
+                  onAdd={(label) =>
+                    run(() => createSpacePage(slug, label), (createdSlug) => switchTo(createdSlug))
+                  }
+                />
+              ) : (
+                <AddPagesUpsell slug={slug} />
+              ))}
+          </section>
+
+          {/* BUSINESS INFO: the single source of truth. Edited once here, it feeds every block that shows
+              it (Contact, Business, About) on every page and surface. */}
+          <section>
+            <SectionHeader title="Business info" />
+            <SpaceBusinessForm
+              slug={slug}
+              initial={businessInfo}
+              initialCoverUrl={coverImageUrl}
+              initialLogoUrl={brandLogoUrl}
+              readOnly={readOnly}
+            />
+          </section>
+
+          {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own
+              link, reading the same content as your profile. Fail-closed: unpublished, only you can reach it. */}
+          {!readOnly && (
+            <section>
+              <SectionHeader title="External website" />
+              <p className="-mt-2 mb-3 text-sm text-muted">
+                Publish your Home page as a standalone website with its own link. It shows the same content as
+                your profile, so you edit once and it stays in sync.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant={websitePublished ? 'secondary' : 'primary'}
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => run(() => setWebsitePublished(slug, !websitePublished))}
+                >
+                  <Globe className="h-4 w-4" aria-hidden />
+                  {websitePublished ? 'Unpublish website' : 'Publish website'}
+                </Button>
+                {websitePublished && (
+                  <Link
+                    href={`/sites/${slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline"
+                  >
+                    View website
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                {websitePublished
+                  ? 'Your website is live and anyone with the link can view it.'
+                  : 'Your website is off. Publish it to share a public link.'}
+              </p>
+            </section>
+          )}
+        </div>
+      </details>
     </div>
   )
 }

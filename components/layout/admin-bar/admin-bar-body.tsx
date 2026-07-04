@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronRight, Lock, Search, Settings } from 'lucide-react'
+import { ChevronDown, Lock, Search, Settings } from 'lucide-react'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, type RailTier } from '@/lib/admin/modules/spine'
 import type {
@@ -68,6 +68,9 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
   // Standard + primary render inline; the extra band folds into the one "More" disclosure at the bottom.
   const inlineSections = model.sections.filter((s) => s.tier !== 'extra')
   const extraSections = model.sections.filter((s) => s.tier === 'extra')
+  // The honest "hidden items" count for the "More" badge — the tucked individual settings (nodes),
+  // not the section headers, so a Billing + Danger viewer reads "2", not "1 group".
+  const extraCount = extraSections.reduce((n, s) => n + s.nodes.length, 0)
 
   // After a result clears the query, the sections remount — scroll the pending one into view + focus it.
   useEffect(() => {
@@ -237,14 +240,20 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
             <details
               open={moreOpen}
               onToggle={(e) => setMoreOpen((e.target as HTMLDetailsElement).open)}
-              className="rounded-lg border border-border"
+              className="group rounded-lg border border-border"
             >
-              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
-                <ChevronRight
-                  className={`h-4 w-4 shrink-0 transition-transform motion-reduce:transition-none ${moreOpen ? 'rotate-90' : ''}`}
+              <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
+                More
+                <span
+                  className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-subtle"
+                  aria-label={`${extraCount} more ${extraCount === 1 ? 'setting' : 'settings'}`}
+                >
+                  {extraCount}
+                </span>
+                <ChevronDown
+                  className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
                   aria-hidden
                 />
-                More
               </summary>
               <div className="space-y-6 border-t border-border px-3 pb-3 pt-4">
                 {extraSections.map(renderSection)}
