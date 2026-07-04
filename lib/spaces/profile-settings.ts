@@ -10,9 +10,11 @@
 //      its about/tagline columns aren't in the generated types yet).
 // Returns ActionResult; the UI revalidates the profile + directory on success.
 //
-// brand_accent is a VALIDATED DAWN TOKEN NAME (from lib/theme/validate.ts TOKEN_ALLOWLIST), never
-// a raw hex — the accent is the curated token a future override path will read (resolve.ts §35),
-// so storing a free hex here would be unsafe and off-system (D4/D6, tokens only).
+// brand_accent is a VALIDATED accent value: either a curated DAWN token NAME (TOKEN_ALLOWLIST) or a
+// 6-digit hex the owner picked with the brand color picker (ADR-516 D2). A hex is safe here because
+// brand_accent is never rendered into a server `<style>` tag (lib/theme/server/resolve.ts) — it only
+// reaches a React inline `style` via AccentScope, and both this write and lib/spaces/accent.ts
+// re-validate the strict `#rrggbb` shape. isValidAccent is the ONE rule both accent entry points share.
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -20,14 +22,15 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
+import { isValidAccent } from '@/lib/spaces/accent'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
  *  column (null), a present string is validated before it is written. */
 export interface UpdateSpaceProfileInput {
   brandName?: string | null
-  /** A DAWN token NAME from TOKEN_ALLOWLIST (e.g. '--color-primary'), or '' / null to clear. */
+  /** A DAWN token NAME from TOKEN_ALLOWLIST (e.g. '--color-primary') or a 6-digit hex ('#E2912F'),
+   *  or '' / null to clear. */
   brandAccent?: string | null
   brandLogoUrl?: string | null
   about?: string | null
@@ -91,10 +94,10 @@ export async function updateSpaceProfile(
   if (input.brandAccent !== undefined) {
     const accent = (input.brandAccent ?? '').trim()
     if (accent) {
-      // The accent must be a curated DAWN token NAME, never a raw color — the allowlist is the
-      // exact set a theme may set (lib/theme/validate.ts).
-      if (!TOKEN_ALLOWLIST.has(accent)) {
-        return fail('Pick an accent from the list.')
+      // The accent must be a curated DAWN token NAME (the allowlist) or a 6-digit hex the owner
+      // picked (ADR-516 D2). isValidAccent is the shared rule; anything else is rejected.
+      if (!isValidAccent(accent)) {
+        return fail('Pick a brand color, or enter a hex like #E2912F.')
       }
       patch.brand_accent = accent
     } else {

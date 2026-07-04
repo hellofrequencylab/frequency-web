@@ -1,6 +1,7 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { Check } from 'lucide-react'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { cn } from '@/lib/utils'
 
@@ -155,68 +156,148 @@ export function VisibilityField({
   )
 }
 
+// A 6-digit hex, the exact shape the native color picker emits + the write actions accept
+// (lib/spaces/accent.ts isValidAccent). Kept local so this client file pulls no server module.
+const HEX_RE = /^#[0-9a-fA-F]{6}$/
+
 /**
- * The curated brand-accent tokens an owner may pick. Each is a DAWN semantic token NAME that is
- * also in lib/theme/validate.ts TOKEN_ALLOWLIST (the server re-validates against that exact set),
- * so the accent is always an on-system token, never a raw hex (D4 "the accent is a guest", D6
- * tokens only). The swatch renders the token via `var(--…)` so it tracks the live palette.
+ * The suggested brand-accent SWATCHES an owner can pick with one tap. Each carries a real DAWN palette
+ * hex (app/globals.css light-mode base tokens), so they stay on-system, relabeled to warm, plain,
+ * on-brand names (CONTENT-VOICE) — never the alert/semantic words (success/warning/danger/info) the
+ * accent must not borrow. The owner can still pick ANY color with the picker beside them; a swatch is
+ * just a fast on-brand start. The selected accent is stored as a hex.
  */
-export const ACCENT_TOKENS: { token: string; label: string }[] = [
-  { token: '--color-primary', label: 'Primary' },
-  { token: '--color-signal', label: 'Signal' },
-  { token: '--color-broadcast', label: 'Broadcast' },
-  { token: '--color-success', label: 'Success' },
-  { token: '--color-warning', label: 'Warning' },
-  { token: '--color-info', label: 'Info' },
+export const ACCENT_SWATCHES: { name: string; hex: string }[] = [
+  { name: 'Sunrise', hex: '#E2912F' },
+  { name: 'Bronze', hex: '#9A5E12' },
+  { name: 'Clay', hex: '#B07515' },
+  { name: 'Rose', hex: '#BA3B30' },
+  { name: 'Forest', hex: '#0F8E78' },
+  { name: 'Spruce', hex: '#11827A' },
+  { name: 'Ocean', hex: '#1EB6C5' },
+  { name: 'Harbor', hex: '#2F6FB0' },
 ]
 
-/** A curated accent picker over ACCENT_TOKENS, plus a "None" clear. The selected value is a token
- *  NAME (or '' for none) the server re-validates against TOKEN_ALLOWLIST. */
+/**
+ * The brand-color picker: a real color picker (native + a hex input) for ANY color, a tight grid of
+ * suggested on-brand swatches, and a "Default" clear. The selected value is a 6-digit hex (or '' to
+ * clear, so the per-type default paints); a token NAME still round-trips for a legacy accent. The
+ * server re-validates every value (isValidAccent), so this control is convenience, never the gate.
+ */
 export function AccentPicker({
   value,
   onChange,
+  disabled = false,
 }: {
   value: string
-  onChange: (token: string) => void
+  onChange: (accent: string) => void
+  disabled?: boolean
 }) {
+  // The native color input needs a valid hex to seed; fall back to the first swatch when the stored
+  // accent is a legacy token or empty (the widget shows a color, but nothing reads as selected).
+  const currentHex = HEX_RE.test(value) ? value : null
+  const [draft, setDraft] = useState(currentHex ?? '')
+  // Reflect an external change (a swatch tap, a fresh initial) back into the hex input, using React's
+  // render-time "adjust state on prop change" pattern (no effect, no cascading commit).
+  const [seenHex, setSeenHex] = useState(currentHex)
+  if (currentHex !== seenHex) {
+    setSeenHex(currentHex)
+    setDraft(currentHex ?? '')
+  }
+
+  const commitHex = (raw: string) => {
+    const next = raw.trim()
+    if (next === '') {
+      onChange('')
+      return
+    }
+    if (HEX_RE.test(next)) onChange(next)
+  }
+  const draftValid = draft.trim() === '' || HEX_RE.test(draft.trim())
+
   return (
-    <Field id="brand-accent" label="Brand accent" hint="An on-brand highlight color, picked from the palette.">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => onChange('')}
-          aria-pressed={value === ''}
-          className={cn(
-            'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-            value === '' ? 'border-primary bg-primary-bg text-primary-strong' : 'border-border text-muted hover:border-border-strong',
-          )}
-        >
-          None
-        </button>
-        {ACCENT_TOKENS.map((a) => {
-          const active = value === a.token
-          return (
-            <button
-              key={a.token}
-              type="button"
-              onClick={() => onChange(a.token)}
-              aria-pressed={active}
-              title={a.label}
-              aria-label={a.label}
-              className={cn(
-                'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-                active ? 'border-primary bg-primary-bg text-text' : 'border-border text-muted hover:border-border-strong',
-              )}
-            >
-              <span
-                className="h-4 w-4 rounded-full border border-border"
-                style={{ backgroundColor: `var(${a.token})` }}
-                aria-hidden
-              />
-              {a.label}
-            </button>
-          )
-        })}
+    <Field
+      id="brand-accent"
+      label="Brand color"
+      hint="Your accent. It paints your buttons, the active tab, and highlights across your page."
+    >
+      <div className="space-y-3">
+        {/* The custom picker: a native color well + a hex field + a Default clear. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="color"
+            aria-label="Pick a brand color"
+            value={currentHex ?? '#E2912F'}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
+          />
+          <input
+            type="text"
+            inputMode="text"
+            aria-label="Brand color hex"
+            value={draft}
+            disabled={disabled}
+            placeholder="#E2912F"
+            maxLength={7}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={(e) => commitHex(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                commitHex(draft)
+              }
+            }}
+            className={cn(
+              'w-28 rounded-lg border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
+              draftValid ? 'border-border' : 'border-danger',
+            )}
+          />
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            disabled={disabled}
+            aria-pressed={value === ''}
+            className={cn(
+              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
+              value === ''
+                ? 'border-primary bg-primary-bg text-primary-strong'
+                : 'border-border text-muted hover:border-border-strong',
+            )}
+          >
+            Default
+          </button>
+        </div>
+        {!draftValid && (
+          <p className="text-xs font-medium text-danger">Enter a hex color like #E2912F.</p>
+        )}
+
+        {/* The suggested on-brand swatches: one tap sets the accent. */}
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          {ACCENT_SWATCHES.map((s) => {
+            const active = value.toLowerCase() === s.hex.toLowerCase()
+            return (
+              <button
+                key={s.hex}
+                type="button"
+                onClick={() => onChange(s.hex)}
+                disabled={disabled}
+                aria-pressed={active}
+                title={s.name}
+                aria-label={s.name}
+                className={cn(
+                  'flex aspect-square items-center justify-center rounded-lg border transition-transform disabled:opacity-60',
+                  active
+                    ? 'border-primary ring-2 ring-primary ring-offset-1 ring-offset-surface'
+                    : 'border-border hover:scale-105 motion-reduce:hover:scale-100',
+                )}
+                style={{ backgroundColor: s.hex }}
+              >
+                {active && <Check className="h-4 w-4 text-white [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.5))]" aria-hidden />}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </Field>
   )
