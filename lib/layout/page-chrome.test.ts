@@ -3,6 +3,7 @@ import {
   railFor,
   leftRailFor,
   adminScopeFor,
+  railArchetypeFor,
   isFullWidthEditor,
   isFullViewportEditor,
 } from './page-chrome'
@@ -244,6 +245,59 @@ describe('adminScopeFor — the single admin-scope resolver (LP4 step B0)', () =
   it('returns null on the full-viewport takeovers (nothing to manage)', () => {
     for (const p of ['/on-air', '/on-air/breathe', '/scan', '/sign-in', '/print', '/print/qr']) {
       expect(adminScopeFor(p), p).toBeNull()
+    }
+  })
+})
+
+describe('railArchetypeFor — the rail SHAPE axis (ADR-516 Phase B)', () => {
+  it('marks profile + space profile-root pages as `builder` (the page identity paints)', () => {
+    for (const p of [
+      '/people/ada',
+      '/people/ada/profile-preview',
+      '/people/ada/profile-preview/edit',
+      '/spaces/demo-practitioner', // the Space profile ROOT
+    ]) {
+      expect(railArchetypeFor(p), p).toBe('builder')
+    }
+  })
+
+  it('marks the settings indexes (member + Space) and generic content pages as `hub`', () => {
+    for (const p of [
+      '/settings',
+      '/settings/appearance',
+      '/settings/notifications',
+      '/settings/connections',
+      '/settings/account',
+      '/settings/billing',
+      '/settings/profile', // the profile editor page — the rail is the Hub, not a second ProfileForm (fix C)
+      '/spaces/demo-practitioner/settings',
+      '/spaces/demo-practitioner/settings/basics',
+      '/spaces/demo-practitioner/manage',
+      '/spaces/demo-practitioner/manage/mode',
+      // Generic content pages (not an entity detail) default to the Hub, not the inline personal editor.
+      '/feed',
+      '/circles', // an index
+      '/people', // the people index (no handle)
+      '/messages',
+    ]) {
+      expect(railArchetypeFor(p), p).toBe('hub')
+    }
+  })
+
+  it('marks entity-detail scopes (and Space non-root subpaths) as `manage`', () => {
+    for (const p of [
+      '/circles/sunrise-sit',
+      '/circles/sunrise-sit/manage',
+      '/events/sunrise-sit',
+      '/hubs/north',
+      '/nexuses/west',
+      '/practices/42',
+      '/channels/breathwork',
+      '/journeys/tune-in',
+      '/spaces/demo-practitioner/crm', // a Space subpath (NOT the profile root, NOT settings/manage)
+      '/spaces/demo-practitioner/offerings', // a Space profile TAB
+    ]) {
+      expect(railArchetypeFor(p), p).toBe('manage')
     }
   })
 })

@@ -39,6 +39,9 @@ export function toAdminModule(app: App): AdminModule {
     // `placement` (the uniform-rail axis, ADR-515) round-trips the same way — carried back only when the
     // source tagged a surface `bank` (a bank surface leaves the banded body, so it holds no tier/priority).
     ...(editor.placement !== undefined ? { placement: editor.placement } : {}),
+    // `surfaces` (the per-module surface predicate, ADR-516 Phase B) round-trips by reference, exactly
+    // like `render`/`tier` — carried back only when the source module set one.
+    ...(editor.surfaces !== undefined ? { surfaces: editor.surfaces } : {}),
   }
   // `desc` is optional on AdminModule; include it only when the source carried one (byte-for-byte).
   return app.description !== undefined ? { ...adminModule, desc: app.description } : adminModule

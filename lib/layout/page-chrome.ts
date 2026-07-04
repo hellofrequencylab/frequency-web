@@ -285,6 +285,57 @@ export function adminScopeFor(pathname: string): AdminScope | null {
   return { kind: 'global' }
 }
 
+// ── The rail ARCHETYPE resolver (ADR-516 Phase B) ────────────────────────────────────────────────
+//
+// A SECOND axis on the rail, beside `adminScopeFor`. Where scope answers "what entity can be managed
+// here?", archetype answers "what SHAPE should the rail take on this page?":
+//   • 'builder' — a profile/space PROFILE page where the page's own identity/layout paints. The rail
+//                 mounts the page's inline editors (the member's Profile/Spotlight/Layout on their own
+//                 page; a Space's Basics/Page/Mode via the Customize trigger).
+//   • 'hub'     — a settings index (member /settings*, a Space /settings|/manage) OR any generic content
+//                 page that is not an entity detail. The rail is a stats + quick-links Hub, NOT an inline
+//                 editor: it shows glanceable stats and the bank quick-links, never a duplicated form.
+//   • 'manage'  — an entity-detail scope (circle/event/hub/nexus/practice/channel/journey, and a Space's
+//                 non-profile-root subpaths). The rail mounts that entity's own management editors.
+// Pure + client-safe like railFor/adminScopeFor. The Space "Customize" rail (a typed space scope opened
+// from the profile root) is treated like `manage` in settings-panel — it mounts the Space's inline
+// editors and never the personal "You" set — even though the profile-root PATH resolves to 'builder';
+// the two agree in effect (builder mounts inline editors, and the personal set is dropped on any non
+// global/profile scope). No path returns 'builder' for a Space subpath, so there is no conflict.
+export type RailArchetype = 'builder' | 'hub' | 'manage'
+
+// A profile/space PROFILE page whose own identity/layout paints — the member's own /people/<handle>
+// (and the standalone preview/edit grid), and the Space profile ROOT (/spaces/<slug>, no subpath).
+const BUILDER_PATTERNS: readonly RegExp[] = [
+  /^\/people\/[^/]+(?:\/profile-preview(?:\/edit)?)?$/,
+  /^\/spaces\/[^/]+$/,
+]
+
+// A settings INDEX — the member settings tree (/settings and every /settings/* sub-page) and a Space's
+// owner settings/manage consoles (/spaces/<slug>/settings*, /spaces/<slug>/manage*). These become the
+// stats + quick-links Hub, never an inline editor (the page body already IS the editor).
+const HUB_PATTERNS: readonly RegExp[] = [
+  /^\/settings(?:$|\/)/,
+  /^\/spaces\/[^/]+\/settings(?:$|\/)/,
+  /^\/spaces\/[^/]+\/manage(?:$|\/)/,
+]
+
+/** The rail archetype for a page — the shape the standardized rail takes (ADR-516 Phase B). `builder`
+ *  on a profile/space profile-root page (inline editors), `hub` on a settings index or any generic
+ *  content page (stats + quick-links), `manage` on an entity-detail scope (that entity's editors). Pure
+ *  + client-safe like railFor. */
+export function railArchetypeFor(pathname: string): RailArchetype {
+  if (BUILDER_PATTERNS.some((re) => re.test(pathname))) return 'builder'
+  if (HUB_PATTERNS.some((re) => re.test(pathname))) return 'hub'
+  // An entity-detail scope (circle/event/hub/nexus/practice/channel/journey, or a Space subpath that is
+  // not the profile root) manages that entity. The `global` operator scope is not an entity, so it is
+  // NOT manage — it falls through to the Hub default (a generic content page shows stats + links, not
+  // the personal inline editor, which was mismatch B).
+  const scope = adminScopeFor(pathname)
+  if (scope && scope.kind !== 'global') return 'manage'
+  return 'hub'
+}
+
 // MINI rail — routes that keep the GLOBAL community rail but START it COLLAPSED to a thin
 // strip, with an expand toggle at the rail's foot. The rail is NEVER removed (owner directive:
 // "the right rail stays") — these are immersive build surfaces (the Journey course builder)
