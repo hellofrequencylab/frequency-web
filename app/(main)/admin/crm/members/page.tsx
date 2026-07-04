@@ -1,68 +1,22 @@
 import { Users } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
-import { AdminTemplate, AdminSection } from '@/components/templates'
-import { type MemberFilter } from '@/lib/dashboard/scores'
-import { tierLabel } from '@/lib/dashboard/verdict'
-import type { ResonanceTier } from '@/lib/traits/compute'
-import { Suspense } from 'react'
-import { MemberViewerRoster } from './member-viewer-roster'
+import { AdminTemplate } from '@/components/templates'
+import { PageModules } from '@/components/widgets/page-modules'
+import { resolveFilter } from './resolve-filter'
 
-// The Resonance CRM member roster (Resonance Engine Phase 2 · ADR-383), rendered through the
-// REUSABLE member-viewer block (ADR-459). LIST-FIRST (docs/NEXT-GEN-CRM.md): with no filter this is
-// the FULL scored roster, the familiar front door, now in a master-detail browser (list left, the
-// member's detail right). A tier band (?tier=at_risk) or a lifecycle step (?stage=new) still drills
-// the same list down; every chart point on the cockpit lands here, and the viewer's own tier +
-// lifecycle facets refine it further. Each member's right pane links on to the contact_interactions
-// timeline. STAFF-GATED like the cockpit. FAIL-SAFE: an absent matview shows a calm empty state.
+// The Resonance CRM member roster (ADR-459), module-driven (ADR-270/294): the page owns the
+// requireAdmin gate + the AdminTemplate header, then renders <PageModules>, which lays out the one
+// self-fetching, fail-safe roster block (components/widgets/crm/members-roster.tsx).
+//
+// The interior is keyed on a URL FACET (?tier=/?stage=). searchParams are a PAGE prop that never
+// reach a nested module, so the module reads the SAME facet from the x-search request header the
+// proxy stamps on every route (proxy.ts) — the admin-hubs / practices-library seam. The page still
+// reads its own searchParams to TITLE the header (via the shared resolveFilter), so the header and
+// the roster can never drift; the module renders only through this gated route, so it never re-gates.
+// LIST-FIRST (docs/NEXT-GEN-CRM.md): with no facet this is the FULL scored roster, the front door.
 // Semantic tokens only; copy in voice (no em or en dashes).
 
 export const dynamic = 'force-dynamic'
-
-const TIER_VALUES: readonly ResonanceTier[] = ['resonant', 'cooling', 'at_risk']
-const LIFECYCLE_LABELS: Record<string, string> = {
-  new: 'New',
-  activated: 'Activated',
-  engaged: 'Engaged',
-  at_risk: 'At risk',
-  dormant: 'Dormant',
-}
-
-/** Resolve the URL params into a validated filter + a human title + the empty-state copy. With no
- *  (or an invalid) tier/stage this resolves to the FULL roster (`all`), the list-first front door. */
-function resolveFilter(
-  tier?: string,
-  stage?: string,
-): { filter: MemberFilter; title: string; description: string; emptyTitle: string; emptyDescription: string } {
-  if (tier && (TIER_VALUES as readonly string[]).includes(tier)) {
-    return {
-      filter: { kind: 'tier', value: tier as ResonanceTier },
-      title: `${tierLabel(tier as ResonanceTier)} members`,
-      description: 'Lowest health first. Tap anyone to open their full timeline.',
-      emptyTitle: 'No members in this group yet',
-      emptyDescription:
-        'Once the overnight refresh scores members, the ones in this group show here, each linking to their timeline.',
-    }
-  }
-  if (stage && LIFECYCLE_LABELS[stage]) {
-    return {
-      filter: { kind: 'lifecycle', value: stage },
-      title: `${LIFECYCLE_LABELS[stage]} members`,
-      description: 'Lowest health first. Tap anyone to open their full timeline.',
-      emptyTitle: 'No members in this group yet',
-      emptyDescription:
-        'Once the overnight refresh scores members, the ones in this group show here, each linking to their timeline.',
-    }
-  }
-  // LIST-FIRST default: the full scored roster, the familiar front door (no filter required).
-  return {
-    filter: { kind: 'all' },
-    title: 'Members',
-    description: 'Everyone the engine has scored, lowest health first. Tap anyone to open their full timeline.',
-    emptyTitle: 'No members scored yet',
-    emptyDescription:
-      'Once the overnight refresh scores members, your whole roster shows here, each linking to their timeline.',
-  }
-}
 
 export default async function CockpitMembersPage({
   searchParams,
@@ -82,15 +36,7 @@ export default async function CockpitMembersPage({
       back={{ href: '/admin/crm', label: 'Resonance cockpit' }}
       width="default"
     >
-      <AdminSection>
-        <Suspense fallback={null}>
-          <MemberViewerRoster
-            filter={resolved.filter}
-            emptyTitle={resolved.emptyTitle}
-            emptyDescription={resolved.emptyDescription}
-          />
-        </Suspense>
-      </AdminSection>
+      <PageModules route="/admin/crm/members" />
     </AdminTemplate>
   )
 }

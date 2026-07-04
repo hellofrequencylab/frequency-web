@@ -197,6 +197,9 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   // ── Vera Today block (/admin/crm/today) — the person-plus-action inbox ──
   { id: 'crm-today', label: 'Today', description: 'Vera Today: the person-plus-action cards the model says matter most, each one tap, plus the you-are-at-zero empty.' },
 
+  // ── Members roster block (/admin/crm/members) — the standalone member-viewer, keyed on the URL facet ──
+  { id: 'crm-members-roster', label: 'Member roster', description: 'The standalone member roster: the whole scored list with the hero sort and live search. A tier or lifecycle link drills it; open anyone to see their roles, funnels, pipeline, and recent touches.' },
+
   // ── Leadership dashboard blocks (/lead) — a leader's consolidated home for what they steward ──
   { id: 'lead-stats', label: 'Leader stats', description: 'A glance at what you lead: circles, members reached, upcoming events, and networks.' },
   { id: 'lead-attention', label: 'What needs you', description: 'A short ranked list of the most useful next moves across your circles and events.' },
@@ -514,6 +517,14 @@ const CRM_COCKPIT_MODULE_IDS = [
 // no searchParams facet, so it converts wholesale to one module. The page keeps its janitor gate.
 const CRM_TODAY_MODULE_IDS = ['crm-today'] as const
 
+// The standalone Resonance CRM members page (/admin/crm/members). The whole interior is one self-
+// fetching roster (the fully-featured member-viewer + its fail-safe empty), keyed only on the
+// ?tier=/?stage= URL facet, which the module reads from the x-search request header (the admin-hubs /
+// practices-library seam), so it converts wholesale to one module. The page keeps its requireAdmin
+// gate; this is its OWN route (out of the /admin/crm cockpit set, whose crm-members block never leaks
+// here and vice versa).
+const CRM_MEMBERS_MODULE_IDS = ['crm-members-roster'] as const
+
 // The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
 // library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
 // with no searchParams facet, so it converts wholesale to one module.
@@ -637,6 +648,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/growth': GROWTH_MODULE_IDS,
   '/admin/crm': CRM_COCKPIT_MODULE_IDS,
   '/admin/crm/today': CRM_TODAY_MODULE_IDS,
+  '/admin/crm/members': CRM_MEMBERS_MODULE_IDS,
   '/admin/gamification': GAMIFICATION_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,
   '/admin/hubs': ADMIN_HUBS_MODULE_IDS,
