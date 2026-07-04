@@ -10,11 +10,9 @@ import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
-import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
-import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
+import { readProfilePages, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
-import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
@@ -151,7 +149,6 @@ export default async function SpaceProfileChromeLayout({
   // sticky bar reads as one persistent nav across profile ↔ Manage ↔ CRM. Active state stays client-side
   // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
   const pages = readProfilePages(space.preferences)
-  const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
   // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
@@ -376,10 +373,7 @@ export default async function SpaceProfileChromeLayout({
           coverSize={coverSize}
           coverScrim={coverScrim}
           accent={space.brandAccent ?? ''}
-          blocks={readBlockRows(homeDoc)}
           businessInfo={readProfileData(space.preferences)}
-          layoutPreset={readLayoutPreset(space.preferences, HOME_SLUG)}
-          defaultPreset={readSpaceLayoutDefault(space.preferences)}
           coverImageUrl={space.coverImageUrl}
           brandLogoUrl={space.brandLogoUrl}
           websitePublished={readWebsitePublished(space.preferences)}

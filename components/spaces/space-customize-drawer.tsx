@@ -4,10 +4,8 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { SpacePagePanel, type FocusChoiceLike } from '@/components/spaces/space-page-panel'
 import { OPEN_SPACE_CUSTOMIZE } from '@/components/spaces/space-customize-button'
-import type { SpaceBlockRow } from '@/lib/page-editor/templates/space-blocks'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
-import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 
 // THE SPACE CUSTOMIZE RAIL — the right-hand settings drawer the profile's single "Customize" button
@@ -28,10 +26,7 @@ export function SpaceCustomizeDrawer({
   coverSize,
   coverScrim,
   accent,
-  blocks,
   businessInfo,
-  layoutPreset,
-  defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
   websitePublished = false,
@@ -45,10 +40,7 @@ export function SpaceCustomizeDrawer({
   coverSize: CoverSize
   coverScrim: CoverScrim
   accent: string
-  blocks: SpaceBlockRow[]
   businessInfo: SpaceProfileData
-  layoutPreset: LayoutPreset
-  defaultPreset: LayoutPreset
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
   websitePublished?: boolean
@@ -115,10 +107,7 @@ export function SpaceCustomizeDrawer({
             coverSize={coverSize}
             coverScrim={coverScrim}
             accent={accent}
-            blocks={blocks}
             businessInfo={businessInfo}
-            layoutPreset={layoutPreset}
-            defaultPreset={defaultPreset}
             coverImageUrl={coverImageUrl}
             brandLogoUrl={brandLogoUrl}
             websitePublished={websitePublished}
