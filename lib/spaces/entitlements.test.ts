@@ -20,6 +20,8 @@ import {
   spaceCanSeeResonance,
   spaceCanUseResonanceAi,
   spaceCanUseAdvancedSegments,
+  spaceCanUseFullWebsite,
+  SPACE_FULL_WEBSITE_KEY,
   FREE_AI_DEPTH,
   AI_DEPTH_KEYS,
   BILLING_NAMESPACE,
@@ -255,6 +257,27 @@ describe('AI-depth ladder (FAIL-CLOSED to the free wedge · ADR-387)', () => {
     expect(spaceCanRunPlaybooks(playbooksOnly)).toBe(true)
     expect(spaceAutonomyLevel(playbooksOnly)).toBe('suggest_only')
     expect(autoExecutionAllowed(playbooksOnly)).toBe(false)
+  })
+})
+
+describe('full website / multi-page upsell lock (DEFAULT-DENY, ignores billingLive)', () => {
+  it('is LOCKED by default for every Space (no plan grants it yet)', () => {
+    expect(spaceCanUseFullWebsite(null)).toBe(false)
+    expect(spaceCanUseFullWebsite(undefined)).toBe(false)
+    expect(spaceCanUseFullWebsite({})).toBe(false)
+    expect(spaceCanUseFullWebsite({ entitlements: {} })).toBe(false)
+    // A paid Space with CRM/email still cannot add pages without the explicit key.
+    expect(spaceCanUseFullWebsite({ entitlements: { crm: true, email: true } })).toBe(false)
+  })
+
+  it('unlocks ONLY when the space_full_website entitlement is explicitly granted', () => {
+    expect(spaceCanUseFullWebsite({ entitlements: { [SPACE_FULL_WEBSITE_KEY]: true } })).toBe(true)
+    // Granted via the billing namespace (the union read) also unlocks it.
+    expect(
+      spaceCanUseFullWebsite({ entitlements: { [BILLING_NAMESPACE]: { [SPACE_FULL_WEBSITE_KEY]: true } } }),
+    ).toBe(true)
+    // DEFAULT-DENY: a non-true value never grants.
+    expect(spaceCanUseFullWebsite({ entitlements: { [SPACE_FULL_WEBSITE_KEY]: 'yes' } })).toBe(false)
   })
 })
 

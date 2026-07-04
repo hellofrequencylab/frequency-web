@@ -35,6 +35,7 @@ export function SpaceCustomizeDrawer({
   coverImageUrl = null,
   brandLogoUrl = null,
   websitePublished = false,
+  canManagePages = false,
   focus = null,
 }: {
   slug: string
@@ -51,6 +52,8 @@ export function SpaceCustomizeDrawer({
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
   websitePublished?: boolean
+  /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell). Default-deny. */
+  canManagePages?: boolean
   focus?: { choices: FocusChoiceLike[] } | null
 }) {
   const [open, setOpen] = useState(false)
@@ -119,6 +122,7 @@ export function SpaceCustomizeDrawer({
             coverImageUrl={coverImageUrl}
             brandLogoUrl={brandLogoUrl}
             websitePublished={websitePublished}
+            canManagePages={canManagePages}
             focus={focus}
           />
         </div>

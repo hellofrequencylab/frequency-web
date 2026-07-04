@@ -1,15 +1,20 @@
-import type { SpaceContentData } from '@/lib/spaces/content-data'
-import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
-import { SpaceReviewsBlock } from '@/components/page-editor/blocks/spaces'
+import { Star } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ModuleSection } from './section'
 
-// REVIEWS — member reviews: average + latest few. Reads the live summary off the data bag;
-// FAIL-SAFE: no visible reviews, no section (never a fabricated average).
-export function ReviewsBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
-  if (data.reviews.count === 0) return null
+// REVIEWS — the ratings and reviews section is OFF for now, shown as coming soon (owner decision).
+// It never reads or displays real ratings (`data.reviews`) and never surfaces a "leave a review"
+// affordance; it renders a subtle, on-brand coming-soon card in the ratings slot so the section reads
+// as intentional, not broken. When ratings ship, this block reads the live summary again. Takes no
+// props by design (it must not touch the reviews data); it stays assignable to the module block type.
+export function ReviewsBlock() {
   return (
     <ModuleSection anchor="reviews">
-      <SpaceReviewsBlock eyebrow="What members say" heading="Reviews" reviews={data.reviews} limit={4} />
+      <EmptyState
+        icon={Star}
+        title="Ratings, coming soon"
+        description="Ratings and reviews are on the way. Check back soon to see what members say."
+      />
     </ModuleSection>
   )
 }

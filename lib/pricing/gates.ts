@@ -66,6 +66,13 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
+  // Full website / multi-page profile (owner decision) — a Space gets ONE continuous profile page by
+  // default; the multi-page "Pages" manager is a paid UPSELL tied to the full website (not built yet).
+  // DISABLED here so this coarse plan-ladder gate never binds; the LOCK is enforced by the pure
+  // `space_full_website` ENTITLEMENT key (spaceCanUseFullWebsite, lib/spaces/entitlements.ts), which
+  // stays default-deny regardless of billingLive (featureAllowed would short-circuit to granted while
+  // billing is off, which would un-gate the upsell — so the enforcement deliberately does NOT ride it).
+  space_full_website: { axis: 'plan', minEntitlement: 'pro', enabled: false },
 
   // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine. The free
   // wedge (Today suggest-only + summaries + read-only scoring) is NEVER a gate, so it has no entry

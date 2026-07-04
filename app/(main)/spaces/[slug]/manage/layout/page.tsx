@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import {
   resolveMode,
@@ -123,6 +123,7 @@ export default async function SpacePageSettingsPage({
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}
         websitePublished={readWebsitePublished(space.preferences)}
+        canManagePages={spaceCanUseFullWebsite(space)}
         focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />
