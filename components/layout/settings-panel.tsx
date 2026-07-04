@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ArrowRight, LayoutGrid, type LucideIcon } from 'lucide-react'
+import { LayoutGrid, type LucideIcon } from 'lucide-react'
 import { meetsAccess } from '@/lib/nav-areas'
 import { isModuleRoute } from '@/lib/widgets/module-routes'
 import { LayoutEditor } from '@/components/admin/page-settings/layout-editor'
@@ -11,6 +10,10 @@ import { EventDangerZone } from '@/components/admin/modules/event-danger-zone'
 import { CircleQuestModule } from '@/components/admin/modules/circle-quest-module'
 import { PageContentModule } from '@/components/admin/modules/page-content-module'
 import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
+import { SurfaceLinkRow } from '@/components/admin/modules/surface-link-row'
+import { SurfaceSummaryCard } from '@/components/admin/modules/surface-summary-card'
+import { SURFACE_SUMMARIES } from '@/components/admin/modules/surface-summaries'
+import { SpaceIdentityStrip } from '@/components/admin/modules/space-identity-strip'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
 import { adminScopeFor, type AdminScope } from '@/lib/layout/page-chrome'
@@ -64,34 +67,6 @@ const ENTITY_KINDS: ReadonlySet<string> = new Set([
 function spaceSlugFromPath(pathname: string): string | null {
   const m = pathname.match(/^\/spaces\/([^/]+)/)
   return m ? m[1] : null
-}
-
-/** One editor surface as a compact link-row OUT to its own management page (inline-first rail, ADR-514).
- *  A surface classified `render: 'link'` is a FEATURE WORKFLOW (Members / CRM / Offerings / QR / Email /
- *  Insights / Billing / Danger, …) that the bar deep-links into rather than inlining — config surfaces
- *  render inline instead. Entity-agnostic: it takes a resolved `href` (Space link-rows resolve it via
- *  hrefForSurface; core/personal entities are all inline in this PR, so no core href map exists yet).
- *  Mirrors the console's SectionRow chrome (tokens only, no hex). */
-function SurfaceLinkRow({ app, href }: { app: App; href: string }) {
-  const Icon = app.surfaces.editor?.Icon
-  return (
-    <Link
-      href={href}
-      title={app.description}
-      className="group flex items-center gap-2.5 rounded-lg border border-border bg-surface px-2.5 py-2 outline-none transition-colors hover:border-border-strong hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none"
-    >
-      {Icon && (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-bg text-primary-strong">
-          <Icon className="h-3.5 w-3.5" aria-hidden />
-        </span>
-      )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-text">{app.label}</span>
-      <ArrowRight
-        className="h-3.5 w-3.5 shrink-0 text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary-strong motion-reduce:transition-none"
-        aria-hidden
-      />
-    </Link>
-  )
 }
 
 /** Whether this path is an entity-detail scope (vs the operator `global` scope or a takeover). */
@@ -193,6 +168,11 @@ export interface SettingsPanelModel {
   sections: AdminSection[]
   /** The operator "Page" group (Layout / SEO / Status), separate from the entity spine. */
   pageGroup: ReactNode | null
+  /** The compact Space identity strip (cover + logo + name), pinned above the standard tier when the
+   *  scope is a Space (Phase 2 "keep it in the rail", ADR-514); null otherwise. A ReactNode on the
+   *  CLIENT-built model — it never rides the serializable OpenAdminBarDetail. Self-fetches + fail-safe:
+   *  renders nothing for a non-manager. */
+  identityStrip: ReactNode | null
   /** Every scoped app, for the fuzzy search index. */
   searchApps: SearchableApp[]
   /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
@@ -308,7 +288,17 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       const href = spaceSlug
         ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
         : hrefForEntitySurface(id, scope)
-      return href ? <SurfaceLinkRow key={id} app={app} href={href} /> : null
+      if (!href) return null
+      // "Keep it in the rail" (Phase 2, ADR-514): a link surface with a glanceable stat draws a compact
+      // SUMMARY CARD (inline count + a "View more" affordance into its page); every other link surface —
+      // and any surface whose getter fails / is unpermitted (the card degrades internally) — draws the
+      // plain link-row. Data-driven + fail-safe: a card IFF SURFACE_SUMMARIES[id] exists.
+      const summary = SURFACE_SUMMARIES[id]
+      return summary ? (
+        <SurfaceSummaryCard key={id} app={app} href={href} entry={summary} />
+      ) : (
+        <SurfaceLinkRow key={id} app={app} href={href} />
+      )
     }
     const C = MODULE_COMPONENTS[id]
     return C ? <C key={id} /> : null
@@ -410,6 +400,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // every entity scope (an entity owns its identity through its own sections above).
   const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
 
+  // The compact Space identity strip (cover + logo + name), pinned above the standard tier for a Space
+  // scope (Phase 2 "keep it in the rail", ADR-514). It self-fetches via a read-gated getter and renders
+  // nothing for a non-manager, so it is a pure ReactNode on the CLIENT-built model — it never touches the
+  // serializable OpenAdminBarDetail (the slug comes from the live path).
+  const identityStrip: ReactNode = isSpace && spaceSlug ? <SpaceIdentityStrip slug={spaceSlug} /> : null
+
   // ── Phase 5 (P3): attainable-but-locked management apps for this scope + REAL viewer — an App the
   //    viewer can't act on yet but could plausibly unlock (a plan-gated Space function). Rendered as a
   //    lock + reason, never an editor; personal apps are caps-gated and so are never attainable-locked.
@@ -444,8 +440,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }))
 
   if (!hasContent) {
-    return { hasContent: false, sections: [], pageGroup: null, searchApps: [], lockedApps: [] }
+    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [] }
   }
 
-  return { hasContent: true, sections, pageGroup, searchApps, lockedApps }
+  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps }
 }

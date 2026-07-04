@@ -88,6 +88,35 @@ Customize drawer). Phase C/D (ADR-514) shipped the core/personal classification:
 `inline`; the personal config surfaces are `inline` (via the settings rail-getters + wrappers) and the
 personal feature workflows (Account and privacy, Billing) `link` out through `hrefForEntitySurface`.
 
+**Keep-it-in-the-rail summary cards + identity strip (Phase 2, ADR-514).** The owner directive is to keep
+the SIGNAL in the rail: a primary Space feature `link` surface that has ONE honest, glanceable stat draws a
+compact **summary card** — the `SurfaceLinkRow` chrome (icon + label + chevron) plus a second line with the
+inline stat and a **"View more"** affordance — while the deep workflow still opens on its own page. The rule
+is data-driven and fail-safe: a `render: 'link'` surface gets a card **IFF** `SURFACE_SUMMARIES[id]` exists
+(`components/admin/modules/surface-summaries.ts`, the client-boundary map that mirrors `module-map.tsx`),
+otherwise it falls back to the plain `SurfaceLinkRow` (lifted into its own module so the panel and the card
+share it without a cycle). The four cards + their stat + source:
+
+| Surface | Stat | Source (the LEAN read) |
+|---|---|---|
+| `space.people` | "N members" (active only) | `listSpaceMembers`, count `status==='active'` |
+| `space.engage.crm` | "N in your pipeline" | `getDeals(spaceId)` length (one query, not the 4-read funnel) |
+| `space.services` | "N services listed" | `readProfileData(prefs).offerings`, count `isServiceListed` (no extra query) |
+| `space.comms` | "N campaigns" | `listSpaceCampaigns` length (self-gated, fail-safe `[]`) |
+
+`space.offerings` (adaptive, no single honest stat) and every **extra**-tier surface (QR / Insights /
+Billing / **Danger** — Danger must NEVER carry a stat) stay plain link-rows. Each card self-fetches through a
+read-gated getter (`getSpace{Members,Crm,Services,Campaigns}Summary` in `manage/rail-getters.ts`) that
+re-gates exactly like `getSpaceBasicsData` (`resolveSpaceManageAccess` + the surface's per-Space function)
+and returns a tiny serializable `{ count } | null`; a `null`/failed read degrades the card to the plain
+link-row (never a broken card, never a weakened gate). The COPY (singular/plural, plain nouns, no em dashes)
+lives with the client map, not the getters. A **compact identity strip** (`space-identity-strip.tsx`, over
+`getSpaceIdentityData`) is pinned at the very top of the standard tier for a Space scope: a small cover
+thumbnail with the logo chip overlaid + the name + an **"Edit"** link to `/settings/basics`. It self-fetches
+and renders **nothing** for a non-manager. Both ride the CLIENT-built `SettingsPanelModel` (a new
+`identityStrip` `ReactNode` slot) — never the serializable `OpenAdminBarDetail`. `admin-bar-body` renders the
+strip above the inline sections in the **non-search** branch only, so search results are unaffected.
+
 - **Presence** is unconditional for an authed viewer (the personal set is never empty → the "hide when empty" rule yields "always shown" for free).
 - **Content** is `appsForScope(scope, viewer)` — the same catalog that feeds the Loom Apps lane. Personal Apps are `scope: global`, member-gated; management Apps are entity-scoped, capability-gated.
 - **One component** renders it as a right-rail slide-over (lg+) and a bottom sheet (<lg).
