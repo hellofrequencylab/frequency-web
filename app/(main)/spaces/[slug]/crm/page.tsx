@@ -20,6 +20,7 @@ import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
 import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
 import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
+import { FeatureTierUpsell } from '@/components/pricing/feature-tier-upsell'
 import { SpaceCockpitBand } from './space-cockpit-band'
 import { AutonomyControl } from './autonomy-control'
 import { AiDepthUpsell } from './ai-depth-upsell'
@@ -85,6 +86,8 @@ export default async function SpaceCrmBoardPage({
         brandName={brandName}
         slug={space.slug}
         type={space.type}
+        plan={space.plan}
+        canManage={caps.canManageMembers}
         // Tailor the message: an admin on a plan without CRM sees an upgrade nudge; a viewer whose role
         // is too low sees a "this is for the team" note. Both are calm next steps, never a dead end. The
         // entitlement (hasCrm) decides which: no entitlement -> upgrade; entitlement present but role
@@ -268,11 +271,17 @@ function LockedCrm({
   slug,
   type,
   reason,
+  plan,
+  canManage,
 }: {
   brandName: string
   slug: string
   type: SpaceType
   reason: 'not-admin' | 'no-entitlement'
+  /** The Space's current plan, for the tier range highlight (ADR-518 Phase G). */
+  plan?: string | null
+  /** Whether the viewer can act on the plan (owner / admin), so the range only shows to them. */
+  canManage?: boolean
 }) {
   const description =
     reason === 'not-admin'
@@ -309,6 +318,11 @@ function LockedCrm({
           )
         }
       />
+      {reason === 'no-entitlement' && canManage && (
+        // ADR-518 Phase G: the reusable tier range + placeholder price points (an upgrade CTA that only
+        // navigates, never charges). Shown only to a manager who can change the plan.
+        <FeatureTierUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
+      )}
       {reason === 'no-entitlement' && (
         <p className="mt-4 text-center text-xs text-subtle">
           Want it turned on? Reach out and we will set up the plan for your space.

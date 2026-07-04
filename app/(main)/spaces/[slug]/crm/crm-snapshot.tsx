@@ -6,6 +6,7 @@ import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlem
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, getContacts, countOpenTasks, computeMetrics, formatMoney } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
+import { FeatureTierUpsell } from '@/components/pricing/feature-tier-upsell'
 
 // COMPACT CRM SNAPSHOT for the profile fold-out (ADR-361 P3, CRM-STRATEGY §6/§7). A deliberately
 // SMALL read-only peek at a Space's CRM, meant to sit inside a cramped inline fold-out on the profile.
@@ -40,7 +41,7 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
     // Split the reason the same way the board does: an owner/admin whose plan lacks the entitlement
     // sees the upsell; anyone whose role is simply too low sees nothing at all here.
     const hasCrm = spaceHasEntitlement(space, 'crm')
-    if (!hasCrm) return <CrmUpsell slug={space.slug} />
+    if (!hasCrm) return <CrmUpsell slug={space.slug} plan={space.plan} canManage={caps.canManageMembers} />
     return null
   }
 
@@ -89,8 +90,10 @@ export async function SpaceCrmSnapshot({ slug }: { slug: string }) {
 }
 
 // The small calm upsell shown to an owner/admin whose plan does not include CRM. Same tone as the
-// board's locked state, trimmed to fit the fold-out, with a link to this space's billing.
-function CrmUpsell({ slug }: { slug: string }) {
+// board's locked state, trimmed to fit the fold-out, with a link to this space's billing. For a manager
+// it also shows the reusable tier range + placeholder price points (ADR-518 Phase G); the CTA never
+// charges.
+function CrmUpsell({ slug, plan, canManage }: { slug: string; plan?: string | null; canManage?: boolean }) {
   return (
     <section className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex items-start gap-3">
@@ -112,6 +115,9 @@ function CrmUpsell({ slug }: { slug: string }) {
           </Link>
         </div>
       </div>
+      {canManage && (
+        <FeatureTierUpsell featureKey="space_crm" currentTier={plan} upgradeHref={`/spaces/${slug}/settings/billing`} />
+      )}
     </section>
   )
 }
