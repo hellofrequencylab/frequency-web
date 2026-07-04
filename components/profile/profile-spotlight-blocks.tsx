@@ -29,7 +29,7 @@ function profileSpotlightLayout(): string[] {
   return [...lead, ...rest]
 }
 
-export async function ProfileSpotlightBlocks({ handle }: { handle: string }) {
+export async function ProfileSpotlightBlocks({ handle, owner = false }: { handle: string; owner?: boolean }) {
   // A failed read must never break the profile; resolve inside the try, build JSX after.
   let data: Awaited<ReturnType<typeof getPublishedSpotlight>> = null
   try {
@@ -42,11 +42,16 @@ export async function ProfileSpotlightBlocks({ handle }: { handle: string }) {
   // The FLAT layout path (each id -> its own <section>), at the profile column's tighter rhythm rather
   // than the standalone Spotlight's generous spacing. `@container/profile` keeps blocks sizing to the
   // column, not the viewport.
+  //
+  // OWNER click-to-edit (Spaces item 6): when the viewer owns this profile, hand the renderer an editHref
+  // so each block overlays a hover pencil that deep-links to the member's existing layout editor. A
+  // visitor / non-owner passes nothing, so their render stays byte-identical.
   return (
     <MemberProfileModules
       member={data}
       layout={profileSpotlightLayout()}
       className="@container/profile space-y-6"
+      editHref={owner ? () => `/people/${handle}/profile-preview/edit` : undefined}
     />
   )
 }

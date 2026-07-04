@@ -7,6 +7,7 @@ import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
+import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 
 import { AboutBlock } from './about'
 import { HighlightsBlock } from './highlights'
@@ -67,6 +68,7 @@ export async function SpaceProfileModules({
   space,
   layout,
   grid,
+  editHref,
 }: {
   space: SpaceProfileContext
   /** Override the derived layout (e.g. a caller-supplied order). Omitted = the operator's saved
@@ -76,6 +78,11 @@ export async function SpaceProfileModules({
   /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout) in the unified block
    *  vocabulary. When present its template + slots drive the render; otherwise the flat list is used. */
   grid?: EntityLayout | null
+  /** OWNER click-to-edit (Spaces item 6): given a block id, return the href of the surface's existing
+   *  layout editor. When set, each block is wrapped in an OwnerBlockFrame that overlays a hover pencil
+   *  linking there. Omitted (the default, and every visitor / non-owner render) leaves the render
+   *  byte-identical — no frame, no overlay. */
+  editHref?: (blockId: string) => string
 }) {
   // ONE request-cached pass for every section's live data, with the SAME identity/profile inputs the
   // live Puck landing feeds, so the preview shows the operator's real content (not editor placeholders).
@@ -95,24 +102,39 @@ export async function SpaceProfileModules({
   // authored headings/text/images the operator wrote in their Home doc appear as their own blocks.
   const authored = resolveSpaceAuthoredContent(space.preferences, space.brandName)
 
+  // OWNER wrap (fail-safe): when `editHref` is set, sheathe a block in the click-to-edit frame; the frame
+  // collapses itself when the block renders honest-empty, so a hidden block never leaves a phantom pencil.
+  // Absent (visitor / non-owner), the block returns exactly as before. The `key` moves onto whichever
+  // node is outermost, so React keys the list the same either way.
+  const wrap = (id: string, node: React.ReactNode) =>
+    editHref ? (
+      <OwnerBlockFrame key={id} blockId={id} editHref={editHref(id)} label={id}>
+        {node}
+      </OwnerBlockFrame>
+    ) : (
+      node
+    )
+
   const renderBlock = (id: string) => {
     if (id.length === 0) return null
     // CONTENT ids render the operator's own authored blocks; DATA ids render live space data.
     const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
     if (ContentBlock) {
-      return (
+      return wrap(
+        id,
         <Suspense key={id} fallback={null}>
           <ContentBlock content={authored} />
-        </Suspense>
+        </Suspense>,
       )
     }
     const blockId = toProfileBlockId(id)
     if (!blockId) return null
     const Block = SPACE_PROFILE_BLOCKS[blockId]
-    return (
+    return wrap(
+      id,
       <Suspense key={id} fallback={null}>
         <Block space={space} data={data} />
-      </Suspense>
+      </Suspense>,
     )
   }
 
