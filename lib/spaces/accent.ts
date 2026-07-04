@@ -1,16 +1,24 @@
-// PER-SPACE ACCENT SCOPING (ENTITY-SPACES-BUILD §A — D4 "the accent is a guest", D6 "tokens only").
+// PER-SPACE ACCENT SCOPING (ENTITY-SPACES-BUILD §A — D4 "the accent is a guest").
 //
-// A Space's `brand_accent` is a DAWN token NAME (one of components/spaces/space-form.tsx
-// ACCENT_TOKENS, all of which are in lib/theme/validate.ts TOKEN_ALLOWLIST). On its own that name
-// is inert: nothing in the profile reads `var(--color-broadcast)` — the CTAs, the active tab, the
-// type badge, and the in-body accents all read the `--color-primary*` family. So to make a Space's
-// accent actually paint, this maps the chosen accent FAMILY onto the `--color-primary*` slots as a
-// scoped CSS-variable override the profile shell applies to a wrapper node (never the whole page —
-// the canvas/surface tokens stay neutral, D4). The override is built ONLY from `var(<token>)`
-// references to allowlisted tokens, so no hex literal is ever introduced (D6) and the values track
-// the live palette (light/dark/skin) automatically.
+// A Space's `brand_accent` is EITHER a curated DAWN token NAME (one of components/spaces/space-form.tsx
+// ACCENT_TOKENS, all in lib/theme/validate.ts TOKEN_ALLOWLIST) OR a 6-digit hex the owner picked with
+// the brand color picker (ADR-516 D2 — the owner directive for a real color picker; brand_accent is
+// NOT wired into any server `<style>` tag — see lib/theme/server/resolve.ts — it only ever reaches a
+// React inline `style` via AccentScope, and both the write action and this builder re-validate the hex
+// with a strict `/^#[0-9a-fA-F]{6}$/`, so a hex accent carries no injection surface).
 //
-// Why a registry and not a blind `--color-primary: var(<accent>)`: a complete remap needs the
+// On its own the value is inert: nothing in the profile reads `var(--color-broadcast)` — the CTAs, the
+// active tab, the type badge, and the in-body accents all read the `--color-primary*` family. So to make
+// a Space's accent actually paint, this maps the chosen accent onto the `--color-primary*` slots as a
+// scoped CSS-variable override the profile shell applies to a wrapper node (never the whole page — the
+// canvas/surface tokens stay neutral, D4).
+//
+// A TOKEN accent resolves to `var(<token>)` references (tracking the live palette + dark mode); a HEX
+// accent derives its -hover / -strong / -bg / text-on shades from the one hex with `color-mix` (so the
+// derived shades stay theme-tolerant — the -bg is a translucent tint that sits on any surface) plus a
+// luminance-picked readable text color.
+//
+// Why a registry (tokens) and not a blind `--color-primary: var(<accent>)`: a complete remap needs the
 // accent's -hover / -strong / -bg / text-on variants too (the primary BUTTON reads -hover and
 // text-on-primary; the active tab + badge read -bg + -strong). Only `primary`, `signal`, and
 // `broadcast` ship a full family in app/globals.css; the semantic-state tokens (`info`, `warning`,
@@ -18,6 +26,44 @@
 // available token so EVERY allowlisted accent remaps cleanly and stays legible.
 
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
+
+/** A 6-digit hex accent (`#rrggbb`). The exact shape the native brand color picker emits + the exact
+ *  shape the write actions accept, so the client, the server gate, and this builder agree. */
+export const HEX_ACCENT = /^#[0-9a-fA-F]{6}$/
+
+/** Is `value` a persistable brand accent: a curated allowlisted DAWN token NAME, or a 6-digit hex the
+ *  owner picked? The write actions (updateSpaceProfile, setSpaceAccent) gate on this, so the same rule
+ *  governs both accent entry points. An empty string (clear the accent) is handled by the callers. */
+export function isValidAccent(value: string): boolean {
+  return TOKEN_ALLOWLIST.has(value) || HEX_ACCENT.test(value)
+}
+
+/** Readable text color to sit ON a hex accent: white on a dark accent, near-black ink on a light one,
+ *  by sRGB relative luminance (the standard 0.2126/0.7152/0.0722 weighting). Returns a hex (accent DATA,
+ *  applied via inline style — not a component-styling token). */
+function readableTextOn(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  const luminance = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+  // 0.179 is the WCAG crossover where black and white text carry EQUAL contrast against the accent
+  // ((L+0.05)/0.05 = 1.05/(L+0.05)); above it dark ink wins, below it white wins.
+  return luminance > 0.179 ? '#141414' : '#ffffff'
+}
+
+/** Build the `--color-primary*` override for a HEX accent: the hex itself, two darker shades via
+ *  `color-mix` (hover/strong), a translucent tint (bg, theme-tolerant), and a luminance-picked text
+ *  color. The hex is pre-validated by the caller (accentVars), so no untrusted string is interpolated. */
+function hexAccentVars(hex: string): AccentVars {
+  return {
+    '--color-primary': hex,
+    '--color-primary-hover': `color-mix(in srgb, ${hex} 88%, black)`,
+    '--color-primary-strong': `color-mix(in srgb, ${hex} 72%, black)`,
+    '--color-primary-bg': `color-mix(in srgb, ${hex} 14%, transparent)`,
+    '--color-text-on-primary': readableTextOn(hex),
+  }
+}
 
 /** The DAWN `--color-primary*` slots an accent override sets. Each value is a `var(--token)` string
  *  pointing at an allowlisted token (never a literal), so the live palette + dark mode resolve it. */
@@ -89,12 +135,16 @@ const FAMILIES: Record<string, AccentFamily> = {
   },
 }
 
-/** Build the scoped `--color-primary*` override for an accent base token, or null when the token is
- *  not allowlisted / has no family (the caller then keeps the inherited host accent). The `-strong`
- *  slot is used for the active tab text + type badge text + the in-body `text-primary-strong`, so it
- *  must stay dark-on-light: it falls back to the base only when the family has no darker shade. */
+/** Build the scoped `--color-primary*` override for an accent value: a 6-digit HEX (its derived family)
+ *  or an accent base TOKEN (its `var()` family), or null when the value is a non-hex token that is not
+ *  allowlisted / has no family (the caller then keeps the inherited host accent). For a token the
+ *  `-strong` slot (the active tab text + type badge text + in-body `text-primary-strong`) must stay
+ *  dark-on-light: it falls back to the base only when the family has no darker shade. */
 export function accentVars(token: string | null | undefined): AccentVars | null {
   if (!token) return null
+  // A HEX accent (the owner's picked color): derive its family. Re-validated here (defence in depth)
+  // so only a strict `#rrggbb` is ever interpolated into the inline style.
+  if (HEX_ACCENT.test(token)) return hexAccentVars(token)
   // Defence in depth: never build an override from a token the theme allowlist would reject (the
   // store already validates on write, but the accent is interpolated into inline style here).
   if (!TOKEN_ALLOWLIST.has(token)) return null

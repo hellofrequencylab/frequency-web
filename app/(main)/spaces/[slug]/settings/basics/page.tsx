@@ -78,10 +78,11 @@ export default async function SpaceBasicsPage({
   const extras = await readProfileExtras(space.id)
   const initial: SpaceSettingsValues = {
     brandName: space.brandName ?? '',
-    // brand_accent is stored as a DAWN token name; an old hex value (pre-Wave-B) simply won't match
-    // a picker option and reads as "None" until re-picked.
+    // brand_accent is a DAWN token name OR a 6-digit hex the owner picked (ADR-516 D2); both paint via
+    // resolveAccentVars. A legacy token still round-trips; a custom hex shows in the color picker.
     brandAccent: space.brandAccent ?? '',
     brandLogoUrl: space.brandLogoUrl ?? '',
+    coverImageUrl: space.coverImageUrl ?? '',
     about: extras.about ?? '',
     tagline: extras.tagline ?? '',
     visibility: extras.visibility === 'private' ? 'private' : 'network',

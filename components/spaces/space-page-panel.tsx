@@ -35,7 +35,7 @@ import {
   setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
-import { ACCENT_TOKENS } from '@/components/spaces/space-form'
+import { AccentPicker } from '@/components/spaces/space-form'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
 import { TemplateThumbnail } from '@/components/admin/page-settings/layout-editor'
 import { TEMPLATES, type TemplateId } from '@/lib/widgets/templates'
@@ -345,53 +345,18 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* Theme / accent: the curated brand accent that paints the page (tokens only, never a hex). */}
+      {/* Theme / accent: the brand color that paints the page. A real color picker + on-brand swatches
+          (shared AccentPicker); each pick persists at once through the owner-gated setSpaceAccent. */}
       <section>
         <SectionHeader title="Theme and accent" />
         <p className="-mt-2 mb-3 text-sm text-muted">
           Your brand color. It paints your buttons, the active tab, and highlights across the page.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={readOnly || pending}
-            onClick={() => run(() => setSpaceAccent(slug, ''))}
-            aria-pressed={accent === ''}
-            className={cn(
-              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
-              accent === ''
-                ? 'border-primary bg-primary-bg text-primary-strong'
-                : 'border-border text-muted hover:border-border-strong',
-            )}
-          >
-            Default
-          </button>
-          {ACCENT_TOKENS.map((a) => {
-            const active = accent === a.token
-            return (
-              <button
-                key={a.token}
-                type="button"
-                disabled={readOnly || pending}
-                onClick={() => run(() => setSpaceAccent(slug, a.token))}
-                aria-pressed={active}
-                title={a.label}
-                aria-label={a.label}
-                className={cn(
-                  'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
-                  active ? 'border-primary bg-primary-bg text-text' : 'border-border text-muted hover:border-border-strong',
-                )}
-              >
-                <span
-                  className="h-4 w-4 rounded-full border border-border"
-                  style={{ backgroundColor: `var(${a.token})` }}
-                  aria-hidden
-                />
-                {a.label}
-              </button>
-            )
-          })}
-        </div>
+        <AccentPicker
+          value={accent}
+          onChange={(v) => run(() => setSpaceAccent(slug, v))}
+          disabled={readOnly || pending}
+        />
       </section>
 
       {/* MORE PAGE SETTINGS: the heavier, less-frequent controls (pages, business info, external website)

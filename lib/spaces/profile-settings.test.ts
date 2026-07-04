@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // all network-free (the supabase admin client + auth + store + capability seam + cache are mocked):
 //   1. PERMISSION GATING: a caller without canEditProfile is rejected and NO row is written; an
 //      anonymous caller and a missing Space are likewise rejected.
-//   2. ACCENT IS A TOKEN: brand_accent must be a TOKEN_ALLOWLIST token name (a raw hex is rejected);
-//      an allowlisted token writes through.
+//   2. ACCENT IS A VALIDATED VALUE (ADR-516 D2): brand_accent must be a TOKEN_ALLOWLIST token name OR
+//      a 6-digit hex the owner picked; a malformed value is rejected; an accepted value writes through.
 //   3. An authorized edit writes the patch and revalidates.
 
 // ── Mock the caller identity ────────────────────────────────────────────────────────────────
@@ -92,11 +92,18 @@ describe('updateSpaceProfile — permission gating', () => {
   })
 })
 
-describe('updateSpaceProfile — brand_accent is a validated token', () => {
-  it('rejects a raw hex accent (not an allowlisted token name)', async () => {
+describe('updateSpaceProfile — brand_accent is a validated value (token or hex)', () => {
+  it('accepts a 6-digit hex the owner picked (ADR-516 D2) and writes it through', async () => {
     const r = await updateSpaceProfile('space-1', { brandAccent: '#3D352A' })
+    expect('error' in r).toBe(false)
+    expect(writes).toHaveLength(1)
+    expect(writes[0]!.patch.brand_accent).toBe('#3D352A')
+  })
+
+  it('rejects a malformed accent (not a token, not a 6-digit hex) and writes nothing', async () => {
+    const r = await updateSpaceProfile('space-1', { brandAccent: '#12' })
     expect('error' in r).toBe(true)
-    if ('error' in r) expect(r.error).toMatch(/accent/i)
+    if ('error' in r) expect(r.error).toMatch(/color|hex/i)
     expect(writes).toHaveLength(0)
   })
 

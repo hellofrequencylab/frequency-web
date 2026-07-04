@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
-import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
+import { isValidAccent } from '@/lib/spaces/accent'
 import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
 import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
 import {
@@ -342,15 +342,16 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
 }
 
 /**
- * Set (or clear) the Space's BRAND ACCENT: a curated DAWN token NAME the profile shell paints as the
- * `--color-primary*` family (lib/spaces/accent.ts). An empty string CLEARS the accent (back to the
- * per-role default). The token is re-validated against the theme allowlist server-side, so only an
- * on-system token is ever stored (never a raw hex, D4/D6). Written to the `brand_accent` COLUMN (not
- * preferences); mirrors the basics form's accent write. Owner/admin/editor-gated. Returns ActionResult.
+ * Set (or clear) the Space's BRAND ACCENT: a curated DAWN token NAME or a 6-digit hex the owner picked
+ * (ADR-516 D2). The profile shell paints it as the `--color-primary*` family (lib/spaces/accent.ts). An
+ * empty string CLEARS the accent (back to the per-role default). The value is re-validated server-side
+ * (isValidAccent: an allowlisted token or a strict `#rrggbb`), so only a safe accent is ever stored.
+ * Written to the `brand_accent` COLUMN (not preferences); mirrors the basics form's accent write.
+ * Owner/admin/editor-gated. Returns ActionResult.
  */
 export async function setSpaceAccent(slug: string, token: string): Promise<ActionResult> {
   const trimmed = token.trim()
-  if (trimmed && !TOKEN_ALLOWLIST.has(trimmed)) return fail('Pick an accent from the list.')
+  if (trimmed && !isValidAccent(trimmed)) return fail('Pick a brand color, or enter a hex like #E2912F.')
 
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')

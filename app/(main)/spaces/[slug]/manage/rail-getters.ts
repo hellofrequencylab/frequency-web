@@ -104,6 +104,7 @@ export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData 
     brandName: space.brandName ?? '',
     brandAccent: space.brandAccent ?? '',
     brandLogoUrl: space.brandLogoUrl ?? '',
+    coverImageUrl: space.coverImageUrl ?? '',
     about: extras.about ?? '',
     tagline: extras.tagline ?? '',
     visibility: extras.visibility === 'private' ? 'private' : 'network',
