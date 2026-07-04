@@ -22,7 +22,8 @@ export function readMemberGridLayout(meta: unknown): EntityLayout | null {
  */
 export function withMemberGridLayout(meta: unknown, layout: EntityLayout | null): Record<string, unknown> {
   const base = (meta ?? {}) as GridMeta
-  const empty = !layout || (!layout.template && !layout.slots && !layout.order && !layout.hidden)
+  const empty =
+    !layout || (!layout.rows && !layout.template && !layout.slots && !layout.order && !layout.hidden)
   if (empty) {
     const next = { ...base }
     delete next.entityGrid
