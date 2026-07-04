@@ -246,6 +246,12 @@ export interface SpaceSurface {
   /** The Space types that offer this surface ('*' = every provisionable type). The console serves
    *  every provisionable type except coaching (CONSOLE_SPACE_TYPES in lib/spaces/types.ts). */
   types: readonly (SpaceType | '*')[]
+  /** How the STANDARDIZED admin bar draws this surface (inline-first rail, ADR-514): `inline` mounts the
+   *  surface's editor component in the flattened bar ("everything in view" — the owner directive); `link`
+   *  draws a compact link-row out to the surface's own `/settings/*` management page. Config surfaces
+   *  (Basics / Mode / Page) render inline; every feature workflow (Members / CRM / Offerings / Services /
+   *  QR / Email / Insights / Billing / Danger) links out to its full page. */
+  render: 'inline' | 'link'
 }
 
 /**
@@ -278,6 +284,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Name, brand, about, and who can find this space.',
     requiredFunction: null,
     types: ['*'],
+    render: 'inline',
   },
   // Mode and focus (Space Modes M3, ADR-461/464) — the operating Mode + Focus this space runs on, what
   // the preset surfaces, and per-facet overrides. Always present for a manager (no per-tool function):
@@ -289,6 +296,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Pick how this space runs, see what the preset turns on, and adjust it.',
     requiredFunction: null,
     types: ['*'],
+    render: 'inline',
   },
   // Page (ADR-472) — the public-page quick-edit surface: layout (Book · Schedule · Storefront · Hub, or
   // automatic), cover size, theme/accent, and block order + show/hide, plus a Full page editor button
@@ -302,6 +310,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Set your layout, cover, accent, and block order, or open the full editor.',
     requiredFunction: null,
     types: ['*'],
+    render: 'inline',
   },
   // Offerings (the deeper Offerings merge) — the ONE adaptive commerce surface. It replaces the five
   // separate type-gated surfaces (availability / memberships / donations / enrollment / tickets / check
@@ -318,6 +327,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Everything people can book, join, support, or attend, in one place.',
     requiredFunction: null,
     types: ['*'],
+    render: 'link',
   },
   // People — the team roster and the role each member holds. Every type.
   {
@@ -327,6 +337,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'See who is on your team and the role each one holds.',
     requiredFunction: 'members',
     types: ['*'],
+    render: 'link',
   },
   // Engage — the CRM pipeline. The `crm` function offers it to practitioner, business, and coaching
   // (coaching joined the console with Space Modes M3); the function registry already lists coaching in
@@ -338,6 +349,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
     requiredFunction: 'crm',
     types: ['practitioner', 'business', 'coaching'],
+    render: 'link',
   },
   // Services (the storefront store items) — the operator's catalog of services with full pricing +
   // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
@@ -351,6 +363,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Your storefront store items and their pricing, listed publicly or kept private.',
     requiredFunction: null,
     types: ['*'],
+    render: 'link',
   },
   // NOTE (the deeper Offerings merge): the five separate commerce surfaces that used to live here
   // (space.engage.memberships / donations / enroll / tickets and space.safety.checkin) plus the Place &
@@ -366,6 +379,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Create codes for your space and the landing page they open to.',
     requiredFunction: 'qr',
     types: ['*'],
+    render: 'link',
   },
   // Comms — write a campaign, pick who gets it, and send or schedule it. The `email` function gates
   // it; the types that compose an email surface are practitioner, business, and organization.
@@ -376,6 +390,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Write a campaign, pick who gets it, and send or schedule it.',
     requiredFunction: 'email',
     types: ['practitioner', 'business', 'organization'],
+    render: 'link',
   },
   // Insights — the space's analytics. Carried by the QR function today (the analytics surface lives
   // beside QR codes); a dedicated insights function lands when its own surface is built (Pass 2).
@@ -387,6 +402,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'See how your codes and pages are performing.',
     requiredFunction: 'qr',
     types: ['practitioner', 'business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
+    render: 'link',
   },
   // Billing — the plan ladder and what each plan unlocks. The `billing` function is universal ('*'),
   // so every console type shows it.
@@ -397,6 +413,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'See your current plan and what each plan unlocks.',
     requiredFunction: 'billing',
     types: ['business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
+    render: 'link',
   },
   // Danger — delete this space (owner-grade, permanent). Gated by manage access + owner check in the
   // console, like the legacy cockpit; no per-tool function.
@@ -407,6 +424,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     desc: 'Delete this space and everything it owns. This cannot be undone.',
     requiredFunction: null,
     types: ['*'],
+    render: 'link',
   },
 ] as const
 

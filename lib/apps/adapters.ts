@@ -30,6 +30,7 @@ export function toAdminModule(app: App): AdminModule {
     requiredCapability: app.gate.capability,
     slot: app.category as AdminSlot,
     surface: editor.surface,
+    render: editor.render,
     order: editor.order,
   }
   // `desc` is optional on AdminModule; include it only when the source carried one (byte-for-byte).

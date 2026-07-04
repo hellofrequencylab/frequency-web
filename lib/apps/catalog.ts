@@ -37,7 +37,7 @@ const EDITOR_APPS: App[] = ADMIN_MODULES.map((m): App => ({
   category: m.slot,
   scopes: m.scopes.map((kind) => ({ on: 'scopeKind' as const, kind })),
   gate: { system: 'capability', capability: m.requiredCapability },
-  surfaces: { editor: { surface: m.surface, Icon: m.Icon, order: m.order } },
+  surfaces: { editor: { surface: m.surface, Icon: m.Icon, order: m.order, render: m.render } },
   themeable: false,
   status: 'final',
   version: 1,
@@ -168,7 +168,7 @@ const SPACE_EDITOR_APPS: App[] = [...SPACE_SURFACES]
     gate: s.requiredFunction
       ? { system: 'spaceFunction', fn: s.requiredFunction }
       : { system: 'none' },
-    surfaces: { editor: { surface: 'sidebar', Icon: SPINE_META[s.slot].Icon, order: (i + 1) * 10 } },
+    surfaces: { editor: { surface: 'sidebar', Icon: SPINE_META[s.slot].Icon, order: (i + 1) * 10, render: s.render } },
     themeable: false,
     status: 'final',
     version: 1,

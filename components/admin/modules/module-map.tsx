@@ -21,6 +21,9 @@ import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
+import { SpaceBasicsModule } from './space-basics-module'
+import { SpaceModeModule } from './space-mode-module'
+import { SpacePageModule } from './space-page-module'
 import { PersonalAppearanceModule } from './personal-appearance-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
@@ -52,6 +55,14 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'practice.settings': PracticeSettingsModule,
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,
+  // Space inline config surfaces (inline-first rail, ADR-514). These are the SPACE_SURFACES whose
+  // `render` is 'inline' — Basics / Mode / Page — each a thin wrapper that self-fetches its read-gated
+  // data and mounts the existing editor in the flattened bar. The Space's feature workflows (Members,
+  // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
+  // link-row instead, so they are NOT in this map.
+  'space.basics': SpaceBasicsModule,
+  'space.mode': SpaceModeModule,
+  'space.layout': SpacePageModule,
   // Personal "You" apps (ADMIN-RAIL.md Phase 4) — self-account settings for any signed-in viewer.
   'account.appearance': PersonalAppearanceModule,
 }

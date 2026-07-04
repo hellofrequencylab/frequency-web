@@ -135,6 +135,13 @@ describe('admin module registry', () => {
     expect(ADMIN_MODULES.every((m) => m.surface === 'inline' || m.surface === 'sidebar')).toBe(true)
   })
 
+  // Inline-first rail (ADR-514): every core/personal module renders INLINE in the standardized bar
+  // (behavior-preserving — they already render inline); only Space feature workflows link out, and those
+  // live in the SPACE_SURFACES lane, not here.
+  it('classifies every AdminModule render: "inline" (behavior-preserving)', () => {
+    expect(ADMIN_MODULES.every((m) => m.render === 'inline')).toBe(true)
+  })
+
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
