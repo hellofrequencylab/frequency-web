@@ -11,7 +11,7 @@
 // never a place to delete from).
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck } from 'lucide-react'
+import { Settings, SlidersHorizontal, Users, BarChart3, CreditCard, ShieldCheck, LayoutDashboard, CalendarPlus, Megaphone } from 'lucide-react'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 import type { AdminScope } from '@/lib/layout/page-chrome'
 
@@ -48,21 +48,29 @@ function pushLink(out: BankLink[], label: string, icon: LucideIcon, href: string
   if (href) out.push({ label, icon, href })
 }
 
-/** The FIXED base bank for a scope, before any `placement: 'bank'` surfaces merge in. */
-function baseBank(scope: AdminScope | null, viewer: BankViewer): BankLink[] {
+/** The FIXED base bank for a scope, before any `placement: 'bank'` surfaces merge in.
+ *
+ *  `slug` is the entity's URL slug read from the live path (settings-panel resolves it). Console /
+ *  settings routes are SLUG-keyed (`/circles/<slug>/manage`), but an OpenAdminBarButton carries the
+ *  entity's DB id on `scope.id` (the slug≠id detail contract), so console hrefs use `slug ?? scope.id`.
+ *  A few links are DB-id-keyed by design (the circle create quick-actions pass `?circle=<id>` — the
+ *  create form matches the param against `circle.id`), so those deliberately keep `scope.id`. */
+function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | null): BankLink[] {
   if (!scope) return []
+  // The URL slug for console/settings hrefs; falls back to scope.id when no path slug was supplied
+  // (e.g. a unit test that passes a slug-shaped id directly).
+  const urlSlug = slug ?? scope.id
   switch (scope.kind) {
     // A Space: its owner console + the primary paid workspaces (CRM · Insights · Billing), resolved
-    // through hrefForSurface so a route rename is a one-line map change. Slug from scope.id.
+    // through hrefForSurface so a route rename is a one-line map change. Slug from the live path.
     case 'space': {
-      const slug = scope.id
-      if (!slug) return []
+      if (!urlSlug) return []
       const out: BankLink[] = [
-        { label: 'Manage console', icon: Settings, href: `/spaces/${slug}/manage` },
+        { label: 'Manage console', icon: Settings, href: `/spaces/${urlSlug}/manage` },
       ]
-      pushLink(out, 'CRM', Users, hrefForSurface('space.engage.crm', slug))
-      pushLink(out, 'Insights', BarChart3, hrefForSurface('space.insights', slug))
-      pushLink(out, 'Billing', CreditCard, hrefForSurface('space.billing', slug))
+      pushLink(out, 'CRM', Users, hrefForSurface('space.engage.crm', urlSlug))
+      pushLink(out, 'Insights', BarChart3, hrefForSurface('space.insights', urlSlug))
+      pushLink(out, 'Billing', CreditCard, hrefForSurface('space.billing', urlSlug))
       return out
     }
     // The personal / global scope (and a person profile): the member's own settings + billing, plus the
@@ -82,18 +90,39 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer): BankLink[] {
       }
       return out
     }
-    // A core entity with a full owner console: one Manage link into `/{section}/<slug>/manage`. Circle +
-    // practice consoles are thin, so their bank is just that console (their insights/relevant hubs live
-    // inside it) — 1 link is intentional; the inline body carries the rest.
-    case 'circle':
-    case 'event':
+    // A CIRCLE (ADR-515 Phase 4): the thin manage console PLUS the host's two create quick-actions —
+    // New event and New announcement — so the "where do I go from here?" bank carries the create paths
+    // the header CircleHostMenu used to own. The hrefs mirror CircleHostMenu exactly (keyed on the same
+    // circle id the scope carries), so they resolve identically. Insights stays INLINE (a circle has no
+    // standalone insights page — see ADR-515 Phase 4), so it is not a bank link.
+    case 'circle': {
+      const id = scope.id
+      if (!id || !urlSlug) return []
+      return [
+        // Console is SLUG-keyed; the two create quick-actions are DB-ID-keyed (the create form matches
+        // `?circle=` against circle.id), so they keep scope.id — mirrors CircleHostMenu exactly.
+        { label: 'Manage console', icon: SlidersHorizontal, href: `/circles/${urlSlug}/manage` },
+        { label: 'New event', icon: CalendarPlus, href: `/events/new?circle=${id}` },
+        { label: 'New announcement', icon: Megaphone, href: `/broadcast?compose=true&scope=${id}` },
+      ]
+    }
+    // An EVENT (ADR-515 Phase 4): the full host Manage dashboard — the second-layer console that carries
+    // the roster, approvals, questionnaire, sent Dispatches, AND the analytics (so "Insights" folds into
+    // it rather than a duplicate button, and the on-page Dispatch composer stays the compose path). This
+    // is the canonical "open the dashboard" affordance the People module used to deep-link to inline.
+    case 'event': {
+      if (!urlSlug) return []
+      return [{ label: 'Manage dashboard', icon: LayoutDashboard, href: `/events/${urlSlug}/manage` }]
+    }
+    // A core entity with a full owner console: one Manage link into `/{section}/<slug>/manage`. Hub +
+    // nexus + practice consoles are thin, so their bank is just that console (their insights/relevant
+    // hubs live inside it) — 1 link is intentional; the inline body carries the rest.
     case 'hub':
     case 'nexus':
     case 'practice': {
-      const id = scope.id
       const section = SECTION_FOR_KIND[scope.kind]
-      if (!id || !section) return []
-      return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${id}/manage` }]
+      if (!urlSlug || !section) return []
+      return [{ label: 'Manage console', icon: SlidersHorizontal, href: `/${section}/${urlSlug}/manage` }]
     }
     // Unknown / bank-less scopes (e.g. channel) get an empty bank gracefully.
     default:
@@ -103,18 +132,21 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer): BankLink[] {
 
 /**
  * The bank quick-links for a page `scope` + `viewer`, MERGED with any `placement: 'bank'` surface links
- * the caller resolved (`extra`). De-dupes by href (a base link and a bank surface pointing at the same
- * place collapse to one) and drops any destructive href (Danger is never in the bank). Returns `[]`
- * gracefully for a null / unknown scope. PURE + unit-tested.
+ * the caller resolved (`extra`). `slug` is the entity's URL slug from the live path — console/settings
+ * routes are slug-keyed, so the base links use it (falling back to `scope.id` when omitted). De-dupes by
+ * href (a base link and a bank surface pointing at the same place collapse to one) and drops any
+ * destructive href (Danger is never in the bank). Returns `[]` gracefully for a null / unknown scope.
+ * PURE + unit-tested.
  */
 export function bankForScope(
   scope: AdminScope | null,
   viewer: BankViewer = {},
   extra: readonly BankLink[] = [],
+  slug: string | null = null,
 ): BankLink[] {
   const seen = new Set<string>()
   const out: BankLink[] = []
-  for (const link of [...baseBank(scope, viewer), ...extra]) {
+  for (const link of [...baseBank(scope, viewer, slug), ...extra]) {
     if (!link || !link.href) continue
     if (isDangerHref(link.href)) continue
     if (seen.has(link.href)) continue

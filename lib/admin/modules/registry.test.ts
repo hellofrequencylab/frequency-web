@@ -174,14 +174,17 @@ describe('admin module registry', () => {
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no
   // resolved caps; it selects by kind and each module self-gates server-side).
   it('selects modules by scope kind, filtered by surface, ordered', () => {
-    // Circle now carries the 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics (settings + text),
-    // Place & Time, People, Engage. modulesForScopeKind sorts by `order` (stable), so the order-10
-    // modules keep declaration order and text (order 15) trails.
+    // Circle carries the 9-spine editor Apps (ADMIN-RAIL Phase 7) PLUS the ADR-515 Phase 4 additions:
+    // This week's practice (engage, order 12) and Insights (order 14). modulesForScopeKind sorts by
+    // `order` (stable), so the order-10 modules keep declaration order, then practice (12), insights (14),
+    // and text (15) trail.
     expect(modulesForScopeKind('circle', 'sidebar').map((m) => m.id)).toEqual([
       'circle.settings',
       'circle.placeAndTime',
       'circle.people',
       'circle.engage',
+      'circle.practice',
+      'circle.insights',
       'circle.text',
     ])
     // Hub/Nexus carry their 9-spine editor Apps (ADMIN-RAIL Phase 7): Basics, People, Insights, Danger,

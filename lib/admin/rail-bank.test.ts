@@ -8,6 +8,31 @@ import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
 const hrefs = (links: BankLink[]) => links.map((l) => l.href)
 
 describe('bankForScope', () => {
+  // The console/settings routes are SLUG-keyed, but scope.id carries the entity's DB id (slug≠id detail
+  // contract). The 4th arg is the URL slug from the live path; the base console links must use it, while
+  // the DB-id-keyed circle create quick-actions keep scope.id. This is the fix for the /circles/<uuid>/
+  // manage 404 the bank would otherwise produce.
+  it('uses the URL slug for console links but scope.id for the id-keyed circle create actions', () => {
+    const dbId = '11111111-2222-3333-4444-555555555555'
+    const slug = 'morning-sit'
+    const bank = bankForScope({ kind: 'circle', id: dbId }, {}, [], slug)
+    const h = hrefs(bank)
+    expect(h).toContain(`/circles/${slug}/manage`) // console → SLUG (not the uuid)
+    expect(h).not.toContain(`/circles/${dbId}/manage`)
+    expect(h).toContain(`/events/new?circle=${dbId}`) // create → DB id (create form matches circle.id)
+    expect(h).toContain(`/broadcast?compose=true&scope=${dbId}`)
+  })
+
+  it('slug-keys the console for event / hub / nexus / practice too (4th-arg slug over scope.id)', () => {
+    const dbId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+    const slug = 'gathering'
+    for (const [kind, section] of [['event', 'events'], ['hub', 'hubs'], ['nexus', 'nexuses'], ['practice', 'practices']] as const) {
+      const bank = bankForScope({ kind, id: dbId }, {}, [], slug)
+      expect(hrefs(bank).some((x) => x === `/${section}/${slug}/manage`)).toBe(true)
+      expect(hrefs(bank).some((x) => x.includes(dbId))).toBe(false)
+    }
+  })
+
   it('space → manage console + the primary paid workspaces (CRM · Insights · Billing)', () => {
     const bank = bankForScope({ kind: 'space', id: 'sunrise' })
     expect(bank.length).toBeGreaterThanOrEqual(1)
@@ -81,13 +106,31 @@ describe('bankForScope', () => {
     expect(h.filter((x) => x === '/settings/billing')).toHaveLength(1)
   })
 
-  it('event / hub / nexus / circle / practice → their manage console (≥1 link)', () => {
-    expect(hrefs(bankForScope({ kind: 'event', id: 'x' }))).toEqual(['/events/x/manage'])
+  it('hub / nexus / practice → their manage console (1 link)', () => {
     expect(hrefs(bankForScope({ kind: 'hub', id: 'north' }))).toEqual(['/hubs/north/manage'])
     expect(hrefs(bankForScope({ kind: 'nexus', id: 'core' }))).toEqual(['/nexuses/core/manage'])
-    expect(hrefs(bankForScope({ kind: 'circle', id: 'c1' }))).toEqual(['/circles/c1/manage'])
     expect(hrefs(bankForScope({ kind: 'practice', id: 'p1' }))).toEqual(['/practices/p1/manage'])
-    expect(bankForScope({ kind: 'event', id: 'x' }).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('circle → manage console + the host create quick-actions (New event · New announcement) (ADR-515 Phase 4)', () => {
+    // The two create hrefs mirror CircleHostMenu exactly (same circle id the scope carries). Insights
+    // stays INLINE (a circle has no standalone insights page), so it is NOT a bank link.
+    const bank = bankForScope({ kind: 'circle', id: 'c1' })
+    expect(hrefs(bank)).toEqual([
+      '/circles/c1/manage',
+      '/events/new?circle=c1',
+      '/broadcast?compose=true&scope=c1',
+    ])
+    expect(bank.map((l) => l.label)).toEqual(['Manage console', 'New event', 'New announcement'])
+    // None of the create/nav quick-actions is a destructive href.
+    expect(bank.every((l) => !/danger|delete/i.test(l.href))).toBe(true)
+  })
+
+  it('event → the host Manage dashboard (the console that carries roster/approvals/analytics) (ADR-515 Phase 4)', () => {
+    const bank = bankForScope({ kind: 'event', id: 'x' })
+    expect(hrefs(bank)).toEqual(['/events/x/manage'])
+    expect(bank[0].label).toBe('Manage dashboard')
+    expect(bank.length).toBeGreaterThanOrEqual(1)
   })
 
   it('merges placement:"bank" extras and de-dupes by href', () => {

@@ -6,6 +6,8 @@ import { CircleTextModule } from './circle-text-module'
 import { CirclePlaceTimeModule } from './circle-place-time-module'
 import { CirclePeopleModule } from './circle-people-module'
 import { CircleEngageModule } from './circle-engage-module'
+import { CirclePracticeModule } from './circle-practice-module'
+import { CircleInsightsModule } from './circle-insights-module'
 import { HubSettingsModule } from './hub-settings-module'
 import { HubPeopleModule } from './hub-people-module'
 import { HubInsightsModule } from './hub-insights-module'
@@ -42,6 +44,8 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'circle.placeAndTime': CirclePlaceTimeModule,
   'circle.people': CirclePeopleModule,
   'circle.engage': CircleEngageModule,
+  'circle.practice': CirclePracticeModule,
+  'circle.insights': CircleInsightsModule,
   'hub.settings': HubSettingsModule,
   'hub.people': HubPeopleModule,
   'hub.insights': HubInsightsModule,

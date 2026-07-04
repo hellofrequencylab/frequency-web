@@ -13,8 +13,9 @@ import {
   type CircleChallenge,
   type AdoptableChallenge,
 } from '@/lib/circles/challenges'
-import { slugify } from '@/lib/utils'
+import { slugify, isoDaysAgo } from '@/lib/utils'
 import { isValidTimeZone } from '@/lib/time/zone'
+import { getCircleEarnedZaps } from '@/lib/circles/earned'
 import type { Database } from '@/lib/database.types'
 
 /** A small {id, title, href} entry for one of the circle's adopted Quest items. */
@@ -377,6 +378,94 @@ export async function deleteCircle(id: string, slug: string): Promise<{ error?: 
   revalidatePath(`/circles/${slug}`)
   revalidatePath('/admin/circles')
   return {}
+}
+
+// ─── This week's practice (the 'engage' spine module — ADR-515 Phase 4) ─────────
+// The host-assigned "This week's practice" picker, extracted out of Circle Quest into its own rail
+// module (circle.practice). The read re-checks circle.assignTask (the engage authority + the SAME
+// capability the module declares); it returns null for anyone else, so the module renders nothing.
+// Setting the practice reuses setCirclePracticeAction (gated circle.editSettings, co-granted to a
+// circle leader — so the write gate is never weaker than the read gate).
+
+export interface CirclePracticeAssignData {
+  circleId: string
+  slug: string
+  library: { id: string; title: string }[]
+  activePracticeId: string | null
+}
+
+export async function getCirclePracticeAssignData(slug: string): Promise<CirclePracticeAssignData | null> {
+  const admin = createAdminClient()
+  const { data: circle } = await admin.from('circles').select('id, slug').eq('slug', slug).maybeSingle()
+  if (!circle) return null
+
+  const caps = await getCircleCapabilities(circle.id)
+  if (!caps.has('circle.assignTask')) return null
+
+  const [library, activePractice] = await Promise.all([
+    listPublicPractices(),
+    getCircleActivePractice(circle.id),
+  ])
+  return {
+    circleId: circle.id,
+    slug: circle.slug,
+    library: library.map((p) => ({ id: p.id, title: p.title })),
+    activePracticeId: activePractice?.id ?? null,
+  }
+}
+
+// ─── Insights (the 'insights' spine module — ADR-515 Phase 4) ───────────────────
+// The circle's honest, circle-scoped health: Zaps earned THROUGH this circle (its practice logs +
+// Expression-at-Circle, via getCircleEarnedZaps), active member streaks, and members who joined this
+// week. Mirrors the page body's health reads (components/widgets/circles/circle-health). The read
+// re-checks circle.editSettings and returns null for anyone else (fail-safe).
+
+export interface CircleInsightsData {
+  circleId: string
+  zapsEarned: number
+  activeStreaks: number
+  newThisWeek: number
+}
+
+export async function getCircleInsightsData(slug: string): Promise<CircleInsightsData | null> {
+  const admin = createAdminClient()
+  const { data: circle } = await admin.from('circles').select('id').eq('slug', slug).maybeSingle()
+  if (!circle) return null
+
+  const caps = await getCircleCapabilities(circle.id)
+  if (!caps.has('circle.editSettings')) return null
+
+  const { data: memberRows } = await admin
+    .from('memberships')
+    .select('profile_id')
+    .eq('circle_id', circle.id)
+    .eq('status', 'active')
+  const memberIds = [...new Set(((memberRows ?? []) as { profile_id: string }[]).map((m) => m.profile_id))]
+
+  const weekAgo = isoDaysAgo(7)
+  const [zapsEarned, { data: streakRows }, { data: recentJoins }] = await Promise.all([
+    getCircleEarnedZaps(circle.id),
+    memberIds.length > 0
+      ? admin.from('profiles').select('current_streak').in('id', memberIds)
+      : Promise.resolve({ data: [] as { current_streak: number | null }[] }),
+    admin
+      .from('memberships')
+      .select('id')
+      .eq('circle_id', circle.id)
+      .eq('status', 'active')
+      .gte('joined_at', weekAgo),
+  ])
+
+  const activeStreaks = ((streakRows ?? []) as { current_streak: number | null }[]).filter(
+    (p) => (p.current_streak ?? 0) > 0,
+  ).length
+
+  return {
+    circleId: circle.id,
+    zapsEarned,
+    activeStreaks,
+    newThisWeek: recentJoins?.length ?? 0,
+  }
 }
 
 // ─── Place & Time (the 'place' spine module) ───────────────────────────────────
