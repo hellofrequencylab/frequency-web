@@ -10,7 +10,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -67,7 +67,9 @@ export interface AdminModule {
   /** How the STANDARDIZED admin bar draws this editor (inline-first rail, ADR below): `inline` mounts
    *  the editor component in the flattened bar ("everything in view"); `link` draws a compact link-row
    *  out to the feature's own management page. A SEPARATE axis from `surface` (tune-vs-manage, ADR-138):
-   *  every core/personal module renders inline (behavior-preserving); only feature workflows link out. */
+   *  config surfaces render inline ("everything in view"); only feature workflows link out. Every core
+   *  entity module + the personal config surfaces are `inline`; the personal feature workflows (Account
+   *  and privacy, Billing) are `link` (ADR-514 Phase C/D). */
   render: 'inline' | 'link'
   /** Vertical order within a slot. */
   order: number
@@ -347,11 +349,26 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   // 'account' slot renders ABOVE the management spine (spine.ts). Gated `account.manage` — held by
   // every signed-in viewer on the global scope, denied to signed-out visitors (fail-closed).
   //
-  // Only Appearance ships wrapped today: its ThemeSwitcher is fully self-sufficient in the drawer (it
-  // reads the resolved axes from the shell root and writes via its own server actions). Account,
-  // Profile, Notifications, Connections, and Billing each need server-fetched initial state (blocked
-  // list / profile row / prefs / Stripe portal) with no client-callable getter to reuse, so they stay
-  // as their existing /settings/* pages — the "You" row is a page-routed App for those (Phase-4 note).
+  // CONFIG surfaces render INLINE ("everything in view", the owner directive — ADR-514 Phase D), each a
+  // thin `'use client'` wrapper that mounts the EXISTING /settings/* form via a read-gated getter
+  // (app/(main)/settings/rail-getters.ts), mirroring the Space inline wrappers. The getter re-gates on
+  // the authed viewer and returns null when signed out, so the flattened bar never weakens a gate
+  // (fail-safe); each form's own action still re-checks auth server-side. FEATURE WORKFLOWS link out:
+  //   • account.billing  → /settings/billing  (a billing/portal workflow, not config).
+  //   • account.privacy  → /settings/account   (blocked-members management + data export + account
+  //                        deletion — a composite management page, no single reusable inline form).
+  {
+    id: 'account.profile',
+    label: 'Profile',
+    desc: 'Your display name, handle, photo, and personal contact info.',
+    Icon: UserCircle,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 10,
+  },
   {
     id: 'account.appearance',
     label: 'Appearance',
@@ -362,7 +379,55 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     slot: 'account',
     surface: 'sidebar',
     render: 'inline',
-    order: 10,
+    order: 20,
+  },
+  {
+    id: 'account.notifications',
+    label: 'Notifications',
+    desc: 'Choose how and when Frequency contacts you. Changes save instantly.',
+    Icon: Bell,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 30,
+  },
+  {
+    id: 'account.connections',
+    label: 'Connections and location',
+    desc: 'Decide who can find you, how precisely your location shows, and how far your reach extends.',
+    Icon: Radar,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 40,
+  },
+  {
+    id: 'account.privacy',
+    label: 'Account and privacy',
+    desc: 'Manage who you have blocked, download your data, and delete your account.',
+    Icon: ShieldCheck,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'link',
+    order: 50,
+  },
+  {
+    id: 'account.billing',
+    label: 'Plan and billing',
+    desc: 'See your current plan and what each plan unlocks.',
+    Icon: CreditCard,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'link',
+    order: 60,
   },
 ] as const
 

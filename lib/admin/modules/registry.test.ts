@@ -112,10 +112,20 @@ describe('admin module registry', () => {
 
   it('selects the personal apps by the global scope kind, and only with account.manage', () => {
     // The bar resolves the "You" set on the global scope; a capable viewer sees it, others do not.
-    expect(modulesForScopeKind('global', 'sidebar').map((m) => m.id)).toEqual(['account.appearance'])
-    expect(modulesFor({ kind: 'global' }, new Set<Capability>(['account.manage'])).map((m) => m.id)).toEqual([
+    // The full personal set (ADR-514 Phase D), spine-ordered by `order`: Profile, Appearance,
+    // Notifications, Connections, Account and privacy, Billing.
+    const personalIds = [
+      'account.profile',
       'account.appearance',
-    ])
+      'account.notifications',
+      'account.connections',
+      'account.privacy',
+      'account.billing',
+    ]
+    expect(modulesForScopeKind('global', 'sidebar').map((m) => m.id)).toEqual(personalIds)
+    expect(modulesFor({ kind: 'global' }, new Set<Capability>(['account.manage'])).map((m) => m.id)).toEqual(
+      personalIds,
+    )
     expect(modulesFor({ kind: 'global' }, new Set<Capability>())).toHaveLength(0)
     // Personal apps must not leak onto an entity scope.
     expect(modulesFor(circleScope, new Set<Capability>(['account.manage']))).toHaveLength(0)
@@ -135,11 +145,15 @@ describe('admin module registry', () => {
     expect(ADMIN_MODULES.every((m) => m.surface === 'inline' || m.surface === 'sidebar')).toBe(true)
   })
 
-  // Inline-first rail (ADR-514): every core/personal module renders INLINE in the standardized bar
-  // (behavior-preserving — they already render inline); only Space feature workflows link out, and those
-  // live in the SPACE_SURFACES lane, not here.
-  it('classifies every AdminModule render: "inline" (behavior-preserving)', () => {
-    expect(ADMIN_MODULES.every((m) => m.render === 'inline')).toBe(true)
+  // Inline-first rail (ADR-514 Phase C/D): config renders INLINE, feature workflows link out. Every core
+  // entity module + the personal config surfaces are `inline`; the ONLY `link` modules here are the two
+  // personal feature workflows — Account and privacy + Billing (Space feature workflows live in the
+  // SPACE_SURFACES lane, not here).
+  it('classifies config modules inline and the personal feature workflows link', () => {
+    const linkIds = ADMIN_MODULES.filter((m) => m.render === 'link').map((m) => m.id).sort()
+    expect(linkIds).toEqual(['account.billing', 'account.privacy'])
+    // Every core entity module (non-global scope) renders inline.
+    expect(ADMIN_MODULES.filter((m) => !m.scopes.includes('global')).every((m) => m.render === 'inline')).toBe(true)
   })
 
   // ADR-250 step 1: registry-driven selection by scope kind (the page admin dock has no

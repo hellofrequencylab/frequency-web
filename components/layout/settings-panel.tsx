@@ -24,6 +24,7 @@ import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
+import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
 
 // The SETTINGS CONTENT — the registry-selected manager modules (Page settings, Circle Quest, page
 // content) plus the operator "Page" group (Layout / SEO / Status), resolved from the pathname.
@@ -292,10 +293,13 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       if (!app) return []
       if (app.surfaces.editor?.render === 'link') {
         // Space link-rows resolve their href via hrefForSurface (Danger + unmapped fall back to the
-        // /manage console, so every row is a working link). Core/personal surfaces are all `inline` in
-        // this PR, so no core hrefForEntitySurface(id, scope) exists yet — TODO: add it when core/personal
-        // link-outs land (the deferred follow-up) so a link surface off a non-Space scope resolves too.
-        const href = spaceSlug ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage` : null
+        // /manage console, so every row is a working link). Core/personal link surfaces resolve via
+        // hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal "You" feature workflows
+        // (Account and privacy, Billing) → their /settings/* page; every core entity stays `inline`, so
+        // no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
+        const href = spaceSlug
+          ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
+          : hrefForEntitySurface(id, scope)
         return href ? [<SurfaceLinkRow key={id} app={app} href={href} />] : []
       }
       const C = MODULE_COMPONENTS[id]

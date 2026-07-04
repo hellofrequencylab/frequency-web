@@ -60,22 +60,33 @@ sheds `flat`/`categories`/`content` for an ordered `sections: { slot, label, Ico
 NEW axis, distinct from ADR-138's `surface: 'inline' | 'sidebar'` tune-vs-manage meaning). It is the
 single decision point in `settings-panel`'s `nodesForAppIds`:
 
-- **`inline`** — mount the App's editor component in the bar (`MODULE_COMPONENTS[id]`). Every core /
-  personal module (`circle · hub · nexus · event · practice · channel · account.*`) is `inline` — they
-  already rendered inline, now inside the flattened bar. A Space's **config** surfaces — **Basics · Mode
-  and focus · Page** — are `inline` too: thin `'use client'` wrappers (`space-basics-module` /
-  `space-mode-module` / `space-page-module`) that read the slug from the path, call a read-gated getter
-  (`getSpaceBasicsData` / `getSpaceModeData` / `getSpacePageData` in `manage/rail-getters.ts`), and mount
-  the EXISTING `SpaceSettingsForm` / `ModeSettings` / `SpacePagePanel`. Each getter re-gates server-side
-  (`resolveSpaceManageAccess` + the surface's own function check) and returns `null` for a non-manager,
-  so the wrapper renders nothing — the flatten never weakens a gate (fail-safe).
+- **`inline`** — mount the App's editor component in the bar (`MODULE_COMPONENTS[id]`). Every **core
+  entity** module (`circle · hub · nexus · event · practice · channel`) is `inline`: each entity's module
+  IS its dedicated editor (the `/manage` + `/settings` consoles merely re-compose the SAME module
+  components), and where a deeper feature-workflow page exists (e.g. the event guest dashboard) the inline
+  module already deep-links to it — so keeping them inline satisfies "everything in view" without a
+  regression. The **personal config** surfaces — **Profile · Appearance · Notifications · Connections and
+  location** — are `inline` too: thin `'use client'` wrappers (`personal-{profile,notifications,
+  connections}-module`, plus the self-sufficient `personal-appearance-module`) that call a read-gated
+  getter (`getProfileRailData` / `getNotificationsRailData` / `getConnectionsRailData` in
+  `app/(main)/settings/rail-getters.ts`) and mount the EXISTING `/settings/*` forms. A Space's **config**
+  surfaces — **Basics · Mode and focus · Page** — are `inline` via `space-{basics,mode,page}-module` over
+  `manage/rail-getters.ts`. **Every getter re-gates server-side** (the Space getters via
+  `resolveSpaceManageAccess` + the surface's function check; the personal getters on the AUTHED viewer) and
+  returns `null` when unauthorized, so the wrapper renders nothing — the flatten never weakens a gate
+  (fail-safe).
 - **`link`** — draw a compact `SurfaceLinkRow` OUT to the App's own page (an entity-agnostic row taking a
   resolved href). A Space's **feature workflows** — Members · CRM · Offerings · Services · QR · Email ·
-  Insights · Billing · Danger — are `link`; their href comes from `hrefForSurface(id, slug)`.
+  Insights · Billing · Danger — are `link`; their href comes from `hrefForSurface(id, slug)`. The
+  **personal feature workflows** — **Account and privacy** (blocked-members management + data export +
+  account deletion; no single reusable inline form) and **Billing** — are `link`; their href comes from
+  `hrefForEntitySurface(id, scope)` (`lib/admin/entity-surface-hrefs.ts`, the core/personal twin of
+  `hrefForSurface`).
 
 This fixed the ADR-513 regression (a Space showed *every* surface as a link-row, losing the inline
-Customize drawer). Core/personal entities are all `inline` in this PR (behavior-preserving); a
-`hrefForEntitySurface` for core/personal link-outs is the deferred follow-up.
+Customize drawer). Phase C/D (ADR-514) shipped the core/personal classification: every core entity stays
+`inline`; the personal config surfaces are `inline` (via the settings rail-getters + wrappers) and the
+personal feature workflows (Account and privacy, Billing) `link` out through `hrefForEntitySurface`.
 
 - **Presence** is unconditional for an authed viewer (the personal set is never empty → the "hide when empty" rule yields "always shown" for free).
 - **Content** is `appsForScope(scope, viewer)` — the same catalog that feeds the Loom Apps lane. Personal Apps are `scope: global`, member-gated; management Apps are entity-scoped, capability-gated.

@@ -25,6 +25,9 @@ import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceModeModule } from './space-mode-module'
 import { SpacePageModule } from './space-page-module'
 import { PersonalAppearanceModule } from './personal-appearance-module'
+import { PersonalProfileModule } from './personal-profile-module'
+import { PersonalNotificationsModule } from './personal-notifications-module'
+import { PersonalConnectionsModule } from './personal-connections-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
 // (lib/admin/modules/registry.ts) stays pure metadata — it must, because the module
@@ -63,6 +66,13 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'space.basics': SpaceBasicsModule,
   'space.mode': SpaceModeModule,
   'space.layout': SpacePageModule,
-  // Personal "You" apps (ADMIN-RAIL.md Phase 4) — self-account settings for any signed-in viewer.
+  // Personal "You" apps (ADMIN-RAIL.md Phase 4 / ADR-514 Phase D) — self-account settings for any
+  // signed-in viewer. The CONFIG surfaces render inline: each is a thin wrapper that self-fetches its
+  // read-gated bundle (app/(main)/settings/rail-getters.ts) and mounts the existing /settings/* form.
+  // The feature workflows (account.privacy → /settings/account, account.billing → /settings/billing)
+  // are `render: 'link'`, so they draw a link-row via hrefForEntitySurface and are NOT in this map.
   'account.appearance': PersonalAppearanceModule,
+  'account.profile': PersonalProfileModule,
+  'account.notifications': PersonalNotificationsModule,
+  'account.connections': PersonalConnectionsModule,
 }
