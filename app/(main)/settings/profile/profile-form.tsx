@@ -43,8 +43,13 @@ const lbl   = 'block text-sm font-medium text-text mb-1'
 export function ProfileForm({
   userId,
   initial,
+  hideSpotlight = false,
 }: {
   userId: string
+  /** Suppress the big Spotlight block (ADR-515 Phase 2): the rail mounts ProfileForm with this on,
+   *  because the condensed `account.spotlight` section represents Spotlight there; the full
+   *  /settings/profile page keeps the block (default off). */
+  hideSpotlight?: boolean
   initial: {
     displayName: string
     handle: string
@@ -487,7 +492,7 @@ export function ProfileForm({
           Crew+ members turn it on themselves here (ADR-431); once on, the builder,
           theme, and publish controls appear. Members who can't enable it yet see
           nothing (an upgrade nudge lives on /upgrade, not here). */}
-      {!spotEnabled && initial.canEnableSpotlight && (
+      {!hideSpotlight && !spotEnabled && initial.canEnableSpotlight && (
         <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
@@ -513,7 +518,7 @@ export function ProfileForm({
         </div>
       )}
 
-      {spotEnabled && (
+      {!hideSpotlight && spotEnabled && (
         <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
           <div className="flex items-start gap-2">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-strong" aria-hidden />

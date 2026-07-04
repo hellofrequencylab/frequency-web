@@ -36,8 +36,9 @@ describe('appsForScope — editor apps preserve modulesForScopeKind behavior (LP
     // The personal apps (ADMIN-RAIL.md Phase 4) are the ONLY global-scope editor modules — they apply
     // to every signed-in viewer's own account and make the bar always available. A capable viewer sees
     // them; a no-caps viewer sees none (they gate on account.manage).
-    // The full personal set (ADR-514 Phase D), spine-ordered — Profile, Appearance, Notifications,
-    // Connections, Account and privacy, Billing. It must equal the registry's global-scope sidebar set.
+    // The full personal set (ADR-515 Phase 2), ordered — the inline body (Profile, Spotlight, Layout) then
+    // the bank surfaces (Appearance, Notifications, Connections, Account and privacy, Billing). It must
+    // equal the registry's global-scope sidebar set (the catalog derives from ADMIN_MODULES).
     expect(appsForScope({ kind: 'global' }, SELECTION_VIEWER, 'editor').map((a) => a.id)).toEqual(
       modulesForScopeKind('global', 'sidebar').map((m) => m.id),
     )

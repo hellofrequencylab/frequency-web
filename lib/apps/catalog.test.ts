@@ -115,8 +115,10 @@ describe('three-tier rail axis flows through the catalog', () => {
     }
   })
 
-  it('every editor App is tagged with a band + priority (no untagged rail surface shipped)', () => {
-    for (const a of APPS.filter((x) => x.surfaces.editor)) {
+  it('every INLINE editor App is tagged with a band + priority (no untagged rail-body surface shipped)', () => {
+    // The band + priority order the rail BODY. A `placement: 'bank'` surface (ADR-515 Phase 2) leaves the
+    // banded body for the bottom bank, so it carries no tier/priority — the invariant is over inline apps.
+    for (const a of APPS.filter((x) => x.surfaces.editor && x.surfaces.editor.placement !== 'bank')) {
       expect(a.surfaces.editor?.tier, a.id).toBeTruthy()
       expect(typeof a.surfaces.editor?.priority, a.id).toBe('number')
     }

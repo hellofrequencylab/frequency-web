@@ -65,11 +65,11 @@ single decision point in `settings-panel`'s `nodesForAppIds`:
   IS its dedicated editor (the `/manage` + `/settings` consoles merely re-compose the SAME module
   components), and where a deeper feature-workflow page exists (e.g. the event guest dashboard) the inline
   module already deep-links to it — so keeping them inline satisfies "everything in view" without a
-  regression. The **personal config** surfaces — **Profile · Appearance · Notifications · Connections and
-  location** — are `inline` too: thin `'use client'` wrappers (`personal-{profile,notifications,
-  connections}-module`, plus the self-sufficient `personal-appearance-module`) that call a read-gated
-  getter (`getProfileRailData` / `getNotificationsRailData` / `getConnectionsRailData` in
-  `app/(main)/settings/rail-getters.ts`) and mount the EXISTING `/settings/*` forms. A Space's **config**
+  regression. The **personal config** surfaces were `inline` under ADR-514 Phase C+D — but **ADR-515 Phase 2
+  (§5.6) REVERSED that**: only **Profile** (plus a condensed Spotlight + a Layout link) stays inline; **Appearance ·
+  Notifications · Connections and location** moved to the bottom bank, so their inline wrappers +
+  `getNotificationsRailData` / `getConnectionsRailData` were retired (only `getProfileRailData` remains in
+  `app/(main)/settings/rail-getters.ts`). A Space's **config**
   surfaces — **Basics · Mode and focus · Page** — are `inline` via `space-{basics,mode,page}-module` over
   `manage/rail-getters.ts`. **Every getter re-gates server-side** (the Space getters via
   `resolveSpaceManageAccess` + the surface's function check; the personal getters on the AUTHED viewer) and
@@ -238,8 +238,9 @@ carried from `AdminModule.placement` / `SpaceSurface.placement` through the cata
 - **`bank`** — the surface is promoted into the bottom BANK button-grid instead of the body; `settings-panel`
   resolves its href (Space → `hrefForSurface`; core/personal → `hrefForEntitySurface`) and merges it in.
 
-Nothing is tagged `bank` yet, so the body path is byte-for-byte as before (non-breaking); tagging the
-second-layer surfaces is a later phase.
+The keystone tagged nothing `bank`; **Phase 2 (the personal rail, shipped) opts the personal "You" set in**
+(see §5.6). Round-trip note: `toAdminModule` (`lib/apps/adapters.ts`) carries `placement` back exactly like
+`render`/`tier`, so the catalog composition still round-trips byte-for-byte.
 
 ### 5.2 The bottom bank — `lib/admin/rail-bank.ts`
 
@@ -270,13 +271,43 @@ The circle/event Layout / template chooser is de-operatorized: gated on the ENTI
 (`viewer.caps.has('circle.editSettings')` / `event.editSettings`), not the staff `isOperator` axis (the
 `isModuleRoute` guard stays), so it is an owner-visible guaranteed section on the scopes that have one.
 
-### 5.5 Phased rollout
+### 5.6 The personal "You" rail (Phase 2, shipped) — REVERSES ADR-514 Phase C+D
 
-1. **Keystone (this PR)** — the `placement` axis, `bankForScope`, sticky search, collapsed header,
+The owner directive: the personal rail is ONLY the member's own core admin. The body is exactly three
+inline surfaces; every secondary account surface leaves the sidebar for the bottom bank. This **reverses
+ADR-514 Phase C+D**, which had inlined Appearance, Notifications, and Connections and location.
+
+| Surface | id | Placement | Renders as |
+|---|---|---|---|
+| Profile | `account.profile` | inline (standard) | `PersonalProfileModule` → `ProfileForm` with `hideSpotlight` |
+| Spotlight | `account.spotlight` | inline (standard) | `PersonalSpotlightModule` — condensed status pill + Publish/Unpublish + "Build your page" |
+| Layout | `account.layout` | inline (primary) | `PersonalLayoutModule` — a link-row to `/people/<handle>/profile-preview/edit` |
+| Appearance | `account.appearance` | **bank** | bank button → `/settings/appearance` |
+| Notifications | `account.notifications` | **bank** | bank button → `/settings/notifications` |
+| Connections and location | `account.connections` | **bank** | bank button → `/settings/connections` |
+| Account and privacy | `account.privacy` | **bank** | bank button → `/settings/account` |
+| Plan and billing | `account.billing` | **bank** | bank button → `/settings/billing` (dedupes the base bank Billing) |
+
+So the personal rail reads: **sticky search → Profile → Spotlight → Layout → bottom bank** (Appearance ·
+Notifications · Connections and location · Account and privacy · Billing · All settings). The retired inline
+wrappers (`personal-{appearance,notifications,connections}-module.tsx`) and their getters
+(`getNotificationsRailData` / `getConnectionsRailData`) are gone; only `getProfileRailData` remains, feeding
+all three inline surfaces (it already carries the spotlight flags + the handle). The condensed Spotlight and
+Layout modules self-fetch it and re-gate on the authed viewer, so a signed-out viewer (or, for Spotlight, a
+member who cannot enable it) renders nothing (fail-safe). `ProfileForm` gained a `hideSpotlight` prop so the
+rail suppresses the big Spotlight block (the condensed section stands in); the full `/settings/profile` page
+keeps it.
+
+### 5.7 Phased rollout
+
+1. **Keystone (Phase 1, shipped)** — the `placement` axis, `bankForScope`, sticky search, collapsed header,
    owner-visible layout chooser, and the `event/hub/nexus` manage-console href seam. Non-breaking.
-2. **Tag surfaces to `bank`** — move the second-layer feature workflows onto `placement: 'bank'` per scope.
-3. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
-4. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
+2. **The personal "You" rail (Phase 2, shipped)** — §5.6: Profile/Spotlight/Layout inline; the secondary
+   account surfaces to the bank (reverses ADR-514 Phase C+D).
+3. **Tag entity/Space surfaces to `bank`** — move the remaining second-layer feature workflows onto
+   `placement: 'bank'` per scope.
+4. **Per-entity layout registry rows** — add the `*.layout` chooser to hub/nexus/practice/channel/journey.
+5. **Empty the `extra`/"More" disclosure** — as surfaces move to the bank / inline, the current "More" tier drains.
 
 ---
 

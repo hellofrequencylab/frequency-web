@@ -18,7 +18,9 @@ describe('hrefForEntitySurface', () => {
     expect(hrefForEntitySurface('account.privacy', { kind: 'event', id: 'x' })).toBe('/settings/account')
   })
 
-  it('also maps the inline personal surfaces (so a future flip to link resolves) ', () => {
+  it('maps the moved account surfaces so the bottom bank resolves their href (ADR-515 Phase 2)', () => {
+    // Appearance / Notifications / Connections are `placement: 'bank'` now — the bank resolver reads their
+    // /settings/* href from here. Profile stays inline, but keeps a mapping so a future flip is a no-op.
     expect(hrefForEntitySurface('account.profile', { kind: 'global' })).toBe('/settings/profile')
     expect(hrefForEntitySurface('account.notifications', { kind: 'global' })).toBe('/settings/notifications')
     expect(hrefForEntitySurface('account.connections', { kind: 'global' })).toBe('/settings/connections')
