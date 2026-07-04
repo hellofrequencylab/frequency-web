@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react'
 import { Check } from 'lucide-react'
 import { Input, Textarea, Label } from '@/components/ui/field'
+import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 
 // SHARED SPACE FORM KIT (ENTITY-SPACES-BUILD Wave B). The small set of labeled field primitives
@@ -116,7 +117,8 @@ export function TextareaField({
   )
 }
 
-/** The network/private visibility choice — two radio-style options. Default 'network'. */
+/** The network/private visibility choice — a single toggle switch (Network when on, Private when off)
+ *  with an inline label + one line describing the current state. Default 'network'. */
 export function VisibilityField({
   value,
   onChange,
@@ -124,33 +126,24 @@ export function VisibilityField({
   value: 'network' | 'private'
   onChange: (v: 'network' | 'private') => void
 }) {
-  const options: { value: 'network' | 'private'; label: string; hint: string }[] = [
-    { value: 'network', label: 'Network', hint: 'Listed in the Spaces directory for anyone to find.' },
-    { value: 'private', label: 'Private', hint: 'Hidden from the directory. Only you and your members can open it.' },
-  ]
+  const isNetwork = value === 'network'
   return (
     <Field id="visibility" label="Visibility">
-      <div className="grid gap-2 sm:grid-cols-2">
-        {options.map((o) => {
-          const active = value === o.value
-          return (
-            <button
-              key={o.value}
-              type="button"
-              onClick={() => onChange(o.value)}
-              aria-pressed={active}
-              className={cn(
-                'rounded-lg border p-3 text-left transition-colors',
-                active
-                  ? 'border-primary bg-primary-bg'
-                  : 'border-border bg-surface hover:border-border-strong',
-              )}
-            >
-              <span className="block text-sm font-semibold text-text">{o.label}</span>
-              <span className="mt-0.5 block text-xs text-muted">{o.hint}</span>
-            </button>
-          )
-        })}
+      <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface p-3">
+        <div className="min-w-0">
+          <span className="block text-sm font-semibold text-text">{isNetwork ? 'Network' : 'Private'}</span>
+          <span className="mt-0.5 block text-xs text-muted">
+            {isNetwork
+              ? 'Listed in the Spaces directory for anyone to find.'
+              : 'Hidden from the directory. Only you and your members can open it.'}
+          </span>
+        </div>
+        <Switch
+          id="visibility"
+          checked={isNetwork}
+          onCheckedChange={(next) => onChange(next ? 'network' : 'private')}
+          aria-label="List this Space in the Spaces directory"
+        />
       </div>
     </Field>
   )
@@ -221,59 +214,63 @@ export function AccentPicker({
       label="Brand color"
       hint="Your accent. It paints your buttons, the active tab, and highlights across your page."
     >
-      <div className="space-y-3">
+      {/* Picker on the LEFT, a tight grid of smaller swatches on the RIGHT. Wraps to stacked in the
+          narrow rail (~360px), sits side-by-side once there is room (the wider settings page). */}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
         {/* The custom picker: a native color well + a hex field + a Default clear. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="color"
-            aria-label="Pick a brand color"
-            value={currentHex ?? '#E2912F'}
-            disabled={disabled}
-            onChange={(e) => onChange(e.target.value)}
-            className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
-          />
-          <input
-            type="text"
-            inputMode="text"
-            aria-label="Brand color hex"
-            value={draft}
-            disabled={disabled}
-            placeholder="#E2912F"
-            maxLength={7}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={(e) => commitHex(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                commitHex(draft)
-              }
-            }}
-            className={cn(
-              'w-28 rounded-lg border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
-              draftValid ? 'border-border' : 'border-danger',
-            )}
-          />
-          <button
-            type="button"
-            onClick={() => onChange('')}
-            disabled={disabled}
-            aria-pressed={value === ''}
-            className={cn(
-              'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
-              value === ''
-                ? 'border-primary bg-primary-bg text-primary-strong'
-                : 'border-border text-muted hover:border-border-strong',
-            )}
-          >
-            Default
-          </button>
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="color"
+              aria-label="Pick a brand color"
+              value={currentHex ?? '#E2912F'}
+              disabled={disabled}
+              onChange={(e) => onChange(e.target.value)}
+              className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-border bg-surface p-1 disabled:cursor-default disabled:opacity-60"
+            />
+            <input
+              type="text"
+              inputMode="text"
+              aria-label="Brand color hex"
+              value={draft}
+              disabled={disabled}
+              placeholder="#E2912F"
+              maxLength={7}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={(e) => commitHex(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  commitHex(draft)
+                }
+              }}
+              className={cn(
+                'w-28 rounded-lg border bg-surface px-3 py-1.5 text-sm text-text outline-none focus:border-primary placeholder:text-subtle disabled:opacity-60',
+                draftValid ? 'border-border' : 'border-danger',
+              )}
+            />
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              disabled={disabled}
+              aria-pressed={value === ''}
+              className={cn(
+                'rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60',
+                value === ''
+                  ? 'border-primary bg-primary-bg text-primary-strong'
+                  : 'border-border text-muted hover:border-border-strong',
+              )}
+            >
+              Default
+            </button>
+          </div>
+          {!draftValid && (
+            <p className="text-xs font-medium text-danger">Enter a hex color like #E2912F.</p>
+          )}
         </div>
-        {!draftValid && (
-          <p className="text-xs font-medium text-danger">Enter a hex color like #E2912F.</p>
-        )}
 
-        {/* The suggested on-brand swatches: one tap sets the accent. */}
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+        {/* The suggested on-brand swatches: a compact 4x2 grid, one tap sets the accent. */}
+        <div className="grid grid-cols-4 gap-1.5">
           {ACCENT_SWATCHES.map((s) => {
             const active = value.toLowerCase() === s.hex.toLowerCase()
             return (
@@ -286,7 +283,7 @@ export function AccentPicker({
                 title={s.name}
                 aria-label={s.name}
                 className={cn(
-                  'flex aspect-square items-center justify-center rounded-lg border transition-transform disabled:opacity-60',
+                  'flex h-7 w-7 items-center justify-center rounded-md border transition-transform disabled:opacity-60',
                   active
                     ? 'border-primary ring-2 ring-primary ring-offset-1 ring-offset-surface'
                     : 'border-border hover:scale-105 motion-reduce:hover:scale-100',

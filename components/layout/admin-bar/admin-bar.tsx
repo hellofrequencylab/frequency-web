@@ -3,10 +3,59 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname } from 'next/navigation'
-import { X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useSettingsPanel, useIsDesktop } from '@/components/layout/settings-panel'
 import { AdminBarBody } from '@/components/layout/admin-bar/admin-bar-body'
 import { OPEN_ADMIN_BAR, type OpenAdminBarDetail } from '@/components/admin/open-admin-bar'
+
+// ── The panel TOP BAR (ADR-516 Phase E) ────────────────────────────────────────────────────────────────
+// A real, NON-scrolling top bar at the very top of the panel: the search input + the close button, ABOVE
+// the overflow-y-auto body. Because it is a flex sibling BEFORE the scroll region (never inside it),
+// nothing can ever render above the search on scroll — the search bar IS the top of the rail. The query
+// state lives in the parent AdminBar and is passed down so the body's results/filtering stay wired.
+function AdminBarTopBar({
+  query,
+  onQueryChange,
+  onClose,
+  closeRef,
+}: {
+  query: string
+  onQueryChange: (value: string) => void
+  onClose: () => void
+  closeRef?: React.Ref<HTMLButtonElement>
+}) {
+  return (
+    <div className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3">
+      <div className="relative min-w-0 flex-1">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle" aria-hidden />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Escape clears the query first (P7), stopping it before the chrome's window listener closes the bar.
+            if (e.key === 'Escape' && query) {
+              onQueryChange('')
+              e.stopPropagation()
+            }
+          }}
+          aria-label="Search settings"
+          placeholder="Search settings"
+          className="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-subtle focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+      <button
+        ref={closeRef}
+        type="button"
+        onClick={onClose}
+        aria-label="Close settings"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
+      >
+        <X className="h-5 w-5" aria-hidden />
+      </button>
+    </div>
+  )
+}
 
 // ── The standardized admin bar (docs/ADMIN-RAIL.md Phase 2) ────────────────────
 // ONE themed chrome element that merges the desktop settings slide-over (formerly
@@ -72,6 +121,9 @@ export function AdminBar({
   // Drives the desktop slide-in: the panel mounts translated off to the right, then settles to 0
   // on the next frame so opening reads as a slide from the side.
   const [shown, setShown] = useState(false)
+  // The "Search settings" query, lifted OUT of the scrolling body into this panel shell (ADR-516 Phase E)
+  // so the search input can live in the non-scrolling top bar while the body keeps rendering the results.
+  const [query, setQuery] = useState('')
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -81,6 +133,13 @@ export function AdminBar({
   const { hasContent } = model
   // Resets the drill screen + query on route/scope change (the desktop bar persists across nav).
   const resetKey = `${pathname}::${detail?.scope?.kind ?? ''}`
+
+  // Clear the search when the scope/route changes — the body remounts on `resetKey`, so the lifted query
+  // must reset alongside it (it previously lived inside the remounted body).
+  useEffect(() => {
+    /* eslint-disable-next-line react-hooks/set-state-in-effect */
+    setQuery('')
+  }, [resetKey])
 
   // ── Shared trigger seam. TWO listeners during the migration (docs/ADMIN-RAIL.md): ──
   //   • legacy bare `open-settings` (D.6) — TOGGLES as it always has and clears any pre-scoped detail,
@@ -237,21 +296,18 @@ export function AdminBar({
 
         {/* The panel cover is full column height, but its CONTENT sticks to the viewport. */}
         <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] flex max-h-[calc(100vh-3.5rem)] flex-col">
-          {/* Close — floats over the top-right of the sticky search so the search bar IS the top of the
-              rail, with no empty header band above it (ADR-516: kill the transparent gap). */}
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close settings"
-            className="absolute right-3 top-3.5 z-30 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text motion-reduce:transition-none"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
+          {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above
+              the search on scroll — the search bar IS the top of the rail (ADR-516 Phase E). */}
+          <AdminBarTopBar
+            query={query}
+            onQueryChange={setQuery}
+            onClose={() => setOpen(false)}
+            closeRef={closeButtonRef}
+          />
 
-          {/* Body — scrolls. The sticky search inside is the top of the rail. */}
+          {/* Body — the ONLY scroll region, below the top bar. */}
           <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
-            <AdminBarBody key={resetKey} model={model} />
+            <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
           </div>
         </div>
       </aside>
@@ -272,18 +328,11 @@ export function AdminBar({
       />
       {/* Sheet — full-width on a phone (w-full), a right-side sheet on a tablet (max-w-md). */}
       <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface shadow-pop">
-        {/* Close — floats over the sticky search's top-right, so the search is the top of the sheet with
-            no empty header band above it (ADR-516: kill the transparent gap). */}
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          aria-label="Close settings"
-          className="absolute right-3 top-4 z-30 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-muted transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <X className="h-5 w-5" aria-hidden />
-        </button>
+        {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
+            search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
+        <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={() => setOpen(false)} />
         <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          <AdminBarBody key={resetKey} model={model} />
+          <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
         </div>
       </div>
     </div>

@@ -98,6 +98,36 @@ export async function getProfileRailData(): Promise<ProfileRailData | null> {
   }
 }
 
+// ── Profile completeness for the rail's relevance ranking (ADR-516 Phase E) ────────────────────────────
+// The rail floats an incomplete "You" section to the top and boosts its search results. That needs ONE
+// existing signal — the authed viewer's profile completeness — surfaced cheaply. Reuses getProfileRailData
+// + the pure computeCompleteness helper (no new query, no new instrumentation) and RE-GATES on the authed
+// viewer, returning null when signed out (fail-safe → the rail keeps its default order). READ-ONLY.
+
+export interface ProfileCompletenessRail {
+  /** Profile completeness 0..100 (pure, computed from the profile bundle + the Spotlight flag). */
+  percent: number
+}
+
+/** The authed viewer's profile completeness for the rail relevance ranking, or null when signed out / the
+ *  profile is missing (fail-safe). */
+export async function getProfileCompletenessRail(): Promise<ProfileCompletenessRail | null> {
+  const profile = await getProfileRailData()
+  if (!profile) return null
+  const i = profile.initial
+  const { percent } = computeCompleteness({
+    displayName: i.displayName,
+    handle: i.handle,
+    bio: i.bio,
+    avatarUrl: i.avatarUrl,
+    headerImageUrl: i.headerImageUrl,
+    city: i.city,
+    website: i.website,
+    spotlightEnabled: i.spotlightEnabled,
+  })
+  return { percent }
+}
+
 // ── The member Hub (ADR-516 Phase B) ─────────────────────────────────────────────────────────────────
 // The stats + nudge bundle the settings/content Hub rail shows (components/layout/admin-bar/hub-rail.tsx),
 // sourced ENTIRELY from existing signals: the profile bundle above (completeness + Spotlight state), the
