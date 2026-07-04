@@ -10,15 +10,13 @@ import { spotlightThemeStyles } from '@/lib/spotlight/theme'
 import { SPOTLIGHT_PUBLIC_BASE } from '@/lib/spotlight/puck/resolve'
 
 // THE SHARED PUBLIC SPOTLIGHT CHROME. The member's identity header + theme wrapper + optional
-// background + join CTA footer, with the BLOCK BODY handed in as `children`. Extracted from
-// SpotlightPuckRender so the SAME chrome wraps BOTH the Puck body (components/spotlight/puck-render.tsx,
-// the reversible fallback) AND the module-engine body (MemberProfileModules, the ADR-508 U3 live render)
-// — the two surfaces differ ONLY in their body, never in the identity/theme/background/OG/CTA framing.
+// background + join CTA footer, with the BLOCK BODY handed in as `children`. Since ADR-523 the ONLY body
+// is the module engine (MemberProfileModules, the grid render) — the Puck Spotlight render is retired.
+// This shell keeps the identity/theme/background/OG/CTA framing so the public page look is unchanged.
 //
-// The server-resolved values (name, avatar, theme, background) read the SAME allowlisted SpotlightData
-// the old render did. `showBio` gates the header bio: the Puck render shows it (its blocks never repeat
-// the bio); the module render hides it (the `about` block owns the bio, so showing it here would double
-// it). Server Component throughout; ships no editor runtime.
+// The server-resolved values (name, avatar, theme, background) read the allowlisted SpotlightData. The
+// public page passes `showBio={false}`: the `about` block owns the bio, so showing it here would double
+// it. Server Component throughout; ships no editor runtime.
 
 export function SpotlightShell({
   data,

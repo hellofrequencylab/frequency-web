@@ -127,11 +127,10 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // with the main header still visible"). The header-keeping + left-nav-dropping half lives in
   // isFullWidthEditor + the shell; this entry drops the right rail.
   /^\/edit\/[^/]+$/,
-  // The "Build your Spotlight" Puck editor (/settings/profile/spotlight): the same full-viewport
-  // editor takeover. Its desktop <Puck> owns the surface and its mobile control dock needs the whole
-  // viewport, so it drops the member right rail here (and the mobile bottom nav via
-  // FULL_VIEWPORT_EDITOR_PATTERNS below, so the dock sits in the thumb zone with nothing over it).
-  /^\/settings\/profile\/spotlight$/,
+  // NOTE (ADR-522 follow-up): the "Build your Spotlight" Puck editor (/settings/profile/spotlight) USED to
+  // be a full-viewport takeover here. It is retired — that route now just redirects owners to the in-rail
+  // grid builder on their own profile (/people/<handle>), which keeps the standard global rail. So it no
+  // longer drops any chrome and is intentionally absent from this list.
 ]
 
 // FULL-VIEWPORT EDITOR TAKEOVERS — the Puck-based page builders that own the ENTIRE viewport with
@@ -145,9 +144,10 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
 // IN PAGE (the site header + left nav around the Puck editor), the operator's expected surface for
 // editing their marketing page from inside the app. Only the member Spotlight builder takes the whole
 // viewport (its mobile Discord dock needs the bottom-nav clearance). Pattern match (exact surface only).
-const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = [
-  /^\/settings\/profile\/spotlight$/, // the "Build your Spotlight" Puck editor
-]
+// (ADR-522 follow-up: the member Spotlight Puck editor that used to live here is retired — its route now
+// redirects to the in-rail grid builder. No member route is a full-viewport editor takeover today; the
+// remaining Puck builders (Space landing / marketing) are FULL-WIDTH editors that keep the header.)
+const FULL_VIEWPORT_EDITOR_PATTERNS: RegExp[] = []
 
 /** Whether `pathname` is a full-viewport Puck EDITOR takeover — the shell hides the mobile bottom
  *  nav + drawers (and the desktop header) so the editor's own top bar / thumb-zone dock owns the

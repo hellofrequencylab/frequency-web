@@ -4,10 +4,10 @@
 // the client editor and the RSC render path.
 //
 // WHY A BRIDGE, NOT A MIGRATION: every existing spotlight keeps its data exactly where
-// it is (meta.spotlight.layout). On READ we lift it into Puck so the same shared engine
-// renders + edits it; on SAVE we lower the Puck document back into the SpotlightLayout
-// schema and hand it to the UNCHANGED saveSpotlightLayout server action, which validates
-// it against the same allowlist as before. No column, no schema, no backfill changes.
+// it is (meta.spotlight.layout). On READ we lift it into Puck so the shared engine can render it.
+// (Since ADR-523 the personal Spotlight EDITOR is retired — this bridge is now used by the
+// marketing/space Puck `linktree` block, ADR-508, which reuses the Spotlight block kit; the personal
+// read path validates meta.spotlight directly.) No column, no schema, no backfill changes.
 //
 // LOSSLESS: each SpotlightBlock maps 1:1 to a dedicated `Spotlight*` Puck block whose
 // props ARE the block's fields (plus the id). `spotlightLayoutToPuck` then

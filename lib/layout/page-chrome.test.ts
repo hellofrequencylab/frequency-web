@@ -320,8 +320,11 @@ describe('full-width editors — fullscreen builder, main header KEPT (ADR-508 U
     }
   })
 
-  it('keeps the member Spotlight builder a full-VIEWPORT takeover (header hidden)', () => {
-    expect(isFullViewportEditor('/settings/profile/spotlight')).toBe(true)
+  it('no longer treats the retired Spotlight editor route as an editor takeover (ADR-522)', () => {
+    // The Puck Spotlight editor is retired: /settings/profile/spotlight now redirects to the in-rail grid
+    // builder and keeps the standard global rail, so it is neither a full-viewport nor a full-width editor.
+    expect(isFullViewportEditor('/settings/profile/spotlight')).toBe(false)
     expect(isFullWidthEditor('/settings/profile/spotlight')).toBe(false)
+    expect(railFor('/settings/profile/spotlight')).toBe('global')
   })
 })

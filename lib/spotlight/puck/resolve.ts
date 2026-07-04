@@ -11,14 +11,12 @@ import { linktreePreset } from '@/lib/page-editor/templates/linktree'
 //   2. the server-resolved `SpotlightRenderMeta` (live stat numbers + Top Friend faces) that
 //      rides Puck `metadata`, NEVER the stored blocks (the tamper boundary — see metadata.ts).
 //
-// It exists because the member's Spotlight now renders on MORE THAN ONE surface: the standalone
-// Signal page (components/spotlight/puck-render.tsx) AND the in-app member profile
-// (components/profile/profile-spotlight-blocks.tsx, decomposed into per-block modules). Before this module each built the meta
-// object + bridged the layout INLINE, so the two copies could silently drift — a stat added to one
-// surface and forgotten on the other would break the owner's principle ("the content always comes
-// from the same database, shown distinctly per surface"). Now both surfaces resolve through here,
-// so they are guaranteed identical by construction. The surfaces still differ ONLY in their chrome
-// (the standalone page keeps its identity header + theme wrapper; the profile section drops them)
+// It exists to resolve the Puck `Data` + render meta in ONE place so any surface that renders a
+// Spotlight-derived Puck body shares an identical, tamper-safe resolution. Since ADR-523 the personal
+// Spotlight itself renders on the GRID engine (not Puck); this resolver remains the shared bridge for
+// the marketing/space Puck `linktree` block (ADR-508), which reuses the Spotlight block kit. Keeping the
+// meta + layout bridge here means no surface rebuilds it inline and drifts — "the content always comes
+// from the same database, shown distinctly per surface." The surfaces differ ONLY in their chrome
 // and in the empty-layout policy below — never in how the content itself resolves.
 //
 // PURE + client-safe: only pure converters/templates + the client-safe public-bucket env, so it is
