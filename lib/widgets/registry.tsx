@@ -87,6 +87,7 @@ import { CommunityRelated } from '@/components/widgets/community/related'
 import { AuditRecentActions } from '@/components/widgets/audit/recent-actions'
 import { AdminHubsRoster } from '@/components/widgets/admin/admin-hubs-roster'
 import { AdminNexusesRoster } from '@/components/widgets/admin/admin-nexuses-roster'
+import { AdminModerationQueue } from '@/components/widgets/admin/admin-moderation-queue'
 import { LeadStats } from '@/components/widgets/lead/lead-stats'
 import { LeadAttention } from '@/components/widgets/lead/lead-attention'
 import { LeadCircles } from '@/components/widgets/lead/lead-circles'
@@ -252,6 +253,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   // Structure rosters (/admin/hubs, /admin/nexuses) — the editable network tables.
   'admin-hubs-roster': AdminHubsRoster,
   'admin-nexuses-roster': AdminNexusesRoster,
+  // Moderation queue (/admin/moderation) — the community report queue.
+  'admin-moderation-queue': AdminModerationQueue,
   // Leadership dashboard (/lead) — a leader's consolidated home.
   'lead-stats': LeadStats,
   'lead-attention': LeadAttention,
