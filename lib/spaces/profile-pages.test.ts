@@ -184,4 +184,16 @@ describe('planAddPage (nav-manager create guardrails)', () => {
     // a lower cap override reports the cap earlier (the panel warns at its own limit)
     expect(planAddPage(addPage({}, 'a', 'A'), 'B', 2)).toEqual({ ok: false, reason: 'cap' })
   })
+
+  it('LOCKED when the Space lacks the paid multi-page upsell (entitled=false), whatever the name', () => {
+    // The multi-page profile is a paid upsell; an unentitled Space gets only its one home page. The lock
+    // is checked first, so even a valid label reports `locked` (the operator sees the upsell, not a name error).
+    expect(planAddPage({}, 'Our Classes', MAX_PROFILE_PAGES, false)).toEqual({ ok: false, reason: 'locked' })
+    expect(planAddPage({}, '   ', MAX_PROFILE_PAGES, false)).toEqual({ ok: false, reason: 'locked' })
+    // addPage is a no-op for an unentitled Space (defense in depth): only Home remains.
+    expect(readProfilePages(addPage({}, 'classes', 'Classes', false)).map((p) => p.slug)).toEqual(['home'])
+    // Entitled (the default) keeps the existing behavior: the page is planned + added.
+    expect(planAddPage({}, 'Our Classes').ok).toBe(true)
+    expect(readProfilePages(addPage({}, 'classes', 'Classes')).map((p) => p.slug)).toEqual(['home', 'classes'])
+  })
 })

@@ -7,7 +7,7 @@ import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG, MAX_PROFILE_PAGES } from '@/lib/spaces/profile-pages'
@@ -383,6 +383,7 @@ export default async function SpaceProfileChromeLayout({
           coverImageUrl={space.coverImageUrl}
           brandLogoUrl={space.brandLogoUrl}
           websitePublished={readWebsitePublished(space.preferences)}
+          canManagePages={spaceCanUseFullWebsite(space)}
         />
       )}
     </AccentScope>

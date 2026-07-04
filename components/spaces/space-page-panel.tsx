@@ -35,7 +35,6 @@ import {
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
-import { SpaceFullEditorButton } from '@/components/spaces/space-full-editor-button'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
 import { SpaceLayoutEditor } from '@/components/spaces/space-layout-editor'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
@@ -43,11 +42,12 @@ import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
-// page you are editing), then for the SELECTED page offers cover size, theme/accent, block order +
-// show/hide, and a prominent "Full page editor" button that NAVIGATES to the standalone /edit-page route
-// (the server-rendered, full-page Puck editor) for deep editing. Every write calls a server action that
-// RE-GATES the owner/admin/editor role; this client is fast inline feedback only. DAWN semantic tokens
-// only (no hex), sentence-case copy, no em dashes (CONTENT-VOICE §10).
+// page you are editing), then for the SELECTED page offers cover size, theme/accent, and block order +
+// show/hide. The grid block-picker ("Edit your profile") is the primary and only profile editor here;
+// the Puck full page builder is reserved for marketing and external site pages, not member Space
+// profiles. Every write calls a server action that RE-GATES the owner/admin/editor role; this client is
+// fast inline feedback only. DAWN semantic tokens only (no hex), sentence-case copy, no em dashes
+// (CONTENT-VOICE §10).
 
 /** A focus choice mirroring the mode view's shape, kept LOCAL so this surface stays decoupled from the
  *  mode settings module (it only needs these fields to render the echo). */
@@ -86,6 +86,7 @@ export function SpacePagePanel({
   coverImageUrl = null,
   brandLogoUrl = null,
   websitePublished = false,
+  canManagePages = false,
   focus,
   readOnly = false,
 }: {
@@ -116,6 +117,10 @@ export function SpacePagePanel({
   brandLogoUrl?: string | null
   /** Whether the Space's external website (/sites/<slug>) is currently published. */
   websitePublished?: boolean
+  /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell,
+   *  space_full_website). Default-deny: a Space gets one continuous home page until it unlocks this,
+   *  when the Pages manager shows an upsell instead of the add control. */
+  canManagePages?: boolean
   /** The Focus switcher echo, or null to omit it. */
   focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
@@ -189,8 +194,9 @@ export function SpacePagePanel({
       <section>
         <SectionHeader title="Pages" />
         <p className="-mt-2 mb-3 text-sm text-muted">
-          The pages in your profile nav. Pick one to edit its blocks below, or add, rename, reorder, and
-          delete pages. Home is your main page and always comes first.
+          {canManagePages
+            ? 'The pages in your profile nav. Pick one to edit its blocks below, or add, rename, reorder, and delete pages. Home is your main page and always comes first.'
+            : 'Your profile is one continuous page. Add more pages with your own website to build a full multi-page site.'}
         </p>
         <ul className="space-y-2">
           {pages.map((page) => (
@@ -215,16 +221,19 @@ export function SpacePagePanel({
             />
           ))}
         </ul>
-        {!readOnly && (
-          <AddPageRow
-            atCap={atCap}
-            maxPages={maxPages}
-            pending={pending}
-            onAdd={(label) =>
-              run(() => createSpacePage(slug, label), (createdSlug) => switchTo(createdSlug))
-            }
-          />
-        )}
+        {!readOnly &&
+          (canManagePages ? (
+            <AddPageRow
+              atCap={atCap}
+              maxPages={maxPages}
+              pending={pending}
+              onAdd={(label) =>
+                run(() => createSpacePage(slug, label), (createdSlug) => switchTo(createdSlug))
+              }
+            />
+          ) : (
+            <AddPagesUpsell slug={slug} />
+          ))}
       </section>
 
       {/* BUSINESS INFO: the single source of truth. Edited once here, it feeds every block that shows
@@ -240,22 +249,6 @@ export function SpacePagePanel({
           readOnly={readOnly}
         />
       </section>
-
-      {/* ADVANCED: the full Puck page builder, DEMOTED. Editing a Space is minimal by default (the
-          Business info form + block order + cover/accent above), so the full builder is a quiet
-          advanced entry at the foot for power users, not the primary surface. It NAVIGATES to the
-          standalone /edit-page route (a fresh navigation always fetches current chunk hashes). */}
-      {!readOnly && (
-        <section className="border-t border-border pt-5">
-          <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Advanced</p>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-            <p className="min-w-0 text-sm text-muted">
-              Open the full page builder to hand-arrange every block on {activeLabel}.
-            </p>
-            <SpaceFullEditorButton slug={slug} pageSlug={activePageSlug} variant="quiet" />
-          </div>
-        </section>
-      )}
 
       {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own
           link, reading the same content as your profile. Fail-closed: unpublished, only you can reach it. */}
@@ -654,6 +647,32 @@ function AddPageRow({
         Add page
       </Button>
     </form>
+  )
+}
+
+/** The Pages upsell: shown in place of the "add a page" control when the Space does not have the paid
+ *  multi-page profile (space_full_website). A Space gets one continuous page by default; extra pages ride
+ *  the full website. Plain copy, sentence-case, no em dashes (CONTENT-VOICE §10). Links to the Space's
+ *  billing settings where the plan is chosen. */
+function AddPagesUpsell({ slug }: { slug: string }) {
+  return (
+    <div className="mt-3 rounded-xl border border-border bg-surface p-4">
+      <p className="flex items-center gap-2 text-sm font-semibold text-text">
+        <Globe className="h-4 w-4 text-primary" aria-hidden />
+        Add more pages with your own website
+      </p>
+      <p className="mt-1 text-sm text-muted">
+        Your profile is one continuous page. Unlock the full website to add more pages and build a
+        multi-page site.
+      </p>
+      <Link
+        href={`/spaces/${slug}/settings/billing`}
+        className={cn(buttonClasses('secondary', 'sm'), 'mt-3')}
+      >
+        See plans
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+      </Link>
+    </div>
   )
 }
 

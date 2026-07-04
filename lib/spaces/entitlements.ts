@@ -98,6 +98,27 @@ export function spaceHasEntitlement(space: SpaceLike | null | undefined, key: st
   return spaceEntitlements(space)[key] === true
 }
 
+// ── Full website / multi-page profile upsell lock (owner decision) ───────────────────────────
+// A Space gets ONE continuous profile page by default; the multi-page "Pages" manager is a paid
+// UPSELL tied to the full website (not built yet — this is the GATE only). Unlike the plan-ladder
+// gates (featureAllowed), this is a PURE entitlement read so it stays LOCKED regardless of
+// billing_live: while billing is OFF featureAllowed short-circuits to granted, which would un-gate the
+// upsell — a deliberate lock must not do that. It reads a single default-deny entitlement key, so it
+// is OFF for every Space until billing grants it.
+
+/** The entitlement key that unlocks the multi-page profile / full website. DEFAULT-DENY for every
+ *  Space today (no plan grants it yet). Kept in lock-step with FEATURE_GATES (lib/pricing/gates.ts)
+ *  `space_full_website`. */
+export const SPACE_FULL_WEBSITE_KEY = 'space_full_website' as const
+
+/** May a Space add and manage EXTRA profile pages (the multi-page nav) beyond its one continuous home
+ *  page? PURE, DEFAULT-DENY. This is a deliberate UPSELL LOCK: it reads the `space_full_website`
+ *  entitlement DIRECTLY (not through featureAllowed), so it stays LOCKED for every Space regardless of
+ *  billingLive. The single existing/home page always works; only a 2nd+ page needs this. */
+export function spaceCanUseFullWebsite(space: SpaceLike | null | undefined): boolean {
+  return spaceHasEntitlement(space, SPACE_FULL_WEBSITE_KEY)
+}
+
 // ── Per-Space autonomy slider (Resonance Engine Phase 3 · ADR-384) ───────────────────────────
 // How much the playbook engine may DO on its own for a Space. The single source of truth the
 // execute + Today paths consult to decide whether an `auto`-tier playbook actually auto-runs, or is

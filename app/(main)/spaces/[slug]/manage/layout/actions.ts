@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { TOKEN_ALLOWLIST } from '@/lib/theme/validate'
 import { isRenderableSpaceDoc } from '@/lib/page-editor/templates/space'
 import { moveBlock, setBlockHidden } from '@/lib/page-editor/templates/space-blocks'
@@ -56,6 +56,9 @@ async function authorizeEditor(slug: string): Promise<{
   /** The Space's display name, so a block edit can resolve the CURRENT page doc (stored-or-default)
    *  server-side before it reorders / toggles a block. */
   presetInput: { name: string }
+  /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell, space_full_website).
+   *  DEFAULT-DENY today, so only the one home page is allowed until billing grants the entitlement. */
+  canUseFullWebsite: boolean
 } | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -69,6 +72,7 @@ async function authorizeEditor(slug: string): Promise<{
     spaceId: space.id,
     preferences: asRecord(space.preferences),
     presetInput: { name: space.brandName?.trim() || space.name },
+    canUseFullWebsite: spaceCanUseFullWebsite(space),
   }
 }
 
@@ -434,6 +438,8 @@ function addPageError(reason: AddPageReason): string {
       return 'You already have a page with that name.'
     case 'cap':
       return `You can have up to ${MAX_PROFILE_PAGES} pages. Delete one to add another.`
+    case 'locked':
+      return 'Add more pages with your own website. Upgrade your plan to unlock it.'
   }
 }
 
@@ -447,10 +453,10 @@ export async function createSpacePage(slug: string, label: string): Promise<Acti
   const auth = await authorizeEditor(slug)
   if (!auth) return fail('You do not have access to edit this page.')
 
-  const plan = planAddPage(auth.preferences, label)
+  const plan = planAddPage(auth.preferences, label, MAX_PROFILE_PAGES, auth.canUseFullWebsite)
   if (!plan.ok) return fail(addPageError(plan.reason))
 
-  const preferences = addPage(auth.preferences, plan.slug, plan.label)
+  const preferences = addPage(auth.preferences, plan.slug, plan.label, auth.canUseFullWebsite)
   if (!(await writePreferences(auth.spaceId, preferences))) {
     return fail('Could not add the page. Try again.')
   }

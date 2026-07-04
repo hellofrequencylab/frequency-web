@@ -203,8 +203,10 @@ export function withoutPageDoc(preferences: unknown, slug: string): Record<strin
   return next
 }
 
-/** Why a proposed new page was rejected (the action maps each reason to plain member-facing copy). */
-export type AddPageReason = 'empty' | 'unsluggable' | 'reserved' | 'invalid' | 'duplicate' | 'cap'
+/** Why a proposed new page was rejected (the action maps each reason to plain member-facing copy).
+ *  `locked` = the multi-page profile is a paid upsell (space_full_website) the Space does not have, so
+ *  only its one continuous home page is allowed. */
+export type AddPageReason = 'empty' | 'unsluggable' | 'reserved' | 'invalid' | 'duplicate' | 'cap' | 'locked'
 
 /** The outcome of planning a new page from a human LABEL: either the derived, validated slug + a clean
  *  label to store, or the single reason it was rejected. PURE: the nav-manager guardrail logic lives here
@@ -215,15 +217,22 @@ export type AddPagePlan =
 
 /**
  * Plan a new custom page from a raw label: derive its slug (slugifyLabel), then run every nav guardrail
- * in order (non-empty -> sluggable -> not reserved -> valid -> under the cap -> not a duplicate). Returns
- * the created slug + a clean label on success, else the first failing reason. PURE + total. `maxPages`
- * defaults to the model cap so a caller can override it in a test.
+ * in order (entitled -> non-empty -> sluggable -> not reserved -> valid -> under the cap -> not a
+ * duplicate). Returns the created slug + a clean label on success, else the first failing reason. PURE +
+ * total. `maxPages` defaults to the model cap so a caller can override it in a test. `entitled` gates the
+ * paid multi-page UPSELL (space_full_website): it defaults to `true` (the pure guardrail is unchanged for
+ * existing callers) and the create action passes the Space's real entitlement, so an unentitled Space
+ * gets only its one home page (reason `locked`).
  */
 export function planAddPage(
   preferences: unknown,
   rawLabel: string,
   maxPages: number = MAX_PROFILE_PAGES,
+  entitled: boolean = true,
 ): AddPagePlan {
+  // The multi-page profile is a paid upsell; without it a Space keeps only its one home page, so any
+  // extra page is locked whatever the name. Checked first so the operator sees the upsell, not a name error.
+  if (!entitled) return { ok: false, reason: 'locked' }
   const label = typeof rawLabel === 'string' ? rawLabel.trim() : ''
   if (!label) return { ok: false, reason: 'empty' }
   const slug = slugifyLabel(label)
@@ -236,12 +245,19 @@ export function planAddPage(
   return { ok: true, slug, label: cleanLabel(label, slug) }
 }
 
-/** Add a new custom page (validated slug, non-reserved, under the cap, no duplicate). Returns
- *  the input unchanged when the add is invalid (the action surfaces the reason separately). */
-export function addPage(preferences: unknown, slug: string, label: string): Record<string, unknown> {
+/** Add a new custom page (validated slug, non-reserved, under the cap, no duplicate, and entitled).
+ *  Returns the input unchanged when the add is invalid (the action surfaces the reason separately).
+ *  `entitled` defaults to `true` so existing callers are unchanged; a `false` (unentitled) Space can
+ *  never add a page beyond its one home page (the paid multi-page upsell, space_full_website). */
+export function addPage(
+  preferences: unknown,
+  slug: string,
+  label: string,
+  entitled: boolean = true,
+): Record<string, unknown> {
   const s = slug.trim().toLowerCase()
   const pages = readProfilePages(preferences)
-  if (!isValidPageSlug(s) || pages.some((p) => p.slug === s) || pages.length >= MAX_PROFILE_PAGES) {
+  if (!entitled || !isValidPageSlug(s) || pages.some((p) => p.slug === s) || pages.length >= MAX_PROFILE_PAGES) {
     return baseRecord(preferences)
   }
   const next = baseRecord(preferences)
