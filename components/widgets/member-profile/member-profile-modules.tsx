@@ -3,6 +3,7 @@ import type { SpotlightData } from '@/lib/spotlight/data'
 import { defaultMemberLayout } from '@/lib/entity-blocks/context'
 import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
+import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 import {
   resolveMemberBlockData,
   toMemberEntity,
@@ -54,6 +55,7 @@ export function MemberProfileModules({
   member,
   layout,
   grid,
+  editHref,
   className = '@container/profile space-y-14',
 }: {
   /** The member's already-resolved Spotlight (from getPublishedSpotlight — the ONE reader). */
@@ -64,6 +66,10 @@ export function MemberProfileModules({
   /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout). When present its
    *  template + slots drive the render; otherwise the flat single-column `layout` is used. */
   grid?: EntityLayout | null
+  /** OWNER click-to-edit (Spaces item 6): given a block id, return the href of the member's existing
+   *  layout editor. When set, each block is wrapped in an OwnerBlockFrame that overlays a hover pencil
+   *  linking there. Omitted (every visitor / non-owner render) leaves the render byte-identical. */
+  editHref?: (blockId: string) => string
   /** The FLAT-path wrapper classes. Defaults to the standalone Spotlight rhythm (`space-y-14`); a
    *  caller embedding the blocks in a denser column (the in-app profile) passes a tighter gap. Must keep
    *  `@container/profile` so blocks size to the column. Ignored on the grid path. */
@@ -75,10 +81,20 @@ export function MemberProfileModules({
   const renderBlock = (id: string) => {
     const Block = MEMBER_PROFILE_BLOCKS[id]
     if (!Block) return null
-    return (
+    const node = (
       <Suspense key={id} fallback={null}>
         <Block member={identity} data={data} />
       </Suspense>
+    )
+    // OWNER wrap (fail-safe): with `editHref` set, sheathe the block in the click-to-edit frame, which
+    // collapses itself on an honest-empty block so no phantom pencil floats over blank space. Absent
+    // (visitor / non-owner), the block returns exactly as before. The `key` moves to the outermost node.
+    return editHref ? (
+      <OwnerBlockFrame key={id} blockId={id} editHref={editHref(id)} label={id}>
+        {node}
+      </OwnerBlockFrame>
+    ) : (
+      node
     )
   }
 
