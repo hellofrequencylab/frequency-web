@@ -301,6 +301,24 @@ export async function getPracticeCapabilities(practiceId: string): Promise<Set<C
   })
 }
 
+/** What the caller can do on a specific Journey. journey.editSettings goes to its author
+ *  (journey_plans.author_id), platform staff, or whoever manages its parent scope. Mirrors
+ *  getPracticeCapabilities. Used to gate the Journey admin rail (ADR-515 Phase 6). */
+export async function getJourneyCapabilities(journeyId: string): Promise<Set<Capability>> {
+  const viewer = await currentViewer()
+  const admin = createAdminClient()
+  const { data: j } = await admin
+    .from('journey_plans')
+    .select('author_id')
+    .eq('id', journeyId)
+    .maybeSingle()
+  return resolveCapabilities(viewer, {
+    kind: 'journey',
+    journeyId,
+    authorId: (j as { author_id: string | null } | null)?.author_id ?? null,
+  })
+}
+
 /** What the caller can do on a profile (edit-in-place gating + Spotlight). Reads the
  *  OWNER's Spotlight flags from their meta so the resolver can grant spotlight.manage
  *  only when the owner has it enabled (opt-in is owner state, not a viewer flag). */
@@ -345,6 +363,8 @@ export async function loadCapabilitiesForScope(scope: AdminScope | null): Promis
       return scope.id ? getEventCapabilities(scope.id) : new Set()
     case 'practice':
       return scope.id ? getPracticeCapabilities(scope.id) : new Set()
+    case 'journey':
+      return scope.id ? getJourneyCapabilities(scope.id) : new Set()
     case 'profile':
       return scope.id ? getProfileCapabilities(scope.id) : new Set()
     default:

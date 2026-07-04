@@ -34,6 +34,7 @@ const SECTION_BY_KIND: Partial<Record<ScopeKind, string>> = {
   nexus: 'nexuses',
   practice: 'practices',
   channel: 'channels',
+  journey: 'journeys',
   profile: 'people',
 }
 

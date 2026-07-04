@@ -34,6 +34,8 @@ export type Capability =
   | 'event.editSettings'
   // practice
   | 'practice.editSettings'
+  // journey (the guided plan a member authors — its core editable functions on the admin rail, ADR-515 Phase 6)
+  | 'journey.editSettings'
   // creation gates (global) — who may AUTHOR a new entity. Real-Crew (paid) or a
   // community steward (crew+ on the trust ladder). Everyone else is sold the
   // one-tap free-beta upgrade. See docs/RESONANCE-FEED-ARCHITECTURE.md §"Access".
@@ -107,6 +109,14 @@ export type Scope =
       /** practices.created_by — the practice's owner. */
       ownerId: string | null
       /** True if the viewer manages the practice's parent space (caller-computed). */
+      viewerManagesScope?: boolean
+    }
+  | {
+      kind: 'journey'
+      journeyId: string
+      /** journey_plans.author_id — the Journey's author (owner). */
+      authorId: string | null
+      /** True if the viewer manages the Journey's parent scope (caller-computed). */
       viewerManagesScope?: boolean
     }
   | {
@@ -296,6 +306,15 @@ export function resolveCapabilities(viewer: Viewer, scope: Scope): Set<Capabilit
       const leadsPractice =
         (!!profileId && scope.ownerId === profileId) || isStaff || scope.viewerManagesScope === true
       if (leadsPractice) caps.add('practice.editSettings')
+      break
+    }
+
+    case 'journey': {
+      // A Journey is owned by its author; the author, platform staff, or whoever manages its parent
+      // scope (caller-computed) may edit its settings. Mirrors the event / practice cases precisely.
+      const leadsJourney =
+        (!!profileId && scope.authorId === profileId) || isStaff || scope.viewerManagesScope === true
+      if (leadsJourney) caps.add('journey.editSettings')
       break
     }
 

@@ -2,8 +2,10 @@ import Image from 'next/image'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, SlidersHorizontal } from 'lucide-react'
 import { JourneyAuthorActions } from '@/components/journey/v2/learn/journey-author-actions'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { createClient } from '@/lib/supabase/server'
 import { getJourneyPlayerView } from '@/lib/journeys/store'
 import { getMemberRunForPlan, getCohortProgress, getSoloEnrollmentStart, getKickoffEvent, getPhaseEvents, type KickoffEvent } from '@/lib/journeys/runs'
@@ -127,6 +129,14 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
   const isAuthor = view.plan.author_id === profileId
   const PlanIcon = JOURNEY_ICON_MAP[plan.emoji ?? ''] ?? DefaultJourneyIcon
 
+  // The standardized admin rail trigger (ADR-515 Phase 6). journey.editSettings resolves to the author,
+  // platform staff, or a parent-scope manager (getJourneyCapabilities) — so an author OR an operator
+  // reaches the Journey's core editable functions (Settings inline · Builder/Layout · Export · Danger) in
+  // place, mirroring how the channel page mounts OpenAdminBarButton. Every module re-gates server-side, so
+  // this is UX, never the authority.
+  const journeyCaps = await getJourneyCapabilities(plan.id)
+  const canManageJourney = journeyCaps.has('journey.editSettings')
+
   // Pre-render the rich practice detail ONCE per practice step (server-rendered markdown, no client
   // cost) and the per-step Pillar names — the player looks both up by the selected lesson id (the
   // RSC interleaving pattern: a Server Component handed to a Client Component as a node map).
@@ -167,8 +177,20 @@ export default async function JourneyLearnPage({ params }: { params: Promise<{ s
       }
       subtitle={plan.summary ? <span className="block leading-relaxed">{plan.summary}</span> : undefined}
       actions={
-        isAuthor ? (
-          <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
+        canManageJourney || isAuthor ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {canManageJourney && (
+              <OpenAdminBarButton
+                scope={{ kind: 'journey', id: plan.id }}
+                caps={Array.from(journeyCaps)}
+                label="Manage"
+                icon={<SlidersHorizontal className="h-4 w-4" />}
+              />
+            )}
+            {isAuthor && (
+              <JourneyAuthorActions slug={slug} planId={plan.id} visibility={plan.visibility} />
+            )}
+          </div>
         ) : undefined
       }
     >
