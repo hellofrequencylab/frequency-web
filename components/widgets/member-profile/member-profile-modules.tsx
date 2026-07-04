@@ -84,8 +84,10 @@ export function MemberProfileModules({
   /** Override the registry default order (e.g. a caller-supplied layout). Omitted = the fresh
    *  member default (defaultMemberLayout). Ignored when `grid` is supplied. */
   layout?: string[]
-  /** The GRID layout (U2b) — an effective EntityLayout (from mergeEntityLayout). When present its
-   *  template + slots drive the render; otherwise the flat single-column `layout` is used. */
+  /** The GRID layout (U2b/ADR-516) — an effective EntityLayout. When this prop is SUPPLIED (grid mode,
+   *  even as `null`), the render goes through the freeform grid: resolveRows falls back to the default
+   *  starter for a null/empty layout, so an un-customized member still shows a sensible default. Omit the
+   *  prop entirely (undefined) to use the flat single-column `layout` path instead. */
   grid?: EntityLayout | null
   /** OWNER click-to-edit (Spaces item 6): given a block id, return the href of the member's existing
    *  layout editor. When set, each block is wrapped in an OwnerBlockFrame that overlays a hover pencil
@@ -119,8 +121,10 @@ export function MemberProfileModules({
     )
   }
 
-  // GRID path (ADR-516): resolve the effective freeform rows and render them. Fail-safe: unknown ids drop.
-  if (grid) {
+  // GRID path (ADR-516): resolve the effective freeform rows and render them. Entered whenever the caller
+  // supplies the `grid` prop at all (including `null` — resolveRows then yields the default starter). This
+  // is the ONE in-app engine the owner preview and the visitor view share. Fail-safe: unknown ids drop.
+  if (grid !== undefined) {
     return (
       <div className="@container/profile">
         <EntityGrid rows={resolveRows(grid, 'member')} renderBlock={renderBlock} />

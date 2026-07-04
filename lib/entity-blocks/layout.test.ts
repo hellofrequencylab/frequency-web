@@ -324,24 +324,26 @@ describe('starter layouts', () => {
     }
   })
 
-  it('member basic equals the legacy default order (a no-op visual change)', () => {
+  it('member basic omits the chrome-owned about/stats and leads with links, topfriends (ADR-522)', () => {
     expect(starterRows('member', 'basic')).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 1, slots: ['stats'] },
-      { id: 'r2', columns: 1, slots: ['links'] },
-      { id: 'r3', columns: 1, slots: ['topfriends'] },
+      { id: 'r0', columns: 1, slots: ['links'] },
+      { id: 'r1', columns: 1, slots: ['topfriends'] },
     ])
+    // The chrome (bio + Standing card) is canonical; the member grid never re-renders it by default.
+    const ids = starterRows('member', 'basic').flatMap((r) => r.slots)
+    expect(ids).not.toContain('about')
+    expect(ids).not.toContain('stats')
   })
 
-  it('minimal is a single 1-col row (about only)', () => {
-    expect(starterRows('member', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+  it('minimal is a single 1-col row (member → links, space → about)', () => {
+    expect(starterRows('member', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['links'] }])
     expect(starterRows('space', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
   })
 
   it('starterRows returns a fresh copy (mutation-safe)', () => {
     const a = starterRows('member', 'basic')
     a[0].slots[0] = 'mutated'
-    expect(STARTER_LAYOUTS.member.basic[0].slots[0]).toBe('about')
+    expect(STARTER_LAYOUTS.member.basic[0].slots[0]).toBe('links')
   })
 })
 

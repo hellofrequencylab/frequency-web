@@ -51,8 +51,39 @@ export interface SpotlightData {
  * Load a member's published Spotlight by handle, or null when it doesn't exist, is
  * inactive/system, or is not published. The publish gate reads `meta` in isolation;
  * the returned profile carries only allowlisted columns.
+ *
+ * This is the PUBLIC mini-site reader (fail-closed on publish). The in-app profile uses
+ * `getMemberProfileModules` (below), which shares this exact safe/allowlisted read but
+ * drops the publish gate.
  */
 export async function getPublishedSpotlight(handle: string): Promise<SpotlightData | null> {
+  return loadMemberSpotlight(handle, { requirePublished: true })
+}
+
+/**
+ * Load a member's profile-block data for the IN-APP profile (`/people/<handle>`), decoupled from the
+ * Spotlight publish gate (ADR-522). Every signed-in member's own grid renders here regardless of tier or
+ * `meta.spotlight.published`, so the in-app profile looks uniform member-to-member. The read stays exactly
+ * as SAFE as the public reader — admin client, the SPOTLIGHT_SELECT column allowlist, layout validated on
+ * read — just NOT publish/tier-gated. Returns null only when the profile is missing / inactive / system.
+ *
+ * DELIBERATELY does not gate on publish: the public `/spotlight` mini-site keeps its own gate
+ * (getPublishedSpotlight). The member's saved grid (meta.entityGrid → `.grid`) drives the render; the
+ * caller falls back to the default starter layout via resolveRows when it is null.
+ */
+export async function getMemberProfileModules(handle: string): Promise<SpotlightData | null> {
+  return loadMemberSpotlight(handle, { requirePublished: false })
+}
+
+/**
+ * The shared reader behind both entry points. `requirePublished` is the ONLY difference: the public
+ * mini-site fails closed on it; the in-app profile does not. Everything else (the column allowlist, the
+ * validate-on-read security boundary, the derived grid) is identical, so the two surfaces never drift.
+ */
+async function loadMemberSpotlight(
+  handle: string,
+  { requirePublished }: { requirePublished: boolean },
+): Promise<SpotlightData | null> {
   const admin = createAdminClient()
 
   // Gate: resolve the profile + its publish flag + editor layout from meta (meta itself
@@ -65,7 +96,7 @@ export async function getPublishedSpotlight(handle: string): Promise<SpotlightDa
 
   const g = gate as { id?: string; auth_user_id?: string | null; is_active?: boolean; is_system?: boolean; meta?: unknown; lifetime_zaps?: number | null } | null
   if (!g?.id || g.is_active === false || g.is_system === true) return null
-  if (!readSpotlightPublished(g.meta)) return null
+  if (requirePublished && !readSpotlightPublished(g.meta)) return null
 
   // Validate the stored layout/background ON READ (the security boundary): a tampered
   // meta blob is coerced to a safe subset, asset paths pinned to this owner's folder.
