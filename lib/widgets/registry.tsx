@@ -146,6 +146,13 @@ import { EventLocation } from '@/components/widgets/events/event-location'
 import { EventWhenWhere } from '@/components/widgets/events/event-when-where'
 import { EventAttendees } from '@/components/widgets/events/event-attendees'
 import { EventCheckin } from '@/components/widgets/events/event-checkin'
+import { GamificationSeason } from '@/components/widgets/gamification/gamification-season'
+import { GamificationRewards } from '@/components/widgets/gamification/gamification-rewards'
+import { GamificationMetrics } from '@/components/widgets/gamification/gamification-metrics'
+import { GamificationStats } from '@/components/widgets/gamification/gamification-stats'
+import { GamificationTopAchievers } from '@/components/widgets/gamification/gamification-top-achievers'
+import { GamificationAchievements } from '@/components/widgets/gamification/gamification-achievements'
+import { GamificationChallenges } from '@/components/widgets/gamification/gamification-challenges'
 
 // Binds each layout-module id (lib/widgets/modules.ts) to its self-fetching RSC. Kept apart
 // from the metadata so the editor / actions / resolver never import server components. The
@@ -332,6 +339,15 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-dispatch': EventDispatch,
   'event-activity': EventActivityBlock,
   'event-recap': EventRecap,
+  // Gamification (/admin/gamification) — achievements, challenges, and engagement, plus the
+  // janitor-only reward-economy editor (self-gating, renders null for a non-janitor).
+  'gamification-season': GamificationSeason,
+  'gamification-rewards': GamificationRewards,
+  'gamification-metrics': GamificationMetrics,
+  'gamification-stats': GamificationStats,
+  'gamification-top-achievers': GamificationTopAchievers,
+  'gamification-achievements': GamificationAchievements,
+  'gamification-challenges': GamificationChallenges,
 }
 
 export function componentFor(id: string): ModuleComponent | undefined {

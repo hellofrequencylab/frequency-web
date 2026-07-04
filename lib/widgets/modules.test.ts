@@ -178,6 +178,24 @@ describe('moduleIdsForScope', () => {
     expect(t).not.toContain('community-pulse')
   })
 
+  it('the Gamification page (/admin/gamification) resolves its seven blocks, in order, no leakage', () => {
+    const g = moduleIdsForScope('/admin/gamification')
+    expect(g).toBe(ROUTE_MODULE_IDS['/admin/gamification'])
+    // Default render order: season control, the janitor-only reward editor, the Rewards v2 metrics,
+    // the stat band, the top-achievers leaderboard, then the achievements + season-challenges tables.
+    expect(g).toEqual([
+      'gamification-season',
+      'gamification-rewards',
+      'gamification-metrics',
+      'gamification-stats',
+      'gamification-top-achievers',
+      'gamification-achievements',
+      'gamification-challenges',
+    ])
+    // A distinct exact route — it never inherits the global community blocks.
+    expect(g).not.toContain('community-pulse')
+  })
+
   it('an entity profile tab resolves the family module set via the /spaces/* section scope', () => {
     // Every /spaces/<slug>/<tab> shares one family set keyed at '/spaces/*' (ENTITY-SPACES §B.2):
     // the index profile, a tab, and a different slug all resolve the same set, never the global one.

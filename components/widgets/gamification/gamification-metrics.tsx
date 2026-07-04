@@ -1,7 +1,8 @@
-// Rewards Economy v2 — operator metrics (brief §10). Server Component, rendered
-// behind <Suspense> on the gamification admin. Each metric carries its healthy
-// band; tune with the levers in priority order: Full Day bonus first, base
-// practice rates second (±2 max), thresholds never mid-season.
+// Gamification layout module (LP7): Rewards Economy v2 operator metrics (brief §10). Self-fetching,
+// fail-safe RSC; the page owns the host + community-staff gate, so this never re-gates. Each metric
+// carries its healthy band; tune with the levers in priority order: Full Day bonus first, base
+// practice rates second (±2 max), thresholds never mid-season. (Relocated from the page's
+// metrics-panel.tsx during the LP7 module conversion.)
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -122,7 +123,7 @@ async function computeMetrics(): Promise<Metric[]> {
   return metrics
 }
 
-export async function MetricsPanel() {
+export async function GamificationMetrics() {
   const metrics = await computeMetrics()
   return (
     <AdminSection title="Economy metrics (Rewards v2)">

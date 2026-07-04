@@ -156,6 +156,15 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'community-manage', label: 'Manage', description: 'One card per working surface in Community, each with a live stat and a link straight to the surface that edits it.' },
   { id: 'community-related', label: 'Related areas', description: 'A cross-link strip to the neighboring workspaces the viewer can enter from here.' },
 
+  // ── Gamification blocks (/admin/gamification) — achievements, challenges, and engagement ──
+  { id: 'gamification-season', label: 'Season control', description: 'The current season, with the janitor-only control to end it and open the next.' },
+  { id: 'gamification-rewards', label: 'Reward economy', description: 'The live Zap and Gem economy editor: tune what each action earns, add actions, or remove them (janitor only).' },
+  { id: 'gamification-metrics', label: 'Economy metrics', description: 'The Rewards v2 health metrics, each against its target band: the North Star, streaks, completion, distribution, and sink rate.' },
+  { id: 'gamification-stats', label: 'Engagement stats', description: 'The headline counts: achievements, times unlocked, season challenges, and challenges completed.' },
+  { id: 'gamification-top-achievers', label: 'Top achievers', description: 'The five members with the most achievements, each with their Zaps and streak.' },
+  { id: 'gamification-achievements', label: 'All achievements', description: 'The full achievements table by sort order, with tier, category, and Zap reward.' },
+  { id: 'gamification-challenges', label: 'Season challenges', description: 'The active season challenges, with difficulty, target, and Zap reward.' },
+
   // ── Audit log blocks (/admin/audit) — the append-only security trail ──
   { id: 'audit-recent-actions', label: 'Recent actions', description: 'The 100 most recent sensitive platform actions, newest first: who did what, to whom.' },
 
@@ -426,6 +435,22 @@ const COMMUNITY_ADMIN_MODULE_IDS = [
   'community-related',
 ] as const
 
+// The Gamification page (/admin/gamification), in default render order — the season control, the
+// janitor-only reward-economy editor, the Rewards v2 metrics, the stat band, the top-achievers
+// leaderboard, then the achievements + season-challenges tables. Each block self-fetches (fail-safe);
+// the page keeps its host + community-staff gate, and the reward editor self-gates further to the
+// web_role janitor axis (the same axis its server actions enforce), so it renders null for a non-
+// janitor. The modules render only through the gated route and never re-gate.
+const GAMIFICATION_MODULE_IDS = [
+  'gamification-season',
+  'gamification-rewards',
+  'gamification-metrics',
+  'gamification-stats',
+  'gamification-top-achievers',
+  'gamification-achievements',
+  'gamification-challenges',
+] as const
+
 // The Audit log (/admin/audit). The whole interior is one self-fetching security trail, keyed only on
 // recency with no searchParams facet, so it converts wholesale to one module. The page keeps its
 // admin gate; the module renders only through that gated route.
@@ -612,6 +637,7 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/admin/growth': GROWTH_MODULE_IDS,
   '/admin/crm': CRM_COCKPIT_MODULE_IDS,
   '/admin/crm/today': CRM_TODAY_MODULE_IDS,
+  '/admin/gamification': GAMIFICATION_MODULE_IDS,
   '/admin/audit': AUDIT_MODULE_IDS,
   '/admin/hubs': ADMIN_HUBS_MODULE_IDS,
   '/admin/nexuses': ADMIN_NEXUSES_MODULE_IDS,
