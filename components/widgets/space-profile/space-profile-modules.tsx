@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { getSpaceContentData, type SpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import type { ProfileBlockId } from '@/lib/spaces/profile-blocks'
+import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { layoutSlots, type EntityLayout } from '@/lib/entity-blocks/layout'
@@ -20,6 +21,7 @@ import { FaqBlock } from './faq'
 import { UpdatesBlock } from './updates'
 import { ContactBlock } from './contact'
 import { BusinessBlock } from './business'
+import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authored-content'
 
 // THE MODULE-ENGINE SPACE PROFILE RENDERER (Epic 1.7, S2 staff-preview). A non-Puck, block-style
 // render of a space profile: it resolves the ordered ProfileBlockId layout from the S1 registry + the
@@ -53,8 +55,9 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
 }
 
 /** The unified grid vocabulary keys blocks by registry id; this S1 renderer keys by ProfileBlockId. The
- *  only divergence is `stats` (unified) vs `highlights` (S1); every other shared id matches. Unified
- *  content ids (heading/text/...) have no space section here and fail-safe to null. */
+ *  only divergence is `stats` (unified) vs `highlights` (S1); every other shared DATA id matches. The
+ *  unified content ids (heading/text/image/gallery/quote/embed/divider) are handled separately by
+ *  SPACE_CONTENT_BLOCKS (the operator's authored content), so they never reach this DATA map. */
 function toProfileBlockId(id: string): ProfileBlockId | null {
   const normalized = id === 'stats' ? 'highlights' : id
   return normalized in SPACE_PROFILE_BLOCKS ? (normalized as ProfileBlockId) : null
@@ -87,8 +90,23 @@ export async function SpaceProfileModules({
     profile: space.profile,
   })
 
+  // The operator's AUTHORED content, grouped by unified content id (pure, sync, fail-safe to an empty bag
+  // when they have written none). Rendered by the content ids alongside the live-data section blocks, so
+  // authored headings/text/images the operator wrote in their Home doc appear as their own blocks.
+  const authored = resolveSpaceAuthoredContent(space.preferences, space.brandName)
+
   const renderBlock = (id: string) => {
-    const blockId = id.length === 0 ? null : toProfileBlockId(id)
+    if (id.length === 0) return null
+    // CONTENT ids render the operator's own authored blocks; DATA ids render live space data.
+    const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
+    if (ContentBlock) {
+      return (
+        <Suspense key={id} fallback={null}>
+          <ContentBlock content={authored} />
+        </Suspense>
+      )
+    }
+    const blockId = toProfileBlockId(id)
     if (!blockId) return null
     const Block = SPACE_PROFILE_BLOCKS[blockId]
     return (

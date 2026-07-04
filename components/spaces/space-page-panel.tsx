@@ -20,7 +20,6 @@ import { Button, buttonClasses } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
-import type { SpaceBlockRow } from '@/lib/page-editor/templates/space-blocks'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
 import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
@@ -36,9 +35,7 @@ import {
 import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { ACCENT_TOKENS } from '@/components/spaces/space-form'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
-import { SpaceLayoutEditor } from '@/components/spaces/space-layout-editor'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
-import type { LayoutPreset } from '@/lib/spaces/layout-presets'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -79,10 +76,7 @@ export function SpacePagePanel({
   coverSize,
   coverScrim,
   accent,
-  blocks,
   businessInfo,
-  layoutPreset,
-  defaultPreset,
   coverImageUrl = null,
   brandLogoUrl = null,
   websitePublished = false,
@@ -93,7 +87,7 @@ export function SpacePagePanel({
   slug: string
   /** The operator's ordered nav pages (Home first), for the switcher + manager. */
   pages: ProfilePage[]
-  /** The page currently being edited (its blocks + full editor act on this one). */
+  /** The page currently being edited (the Pages manager highlights + acts on this one). */
   activePageSlug: string
   /** The most pages a Space may expose, so the panel warns at the cap. */
   maxPages: number
@@ -103,14 +97,8 @@ export function SpacePagePanel({
   coverScrim: CoverScrim
   /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
   accent: string
-  /** The TOP-LEVEL blocks of the ACTIVE page's doc (stored-or-default), in order, for the Blocks list. */
-  blocks: SpaceBlockRow[]
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
-  /** The ACTIVE page's EFFECTIVE layout template (its own, else inherited), for the Layout editor. */
-  layoutPreset: LayoutPreset
-  /** The Space's All-pages default template, for the Layout editor's "All pages" scope. */
-  defaultPreset: LayoutPreset
   /** The Space's current header (cover) image URL, for the Business info form's upload control. */
   coverImageUrl?: string | null
   /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
@@ -150,8 +138,6 @@ export function SpacePagePanel({
     router.push(`${pathname}?page=${encodeURIComponent(pageSlug)}`)
   }
 
-  const activePage = pages.find((p) => p.slug === activePageSlug) ?? pages[0]
-  const activeLabel = activePage?.label ?? activePageSlug
   const custom = pages.filter((p) => !p.system)
   const atCap = pages.length >= maxPages
 
@@ -329,25 +315,6 @@ export function SpacePagePanel({
           </Link>
         </section>
       )}
-
-      {/* Layout: pick a TEMPLATE for this page (or for all pages) and arrange its blocks, without opening
-          the full editor. The content stays the same under every template; only the display changes. */}
-      <section>
-        <SectionHeader title="Layout" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          Pick a layout for {activeLabel} or for every page, then reorder or hide its blocks. Your content
-          stays the same; only the display changes.
-        </p>
-        <SpaceLayoutEditor
-          slug={slug}
-          activePageSlug={activePageSlug}
-          activeLabel={activeLabel}
-          pagePreset={layoutPreset}
-          defaultPreset={defaultPreset}
-          blocks={blocks}
-          readOnly={readOnly}
-        />
-      </section>
 
       {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
       <section>

@@ -9,10 +9,8 @@ import {
   listVariantsForType,
   modeHasFocusChoice,
 } from '@/lib/spaces/modes'
-import { readBlockRows } from '@/lib/page-editor/templates/space-blocks'
 import {
   readProfilePages,
-  resolveSpacePageDoc,
   hasPage,
   HOME_SLUG,
   MAX_PROFILE_PAGES,
@@ -20,7 +18,6 @@ import {
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
-import { readLayoutPreset, readSpaceLayoutDefault } from '@/lib/spaces/layout-presets'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import {
@@ -77,12 +74,6 @@ export default async function SpacePageSettingsPage({
   const requested = (page ?? HOME_SLUG).trim().toLowerCase()
   const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
 
-  // The ACTIVE page's current doc (stored-or-default). The Blocks list reads its TOP-LEVEL blocks WITH
-  // the hidden flag intact (so the panel shows a hidden block as toggle-able). The Full page editor is a
-  // navigation to /edit-page, which resolves + strips the doc itself, so the panel no longer passes it.
-  const currentDoc = resolveSpacePageDoc(space.preferences, brandName, activePageSlug)
-  const blocks = readBlockRows(currentDoc)
-
   // The Focus echo: reuse the mode page's model (the type's variants, default first). Only when the Mode
   // has more than one Focus; otherwise omit the section.
   const mode = resolveMode(space.type, space.modeVariant)
@@ -116,10 +107,7 @@ export default async function SpacePageSettingsPage({
         coverSize={coverSize}
         coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
-        blocks={blocks}
         businessInfo={readProfileData(space.preferences)}
-        layoutPreset={readLayoutPreset(space.preferences, activePageSlug)}
-        defaultPreset={readSpaceLayoutDefault(space.preferences)}
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}
         websitePublished={readWebsitePublished(space.preferences)}

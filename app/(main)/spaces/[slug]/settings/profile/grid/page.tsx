@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
@@ -110,14 +109,6 @@ export default async function SpaceProfileGridPage({
         onSave={onSave}
         readOnly={staffViewing}
       />
-
-      <p className="mt-6 text-xs text-muted">
-        Prefer a single column?{' '}
-        <Link href={`/spaces/${space.slug}/settings/profile`} className="font-semibold text-primary-strong hover:underline">
-          Open the list editor
-        </Link>
-        .
-      </p>
     </FocusTemplate>
   )
 }
