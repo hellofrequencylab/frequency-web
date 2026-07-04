@@ -22,8 +22,11 @@ import {
   getSpaceCapabilities,
   spaceCanUseFullWebsite,
 } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess, spaceFunctionDef } from '@/lib/spaces/functions'
+import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
+import { listSpaceMembers } from '@/lib/spaces/membership'
+import { getDeals } from '@/lib/crm/pipeline'
+import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
 import {
   readProfilePages,
   hasPage,
@@ -31,7 +34,7 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { readCoverSize, readCoverScrim } from './layout/preferences'
-import { readProfileData, type SpaceProfileData } from '@/lib/spaces/profile-data'
+import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import {
   resolveMode,
@@ -255,4 +258,93 @@ export async function getSpaceModeData(slug: string): Promise<SpaceModeData | nu
   }
 
   return { slug, view, readOnly: staffViewing && !canManage }
+}
+
+// ── Rail summary getters (Phase 2 "keep it in the rail") ─────────────────────────────────────────────
+// TINY, serializable, fail-safe reads that feed the primary feature link-rows their glanceable inline
+// stat (SURFACE_SUMMARIES in components/admin/modules/surface-summaries.ts). Each RE-GATES exactly like
+// getSpaceBasicsData — resolveSpaceManageAccess plus (when the surface carries one) the same per-Space
+// function the surface's page re-checks — and returns null when the viewer cannot manage / cannot use the
+// tool, so the summary card degrades to a plain link-row (never a broken card, never a weakened gate).
+// They return only a `{ count }` (or the identity strip's plain strings) — no React, no Icons, no copy;
+// the singular/plural COPY lives with the client-boundary map. The Space read is React.cache()d, so these
+// dedupe on the one cached row.
+
+type ResolvedSpace = NonNullable<Awaited<ReturnType<typeof getVisibleSpaceBySlug>>>
+
+/** Re-gate a Space for a rail summary read: manage access (fail-safe → null) plus, when the surface
+ *  carries a per-Space function, the SAME `spaceFunctionAccess` check its page re-runs (a staff previewer
+ *  passes, mirroring getSpaceBasicsData). Returns the cached Space row on success, else null. */
+async function resolveSummarySpace(
+  slug: string,
+  requiredFunction: SpaceFunctionKey | null,
+): Promise<ResolvedSpace | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  if (requiredFunction) {
+    const caps = await getSpaceCapabilities(space, viewerProfileId)
+    if (!staffViewing && !spaceFunctionAccess(space, requiredFunction, caps.role)) return null
+  }
+  return space
+}
+
+/** The compact identity strip's data (cover + logo + name), or null when the viewer cannot manage this
+ *  Space (fail-safe → the strip renders nothing). All fields already ride the cached Space row. */
+export async function getSpaceIdentityData(
+  slug: string,
+): Promise<{ slug: string; name: string; coverImageUrl: string | null; brandLogoUrl: string | null } | null> {
+  const space = await resolveSummarySpace(slug, null)
+  if (!space) return null
+  return {
+    slug: space.slug,
+    name: (space.brandName ?? '').trim() || space.name,
+    coverImageUrl: space.coverImageUrl ?? null,
+    brandLogoUrl: space.brandLogoUrl ?? null,
+  }
+}
+
+/** "N members" — active memberships only. Gated on manage access + the `members` function. Fail-safe. */
+export async function getSpaceMembersSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'members')
+  if (!space) return null
+  const members = await listSpaceMembers(space.id)
+  return { count: members.filter((m) => m.status === 'active').length }
+}
+
+/** "N in your pipeline" — the Space's CRM deals. Gated on manage access + the `crm` function. The lean
+ *  read (getDeals, one query) over the 4-read funnel. Fail-safe. */
+export async function getSpaceCrmSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'crm')
+  if (!space) return null
+  const deals = await getDeals(space.id)
+  return { count: deals.length }
+}
+
+/** "N services listed" — publicly listed storefront offerings. Gated on manage access alone (Services is
+ *  FREE profile framing, `requiredFunction: null`). Reads the cached preferences blob (no extra query). */
+export async function getSpaceServicesSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, null)
+  if (!space) return null
+  const offerings = readProfileData(space.preferences).offerings ?? []
+  return { count: offerings.filter(isServiceListed).length }
+}
+
+/** "N campaigns" — the Space's email campaigns. Gated on manage access + the `email` function (and
+ *  listSpaceCampaigns self-gates + fails safe to []). Fail-safe. */
+export async function getSpaceCampaignsSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'email')
+  if (!space) return null
+  const campaigns = await listSpaceCampaigns(space.id)
+  return { count: campaigns.length }
 }

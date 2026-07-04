@@ -186,6 +186,11 @@ export function AdminBarBody({ model }: { model: SettingsPanelModel }) {
         // ── The band-ordered sections (standard + primary inline), then the operator Page group + locked
         //    rows, then the ONE "More" disclosure (extra band) at the very bottom. ──
         <>
+          {/* The compact Space identity strip (cover + logo + name), pinned at the very top of the
+              standard tier (Phase 2 "keep it in the rail", ADR-514). Self-fetches + fail-safe (renders
+              nothing for a non-manager); non-search branch only, so search results stay unaffected. */}
+          {model.identityStrip}
+
           <div className="space-y-6">{inlineSections.map(renderSection)}</div>
 
           {/* The operator page-globals group, set apart by a hairline. Suppressed on entity scopes. */}
