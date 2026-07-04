@@ -95,13 +95,16 @@ describe('resolveCrmCapabilities — Space CRM amplifiers (plan axis)', () => {
     expect(canCrm(caps, 'crm.space.email')).toBe(false)
   })
 
-  it('fails closed: a Space without the CRM entitlement grants no board, even to an admin', () => {
+  it('UNIVERSAL (ADR-517 Phase F): an admin of a plain Space gets the CRM board with no entitlement', () => {
+    // Under universal functions the pure CRM board access no longer default-denies on the entitlement blob;
+    // it is available to a manager of any Space. The freemium TIER (Phase G) governs usage/limits via the
+    // LIVE seam, not this pure resolver.
     const caps = resolveCrmCapabilities({
       ...member,
       space: { id: 's1', entitlements: {}, featureRoles: {} },
       spaceRole: 'admin',
     })
-    expect(canCrm(caps, 'crm.space.view')).toBe(false)
+    expect(canCrm(caps, 'crm.space.view')).toBe(true)
   })
 })
 

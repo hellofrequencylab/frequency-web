@@ -8,26 +8,28 @@ import { describe, it, expect } from 'vitest'
 import { enabledFunctionKeys, resolveProfileLayout } from './profile-modules'
 
 describe('enabledFunctionKeys', () => {
-  it('turns universal functions ON by default and leaves plan-gated ones OFF (empty blob)', () => {
+  it('turns EVERY function ON by default under universal functions (ADR-517 Phase F, empty blob)', () => {
     const keys = enabledFunctionKeys({ type: 'practitioner', entitlements: {} })
-    // Universal, offered by every / practitioner type: on by default.
     expect(keys.has('members')).toBe(true)
     expect(keys.has('availability')).toBe(true)
     expect(keys.has('profile')).toBe(true)
-    // Plan-gated (needs the `crm` entitlement): default-deny.
-    expect(keys.has('crm')).toBe(false)
+    // crm/email are now universally available too (their entitlement value is only the Phase-G tier key).
+    expect(keys.has('crm')).toBe(true)
+    expect(keys.has('email')).toBe(true)
   })
 
-  it('drops a universal function the operator explicitly turned OFF', () => {
+  it('drops a function the operator explicitly turned OFF', () => {
     const keys = enabledFunctionKeys({ type: 'practitioner', entitlements: { members: false } })
     expect(keys.has('members')).toBe(false)
     expect(keys.has('availability')).toBe(true)
   })
 
-  it('excludes a function that does not apply to the type', () => {
-    // `availability` is practitioner-only; a business space never offers it.
+  it('offers every function on every type (no per-type restriction under universal functions)', () => {
+    // A business now offers availability, tickets, donations, etc. — every profile is the same functionally.
     const keys = enabledFunctionKeys({ type: 'business', entitlements: {} })
-    expect(keys.has('availability')).toBe(false)
+    expect(keys.has('availability')).toBe(true)
+    expect(keys.has('tickets')).toBe(true)
+    expect(keys.has('donations')).toBe(true)
   })
 
   it('is fail-safe on a malformed entitlements blob (universals stay on)', () => {

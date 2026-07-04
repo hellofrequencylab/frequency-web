@@ -23,41 +23,42 @@ export interface OfferingSection {
   anchor: string
   /** The per-Space function the section's body re-checks (the console gate = the section gate). */
   requiredFunction: SpaceFunctionKey
-  /** The Space types that compose this section. */
-  types: readonly SpaceType[]
+  /** The Space types that compose this section, or '*' for every type. */
+  types: readonly (SpaceType | '*')[]
 }
 
 /**
- * THE catalog, in the order the sections stack on the Offerings page. This mirrors the type spine
- * the individual surfaces carried before the merge:
- *   practitioner -> Availability
- *   business     -> Memberships
- *   organization -> Donations + Enrollment
- *   event_space  -> Tickets + Check in
+ * THE catalog, in the order the sections stack on the Offerings page. UNIVERSAL FUNCTIONS (ADR-517
+ * Phase F): every Space has access to every offering, so every section composes onto every type
+ * (`types: ['*']`). The comment names each section's ORIGIN Mode preset; it no longer restricts access.
+ * Each section body re-checks its own per-Space function gate (now universal) and keeps money dormant.
  */
 export const OFFERING_SECTIONS: readonly OfferingSection[] = [
-  { anchor: 'availability', requiredFunction: 'availability', types: ['practitioner'] },
-  { anchor: 'memberships', requiredFunction: 'memberships', types: ['business'] },
-  { anchor: 'donations', requiredFunction: 'donations', types: ['organization'] },
-  { anchor: 'enroll', requiredFunction: 'enroll', types: ['organization'] },
-  { anchor: 'tickets', requiredFunction: 'tickets', types: ['event_space'] },
-  { anchor: 'checkin', requiredFunction: 'checkin', types: ['event_space'] },
+  { anchor: 'availability', requiredFunction: 'availability', types: ['*'] }, // origin: practitioner
+  { anchor: 'memberships', requiredFunction: 'memberships', types: ['*'] }, // origin: business
+  { anchor: 'donations', requiredFunction: 'donations', types: ['*'] }, // origin: organization
+  { anchor: 'enroll', requiredFunction: 'enroll', types: ['*'] }, // origin: organization
+  { anchor: 'tickets', requiredFunction: 'tickets', types: ['*'] }, // origin: event_space
+  { anchor: 'checkin', requiredFunction: 'checkin', types: ['*'] }, // origin: event_space
 ] as const
 
-/** Does a section compose onto this Space type? */
+/** Does a section compose onto this Space type? ('*' = every type.) Under universal functions every
+ *  section carries '*', so this is true for every real type. */
 function offeringAppliesToType(section: OfferingSection, type: SpaceType): boolean {
-  return section.types.includes(type)
+  return section.types.includes('*') || section.types.includes(type)
 }
 
-/** The offering sections a Space type composes, in stack order (empty for a type with none). */
+/** The offering sections a Space type composes, in stack order. UNIVERSAL: every type composes every
+ *  section (each section body re-checks its own per-Space function gate, now universal, and keeps money
+ *  dormant until the freemium tier lands). */
 export function offeringSectionsForType(type: SpaceType): OfferingSection[] {
   return OFFERING_SECTIONS.filter((s) => offeringAppliesToType(s, type))
 }
 
 /**
- * Does this Space type have ANY commerce section at all? Gates the console's Offerings CARD: a type
- * with zero commerce functions (lab / partner / coaching / root) shows no Offerings card, so the
- * console never opens an empty Offerings surface. PURE (type alone; the per-tool gate is the page's job).
+ * Does this Space type have ANY commerce section at all? Gates the console's Offerings CARD. UNIVERSAL
+ * (ADR-517 Phase F): every Space can configure every offering, so this is always true for a real type.
+ * PURE (type alone; the per-tool gate is the page's job).
  */
 export function typeHasOfferings(type: SpaceType): boolean {
   return offeringSectionsForType(type).length > 0

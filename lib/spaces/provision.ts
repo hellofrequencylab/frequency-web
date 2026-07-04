@@ -175,7 +175,7 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
   // fork a parallel seed path. Idempotent + fail-safe (a no-op when the space already has stages, and it
   // never throws), so a seed failure never blocks provisioning. Best-effort: the redirect proceeds.
   if (isSpaceType(type)) {
-    await ensureSpaceStages(spaceId, type)
+    await ensureSpaceStages(spaceId, type, modeVariant)
   }
 
   // Success: hand the owner straight to the settings surface to finish the profile. redirect()

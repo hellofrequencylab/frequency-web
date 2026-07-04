@@ -226,20 +226,28 @@ function hydrateDeal(d: Record<string, unknown>, people: Map<string, PersonLite>
   }
 }
 
-// ── Per-space stage seeding (CRM-STRATEGY §7, P3) ─────────────────────────────────────────────────
-// A Space gets a per-segment starting pipeline (lib/crm/stage-templates.ts) seeded into crm_stages,
-// scoped by space_id, the first time its CRM is opened. These are service-role writes (the crm_*
-// tables are RLS-enabled with no policies; the caller gates on the Space owner / admin before calling),
-// matching the lib/crm/pipeline.ts read posture.
+// ── Per-space stage seeding (CRM-STRATEGY §7, P3 · unified with Space Modes by ADR-517 Phase F E1) ─────
+// A Space gets a starting pipeline seeded into crm_stages, scoped by space_id, the first time its CRM is
+// opened. The seed comes from the resolved MODE PRESET's pipeline (lib/crm/stage-templates.ts
+// seedStagesForSpace -> lib/spaces/modes.ts), the SAME set the Mode settings "Suggested pipeline" preview
+// shows, so the preview and the seed can never disagree. These are service-role writes (the crm_* tables
+// are RLS-enabled with no policies; the caller gates on the Space owner / admin before calling), matching
+// the lib/crm/pipeline.ts read posture.
 
 import type { SpaceType } from '@/lib/spaces/types'
-import { defaultStagesForSpaceType } from './stage-templates'
+import { seedStagesForSpace } from './stage-templates'
 
-/** Idempotently seed the per-segment starting stages for a Space, scoped by space_id. A NO-OP when
- *  the Space already has any stage (so an owner who has customized their pipeline is never overwritten,
- *  and a second CRM open never re-seeds). FAIL-SAFE: returns false and writes nothing on any error or
- *  missing column, so opening the CRM never throws. Returns true when it seeded a fresh set. */
-export async function ensureSpaceStages(spaceId: string, type: SpaceType | null | undefined): Promise<boolean> {
+/** Idempotently seed the Mode-preset starting stages for a Space, scoped by space_id. Pass the Space's
+ *  `type` and (optionally) its `mode_variant` so the seed matches the exact Mode preview the operator
+ *  saw; an absent variant resolves to the type's default Focus. A NO-OP when the Space already has any
+ *  stage (so an owner who has customized their pipeline is never overwritten, and a second CRM open never
+ *  re-seeds). FAIL-SAFE: returns false and writes nothing on any error or missing column, so opening the
+ *  CRM never throws. Returns true when it seeded a fresh set. */
+export async function ensureSpaceStages(
+  spaceId: string,
+  type: SpaceType | null | undefined,
+  variant?: string | null,
+): Promise<boolean> {
   if (!spaceId) return false
   try {
     // Already seeded (or customized) -> leave it alone. One head count, scoped to this Space.
@@ -249,7 +257,7 @@ export async function ensureSpaceStages(spaceId: string, type: SpaceType | null 
       .eq('space_id', spaceId)
     if ((count ?? 0) > 0) return false
 
-    const rows = defaultStagesForSpaceType(type).map((stage, i) => ({
+    const rows = seedStagesForSpace(type, variant).map((stage, i) => ({
       space_id: spaceId,
       name: stage.name,
       kind: stage.kind,

@@ -367,9 +367,10 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'link',
   },
-  // Engage — the CRM pipeline. The `crm` function offers it to practitioner, business, and coaching
-  // (coaching joined the console with Space Modes M3); the function registry already lists coaching in
-  // the `crm` types, so the surface gate and the function gate stay the same check.
+  // Engage — the CRM pipeline. UNIVERSAL (ADR-517 Phase F): the `crm` function is available to every
+  // Space, so the surface offers it to every console type (`types: ['*']`). The surface gate and the
+  // function gate stay the same check (`spaceFunctionAccess(space, 'crm', role)`, now universally true
+  // for a manager); the freemium TIER seam governs usage/limits once billing is live.
   {
     id: 'space.engage.crm',
     tier: 'primary',
@@ -378,11 +379,26 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'CRM',
     desc: 'Your pipeline and contacts, and private notes on the people you work with.',
     requiredFunction: 'crm',
-    types: ['practitioner', 'business', 'coaching'],
+    types: ['*'],
     render: 'link',
     // BANK (ADR-515 Phase 3): the CRM board is a private back-office workflow, never on the public
     // profile, so it leaves the rail body for the bottom bank.
     placement: 'bank',
+  },
+  // Vera autonomy (Resonance Engine Phase 3 · ADR-384; rail control ADR-517 Phase F). How much Vera does
+  // on its own for this Space (suggest-only vs run the safe stuff). An INLINE owner-gated control in the
+  // rail body that reuses setSpaceAutonomy; its module getter re-gates canManageMembers (owner/admin), and
+  // requiredFunction 'crm' sits it beside the CRM tools (universal, so it shows for every console type).
+  {
+    id: 'space.autonomy',
+    tier: 'primary',
+    priority: 15,
+    slot: 'engage',
+    label: 'Vera autonomy',
+    desc: 'Choose how much Vera does on its own for this space.',
+    requiredFunction: 'crm',
+    types: ['*'],
+    render: 'inline',
   },
   // Services (the storefront store items) — the operator's catalog of services with full pricing +
   // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
@@ -421,8 +437,8 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     // public profile, so they render as a bottom-bank button.
     placement: 'bank',
   },
-  // Comms — write a campaign, pick who gets it, and send or schedule it. The `email` function gates
-  // it; the types that compose an email surface are practitioner, business, and organization.
+  // Comms — write a campaign, pick who gets it, and send or schedule it. UNIVERSAL (ADR-517 Phase F):
+  // the `email` function is available to every Space, so the surface offers it to every console type.
   {
     id: 'space.comms',
     tier: 'primary',
@@ -431,7 +447,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'Email',
     desc: 'Write a campaign, pick who gets it, and send or schedule it.',
     requiredFunction: 'email',
-    types: ['practitioner', 'business', 'organization'],
+    types: ['*'],
     render: 'link',
     // BANK (ADR-515 Phase 3): campaign composition never paints on the public page, so Email leaves the
     // rail body for the bottom bank.
@@ -448,13 +464,13 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'Insights',
     desc: 'See how your codes and pages are performing.',
     requiredFunction: 'qr',
-    types: ['practitioner', 'business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
+    types: ['*'],
     render: 'link',
     // BANK (ADR-515 Phase 3): analytics are a back-office destination, so Insights renders in the bank.
     placement: 'bank',
   },
-  // Billing — the plan ladder and what each plan unlocks. The `billing` function is universal ('*'),
-  // so every console type shows it.
+  // Billing — the plan ladder and what each plan unlocks. UNIVERSAL (ADR-517 Phase F): every console type
+  // shows it (the freemium tier is where usage/limits land, so every Space needs the billing surface).
   {
     id: 'space.billing',
     tier: 'extra',
@@ -463,7 +479,7 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     label: 'Plan and billing',
     desc: 'See your current plan and what each plan unlocks.',
     requiredFunction: 'billing',
-    types: ['business', 'coaching', 'organization', 'event_space', 'lab', 'partner'],
+    types: ['*'],
     render: 'link',
     // BANK (ADR-515 Phase 3): billing is a back-office destination, so it renders in the bottom bank
     // (deduped against the base bank's fixed Billing link by href).

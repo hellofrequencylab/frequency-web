@@ -98,10 +98,11 @@ export async function switchSpaceFocus(slug: string, variant: string): Promise<A
     return fail('Could not switch the focus. Try again.')
   }
 
-  // Re-seed the suggested pipeline for the (unchanged) type. Idempotent: ensureSpaceStages is a NO-OP
-  // when the space already has any stage, so a hand-customized pipeline is never clobbered (the
-  // non-destructive guarantee). Best-effort: a seed failure never fails the switch.
-  await ensureSpaceStages(auth.spaceId, auth.type as Parameters<typeof ensureSpaceStages>[1])
+  // Re-seed the suggested pipeline for the NEW Focus. Idempotent: ensureSpaceStages is a NO-OP when the
+  // space already has any stage, so a hand-customized pipeline is never clobbered (the non-destructive
+  // guarantee). Passing the just-switched `variant` keeps the seed matched to the Mode preview a fresh
+  // space would show. Best-effort: a seed failure never fails the switch.
+  await ensureSpaceStages(auth.spaceId, auth.type as Parameters<typeof ensureSpaceStages>[1], variant)
 
   revalidatePath(`/spaces/${slug}/manage/mode`)
   revalidatePath(`/spaces/${slug}/manage`)
