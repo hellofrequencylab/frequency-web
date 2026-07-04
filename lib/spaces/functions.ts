@@ -1,26 +1,30 @@
-// Per-Space FUNCTION access (per-space-roles Phase 1). The single PURE resolver for "may this viewer
-// use this Space tool?", composing the two existing primitives:
-//   1. ENTITLEMENT (the on/off switch) — spaceHasEntitlement(space, fn.entitlement) for a plan-gated
-//      function; for a UNIVERSAL function (no entitlement) the switch lives in the SAME spaces.entitlements
-//      blob keyed by the function key, DEFAULT-ON (only an explicit `false` turns it off).
+// Per-Space FUNCTION access (per-space-roles Phase 1 · UNIVERSAL FUNCTIONS ADR-517 Phase F). The single
+// PURE resolver for "may this viewer use this Space tool?", composing the two primitives:
+//   1. AVAILABILITY (the on/off switch) — EVERY function is UNIVERSAL and DEFAULT-ON. The switch lives in
+//      the spaces.entitlements blob keyed by the function key, and only an explicit `false` (an operator
+//      turning it off) disables it. There is no per-function plan default-deny anymore: after freemium
+//      the FREEMIUM TIER governs usage/limits, and that lives in the LIVE `featureAllowed` seam
+//      (lib/spaces/function-access.ts spaceFunctionAccessLive), NOT here. A function's `entitlement`
+//      field is now just the Phase-G TIER KEY that seam reads; the pure resolver never gates on it.
 //   2. ROLE (who may use it once on) — atLeastSpaceRole(viewerSpaceRole, minRole), where minRole is the
 //      per-Space override (spaces.feature_roles) if present, else the function's CODE default.
 //
 // PURE + framework-independent (no Supabase/Next imports — only the pure ladder + entitlement readers),
 // like lib/spaces/entitlements.ts and lib/pricing/plans.ts, so it is trivially unit-testable. FAIL-SAFE
-// is the whole contract: an unknown function, a null/unknown viewer role, or a malformed blob all read
-// as NO ACCESS.
+// is the contract: an unknown function or a null/unknown viewer role read as NO ACCESS; a malformed blob
+// reads as the default (every function ON) so a garbage blob never locks a manager out of a tool.
 //
-// NON-BREAKING: defaults reproduce today's behavior. A universal function is default-ON for its default
-// role (editor / moderator / admin = today's canEditProfile / canInvite / isAdmin thresholds). CRM and
-// email keep their entitlement gate with an `admin` default role. An empty spaces.feature_roles ('{}')
-// means every function uses its CODE default min-role. Adding a capability is one registry row + (for a
-// plan-gated one) one entitlement key — never a schema change.
+// ADR-517 Phase F — UNIVERSAL: every Space, regardless of its Mode (type), has access to EVERY function.
+// Mode is now only a starter PRESET (framing/emphasis, never a gate). So `types` on every function is the
+// wildcard '*': a function applies to every Space type, and `spaceFunctionAccess` returns the FULL set for
+// a manager of any Space. The tier seam (`featureAllowed`, currently permissive while billing is OFF)
+// stays intact for Phase G to drive; during the beta everything resolves to available.
+// An empty spaces.feature_roles ('{}') means every function uses its CODE default min-role.
 //
 // Copy follows docs/CONTENT-VOICE.md: plain operator-facing nouns, no em or en dashes.
 
 import { atLeastSpaceRole, isSpaceRole, SPACE_ROLES, type SpaceRole } from './membership'
-import { spaceHasEntitlement, spaceEntitlements, type SpaceLike } from './entitlements'
+import { spaceEntitlements, type SpaceLike } from './entitlements'
 import type { SpaceType } from './types'
 
 /** Every value `spaces.type` can hold (kept in lock-step with SpaceType in ./types). The operator
@@ -72,7 +76,10 @@ export interface SpaceFunctionDef {
   label: string
   /** One-line operator-facing description for the grids. */
   description: string
-  /** The spaces.entitlements key this function's ON state requires, or null for a universal toggle. */
+  /** The freemium TIER key for this function (ADR-517 Phase F): the key the LIVE `featureAllowed` seam
+   *  (Phase G) reads to gate USAGE/LIMITS once billing is live, or null for a function with no paid tier.
+   *  It is NOT a pure on/off gate — every function is universally available (default-ON) in the pure
+   *  resolver; this key only feeds the tier seam (`featureKeyForFunction`). */
   entitlement: string | null
   /** The CODE default lowest SpaceRole that may use the function (overridable per-Space). */
   defaultMinRole: SpaceRole
@@ -80,8 +87,10 @@ export interface SpaceFunctionDef {
   types: readonly FunctionTypeScope[]
 }
 
-/** THE registry. Order is the operator-grid order. Universal functions (`entitlement: null`) default ON;
- *  plan-gated ones (CRM, email) keep their entitlement switch. Default roles mirror today's thresholds:
+/** THE registry. Order is the operator-grid order. UNIVERSAL FUNCTIONS (ADR-517 Phase F): every function
+ *  applies to EVERY Space type (`types: ['*']`) and is DEFAULT-ON in the pure resolver, so every profile is
+ *  the same functionally. CRM and email keep an `entitlement` VALUE, but it is now only the Phase-G freemium
+ *  TIER key (read by the LIVE seam), NOT a pure gate. Default roles mirror today's thresholds:
  *  editor = canEditProfile, moderator = canInvite, admin = isAdmin / canManageMembers. */
 export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
   {
@@ -90,7 +99,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'The pipeline, contacts, and private notes for this space.',
     entitlement: 'crm',
     defaultMinRole: 'admin',
-    types: ['practitioner', 'business', 'coaching', 'organization'],
+    types: ['*'],
   },
   {
     key: 'email',
@@ -98,7 +107,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Write a campaign, pick who gets it, and send or schedule it.',
     entitlement: 'email',
     defaultMinRole: 'admin',
-    types: ['business', 'organization'],
+    types: ['*'],
   },
   {
     key: 'members',
@@ -122,7 +131,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Set the weekly times members can book, and see who is on the calendar.',
     entitlement: null,
     defaultMinRole: 'editor',
-    types: ['practitioner'],
+    types: ['*'],
   },
   {
     key: 'memberships',
@@ -130,7 +139,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Define the tiers members can join, and see who has joined.',
     entitlement: null,
     defaultMinRole: 'editor',
-    types: ['business'],
+    types: ['*'],
   },
   {
     key: 'donations',
@@ -138,7 +147,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Set up the fund, a short description, and the amounts members can pick.',
     entitlement: null,
     defaultMinRole: 'editor',
-    types: ['organization'],
+    types: ['*'],
   },
   {
     key: 'enroll',
@@ -146,7 +155,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Define the program and see who has enrolled.',
     entitlement: null,
     defaultMinRole: 'editor',
-    types: ['coaching'],
+    types: ['*'],
   },
   {
     key: 'tickets',
@@ -154,7 +163,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
     entitlement: null,
     defaultMinRole: 'editor',
-    types: ['event_space'],
+    types: ['*'],
   },
   {
     key: 'checkin',
@@ -162,7 +171,7 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Show the door code and see who checked in.',
     entitlement: null,
     defaultMinRole: 'moderator',
-    types: ['event_space'],
+    types: ['*'],
   },
   {
     key: 'billing',
@@ -213,9 +222,9 @@ export function functionsForType(type: SpaceType | null | undefined): SpaceFunct
   return SPACE_FUNCTIONS.filter((fn) => functionAppliesToType(fn, type))
 }
 
-/** The function keys ENABLED BY DEFAULT for a type (its on-by-default tool set, before any operator/owner
- *  toggle). A universal function is on by default; a plan-gated one is on only when the plan grants it,
- *  which is not knowable from the type alone, so this returns the UNIVERSAL defaults for the type. PURE. */
+/** The function keys ENABLED BY DEFAULT for a type WITHOUT a freemium tier (the free tool set, before any
+ *  operator/owner toggle). Under UNIVERSAL FUNCTIONS every function is default-ON; the tier-marked ones
+ *  (crm/email) are excluded here only so the seeder never writes a tier key. PURE. */
 export function defaultEnabledFunctions(type: SpaceType | null | undefined): SpaceFunctionKey[] {
   return functionsForType(type)
     .filter((fn) => fn.entitlement === null)
@@ -224,17 +233,16 @@ export function defaultEnabledFunctions(type: SpaceType | null | undefined): Spa
 
 // ── The on/off + role resolution (pure, default-deny / fail-safe) ────────────────────────────────
 
-/** Whether a function's ON switch is set for a Space.
- *  - PLAN-GATED (fn.entitlement != null): the plan must grant the entitlement (spaceHasEntitlement,
- *    DEFAULT-DENY: a missing key is OFF). This is the corrective fix for the CRM gate — once
- *    spaces.entitlements actually projects onto the Space, `crm:true` turns the board on.
- *  - UNIVERSAL (fn.entitlement === null): the switch lives in the same entitlements blob keyed by the
- *    function key, DEFAULT-ON — only an explicit `false` (an operator/owner turning it off) disables it,
- *    so an empty blob keeps every universal tool ON (today's behavior). */
+/** Whether a function's ON switch is set for a Space. UNIVERSAL (ADR-517 Phase F): EVERY function is
+ *  DEFAULT-ON. The switch lives in the spaces.entitlements blob keyed by the function key; only an explicit
+ *  `false` (an operator/owner turning it off) disables it, so an empty/absent blob keeps every tool ON.
+ *  There is no per-function plan default-deny: the freemium TIER gate for a plan-marked function
+ *  (fn.entitlement != null) lives ENTIRELY in the LIVE `featureAllowed` seam (spaceFunctionAccessLive),
+ *  which Phase G drives; the pure resolver never default-denies it, so during the beta everything is on. */
 export function spaceFunctionEnabled(space: SpaceLike | null | undefined, fn: SpaceFunctionDef): boolean {
-  if (fn.entitlement) return spaceHasEntitlement(space, fn.entitlement)
-  // Universal: default-ON. spaceEntitlements normalizes every value to a boolean, so a key present and
-  // not `true` reads as off; an absent key (the common case) is ON.
+  // spaceEntitlements normalizes every value to a boolean, so a key present and not `true` reads as off;
+  // an absent key (the common case) is ON. This holds for crm/email too now (their `entitlement` key is
+  // only the Phase-G tier key, not a pure gate).
   const ent = spaceEntitlements(space)
   return fn.key in ent ? ent[fn.key] === true : true
 }
@@ -304,10 +312,9 @@ export interface SpaceFunctionTypeDefault {
  *  functions the type offers, applies any operator per-type default over the CODE default, and returns
  *  two SPARSE jsonb blobs ready to write to spaces.entitlements + spaces.feature_roles:
  *   - `entitlements`: only the universal functions the operator turned OFF are written (as `false`);
- *     a default-ON universal function writes nothing (an empty/absent key reads as ON). Plan-gated
- *     functions are NEVER seeded on here (a new Space starts on the free plan; the operator/owner grants
- *     a paid tool later through billing or the absolute operator override), so the seed never out-grants
- *     the plan.
+ *     a default-ON function writes nothing (an empty/absent key reads as ON). Tier-marked functions
+ *     (crm/email) are NEVER seeded here: their availability is universal (default-ON) and their
+ *     usage/limits are governed by the Phase-G freemium TIER seam, not a per-Space seed.
  *   - `featureRoles`: only a min-role that DIFFERS from the code default is written (sparse), so an
  *     untouched type yields '{}' and the Space resolves exactly as today.
  *  An empty `defaults` list (the common case) returns two empty blobs = pure code defaults. */
@@ -328,9 +335,9 @@ export function seedSpaceConfigFromDefaults(
   for (const fn of functionsForType(type)) {
     const override = byFn.get(fn.key)
 
-    // ON/OFF — only UNIVERSAL functions are seeded (plan-gated tools come from the plan, never the seed).
-    // A universal function is default-ON, so we only write the sparse OFF case: an operator default that
-    // explicitly disables it.
+    // ON/OFF — only NON-TIER functions are seeded (tier-marked tools stay universal + default-ON, their
+    // limits governed by the Phase-G tier seam). A function is default-ON, so we only write the sparse OFF
+    // case: an operator default that explicitly disables it.
     if (fn.entitlement === null && override && override.enabled === false) {
       entitlements[fn.key] = false
     }

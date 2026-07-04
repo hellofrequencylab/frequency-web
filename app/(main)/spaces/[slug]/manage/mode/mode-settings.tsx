@@ -85,11 +85,16 @@ export function ModeSettings({
     <div className="space-y-8">
       {/* Current Mode + Focus */}
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Current mode</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Starter preset</p>
         <h2 className="mt-1 text-lg font-semibold text-text">
           {view.modeLabel}: {view.focusLabel}
         </h2>
         <p className="mt-1 text-sm text-muted">{view.tagline}</p>
+        <p className="mt-3 text-sm text-muted">
+          A preset is just a quick-setup shortcut. It seeds a suggested layout, pipeline, and wording so you
+          are not starting from a blank page. Every tool stays available no matter which preset you pick,
+          and switching never removes anything.
+        </p>
       </section>
 
       {error && (
@@ -100,9 +105,9 @@ export function ModeSettings({
 
       {/* What this turns on (the preview) */}
       <section>
-        <SectionHeader title="What this turns on" />
+        <SectionHeader title="What this preset leads with" />
         <p className="-mt-2 mb-3 text-sm text-muted">
-          Mode never locks anything. Every tool stays available; this is the order your console leads
+          A preset never locks anything. Every tool stays available; this is the order your console leads
           with and the words it uses. You can turn any module off the nav without losing it.
         </p>
 

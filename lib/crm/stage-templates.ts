@@ -1,78 +1,53 @@
-// PER-SEGMENT STAGE TEMPLATES (CRM-STRATEGY §7, P3). One CRM model, many shapes: the same
-// crm_stages primitive, seeded with a DIFFERENT starting pipeline per Space `type`. A Space's
-// "pipeline" is a sales funnel for a business, a client journey for a practitioner / coach, and a
-// supporter lifecycle for an organization.
+// CRM STARTING-PIPELINE SEED (CRM-STRATEGY §7, P3 · unified with Space Modes by ADR-517 Phase F E1). One
+// CRM model, many shapes: the same crm_stages primitive, seeded with a DIFFERENT starting pipeline per
+// Space. The seed now comes from the resolved MODE PRESET's `pipeline` (lib/spaces/modes.ts) — the SAME
+// set the "Suggested pipeline" preview shows on the Mode settings surface — so the preview and the actual
+// seed can never disagree. A Space with no Mode preset (root / unknown type) falls back to a GENERIC
+// funnel so every Space still gets a working board.
 //
-// SHAPE: this module is PURE (no Supabase / Next imports), so defaultStagesForSpaceType is trivially
-// unit-testable. The IO seam that actually seeds crm_stages for a Space (ensureSpaceStages) lives in
-// lib/crm/pipeline.ts, which imports these templates. No member-facing copy here is a feature name;
-// the stage labels are operator-facing pipeline columns, plain and per CONTENT-VOICE (no em/en dashes).
+// SHAPE: PURE (no Supabase / Next imports; resolveMode is itself pure), so seedStagesForSpace is trivially
+// unit-testable. The IO seam that actually writes crm_stages for a Space (ensureSpaceStages) lives in
+// lib/crm/pipeline.ts, which imports this. Stage labels are operator-facing pipeline columns, plain and
+// per CONTENT-VOICE (no em/en dashes).
 
 import type { SpaceType } from '@/lib/spaces/types'
 import type { StageKind } from './pipeline'
+import { resolveMode } from '@/lib/spaces/modes'
 
-/** One seed stage in a template: a label, its order, and its kind (open / won / lost), which drives
- *  the deal status + the column tone. The first 'open' stage is where a graduated contact's deal
- *  lands. */
+/** One seed stage in a template: a label + its kind (open / won / lost), which drives the deal status +
+ *  the column tone. The first 'open' stage is where a graduated contact's deal lands. Order is the array
+ *  index (callers number it). */
 export interface StageTemplate {
   name: string
   kind: StageKind
 }
 
-// The generic fallback for any Space type without a bespoke template (event_space / lab / partner /
-// root and anything new): a plain, sensible open->won/lost funnel so every Space gets a working board.
-const GENERIC: StageTemplate[] = [
+// The GENERIC fallback for a Space with NO Mode preset (root / unknown / null): a plain, sensible
+// open -> won/lost funnel so every Space gets a working board.
+const GENERIC: readonly StageTemplate[] = [
   { name: 'New', kind: 'open' },
   { name: 'Active', kind: 'open' },
   { name: 'Won', kind: 'won' },
   { name: 'Lost', kind: 'lost' },
-]
+] as const
 
-// Business = a sales funnel (CRM-STRATEGY §7).
-const BUSINESS: StageTemplate[] = [
-  { name: 'Lead', kind: 'open' },
-  { name: 'Contacted', kind: 'open' },
-  { name: 'Qualified', kind: 'open' },
-  { name: 'Proposal', kind: 'open' },
-  { name: 'Won', kind: 'won' },
-  { name: 'Lost', kind: 'lost' },
-]
+/** The generic fallback pipeline (a fresh array each call, so a caller may number/mutate it). */
+export function genericStages(): StageTemplate[] {
+  return GENERIC.map((s) => ({ ...s }))
+}
 
-// Practitioner (and Coaching) = a client journey (CRM-STRATEGY §7). 'Rebook' is the won outcome (the
-// relationship continues); 'Lapsed' is the lost outcome (it went quiet).
-const CLIENT_JOURNEY: StageTemplate[] = [
-  { name: 'Inquiry', kind: 'open' },
-  { name: 'Intake', kind: 'open' },
-  { name: 'Active', kind: 'open' },
-  { name: 'Lapsed', kind: 'lost' },
-  { name: 'Rebook', kind: 'won' },
-]
-
-// Organization / nonprofit = a supporter lifecycle (CRM-STRATEGY §7). 'Recurring' + 'Reactivated' are
-// the won outcomes (giving is live); 'Lapsed' is the lost outcome.
-const SUPPORTER_LIFECYCLE: StageTemplate[] = [
-  { name: 'Prospect', kind: 'open' },
-  { name: 'First gift', kind: 'open' },
-  { name: 'Recurring', kind: 'won' },
-  { name: 'Lapsed', kind: 'lost' },
-  { name: 'Reactivated', kind: 'won' },
-]
-
-/** The seed stage template for a Space type. PURE + total: every SpaceType resolves (the bespoke
- *  segments map to their funnel; everything else falls to a sensible generic), so a caller always
- *  gets a non-empty, ordered set of stages. The returned array is fresh each call (callers may
- *  number it), with sort order = array index. */
-export function defaultStagesForSpaceType(type: SpaceType | null | undefined): StageTemplate[] {
-  switch (type) {
-    case 'business':
-      return [...BUSINESS]
-    case 'practitioner':
-    case 'coaching':
-      return [...CLIENT_JOURNEY]
-    case 'organization':
-      return [...SUPPORTER_LIFECYCLE]
-    default:
-      // root / event_space / lab / partner / null / unknown -> the generic funnel.
-      return [...GENERIC]
-  }
+/**
+ * The starting pipeline to SEED for a Space, resolved from its Mode preset. PURE + total: it resolves the
+ * ModeProfile for `(type, variant)` (lib/spaces/modes.ts resolveMode) and returns that preset's `pipeline`
+ * — the EXACT set the Mode settings "Suggested pipeline" preview renders — so the preview and the seed
+ * agree. A type/variant with no registered Mode (root / unknown) falls back to the GENERIC funnel. The
+ * returned array is fresh each call (callers number it), with sort order = array index.
+ */
+export function seedStagesForSpace(
+  type: SpaceType | null | undefined,
+  variant?: string | null,
+): StageTemplate[] {
+  const mode = resolveMode(type ?? null, variant ?? null)
+  const stages = mode?.pipeline ?? GENERIC
+  return stages.map((s) => ({ name: s.name, kind: s.kind }))
 }

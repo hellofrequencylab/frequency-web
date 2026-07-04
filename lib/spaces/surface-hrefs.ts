@@ -33,6 +33,9 @@ export function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/settings/members`
     case 'space.engage.crm':
       return `${base}/crm`
+    case 'space.autonomy':
+      // The Vera autonomy dial renders inline in the rail; its full home is the CRM cockpit page.
+      return `${base}/crm`
     case 'space.services':
       // The storefront services editor (item 10): CRUD the store items + their pricing + visibility.
       return `${base}/settings/services`

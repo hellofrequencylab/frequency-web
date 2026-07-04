@@ -7,43 +7,40 @@ import {
 } from './offerings'
 import type { SpaceType } from './types'
 
-// The deeper Offerings merge: the pure catalog that decides which commerce sections stack on the unified
-// /settings/offerings page per Space type, and gates the console's single Offerings card. These lock the
-// type -> sections mapping the merge replaced the five separate type-gated surfaces with.
+// The unified Offerings surface, UNIVERSALIZED by ADR-517 Phase F: every Space has access to every
+// offering, so every commerce section composes onto every type (each section body re-checks its own
+// per-Space function gate, now universal, and keeps money dormant until the freemium tier lands). These
+// lock that every type gets the full section stack in a stable order.
 
-describe('offerings catalog · offeringSectionsForType', () => {
-  const CASES: ReadonlyArray<{ type: SpaceType; anchors: string[] }> = [
-    { type: 'practitioner', anchors: ['availability'] },
-    { type: 'business', anchors: ['memberships'] },
-    { type: 'organization', anchors: ['donations', 'enroll'] },
-    { type: 'event_space', anchors: ['tickets', 'checkin'] },
-    { type: 'coaching', anchors: [] },
-    { type: 'lab', anchors: [] },
-    { type: 'partner', anchors: [] },
-    { type: 'root', anchors: [] },
-  ]
+const ALL_ANCHORS = OFFERING_SECTIONS.map((s) => s.anchor)
+const ALL_FNS = OFFERING_SECTIONS.map((s) => s.requiredFunction)
 
-  for (const { type, anchors } of CASES) {
-    it(`gives ${type} the sections [${anchors.join(', ') || 'none'}] in stack order`, () => {
-      expect(offeringSectionsForType(type).map((s) => s.anchor)).toEqual(anchors)
+const CONSOLE_TYPES: readonly SpaceType[] = [
+  'practitioner',
+  'business',
+  'organization',
+  'event_space',
+  'coaching',
+  'lab',
+  'partner',
+]
+
+describe('offerings catalog · offeringSectionsForType (UNIVERSAL)', () => {
+  for (const type of CONSOLE_TYPES) {
+    it(`gives ${type} every section in stack order`, () => {
+      expect(offeringSectionsForType(type).map((s) => s.anchor)).toEqual(ALL_ANCHORS)
     })
   }
 
-  it('marks only the commerce-bearing types as having offerings', () => {
-    expect(typeHasOfferings('practitioner')).toBe(true)
-    expect(typeHasOfferings('business')).toBe(true)
-    expect(typeHasOfferings('organization')).toBe(true)
-    expect(typeHasOfferings('event_space')).toBe(true)
-    expect(typeHasOfferings('coaching')).toBe(false)
-    expect(typeHasOfferings('lab')).toBe(false)
-    expect(typeHasOfferings('partner')).toBe(false)
-    expect(typeHasOfferings('root')).toBe(false)
+  it('marks every type as having offerings (universal access)', () => {
+    for (const type of CONSOLE_TYPES) {
+      expect(typeHasOfferings(type)).toBe(true)
+    }
   })
 
-  it('exposes each section\'s per-Space function so the console can gate the card on usability', () => {
-    expect(offeringFunctionsForType('event_space')).toEqual(['tickets', 'checkin'])
-    expect(offeringFunctionsForType('organization')).toEqual(['donations', 'enroll'])
-    expect(offeringFunctionsForType('lab')).toEqual([])
+  it('exposes every section function for every type so the console gates the card on usability', () => {
+    expect(offeringFunctionsForType('event_space')).toEqual(ALL_FNS)
+    expect(offeringFunctionsForType('lab')).toEqual(ALL_FNS)
   })
 
   it('has unique anchors (each is a distinct page section id)', () => {

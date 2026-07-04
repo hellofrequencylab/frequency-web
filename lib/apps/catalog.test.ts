@@ -76,7 +76,7 @@ describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () =
     // The owner directive (ADR-514): the standardized rail renders config inline ("everything in view")
     // and links out ONLY for feature workflows. Basics / Mode / Page are config; the rest are workflows.
     const renderById = new Map(SPACE_SURFACES.map((s) => [s.id, s.render]))
-    const INLINE = ['space.basics', 'space.mode', 'space.layout']
+    const INLINE = ['space.basics', 'space.mode', 'space.layout', 'space.autonomy']
     const LINK = [
       'space.offerings',
       'space.services',

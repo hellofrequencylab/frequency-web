@@ -31,7 +31,8 @@ describe('the registry', () => {
     }
   })
 
-  it('CRM and email are plan-gated; the rest are universal', () => {
+  it('CRM and email carry a freemium TIER key; the rest carry none (all are universally available)', () => {
+    // ADR-517 Phase F: the `entitlement` value is now only the Phase-G tier key, NOT a pure on/off gate.
     expect(spaceFunctionDef('crm')?.entitlement).toBe('crm')
     expect(spaceFunctionDef('email')?.entitlement).toBe('email')
     expect(spaceFunctionDef('members')?.entitlement).toBeNull()
@@ -51,30 +52,25 @@ describe('the registry', () => {
   })
 })
 
-describe('type scoping', () => {
-  it('universal functions appear for every type; per-type ones only for theirs', () => {
-    const practitioner = functionsForType('practitioner').map((f) => f.key)
-    expect(practitioner).toContain('members') // universal
-    expect(practitioner).toContain('availability') // practitioner-only
-    expect(practitioner).not.toContain('memberships') // business-only
-    expect(practitioner).not.toContain('tickets') // event_space-only
-
-    const business = functionsForType('business').map((f) => f.key)
-    expect(business).toContain('memberships')
-    expect(business).toContain('email')
-    expect(business).not.toContain('availability')
-
-    const event = functionsForType('event_space').map((f) => f.key)
-    expect(event).toContain('tickets')
-    expect(event).toContain('checkin')
+describe('type scoping (UNIVERSAL — ADR-517 Phase F)', () => {
+  it('EVERY function applies to EVERY type: every profile is the same functionally', () => {
+    const allKeys = SPACE_FUNCTIONS.map((f) => f.key)
+    for (const type of ['practitioner', 'business', 'organization', 'event_space', 'coaching', 'lab', 'partner'] as const) {
+      const keys = functionsForType(type).map((f) => f.key)
+      expect(keys).toEqual(allKeys) // full registry, no per-type restriction
+    }
   })
 
-  it('defaultEnabledFunctions returns the UNIVERSAL (free) tools for a type, not the plan-gated ones', () => {
+  it('defaultEnabledFunctions returns the non-tier (free) tools for a type, excluding the tier-marked ones', () => {
     const business = defaultEnabledFunctions('business')
     expect(business).toContain('members')
     expect(business).toContain('qr')
-    expect(business).not.toContain('crm') // plan-gated
-    expect(business).not.toContain('email') // plan-gated
+    // A business now also offers what were once type-specific tools (universal).
+    expect(business).toContain('availability')
+    expect(business).toContain('tickets')
+    // crm/email carry a tier key, so the seeder never writes them here.
+    expect(business).not.toContain('crm')
+    expect(business).not.toContain('email')
   })
 
   it('a null type offers nothing', () => {
@@ -83,16 +79,16 @@ describe('type scoping', () => {
   })
 })
 
-describe('the on/off switch', () => {
-  it('PLAN-GATED: a function is OFF without its entitlement, ON with it (the CRM gate)', () => {
+describe('the on/off switch (UNIVERSAL default-ON — ADR-517 Phase F)', () => {
+  it('a TIER-MARKED function (crm) is now default-ON like the rest; only an explicit `false` turns it off', () => {
     const crm = spaceFunctionDef('crm')!
-    expect(spaceFunctionEnabled({ entitlements: {} }, crm)).toBe(false)
+    expect(spaceFunctionEnabled({ entitlements: {} }, crm)).toBe(true) // universal default-ON (was OFF)
     expect(spaceFunctionEnabled({ entitlements: { crm: true } }, crm)).toBe(true)
-    expect(spaceFunctionEnabled({ entitlements: { crm: false } }, crm)).toBe(false)
-    expect(spaceFunctionEnabled(null, crm)).toBe(false)
+    expect(spaceFunctionEnabled({ entitlements: { crm: false } }, crm)).toBe(false) // explicit off
+    expect(spaceFunctionEnabled(null, crm)).toBe(true) // no space = code default (on)
   })
 
-  it('UNIVERSAL: default-ON; only an explicit `false` turns it off', () => {
+  it('a non-tier function (members) is default-ON; only an explicit `false` turns it off', () => {
     const members = spaceFunctionDef('members')!
     expect(spaceFunctionEnabled({ entitlements: {} }, members)).toBe(true) // empty blob = on
     expect(spaceFunctionEnabled(null, members)).toBe(true) // no space = code default (on)
@@ -130,46 +126,44 @@ describe('min-role override (spaces.feature_roles)', () => {
   })
 })
 
-describe('spaceFunctionAccess (the gate)', () => {
-  it('PLAN-GATED + ROLE: CRM needs the entitlement AND admin by default', () => {
-    const withCrm = { entitlements: { crm: true }, featureRoles: {} }
-    expect(spaceFunctionAccess(withCrm, 'crm', 'admin')).toBe(true)
-    expect(spaceFunctionAccess(withCrm, 'crm', 'moderator')).toBe(false) // role too low
-    // Entitlement off -> no access regardless of role.
-    expect(spaceFunctionAccess({ entitlements: {}, featureRoles: {} }, 'crm', 'admin')).toBe(false)
+describe('spaceFunctionAccess (the gate — UNIVERSAL, ADR-517 Phase F)', () => {
+  it('CRM is available by default (no entitlement needed) and still gated by ROLE (admin default)', () => {
+    const plain = { entitlements: {}, featureRoles: {} }
+    expect(spaceFunctionAccess(plain, 'crm', 'admin')).toBe(true) // universal: on with no entitlement
+    expect(spaceFunctionAccess(plain, 'crm', 'moderator')).toBe(false) // role too low
+    // An explicit `false` turns it off even for an admin (operator disabled the tool).
+    expect(spaceFunctionAccess({ entitlements: { crm: false }, featureRoles: {} }, 'crm', 'admin')).toBe(false)
   })
 
   it('a per-Space override lowers the CRM bar', () => {
-    const space = { entitlements: { crm: true }, featureRoles: { crm: 'moderator' } }
+    const space = { entitlements: {}, featureRoles: { crm: 'moderator' } }
     expect(spaceFunctionAccess(space, 'crm', 'moderator')).toBe(true)
     expect(spaceFunctionAccess(space, 'crm', 'editor')).toBe(false) // still below moderator
   })
 
-  it('UNIVERSAL: members is open to editor+ by default with no entitlement needed', () => {
+  it('members is open to editor+ by default', () => {
     const plain = { entitlements: {}, featureRoles: {} }
     expect(spaceFunctionAccess(plain, 'members', 'editor')).toBe(true)
     expect(spaceFunctionAccess(plain, 'members', 'admin')).toBe(true)
     expect(spaceFunctionAccess(plain, 'members', 'viewer')).toBe(false) // below editor
   })
 
-  it('an owner reports role "admin" and clears every default threshold', () => {
-    const space = { entitlements: { crm: true, email: true }, featureRoles: {} }
+  it('an owner (role "admin") of a plain Space clears EVERY function — the full universal set', () => {
+    // The core Phase F guarantee: a manager of ANY Space, with NOTHING granted, reaches every function.
+    const plain = { entitlements: {}, featureRoles: {} }
     for (const fn of SPACE_FUNCTIONS) {
-      // owner == 'admin'; with the entitlements granted, admin meets every default min-role.
-      expect(spaceFunctionAccess(space, fn.key, 'admin')).toBe(true)
+      expect(spaceFunctionAccess(plain, fn.key, 'admin')).toBe(true)
     }
   })
 
-  it('FAIL-SAFE: null role, unknown function, and a malformed blob all deny', () => {
-    const space = { entitlements: { crm: true }, featureRoles: {} }
-    expect(spaceFunctionAccess(space, 'crm', null)).toBe(false)
-    expect(spaceFunctionAccess(space, 'crm', undefined)).toBe(false)
-    expect(spaceFunctionAccess(space, 'made-up', 'admin')).toBe(false) // unknown fn
-    expect(spaceFunctionAccess(null, 'crm', 'admin')).toBe(false) // no space
+  it('FAIL-SAFE: null/unknown role and unknown function deny; a garbage blob defaults to ON (never a lockout)', () => {
+    const plain = { entitlements: {}, featureRoles: {} }
+    expect(spaceFunctionAccess(plain, 'crm', null)).toBe(false) // null role
+    expect(spaceFunctionAccess(plain, 'crm', undefined)).toBe(false)
+    expect(spaceFunctionAccess(plain, 'made-up', 'admin')).toBe(false) // unknown fn
+    // Universal default-ON survives a garbage entitlements blob (spaceEntitlements -> {}).
     expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'members', 'editor')).toBe(true)
-    // ^ universal default-on survives a garbage entitlements blob (spaceEntitlements -> {}), editor meets editor.
-    expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'crm', 'admin')).toBe(false)
-    // ^ plan-gated stays off on a garbage blob (default-deny).
+    expect(spaceFunctionAccess({ entitlements: 'garbage', featureRoles: 'garbage' }, 'crm', 'admin')).toBe(true)
   })
 })
 

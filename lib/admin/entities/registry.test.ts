@@ -97,134 +97,61 @@ describe('entity registry · surfacesFor', () => {
   })
 })
 
-// EM1-3 / EM2-3: the PARALLEL Space spine. A Space is gated by the per-Space function world, not the
-// unified Capability set, so `spaceSurfacesFor(type, canUse)` selects by (type offers the surface)
-// AND (the caller's `canUse(fn)` predicate). These lock every provisionable type's spine (the console
-// serves all but coaching), and that always-on Basics + Danger render regardless of the per-tool gate.
+// UNIVERSAL FUNCTIONS (ADR-517 Phase F): every profile is the same functionally, so every console type
+// resolves the IDENTICAL full spine (every function applies to every type; the Offerings surface adapts
+// but is available to all). `spaceSurfacesFor(type, canUse)` still gates each surface on the caller's
+// `canUse(fn)` predicate, so a denied tool drops out; the difference is that the per-TYPE restriction is
+// gone. The freemium TIER (Phase G) is where usage/limits will land, not the surface set.
 
 describe('entity registry · spaceSurfacesFor', () => {
-  // A canUse predicate that grants every tool (an owner of a fully-entitled space).
+  // A canUse predicate that grants every tool (an owner of a Space during the beta).
   const allow = (): boolean => true
-  // A canUse predicate that denies every tool (no plan / a low role): only the null-gated surfaces.
+  // A canUse predicate that denies every tool (a low role): only the null-gated surfaces render.
   const deny = (): boolean => false
 
-  // THE DEEPER OFFERINGS MERGE: the five separate commerce surfaces (place / memberships / donations /
-  // enroll / tickets / checkin) collapsed into the ONE adaptive `space.offerings` surface (engage slot).
-  // It shows only when the type has an offering the viewer can use, and it sorts in the engage slot
-  // BEFORE CRM (declaration order within the shared slot).
+  // The ONE full spine every console type resolves under universal functions (slot order; declaration
+  // order within a slot). Autonomy is an inline control in the engage slot, right after CRM.
+  const FULL_SPINE = [
+    'space.basics',
+    'space.mode',
+    'space.people',
+    'space.layout',
+    'space.offerings',
+    'space.engage.crm',
+    'space.autonomy',
+    'space.services',
+    'space.reach',
+    'space.comms',
+    'space.insights',
+    'space.billing',
+    'space.danger',
+  ]
 
-  it('gives a practitioner the full spine in order: basics, mode, people, layout, offerings, CRM, services, reach, comms, insights, danger', () => {
-    const ids = spaceSurfacesFor('practitioner', allow).map((s) => s.id)
-    expect(ids).toEqual([
-      'space.basics',
-      'space.mode',
-      'space.people',
-      'space.layout',
-      'space.offerings',
-      'space.engage.crm',
-      'space.services',
-      'space.reach',
-      'space.comms',
-      'space.insights',
-      'space.danger',
-    ])
-    // The old individual commerce surface ids are gone; Offerings carries them now.
-    expect(ids).not.toContain('space.place')
-    // Services (the storefront store items) sorts right AFTER CRM within the shared engage slot.
-    expect(ids.indexOf('space.services')).toBe(ids.indexOf('space.engage.crm') + 1)
-  })
+  const CONSOLE_TYPES = [
+    'practitioner',
+    'organization',
+    'business',
+    'event_space',
+    'coaching',
+    'lab',
+    'partner',
+  ] as const
 
-  it('gives an organization the Offerings (donations + enrollment) + billing spine, never the practitioner-only CRM', () => {
-    const ids = spaceSurfacesFor('organization', allow).map((s) => s.id)
-    expect(ids).toEqual([
-      'space.basics',
-      'space.mode',
-      'space.people',
-      'space.layout',
-      'space.offerings',
-      'space.services',
-      'space.reach',
-      'space.comms',
-      'space.insights',
-      'space.billing',
-      'space.danger',
-    ])
-    // CRM is not an organization surface, and the old individual commerce ids are gone.
-    expect(ids).not.toContain('space.engage.crm')
-    expect(ids).not.toContain('space.engage.donations')
-    expect(ids).not.toContain('space.engage.enroll')
-    // And billing is an organization-spine surface this slice does not give the practitioner.
-    expect(spaceSurfacesFor('practitioner', allow).map((s) => s.id)).not.toContain('space.billing')
-  })
-
-  it('gives a business the Offerings (memberships) + CRM + email + billing spine, never the org-only enroll', () => {
-    const ids = spaceSurfacesFor('business', allow).map((s) => s.id)
-    expect(ids).toEqual([
-      'space.basics',
-      'space.mode',
-      'space.people',
-      'space.layout',
-      'space.offerings',
-      'space.engage.crm',
-      'space.services',
-      'space.reach',
-      'space.comms',
-      'space.insights',
-      'space.billing',
-      'space.danger',
-    ])
-    expect(ids).not.toContain('space.engage.memberships')
-    expect(ids).not.toContain('space.engage.enroll')
-  })
-
-  it('gives an event_space the Offerings (tickets + check-in) + billing spine, never CRM/email', () => {
-    const ids = spaceSurfacesFor('event_space', allow).map((s) => s.id)
-    expect(ids).toEqual([
-      'space.basics',
-      'space.mode',
-      'space.people',
-      'space.layout',
-      'space.offerings',
-      'space.services',
-      'space.reach',
-      'space.insights',
-      'space.billing',
-      'space.danger',
-    ])
-    expect(ids).not.toContain('space.engage.crm')
-    expect(ids).not.toContain('space.engage.tickets')
-    expect(ids).not.toContain('space.safety.checkin')
-    expect(ids).not.toContain('space.comms')
-  })
-
-  it('gives lab + partner the universal four spine plus the always-on Services surface (no Offerings, no role-specific engage)', () => {
-    for (const type of ['lab', 'partner'] as const) {
-      const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
-      expect(ids).toEqual([
-        'space.basics',
-        'space.mode',
-        'space.people',
-        'space.layout',
-        'space.services',
-        'space.reach',
-        'space.insights',
-        'space.billing',
-        'space.danger',
-      ])
-      // No Offerings (lab/partner have zero commerce functions), no engage / comms surface. Services is
-      // FREE profile framing (null-gated), so any type carries it.
-      expect(ids).not.toContain('space.offerings')
-      expect(ids).not.toContain('space.comms')
-      expect(ids.some((id) => id.startsWith('space.engage'))).toBe(false)
+  it('gives EVERY console type the identical full spine (same functionally, ADR-517 Phase F)', () => {
+    for (const type of CONSOLE_TYPES) {
+      expect(spaceSurfacesFor(type, allow).map((s) => s.id), type).toEqual(FULL_SPINE)
     }
+    // The old individual commerce surface ids are gone; Offerings carries them.
+    expect(FULL_SPINE).not.toContain('space.place')
+    expect(FULL_SPINE.some((id) => id === 'space.engage.donations')).toBe(false)
   })
 
   it('falls back to only the always-on Basics + Mode + Layout + Services + Danger when the viewer can use no tool', () => {
-    // Mode and focus + Layout + Services are all null-gated (FREE framing, never a per-tool gate), so they
-    // render for a manager regardless of which tools are on, alongside Basics + Danger (Space Modes M3 /
-    // ADR-472). Services sorts in the engage slot, between Layout and Danger.
-    for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
-      expect(spaceSurfacesFor(type, deny).map((s) => s.id)).toEqual([
+    // The null-gated surfaces (Basics / Mode / Layout / Services / Danger) render for a manager regardless
+    // of which tools are on. Offerings is hidden under deny (no usable commerce function), and the
+    // function-gated surfaces (People / CRM / autonomy / QR / email / insights / billing) drop out.
+    for (const type of CONSOLE_TYPES) {
+      expect(spaceSurfacesFor(type, deny).map((s) => s.id), type).toEqual([
         'space.basics',
         'space.mode',
         'space.layout',
@@ -235,7 +162,7 @@ describe('entity registry · spaceSurfacesFor', () => {
   })
 
   it('orders Basics first and Danger last regardless of which tools are on', () => {
-    for (const type of ['practitioner', 'organization', 'business', 'coaching', 'event_space', 'lab', 'partner'] as const) {
+    for (const type of CONSOLE_TYPES) {
       const ids = spaceSurfacesFor(type, allow).map((s) => s.id)
       expect(ids[0]).toBe('space.basics')
       expect(ids[ids.length - 1]).toBe('space.danger')
@@ -243,36 +170,15 @@ describe('entity registry · spaceSurfacesFor', () => {
   })
 
   it('passes the surface function to canUse so the caller binds the real per-Space gate', () => {
-    // Only enable CRM; the practitioner spine should then include engage.crm but drop, e.g., email.
+    // Only enable CRM; the spine should then include engage.crm + its autonomy control but drop email.
     const onlyCrm = (fn: SpaceFunctionKey): boolean => fn === 'crm'
     const ids = spaceSurfacesFor('practitioner', onlyCrm).map((s) => s.id)
     expect(ids).toContain('space.engage.crm')
+    expect(ids).toContain('space.autonomy') // the autonomy control rides the crm gate
     expect(ids).not.toContain('space.comms') // email gate denied
+    expect(ids).not.toContain('space.offerings') // no usable commerce function
     expect(ids).toContain('space.basics') // always-on
     expect(ids).toContain('space.danger') // always-on
-  })
-
-  it('gives coaching the console spine with CRM (Space Modes M3): basics, mode, people, layout, CRM, reach, insights, billing, danger', () => {
-    // Coaching joined the console with Space Modes M3 (ADR-461/464). Its `crm` function lists coaching, so
-    // the CRM surface shows; it carries the universal Members / QR / Insights / Billing + the always-on
-    // Mode surface. It does NOT get the other types' role-specific engage tools or email (the email
-    // function does not list coaching).
-    const ids = spaceSurfacesFor('coaching', allow).map((s) => s.id)
-    expect(ids).toEqual([
-      'space.basics',
-      'space.mode',
-      'space.people',
-      'space.layout',
-      'space.engage.crm',
-      'space.services',
-      'space.reach',
-      'space.insights',
-      'space.billing',
-      'space.danger',
-    ])
-    // Coaching has zero commerce functions, so no Offerings surface, and no email (email omits coaching).
-    expect(ids).not.toContain('space.offerings')
-    expect(ids).not.toContain('space.comms')
   })
 
   it('has unique Space surface ids', () => {
@@ -289,6 +195,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.layout': { tier: 'standard', priority: 20 },
       'space.mode': { tier: 'standard', priority: 30 },
       'space.engage.crm': { tier: 'primary', priority: 10 },
+      'space.autonomy': { tier: 'primary', priority: 15 },
       'space.people': { tier: 'primary', priority: 20 },
       'space.offerings': { tier: 'primary', priority: 30 },
       'space.services': { tier: 'primary', priority: 40 },
@@ -333,6 +240,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.offerings',
       'space.services',
       'space.people',
+      'space.autonomy',
       'space.danger',
     ])
 
@@ -362,34 +270,28 @@ describe('entity registry · spaceSurfacesFor', () => {
     })
   })
 
-  // THE OFFERINGS VISIBILITY GATE (the deeper Offerings merge): space.offerings is null-gated (it
-  // adapts) but must NOT show as an always-on surface — a type with zero commerce functions never
-  // opens an empty Offerings card. It shows only when the type has an offering the viewer can use.
+  // THE OFFERINGS VISIBILITY GATE (universalized by ADR-517 Phase F): space.offerings is null-gated (it
+  // adapts) but still must not open EMPTY, so it shows only when the viewer can use at least one offering
+  // function. Under universal functions EVERY type composes every offering section, so it shows for every
+  // console type — but a viewer who can use no offering function still sees no empty card.
   describe('the adaptive Offerings surface visibility gate', () => {
-    it('shows Offerings for a type with a usable commerce function (practitioner/business/org/event_space)', () => {
-      for (const type of ['practitioner', 'business', 'organization', 'event_space'] as const) {
-        expect(spaceSurfacesFor(type, allow).map((s) => s.id)).toContain('space.offerings')
+    it('shows Offerings for EVERY console type (every type has usable commerce functions now)', () => {
+      for (const type of ['practitioner', 'business', 'organization', 'event_space', 'coaching', 'lab', 'partner'] as const) {
+        expect(spaceSurfacesFor(type, allow).map((s) => s.id), type).toContain('space.offerings')
       }
     })
 
-    it('hides Offerings for a type with zero commerce functions (coaching/lab/partner)', () => {
-      for (const type of ['coaching', 'lab', 'partner'] as const) {
-        expect(spaceSurfacesFor(type, allow).map((s) => s.id)).not.toContain('space.offerings')
-      }
-    })
-
-    it('hides Offerings when the viewer can use NO commerce function, even on a type that has one', () => {
-      // An event_space carries tickets + checkin, but a viewer who can use neither sees no Offerings card
-      // (it would open empty). Every non-commerce tool stays usable; only the offering functions are denied.
-      const noOfferings = (fn: SpaceFunctionKey): boolean => fn !== 'tickets' && fn !== 'checkin'
+    it('hides Offerings when the viewer can use NO offering function (it would open empty)', () => {
+      // Deny every offering function (booking / memberships / donations / enroll / tickets / checkin); a
+      // non-commerce tool stays usable, so People still shows but Offerings does not.
+      const OFFERING_FNS = new Set(['availability', 'memberships', 'donations', 'enroll', 'tickets', 'checkin'])
+      const noOfferings = (fn: SpaceFunctionKey): boolean => !OFFERING_FNS.has(fn)
       const ids = spaceSurfacesFor('event_space', noOfferings).map((s) => s.id)
       expect(ids).not.toContain('space.offerings')
       expect(ids).toContain('space.people') // a non-commerce surface still shows
     })
 
-    it('shows Offerings when at least ONE of the type\'s offering functions is usable', () => {
-      // An event_space where only check-in is usable (tickets denied) still shows Offerings — its
-      // Check-in section renders, the Tickets section shows its own locked state inside the page.
+    it('shows Offerings when at least ONE offering function is usable', () => {
       const onlyCheckin = (fn: SpaceFunctionKey): boolean => fn === 'checkin'
       expect(spaceSurfacesFor('event_space', onlyCheckin).map((s) => s.id)).toContain('space.offerings')
     })

@@ -81,7 +81,7 @@ export async function importContactsToSpace(
   }
 
   // Make sure the Space has its per-segment starting pipeline before we seed deals into it.
-  await ensureSpaceStages(spaceId, space.type)
+  await ensureSpaceStages(spaceId, space.type, space.modeVariant)
   const firstOpen = await getFirstOpenStage(spaceId)
 
   // The owner's own contacts, narrowed by the optional status/tag filter.

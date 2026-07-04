@@ -21,6 +21,8 @@ import {
   resolveSpaceManageAccess,
   getSpaceCapabilities,
   spaceCanUseFullWebsite,
+  spaceAutonomyLevel,
+  type AutonomyLevel,
 } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, spaceFunctionDef, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
@@ -314,6 +316,42 @@ export async function getSpaceModeData(slug: string): Promise<SpaceModeData | nu
   }
 
   return { slug, view, readOnly: staffViewing && !canManage }
+}
+
+// ── Vera autonomy (space.autonomy) ───────────────────────────────────────────────────────────────────
+// The inline rail control for the per-Space Vera autonomy dial (Resonance Engine Phase 3 · ADR-384;
+// rail control ADR-517 Phase F GAP 2). Reuses the existing setSpaceAutonomy write; this getter only
+// READS the current level and re-gates the SAME owner/admin authority the setter enforces
+// (caps.canManageMembers). Returns null for anyone who cannot change it (including a staff previewer, who
+// gets no write), so the inline module renders nothing — the write authority is never widened.
+
+interface SpaceAutonomyData {
+  slug: string
+  level: AutonomyLevel
+}
+
+/** The Vera autonomy control's data, or null when the viewer cannot manage this Space's members
+ *  (owner/admin only, matching setSpaceAutonomy). Fail-safe -> the inline module renders nothing. */
+export async function getSpaceAutonomyData(slug: string): Promise<SpaceAutonomyData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  // Owner / admin only (the SAME gate setSpaceAutonomy re-checks). A mere editor or a staff previewer
+  // cannot change autonomy, so they get no control.
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!caps.canManageMembers) return null
+
+  return { slug: space.slug, level: spaceAutonomyLevel(space) }
 }
 
 // ── Rail summary getters (Phase 2 "keep it in the rail") ─────────────────────────────────────────────

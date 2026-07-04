@@ -96,7 +96,7 @@ export default async function SpaceCrmBoardPage({
 
   // The space has CRM and the viewer runs it: make sure the per-segment starting pipeline exists, then
   // render the board. ensureSpaceStages is idempotent + fail-safe (a no-op once seeded / customized).
-  await ensureSpaceStages(space.id, space.type)
+  await ensureSpaceStages(space.id, space.type, space.modeVariant)
 
   const boardHref = `/spaces/${space.slug}/crm`
 
