@@ -55,20 +55,23 @@ describe('unified entity-block registry', () => {
     }
   })
 
-  it('profilePaletteForKind narrows to the curated core (ADR-529)', () => {
+  it('profilePaletteForKind narrows to the curated core (ADR-529 → ADR-536)', () => {
     const space = profilePaletteForKind('space').map((b) => b.id)
-    // Core kept:
-    for (const id of ['about', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'heading', 'text', 'links', 'image']) {
+    // Core kept (SPACE): the connected data sections + Find-us-online + the content blocks. `business`
+    // replaces the authored `links` for a space (Find us online covers links).
+    for (const id of ['about', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'heading', 'text', 'image']) {
       expect(space).toContain(id)
     }
-    // Retired from the offered palette:
-    for (const id of ['highlights', 'stats', 'practices', 'circles', 'business', 'faq', 'updates', 'gallery', 'quote', 'embed', 'divider']) {
+    // Retired / excluded from the SPACE palette (no wired data, rarely used, or covered by business):
+    for (const id of ['highlights', 'stats', 'practices', 'circles', 'faq', 'updates', 'gallery', 'quote', 'embed', 'divider', 'links']) {
       expect(space).not.toContain(id)
     }
-    // The member palette keeps topfriends + the four content essentials, drops the niche content blocks.
+    // The member palette keeps topfriends + the authored links list + the content essentials; `business` is
+    // space-only so it never reaches the member palette.
     const member = profilePaletteForKind('member').map((b) => b.id)
     expect(member).toContain('topfriends')
     expect(member).toContain('links')
+    expect(member).not.toContain('business')
     expect(member).not.toContain('gallery')
     expect(member).not.toContain('divider')
   })
