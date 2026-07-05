@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   GripVertical,
   ChevronUp,
@@ -38,13 +39,17 @@ import {
   unhideBlock,
   removeBlock,
   swapCells,
+  setBlockContent,
+  setBlockStyle,
   placedIds,
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
+import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { useProfileLayout } from './profile-layout-context'
 import { BlockPicker } from './block-picker'
+import { BlockEditPanel } from './block-edit-panel'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -84,14 +89,18 @@ export function EntityPageBuilder({
   pageId,
   kind,
   loadRailData,
+  editHrefFor,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
   kind: EntityKind
   /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing). */
   loadRailData: () => Promise<BuilderRailData | null>
+  /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
+  editHrefFor?: (blockId: string) => string | null
 }) {
   const store = useProfileLayout()
+  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [matchId, setMatchId] = useState<string | null>(null)
@@ -101,11 +110,24 @@ export function EntityPageBuilder({
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [addingAt, setAddingAt] = useState<{ rowId: string; col: number } | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [grab, setGrab] = useState<Grab>(null)
   const [announce, setAnnounce] = useState('')
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Content / style edits change what a block RENDERS (not just where it sits), so the server-rendered
+  // live-preview nodes need to re-render. Debounce a router.refresh past the store's save window so the
+  // preview reconciles after the edit persists (structural edits stay instant and never refresh).
+  const refreshSoon = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => router.refresh(), 900)
+  }, [router])
+  useEffect(() => () => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+  }, [])
 
   // Seed the shared store from the persisted layout (idempotent — the live preview may have seeded first).
   // Only seed a store of the SAME kind, so a builder mounted beside the wrong provider never pollutes it.
@@ -144,7 +166,12 @@ export function EntityPageBuilder({
   const maxColumns = maxColumnsForKind(kind)
   const lockedSet = new Set(lockedIds)
   const palette = blocksForKind(kind).filter((b) => !lockedSet.has(b.id))
-  const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden }
+  const layout: BuilderLayout = {
+    rows: store.rows,
+    hidden: store.hidden,
+    content: store.content,
+    style: store.style,
+  }
   // The derived bench, minus any function-locked block the space cannot offer yet (never on the page).
   const bench = store.bench.filter((id) => !lockedSet.has(id))
   const placed = placedIds(layout.rows)
@@ -195,6 +222,15 @@ export function EntityPageBuilder({
     mutate(hidden ? unhideBlock(layout, blockId) : hideBlock(layout, blockId))
     say(`${label(blockId)} ${hidden ? 'shown' : 'hidden'}.`)
     setOpenMenu(null)
+  }
+  // Content / style edits (ADR-528): persist + refresh the preview (the block's render changes).
+  function onEditContent(blockId: string, props: Record<string, unknown>) {
+    mutate(setBlockContent(layout, blockId, Object.keys(props).length ? props : undefined))
+    refreshSoon()
+  }
+  function onEditStyle(blockId: string, style: BlockStyle) {
+    mutate(setBlockStyle(layout, blockId, Object.keys(style).length ? style : undefined))
+    refreshSoon()
   }
   function onDelete(blockId: string) {
     mutate(removeBlock(layout, blockId))
@@ -303,6 +339,22 @@ export function EntityPageBuilder({
       }
     }
   }
+
+  // The inline edit panel for a block (ADR-528): content fields (content block) / on-off + quick fields +
+  // manage link (data block), plus style controls. Rendered right under the block's pill when it is open.
+  const editPanelFor = (id: string) =>
+    editingId === id ? (
+      <BlockEditPanel
+        id={id}
+        content={store.content[id] ?? {}}
+        style={store.style[id] ?? {}}
+        hidden={layout.hidden.includes(id)}
+        editHref={editHrefFor?.(id) ?? null}
+        onContent={(props) => onEditContent(id, props)}
+        onStyle={(s) => onEditStyle(id, s)}
+        onToggleHide={() => onToggleHide(id)}
+      />
+    ) : null
 
   // Starters (the wireframe seeds) are a SPACE affordance only — the member profile is a fixed single-
   // column list with no layout to seed, so it never shows them.
@@ -414,6 +466,7 @@ export function EntityPageBuilder({
                     hidden={layout.hidden.includes(id)}
                     grabbed={grab?.kind === 'block' && grab.id === id}
                     menuOpen={openMenu === `block:${id}`}
+                    editing={editingId === id}
                     canUp={index > 0}
                     canDown={index < memberBlocks.length - 1}
                     emptySlots={[]}
@@ -421,6 +474,7 @@ export function EntityPageBuilder({
                     onDragStart={() => (dragBlock.current = id)}
                     onDragEnd={() => (dragBlock.current = null)}
                     onHandleKey={(e) => blockHandleKey(e, id)}
+                    onEdit={() => setEditingId((m) => (m === id ? null : id))}
                     onUp={() => moveBlockBy(id, -1)}
                     onDown={() => moveBlockBy(id, 1)}
                     onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
@@ -431,6 +485,7 @@ export function EntityPageBuilder({
                     onCancelDelete={() => setConfirmDelete(null)}
                     onConfirmDelete={() => onDelete(id)}
                   />
+                  {editPanelFor(id)}
                 </li>
               ))}
             </ol>
@@ -523,7 +578,7 @@ export function EntityPageBuilder({
                   ))}
                 </div>
 
-                {/* Split control (2-column rows only): 50/50 even, or 66/33 lead column. */}
+                {/* Split control (2-column rows only): 1/2 even, or a 2/3 lead column on either side. */}
                 {row.columns === 2 && (
                   <div
                     className="flex overflow-hidden rounded-md border border-border"
@@ -532,16 +587,18 @@ export function EntityPageBuilder({
                   >
                     {(
                       [
-                        { r: 'even' as const, label: '50/50' },
-                        { r: 'lead' as const, label: '66/33' },
+                        { r: 'even' as const, label: '1/2', aria: 'Even halves' },
+                        { r: 'lead' as const, label: '2/3', aria: 'Two thirds, then one third' },
+                        { r: 'trail' as const, label: '1/3', aria: 'One third, then two thirds' },
                       ]
-                    ).map(({ r, label: lbl }) => {
-                      const active = r === 'lead' ? row.ratio === 'lead' : row.ratio !== 'lead'
+                    ).map(({ r, label: lbl, aria }) => {
+                      const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === r
                       return (
                         <button
                           key={r}
                           type="button"
                           aria-pressed={active}
+                          aria-label={`${aria} for row ${index + 1}`}
                           onClick={() => onSetRatio(row.id, r)}
                           className={`px-1.5 py-0.5 text-2xs font-semibold ${
                             active ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
@@ -626,28 +683,33 @@ export function EntityPageBuilder({
                       onDrop={(e) => id === null && dropOnSlot(e, row.id, col)}
                     >
                       {id ? (
-                        <BlockPill
-                          id={id}
-                          hidden={layout.hidden.includes(id)}
-                          grabbed={grab?.kind === 'block' && grab.id === id}
-                          menuOpen={openMenu === `block:${id}`}
-                          canUp={slotSeq.findIndex((s) => s.id === id) > 0}
-                          canDown={slotSeq.findIndex((s) => s.id === id) < slotSeq.length - 1}
-                          emptySlots={emptySlots}
-                          confirmDelete={confirmDelete === id}
-                          onDragStart={() => (dragBlock.current = id)}
-                          onDragEnd={() => (dragBlock.current = null)}
-                          onHandleKey={(e) => blockHandleKey(e, id)}
-                          onUp={() => moveBlockBy(id, -1)}
-                          onDown={() => moveBlockBy(id, 1)}
-                          onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
-                          onMoveTo={(t) => onPlace(id, t.rowId, t.ci)}
-                          onToggleHide={() => onToggleHide(id)}
-                          onBench={() => onBench(id)}
-                          onAskDelete={() => setConfirmDelete(id)}
-                          onCancelDelete={() => setConfirmDelete(null)}
-                          onConfirmDelete={() => onDelete(id)}
-                        />
+                        <>
+                          <BlockPill
+                            id={id}
+                            hidden={layout.hidden.includes(id)}
+                            grabbed={grab?.kind === 'block' && grab.id === id}
+                            menuOpen={openMenu === `block:${id}`}
+                            editing={editingId === id}
+                            canUp={slotSeq.findIndex((s) => s.id === id) > 0}
+                            canDown={slotSeq.findIndex((s) => s.id === id) < slotSeq.length - 1}
+                            emptySlots={emptySlots}
+                            confirmDelete={confirmDelete === id}
+                            onDragStart={() => (dragBlock.current = id)}
+                            onDragEnd={() => (dragBlock.current = null)}
+                            onHandleKey={(e) => blockHandleKey(e, id)}
+                            onEdit={() => setEditingId((m) => (m === id ? null : id))}
+                            onUp={() => moveBlockBy(id, -1)}
+                            onDown={() => moveBlockBy(id, 1)}
+                            onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
+                            onMoveTo={(t) => onPlace(id, t.rowId, t.ci)}
+                            onToggleHide={() => onToggleHide(id)}
+                            onBench={() => onBench(id)}
+                            onAskDelete={() => setConfirmDelete(id)}
+                            onCancelDelete={() => setConfirmDelete(null)}
+                            onConfirmDelete={() => onDelete(id)}
+                          />
+                          {editPanelFor(id)}
+                        </>
                       ) : addingAt && addingAt.rowId === row.id && addingAt.col === col ? (
                         <BlockPicker
                           palette={palette}
@@ -735,7 +797,16 @@ export function SpacePageBuilder({ slug }: { slug: string }) {
       ? { matchId: d.slug, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: d.lockedIds }
       : null
   }, [slug])
-  return <EntityPageBuilder pageId={slug} kind="space" loadRailData={load} />
+  return (
+    <EntityPageBuilder
+      pageId={slug}
+      kind="space"
+      loadRailData={load}
+      // A DATA block's "Manage" link points at the Space management console, where every feature's own
+      // editor lives (deep content stays in that manager; the rail edits arrangement + quick fields).
+      editHrefFor={(blockId) => (entityBlockById(blockId)?.category === 'data' ? `/spaces/${slug}/manage` : null)}
+    />
+  )
 }
 
 // ── The per-block control cluster ──
@@ -744,6 +815,7 @@ function BlockPill({
   hidden,
   grabbed,
   menuOpen,
+  editing,
   canUp,
   canDown,
   emptySlots,
@@ -751,6 +823,7 @@ function BlockPill({
   onDragStart,
   onDragEnd,
   onHandleKey,
+  onEdit,
   onUp,
   onDown,
   onToggleMenu,
@@ -765,6 +838,7 @@ function BlockPill({
   hidden: boolean
   grabbed: boolean
   menuOpen: boolean
+  editing: boolean
   canUp: boolean
   canDown: boolean
   emptySlots: { rowId: string; ri: number; ci: number }[]
@@ -772,6 +846,7 @@ function BlockPill({
   onDragStart: () => void
   onDragEnd: () => void
   onHandleKey: (e: KeyboardEvent) => void
+  onEdit: () => void
   onUp: () => void
   onDown: () => void
   onToggleMenu: () => void
@@ -800,12 +875,12 @@ function BlockPill({
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
-      {/* The label is a button: clicking a block opens its controls (edit / hide / move / remove). */}
+      {/* The label is a button: clicking a block opens its inline EDIT panel (content + style). */}
       <button
         type="button"
-        onClick={onToggleMenu}
+        onClick={onEdit}
         aria-label={`Edit ${label(id)}`}
-        aria-expanded={menuOpen}
+        aria-expanded={editing}
         className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
       >
         {label(id)}

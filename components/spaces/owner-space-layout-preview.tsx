@@ -55,7 +55,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
       : null
   const saved = parseEntityLayout(rawLayout)
 
-  const nodes = renderSpaceBlockNodes(context, data, authored)
+  const nodes = renderSpaceBlockNodes(context, data, authored, saved)
   const rows = resolveRows(saved, 'space')
   const hidden = saved?.hidden ?? []
 

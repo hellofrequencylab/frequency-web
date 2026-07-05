@@ -6,9 +6,10 @@ import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { blocksForKind } from '@/lib/entity-blocks/registry'
+import { blocksForKind, entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
+import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
 
 import { AboutBlock } from './about'
 import { HighlightsBlock } from './highlights'
@@ -68,30 +69,60 @@ function toProfileBlockId(id: string): ProfileBlockId | null {
 
 type SpaceAuthored = ReturnType<typeof resolveSpaceAuthoredContent>
 
-/** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame). CONTENT ids
- *  render the operator's authored blocks; DATA ids render live space data. Shared by the live render and
- *  the render-all-once node map. Unknown / empty id → null. */
+/** The DATA-block quick header (ADR-528): an optional operator-authored section title + intro line,
+ *  rendered above a live-data block. Null when neither is set. */
+function DataQuickHeader({ props }: { props: Record<string, unknown> | undefined }) {
+  const title = typeof props?.title === 'string' ? props.title : ''
+  const intro = typeof props?.intro === 'string' ? props.intro : ''
+  if (!title && !intro) return null
+  return (
+    <div className="mb-4">
+      {title && <h2 className="text-2xl font-bold text-text">{title}</h2>}
+      {intro && <p className="mt-1 text-sm text-muted">{intro}</p>}
+    </div>
+  )
+}
+
+/** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame), wrapped in its
+ *  per-block STYLE frame (ADR-528). CONTENT ids render the operator's inline-authored content (from the
+ *  layout's `content` bag, falling back to any legacy Puck-doc content); DATA ids render live space data
+ *  under an optional authored title/intro. Shared by the live render and the render-all-once node map.
+ *  Unknown / empty id → null. */
 function renderSpaceBlock(
   id: string,
   space: SpaceProfileContext,
   data: SpaceContentData,
   authored: SpaceAuthored,
+  layout: EntityLayout | null,
 ): React.ReactNode {
   if (id.length === 0) return null
-  const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
-  if (ContentBlock) {
-    return (
-      <Suspense key={id} fallback={null}>
-        <ContentBlock content={authored} />
-      </Suspense>
+  const block = entityBlockById(id)
+  const style = layout?.style?.[id]
+  const contentProps = layout?.content?.[id]
+
+  let inner: React.ReactNode
+  if (block && block.category === 'content') {
+    if (hasContent(id, contentProps)) {
+      inner = <ContentBlockView id={id} props={contentProps ?? {}} />
+    } else {
+      const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
+      inner = ContentBlock ? <ContentBlock content={authored} /> : null
+    }
+  } else {
+    const blockId = toProfileBlockId(id)
+    if (!blockId) return null
+    const Block = SPACE_PROFILE_BLOCKS[blockId]
+    inner = (
+      <>
+        <DataQuickHeader props={contentProps} />
+        <Block space={space} data={data} />
+      </>
     )
   }
-  const blockId = toProfileBlockId(id)
-  if (!blockId) return null
-  const Block = SPACE_PROFILE_BLOCKS[blockId]
+  if (inner == null) return null
   return (
     <Suspense key={id} fallback={null}>
-      <Block space={space} data={data} />
+      <BlockStyleFrame style={style}>{inner}</BlockStyleFrame>
     </Suspense>
   )
 }
@@ -107,9 +138,10 @@ export function renderSpaceBlockNodes(
   space: SpaceProfileContext,
   data: SpaceContentData,
   authored: SpaceAuthored,
+  layout: EntityLayout | null,
 ): Record<string, React.ReactNode> {
   const nodes: Record<string, React.ReactNode> = {}
-  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored)
+  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored, layout)
   return nodes
 }
 
@@ -165,7 +197,7 @@ export async function SpaceProfileModules({
     )
 
   const renderBlock = (id: string) => {
-    const node = renderSpaceBlock(id, space, data, authored)
+    const node = renderSpaceBlock(id, space, data, authored, grid ?? null)
     return node === null ? null : wrap(id, node)
   }
 

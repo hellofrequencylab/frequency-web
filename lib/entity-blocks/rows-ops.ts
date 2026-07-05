@@ -1,5 +1,6 @@
 import { entityBlockById, blocksForKind, type EntityKind } from './registry'
 import type { RowDef, RowColumns, RowRatio } from './layout'
+import type { BlockStyle } from './block-content'
 
 // PURE ROWS MUTATION HELPERS for the in-rail Profile page builder (ADR-516 Phase C). Every function is
 // IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index / unknown id
@@ -13,10 +14,13 @@ import type { RowDef, RowColumns, RowRatio } from './layout'
 // `hidden` is the set of blocks kept in place but not rendered (the per-block "Hide"); benching a block
 // removes it from its row so it falls back to the derived bench tray with its config intact.
 
-/** The builder's working state: the freeform rows plus the hidden set. Bench is derived (deriveBench). */
+/** The builder's working state: the freeform rows plus the hidden set, and the per-block authored content +
+ *  style (ADR-528), both keyed by block id. Bench is derived (deriveBench). */
 export interface BuilderLayout {
   rows: RowDef[]
   hidden: string[]
+  content?: Record<string, Record<string, unknown>>
+  style?: Record<string, BlockStyle>
 }
 
 const MAX_ROWS = 24
@@ -62,12 +66,53 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     let id = typeof raw.id === 'string' && ROW_ID_RE.test(raw.id) ? raw.id : genRowId(seenRowIds)
     if (seenRowIds.has(id)) id = genRowId(seenRowIds)
     seenRowIds.add(id)
-    // The ratio only applies to a 2-column row; drop it otherwise, and keep only the sparse `lead` value.
-    const ratio: RowRatio | undefined = columns === 2 && raw.ratio === 'lead' ? 'lead' : undefined
+    // The ratio only applies to a 2-column row; drop it otherwise, and keep only the sparse lead/trail split.
+    const ratio: RowRatio | undefined =
+      columns === 2 && (raw.ratio === 'lead' || raw.ratio === 'trail') ? raw.ratio : undefined
     rows.push(ratio ? { id, columns, slots, ratio } : { id, columns, slots })
   }
   const hidden = [...new Set(layout.hidden.filter((id) => entityBlockById(id) !== null))]
-  return { rows, hidden }
+  // Content + style are keyed by block id and edited directly (not by row ops); carry them through
+  // unchanged, keeping only known block-id keys (a retired id drops).
+  const out: BuilderLayout = { rows, hidden }
+  if (layout.content) {
+    const content: Record<string, Record<string, unknown>> = {}
+    for (const [id, props] of Object.entries(layout.content)) if (entityBlockById(id)) content[id] = props
+    if (Object.keys(content).length) out.content = content
+  }
+  if (layout.style) {
+    const style: Record<string, BlockStyle> = {}
+    for (const [id, s] of Object.entries(layout.style)) if (entityBlockById(id)) style[id] = s
+    if (Object.keys(style).length) out.style = style
+  }
+  return out
+}
+
+/** Set (or clear) a block's authored content bag. Passing an empty/undefined bag removes the entry. Keyed
+ *  by block id; unknown ids are ignored. Immutable. */
+export function setBlockContent(
+  layout: BuilderLayout,
+  blockId: string,
+  props: Record<string, unknown> | undefined,
+): BuilderLayout {
+  if (entityBlockById(blockId) === null) return layout
+  const content = { ...(layout.content ?? {}) }
+  if (props && Object.keys(props).length) content[blockId] = props
+  else delete content[blockId]
+  return normalize({ ...layout, content })
+}
+
+/** Set (or clear) a block's style bag. Passing an empty/undefined style removes the entry. Immutable. */
+export function setBlockStyle(
+  layout: BuilderLayout,
+  blockId: string,
+  style: BlockStyle | undefined,
+): BuilderLayout {
+  if (entityBlockById(blockId) === null) return layout
+  const styles = { ...(layout.style ?? {}) }
+  if (style && Object.keys(style).length) styles[blockId] = style
+  else delete styles[blockId]
+  return normalize({ ...layout, style: styles })
 }
 
 /** Every block id currently placed in a row (non-null cell). */
