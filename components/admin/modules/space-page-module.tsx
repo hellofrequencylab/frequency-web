@@ -74,11 +74,6 @@ export function SpacePageModule() {
         pages={data.pages}
         activePageSlug={data.activePageSlug}
         maxPages={data.maxPages}
-        coverScrim={data.coverScrim}
-        accent={data.accent}
-        businessInfo={data.businessInfo}
-        coverImageUrl={data.coverImageUrl}
-        brandLogoUrl={data.brandLogoUrl}
         websitePublished={data.websitePublished}
         canManagePages={data.canManagePages}
         readOnly={data.readOnly}

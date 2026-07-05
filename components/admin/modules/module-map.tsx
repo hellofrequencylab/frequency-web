@@ -31,6 +31,7 @@ import { JourneyBuilderModule } from './journey-builder-module'
 import { JourneyExportModule } from './journey-export-module'
 import { JourneyDangerModule } from './journey-danger-module'
 import { SpaceBasicsModule } from './space-basics-module'
+import { SpaceBrandingModule } from './space-branding-module'
 import { SpacePageModule } from './space-page-module'
 import { SpaceAutonomyModule } from './space-autonomy-module'
 import { SpacePipelineModule } from './space-pipeline-module'
@@ -87,6 +88,9 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
   // link-row instead, so they are NOT in this map.
   'space.basics': SpaceBasicsModule,
+  // Branding (Section 2 of the profile+identity rework): header/logo images, cover style, accent — the
+  // visual half split out of the old Basics form so every field has exactly one editor.
+  'space.branding': SpaceBrandingModule,
   // `space.mode` intentionally has NO inline component: Mode is a creation-time PRESET edited on the full
   // /manage/mode page (reachable from the manage console), never as a rail section (ADR-527 removed the
   // former rail "Starter" chip). The surface stays in the registry for the console link only.

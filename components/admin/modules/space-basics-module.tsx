@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getSpaceBasicsData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
-import { SpaceSettingsForm } from '@/app/(main)/spaces/[slug]/settings/settings-form'
+import { SpaceBusinessInfoForm } from '@/components/spaces/space-business-info-form'
 
-// SPACE BASICS — the inline editor module for the standardized admin bar (ADR-514). Mirrors
-// circle-settings-module EXACTLY: reads the Space slug from the live path, calls the read-gated
-// getSpaceBasicsData(slug) on mount, and renders the EXISTING SpaceSettingsForm inline. The getter
-// re-gates server-side and returns null when the viewer cannot manage this Space, so a non-manager sees
-// nothing here (the fail-safe). The form's own updateSpaceProfile re-checks canEditProfile, so this is a
-// convenience over an unchanged server gate.
+// SPACE BUSINESS INFO — Section 1 of the Space rail (the profile+identity rework). Reads the Space slug
+// from the live path, calls the read-gated getSpaceBasicsData(slug) on mount, and renders the consolidated
+// SpaceBusinessInfoForm inline: every WORD about the space (name, tagline, About, Story, contact, socials,
+// visibility) in one place. The getter re-gates server-side and returns null when the viewer cannot manage
+// this Space, so a non-manager sees nothing here (fail-safe). The form's own actions re-check canEditProfile.
+//
+// No module header: the rail already labels this group "Business info" (SPACE_GROUP_META).
 
 type Data = NonNullable<Awaited<ReturnType<typeof getSpaceBasicsData>>>
 
@@ -45,15 +46,18 @@ export function SpaceBasicsModule() {
   }
   if (!data) return null // not permitted / not found → no chrome
 
-  // No module header here: the rail already labels this group "Identity" (SPACE_GROUP_META). A second
-  // "Basics" title under it just doubled the name (operator feedback), so the form's own section headers
-  // (Pictures / Name & bio / Brand / Visibility) carry the structure.
   return (
     <section className="min-w-0">
-      <SpaceSettingsForm
+      <SpaceBusinessInfoForm
         spaceId={data.spaceId}
         slug={data.slug}
-        initial={data.initial}
+        identity={{
+          brandName: data.initial.brandName,
+          about: data.initial.about,
+          tagline: data.initial.tagline,
+          visibility: data.initial.visibility,
+        }}
+        business={data.business}
         readOnly={data.readOnly}
       />
     </section>

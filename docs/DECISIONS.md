@@ -11296,3 +11296,21 @@ check:canon, check:authz. No em dashes in touched copy; semantic tokens only.
 - **Section-level block move (touch-friendly).** The page-builder block menu replaces the empty-slot-only "Move to (Row X, column Y)" list with **"Move to section N"** for every row plus **"New section"**. Moving fills the target row's first empty slot, or — if that row is full — drops the block into a fresh section just below it; "New section" appends a row at the end. Both no-op cleanly at the `MAX_ROWS` cap. This works with a tap (no drag), so it functions on mobile; up/down arrows and desktop drag are unchanged.
 
 **Consequences.** The Space Basics rail reads top-to-bottom with a single header per level and the visitor-facing images up top; blocks relocate section-to-section on any device. Member (single-column) editor is untouched (its block menu passes no sections). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-533: Space rail rework, Stage 1 — one "Business info" + one "Branding" section (kill the identity/business duplication)
+
+**Status:** Accepted (2026-07-05). No migration. First of a staged Space-rail rework.
+
+**Context.** The Space admin rail had grown THREE overlapping identity/business editors: the top "Identity" Basics form (name / tagline / About / header image / logo / accent / visibility), a separate Business info form buried in the Page module's "More page settings" disclosure (Story / address / hours / phone / email / website / socials + its OWN header + logo uploaders), and the Page module's own "Cover style" + "Theme and accent" sections. Header image was editable in three places, logo and accent in two, and "About" (the `spaces.about` column) vs "Story" (the `profileData.about` blob) were two different stores both meaning "about". Operator feedback: duplicate content, out of order, needs condensing.
+
+**Decision.** Consolidate every identity/business field into exactly TWO rail sections, each field with one editor:
+- **Business info** (Section 1, the `basics` slot relabelled from "Identity"). A single new `SpaceBusinessInfoForm` holding every WORD: brand name, tagline, **About** (short intro → the `spaces.about` column, `updateSpaceProfile`), **Story** (longer narrative → the `profileData.about` blob, `setSpaceBusinessInfo`), the contact block (address, hours, phone, email, website, rating, socials), and visibility. One Save fires both writes; both re-gate server-side.
+- **Branding** (Section 2, a NEW `space.branding` surface on the repurposed `place` spine slot, relabelled "Branding" for the Space scope in `SPACE_GROUP_META`). A new `SpaceBrandingForm` with every VISUAL field: header image, logo, cover style (Shade/Blend, compact buttons), and theme accent. Each control saves on its own action.
+- The Page module's `SpacePagePanel` **loses** its Cover style, Theme/accent, and Business info sections (now in Branding + Business info); it keeps the block editor, Pages, and External website. The old `SpaceBusinessForm` is deleted (orphaned).
+- The `/manage` console gains a Branding card (icon + href to `/settings/basics` interim, since Branding has no standalone page yet); `groupForSurface` clusters the `place` slot into the Identity/Business-info console group so the console keeps its seven ADR-520 groups.
+
+About↔Story needs **no migration** — both stores already exist and already render (the `profileData.about` blob is the public "Our story" card; the `spaces.about` column feeds the About module), so this only gives each one editor and one label.
+
+**Deferred to later stages:** the page-editor rework (Section 3), a "More Pages" coming-soon section (Section 4), services rendered as one expandable summary-block section each, and pinning Billing + Danger at the bottom. The standalone `/settings/basics` + `/settings` pages still use the older combined `SpaceSettingsForm` and will be migrated to the split forms in a follow-up.
+
+**Consequences.** The Space rail now leads with two clean, non-overlapping sections; every identity/business/brand field has exactly one home. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.

@@ -21,6 +21,10 @@ export function hrefForSurface(id: string, slug: string): string | null {
       // The dedicated basics editor, NOT the /settings index (which redirects console types to /manage,
       // looping "Open basics" straight back to this console).
       return `${base}/settings/basics`
+    case 'space.branding':
+      // Branding is a rail-inline section (header/logo/cover/accent) with no standalone page yet; the
+      // console links it to the basics editor, which still carries those fields. Non-looping.
+      return `${base}/settings/basics`
     case 'space.mode':
       return `${base}/manage/mode`
     case 'space.layout':

@@ -22,19 +22,13 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
-import type { CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
-  setSpaceCoverScrim,
-  setSpaceAccent,
   createSpacePage,
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
   setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { AccentPicker } from '@/components/spaces/space-form'
-import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
-import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
 // for FAST tweaks: it manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -45,24 +39,11 @@ import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 // fast inline feedback only. DAWN semantic tokens only (no hex), sentence-case copy, no em dashes
 // (CONTENT-VOICE §10).
 
-// The two Hero cover-scrim treatments. A Space profile ALWAYS uses the Hero cover (ADR-526), where the
-// identity (logo + name + actions) overlays the image, so the scrim choice is always relevant. Plain
-// forward taglines, no em dashes (CONTENT-VOICE).
-const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
-  { value: 'shade', label: 'Shade', tagline: 'A soft dark fade so your name stays readable on any photo.' },
-  { value: 'blend', label: 'Blend', tagline: 'The photo melts into the page. Best with a calm image.' },
-]
-
 export function SpacePagePanel({
   slug,
   pages,
   activePageSlug,
   maxPages,
-  coverScrim,
-  accent,
-  businessInfo,
-  coverImageUrl = null,
-  brandLogoUrl = null,
   websitePublished = false,
   canManagePages = false,
   readOnly = false,
@@ -74,16 +55,6 @@ export function SpacePagePanel({
   activePageSlug: string
   /** The most pages a Space may expose, so the panel warns at the cap. */
   maxPages: number
-  /** The chosen Hero scrim treatment (Shade vs Blend). The Space cover is always Hero (ADR-526). */
-  coverScrim: CoverScrim
-  /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
-  accent: string
-  /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
-  businessInfo: SpaceProfileData
-  /** The Space's current header (cover) image URL, for the Business info form's upload control. */
-  coverImageUrl?: string | null
-  /** The Space's current profile (logo) image URL, for the Business info form's upload control. */
-  brandLogoUrl?: string | null
   /** Whether the Space's external website (/sites/<slug>) is currently published. */
   websitePublished?: boolean
   /** Whether the Space may add/manage EXTRA profile pages (the paid multi-page upsell,
@@ -154,56 +125,12 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* Cover style (scrim): the Space cover is always Hero (ADR-526), where the identity overlays the image.
-          Shade keeps text legible on any photo; Blend fades the photo into the page. */}
-      <section>
-        <SectionHeader title="Cover style" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          How your name and buttons sit on the Hero cover image.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {COVER_SCRIMS.map((c) => {
-            const active = coverScrim === c.value
-            return (
-              <button
-                key={c.value}
-                type="button"
-                disabled={readOnly || pending || active}
-                onClick={() => run(() => setSpaceCoverScrim(slug, c.value))}
-                aria-pressed={active}
-                className={cn(
-                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active
-                    ? 'border-primary bg-primary-bg'
-                    : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold text-text">
-                  {c.label}
-                  {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
-                </span>
-                <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
+      {/* Cover style, theme accent, and business info moved OUT of this panel (the profile+identity rework):
+          cover + accent now live in the Branding section, and every business/identity WORD lives in the
+          Business info section, so each field has exactly one editor. This panel keeps only the page-level
+          controls: the block editor above, plus Pages + External website below. */}
 
-      {/* Theme / accent: the brand color that paints the page. A real color picker + on-brand swatches
-          (shared AccentPicker); each pick persists at once through the owner-gated setSpaceAccent. */}
-      <section>
-        <SectionHeader title="Theme and accent" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          Your brand color. It paints your buttons, the active tab, and highlights across the page.
-        </p>
-        <AccentPicker
-          value={accent}
-          onChange={(v) => run(() => setSpaceAccent(slug, v))}
-          disabled={readOnly || pending}
-        />
-      </section>
-
-      {/* MORE PAGE SETTINGS: the heavier, less-frequent controls (pages, business info, external website)
+      {/* MORE PAGE SETTINGS: the heavier, less-frequent controls (pages, external website)
           tucked behind ONE disclosure so the panel LEADS with the quick tweaks (grid, cover, accent,
           focus). A closed <details> keeps its children mounted, so every control stays reachable +
           keyboard-operable + reachable by a read-only staff previewer. Default closed. */}
@@ -261,19 +188,6 @@ export function SpacePagePanel({
               ) : (
                 <AddPagesUpsell slug={slug} />
               ))}
-          </section>
-
-          {/* BUSINESS INFO: the single source of truth. Edited once here, it feeds every block that shows
-              it (Contact, Business, About) on every page and surface. */}
-          <section>
-            <SectionHeader title="Business info" />
-            <SpaceBusinessForm
-              slug={slug}
-              initial={businessInfo}
-              initialCoverUrl={coverImageUrl}
-              initialLogoUrl={brandLogoUrl}
-              readOnly={readOnly}
-            />
           </section>
 
           {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own

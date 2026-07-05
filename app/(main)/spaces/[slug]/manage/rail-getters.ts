@@ -52,6 +52,9 @@ interface SpaceBasicsData {
   spaceId: string
   slug: string
   initial: SpaceSettingsValues
+  /** The central business blob (Story + contact + socials) the Business info form edits alongside the
+   *  profile columns (the profile+identity rework — Section 1 is every WORD in one place). */
+  business: SpaceProfileData
   readOnly: boolean
 }
 
@@ -106,6 +109,50 @@ export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData 
     spaceId: space.id,
     slug: space.slug,
     initial,
+    business: readProfileData(space.preferences),
+    readOnly: staffViewing || !canUseProfile,
+  }
+}
+
+// ── Branding (space.branding) ──────────────────────────────────────────────────────────────────────────
+// The SpaceBrandingForm prop bundle (Section 2 of the profile+identity rework): the header + logo images,
+// the Hero cover style, and the brand accent — every VISUAL field, in one place. Read-gated exactly like
+// Basics (manage access + the `profile` function); each control re-gates its own write server-side.
+
+interface SpaceBrandingData {
+  slug: string
+  coverImageUrl: string | null
+  brandLogoUrl: string | null
+  coverScrim: ReturnType<typeof readCoverScrim>
+  accent: string
+  readOnly: boolean
+}
+
+/** The Branding editor's data, or null when the viewer cannot manage this Space (fail-safe → the wrapper
+ *  renders nothing). Mirrors getSpaceBasicsData's gate. */
+export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+
+  return {
+    slug: space.slug,
+    coverImageUrl: space.coverImageUrl ?? null,
+    brandLogoUrl: space.brandLogoUrl ?? null,
+    coverScrim: readCoverScrim(space.preferences),
+    accent: space.brandAccent ?? '',
     readOnly: staffViewing || !canUseProfile,
   }
 }
