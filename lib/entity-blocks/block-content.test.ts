@@ -74,6 +74,37 @@ describe('sanitizeBlockContent', () => {
       intro: 'What we do',
     })
   })
+  it('sanitizes a callout (ADR-542): text fields bounded, button url made safe, bad image dropped', () => {
+    expect(
+      sanitizeBlockContent('callout', {
+        title: '  Join us  ',
+        body: 'Come along',
+        buttonLabel: 'Book',
+        buttonUrl: 'https://x.com/book',
+        image: 'javascript:1',
+        bogus: 'x',
+      }),
+    ).toEqual({ title: 'Join us', body: 'Come along', buttonLabel: 'Book', buttonUrl: 'https://x.com/book' })
+  })
+  it('sanitizes features (ADR-542): drops items with no title and no text, bounds fields', () => {
+    expect(
+      sanitizeBlockContent('features', {
+        items: [
+          { icon: '⭐', title: 'Fast', text: 'Very fast' },
+          { icon: 'x', title: '', text: '' }, // no title/text -> dropped
+          { title: 'Only title' },
+        ],
+      }),
+    ).toEqual({
+      items: [
+        { icon: '⭐', title: 'Fast', text: 'Very fast' },
+        { icon: '', title: 'Only title', text: '' },
+      ],
+    })
+  })
+  it('features with no valid items returns undefined', () => {
+    expect(sanitizeBlockContent('features', { items: [{ icon: 'x' }] })).toBeUndefined()
+  })
 })
 
 describe('sanitizeContentMap / sanitizeStyleMap (block-id allowlist)', () => {

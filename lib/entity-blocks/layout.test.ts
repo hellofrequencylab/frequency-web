@@ -148,8 +148,8 @@ describe('rows validation (parseEntityLayout)', () => {
       ],
     })
     expect(parsed?.rows).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 2, slots: ['stats', 'links'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 2, cells: [['stats'], ['links']] },
     ])
   })
 
@@ -161,7 +161,7 @@ describe('rows validation (parseEntityLayout)', () => {
 
   it('nulls an unknown block id but keeps the cell positional', () => {
     const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'nope'] }] })
-    expect(parsed?.rows).toEqual([{ id: 'r0', columns: 2, slots: ['about', null] }])
+    expect(parsed?.rows).toEqual([{ id: 'r0', columns: 2, cells: [['about'], []] }])
   })
 
   it('dedupes a block id across all rows (later repeat becomes null)', () => {
@@ -171,14 +171,14 @@ describe('rows validation (parseEntityLayout)', () => {
         { id: 'r1', columns: 2, slots: ['about', 'stats'] },
       ],
     })
-    expect(parsed?.rows?.[1].slots).toEqual([null, 'stats'])
+    expect(parsed?.rows?.[1].cells).toEqual([[], ['stats']])
   })
 
   it('clamps slots length to columns (pads with null, truncates extras)', () => {
     const short = parseEntityLayout({ rows: [{ id: 'r0', columns: 3, slots: ['about'] }] })
-    expect(short?.rows?.[0].slots).toEqual(['about', null, null])
+    expect(short?.rows?.[0].cells).toEqual([['about'], [], []])
     const long = parseEntityLayout({ rows: [{ id: 'r0', columns: 1, slots: ['about', 'stats'] }] })
-    expect(long?.rows?.[0].slots).toEqual(['about'])
+    expect(long?.rows?.[0].cells).toEqual([['about']])
   })
 
   it('caps the row count at 24', () => {
@@ -194,7 +194,7 @@ describe('rows validation (parseEntityLayout)', () => {
   it('drops wrong-kind ids on sanitize', () => {
     // 'topfriends' is member-only; sanitizing for a SPACE (which keeps the 2-column row) must null it.
     const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'topfriends'] }] }, 'space')
-    expect(clean?.rows?.[0].slots).toEqual(['about', null])
+    expect(clean?.rows?.[0].cells).toEqual([['about'], []])
   })
 })
 
@@ -205,7 +205,7 @@ describe('per-kind max columns clamp', () => {
     // 'about'+'stats' are both valid member blocks; a member row can only be one column, so the second
     // cell is dropped and the row narrows to 1 column.
     const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }] }, 'member')
-    expect(clean?.rows).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+    expect(clean?.rows).toEqual([{ id: 'r0', columns: 1, cells: [['about']] }])
   })
 
   it('clamps a space layout to at most two columns', () => {
@@ -213,29 +213,29 @@ describe('per-kind max columns clamp', () => {
       { rows: [{ id: 'r0', columns: 3, slots: ['about', 'stats', 'offerings'] }] },
       'space',
     )
-    expect(clean?.rows).toEqual([{ id: 'r0', columns: 2, slots: ['about', 'stats'] }])
+    expect(clean?.rows).toEqual([{ id: 'r0', columns: 2, cells: [['about'], ['stats']] }])
   })
 
   it('resolveRows clamps a member 2-col row to one column on read', () => {
-    const layout: EntityLayout = { rows: [{ id: 'r0', columns: 2, slots: ['links', 'topfriends'] }] }
-    expect(resolveRows(layout, 'member')).toEqual([{ id: 'r0', columns: 1, slots: ['links'] }])
+    const layout: EntityLayout = { rows: [{ id: 'r0', columns: 2, cells: [['links'], ['topfriends']] }] }
+    expect(resolveRows(layout, 'member')).toEqual([{ id: 'r0', columns: 1, cells: [['links']] }])
   })
 })
 
 describe('2-column ratio (even / lead = 66/33)', () => {
   it('parses and keeps a lead ratio on a 2-column row', () => {
     const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' }] })
-    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, cells: [['about'], ['stats']], ratio: 'lead' })
   })
 
   it('drops a ratio on a non-2-column row (even is the implicit default)', () => {
     const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 1, slots: ['about'], ratio: 'lead' }] })
-    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 1, slots: ['about'] })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 1, cells: [['about']] })
   })
 
   it('normalizes an unknown ratio value away', () => {
     const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'wat' }] })
-    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, slots: ['about', 'stats'] })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, cells: [['about'], ['stats']] })
   })
 
   it('carries the lead ratio through sanitize + resolve for a space', () => {
@@ -250,7 +250,7 @@ describe('2-column ratio (even / lead = 66/33)', () => {
       { rows: [{ id: 'r0', columns: 2, slots: ['links', 'topfriends'], ratio: 'lead' }] },
       'member',
     )
-    expect(clean?.rows?.[0]).toEqual({ id: 'r0', columns: 1, slots: ['links'] })
+    expect(clean?.rows?.[0]).toEqual({ id: 'r0', columns: 1, cells: [['links']] })
   })
 
   it('carries a trail (33/66) ratio for a space 2-column row', () => {
@@ -321,7 +321,7 @@ describe('templateToRows (all 7 templates)', () => {
       const rows = templateToRows(tpl, slots, 'member')
       for (const row of rows) {
         expect([1, 2, 3, 4]).toContain(row.columns)
-        expect(row.slots.length).toBe(row.columns)
+        expect(row.cells.length).toBe(row.columns)
       }
     }
   })
@@ -329,16 +329,16 @@ describe('templateToRows (all 7 templates)', () => {
   it('single → one 1-column row per block, order preserved (byte-identical default stack)', () => {
     const rows = templateToRows('single', { main: ['about', 'stats', 'links', 'topfriends'] }, 'member')
     expect(rows).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 1, slots: ['stats'] },
-      { id: 'r2', columns: 1, slots: ['links'] },
-      { id: 'r3', columns: 1, slots: ['topfriends'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 1, cells: [['stats']] },
+      { id: 'r2', columns: 1, cells: [['links']] },
+      { id: 'r3', columns: 1, cells: [['topfriends']] },
     ])
   })
 
   it('main-side → a 2-column row zipping the two columns', () => {
     const rows = templateToRows('main-side', { main: ['about'], side: ['links'] }, 'member')
-    expect(rows).toEqual([{ id: 'r0', columns: 2, slots: ['about', 'links'] }])
+    expect(rows).toEqual([{ id: 'r0', columns: 2, cells: [['about'], ['links']] }])
   })
 
   it('header-main-side-footer → header row(s), a 2-col body, then footer row(s)', () => {
@@ -348,15 +348,15 @@ describe('templateToRows (all 7 templates)', () => {
       'member',
     )
     expect(rows).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 2, slots: ['stats', 'links'] },
-      { id: 'r2', columns: 1, slots: ['topfriends'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 2, cells: [['stats'], ['links']] },
+      { id: 'r2', columns: 1, cells: [['topfriends']] },
     ])
   })
 
   it('drops wrong-kind ids during conversion', () => {
     const rows = templateToRows('single', { main: ['about', 'offerings'] }, 'member')
-    expect(rows).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+    expect(rows).toEqual([{ id: 'r0', columns: 1, cells: [['about']] }])
   })
 })
 
@@ -364,24 +364,24 @@ describe('resolveRows fallbacks', () => {
   it('rows present → validated rows, hidden dropped', () => {
     // Uses a SPACE (which keeps a 2-column row) to prove hidden ids null their cell positionally.
     const layout: EntityLayout = {
-      rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }],
+      rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']] }],
       hidden: ['stats'],
     }
-    expect(resolveRows(layout, 'space')).toEqual([{ id: 'r0', columns: 2, slots: ['about', null] }])
+    expect(resolveRows(layout, 'space')).toEqual([{ id: 'r0', columns: 2, cells: [['about'], []] }])
   })
 
   it('legacy template + slots → templateToRows', () => {
     const layout: EntityLayout = { template: 'single', slots: { main: ['about', 'stats'] } }
     expect(resolveRows(layout, 'member')).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 1, slots: ['stats'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 1, cells: [['stats']] },
     ])
   })
 
   it('flat legacy order → single-column rows', () => {
     expect(resolveRows({ order: ['about', 'links'] }, 'member')).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 1, slots: ['links'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 1, cells: [['links']] },
     ])
   })
 
@@ -394,10 +394,10 @@ describe('resolveRows fallbacks', () => {
     // The exact live member path: mergeEntityLayout(defaultMemberLayout(), null) → resolveRows.
     const merged = mergeEntityLayout(['about', 'stats', 'links', 'topfriends'], null, 'member')
     expect(resolveRows(merged, 'member')).toEqual([
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 1, slots: ['stats'] },
-      { id: 'r2', columns: 1, slots: ['links'] },
-      { id: 'r3', columns: 1, slots: ['topfriends'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 1, cells: [['stats']] },
+      { id: 'r2', columns: 1, cells: [['links']] },
+      { id: 'r3', columns: 1, cells: [['topfriends']] },
     ])
   })
 })
@@ -413,7 +413,7 @@ describe('starter layouts', () => {
         expect(rows.length).toBeGreaterThan(0)
         for (const row of rows) {
           expect([1, 2, 3, 4]).toContain(row.columns)
-          expect(row.slots.length).toBe(row.columns)
+          expect(row.cells.length).toBe(row.columns)
         }
         // Sanitizing the starter for its kind must not null any placed id (they are all valid).
         const clean = sanitizeEntityLayout({ rows }, kind)
@@ -424,25 +424,25 @@ describe('starter layouts', () => {
 
   it('member basic omits the chrome-owned about/stats and leads with links, topfriends (ADR-522)', () => {
     expect(starterRows('member', 'basic')).toEqual([
-      { id: 'r0', columns: 1, slots: ['links'] },
-      { id: 'r1', columns: 1, slots: ['topfriends'] },
+      { id: 'r0', columns: 1, cells: [['links']] },
+      { id: 'r1', columns: 1, cells: [['topfriends']] },
     ])
     // The chrome (bio + Standing card) is canonical; the member grid never re-renders it by default.
-    const ids = starterRows('member', 'basic').flatMap((r) => r.slots)
+    const ids = starterRows('member', 'basic').flatMap((r) => r.cells.flat())
     expect(ids).not.toContain('about')
     expect(ids).not.toContain('stats')
   })
 
   it('minimal starters lead with the essentials (member → links, space → about)', () => {
-    expect(starterRows('member', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['links'] }])
+    expect(starterRows('member', 'minimal')).toEqual([{ id: 'r0', columns: 1, cells: [['links']] }])
     // The space minimal starter (ADR-529 curated core): about, offerings, contact.
-    expect(starterRows('space', 'minimal').flatMap((r) => r.slots)).toEqual(['about', 'offerings', 'contact'])
+    expect(starterRows('space', 'minimal').flatMap((r) => r.cells.flat())).toEqual(['about', 'offerings', 'contact'])
   })
 
   it('starterRows returns a fresh copy (mutation-safe)', () => {
     const a = starterRows('member', 'basic')
-    a[0].slots[0] = 'mutated'
-    expect(STARTER_LAYOUTS.member.basic[0].slots[0]).toBe('links')
+    a[0].cells[0][0] = 'mutated'
+    expect(STARTER_LAYOUTS.member.basic[0].cells[0][0]).toBe('links')
   })
 })
 

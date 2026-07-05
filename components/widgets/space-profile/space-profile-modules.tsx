@@ -25,6 +25,7 @@ import { FaqBlock } from './faq'
 import { UpdatesBlock } from './updates'
 import { ContactBlock } from './contact'
 import { BusinessBlock } from './business'
+import { JourneysBlock } from './journeys'
 import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authored-content'
 
 // THE MODULE-ENGINE SPACE PROFILE RENDERER (Epic 1.7, S2 staff-preview). A non-Puck, block-style
@@ -60,10 +61,18 @@ export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
   business: BusinessBlock,
 }
 
+/** DATA blocks (ADR-542) that live in the unified registry but NOT the S1 ProfileBlockId set: `journeys`
+ *  auto-pulls the space's hosted journeys. Keyed by unified id; read via Object.hasOwn so a user-ish id
+ *  never reaches the prototype chain. */
+const EXTRA_DATA_BLOCKS: Record<string, BlockComponent> = {
+  journeys: JourneysBlock,
+}
+
 /** The unified grid vocabulary keys blocks by registry id; this S1 renderer keys by ProfileBlockId. The
  *  only divergence is `stats` (unified) vs `highlights` (S1); every other shared DATA id matches. The
- *  unified content ids (heading/text/image/gallery/quote/embed/divider) are handled separately by
- *  SPACE_CONTENT_BLOCKS (the operator's authored content), so they never reach this DATA map. */
+ *  unified content ids (callout/features/heading/text/image/gallery/...) are handled separately by
+ *  ContentBlockView / SPACE_CONTENT_BLOCKS, and the ADR-542 extra data blocks by EXTRA_DATA_BLOCKS, so
+ *  they never reach this DATA map. */
 function toProfileBlockId(id: string): ProfileBlockId | null {
   const normalized = id === 'stats' ? 'highlights' : id
   return normalized in SPACE_PROFILE_BLOCKS ? (normalized as ProfileBlockId) : null
@@ -111,6 +120,14 @@ function renderSpaceBlock(
       const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]
       inner = ContentBlock ? <ContentBlock content={authored} /> : null
     }
+  } else if (Object.hasOwn(EXTRA_DATA_BLOCKS, id)) {
+    const Block = EXTRA_DATA_BLOCKS[id]
+    inner = (
+      <>
+        <DataQuickHeader props={contentProps} />
+        <Block space={space} data={data} />
+      </>
+    )
   } else {
     const blockId = toProfileBlockId(id)
     if (!blockId) return null

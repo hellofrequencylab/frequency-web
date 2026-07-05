@@ -47,6 +47,7 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', category: 'data', kinds: ['space'], requiresFunction: 'availability', order: 40 },
   { id: 'events', label: 'Events', description: 'Upcoming events to show up to.', category: 'data', kinds: ['space'], order: 50 },
   { id: 'practices', label: 'Practices and journeys', description: 'Practices and journeys to start here.', category: 'data', kinds: ['space'], order: 60 },
+  { id: 'journeys', label: 'Journeys', description: 'The journeys you host here.', category: 'data', kinds: ['space'], order: 66 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', category: 'data', kinds: ['space'], order: 70 },
   { id: 'team', label: 'Team', description: 'The people who run this space.', category: 'data', kinds: ['space'], requiresFunction: 'members', order: 80 },
   { id: 'reviews', label: 'Reviews', description: 'What members say.', category: 'data', kinds: ['space'], order: 90 },
@@ -61,10 +62,14 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
 // Generalized from Spotlight's authored block types so a space can use them too (a hand-written
 // heading, blurb, link row, image, gallery, quote, embed, or divider anywhere in the grid).
 const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
+  // The SPACE free-form blocks (ADR-542): a Callout and a Features section (space-only, interleaved with the
+  // legacy authored blocks in ascending order). The Image Gallery reuses the existing `gallery` block below.
   { id: 'heading', label: 'Heading', description: 'A section heading you write.', category: 'content', kinds: ['member', 'space'], order: 200 },
+  { id: 'callout', label: 'Callout', description: 'A highlighted message with a button and an image.', category: 'content', kinds: ['space'], order: 205 },
   { id: 'text', label: 'Text', description: 'A paragraph of your own words.', category: 'content', kinds: ['member', 'space'], order: 210 },
   { id: 'links', label: 'Links', description: 'A row of links (the bio-link list).', category: 'content', kinds: ['member', 'space'], order: 220 },
   { id: 'image', label: 'Image', description: 'A single image.', category: 'content', kinds: ['member', 'space'], order: 230 },
+  { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space'], order: 235 },
   { id: 'gallery', label: 'Gallery', description: 'A grid of images.', category: 'content', kinds: ['member', 'space'], order: 240 },
   { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space'], order: 250 },
   { id: 'embed', label: 'Embed', description: 'An embedded video or player.', category: 'content', kinds: ['member', 'space'], order: 260 },
@@ -114,25 +119,35 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'offerings',
   'booking',
   'events',
+  'journeys', // The journeys this space hosts (auto-pulled — ADR-542).
   'team',
   'reviews',
   'contact',
   'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
   // Member-only data section (kept for the member profile).
   'topfriends',
-  // Content blocks: Heading (standard), Text + Image (custom), and the authored Links list (MEMBER bio-links).
+  // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section.
+  'callout',
+  'gallery',
+  'features',
+  // Legacy authored content blocks — kept in the union for the MEMBER palette (Heading/Text/Links/Image);
+  // the SPACE palette excludes them (KIND_PALETTE_EXCLUSIONS) in favour of Callout + the connected sections.
   'heading',
   'text',
   'links',
   'image',
 ])
 
-/** Block ids curated OUT of a specific kind's palette (ADR-536), even though they are in the core set for the
- *  other kind. A SPACE uses the connected "Find us online" (`business`) block for its links, so the authored
- *  `links` list is dropped from the space palette (it stays for the member, whose bio-link list is `links`). */
+/** Block ids curated OUT of a specific kind's palette (ADR-536 → ADR-542), even though they are in the core
+ *  set for the other kind. The SPACE editor offers ONLY its connected data sections + the four free-form
+ *  blocks (Callout, Gallery, Journeys, Features), so the legacy authored blocks are dropped: `links` →
+ *  the connected "Find us online" (`business`) covers links; `heading`/`text` → a Callout carries a title +
+ *  body; `image` → the Gallery. They stay for the MEMBER, whose profile still uses them. The MEMBER excludes
+ *  the space-only free-form `gallery`/`callout`? (both are space-kind here, so blocksForKind already drops
+ *  them for members — no member exclusion needed). */
 const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
-  space: new Set(['links']),
-  member: new Set(),
+  space: new Set(['links', 'heading', 'text', 'image']),
+  member: new Set(['gallery']),
 }
 
 /** The curated, best-practice palette for a profile builder: `blocksForKind` narrowed to the core set, minus

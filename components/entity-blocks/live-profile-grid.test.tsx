@@ -17,8 +17,8 @@ const nodes = {
 describe('LiveProfileGrid (no-provider fallback)', () => {
   it('renders the persisted rows in order from the node map', () => {
     const rows: RowDef[] = [
-      { id: 'r0', columns: 1, slots: ['about'] },
-      { id: 'r1', columns: 2, slots: ['stats', 'links'] },
+      { id: 'r0', columns: 1, cells: [['about']] },
+      { id: 'r1', columns: 2, cells: [['stats'], ['links']] },
     ]
     const html = renderToStaticMarkup(<LiveProfileGrid nodes={nodes} initialRows={rows} />)
     expect(html).toContain('data-block="about"')
@@ -28,14 +28,14 @@ describe('LiveProfileGrid (no-provider fallback)', () => {
   })
 
   it('drops a hidden cell from the render', () => {
-    const rows: RowDef[] = [{ id: 'r0', columns: 1, slots: ['about'] }, { id: 'r1', columns: 1, slots: ['stats'] }]
+    const rows: RowDef[] = [{ id: 'r0', columns: 1, cells: [['about']] }, { id: 'r1', columns: 1, cells: [['stats']] }]
     const html = renderToStaticMarkup(<LiveProfileGrid nodes={nodes} initialRows={rows} initialHidden={['stats']} />)
     expect(html).toContain('data-block="about"')
     expect(html).not.toContain('data-block="stats"')
   })
 
   it('renders nothing for an unknown id', () => {
-    const rows: RowDef[] = [{ id: 'r0', columns: 1, slots: ['ghost'] }]
+    const rows: RowDef[] = [{ id: 'r0', columns: 1, cells: [['ghost']] }]
     const html = renderToStaticMarkup(<LiveProfileGrid nodes={nodes} initialRows={rows} />)
     expect(html).not.toContain('data-block')
   })

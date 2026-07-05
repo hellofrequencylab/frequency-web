@@ -2,17 +2,26 @@ import { entityBlockById, blocksForKind, type EntityKind } from './registry'
 import type { RowDef, RowColumns, RowRatio } from './layout'
 import type { BlockStyle } from './block-content'
 
-// PURE ROWS MUTATION HELPERS for the in-rail Profile page builder (ADR-516 Phase C). Every function is
-// IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index / unknown id
-// is a no-op, never a throw), and every result is re-run through `normalize` so the Phase A invariants
-// always hold: at most MAX_ROWS rows; each row's `columns` in {1,2,3,4} with `slots.length === columns`;
-// each cell null or a KNOWN registry block id; a block id appears at most once across ALL rows; each row
-// id a safe generated token, unique. Framework-free (no React / Next / Supabase), so the builder, the
-// live grid, and the unit test share one source and it is trivially testable.
+// PURE ROWS MUTATION HELPERS for the on-page Profile page builder (ADR-516 Phase C → ADR-542). Every
+// function is IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index /
+// unknown id is a no-op, never a throw), and every result is re-run through `normalize` so the invariants
+// always hold: at most MAX_ROWS rows; each row's `columns` in {1,2,3,4} with `cells.length === columns`;
+// each column a STACK of KNOWN registry block ids (ADR-542), capped at MAX_STACK; a block id appears at
+// most once across ALL rows; each row id a safe generated token, unique. Framework-free (no React / Next /
+// Supabase), so the builder, the live grid, and the unit test share one source and it is trivially testable.
 //
-// The BENCH ("not shown") is DERIVED, never stored (mirrors Phase A's note): palette − placed − hidden.
-// `hidden` is the set of blocks kept in place but not rendered (the per-block "Hide"); benching a block
-// removes it from its row so it falls back to the derived bench tray with its config intact.
+// The BENCH ("not shown") is DERIVED, never stored: palette − placed − hidden. `hidden` is the set of
+// blocks kept in place but not rendered (the per-block "Hide"); benching a block removes it from its column
+// so it falls back to the derived bench tray with its config intact.
+
+const MAX_ROWS = 24
+const MAX_STACK = 12
+const VALID_COLUMNS: ReadonlySet<number> = new Set([1, 2, 3, 4])
+const ROW_ID_RE = /^r[0-9a-z]+$/i
+
+function isRowColumns(v: unknown): v is RowColumns {
+  return typeof v === 'number' && VALID_COLUMNS.has(v)
+}
 
 /** The builder's working state: the freeform rows plus the hidden set, and the per-block authored content +
  *  style (ADR-528), both keyed by block id. Bench is derived (deriveBench). */
@@ -21,14 +30,6 @@ export interface BuilderLayout {
   hidden: string[]
   content?: Record<string, Record<string, unknown>>
   style?: Record<string, BlockStyle>
-}
-
-const MAX_ROWS = 24
-const VALID_COLUMNS: ReadonlySet<number> = new Set([1, 2, 3, 4])
-const ROW_ID_RE = /^r[0-9a-z]+$/i
-
-function isRowColumns(v: unknown): v is RowColumns {
-  return typeof v === 'number' && VALID_COLUMNS.has(v)
 }
 
 /** A fresh, safe, unique row id (never a raw user key — matches ROW_ID_RE, deduped against `taken`). */
@@ -42,10 +43,10 @@ export function genRowId(taken: Iterable<string> = []): string {
 }
 
 /**
- * Re-establish every Phase A invariant on a (possibly hand-mutated) layout. Total: clamps the row count,
- * fixes each row's `columns`/`slots` length, drops unknown or duplicate block ids to null, and regenerates
- * any unsafe or duplicate row id. The hidden set is filtered to known ids and deduped. Used as the final
- * step of every mutation so the ops below can be written straightforwardly.
+ * Re-establish every invariant on a (possibly hand-mutated) layout. Total: clamps the row count, fixes
+ * each row's `columns`/`cells` length, caps each column stack to MAX_STACK, drops unknown or duplicate
+ * block ids, and regenerates any unsafe or duplicate row id. The hidden set is filtered to known ids and
+ * deduped. Used as the final step of every mutation so the ops below can be written straightforwardly.
  */
 export function normalize(layout: BuilderLayout): BuilderLayout {
   const seenBlocks = new Set<string>()
@@ -53,15 +54,16 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
   const rows: RowDef[] = []
   for (const raw of layout.rows.slice(0, MAX_ROWS)) {
     const columns: RowColumns = isRowColumns(raw.columns) ? raw.columns : 1
-    const slots: (string | null)[] = []
+    const cells: string[][] = []
     for (let i = 0; i < columns; i++) {
-      const s = raw.slots[i] ?? null
-      if (typeof s === 'string' && entityBlockById(s) !== null && !seenBlocks.has(s)) {
-        seenBlocks.add(s)
-        slots.push(s)
-      } else {
-        slots.push(null)
+      const stack: string[] = []
+      for (const s of (raw.cells?.[i] ?? []).slice(0, MAX_STACK)) {
+        if (typeof s === 'string' && entityBlockById(s) !== null && !seenBlocks.has(s)) {
+          seenBlocks.add(s)
+          stack.push(s)
+        }
       }
+      cells.push(stack)
     }
     let id = typeof raw.id === 'string' && ROW_ID_RE.test(raw.id) ? raw.id : genRowId(seenRowIds)
     if (seenRowIds.has(id)) id = genRowId(seenRowIds)
@@ -69,7 +71,7 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     // The ratio only applies to a 2-column row; drop it otherwise, and keep only the sparse lead/trail split.
     const ratio: RowRatio | undefined =
       columns === 2 && (raw.ratio === 'lead' || raw.ratio === 'trail') ? raw.ratio : undefined
-    rows.push(ratio ? { id, columns, slots, ratio } : { id, columns, slots })
+    rows.push(ratio ? { id, columns, cells, ratio } : { id, columns, cells })
   }
   const hidden = [...new Set(layout.hidden.filter((id) => entityBlockById(id) !== null))]
   // Content + style are keyed by block id and edited directly (not by row ops); carry them through
@@ -115,10 +117,10 @@ export function setBlockStyle(
   return normalize({ ...layout, style: styles })
 }
 
-/** Every block id currently placed in a row (non-null cell). */
+/** Every block id currently placed in a row (any column, any depth). */
 export function placedIds(rows: RowDef[]): Set<string> {
   const out = new Set<string>()
-  for (const row of rows) for (const s of row.slots) if (s) out.add(s)
+  for (const row of rows) for (const stack of row.cells) for (const s of stack) out.add(s)
   return out
 }
 
@@ -136,7 +138,7 @@ export function deriveBench(layout: BuilderLayout, kind: EntityKind): string[] {
 
 /** An empty single-column row with a fresh id. */
 function emptyRow(taken: Iterable<string>): RowDef {
-  return { id: genRowId(taken), columns: 1, slots: [null] }
+  return { id: genRowId(taken), columns: 1, cells: [[]] }
 }
 
 /** Insert a new empty 1-column row at `at` (end when omitted). No-op at the MAX_ROWS cap. */
@@ -168,20 +170,24 @@ export function moveRow(layout: BuilderLayout, from: number, to: number): Builde
 }
 
 /**
- * Set a row's column count. Splits/merges the slots, preserving the row's blocks LEFT-TO-RIGHT: the first
- * `n` blocks keep their slots, any overflow (a wider row narrowed) is dropped from the row and falls to the
- * derived bench. Widening pads with empty slots. No-op for an unknown row id or an out-of-range count.
+ * Set a row's column count. Preserves EVERY box (a column is a stack now, so nothing needs dropping):
+ * widening pads with empty columns; narrowing MERGES the boxes of the dropped columns onto the last kept
+ * column (left-to-right), so a 2→1 change stacks both columns into one. No-op for an unknown row id or an
+ * out-of-range count.
  */
 export function setRowColumns(layout: BuilderLayout, rowId: string, n: number): BuilderLayout {
   if (!isRowColumns(n)) return layout
   const rows = layout.rows.map((row) => {
     if (row.id !== rowId) return row
-    const blocks = row.slots.filter((s): s is string => s !== null)
-    const slots: (string | null)[] = []
-    for (let i = 0; i < n; i++) slots.push(blocks[i] ?? null)
+    const cells: string[][] = []
+    for (let i = 0; i < n; i++) cells.push([...(row.cells[i] ?? [])])
+    // Narrowing: fold any dropped columns' boxes onto the last kept column so nothing is lost.
+    if (n < row.columns) {
+      for (let i = n; i < row.cells.length; i++) cells[n - 1].push(...row.cells[i])
+    }
     // Leaving a 2-column row drops any lead ratio (normalize enforces this too; being explicit is cheap).
     const ratio = n === 2 ? row.ratio : undefined
-    return { ...row, columns: n, slots, ratio }
+    return { ...row, columns: n as RowColumns, cells, ratio }
   })
   return normalize({ ...layout, rows })
 }
@@ -197,48 +203,86 @@ export function setRowRatio(layout: BuilderLayout, rowId: string, ratio: RowRati
   return normalize({ ...layout, rows })
 }
 
-/** Remove `blockId` from wherever it sits (any slot) — immutable. */
+/** Remove `blockId` from wherever it sits (any column, any depth) — immutable. */
 function clearFromRows(rows: RowDef[], blockId: string): RowDef[] {
-  return rows.map((row) =>
-    row.slots.includes(blockId)
-      ? { ...row, slots: row.slots.map((s) => (s === blockId ? null : s)) }
-      : row,
-  )
+  return rows.map((row) => {
+    if (!row.cells.some((stack) => stack.includes(blockId))) return row
+    return { ...row, cells: row.cells.map((stack) => stack.filter((s) => s !== blockId)) }
+  })
 }
 
 /**
- * Place `blockId` into (rowId, colIndex). Works from the bench OR as a move from another slot: the block
- * is first cleared from any current slot and from `hidden`, then dropped in. If the target slot already
- * holds another block, that block is displaced to the derived bench (its cell is freed). No-op for an
- * unknown block id, unknown row, or out-of-range column.
+ * Place `blockId` into (rowId, colIndex) at stack position `index` (append when omitted / out of range).
+ * Works from the bench OR as a move from another column: the block is first cleared from any current
+ * position and from `hidden`, then inserted. No-op for an unknown block id, unknown row, or out-of-range
+ * column.
  */
 export function placeBlock(
   layout: BuilderLayout,
   blockId: string,
   rowId: string,
   colIndex: number,
+  index?: number,
 ): BuilderLayout {
   if (entityBlockById(blockId) === null) return layout
   const target = layout.rows.find((r) => r.id === rowId)
   if (!target || colIndex < 0 || colIndex >= target.columns) return layout
   const cleared = clearFromRows(layout.rows, blockId)
-  const rows = cleared.map((row) =>
-    row.id === rowId
-      ? { ...row, slots: row.slots.map((s, i) => (i === colIndex ? blockId : s)) }
-      : row,
-  )
+  const rows = cleared.map((row) => {
+    if (row.id !== rowId) return row
+    const cells = row.cells.map((stack, i) => {
+      if (i !== colIndex) return stack
+      const next = [...stack]
+      const at = index === undefined || index < 0 || index > next.length ? next.length : index
+      next.splice(at, 0, blockId)
+      return next
+    })
+    return { ...row, cells }
+  })
   const hidden = layout.hidden.filter((id) => id !== blockId)
   return normalize({ rows, hidden })
 }
 
-/** Move a placed block to a new slot. Alias of placeBlock (same displace-to-bench semantics). */
+/** Move a placed block to a new column/position. Alias of placeBlock. */
 export function moveBlock(
   layout: BuilderLayout,
   blockId: string,
   rowId: string,
   colIndex: number,
+  index?: number,
 ): BuilderLayout {
-  return placeBlock(layout, blockId, rowId, colIndex)
+  return placeBlock(layout, blockId, rowId, colIndex, index)
+}
+
+/**
+ * Nudge a placed block one step within its OWN column stack (delta -1 = up, +1 = down). Swaps it with its
+ * neighbour. A no-op at the ends, or for an unplaced id. The primary "reorder within a column" control.
+ */
+export function nudgeBox(layout: BuilderLayout, blockId: string, delta: number): BuilderLayout {
+  for (const row of layout.rows) {
+    for (let c = 0; c < row.cells.length; c++) {
+      const stack = row.cells[c]
+      const idx = stack.indexOf(blockId)
+      if (idx === -1) continue
+      const to = idx + delta
+      if (to < 0 || to >= stack.length) return layout
+      const rows = layout.rows.map((rw) =>
+        rw.id === row.id
+          ? {
+              ...rw,
+              cells: rw.cells.map((s, i) => {
+                if (i !== c) return s
+                const next = [...s]
+                ;[next[idx], next[to]] = [next[to], next[idx]]
+                return next
+              }),
+            }
+          : rw,
+      )
+      return normalize({ ...layout, rows })
+    }
+  }
+  return layout
 }
 
 /** Send a block to the bench: free its slot (config is kept elsewhere). Leaves `hidden` untouched. */
@@ -257,45 +301,6 @@ export function hideBlock(layout: BuilderLayout, blockId: string): BuilderLayout
 export function unhideBlock(layout: BuilderLayout, blockId: string): BuilderLayout {
   if (!layout.hidden.includes(blockId)) return layout
   return normalize({ ...layout, hidden: layout.hidden.filter((id) => id !== blockId) })
-}
-
-/**
- * Swap the contents of two cells (each addressed by row id + column index). Used by the per-block up/down
- * arrows: moving a block to its neighbour swaps them, so an empty neighbour is a plain move and an
- * occupied one exchanges places. No-op for an unknown row or out-of-range column.
- */
-export function swapCells(
-  layout: BuilderLayout,
-  aRowId: string,
-  aCol: number,
-  bRowId: string,
-  bCol: number,
-): BuilderLayout {
-  const a = layout.rows.find((r) => r.id === aRowId)
-  const b = layout.rows.find((r) => r.id === bRowId)
-  if (!a || !b || aCol < 0 || aCol >= a.columns || bCol < 0 || bCol >= b.columns) return layout
-  const av = a.slots[aCol] ?? null
-  const bv = b.slots[bCol] ?? null
-  const rows = layout.rows.map((row) => {
-    if (row.id === aRowId && row.id === bRowId) {
-      const slots = [...row.slots]
-      slots[aCol] = bv
-      slots[bCol] = av
-      return { ...row, slots }
-    }
-    if (row.id === aRowId) {
-      const slots = [...row.slots]
-      slots[aCol] = bv
-      return { ...row, slots }
-    }
-    if (row.id === bRowId) {
-      const slots = [...row.slots]
-      slots[bCol] = av
-      return { ...row, slots }
-    }
-    return row
-  })
-  return normalize({ ...layout, rows })
 }
 
 /** Fully remove a block (the confirm-gated Delete): free its slot AND clear any hidden flag. */
