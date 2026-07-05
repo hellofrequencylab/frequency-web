@@ -6,10 +6,9 @@ import { PageHeading } from '@/components/templates'
 import { toMemberEntity } from '@/lib/entity-blocks/member-adapter'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
 
-// STAFF/SELF-PREVIEW: the module-engine (unified block) render of a member's Spotlight, shown BESIDE the
-// live Puck render so the member or platform staff can validate the non-Puck render without changing
-// anything live. Nothing here touches the public Spotlight: /spotlight/[handle] still renders through
-// Puck (components/spotlight/puck-render.tsx). Mirrors the space preview
+// STAFF/SELF-PREVIEW: the module-engine (unified block) render of a member's Spotlight. Since ADR-522 this
+// IS the live engine — the public /spotlight/[handle] renders the same MemberProfileModules grid — so this
+// route is now a staff/self diagnostic of that render. Mirrors the space preview
 // (app/(main)/spaces/[slug]/(profile)/profile-preview/page.tsx).
 //
 // GATE: the member THEMSELVES (the owner gate the Spotlight editor uses) or platform staff. notFound

@@ -1609,13 +1609,11 @@ export default function AppShell({
   const effectiveRail = mergeChrome(railFor(pathname), chromeOverrides ?? {}, pathname)
   const showSidebar = !!sidebar && effectiveRail === 'global'
 
-  // Full-viewport EDITOR takeover (the Puck page builders: the Space landing editor, the Spotlight
-  // editor). These own the whole viewport with their OWN top bar (desktop) + thumb-zone control dock
-  // (mobile). The shell hides its desktop header AND its mobile bottom tab bar + side drawers here, so
-  // the editor's dock sits in the thumb zone with nothing over it (the "dock is unreachable" bug on
-  // /settings/profile/spotlight was the fixed bottom nav covering it). The right rail is already
-  // dropped for these via page-chrome (effectiveRail 'none'); this is the MOBILE-nav twin of that.
-  // Declared in one place (page-chrome.ts) so the shell never path-sniffs.
+  // Full-viewport EDITOR takeover: a builder that owns the whole viewport with its OWN top bar (desktop)
+  // + thumb-zone control dock (mobile), so the shell hides its desktop header AND its mobile bottom tab
+  // bar + side drawers. NOTE (ADR-522 follow-up): the member Spotlight Puck editor that used to match here
+  // is retired, so isFullViewportEditor currently matches nothing — this stays as the one declared
+  // extension point (page-chrome.ts) for any future viewport takeover, so the shell never path-sniffs.
   const editorTakeover = isFullViewportEditor(pathname)
 
   // Full-WIDTH editor (the Space landing editor): the builder fills the whole content width — both

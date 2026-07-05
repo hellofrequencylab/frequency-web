@@ -84,7 +84,8 @@ export default async function ProfileSettingsPage() {
       <LocationTimezoneCard currentTimezone={(profile as { home_timezone: string | null }).home_timezone} />
       {/* hideSpotlight (ADR-522): the full Spotlight enable/publish block is NOT shown here. The canonical
           in-app control is the rail's `account.spotlight` module; identity settings and Spotlight stay
-          decoupled. The classic Puck editor at /settings/profile/spotlight remains reachable directly. */}
+          decoupled. Members design their page with the in-rail grid builder on their own profile
+          (/people/<handle>) — the classic Puck editor is retired. */}
       <ProfileForm
         userId={user.id}
         hideSpotlight

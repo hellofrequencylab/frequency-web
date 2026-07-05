@@ -30,8 +30,9 @@ import { DividerBlock } from './divider'
 // never blocks the ones above it (PAGE-FRAMEWORK §5), and each block is FAIL-SAFE (renders nothing when
 // its slice is absent), so the whole render degrades to an empty column rather than a broken page.
 //
-// STAFF/SELF-PREVIEW ONLY: nothing live reads this — the live Spotlight stays the Puck render
-// (components/spotlight/puck-render.tsx). This validates the unified module render beside it.
+// THE LIVE ENGINE (ADR-522 follow-up): this module/grid render now drives BOTH the in-app profile
+// (profile-spotlight-blocks) AND the public /spotlight/<handle> mini-site. The Puck Spotlight render is
+// retired — the grid is the single engine end to end.
 
 type MemberBlockComponent = (props: MemberBlockProps) => React.ReactNode
 

@@ -531,21 +531,14 @@ export function ProfileForm({
             </div>
           </div>
 
-          {/* PRIMARY (ADR-516 Phase C): the page BUILDER now lives inline in the rail on your own profile.
-              Open your profile and the rail's Layout section is the full rows/slots builder, previewing every
-              change live. The classic Puck builder stays reachable, demoted below. */}
+          {/* The page BUILDER lives inline in the rail on your own profile (ADR-516 Phase C; ADR-522: the
+              grid is the single engine now). Open your profile and the rail's Layout section is the full
+              rows/slots builder, previewing every change live. */}
           <Link
             href={`/people/${initial.handle}`}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
           >
             <Sparkles className="h-3.5 w-3.5" /> Build your page (arrange your blocks)
-          </Link>
-
-          <Link
-            href="/settings/profile/spotlight"
-            className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted transition-colors hover:text-text"
-          >
-            Prefer the classic builder? Open it here.
           </Link>
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-3 py-2.5">

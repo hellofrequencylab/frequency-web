@@ -3,8 +3,6 @@ import type { Metadata } from 'next'
 import { getPublishedSpotlight } from '@/lib/spotlight/data'
 import { SpotlightShell } from '@/components/spotlight/spotlight-shell'
 import { MemberProfileModules } from '@/components/widgets/member-profile/member-profile-modules'
-import { defaultMemberLayout } from '@/lib/entity-blocks/context'
-import { mergeEntityLayout } from '@/lib/entity-blocks/layout'
 import { JsonLd } from '@/components/json-ld'
 import { personSchema, breadcrumbSchema } from '@/lib/jsonld'
 
@@ -49,14 +47,15 @@ export default async function SpotlightRoute({
   const name = data.profile.display_name || `@${data.profile.handle}`
   const path = `/spotlight/${data.profile.handle}`
 
-  // ADR-508 U3 LIVE CUTOVER: the block body now renders through the MODULE ENGINE (the block-picker
-  // grid), NOT Puck. The identity header + theme + background + join CTA stay in the shared SpotlightShell
-  // (unchanged look); only the body swaps to <MemberProfileModules>. REVERSIBLE: nothing deletes
-  // meta.spotlight (the stored Puck layout) — reverting is a one-line swap back to <SpotlightPage>.
-  // The EFFECTIVE GRID: the fresh member default with the member's saved grid (meta.entityGrid, read into
-  // data.grid) merged over it. FAIL-SAFE: a null saved grid leaves the fresh default. `showBio={false}`:
-  // the `about` block renders the bio, so the header must not repeat it.
-  const grid = mergeEntityLayout(defaultMemberLayout(), data.grid, 'member')
+  // ADR-522 follow-up: the GRID is now the single engine end to end. The public mini-site body renders
+  // through the SAME MemberProfileModules grid path the in-app profile uses (profile-spotlight-blocks):
+  // resolveRows over the member's saved meta.entityGrid, falling back to the default starter when it is
+  // null — so the public page shows the member's actual builder arrangement, never Puck. The identity
+  // header + theme + background + join CTA stay in the shared SpotlightShell (unchanged look); only the
+  // body is the module engine. FAIL-SAFE: a null saved grid yields the fresh default (resolveRows), and
+  // the content blocks source from the retained validated data.layout, so no published page goes blank.
+  // The publish gate stays in getPublishedSpotlight (this route is opt-in). `showBio={false}`: the
+  // `about` block renders the bio, so the header must not repeat it.
   return (
     <>
       <JsonLd
@@ -66,7 +65,7 @@ export default async function SpotlightRoute({
         ]}
       />
       <SpotlightShell data={data} showJoinCta showBio={false}>
-        <MemberProfileModules member={data} grid={grid} />
+        <MemberProfileModules member={data} grid={data.grid} />
       </SpotlightShell>
     </>
   )
