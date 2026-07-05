@@ -1,4 +1,4 @@
-import { entityBlockById, type EntityBlockDef } from './registry'
+import { ENTITY_BLOCKS, entityBlockById, type EntityBlockDef } from './registry'
 
 // PER-BLOCK AUTHORED CONTENT + STYLE (ADR-528). The freeform grid (ADR-516/526) arranged blocks but their
 // CONTENT was still authored in the Puck Home doc. This module gives every block an inline-editable content
@@ -168,31 +168,36 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
 
 // ── Map sanitize (keyed by block id — the allowlist that blocks prototype pollution) ──────────────────
 
-/** A block-id key is safe iff it is a known registry block (never a raw user key like `__proto__`). */
-function isKnownBlockId(id: string): boolean {
-  return entityBlockById(id) !== null
-}
+// The allowlist of every real block id, as a Set. Gating a user-originated key on `KNOWN_BLOCK_IDS.has`
+// makes the written property name a fixed, safe value (mirrors lib/entity-blocks/layout.ts KNOWN_SLOT_IDS)
+// — a bad key like `__proto__` is never a registry id, so it can never reach an object property (CodeQL
+// js/remote-property-injection). A membership Set is the pattern the analysis recognises as a sanitizer.
+const KNOWN_BLOCK_IDS: ReadonlySet<string> = new Set(ENTITY_BLOCKS.map((b) => b.id))
 
-/** Validate the whole per-block content map. Only known block-id keys survive; each value is sanitized to
- *  its schema. Returns undefined when empty. */
+/** Validate the whole per-block content map. Iterates the ALLOWLIST (not the raw object), so every written
+ *  key is a fixed registry id — a user key can only be READ, never used as a write property name (no
+ *  remote property injection). Each value is sanitized to its schema. Returns undefined when empty. */
 export function sanitizeContentMap(raw: unknown): Record<string, Record<string, unknown>> | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const src = raw as Record<string, unknown>
   const out: Record<string, Record<string, unknown>> = {}
-  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isKnownBlockId(id)) continue
-    const clean = sanitizeBlockContent(id, v)
+  for (const id of KNOWN_BLOCK_IDS) {
+    if (!Object.hasOwn(src, id)) continue
+    const clean = sanitizeBlockContent(id, src[id])
     if (clean) out[id] = clean
   }
   return Object.keys(out).length ? out : undefined
 }
 
-/** Validate the whole per-block style map. Only known block-id keys survive. Returns undefined when empty. */
+/** Validate the whole per-block style map. Iterates the ALLOWLIST (see sanitizeContentMap), so a user key
+ *  is only ever read. Returns undefined when empty. */
 export function sanitizeStyleMap(raw: unknown): Record<string, BlockStyle> | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const src = raw as Record<string, unknown>
   const out: Record<string, BlockStyle> = {}
-  for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (!isKnownBlockId(id)) continue
-    const clean = sanitizeBlockStyle(v)
+  for (const id of KNOWN_BLOCK_IDS) {
+    if (!Object.hasOwn(src, id)) continue
+    const clean = sanitizeBlockStyle(src[id])
     if (clean) out[id] = clean
   }
   return Object.keys(out).length ? out : undefined
