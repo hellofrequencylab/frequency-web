@@ -1,21 +1,9 @@
 import { notFound } from 'next/navigation'
-import { Suspense } from 'react'
 import { FocusTemplate } from '@/components/templates'
-import { SectionHeader } from '@/components/ui/section-header'
-import { EmptyState } from '@/components/ui/empty-state'
-import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
-import { offeringSectionsForType } from '@/lib/spaces/offerings'
-import type { Space } from '@/lib/spaces/types'
-import { AvailabilitySection } from '../availability/section'
-import { MembershipsSection } from '../memberships/section'
-import { DonationsSection } from '../donations/section'
-import { EnrollSection } from '../enroll/section'
-import { TicketsSection } from '../tickets/section'
-import { CheckinSection } from '../checkin/section'
-import { HandHeart } from 'lucide-react'
+import { OfferingsBody } from './offerings-body'
 
 // THE UNIFIED OFFERINGS SURFACE (the deeper Offerings merge). One adaptive, no-rail Focus surface that
 // stacks whichever commerce sub-surfaces apply to THIS space's type, instead of the five separate
@@ -29,11 +17,10 @@ import { HandHeart } from 'lucide-react'
 // The old individual routes (/settings/availability, /memberships, /donations, /enroll, /tickets,
 // /checkin) still resolve: each redirects here anchored to its section (#<anchor>), so bookmarks and
 // links never 404. This page owns the ROUTE + AUTH gate ONCE (resolveSpaceManageAccess, notFound), then
-// composes each section BODY (the extracted `*Section` components), which each re-check their OWN
-// per-Space function gate and render the SAME forms whose server actions stay the source of truth.
-//
-// SPEED (PAGE-FRAMEWORK §5): every section does slow awaits (loads its data + streams its list), so each
-// renders behind its own <Suspense> and its fetches run in parallel; the shell paints immediately.
+// wraps the chrome-free <OfferingsBody> in the FocusTemplate. The same body ALSO renders inline in the
+// Space profile as the Offerings `?panel=` workspace (Stage D2); it composes each section BODY (the
+// extracted `*Section` components), which each re-check their OWN per-Space function gate and render the
+// SAME forms whose server actions stay the source of truth.
 //
 // SECURITY: a Server Component, gated server-side. It resolves the Space, gates RENDER on canManage ||
 // staffViewing, and notFound()s otherwise (no existence leak). Every mutation re-checks its OWN gate in
@@ -41,60 +28,6 @@ import { HandHeart } from 'lucide-react'
 
 export const metadata = {
   title: 'Offerings',
-}
-
-/** Per-section header copy (CONTENT-VOICE: plain, no em/en dashes). Keyed by the offering anchor. */
-const SECTION_META: Record<string, { title: string; blurb: string }> = {
-  availability: {
-    title: 'Availability and bookings',
-    blurb: 'Set the weekly times members can book, and see who is on your calendar.',
-  },
-  memberships: {
-    title: 'Memberships',
-    blurb: 'Define the tiers members can join, and see who has joined. Paid billing comes later.',
-  },
-  donations: {
-    title: 'Donations',
-    blurb: 'Set up your fund and the amounts supporters can pick. Paid giving comes later.',
-  },
-  enroll: {
-    title: 'Enrollment',
-    blurb: 'Define your program and see who has enrolled. Paid enrollment comes later.',
-  },
-  tickets: {
-    title: 'Tickets',
-    blurb: 'Set up free or RSVP ticket tiers, and see who has reserved a spot.',
-  },
-  checkin: {
-    title: 'Check in',
-    blurb: 'Show the door code and see who has checked in.',
-  },
-}
-
-/** Bind an offering anchor to its section body. Each takes the resolved space + the preview flag. */
-function renderSection(
-  anchor: string,
-  space: Space,
-  viewerProfileId: string | null,
-  staffViewing: boolean,
-) {
-  const common = { space, viewerProfileId, staffViewing }
-  switch (anchor) {
-    case 'availability':
-      return <AvailabilitySection {...common} />
-    case 'memberships':
-      return <MembershipsSection {...common} />
-    case 'donations':
-      return <DonationsSection {...common} />
-    case 'enroll':
-      return <EnrollSection {...common} />
-    case 'tickets':
-      return <TicketsSection {...common} />
-    case 'checkin':
-      return <CheckinSection {...common} />
-    default:
-      return null
-  }
 }
 
 export default async function SpaceOfferingsPage({
@@ -121,7 +54,6 @@ export default async function SpaceOfferingsPage({
   if (!canManage && !staffViewing) notFound()
 
   const brandName = space.brandName ?? space.name
-  const sections = offeringSectionsForType(space.type)
 
   return (
     <FocusTemplate
@@ -130,40 +62,7 @@ export default async function SpaceOfferingsPage({
       description="Everything people can book, join, support, or attend. Open a section to set it up; it shows on your space page."
       width="wide"
     >
-      {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
-
-      {sections.length === 0 ? (
-        <EmptyState
-          icon={HandHeart}
-          title="No offerings for this space yet."
-          description="This space type does not run bookings, memberships, giving, or tickets. Change your space type to add them."
-        />
-      ) : (
-        <div className="space-y-12">
-          {sections.map((section) => {
-            const meta = SECTION_META[section.anchor]
-            return (
-              <section key={section.anchor} id={section.anchor} className="scroll-mt-24">
-                <SectionHeader title={meta.title} />
-                <p className="-mt-2 mb-4 text-sm text-muted">{meta.blurb}</p>
-                <Suspense fallback={<SectionSkeleton />}>
-                  {renderSection(section.anchor, space, viewerProfileId, staffViewing)}
-                </Suspense>
-              </section>
-            )
-          })}
-        </div>
-      )}
+      <OfferingsBody slug={slug} />
     </FocusTemplate>
-  )
-}
-
-// Dimension-matched skeleton while a section streams its data (no CLS, PAGE-FRAMEWORK §5.4).
-function SectionSkeleton() {
-  return (
-    <div className="space-y-3">
-      <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-      <div className="h-14 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-    </div>
   )
 }

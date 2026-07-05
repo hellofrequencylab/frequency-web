@@ -11384,3 +11384,17 @@ The short column is threaded fail-safe into the render bag: `getSpaceAbout(space
 - The RAIL links via a new `panelHrefForSurface` (a panelable surface → `?panel=`, else the normal route); `hrefForSurface` is UNTOUCHED, so the `/manage` console + the bottom bank keep their full routes (the "full admin sub-menu"). CRM is never a panel.
 
 **Consequences.** Clicking Members in the rail now opens the roster inline under the persistent hero + menu; the standalone `/settings/members` route still works for deep links. The seam (registry + `panelHrefForSurface` + chrome-free body) is the template the remaining services (D2), deep-settings editors (D3), and menu polish (D4) reuse — CRM excepted (full-width). Gate green: `tsc --noEmit`, eslint, vitest (3932 passed), check:canon, check:authz.
+
+## ADR-539: Space rail rework, Stage D2 — the remaining services open inline (Offerings, Services, QR, Email, Billing)
+
+**Status:** Accepted (2026-07-05). No migration. Extends ADR-538 (D1) to the rest of the service managers.
+
+**Context.** D1 (ADR-538) proved the inline-workspace seam on Members: a rail link opens a `?panel=<id>` that swaps the profile body (hero + menu persist) with the manager's chrome-free, self-gating body, while the standalone route stays a deep link. D2 replicates that for the remaining panelable services.
+
+**Decision.** Add inline panels for **Offerings** (`space.offerings`), **Services** (`space.services`), **QR codes** (`space.reach`), **Email** (`space.comms`), and **Plan & usage / Billing** (`space.billing`), mirroring the D1 pattern exactly:
+- Each route's body is extracted into a chrome-free, self-gating `<X>Body` Server Component (`settings/<x>/<x>-body.tsx`); the route `page.tsx` gates + wraps it in its existing template, so the standalone route renders byte-identically (including the feature-locked variants for QR/Email/Billing and Billing's locked/unlocked title swap).
+- `surface-panels.ts` stays PURE (label + `fullHref` + `PANEL_SURFACE_TO_ID`, imported by the client rail); the server-only body components live in a `PANEL_BODIES` map inside `SpaceBodyPanel` (a Server Component), so no server body import leaks into the client bundle. Body type accepts async Server Components.
+- `hrefForSurface` + `lib/admin/rail-bank.ts` are untouched — the `/manage` console and the bottom bank keep linking QR/Email/Billing to their full routes; only the RAIL body opens the panel via `panelHrefForSurface`.
+- **CRM stays full-width** at its own route (never a panel), per the owner directive; Insights (shares the QR route) and Danger are left as full-route/inline as before.
+
+**Consequences.** Every primary service now opens inline in the space page under the persistent hero + menu; each standalone route still works as a deep link. Deferred: deep-settings full editors as panels (D3), menu active-state + polish (D4), optional route redirects (D5). Gate green: `tsc --noEmit`, eslint, vitest (3932 passed), check:canon, check:authz.
