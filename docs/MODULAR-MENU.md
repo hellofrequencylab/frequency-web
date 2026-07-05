@@ -43,11 +43,12 @@ Family → modules (each gated by its featureKey; shows only when enabled):
 ## Phases
 
 - **P0 — Contract v2 (foundation, additive, no render change).** Extend `AdminModule` with `gate` (capability | spaceFunction | always) + `family`/`featureKey`/`snapshotKey`/`primaryActions`/`deepLink`. Add `SPACE_MODULES: AdminModule[]` (the full independent catalog above, gated by featureKey) and `moduleManifest`. Unit tests prove the catalog covers every SPACE_FUNCTION + shell area and that gating matches today. Rail/console UNCHANGED. ADR-543.
-- **P1 — Render space from the manifest + service split + CRM consolidation.** Rail + manage console render space from `moduleManifest` instead of SPACE_SURFACES. Offerings un-merges into the 7 independent modules; CRM absorbs autonomy + pipeline. ADR-544.
+- **P1 — Render the manage CONSOLE from the manifest + service split + CRM consolidation.** The `/manage` console renders space from `spaceModuleManifest` (gated by the authoritative `canUse`). Offerings un-merges into the 7 independent modules; CRM is one module. ADR-544. DONE.
+- **P1b — Rail onto the manifest.** The space rail renders through the `lib/apps` catalog (coupled to `SPACE_SURFACES`, `MODULE_COMPONENTS`, `rail-getters`, `surface-summaries`, `rail-bank`, `entity-surface-hrefs` + their tests). Retarget the rail rows at the manifest (split offerings; drop the separate autonomy/pipeline rows; single CRM row) without disturbing the other scopes. ADR-544b.
 - **P2 — Full bodies + deep wiring for space services.** Each service module: on-page `?panel=` body + snapshot + "Open full …" deep link (much exists from D1-D5). ADR-545.
 - **P3 — Module Manager admin area.** Owner-gated grid of every module: toggle feature (writes `spaces.entitlements`), drag-order, hide-from-menu, plan/tier badge + upgrade nudge. Persists `moduleOrder` + `hiddenModules` per space; the manifest reads them. Universal, ships space-first. ADR-546.
 - **P4 — Other entity scopes to "full."** circle/hub/nexus/event/practice/channel/journey modules gain snapshots + deep links + the shared card via the contract. ADR-547.
 - **P5 — Account/"You" + global onto the contract; retire duplication.** Personal set + global onto the manifest; delete legacy `ENTITY_SURFACES`/`SPACE_SURFACES` divergence; one renderer everywhere. Docs → git + Notion. ADR-548.
 
 ## Status
-- [ ] P0 · [ ] P1 · [ ] P2 · [ ] P3 · [ ] P4 · [ ] P5
+- [x] P0 · [x] P1 (console) · [ ] P1b (rail) · [ ] P2 · [ ] P3 · [ ] P4 · [ ] P5

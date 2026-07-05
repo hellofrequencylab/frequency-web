@@ -5,7 +5,7 @@ import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functio
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
 import { isStaff } from '@/lib/core/roles'
-import { spaceSurfacesFor } from '@/lib/admin/entities/registry'
+import { spaceModuleManifest } from '@/lib/admin/modules/space-modules'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -46,10 +46,17 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
   const canUse = (fn: SpaceFunctionKey): boolean =>
     staffViewing || spaceFunctionAccess(space, fn, caps.role)
 
-  // SURFACES: the gated spine, in SPINE order (Basics / identity always leads). The console groups
-  // these into scannable clusters itself (console.tsx), so it keeps the stable spine order here and does
-  // NOT pre-reorder by Mode emphasis.
-  const surfaces = spaceSurfacesFor(space.type, canUse)
+  // MODULES (docs/MODULAR-MENU.md — P1, ADR-544): the console now renders the SPACE menu from the P0
+  // module manifest instead of the legacy SPACE_SURFACES spine, so the service split (7 independent
+  // commerce modules) + the CRM consolidation (one module absorbing autonomy + pipeline) go live. Take
+  // the full catalog (entitlements `{}` = default-on) and gate each module by the SAME authoritative
+  // `canUse` the surfaces used (role + plan + entitlement via spaceFunctionAccess): a shell module
+  // (`gate.kind === 'always'`) always shows; a service module shows only when its function is usable, so
+  // a space with a function off (e.g. availability) drops that module, matching the legacy gating. The
+  // console groups these into scannable clusters itself (console.tsx) and does NOT pre-reorder by Mode.
+  const modules = spaceModuleManifest({}).filter(
+    (m) => m.gate.kind === 'always' || canUse(m.gate.fn),
+  )
 
   // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the
   // console the emphasized FUNCTION list as framing only.
@@ -64,7 +71,7 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
   return (
     <SpaceManageConsole
       slug={space.slug}
-      surfaces={surfaces}
+      modules={modules}
       emphasis={emphasis}
       canDelete={canDelete}
       spaceId={space.id}

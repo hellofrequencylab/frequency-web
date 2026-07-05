@@ -6,7 +6,8 @@
 // The console re-exports `hrefForSurface` from here, so its unit test (console.test.ts) and every existing
 // caller are unchanged. See app/(main)/spaces/[slug]/manage/console.tsx.
 
-import { PANEL_SURFACE_TO_ID } from '@/components/spaces/workspace/surface-panels'
+import { PANEL_SURFACE_TO_ID, isPanelId } from '@/components/spaces/workspace/surface-panels'
+import type { SpaceModule } from '@/lib/admin/modules/space-modules'
 
 /** Map a Space surface id to the sub-page it opens, given the Space slug. Danger has no href (the console
  *  renders its delete control inline; the rail falls back to the /manage console); an unmapped id is
@@ -80,4 +81,30 @@ export function panelHrefForSurface(id: string, slug: string): string | null {
   const panel = PANEL_SURFACE_TO_ID[id]
   if (panel) return `/spaces/${slug}?panel=${panel}`
   return hrefForSurface(id, slug)
+}
+
+/** A new-module id (lib/admin/modules/space-modules.ts) → the on-page inline panel it opens, keyed by
+ *  PANEL id (the id the profile body renders — SURFACE_PANELS). Only the modules that have an on-page panel
+ *  today appear here; every other module (the 7 split commerce services, Insights, Danger) has no entry and
+ *  falls through to its `deepLink`. The legacy CRM surface id was `space.engage.crm`; the module id is
+ *  `space.crm`, so this map re-anchors it to the same `crm` panel. Members / Store / QR / Email / Billing
+ *  keep their existing panel ids. PURE. */
+const MODULE_PANEL_ID: Record<string, string> = {
+  'space.people': 'members', // Members
+  'space.crm': 'crm', // CRM (the bounded board panel — legacy surface id was space.engage.crm)
+  'space.services': 'services', // Store
+  'space.reach': 'qr', // QR codes
+  'space.comms': 'email', // Email
+  'space.billing': 'billing', // Plan and usage
+}
+
+/** THE MANAGE-CONSOLE href for a P1 module (docs/MODULAR-MENU.md — P1): prefer the module's ON-PAGE panel
+ *  when one exists (so the console keeps the Stage-D5 no-regression `?panel=` behavior), else fall through
+ *  to the module's own deep-editing route (`deepLink`). Nullable like panelHrefForSurface: Danger has no
+ *  panel and no deepLink, so it stays null (the caller renders its inline delete control instead). PURE, so
+ *  the console's unit test can lock the no-regression mapping. */
+export function panelHrefForModule(module: SpaceModule, slug: string): string | null {
+  const panel = MODULE_PANEL_ID[module.id]
+  if (panel && isPanelId(panel)) return `/spaces/${slug}?panel=${panel}`
+  return module.deepLink ? module.deepLink(slug) : null
 }
