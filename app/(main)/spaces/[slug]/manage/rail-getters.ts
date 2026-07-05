@@ -326,21 +326,6 @@ async function resolveSummarySpace(
   return space
 }
 
-/** The compact identity strip's data (cover + logo + name), or null when the viewer cannot manage this
- *  Space (fail-safe → the strip renders nothing). All fields already ride the cached Space row. */
-export async function getSpaceIdentityData(
-  slug: string,
-): Promise<{ slug: string; name: string; coverImageUrl: string | null; brandLogoUrl: string | null } | null> {
-  const space = await resolveSummarySpace(slug, null)
-  if (!space) return null
-  return {
-    slug: space.slug,
-    name: (space.brandName ?? '').trim() || space.name,
-    coverImageUrl: space.coverImageUrl ?? null,
-    brandLogoUrl: space.brandLogoUrl ?? null,
-  }
-}
-
 /** "N members" — active memberships only. Gated on manage access + the `members` function. Fail-safe. */
 export async function getSpaceMembersSummary(slug: string): Promise<{ count: number } | null> {
   const space = await resolveSummarySpace(slug, 'members')

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Info } from 'lucide-react'
 import { getSpaceBasicsData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpaceSettingsForm } from '@/app/(main)/spaces/[slug]/settings/settings-form'
 
@@ -46,15 +45,11 @@ export function SpaceBasicsModule() {
   }
   if (!data) return null // not permitted / not found → no chrome
 
+  // No module header here: the rail already labels this group "Identity" (SPACE_GROUP_META). A second
+  // "Basics" title under it just doubled the name (operator feedback), so the form's own section headers
+  // (Pictures / Name & bio / Brand / Visibility) carry the structure.
   return (
-    <section className="min-w-0 space-y-4">
-      <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-          <Info className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          Basics
-        </h3>
-        <p className="text-sm text-muted">Name, brand, about, and who can find this space.</p>
-      </header>
+    <section className="min-w-0">
       <SpaceSettingsForm
         spaceId={data.spaceId}
         slug={data.slug}

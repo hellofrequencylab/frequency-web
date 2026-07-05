@@ -185,10 +185,19 @@ export function EntityPageBuilder({
   const bench = store.bench.filter((id) => !lockedSet.has(id) && CORE_PROFILE_BLOCK_IDS.has(id))
   const placed = placedIds(layout.rows)
 
-  // Every empty slot, as a move target (reading order) — powers the "Move to" menus + bench "Place in".
+  // Every empty slot, as a move target (reading order) — powers the bench "Place in".
   const emptySlots = layout.rows.flatMap((r, ri) =>
     r.slots.flatMap((id, ci) => (id === null ? [{ rowId: r.id, ri, ci }] : [])),
   )
+
+  // Every row as a SECTION move target (item 5): the block menu lists these so a block jumps section to
+  // section in one tap, no drag needed. `full` marks a row with no empty slot (the move then spawns a new
+  // section just below it).
+  const moveTargets = layout.rows.map((r, ri) => ({
+    rowId: r.id,
+    ri,
+    full: r.slots.every((s) => s !== null),
+  }))
 
   // ── Row actions ──
   function onAddRow(at?: number) {
@@ -245,6 +254,42 @@ export function EntityPageBuilder({
     mutate(removeBlock(layout, blockId))
     say(`${label(blockId)} removed.`)
     setConfirmDelete(null)
+    setOpenMenu(null)
+  }
+
+  // ── Section-level block move (item 5): relocate a block to another section straight from its menu, no
+  // drag required (so it works on touch too). Fill the target row's first empty slot; if that row is full,
+  // drop the block into a fresh section right below it. "New section" appends an empty row at the end and
+  // places the block there. Both bail cleanly at the MAX_ROWS cap (addRow is a no-op there).
+  function onMoveToSection(blockId: string, rowId: string) {
+    const ri = layout.rows.findIndex((r) => r.id === rowId)
+    const target = layout.rows[ri]
+    if (!target) return
+    const emptyCol = target.slots.findIndex((s) => s === null)
+    if (emptyCol >= 0) {
+      mutate(placeBlock(layout, blockId, rowId, emptyCol))
+      say(`${label(blockId)} moved to section ${ri + 1}.`)
+    } else {
+      const withRow = addRow(layout, ri + 1)
+      if (withRow.rows.length === layout.rows.length) {
+        say('That is the maximum number of sections.')
+        setOpenMenu(null)
+        return
+      }
+      mutate(placeBlock(withRow, blockId, withRow.rows[ri + 1].id, 0))
+      say(`Section ${ri + 1} was full, so ${label(blockId)} moved to a new section below it.`)
+    }
+    setOpenMenu(null)
+  }
+  function onMoveToNewSection(blockId: string) {
+    const withRow = addRow(layout)
+    if (withRow.rows.length === layout.rows.length) {
+      say('That is the maximum number of sections.')
+      setOpenMenu(null)
+      return
+    }
+    mutate(placeBlock(withRow, blockId, withRow.rows[withRow.rows.length - 1].id, 0))
+    say(`${label(blockId)} moved to a new section.`)
     setOpenMenu(null)
   }
 
@@ -478,7 +523,8 @@ export function EntityPageBuilder({
                     editing={editingId === id}
                     canUp={index > 0}
                     canDown={index < memberBlocks.length - 1}
-                    emptySlots={[]}
+                    sections={[]}
+                    currentRowId={null}
                     confirmDelete={confirmDelete === id}
                     onDragStart={() => (dragBlock.current = id)}
                     onDragEnd={() => (dragBlock.current = null)}
@@ -487,7 +533,8 @@ export function EntityPageBuilder({
                     onUp={() => moveBlockBy(id, -1)}
                     onDown={() => moveBlockBy(id, 1)}
                     onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
-                    onMoveTo={() => {}}
+                    onMoveToSection={() => {}}
+                    onMoveToNewSection={() => {}}
                     onToggleHide={() => onToggleHide(id)}
                     onBench={() => onBench(id)}
                     onAskDelete={() => setConfirmDelete(id)}
@@ -683,7 +730,8 @@ export function EntityPageBuilder({
                             editing={editingId === id}
                             canUp={slotSeq.findIndex((s) => s.id === id) > 0}
                             canDown={slotSeq.findIndex((s) => s.id === id) < slotSeq.length - 1}
-                            emptySlots={emptySlots}
+                            sections={moveTargets}
+                            currentRowId={row.id}
                             confirmDelete={confirmDelete === id}
                             onDragStart={() => (dragBlock.current = id)}
                             onDragEnd={() => (dragBlock.current = null)}
@@ -692,7 +740,8 @@ export function EntityPageBuilder({
                             onUp={() => moveBlockBy(id, -1)}
                             onDown={() => moveBlockBy(id, 1)}
                             onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
-                            onMoveTo={(t) => onPlace(id, t.rowId, t.ci)}
+                            onMoveToSection={(rid) => onMoveToSection(id, rid)}
+                            onMoveToNewSection={() => onMoveToNewSection(id)}
                             onToggleHide={() => onToggleHide(id)}
                             onBench={() => onBench(id)}
                             onAskDelete={() => setConfirmDelete(id)}
@@ -814,7 +863,8 @@ function BlockPill({
   editing,
   canUp,
   canDown,
-  emptySlots,
+  sections,
+  currentRowId,
   confirmDelete,
   onDragStart,
   onDragEnd,
@@ -823,7 +873,8 @@ function BlockPill({
   onUp,
   onDown,
   onToggleMenu,
-  onMoveTo,
+  onMoveToSection,
+  onMoveToNewSection,
   onToggleHide,
   onBench,
   onAskDelete,
@@ -837,7 +888,10 @@ function BlockPill({
   editing: boolean
   canUp: boolean
   canDown: boolean
-  emptySlots: { rowId: string; ri: number; ci: number }[]
+  /** Every row as a section move target (item 5); empty for the member single-column list. */
+  sections: { rowId: string; ri: number; full: boolean }[]
+  /** The row this block currently sits in — excluded from the move-to list. Null on the member list. */
+  currentRowId: string | null
   confirmDelete: boolean
   onDragStart: () => void
   onDragEnd: () => void
@@ -846,7 +900,8 @@ function BlockPill({
   onUp: () => void
   onDown: () => void
   onToggleMenu: () => void
-  onMoveTo: (t: { rowId: string; ci: number }) => void
+  onMoveToSection: (rowId: string) => void
+  onMoveToNewSection: () => void
   onToggleHide: () => void
   onBench: () => void
   onAskDelete: () => void
@@ -926,14 +981,20 @@ function BlockPill({
               </div>
             ) : (
               <>
-                {emptySlots.length > 0 && (
+                {sections.length > 0 && (
                   <>
-                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Move to</p>
-                    {emptySlots.map((t) => (
-                      <MenuItem key={`${t.rowId}-${t.ci}`} onClick={() => onMoveTo(t)}>
-                        <MoveRight className="h-3.5 w-3.5" aria-hidden /> Row {t.ri + 1}, column {t.ci + 1}
-                      </MenuItem>
-                    ))}
+                    <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Move to section</p>
+                    {sections
+                      .filter((s) => s.rowId !== currentRowId)
+                      .map((s) => (
+                        <MenuItem key={s.rowId} onClick={() => onMoveToSection(s.rowId)}>
+                          <MoveRight className="h-3.5 w-3.5" aria-hidden /> Section {s.ri + 1}
+                          {s.full && <span className="ml-auto text-3xs text-subtle">full</span>}
+                        </MenuItem>
+                      ))}
+                    <MenuItem onClick={onMoveToNewSection}>
+                      <Plus className="h-3.5 w-3.5" aria-hidden /> New section
+                    </MenuItem>
                   </>
                 )}
                 <MenuItem onClick={onToggleHide}>

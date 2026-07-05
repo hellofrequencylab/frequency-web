@@ -214,9 +214,9 @@ export function AccentPicker({
       label="Brand color"
       hint="Your accent. It paints your buttons, the active tab, and highlights across your page."
     >
-      {/* Picker on the LEFT, a tight grid of smaller swatches on the RIGHT. Wraps to stacked in the
-          narrow rail (~360px), sits side-by-side once there is room (the wider settings page). */}
-      <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
+      {/* The picker sits on top; the suggested swatches run as ONE full-width line beneath it (operator
+          feedback), so the control reads top-to-bottom in the narrow rail and on the wide settings page. */}
+      <div className="space-y-3">
         {/* The custom picker: a native color well + a hex field + a Default clear. */}
         <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -269,8 +269,8 @@ export function AccentPicker({
           )}
         </div>
 
-        {/* The suggested on-brand swatches: a compact 4x2 grid, one tap sets the accent. */}
-        <div className="grid grid-cols-4 gap-1.5">
+        {/* The suggested on-brand swatches: ONE full-width row beneath the picker, one tap sets the accent. */}
+        <div className="grid grid-cols-8 gap-1.5">
           {ACCENT_SWATCHES.map((s) => {
             const active = value.toLowerCase() === s.hex.toLowerCase()
             return (

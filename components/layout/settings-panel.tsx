@@ -13,7 +13,6 @@ import { MODULE_COMPONENTS } from '@/components/admin/modules/module-map'
 import { SurfaceLinkRow } from '@/components/admin/modules/surface-link-row'
 import { SurfaceSummaryCard } from '@/components/admin/modules/surface-summary-card'
 import { SURFACE_SUMMARIES } from '@/components/admin/modules/surface-summaries'
-import { SpaceIdentityStrip } from '@/components/admin/modules/space-identity-strip'
 import { PERSONAL_MODULE_IDS, type AdminSlot } from '@/lib/admin/modules/registry'
 import { SPINE_META, SPACE_GROUP_META, groupIntoTiers, tierForApp, type RailTier } from '@/lib/admin/modules/spine'
 import { adminScopeFor, railArchetypeFor, type AdminScope } from '@/lib/layout/page-chrome'
@@ -170,11 +169,6 @@ export interface SettingsPanelModel {
   sections: AdminSection[]
   /** The operator "Page" group (Layout / SEO / Status), separate from the entity spine. */
   pageGroup: ReactNode | null
-  /** The compact Space identity strip (cover + logo + name), pinned above the standard tier when the
-   *  scope is a Space (Phase 2 "keep it in the rail", ADR-514); null otherwise. A ReactNode on the
-   *  CLIENT-built model — it never rides the serializable OpenAdminBarDetail. Self-fetches + fail-safe:
-   *  renders nothing for a non-manager. */
-  identityStrip: ReactNode | null
   /** Every scoped app, for the fuzzy search index. */
   searchApps: SearchableApp[]
   /** Attainable-but-locked apps (Phase 5 / P3): rendered as a lock + reason, never an editor. */
@@ -474,12 +468,6 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // every entity scope (an entity owns its identity through its own sections above).
   const pageGroup: ReactNode = showPageSettings ? <PageSettingsModule hideBasics={!!contentModule} /> : null
 
-  // The compact Space identity strip (cover + logo + name), pinned above the standard tier for a Space
-  // scope (Phase 2 "keep it in the rail", ADR-514). It self-fetches via a read-gated getter and renders
-  // nothing for a non-manager, so it is a pure ReactNode on the CLIENT-built model — it never touches the
-  // serializable OpenAdminBarDetail (the slug comes from the live path).
-  const identityStrip: ReactNode = isSpace && spaceSlug ? <SpaceIdentityStrip slug={spaceSlug} /> : null
-
   // ── Phase 5 (P3): attainable-but-locked management apps for this scope + REAL viewer — an App the
   //    viewer can't act on yet but could plausibly unlock (a plan-gated Space function). Rendered as a
   //    lock + reason, never an editor; personal apps are caps-gated and so are never attainable-locked.
@@ -555,8 +543,8 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const bank: BankLink[] = bankForScope(scope, { isStaff: isOperator }, bankSurfaceLinks, pathSlug)
 
   if (!hasContent) {
-    return { hasContent: false, sections: [], pageGroup: null, identityStrip: null, searchApps: [], lockedApps: [], bank, hub: null }
+    return { hasContent: false, sections: [], pageGroup: null, searchApps: [], lockedApps: [], bank, hub: null }
   }
 
-  return { hasContent: true, sections, pageGroup, identityStrip, searchApps, lockedApps, bank, hub }
+  return { hasContent: true, sections, pageGroup, searchApps, lockedApps, bank, hub }
 }
