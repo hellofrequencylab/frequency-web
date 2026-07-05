@@ -17,7 +17,13 @@ import {
   Check,
   Loader2,
 } from 'lucide-react'
-import { blocksForKind, entityBlockById, MEMBER_CHROME_BLOCK_IDS, type EntityKind } from '@/lib/entity-blocks/registry'
+import {
+  entityBlockById,
+  profilePaletteForKind,
+  CORE_PROFILE_BLOCK_IDS,
+  MEMBER_CHROME_BLOCK_IDS,
+  type EntityKind,
+} from '@/lib/entity-blocks/registry'
 import {
   starterRows,
   STARTER_LAYOUTS,
@@ -165,15 +171,18 @@ export function EntityPageBuilder({
 
   const maxColumns = maxColumnsForKind(kind)
   const lockedSet = new Set(lockedIds)
-  const palette = blocksForKind(kind).filter((b) => !lockedSet.has(b.id))
+  // The curated best-practice palette (ADR-529): only the core blocks are offered.
+  const palette = profilePaletteForKind(kind).filter((b) => !lockedSet.has(b.id))
   const layout: BuilderLayout = {
     rows: store.rows,
     hidden: store.hidden,
     content: store.content,
     style: store.style,
   }
-  // The derived bench, minus any function-locked block the space cannot offer yet (never on the page).
-  const bench = store.bench.filter((id) => !lockedSet.has(id))
+  // The derived bench, minus any function-locked block the space cannot offer yet + any non-core block
+  // retired from the curated palette (ADR-529) — a retired block that is still placed keeps rendering, but
+  // it is never offered back from the bench.
+  const bench = store.bench.filter((id) => !lockedSet.has(id) && CORE_PROFILE_BLOCK_IDS.has(id))
   const placed = placedIds(layout.rows)
 
   // Every empty slot, as a move target (reading order) — powers the "Move to" menus + bench "Place in".
@@ -802,11 +811,27 @@ export function SpacePageBuilder({ slug }: { slug: string }) {
       pageId={slug}
       kind="space"
       loadRailData={load}
-      // A DATA block's "Manage" link points at the Space management console, where every feature's own
-      // editor lives (deep content stays in that manager; the rail edits arrangement + quick fields).
-      editHrefFor={(blockId) => (entityBlockById(blockId)?.category === 'data' ? `/spaces/${slug}/manage` : null)}
+      // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
+      // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
+      editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}
     />
   )
+}
+
+/** The admin-area path for a Space DATA block (ADR-529 item 4). Each function-backed block links to its own
+ *  manager; a data block with no dedicated manager falls back to the console; a content block gets none. */
+const SPACE_BLOCK_ADMIN_PATH: Record<string, string> = {
+  about: 'settings/basics',
+  contact: 'settings/basics',
+  reviews: 'settings/basics',
+  offerings: 'settings/offerings',
+  booking: 'settings/availability',
+  team: 'settings/members',
+}
+function spaceBlockAdminHref(slug: string, blockId: string): string | null {
+  const path = SPACE_BLOCK_ADMIN_PATH[blockId]
+  if (path) return `/spaces/${slug}/${path}`
+  return entityBlockById(blockId)?.category === 'data' ? `/spaces/${slug}/manage` : null
 }
 
 // ── The per-block control cluster ──

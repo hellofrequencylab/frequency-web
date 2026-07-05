@@ -61,7 +61,13 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
 
   return (
     <div className="@container/profile">
-      <LiveProfileGrid nodes={nodes} initialRows={rows} initialHidden={hidden} />
+      <LiveProfileGrid
+        nodes={nodes}
+        initialRows={rows}
+        initialHidden={hidden}
+        initialContent={saved?.content ?? {}}
+        initialStyle={saved?.style ?? {}}
+      />
     </div>
   )
 }

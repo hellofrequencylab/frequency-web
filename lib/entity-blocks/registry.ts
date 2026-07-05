@@ -96,3 +96,31 @@ export const MEMBER_CHROME_BLOCK_IDS: readonly string[] = ['about', 'stats']
 export function blocksForKind(kind: EntityKind): EntityBlockDef[] {
   return ENTITY_BLOCKS.filter((b) => blockSupportsKind(b, kind)).slice().sort((a, b) => a.order - b.order)
 }
+
+/** The CURATED profile block set (ADR-529, owner directive: "narrow it down to best practice without it
+ *  being overwhelming"). This is the OFFERED palette — the block-picker + bench only surface these. A block
+ *  NOT here is retired from the offer (existing placements still RENDER, fail-safe; they just cannot be
+ *  re-added). Kept: the core data sections + the four essential content blocks. Retired: highlights,
+ *  practices, circles, business, faq, updates + gallery, quote, embed, divider. */
+export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
+  // Core data sections (the space profile spine).
+  'about',
+  'offerings',
+  'booking',
+  'events',
+  'team',
+  'reviews',
+  'contact',
+  // Member-only data section (kept for the member profile).
+  'topfriends',
+  // The four essential content blocks.
+  'heading',
+  'text',
+  'links',
+  'image',
+])
+
+/** The curated, best-practice palette for a profile builder: `blocksForKind` narrowed to the core set. */
+export function profilePaletteForKind(kind: EntityKind): EntityBlockDef[] {
+  return blocksForKind(kind).filter((b) => CORE_PROFILE_BLOCK_IDS.has(b.id))
+}

@@ -433,9 +433,10 @@ describe('starter layouts', () => {
     expect(ids).not.toContain('stats')
   })
 
-  it('minimal is a single 1-col row (member → links, space → about)', () => {
+  it('minimal starters lead with the essentials (member → links, space → about)', () => {
     expect(starterRows('member', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['links'] }])
-    expect(starterRows('space', 'minimal')).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+    // The space minimal starter (ADR-529 curated core): about, offerings, contact.
+    expect(starterRows('space', 'minimal').flatMap((r) => r.slots)).toEqual(['about', 'offerings', 'contact'])
   })
 
   it('starterRows returns a fresh copy (mutation-safe)', () => {
