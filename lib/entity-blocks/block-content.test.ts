@@ -87,4 +87,14 @@ describe('sanitizeContentMap / sanitizeStyleMap (block-id allowlist)', () => {
     expect(sanitizeStyleMap({ heading: { pad: 'none' } })).toBeUndefined()
     expect(sanitizeStyleMap({ heading: { background: true } })).toEqual({ heading: { background: true } })
   })
+
+  it('never writes a JSON __proto__ own-key (the real persisted-blob attack vector)', () => {
+    // JSON.parse creates an OWN "__proto__" property (unlike an object literal). The allowlist iteration
+    // never visits it, so it is neither read nor written — no prototype pollution.
+    const raw = JSON.parse('{"__proto__": {"text": "x"}, "heading": {"text": "Hi"}}')
+    const out = sanitizeContentMap(raw)
+    expect(out).toEqual({ heading: { text: 'Hi' } })
+    expect(({} as Record<string, unknown>).text).toBeUndefined()
+    expect(Object.getPrototypeOf(out)).toBe(Object.prototype)
+  })
 })
