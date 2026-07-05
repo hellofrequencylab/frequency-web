@@ -6,25 +6,16 @@ import { DashboardTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { spaceManageHref, type SpaceType } from '@/lib/spaces/types'
-import { getSpaceCapabilities, spaceHasEntitlement, spaceAutonomyLevel, spaceAiDepth } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccessLive } from '@/lib/spaces/function-access'
 import { getDeals, countOpenTasks, computeMetrics, formatMoney, ensureSpaceStages } from '@/lib/crm/pipeline'
 import { StatCard } from '@/components/ui/stat-card'
-import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
-import { SpacePipeline } from '@/components/spaces/crm/space-pipeline'
-import { CrmFunnelPanel } from '@/components/spaces/crm/crm-funnel-panel'
-import { SpaceContacts } from '@/components/spaces/crm/space-contacts'
 import { SpaceContactDetail } from '@/components/spaces/crm/space-contact-detail'
 import { SpaceStageList } from '@/components/spaces/crm/space-stage-list'
 import { CrmViewTabs, type CrmView } from '@/components/spaces/crm/crm-view-tabs'
-import { SpaceTasks } from '@/components/spaces/crm/space-tasks'
-import { ImportContactsForm } from '@/components/spaces/crm/import-contacts-form'
 import { FeatureMeterUpsell } from '@/components/pricing/feature-meter-upsell'
-import { SpaceCockpitBand } from './space-cockpit-band'
-import { AutonomyControl } from './autonomy-control'
-import { AiDepthUpsell } from './ai-depth-upsell'
-import { SpaceResonanceSection } from './space-resonance-section'
+import { CrmBody, ListSkeleton } from './crm-body'
 
 // PER-SPACE CRM BOARD (CRM-STRATEGY §6/§7, ADR-361 P3). The paid, full-width Dashboard a Space runs:
 // its pipeline (per-segment stages + deals) plus its contacts, scoped to this space_id, with the
@@ -38,6 +29,11 @@ import { SpaceResonanceSection } from './space-resonance-section'
 // space, the no-existence-leak rule.) Every read is fail-safe (lib/crm/pipeline.ts returns [] on error).
 //
 // The rail is registered 'none' for this route in lib/layout/page-chrome.ts (a full-width board).
+//
+// STAGE D5: the board itself (tabs + the active view) lives in the chrome-free, self-gating <CrmBody>,
+// shared with the inline `?panel=crm` workspace. This page keeps the DashboardTemplate chrome + stats slot,
+// the LockedCrm gate, and the two DEEP sub-views (?contact=, ?stage=) that stay full-width on this route;
+// it delegates the default board (People / Pipeline / Cockpit by ?view=) to <CrmBody>, byte-identical.
 // No em or en dashes; voice per CONTENT-VOICE §10.
 
 export const metadata = {
@@ -185,84 +181,11 @@ export default async function SpaceCrmBoardPage({
       }
       width="wide"
     >
-      {/* LIST-FIRST (docs/NEXT-GEN-CRM.md): the persistent view tabs sit at the top of every board
-          view, so the familiar People list is always one tap away from Pipeline or Cockpit. */}
-      <CrmViewTabs boardHref={boardHref} active={activeView} />
-
-      {/* ── PEOPLE (default front door): the familiar member roster + the import path ─────────────── */}
-      {activeView === 'people' && (
-        <>
-          <ImportContactsForm spaceId={space.id} />
-
-          <Suspense fallback={<ListSkeleton />}>
-            {/* Each contact row opens the on-board detail (?contact=<id> on this board). */}
-            <SpaceContacts
-              spaceId={space.id}
-              slug={space.slug}
-              selectedContactId={null}
-              linkBase={boardHref}
-            />
-          </Suspense>
-        </>
-      )}
-
-      {/* ── PIPELINE: deals + stages + the reach funnel + the tasks you owe ───────────────────────── */}
-      {activeView === 'pipeline' && (
-        <>
-          <Suspense fallback={<BoardSkeleton />}>
-            {/* Editable stages (ADR-517 Phase F2): a manager gets the owner-only "Edit stages" control;
-                the stage actions re-gate + space-scope by slug, so this is convenience over an unchanged
-                gate. A non-manager still reaches here read-only (the board itself gates on canUseCrm). */}
-            <SpacePipeline spaceId={space.id} slug={space.slug} editable={caps.canEditProfile} />
-          </Suspense>
-
-          {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. */}
-          <Suspense fallback={<FunnelSkeleton />}>
-            <CrmFunnelPanel spaceId={space.id} />
-          </Suspense>
-
-          <Suspense fallback={<ListSkeleton />}>
-            <SpaceTasks spaceId={space.id} slug={space.slug} />
-          </Suspense>
-        </>
-      )}
-
-      {/* ── COCKPIT (secondary): the health summary + lifecycle funnel + worklist + resonance ──────── */}
-      {activeView === 'cockpit' && (
-        <>
-          {/* RESONANCE COCKPIT BAND (Phase 2 · ADR-383): the verdict line + four Space-scoped health
-              StatCards + the Space who-needs-attention worklist + the lifecycle funnel. Its own
-              Suspense so the cockpit reads never block; every read is fail-safe (zeros / empty). */}
-          <Suspense fallback={<CockpitSkeleton />}>
-            <SpaceCockpitBand spaceId={space.id} slug={space.slug} />
-          </Suspense>
-
-          {/* AUTONOMY SLIDER (Phase 3 · ADR-384): the owner's dial for how much Vera does on its own.
-              Owner/admin only (caps.canManageMembers); the setter re-gates server-side. */}
-          {caps.canManageMembers && (
-            <AutonomyControl slug={space.slug} level={spaceAutonomyLevel(space)} />
-          )}
-
-          {/* AI-DEPTH UPSELL (Phase 6 · ADR-387): a display-only nudge shown only at the soft ceiling.
-              Owner/admin only; fail-safe to rendering nothing. */}
-          {caps.canManageMembers && (
-            <Suspense fallback={null}>
-              <AiDepthUpsell
-                slug={space.slug}
-                spaceId={space.id}
-                tier={spaceAiDepth(space)}
-                plan={space.plan}
-              />
-            </Suspense>
-          )}
-
-          {/* Resonance Graph (Phase 4 · ADR-385): "people close by with your vibe", the Space-scoped
-              reciprocal match suggestions. Its own Suspense; fail-safe to empty. */}
-          <Suspense fallback={<ListSkeleton />}>
-            <SpaceResonanceSection spaceId={space.id} />
-          </Suspense>
-        </>
-      )}
+      {/* The board itself (tabs + the active view) is the chrome-free <CrmBody>, shared with the inline
+          `?panel=crm` workspace (Stage D5). This page frames it in the DashboardTemplate + stats slot; the
+          panel bounds it under the profile hero. CrmBody re-derives the same space + caps, so the standalone
+          render stays byte-identical. The deep sub-views (?contact=, ?stage=) stay on this route, above. */}
+      <CrmBody slug={space.slug} activeView={activeView} />
     </DashboardTemplate>
   )
 }
@@ -362,52 +285,6 @@ function StatsSkeleton() {
   )
 }
 
-function CockpitSkeleton() {
-  return (
-    <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
-        ))}
-      </div>
-      <div className="h-40 animate-pulse rounded-2xl bg-surface-elevated/50" />
-    </section>
-  )
-}
-
-function BoardSkeleton() {
-  return (
-    <section>
-      <SectionHeader title="Pipeline" />
-      <div className="flex gap-3 overflow-hidden">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-40 w-64 shrink-0 animate-pulse rounded-2xl bg-surface-elevated/50" />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function FunnelSkeleton() {
-  return (
-    <section>
-      <SectionHeader title="Funnel" />
-      <div className="mb-4 grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-elevated/50" />
-        ))}
-      </div>
-      <div className="h-44 animate-pulse rounded-2xl bg-surface-elevated/50" />
-    </section>
-  )
-}
-
-function ListSkeleton() {
-  return (
-    <div className="space-y-px rounded-2xl border border-border bg-surface p-2 shadow-sm">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-elevated/50" />
-      ))}
-    </div>
-  )
-}
+// The board's own skeletons (Board / Funnel / Cockpit) moved into crm-body.tsx with the views they frame.
+// ListSkeleton is imported from there and reused by the two deep sub-views (contact detail + stage drill)
+// that stay on this route, so every board skeleton lives in one place.

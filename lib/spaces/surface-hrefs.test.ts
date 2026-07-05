@@ -12,9 +12,15 @@ describe('panelHrefForSurface (rail-only inline-panel translation)', () => {
     expect(panelHrefForSurface('space.people', slug)).not.toBe(hrefForSurface('space.people', slug))
   })
 
-  it('falls through to the full route for a non-panel surface (CRM is never a panel)', () => {
-    expect(panelHrefForSurface('space.engage.crm', slug)).toBe(hrefForSurface('space.engage.crm', slug))
+  it('opens CRM (space.engage.crm) inline via ?panel=crm — the bounded board panel (Stage D5)', () => {
+    expect(panelHrefForSurface('space.engage.crm', slug)).toBe(`/spaces/${slug}?panel=crm`)
+    expect(panelHrefForSurface('space.engage.crm', slug)).not.toBe(hrefForSurface('space.engage.crm', slug))
+  })
+
+  it('falls through to the full route for a non-panel surface', () => {
+    // Basics has no panel, so the rail keeps opening its standalone editor.
     expect(panelHrefForSurface('space.basics', slug)).toBe(`/spaces/${slug}/settings/basics`)
+    expect(panelHrefForSurface('space.basics', slug)).toBe(hrefForSurface('space.basics', slug))
   })
 
   it('preserves the nullable contract for a surface with no route (Danger)', () => {

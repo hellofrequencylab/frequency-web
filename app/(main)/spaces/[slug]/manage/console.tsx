@@ -26,7 +26,7 @@ import type { SpaceSurface } from '@/lib/admin/entities/registry'
 import type { AdminSlot } from '@/lib/admin/modules/registry'
 import { SPACE_GROUP_META } from '@/lib/admin/modules/spine'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
-import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
+import { hrefForSurface, panelHrefForSurface } from '@/lib/spaces/surface-hrefs'
 
 // hrefForSurface was LIFTED to the pure lib module (lib/spaces/surface-hrefs.ts) so the client-side
 // admin rail's Space link-rows (components/layout/settings-panel.tsx) can reuse the SAME map without
@@ -38,9 +38,11 @@ export { hrefForSurface }
 // The page (an RSC) resolves the Space + gates server-side and hands this the gated spine surfaces (in
 // stable spine order) plus the Mode emphasis list; this layer binds each surface id to the EXISTING
 // settings sub-page that already serves it, GROUPS the flat spine into scannable clusters, and tags the
-// surfaces a Mode suggests. No feature is rebuilt: every section is a link into a working
-// /spaces/[slug]/settings sub-page (or the CRM board / Mode settings), so this stays a pure
-// harmonization of navigation onto the unified spine.
+// surfaces a Mode suggests. No feature is rebuilt: every section is a link into a working surface. As of
+// Stage D5 the cards route through panelHrefForSurface, so a PANELABLE surface opens ON-PAGE (the profile
+// body's `?panel=<id>` workspace), matching the rail; a non-panel surface still opens its full
+// /spaces/[slug]/settings sub-page (or the CRM full page / Mode settings). This stays a pure harmonization
+// of navigation onto the unified spine (the console PAGE itself remains a working deep link).
 //
 // DESIGN:
 //   • Identity LEADS, always, at the top — never demoted below the mode-emphasized modules (the bug the
@@ -252,7 +254,11 @@ function GroupCluster({
           if (surface.id === 'space.danger') {
             return <DangerRow key={surface.id} surface={surface} canDelete={canDelete} spaceId={spaceId} />
           }
-          const href = hrefForSurface(surface.id, slug)
+          // Stage D5: the console's cards now open ON-PAGE panels, matching the rail. A panelable surface
+          // (PANEL_SURFACE_TO_ID) resolves to `/spaces/<slug>?panel=<id>` so navigating a manager from the
+          // console also shows it inline in the profile; a non-panel surface falls through to its full route
+          // unchanged. (hrefForSurface itself is untouched — the console PAGE + bottom bank still use it.)
+          const href = panelHrefForSurface(surface.id, slug)
           if (!href) return null
           return (
             <SectionRow
