@@ -17,6 +17,7 @@ import {
   Mail,
   BarChart3,
   CreditCard,
+  Blocks,
   Trash2,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
@@ -107,8 +108,50 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   { id: 'space.billing', label: 'Plan and usage', desc: 'Your plan, what it unlocks, and billing.', Icon: CreditCard, family: 'growth', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
+  // The Module Manager (ADR-546, P3): the owner-gated area that turns each service on or off, reorders the
+  // menu, and hides a module. An always-on shell area (no featureKey — it can never be turned off or hidden),
+  // gated to owner/admin at every render + write, not by a feature. Deep-links to its own page.
+  { id: 'space.modules', label: 'Menu and features', desc: 'Turn features on or off, reorder your menu, and hide what you do not use.', Icon: Blocks, family: 'system', slot: 'safety', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage/modules`, order: 98, tier: 'extra' },
   { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'inline', order: 99, tier: 'extra' },
 ]
+
+/** Module ids that may NEVER be hidden from the menu or turned off: the shell config surfaces (Identity /
+ *  Info / Page / Settings), Danger, and the Module Manager itself. Hiding any of these would strand the
+ *  owner (they could not get back to edit their space or its menu). The Module Manager UI hard-disables
+ *  the hide + feature controls for these, and `readModuleMenuPrefs` drops them from any stored hidden list. */
+export const UNHIDEABLE_MODULE_IDS: readonly string[] = [
+  'space.branding',
+  'space.basics',
+  'space.layout',
+  'space.settings',
+  'space.modules',
+  'space.danger',
+]
+
+/** Whether a module may be hidden from the menu (everything but the shell + Danger + the Module Manager). */
+export function isModuleHideable(id: string): boolean {
+  return !UNHIDEABLE_MODULE_IDS.includes(id)
+}
+
+/** The menu families in their canonical display order (the Module Manager groups its rows by these). */
+export const SPACE_MODULE_FAMILY_ORDER: readonly SpaceModuleFamily[] = [
+  'space',
+  'audience',
+  'offerings',
+  'reach',
+  'growth',
+  'system',
+]
+
+/** Member-facing family headers for the Module Manager (NAMING.md + CONTENT-VOICE.md; no em dashes). */
+export const SPACE_MODULE_FAMILY_LABEL: Record<SpaceModuleFamily, string> = {
+  space: 'Your space',
+  audience: 'Audience',
+  offerings: 'Offerings & money',
+  reach: 'Reach',
+  growth: 'Growth',
+  system: 'System',
+}
 
 /** A space module by id, or null. */
 export function spaceModuleById(id: string): SpaceModule | null {

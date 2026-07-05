@@ -6,6 +6,7 @@ import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
 import { isStaff } from '@/lib/core/roles'
 import { spaceModuleManifest } from '@/lib/admin/modules/space-modules'
+import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceManageConsole } from './console'
 
 // The Space owner console BOARD (ADR-441 EM1-3): the reusable render boundary that resolves the Space,
@@ -54,9 +55,17 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
   // (`gate.kind === 'always'`) always shows; a service module shows only when its function is usable, so
   // a space with a function off (e.g. availability) drops that module, matching the legacy gating. The
   // console groups these into scannable clusters itself (console.tsx) and does NOT pre-reorder by Mode.
-  const modules = spaceModuleManifest({}).filter(
-    (m) => m.gate.kind === 'always' || canUse(m.gate.fn),
-  )
+  //
+  // MODULE MANAGER OVERRIDES (P3, ADR-546): feed the owner's persisted menu overrides — the module ORDER
+  // and the HIDDEN set (spaces.preferences.moduleMenu, read fail-safe) — into the manifest, so a hidden
+  // module drops from the console and the owner's order applies. The Module Manager itself (space.modules)
+  // is OWNER/ADMIN only (caps.canManageMembers), narrower than the console's editor-level manage gate, so a
+  // mere editor / staff previewer never sees the menu-management entry point.
+  const menu = readModuleMenuPrefs(space.preferences)
+  const modules = spaceModuleManifest({}, { order: menu.order, hidden: menu.hidden }).filter((m) => {
+    if (m.id === 'space.modules') return caps.canManageMembers
+    return m.gate.kind === 'always' || canUse(m.gate.fn)
+  })
 
   // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the
   // console the emphasized FUNCTION list as framing only.

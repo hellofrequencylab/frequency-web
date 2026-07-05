@@ -5,6 +5,10 @@ import {
   isFeatureEnabled,
   isModuleEnabled,
   spaceModuleManifest,
+  isModuleHideable,
+  UNHIDEABLE_MODULE_IDS,
+  SPACE_MODULE_FAMILY_ORDER,
+  SPACE_MODULE_FAMILY_LABEL,
 } from './space-modules'
 import { SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
 
@@ -104,5 +108,36 @@ describe('spaceModuleManifest', () => {
     const ids = spaceModuleManifest({ qr: false }).map((m) => m.id)
     expect(ids).not.toContain('space.reach')
     expect(ids).not.toContain('space.insights')
+  })
+})
+
+// ADR-546 (docs/MODULAR-MENU.md P3): the Module Manager module + the hide/family metadata it drives.
+describe('Module Manager (space.modules) + hide/family metadata', () => {
+  it('ships a space.modules module: always-on shell, no featureKey, its own deep route', () => {
+    const m = spaceModuleById('space.modules')
+    expect(m).not.toBeNull()
+    expect(m!.gate.kind).toBe('always') // owner/admin gating lives in the board + page, not the manifest
+    expect(m!.featureKey).toBeNull() // never a toggleable feature
+    expect(m!.deepLink?.('demo')).toBe('/spaces/demo/manage/modules')
+  })
+
+  it('protects the shell config surfaces, Danger, and the Module Manager itself from hiding', () => {
+    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger', 'space.modules']) {
+      expect(isModuleHideable(id), `${id} must be unhideable`).toBe(false)
+      expect(UNHIDEABLE_MODULE_IDS).toContain(id)
+    }
+  })
+
+  it('lets every SERVICE module be hidden', () => {
+    for (const m of SPACE_MODULES) {
+      if (m.gate.kind === 'feature') expect(isModuleHideable(m.id), `${m.id} should be hideable`).toBe(true)
+    }
+  })
+
+  it('gives every family a display order slot and a label', () => {
+    for (const m of SPACE_MODULES) {
+      expect(SPACE_MODULE_FAMILY_ORDER).toContain(m.family)
+      expect(SPACE_MODULE_FAMILY_LABEL[m.family]).toBeTruthy()
+    }
   })
 })
