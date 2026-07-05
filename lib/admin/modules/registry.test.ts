@@ -136,12 +136,14 @@ describe('admin module registry', () => {
 
   it('selects the personal apps by the global scope kind, and only with account.manage', () => {
     // The bar resolves the "You" set on the global scope; a capable viewer sees it, others do not.
-    // The full personal set (ADR-515 Phase 2), ordered by `order`: the inline body (Profile, Spotlight,
-    // Layout) then the bank surfaces (Appearance, Notifications, Connections, Account and privacy, Billing).
+    // The full personal set (ADR-515 Phase 2 · ADR-525), ordered by `order`: the inline body (Profile,
+    // Spotlight, Layout, Spotlight look) then the bank surfaces (Appearance, Notifications, Connections,
+    // Account and privacy, Billing).
     const personalIds = [
       'account.profile',
       'account.spotlight',
       'account.layout',
+      'account.spotlightAppearance',
       'account.appearance',
       'account.notifications',
       'account.connections',
@@ -171,15 +173,20 @@ describe('admin module registry', () => {
     expect(ADMIN_MODULES.every((m) => m.surface === 'inline' || m.surface === 'sidebar')).toBe(true)
   })
 
-  // The personal rail (ADR-515 Phase 2). The BODY is exactly three inline surfaces — Profile, Spotlight,
-  // Layout (placement inline, render inline); the secondary account surfaces — Appearance, Notifications,
-  // Connections and location, Account and privacy, Plan and billing — are `placement: 'bank'` (they leave
-  // the sidebar body for the bottom bank). Every core entity module (non-global scope) still renders inline.
-  it('keeps only Profile / Spotlight / Layout inline and banks the secondary account surfaces (ADR-515)', () => {
+  // The personal rail (ADR-515 Phase 2 · ADR-525). The BODY is the inline surfaces — Profile, Spotlight,
+  // Layout, Spotlight look (placement inline, render inline); the secondary account surfaces — Appearance,
+  // Notifications, Connections and location, Account and privacy, Plan and billing — are `placement: 'bank'`
+  // (they leave the sidebar body for the bottom bank). Every core entity module (non-global scope) inline.
+  it('keeps the profile-look surfaces inline and banks the secondary account surfaces (ADR-515 · ADR-525)', () => {
     const personal = ADMIN_MODULES.filter((m) => m.scopes.includes('global'))
     const inlineBody = personal.filter((m) => m.placement !== 'bank').map((m) => m.id).sort()
     const bank = personal.filter((m) => m.placement === 'bank').map((m) => m.id).sort()
-    expect(inlineBody).toEqual(['account.layout', 'account.profile', 'account.spotlight'])
+    expect(inlineBody).toEqual([
+      'account.layout',
+      'account.profile',
+      'account.spotlight',
+      'account.spotlightAppearance',
+    ])
     expect(bank).toEqual([
       'account.appearance',
       'account.billing',

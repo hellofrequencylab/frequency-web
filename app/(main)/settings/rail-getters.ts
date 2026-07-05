@@ -19,7 +19,17 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getProfileCapabilities } from '@/lib/core/load-capabilities'
-import { readSpotlightEnabled, readSpotlightPublished } from '@/lib/profile/spotlight-flags'
+import {
+  readSpotlightEnabled,
+  readSpotlightPublished,
+  readSpotlightThemeRaw,
+  readSpotlightBackgroundRaw,
+} from '@/lib/profile/spotlight-flags'
+import { validateSpotlightTheme, type SpotlightTheme } from '@/lib/spotlight/theme'
+import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
+import type { SpotlightBackground } from '@/lib/spotlight/blocks/schema'
+import { getTopFriendsForOwner, getAcceptedFriendsForPicker } from '@/lib/spotlight/top-friends'
+import type { TopFriend } from '@/lib/spotlight/top-friends.types'
 import { computeCompleteness } from '@/lib/profile/completeness'
 import { deriveTier, ENTITLEMENT_LABEL } from '@/lib/core/entitlement'
 import type { EntitlementTier } from '@/lib/core/entitlement'
@@ -247,5 +257,71 @@ export async function getMemberLayoutRailData(): Promise<MemberLayoutRailData | 
     rows: resolveRows(saved, 'member'),
     hidden: saved?.hidden ?? [],
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
+  }
+}
+
+// ── The Spotlight appearance rail bundle (account.spotlightAppearance, ADR-525) ──────────────────────────
+// The grid-side replacement for the retired Puck editor's look controls: the member's profile skin, their
+// Spotlight page THEME (header framing + fonts), the page BACKGROUND (image + focus/dim/zoom), and their
+// Top Friends. Everything the Appearance rail module needs in one read. RE-GATES on the authed viewer (reads
+// ONLY the caller's own row + only THEIR accepted friends via getAcceptedFriendsForPicker) and returns NULL
+// when signed out (fail-safe → the module renders nothing). The theme/background are VALIDATED here (the
+// same read-side boundary the public renderer enforces), so the module always seeds from a safe subset.
+// READ-ONLY + serializable; the module's own writes (setSpotlightTheme / setSpotlightBackground /
+// updateProfileTheme / the Top Friends actions) each re-check auth server-side.
+
+export interface AppearanceRailData {
+  handle: string | null
+  /** Whether the viewer may turn Spotlight on (gates the whole module — appearance is Spotlight chrome). */
+  canEnableSpotlight: boolean
+  /** Whether Spotlight is currently enabled (the writers require it, so the module tells the member). */
+  spotlightEnabled: boolean
+  /** The stored profile skin id (governed allowlist), or null for the default. */
+  profileTheme: string | null
+  /** The validated Spotlight page theme (header show/height/focusY + fonts + colour/card fields). */
+  theme: SpotlightTheme
+  /** The validated Spotlight page background (assetPath pinned to the owner + focus/dim/zoom). */
+  background: SpotlightBackground
+  /** The member's current ordered Top Friends (resolved to public identity fields). */
+  topFriends: TopFriend[]
+  /** Every accepted friend, as the picker's source list (only the caller's own friends). */
+  friendOptions: TopFriend[]
+}
+
+/** The Spotlight appearance bundle for the rail module, or null when signed out / the profile is missing
+ *  (fail-safe → the module renders nothing). */
+export async function getAppearanceRailData(): Promise<AppearanceRailData | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, handle, meta, profile_theme')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!profile) return null
+
+  const meta = (profile as { meta?: unknown }).meta
+  const profileId = profile.id as string
+  const canEnableSpotlight = (await getProfileCapabilities(profileId)).has('spotlight.enable')
+
+  const [topFriends, friendOptions] = await Promise.all([
+    getTopFriendsForOwner(profileId),
+    getAcceptedFriendsForPicker(profileId),
+  ])
+
+  return {
+    handle: (profile as { handle?: string | null }).handle ?? null,
+    canEnableSpotlight,
+    spotlightEnabled: readSpotlightEnabled(meta),
+    profileTheme: (profile as { profile_theme?: string | null }).profile_theme ?? null,
+    theme: validateSpotlightTheme(readSpotlightThemeRaw(meta)),
+    // The auth user id pins the background asset path to the owner's own folder, exactly as the public read.
+    background: validateSpotlightBackground(readSpotlightBackgroundRaw(meta), user.id),
+    topFriends,
+    friendOptions,
   }
 }
