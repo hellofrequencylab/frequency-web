@@ -4,6 +4,7 @@ import {
   entityBlockById,
   blockSupportsKind,
   blocksForKind,
+  profilePaletteForKind,
   MEMBER_CHROME_BLOCK_IDS,
 } from './registry'
 import { PROFILE_BLOCKS } from '@/lib/spaces/profile-blocks'
@@ -52,6 +53,24 @@ describe('unified entity-block registry', () => {
       expect(unified, `missing unified block for space profile block ${pb.id}`).not.toBeNull()
       expect(blockSupportsKind(unified!, 'space')).toBe(true)
     }
+  })
+
+  it('profilePaletteForKind narrows to the curated core (ADR-529)', () => {
+    const space = profilePaletteForKind('space').map((b) => b.id)
+    // Core kept:
+    for (const id of ['about', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'heading', 'text', 'links', 'image']) {
+      expect(space).toContain(id)
+    }
+    // Retired from the offered palette:
+    for (const id of ['highlights', 'stats', 'practices', 'circles', 'business', 'faq', 'updates', 'gallery', 'quote', 'embed', 'divider']) {
+      expect(space).not.toContain(id)
+    }
+    // The member palette keeps topfriends + the four content essentials, drops the niche content blocks.
+    const member = profilePaletteForKind('member').map((b) => b.id)
+    expect(member).toContain('topfriends')
+    expect(member).toContain('links')
+    expect(member).not.toContain('gallery')
+    expect(member).not.toContain('divider')
   })
 
   it('blocksForKind returns member vs space palettes', () => {

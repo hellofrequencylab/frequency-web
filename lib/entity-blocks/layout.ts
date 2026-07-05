@@ -479,15 +479,25 @@ const MEMBER_STARTERS: Record<StarterId, readonly RowDef[]> = {
 }
 
 const SPACE_STARTERS: Record<StarterId, readonly RowDef[]> = {
+  // The core best-practice space profile (ADR-529): identity story, what you offer + how to book, what's
+  // coming up + who runs it, social proof, then how to reach you.
   basic: [
     r('r0', 1, ['about']),
-    r('r1', 1, ['stats']),
-    r('r2', 1, ['offerings']),
+    r('r1', 1, ['offerings']),
+    r('r2', 1, ['booking']),
     r('r3', 1, ['events']),
-    r('r4', 1, ['updates']),
+    r('r4', 1, ['team']),
+    r('r5', 1, ['reviews']),
+    r('r6', 1, ['contact']),
   ],
-  showcase: [r('r0', 1, ['about']), r('r1', 2, ['offerings', 'events']), r('r2', 2, ['stats', 'reviews'])],
-  minimal: [r('r0', 1, ['about'])],
+  showcase: [
+    r('r0', 1, ['about']),
+    r('r1', 2, ['offerings', 'booking']),
+    r('r2', 2, ['events', 'team']),
+    r('r3', 1, ['reviews']),
+    r('r4', 1, ['contact']),
+  ],
+  minimal: [r('r0', 1, ['about']), r('r1', 1, ['offerings']), r('r2', 1, ['contact'])],
 }
 
 /** The starter seeds by kind. Values are read-only templates; use starterRows to get a fresh, mutable copy. */

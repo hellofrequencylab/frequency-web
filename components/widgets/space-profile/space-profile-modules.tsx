@@ -94,6 +94,7 @@ function renderSpaceBlock(
   data: SpaceContentData,
   authored: SpaceAuthored,
   layout: EntityLayout | null,
+  styled = true,
 ): React.ReactNode {
   if (id.length === 0) return null
   const block = entityBlockById(id)
@@ -120,9 +121,12 @@ function renderSpaceBlock(
     )
   }
   if (inner == null) return null
+  // `styled=false` (the owner live-preview node map) leaves the style frame to LiveProfileGrid, which
+  // applies it CLIENT-side from the shared store so a style edit shows instantly (no server round-trip).
+  const body = styled ? <BlockStyleFrame style={style}>{inner}</BlockStyleFrame> : inner
   return (
     <Suspense key={id} fallback={null}>
-      <BlockStyleFrame style={style}>{inner}</BlockStyleFrame>
+      {body}
     </Suspense>
   )
 }
@@ -141,7 +145,8 @@ export function renderSpaceBlockNodes(
   layout: EntityLayout | null,
 ): Record<string, React.ReactNode> {
   const nodes: Record<string, React.ReactNode> = {}
-  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored, layout)
+  // styled=false: LiveProfileGrid applies each block's style frame client-side (instant live style edits).
+  for (const b of blocksForKind('space')) nodes[b.id] = renderSpaceBlock(b.id, space, data, authored, layout, false)
   return nodes
 }
 
