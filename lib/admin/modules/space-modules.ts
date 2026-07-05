@@ -1,0 +1,164 @@
+import type { LucideIcon } from 'lucide-react'
+import {
+  IdCard,
+  Palette,
+  SlidersHorizontal,
+  LayoutTemplate,
+  Users,
+  Briefcase,
+  CalendarClock,
+  BadgeCheck,
+  HeartHandshake,
+  GraduationCap,
+  Ticket,
+  DoorOpen,
+  Store,
+  QrCode,
+  Mail,
+  BarChart3,
+  CreditCard,
+  Trash2,
+} from 'lucide-react'
+import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import type { AdminSlot } from './registry'
+
+// THE UNIVERSAL MODULE CONTRACT for the SPACE menu (ADR-543, docs/MODULAR-MENU.md — P0). Space is the one
+// scope that never joined the `AdminModule` registry (lib/admin/modules/registry.ts) because it has NO
+// `Capability` values — it gates on a `SpaceFunctionKey` + role via `resolveSpaceManageAccess` /
+// `spaceFunctionAccess` / `spaces.entitlements`. This module declares the space menu as a catalog of
+// INDEPENDENT, self-contained modules on the same shape the other scopes use, gated by a feature key so the
+// Module Manager (P3) can flip each on and off. PURE + framework-free (types + data only), so it is trivially
+// testable and safe to import anywhere. ADDITIVE: nothing renders from this yet (P1 wires the rail + console
+// to `spaceModuleManifest`); today's SPACE_SURFACES render path is untouched.
+
+/** The menu family a module belongs to (a coarser grouping than the engineering spine `slot`). */
+export type SpaceModuleFamily = 'space' | 'audience' | 'offerings' | 'reach' | 'growth' | 'system'
+
+/** How a module is gated into the menu:
+ *  - `always`  — a shell area (identity / page / settings / danger): shown for any manager.
+ *  - `feature` — a SERVICE gated on a `SpaceFunctionKey`: shown only when that function is enabled
+ *                (default ON; only an explicit `false` in `spaces.entitlements` hides it). */
+export type SpaceModuleGate = { kind: 'always' } | { kind: 'feature'; fn: SpaceFunctionKey }
+
+/** How the module's body renders: `inline` (mounts its editor in the rail), `panel` (opens on-page via
+ *  `?panel=`), or `link` (a link-row out to its deep route only). */
+export type SpaceModuleRender = 'inline' | 'panel' | 'link'
+
+/** ONE self-contained admin module: a primary area or a service, with a header, a gate, a body, and a wire
+ *  into its deep-editing route. */
+export interface SpaceModule {
+  /** Stable id (kept compatible with the existing SPACE_SURFACES ids where one already exists). */
+  id: string
+  /** Member-facing name (naming/voice canon). */
+  label: string
+  /** One-line purpose. */
+  desc: string
+  Icon: LucideIcon
+  family: SpaceModuleFamily
+  /** The engineering spine slot (reused for grouping + ordering parity with the other scopes). */
+  slot: AdminSlot
+  gate: SpaceModuleGate
+  /** The feature toggle the Module Manager flips (a `SpaceFunctionKey`), or null for a shell area that
+   *  cannot be turned off. */
+  featureKey: SpaceFunctionKey | null
+  render: SpaceModuleRender
+  /** Build the deep-editing route for this module, given the space slug. */
+  deepLink?: (slug: string) => string
+  /** Sort order within the menu. */
+  order: number
+  /** The three-tier rail band (identity/profile · most-used · under "More"). */
+  tier: 'standard' | 'primary' | 'extra'
+}
+
+const base = (slug: string) => `/spaces/${slug}`
+
+/**
+ * THE SPACE MODULE CATALOG (ADR-543). Every primary area + every service as an INDEPENDENT module. The six
+ * commerce services (Booking / Memberships / Donations / Enrollment / Tickets / Check-in) are their own
+ * modules (the owner's directive — they used to be collapsed into one "Offerings" surface). CRM is a single
+ * module that will absorb Vera autonomy + the Pipeline as sub-areas (P1). Ordered by `order`.
+ */
+export const SPACE_MODULES: readonly SpaceModule[] = [
+  // ── The space itself (shell — always on) ─────────────────────────────────────────────────────────────
+  { id: 'space.branding', label: 'Identity and Branding', desc: 'Name, tagline, header, logo, cover, and accent.', Icon: Palette, family: 'space', slot: 'place', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 10, tier: 'standard' },
+  { id: 'space.basics', label: 'Info and Connect', desc: 'About, Story, contact and hours, and your links.', Icon: IdCard, family: 'space', slot: 'basics', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 15, tier: 'standard' },
+  { id: 'space.layout', label: 'Page', desc: 'Arrange the sections of your page into rows and columns.', Icon: LayoutTemplate, family: 'space', slot: 'layout', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/manage/layout`, order: 20, tier: 'standard' },
+  { id: 'space.settings', label: 'Settings', desc: 'Who can see your space, and the ratings you allow.', Icon: SlidersHorizontal, family: 'space', slot: 'safety', gate: { kind: 'always' }, featureKey: null, render: 'inline', deepLink: (s) => `${base(s)}/settings/basics`, order: 25, tier: 'primary' },
+
+  // ── Audience & relationships ─────────────────────────────────────────────────────────────────────────
+  { id: 'space.people', label: 'Members', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary' },
+  { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary' },
+
+  // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
+  { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/availability`, order: 40, tier: 'primary' },
+  { id: 'space.memberships', label: 'Memberships', desc: 'The tiers members can join, and who has joined.', Icon: BadgeCheck, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'memberships' }, featureKey: 'memberships', render: 'panel', deepLink: (s) => `${base(s)}/settings/memberships`, order: 45, tier: 'primary' },
+  { id: 'space.donations', label: 'Donations', desc: 'The fund, a short description, and the amounts members can pick.', Icon: HeartHandshake, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'donations' }, featureKey: 'donations', render: 'panel', deepLink: (s) => `${base(s)}/settings/donations`, order: 50, tier: 'primary' },
+  { id: 'space.enroll', label: 'Enrollment', desc: 'The program details, and who has enrolled.', Icon: GraduationCap, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'enroll' }, featureKey: 'enroll', render: 'panel', deepLink: (s) => `${base(s)}/settings/enroll`, order: 55, tier: 'primary' },
+  { id: 'space.tickets', label: 'Tickets', desc: 'Free or RSVP ticket tiers, and who has reserved a spot.', Icon: Ticket, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'tickets' }, featureKey: 'tickets', render: 'panel', deepLink: (s) => `${base(s)}/settings/tickets`, order: 60, tier: 'primary' },
+  { id: 'space.checkin', label: 'Check in', desc: 'Show the door code, and see who checked in.', Icon: DoorOpen, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'checkin' }, featureKey: 'checkin', render: 'panel', deepLink: (s) => `${base(s)}/settings/checkin`, order: 65, tier: 'primary' },
+  { id: 'space.services', label: 'Store', desc: 'Your storefront items, their pricing, and visibility.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'always' }, featureKey: null, render: 'panel', deepLink: (s) => `${base(s)}/settings/services`, order: 70, tier: 'primary' },
+
+  // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
+  { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary' },
+  { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary' },
+
+  // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
+  { id: 'space.insights', label: 'Insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra' },
+  { id: 'space.billing', label: 'Plan and usage', desc: 'Your plan, what it unlocks, and billing.', Icon: CreditCard, family: 'growth', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra' },
+
+  // ── System ───────────────────────────────────────────────────────────────────────────────────────────
+  { id: 'space.danger', label: 'Danger zone', desc: 'Delete this space. This cannot be undone.', Icon: Trash2, family: 'system', slot: 'danger', gate: { kind: 'always' }, featureKey: null, render: 'inline', order: 99, tier: 'extra' },
+]
+
+/** A space module by id, or null. */
+export function spaceModuleById(id: string): SpaceModule | null {
+  return SPACE_MODULES.find((m) => m.id === id) ?? null
+}
+
+/** Whether a feature is enabled for a space. Default ON: a function is enabled unless `entitlements` maps it
+ *  to an explicit `false` (mirrors lib/spaces/functions resolution — universal, default-on, opt-out). */
+export function isFeatureEnabled(
+  entitlements: Partial<Record<SpaceFunctionKey, boolean>> | null | undefined,
+  fn: SpaceFunctionKey,
+): boolean {
+  return entitlements?.[fn] !== false
+}
+
+/** Whether a module is gated INTO the menu for the given entitlements (a shell module always is; a service
+ *  module is iff its feature is enabled). Independent of the Module Manager's hide/order overrides. */
+export function isModuleEnabled(
+  module: SpaceModule,
+  entitlements: Partial<Record<SpaceFunctionKey, boolean>> | null | undefined,
+): boolean {
+  return module.gate.kind === 'always' || isFeatureEnabled(entitlements, module.gate.fn)
+}
+
+/** Options that let the Module Manager (P3) override the default menu: hide modules, and/or reorder them. */
+export interface ModuleManifestOptions {
+  /** Module ids the owner has hidden from the menu. */
+  hidden?: readonly string[]
+  /** Module ids in the owner's preferred order; unlisted modules keep their catalog order, after these. */
+  order?: readonly string[]
+}
+
+/**
+ * THE SPACE MODULE MANIFEST (ADR-543): the ordered, gated list of modules a space's menu shows. Filters the
+ * catalog by feature gate (default ON), drops any the owner hid, and orders by the owner's preference then
+ * the catalog `order`. PURE + total — the single entry the rail + console will render from (P1).
+ */
+export function spaceModuleManifest(
+  entitlements: Partial<Record<SpaceFunctionKey, boolean>> | null | undefined,
+  opts: ModuleManifestOptions = {},
+): SpaceModule[] {
+  const hidden = new Set(opts.hidden ?? [])
+  const enabled = SPACE_MODULES.filter((m) => isModuleEnabled(m, entitlements) && !hidden.has(m.id))
+  if (!opts.order || opts.order.length === 0) {
+    return enabled.slice().sort((a, b) => a.order - b.order)
+  }
+  const rank = new Map(opts.order.map((id, i) => [id, i]))
+  return enabled.slice().sort((a, b) => {
+    const ra = rank.has(a.id) ? (rank.get(a.id) as number) : Number.MAX_SAFE_INTEGER
+    const rb = rank.has(b.id) ? (rank.get(b.id) as number) : Number.MAX_SAFE_INTEGER
+    return ra !== rb ? ra - rb : a.order - b.order
+  })
+}
