@@ -78,12 +78,20 @@ describe('panelHrefForModule (on-page panel first, else deep link, no regression
     expect(panelHrefForModule(byId('space.billing'), slug)).toBe(`/spaces/${slug}?panel=billing`)
   })
 
-  it('falls through to the deep link for a split commerce module with no panel yet', () => {
-    // The service split: each commerce module opens its own /settings/* page (no on-page panel yet).
-    expect(panelHrefForModule(byId('space.booking'), slug)).toBe(`/spaces/${slug}/settings/availability`)
-    expect(panelHrefForModule(byId('space.memberships'), slug)).toBe(`/spaces/${slug}/settings/memberships`)
-    expect(panelHrefForModule(byId('space.donations'), slug)).toBe(`/spaces/${slug}/settings/donations`)
-    expect(panelHrefForModule(byId('space.tickets'), slug)).toBe(`/spaces/${slug}/settings/tickets`)
+  it('opens each split commerce module on-page via ?panel= (modular menu P2, ADR-545)', () => {
+    // P2: the six independent commerce services gained full inline bodies, so they open on-page like the
+    // rest (no longer deep-linking to their /settings/* page).
+    expect(panelHrefForModule(byId('space.booking'), slug)).toBe(`/spaces/${slug}?panel=booking`)
+    expect(panelHrefForModule(byId('space.memberships'), slug)).toBe(`/spaces/${slug}?panel=memberships`)
+    expect(panelHrefForModule(byId('space.donations'), slug)).toBe(`/spaces/${slug}?panel=donations`)
+    expect(panelHrefForModule(byId('space.enroll'), slug)).toBe(`/spaces/${slug}?panel=enroll`)
+    expect(panelHrefForModule(byId('space.tickets'), slug)).toBe(`/spaces/${slug}?panel=tickets`)
+    expect(panelHrefForModule(byId('space.checkin'), slug)).toBe(`/spaces/${slug}?panel=checkin`)
+  })
+
+  it('falls through to the deep link for a module with no panel (Insights)', () => {
+    // Insights still has no on-page panel, so it opens its deep route (the QR Scans anchor).
+    expect(panelHrefForModule(byId('space.insights'), slug)).toBe(`/spaces/${slug}/settings/qr#scans`)
   })
 
   it('gives Danger no href (it renders its delete control inline)', () => {

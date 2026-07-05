@@ -10,6 +10,12 @@ import { QrBody } from '@/app/(main)/spaces/[slug]/settings/qr/qr-body'
 import { EmailBody } from '@/app/(main)/spaces/[slug]/settings/email/email-body'
 import { BillingBody } from '@/app/(main)/spaces/[slug]/settings/billing/billing-body'
 import { CrmBody } from '@/app/(main)/spaces/[slug]/crm/crm-body'
+import { BookingBody } from '@/app/(main)/spaces/[slug]/settings/availability/availability-body'
+import { MembershipsBody } from '@/app/(main)/spaces/[slug]/settings/memberships/memberships-body'
+import { DonationsBody } from '@/app/(main)/spaces/[slug]/settings/donations/donations-body'
+import { EnrollBody } from '@/app/(main)/spaces/[slug]/settings/enroll/enroll-body'
+import { TicketsBody } from '@/app/(main)/spaces/[slug]/settings/tickets/tickets-body'
+import { CheckinBody } from '@/app/(main)/spaces/[slug]/settings/checkin/checkin-body'
 
 // INLINE WORKSPACE — the panel BODY (Stage D1). The Space profile's persistent hero + tab menu live in
 // the (profile) route-group layout, so a `?panel=<id>` soft-navigation swaps ONLY this body (the layout
@@ -35,6 +41,14 @@ const PANEL_BODIES: Record<string, PanelBody> = {
   email: EmailBody,
   billing: BillingBody,
   crm: CrmBody,
+  // The six independent commerce service panels (P2, ADR-545): each self-gating body re-checks manage
+  // access, then its section re-checks its own per-Space function gate. Same seam as Members above.
+  booking: BookingBody,
+  memberships: MembershipsBody,
+  donations: DonationsBody,
+  enroll: EnrollBody,
+  tickets: TicketsBody,
+  checkin: CheckinBody,
 }
 
 export function SpaceBodyPanel({ slug, panel }: { slug: string; panel: string }) {

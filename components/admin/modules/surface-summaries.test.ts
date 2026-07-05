@@ -7,6 +7,9 @@ vi.mock('@/app/(main)/spaces/[slug]/manage/rail-getters', () => ({
   getSpaceCrmSummary: async () => null,
   getSpaceServicesSummary: async () => null,
   getSpaceCampaignsSummary: async () => null,
+  getSpaceBookingSummary: async () => null,
+  getSpaceMembershipsSummary: async () => null,
+  getSpaceTicketsSummary: async () => null,
 }))
 
 import { SURFACE_SUMMARIES } from './surface-summaries'
@@ -16,9 +19,20 @@ import { SURFACE_SUMMARIES } from './surface-summaries'
 // copy (correct singular/plural, plain nouns, no em dashes — CONTENT-VOICE §10).
 
 describe('SURFACE_SUMMARIES — the card-vs-plain-link rule', () => {
-  it('carries a summary ONLY for the four primary feature surfaces', () => {
+  it('carries a summary for the primary feature surfaces with an honest single stat', () => {
+    // The four original audience/reach surfaces plus the three commerce services with a cheap count
+    // (Booking / Memberships / Tickets — modular menu P2, ADR-545). Donations / Enrollment / Check-in
+    // have no cheap single-stat, so they are deliberately absent.
     expect(Object.keys(SURFACE_SUMMARIES).sort()).toEqual(
-      ['space.comms', 'space.engage.crm', 'space.people', 'space.services'].sort(),
+      [
+        'space.booking',
+        'space.comms',
+        'space.engage.crm',
+        'space.memberships',
+        'space.people',
+        'space.services',
+        'space.tickets',
+      ].sort(),
     )
   })
 
@@ -42,6 +56,10 @@ describe('SURFACE_SUMMARIES — the card-vs-plain-link rule', () => {
     expect(SURFACE_SUMMARIES['space.comms'].meterKey).toBe('space_email')
     expect(SURFACE_SUMMARIES['space.people'].meterKey).toBeUndefined()
     expect(SURFACE_SUMMARIES['space.services'].meterKey).toBeUndefined()
+    // The commerce snapshots are plain counts, no meter.
+    expect(SURFACE_SUMMARIES['space.booking'].meterKey).toBeUndefined()
+    expect(SURFACE_SUMMARIES['space.memberships'].meterKey).toBeUndefined()
+    expect(SURFACE_SUMMARIES['space.tickets'].meterKey).toBeUndefined()
   })
 })
 
@@ -56,6 +74,12 @@ describe('SURFACE_SUMMARIES — the stat copy', () => {
     ['space.services', 3, '3 items listed'],
     ['space.comms', 1, '1 campaign'],
     ['space.comms', 4, '4 campaigns'],
+    ['space.booking', 1, '1 booking window'],
+    ['space.booking', 3, '3 booking windows'],
+    ['space.memberships', 1, '1 tier'],
+    ['space.memberships', 5, '5 tiers'],
+    ['space.tickets', 1, '1 ticket tier'],
+    ['space.tickets', 2, '2 ticket tiers'],
   ]
 
   it.each(cases)('%s @ %i → "%s"', (id, count, expected) => {

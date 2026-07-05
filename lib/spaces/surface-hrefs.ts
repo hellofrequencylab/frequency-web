@@ -112,6 +112,14 @@ const MODULE_PANEL_ID: Record<string, string> = {
   'space.reach': 'qr', // QR codes
   'space.comms': 'email', // Email
   'space.billing': 'billing', // Plan and usage
+  // The six independent commerce service modules now open on-page too (P2, ADR-545): each maps to its own
+  // service panel so the console + rail open the manager inline instead of deep-linking to /settings/*.
+  'space.booking': 'booking', // Booking (availability)
+  'space.memberships': 'memberships', // Memberships
+  'space.donations': 'donations', // Donations
+  'space.enroll': 'enroll', // Enrollment
+  'space.tickets': 'tickets', // Tickets
+  'space.checkin': 'checkin', // Check in
 }
 
 /** THE MANAGE-CONSOLE href for a P1 module (docs/MODULAR-MENU.md — P1): prefer the module's ON-PAGE panel

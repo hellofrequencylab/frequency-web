@@ -27,6 +27,9 @@ import {
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { listSpaceMembers } from '@/lib/spaces/membership'
+import { listSpaceAvailability } from '@/lib/spaces/booking'
+import { listAllMembershipTiers } from '@/lib/spaces/memberships'
+import { listAllTicketTiers } from '@/lib/spaces/tickets'
 import { getDeals, getStages, type StageKind } from '@/lib/crm/pipeline'
 import { resolveStageManagerAccess } from '@/lib/crm/stages'
 import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
@@ -459,6 +462,40 @@ export async function getSpaceCampaignsSummary(slug: string): Promise<{ count: n
   if (!space) return null
   const campaigns = await listSpaceCampaigns(space.id)
   return { count: campaigns.length, tier: (space.plan ?? 'free').toLowerCase() }
+}
+
+// ── Commerce-service snapshots (modular menu P2 · ADR-545) ───────────────────────────────────────────
+// Three CHEAP single-table counts for the independent commerce panels' rail cards, each re-gated on manage
+// access + the surface's own per-Space function (resolveSummarySpace) and fail-safe → null → a plain
+// link-row. Only the services with a natural, cheap count get a snapshot: Booking (availability windows),
+// Memberships (tiers), and Tickets (tiers). Donations (one ask), Enrollment (one program), and Check-in
+// (a capture scan) carry no snapshot here — no cheap single-stat, so their panels stay plain link-rows.
+
+/** "N booking windows" — the Space's saved weekly availability windows. Gated on manage access + the
+ *  `availability` function. One list read (the SAME the Booking section loads). Fail-safe. */
+export async function getSpaceBookingSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'availability')
+  if (!space) return null
+  const windows = await listSpaceAvailability(space.id)
+  return { count: windows.length }
+}
+
+/** "N tiers" — the Space's membership tiers. Gated on manage access + the `memberships` function. One list
+ *  read (the SAME the Memberships section loads). Fail-safe. */
+export async function getSpaceMembershipsSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'memberships')
+  if (!space) return null
+  const tiers = await listAllMembershipTiers(space.id)
+  return { count: tiers.length }
+}
+
+/** "N ticket tiers" — the Space's ticket tiers. Gated on manage access + the `tickets` function. One list
+ *  read (the SAME the Tickets section loads). Fail-safe. */
+export async function getSpaceTicketsSummary(slug: string): Promise<{ count: number } | null> {
+  const space = await resolveSummarySpace(slug, 'tickets')
+  if (!space) return null
+  const tiers = await listAllTicketTiers(space.id)
+  return { count: tiers.length }
 }
 
 // ── The Space Hub (ADR-516 Phase B) ──────────────────────────────────────────────────────────────────
