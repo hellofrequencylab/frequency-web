@@ -55,10 +55,10 @@ describe('appsForScope — Space editor apps reproduce spaceSurfacesFor (ENTITY-
   // A Space profile resolves its editor apps by spaceType + the viewer's per-Space functions, so
   // appsForScope({ kind:'space', spaceType }, viewerHoldingEveryFn, 'editor') reproduces the same spine
   // surfaces the /manage console renders via spaceSurfacesFor(type, canUse) — the behavior-preservation
-  // guarantee that lets the standardized rail replace the bespoke SpaceCustomizeDrawer. A viewer holding
-  // EVERY function is the clean parity case (the Offerings surface, gate 'none', shows in both then; for a
-  // type with zero commerce functions spaceSurfacesFor hides Offerings while the rail keeps its link, so we
-  // check the offering-bearing types where the two align exactly, id AND order).
+  // guarantee that lets the standardized rail replace the bespoke SpaceCustomizeDrawer. With every function
+  // usable the two align exactly, id AND order (modular menu P1b, ADR-544b: every surface, including the
+  // seven independent commerce surfaces, gates purely on its own function, so the rail and the console
+  // resolve the identical set for a given viewer).
   const everyFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => true }
   const OFFERING_TYPES: SpaceType[] = ['practitioner', 'business', 'organization', 'event_space']
 
@@ -71,9 +71,9 @@ describe('appsForScope — Space editor apps reproduce spaceSurfacesFor (ENTITY-
   })
 
   it('gates on the viewer functions: a no-function viewer keeps only the always-on floor', () => {
-    // With no functions the functioned surfaces (members, crm, qr, email, billing) drop; the always-on
-    // (gate 'none') floor — Basics / Mode / Page / Services / Danger, plus Offerings (gate 'none') — stays,
-    // so the owner NEVER sees an empty rail (the fail-safe). Compare against the SAME null-function console.
+    // With no functions the functioned surfaces (members, crm, the six functioned commerce surfaces, qr,
+    // email, billing) drop; the always-on (gate 'none') floor — Identity / Info / Settings / Mode / Page /
+    // Store / Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
     const noFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => false }
     const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, noFn, 'editor').map((a) => a.id)
     expect(got).toContain('space.basics')
