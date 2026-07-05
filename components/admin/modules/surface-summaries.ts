@@ -46,7 +46,8 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
   },
   'space.services': {
     getter: getSpaceServicesSummary,
-    format: (n) => (n.count === 1 ? '1 service listed' : `${n.count} services listed`),
+    // Store (modular menu P1b, ADR-544b): the storefront lists items, so the glanceable stat counts items.
+    format: (n) => (n.count === 1 ? '1 item listed' : `${n.count} items listed`),
   },
   'space.comms': {
     getter: getSpaceCampaignsSummary,

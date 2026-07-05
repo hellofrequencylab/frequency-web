@@ -52,8 +52,8 @@ describe('SURFACE_SUMMARIES — the stat copy', () => {
     ['space.people', 7, '7 members'],
     ['space.engage.crm', 1, '1 in your pipeline'],
     ['space.engage.crm', 12, '12 in your pipeline'],
-    ['space.services', 1, '1 service listed'],
-    ['space.services', 3, '3 services listed'],
+    ['space.services', 1, '1 item listed'],
+    ['space.services', 3, '3 items listed'],
     ['space.comms', 1, '1 campaign'],
     ['space.comms', 4, '4 campaigns'],
   ]

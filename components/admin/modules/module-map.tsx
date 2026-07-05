@@ -34,8 +34,6 @@ import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceBrandingModule } from './space-branding-module'
 import { SpaceSettingsModule } from './space-settings-module'
 import { SpacePageModule } from './space-page-module'
-import { SpaceAutonomyModule } from './space-autonomy-module'
-import { SpacePipelineModule } from './space-pipeline-module'
 import { PersonalProfileModule } from './personal-profile-module'
 import { PersonalSpotlightModule } from './personal-spotlight-module'
 import { PersonalLayoutModule } from './personal-layout-module'
@@ -84,10 +82,12 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'journey.export': JourneyExportModule,
   'journey.danger': JourneyDangerModule,
   // Space inline config surfaces (inline-first rail, ADR-514). These are the SPACE_SURFACES whose
-  // `render` is 'inline' — Basics / Mode / Page — each a thin wrapper that self-fetches its read-gated
-  // data and mounts the existing editor in the flattened bar. The Space's feature workflows (Members,
-  // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
-  // link-row instead, so they are NOT in this map.
+  // `render` is 'inline' — Basics / Branding / Settings / Page — each a thin wrapper that self-fetches its
+  // read-gated data and mounts the existing editor in the flattened bar. The Space's feature workflows
+  // (Members, CRM, the seven Offerings & money surfaces, QR, Email, Insights, Billing, Danger) stay
+  // `render: 'link'` and draw a link-row instead, so they are NOT in this map. Vera autonomy + the Pipeline
+  // are no longer standalone rail modules (modular menu P1b, ADR-544b): they fold into CRM (their editors
+  // return in P2 as CRM sub-areas), so SpaceAutonomyModule / SpacePipelineModule are not mounted here.
   // Info & Connect (Section 2, ADR-535): About, Story, contact, links. (Stable id stays `space.basics`.)
   'space.basics': SpaceBasicsModule,
   // Identity & Branding (Section 1, ADR-535): name, tagline, header/logo images, cover style, accent — the
@@ -99,10 +99,6 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // /manage/mode page (reachable from the manage console), never as a rail section (ADR-527 removed the
   // former rail "Starter" chip). The surface stays in the registry for the console link only.
   'space.layout': SpacePageModule,
-  // Vera autonomy (ADR-517 Phase F): an inline owner-gated control that reuses setSpaceAutonomy.
-  'space.autonomy': SpaceAutonomyModule,
-  // Pipeline (ADR-517 Phase F2): an inline owner-gated stage preview that links into the full editor.
-  'space.pipeline': SpacePipelineModule,
   // Personal "You" apps (ADMIN-RAIL.md Phase 4 / ADR-515 Phase 2) — self-account settings for any
   // signed-in viewer. The rail BODY is just three inline surfaces: Profile (identity), a condensed
   // Spotlight, and a Layout link, each a thin wrapper that self-fetches its read-gated bundle

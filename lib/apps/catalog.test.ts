@@ -76,9 +76,17 @@ describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () =
     // The owner directive (ADR-514): the standardized rail renders config inline ("everything in view")
     // and links out ONLY for feature workflows. Basics / Mode / Page are config; the rest are workflows.
     const renderById = new Map(SPACE_SURFACES.map((s) => [s.id, s.render]))
-    const INLINE = ['space.basics', 'space.branding', 'space.settings', 'space.mode', 'space.layout', 'space.autonomy', 'space.pipeline']
+    // Config surfaces render INLINE (Identity / Info / Settings / Mode / Page); every feature workflow LINKS
+    // out. Modular menu P1b (ADR-544b): the seven Offerings & money surfaces are independent link-rows, and
+    // autonomy + pipeline are gone (folded into CRM).
+    const INLINE = ['space.basics', 'space.branding', 'space.settings', 'space.mode', 'space.layout']
     const LINK = [
-      'space.offerings',
+      'space.booking',
+      'space.memberships',
+      'space.donations',
+      'space.enroll',
+      'space.tickets',
+      'space.checkin',
       'space.services',
       'space.people',
       'space.engage.crm',

@@ -22,7 +22,6 @@ import type { AdminSlot } from '@/lib/admin/modules/registry'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { SpaceType } from '@/lib/spaces/types'
-import { offeringFunctionsForType } from '@/lib/spaces/offerings'
 
 /** The entity types the framework manages. Pass 1 ships `circle`; the rest are the
  *  same shape and land as their surfaces are declared (Pass 1 EM1-3..EM1-5, Pass 2). */
@@ -369,22 +368,77 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'inline',
   },
-  // Offerings (the deeper Offerings merge) — the ONE adaptive commerce surface. It replaces the five
-  // separate type-gated surfaces (availability / memberships / donations / enrollment / tickets / check
-  // in): the unified /settings/offerings page stacks whichever of those sections apply to THIS space's
-  // type (practitioner -> availability; business -> memberships; organization -> donations + enrollment;
-  // event_space -> tickets + check in). It carries `requiredFunction: null` because it ADAPTS (each
-  // section re-checks its own per-tool gate); `types: ['*']` because any type may declare it. Its console
-  // VISIBILITY is gated separately in spaceSurfacesFor on "the type has an offering the viewer can use",
-  // so a type with zero commerce functions (lab / partner / coaching / root) never shows an empty card.
+  // OFFERINGS & MONEY group — the SEVEN INDEPENDENT commerce surfaces (modular menu P1b, ADR-544b). The
+  // rail used to collapse these into ONE adaptive `space.offerings` row; P1 split the manage console into
+  // independent modules (ADR-544), and this un-merges the RAIL to match: each commerce tool is its own
+  // link-row, gated by its OWN per-Space function (so a practitioner sees Booking, a business sees
+  // Memberships, and so on — the per-type shaping that `canUse(fn)` already encodes). The ids + copy mirror
+  // the module catalog (lib/admin/modules/space-modules.ts) so the rail and the console show the same
+  // modules. Each links out to its EXISTING /settings/* page (no feature is rebuilt). Store (space.services)
+  // is declared below, right after CRM, and completes the group. Priorities keep the module catalog order.
   {
-    id: 'space.offerings',
+    id: 'space.booking',
     tier: 'primary',
     priority: 30,
     slot: 'engage',
-    label: 'Offerings',
-    desc: 'Everything people can book, join, support, or attend, in one place.',
-    requiredFunction: null,
+    label: 'Booking',
+    desc: 'Set the weekly times members can book, and see the calendar.',
+    requiredFunction: 'availability',
+    types: ['*'],
+    render: 'link',
+  },
+  {
+    id: 'space.memberships',
+    tier: 'primary',
+    priority: 31,
+    slot: 'engage',
+    label: 'Memberships',
+    desc: 'The tiers members can join, and who has joined.',
+    requiredFunction: 'memberships',
+    types: ['*'],
+    render: 'link',
+  },
+  {
+    id: 'space.donations',
+    tier: 'primary',
+    priority: 32,
+    slot: 'engage',
+    label: 'Donations',
+    desc: 'The fund, a short description, and the amounts members can pick.',
+    requiredFunction: 'donations',
+    types: ['*'],
+    render: 'link',
+  },
+  {
+    id: 'space.enroll',
+    tier: 'primary',
+    priority: 33,
+    slot: 'engage',
+    label: 'Enrollment',
+    desc: 'The program details, and who has enrolled.',
+    requiredFunction: 'enroll',
+    types: ['*'],
+    render: 'link',
+  },
+  {
+    id: 'space.tickets',
+    tier: 'primary',
+    priority: 34,
+    slot: 'engage',
+    label: 'Tickets',
+    desc: 'Free or RSVP ticket tiers, and who has reserved a spot.',
+    requiredFunction: 'tickets',
+    types: ['*'],
+    render: 'link',
+  },
+  {
+    id: 'space.checkin',
+    tier: 'primary',
+    priority: 35,
+    slot: 'engage',
+    label: 'Check in',
+    desc: 'Show the door code, and see who checked in.',
+    requiredFunction: 'checkin',
     types: ['*'],
     render: 'link',
   },
@@ -403,71 +457,47 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     types: ['*'],
     render: 'link',
   },
-  // CRM — the pipeline. UNIVERSAL (ADR-517 Phase F): the `crm` function is available to every Space, so
-  // the surface offers it to every console type. In the Audience group (ADR-520). Kept INLINE (a live
-  // usage card, ADR-520 P2) so its metered usage is visible in the rail body — the "usage is the visible
-  // monetization surface" directive; the fixed base bank still carries a CRM quick-link, so it is reachable
-  // both ways. The freemium meter (space_crm, contacts) surfaces on the card via SURFACE_SUMMARIES.
+  // CRM — the ONE relationship module (modular menu P1b, ADR-544b). UNIVERSAL (ADR-517 Phase F): the `crm`
+  // function is available to every Space, so the surface offers it to every console type. In the Audience
+  // group (ADR-520). CRM now ABSORBS Vera autonomy + the Pipeline: they are no longer standalone rail rows
+  // (they become CRM sub-areas in P2), so the rail shows a single CRM row that matches the console's one
+  // `space.crm` module. Kept INLINE as a live usage card (ADR-520 P2) so its metered usage is visible in the
+  // rail body; the fixed base bank still carries a CRM quick-link, so it is reachable both ways. The
+  // freemium meter (space_crm, contacts) surfaces on the card via SURFACE_SUMMARIES.
   {
     id: 'space.engage.crm',
     tier: 'primary',
     priority: 15,
     slot: 'people',
     label: 'CRM',
-    desc: 'Your pipeline and contacts, and private notes on the people you work with.',
+    desc: 'Your pipeline, contacts, private notes, and how much Vera does on its own.',
     requiredFunction: 'crm',
     types: ['*'],
     render: 'link',
   },
-  // Vera autonomy (Resonance Engine Phase 3 · ADR-384; rail control ADR-517 Phase F). How much Vera does
-  // on its own for this Space. An INLINE owner-gated control that reuses setSpaceAutonomy; its module
-  // getter re-gates canManageMembers (owner/admin). In the Audience group (ADR-520), beside the CRM tools.
-  {
-    id: 'space.autonomy',
-    tier: 'primary',
-    priority: 20,
-    slot: 'people',
-    label: 'Vera autonomy',
-    desc: 'Choose how much Vera does on its own for this space.',
-    requiredFunction: 'crm',
-    types: ['*'],
-    render: 'inline',
-  },
-  // Pipeline (ADR-517 Phase F2 · audit GAP 1) — the editable CRM pipeline: an INLINE owner-gated stage
-  // preview that links into the full editor on the CRM board's Pipeline view. Gated by the SAME `crm`
-  // function. In the Audience group (ADR-520), after the autonomy control.
-  {
-    id: 'space.pipeline',
-    tier: 'primary',
-    priority: 25,
-    slot: 'people',
-    label: 'Pipeline',
-    desc: 'Your CRM stages. Rename, reorder, and set what each one means.',
-    requiredFunction: 'crm',
-    types: ['*'],
-    render: 'inline',
-  },
-  // Services (the storefront store items) — the operator's catalog of services with full pricing +
-  // a listed/private visibility toggle, edited at /settings/services and rendered on the public space
-  // storefront (components/widgets/space-profile/offerings.tsx). Declared right AFTER CRM so it sorts
-  // after it within the shared engage slot. `requiredFunction: null` (FREE profile framing, like Page):
-  // any space may list services, so it is always present for a manager on every console type.
+  // Store (the storefront store items) — the operator's catalog of services with full pricing + a
+  // listed/private visibility toggle, edited at /settings/services and rendered on the public space
+  // storefront (components/widgets/space-profile/offerings.tsx). The seventh Offerings & money module.
+  // Declared right AFTER CRM so it sorts after the six type-gated commerce surfaces within the shared engage
+  // slot (priority 40, after them). `requiredFunction: null` (FREE profile framing, like Page): any space
+  // may list store items, so it is always present for a manager on every console type.
   {
     id: 'space.services',
     tier: 'primary',
     priority: 40,
     slot: 'engage',
-    label: 'Services',
-    desc: 'Your storefront store items and their pricing, listed publicly or kept private.',
+    label: 'Store',
+    desc: 'Your storefront items, their pricing, and visibility.',
     requiredFunction: null,
     types: ['*'],
     render: 'link',
   },
-  // NOTE (the deeper Offerings merge): the five separate commerce surfaces that used to live here
-  // (space.engage.memberships / donations / enroll / tickets and space.safety.checkin) plus the Place &
-  // Time surface (space.place) collapsed into the ONE `space.offerings` surface declared above. Their
-  // section BODIES still exist (each settings sub-page's ./section.tsx) and are composed as stacked
-  // sections on /settings/offerings; the old routes redirect there anchored to their section.
+  // NOTE (modular menu P1b, ADR-544b): the rail's commerce surfaces are the SEVEN independent modules
+  // declared above (Booking / Memberships / Donations / Enrollment / Tickets / Check in / Store), matching
+  // the manage console's module split (ADR-544). The old merged `space.offerings` rail row and the
+  // standalone `space.autonomy` + `space.pipeline` rows are gone (autonomy + pipeline fold into CRM). The
+  // adaptive /settings/offerings page still exists and its old section routes still redirect there; only the
+  // rail no longer surfaces the merged row.
 
   // REACH group (ADR-520) — QR codes + Email, "get your space in front of people." Both are back-office
   // destinations (they never paint on the public profile), so both are `placement: 'bank'`: the whole Reach
@@ -569,24 +599,19 @@ function spaceSurfaceAppliesToType(surface: SpaceSurface, type: SpaceType): bool
  * A viewer who can use none of a type's surfaces still gets Basics + Danger (manage access is the
  * floor); the page gates the route itself on resolveSpaceManageAccess before calling this.
  *
- * THE OFFERINGS EXCEPTION (the deeper Offerings merge): `space.offerings` carries `requiredFunction:
- * null` because the surface itself ADAPTS (each of its stacked sections re-checks its own per-tool
- * gate). But it must NOT show as an always-on surface like Basics/Danger: a type with zero commerce
- * functions (lab / partner / coaching / root) would then open an empty Offerings surface. So it is
- * gated on "this type has an offering the viewer can use" — it shows only when `canUse(fn)` is true for
- * at least one of the type's offering functions.
+ * COMMERCE (modular menu P1b, ADR-544b): the seven Offerings & money surfaces are now INDEPENDENT, each
+ * gated on its OWN per-Space function (Booking → availability, Memberships → memberships, …; Store →
+ * null, always on). So a commerce surface shows exactly when its function is usable, which naturally
+ * shapes the set per type (a practitioner sees Booking, a business sees Memberships, …) and never opens
+ * an empty adaptive card. No special-case remains — the general `requiredFunction` gate below covers them.
  */
 export function spaceSurfacesFor(
   type: SpaceType,
   canUse: (fn: SpaceFunctionKey) => boolean,
 ): SpaceSurface[] {
-  const offeringFns = offeringFunctionsForType(type)
-  const canUseAnyOffering = offeringFns.some((fn) => canUse(fn))
   return SPACE_SURFACES.filter((s) => {
     if (!spaceSurfaceAppliesToType(s, type)) return false
-    // The Offerings surface shows only when the type has a commerce section the viewer can use.
-    if (s.id === 'space.offerings') return canUseAnyOffering
-    // Every other surface: an always-on (null) surface always shows; a functioned one when usable.
+    // An always-on (null) surface always shows; a functioned one shows when its function is usable.
     return s.requiredFunction === null || canUse(s.requiredFunction)
   }).sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
 }

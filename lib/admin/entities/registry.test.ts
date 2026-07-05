@@ -110,19 +110,24 @@ describe('entity registry · spaceSurfacesFor', () => {
   const deny = (): boolean => false
 
   // The ONE full spine every console type resolves under universal functions, in registry SPINE_ORDER
-  // (basics, people, layout, engage, reach, insights, danger), declaration order within a slot. The Space
-  // menu regroup (ADR-520) moved CRM / autonomy / pipeline onto the `people` slot (Audience group), Email
-  // onto `reach` (with QR), and billing onto `insights` (with Insights).
+  // (basics, place, people, layout, engage, reach, comms, safety, insights, billing, danger), declaration
+  // order within a slot. The Space menu regroup (ADR-520) put CRM on the `people` slot (Audience group),
+  // Email on `reach` (with QR), and billing on `insights`. Modular menu P1b (ADR-544b): the `engage` slot now
+  // carries the SEVEN independent commerce surfaces (Booking … Check in, then Store) instead of the merged
+  // Offerings row, and CRM is a single row (autonomy + pipeline folded in, no standalone rows).
   const FULL_SPINE = [
     'space.basics',
     'space.mode',
     'space.branding',
     'space.people',
     'space.engage.crm',
-    'space.autonomy',
-    'space.pipeline',
     'space.layout',
-    'space.offerings',
+    'space.booking',
+    'space.memberships',
+    'space.donations',
+    'space.enroll',
+    'space.tickets',
+    'space.checkin',
     'space.services',
     'space.reach',
     'space.comms',
@@ -146,15 +151,17 @@ describe('entity registry · spaceSurfacesFor', () => {
     for (const type of CONSOLE_TYPES) {
       expect(spaceSurfacesFor(type, allow).map((s) => s.id), type).toEqual(FULL_SPINE)
     }
-    // The old individual commerce surface ids are gone; Offerings carries them.
+    // The commerce surfaces are independent again (ADR-544b), but the old NAMESPACED ids are not used:
+    // the Place & Time surface (space.place) and the old space.engage.* namespacing are gone.
     expect(FULL_SPINE).not.toContain('space.place')
     expect(FULL_SPINE.some((id) => id === 'space.engage.donations')).toBe(false)
+    expect(FULL_SPINE).not.toContain('space.offerings') // the merged row is gone
   })
 
   it('falls back to only the always-on identity + page + services + settings + danger when the viewer can use no tool', () => {
-    // The null-gated surfaces render for a manager regardless of which tools are on. Offerings is hidden
-    // under deny (no usable commerce function), and the function-gated surfaces (People / CRM / autonomy /
-    // QR / email / insights / billing) drop out.
+    // The null-gated surfaces render for a manager regardless of which tools are on. Every function-gated
+    // surface drops out under deny: People / CRM, the six functioned commerce surfaces (Booking …
+    // Check in), QR / email / insights / billing. Store (null-gated) stays.
     for (const type of CONSOLE_TYPES) {
       expect(spaceSurfacesFor(type, deny).map((s) => s.id), type).toEqual([
         'space.basics',
@@ -177,14 +184,15 @@ describe('entity registry · spaceSurfacesFor', () => {
   })
 
   it('passes the surface function to canUse so the caller binds the real per-Space gate', () => {
-    // Only enable CRM; the spine should then include engage.crm + its autonomy control but drop email.
+    // Only enable CRM; the spine should then include the single CRM row but drop email + every commerce
+    // surface. Autonomy + pipeline are no longer standalone rows (ADR-544b): they fold into CRM.
     const onlyCrm = (fn: SpaceFunctionKey): boolean => fn === 'crm'
     const ids = spaceSurfacesFor('practitioner', onlyCrm).map((s) => s.id)
     expect(ids).toContain('space.engage.crm')
-    expect(ids).toContain('space.autonomy') // the autonomy control rides the crm gate
-    expect(ids).toContain('space.pipeline') // the editable pipeline rides the crm gate
+    expect(ids).not.toContain('space.autonomy') // folded into CRM (no standalone row)
+    expect(ids).not.toContain('space.pipeline') // folded into CRM (no standalone row)
     expect(ids).not.toContain('space.comms') // email gate denied
-    expect(ids).not.toContain('space.offerings') // no usable commerce function
+    expect(ids).not.toContain('space.booking') // commerce gate denied
     expect(ids).toContain('space.basics') // always-on
     expect(ids).toContain('space.danger') // always-on
   })
@@ -194,26 +202,28 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  // ADR-517 Phase F2: the editable pipeline gets an inline, crm-gated rail module (audit GAP 1). Lock its
-  // row shape so the rail mounts it as an inline body control beside the CRM tools, for every type.
-  it('declares the space.pipeline rail module inline + crm-gated in the people/Audience slot (ADR-520)', () => {
-    const pipeline = SPACE_SURFACES.find((s) => s.id === 'space.pipeline')
-    expect(pipeline).toBeTruthy()
-    expect(pipeline!.render).toBe('inline')
-    expect(pipeline!.requiredFunction).toBe('crm')
-    expect(pipeline!.slot).toBe('people')
-    expect(pipeline!.tier).toBe('primary')
-    expect(pipeline!.placement ?? 'inline').toBe('inline')
-    expect(pipeline!.types).toContain('*')
+  // Modular menu P1b (ADR-544b): CRM is a SINGLE row that absorbs Vera autonomy + the Pipeline. Lock that
+  // the standalone autonomy/pipeline rail rows are gone and CRM stays one crm-gated row in the Audience slot.
+  it('declares CRM as a single crm-gated row, with no standalone autonomy/pipeline rows (ADR-544b)', () => {
+    const ids = new Set(SPACE_SURFACES.map((s) => s.id))
+    expect(ids.has('space.autonomy')).toBe(false)
+    expect(ids.has('space.pipeline')).toBe(false)
+    const crm = SPACE_SURFACES.find((s) => s.id === 'space.engage.crm')
+    expect(crm).toBeTruthy()
+    expect(crm!.requiredFunction).toBe('crm')
+    expect(crm!.slot).toBe('people')
+    expect(crm!.tier).toBe('primary')
+    expect(SPACE_SURFACES.filter((s) => s.requiredFunction === 'crm')).toHaveLength(1)
   })
 
   // THE THREE-TIER RAIL AXIS (ADR-514 three-tier reorg): each Space surface carries a `tier` band +
   // within-band `priority` so the standardized rail can group STANDARD (identity) → PRIMARY (importance)
   // → EXTRA (under "More"). These lock the exact assignment the owner directive specified.
   describe('three-tier rail tags', () => {
-    // ADR-520: the 7-group order via (tier, priority). Standard: Identity(10), Page(20) [Starter chip 30].
-    // Primary: Audience (Members 10, CRM 15, autonomy 20, pipeline 25), Offerings & money (Offerings 30,
-    // Services 40), Reach (QR 50, Email 55). Extra: Growth (Insights 20, Plan and usage 30), Danger (99).
+    // ADR-520 + ADR-544b: the 7-group order via (tier, priority). Standard: Identity(10), Page(20) [Starter
+    // chip 30]. Primary: Audience (Members 10, CRM 15), Offerings & money (the seven independent commerce
+    // surfaces: Booking 30 … Check in 35, then Store 40), Reach (QR 50, Email 55). Extra: Growth (Insights
+    // 20, Plan and usage 30), Danger (99).
     const TIERS: Record<string, { tier: RailTier; priority: number }> = {
       'space.basics': { tier: 'standard', priority: 15 },
       'space.branding': { tier: 'standard', priority: 10 },
@@ -221,9 +231,12 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.mode': { tier: 'standard', priority: 30 },
       'space.people': { tier: 'primary', priority: 10 },
       'space.engage.crm': { tier: 'primary', priority: 15 },
-      'space.autonomy': { tier: 'primary', priority: 20 },
-      'space.pipeline': { tier: 'primary', priority: 25 },
-      'space.offerings': { tier: 'primary', priority: 30 },
+      'space.booking': { tier: 'primary', priority: 30 },
+      'space.memberships': { tier: 'primary', priority: 31 },
+      'space.donations': { tier: 'primary', priority: 32 },
+      'space.enroll': { tier: 'primary', priority: 33 },
+      'space.tickets': { tier: 'primary', priority: 34 },
+      'space.checkin': { tier: 'primary', priority: 35 },
       'space.services': { tier: 'primary', priority: 40 },
       'space.reach': { tier: 'primary', priority: 50 },
       'space.comms': { tier: 'primary', priority: 55 },
@@ -271,12 +284,15 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.branding',
       'space.mode',
       'space.layout',
-      'space.offerings',
+      'space.booking',
+      'space.memberships',
+      'space.donations',
+      'space.enroll',
+      'space.tickets',
+      'space.checkin',
       'space.services',
       'space.people',
       'space.engage.crm',
-      'space.autonomy',
-      'space.pipeline',
       'space.settings',
       'space.danger',
     ])
@@ -307,30 +323,48 @@ describe('entity registry · spaceSurfacesFor', () => {
     })
   })
 
-  // THE OFFERINGS VISIBILITY GATE (universalized by ADR-517 Phase F): space.offerings is null-gated (it
-  // adapts) but still must not open EMPTY, so it shows only when the viewer can use at least one offering
-  // function. Under universal functions EVERY type composes every offering section, so it shows for every
-  // console type — but a viewer who can use no offering function still sees no empty card.
-  describe('the adaptive Offerings surface visibility gate', () => {
-    it('shows Offerings for EVERY console type (every type has usable commerce functions now)', () => {
-      for (const type of ['practitioner', 'business', 'organization', 'event_space', 'coaching', 'lab', 'partner'] as const) {
-        expect(spaceSurfacesFor(type, allow).map((s) => s.id), type).toContain('space.offerings')
+  // THE INDEPENDENT COMMERCE SURFACES (modular menu P1b, ADR-544b): the merged `space.offerings` row is
+  // gone. The seven Offerings & money surfaces are independent, each gated on its OWN per-Space function
+  // (Store is null-gated, always on). So a commerce surface shows exactly when its function is usable, which
+  // naturally shapes the set per type and never opens an empty adaptive card.
+  describe('the independent commerce surfaces', () => {
+    const COMMERCE: Record<string, SpaceFunctionKey> = {
+      'space.booking': 'availability',
+      'space.memberships': 'memberships',
+      'space.donations': 'donations',
+      'space.enroll': 'enroll',
+      'space.tickets': 'tickets',
+      'space.checkin': 'checkin',
+    }
+
+    it('no longer declares the merged Offerings row or standalone autonomy/pipeline rows', () => {
+      const ids = new Set(SPACE_SURFACES.map((s) => s.id))
+      expect(ids.has('space.offerings')).toBe(false)
+      expect(ids.has('space.autonomy')).toBe(false)
+      expect(ids.has('space.pipeline')).toBe(false)
+    })
+
+    it('shows each commerce surface only when its OWN function is usable', () => {
+      for (const [id, fn] of Object.entries(COMMERCE)) {
+        const only = (f: SpaceFunctionKey): boolean => f === fn
+        const ids = spaceSurfacesFor('practitioner', only).map((s) => s.id)
+        expect(ids, id).toContain(id)
+        // A single-function grant surfaces ONLY that commerce tool, never its siblings.
+        for (const other of Object.keys(COMMERCE)) {
+          if (other !== id) expect(ids, `${id} should not surface ${other}`).not.toContain(other)
+        }
       }
     })
 
-    it('hides Offerings when the viewer can use NO offering function (it would open empty)', () => {
-      // Deny every offering function (booking / memberships / donations / enroll / tickets / checkin); a
-      // non-commerce tool stays usable, so People still shows but Offerings does not.
-      const OFFERING_FNS = new Set(['availability', 'memberships', 'donations', 'enroll', 'tickets', 'checkin'])
-      const noOfferings = (fn: SpaceFunctionKey): boolean => !OFFERING_FNS.has(fn)
-      const ids = spaceSurfacesFor('event_space', noOfferings).map((s) => s.id)
-      expect(ids).not.toContain('space.offerings')
-      expect(ids).toContain('space.people') // a non-commerce surface still shows
+    it('always shows Store (null-gated) and hides every functioned commerce surface under deny', () => {
+      const ids = spaceSurfacesFor('event_space', deny).map((s) => s.id)
+      expect(ids).toContain('space.services') // Store is always-on
+      for (const id of Object.keys(COMMERCE)) expect(ids, id).not.toContain(id)
     })
 
-    it('shows Offerings when at least ONE offering function is usable', () => {
-      const onlyCheckin = (fn: SpaceFunctionKey): boolean => fn === 'checkin'
-      expect(spaceSurfacesFor('event_space', onlyCheckin).map((s) => s.id)).toContain('space.offerings')
+    it('shows every commerce surface to a viewer who can use every function', () => {
+      const ids = spaceSurfacesFor('event_space', allow).map((s) => s.id)
+      for (const id of [...Object.keys(COMMERCE), 'space.services']) expect(ids, id).toContain(id)
     })
   })
 })
