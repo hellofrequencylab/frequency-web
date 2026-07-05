@@ -41,6 +41,7 @@ export interface EntityBlockDef {
 // blurb + headline counts). The rest are space sections (no member equivalent) or member-only.
 const DATA_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'about', label: 'About', description: 'The identity blurb and story.', category: 'data', kinds: ['member', 'space'], order: 10 },
+  { id: 'story', label: 'Story', description: 'The longer story of this space.', category: 'data', kinds: ['space'], order: 15 },
   { id: 'stats', label: 'Highlights', description: 'Headline counts and standout stats.', category: 'data', kinds: ['member', 'space'], order: 20 },
   { id: 'offerings', label: 'Offerings', description: 'The services or products to book or buy.', category: 'data', kinds: ['space'], order: 30 },
   { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', category: 'data', kinds: ['space'], requiresFunction: 'availability', order: 40 },
@@ -109,6 +110,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   // Connected data sections — each shows live profile info the operator entered in Identity & Branding /
   // Info & Connect, or a wired feature.
   'about',
+  'story',
   'offerings',
   'booking',
   'events',

@@ -15,6 +15,7 @@ import type { SpaceFunctionKey } from './functions'
  *  blocks like SpaceLayout / IdentityHeader / SectionTitle are chrome, not pickable sections). */
 export type ProfileBlockId =
   | 'about'
+  | 'story'
   | 'highlights'
   | 'offerings'
   | 'booking'
@@ -45,6 +46,7 @@ export interface ProfileBlockDef {
 /** THE profile block registry, in default display order. Adding a section = a row here. */
 export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'about', label: 'About', description: 'Who this space is and what it offers.', requiresFunction: null, types: ['*'], order: 10 },
+  { id: 'story', label: 'Story', description: 'The longer story of this space.', requiresFunction: null, types: ['*'], order: 15 },
   { id: 'highlights', label: 'Highlights', description: 'Live counts and standout stats.', requiresFunction: null, types: ['*'], order: 20 },
   { id: 'offerings', label: 'Offerings', description: 'The services or products members can book or buy.', requiresFunction: null, types: ['*'], order: 30 },
   { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', requiresFunction: 'availability', types: ['*'], order: 40 },

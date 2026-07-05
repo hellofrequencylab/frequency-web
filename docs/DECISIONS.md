@@ -11355,3 +11355,17 @@ About↔Story needs **no migration** — both stores already exist and already r
 - **Arrange controls on top.** The primary "Add row" action moved ABOVE the rows outline (it was below), so building the page reads top-down; the duplicate bottom control was removed.
 
 **Consequences.** The organizer offers ~11 blocks that all render something real, one clear split adjuster, and a top-down arrange flow. Click-to-edit (the inline block panel) and the section-level move (ADR-532) are unchanged. Deferred to follow-ups: splitting About (short) vs Story (long) into two distinct blocks, and the inline-workspace stage (services + deeper settings rendering in the page body). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-537: About and Story are two distinct profile blocks
+
+**Status:** Accepted (2026-07-05). No migration.
+
+**Context.** ADR-535 split a space's identity text into two fields — About (a short intro, the `spaces.about` COLUMN) and Story (the longer narrative, the `preferences.profileData.about` BLOB) — but the page organizer still had ONE `about` block, which rendered the BLOB ("Our story" card). So the short About column had no block, and the two fields could not be placed independently.
+
+**Decision.** Two page blocks, one per field:
+- **`about` block** renders the SHORT About (the `spaces.about` column) under "About this space"; null when empty.
+- **`story` block** (new) renders the LONG Story (the `profileData.about` blob) as the "Our story" card (the former `about` block body).
+
+The short column is threaded fail-safe into the render bag: `getSpaceAbout(spaceId)` (an untyped admin read of `spaces.about`, empty ⇒ `''`) joins the existing request-cached `getSpaceLiveContent` pass and is exposed as `SpaceContentData.aboutShort`. `story` is registered (`lib/entity-blocks/registry.ts` order 15, `ProfileBlockId`, `PROFILE_BLOCKS`), added to `CORE_PROFILE_BLOCK_IDS`, and wired into `SPACE_PROFILE_BLOCKS`. Space-only (a member profile never sees `story`).
+
+**Consequences.** Operators can place About and Story independently, matching the two Info & Connect fields. No migration (both stores already existed). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
