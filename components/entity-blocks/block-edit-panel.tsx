@@ -208,40 +208,46 @@ function StyleControls({ style, onChange }: { style: BlockStyle; onChange: (next
     if (next.align === 'start') delete next.align
     onChange(next)
   }
+  // Style is secondary to content, so it collapses behind a "Style" disclosure (closed by default) — the
+  // panel leads with the block's content / quick fields, and the look controls are one tap away.
   return (
-    <div className="space-y-2 border-t border-border pt-2.5">
-      <span className={labelCls}>Style</span>
-      <label className="flex items-center justify-between gap-2">
-        <span className="text-xs text-text">Card background</span>
-        <input
-          type="checkbox"
-          checked={style.background === true}
-          onChange={(e) => set({ background: e.target.checked })}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+    <details className="border-t border-border pt-2 [&_summary::-webkit-details-marker]:hidden">
+      <summary className="cursor-pointer select-none text-2xs font-semibold uppercase tracking-wide text-subtle">
+        Style
+      </summary>
+      <div className="mt-2 space-y-2">
+        <label className="flex items-center justify-between gap-2">
+          <span className="text-xs text-text">Card background</span>
+          <input
+            type="checkbox"
+            checked={style.background === true}
+            onChange={(e) => set({ background: e.target.checked })}
+            className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+          />
+        </label>
+        <Segmented
+          aria="Spacing"
+          options={[
+            { v: 'none', label: 'None' },
+            { v: 'sm', label: 'S' },
+            { v: 'md', label: 'M' },
+            { v: 'lg', label: 'L' },
+          ]}
+          value={style.pad ?? 'none'}
+          onSelect={(v) => set({ pad: v as BlockStyle['pad'] })}
         />
-      </label>
-      <Segmented
-        aria="Spacing"
-        options={[
-          { v: 'none', label: 'None' },
-          { v: 'sm', label: 'S' },
-          { v: 'md', label: 'M' },
-          { v: 'lg', label: 'L' },
-        ]}
-        value={style.pad ?? 'none'}
-        onSelect={(v) => set({ pad: v as BlockStyle['pad'] })}
-      />
-      <Segmented
-        aria="Alignment"
-        options={[
-          { v: 'start', label: 'Left' },
-          { v: 'center', label: 'Center' },
-          { v: 'end', label: 'Right' },
-        ]}
-        value={style.align ?? 'start'}
-        onSelect={(v) => set({ align: v as BlockStyle['align'] })}
-      />
-    </div>
+        <Segmented
+          aria="Alignment"
+          options={[
+            { v: 'start', label: 'Left' },
+            { v: 'center', label: 'Center' },
+            { v: 'end', label: 'Right' },
+          ]}
+          value={style.align ?? 'start'}
+          onSelect={(v) => set({ align: v as BlockStyle['align'] })}
+        />
+      </div>
+    </details>
   )
 }
 

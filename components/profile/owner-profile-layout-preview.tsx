@@ -25,13 +25,19 @@ export async function OwnerProfileLayoutPreview({ handle }: { handle: string }) 
   }
   if (!data) return null
 
-  const nodes = renderMemberBlockNodes(data)
+  const nodes = renderMemberBlockNodes(data, data.grid)
   const rows = resolveRows(data.grid, 'member')
   const hidden = data.grid?.hidden ?? []
 
   return (
     <div className="@container/profile">
-      <LiveProfileGrid nodes={nodes} initialRows={rows} initialHidden={hidden} />
+      <LiveProfileGrid
+        nodes={nodes}
+        initialRows={rows}
+        initialHidden={hidden}
+        initialContent={data.grid?.content ?? {}}
+        initialStyle={data.grid?.style ?? {}}
+      />
     </div>
   )
 }
