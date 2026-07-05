@@ -2,8 +2,10 @@ import { Suspense } from 'react'
 import type { SpotlightData } from '@/lib/spotlight/data'
 import { defaultMemberLayout } from '@/lib/entity-blocks/context'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
+import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
 import {
   resolveMemberBlockData,
   toMemberEntity,
@@ -52,23 +54,53 @@ export const MEMBER_PROFILE_BLOCKS: Record<string, MemberBlockComponent> = {
   divider: DividerBlock,
 }
 
+/** Render ONE member block by id, wrapped in its per-block STYLE frame (ADR-528/529). A CONTENT block whose
+ *  authored bag is set (from the layout's `content`) renders the operator's inline content; otherwise the
+ *  member component renders (legacy / data-backed). `styled=false` (the live-preview node map) leaves the
+ *  style frame to LiveProfileGrid so a style edit shows instantly. Unknown id → null. */
+function renderMemberBlock(
+  id: string,
+  identity: ReturnType<typeof toMemberEntity>,
+  data: ReturnType<typeof resolveMemberBlockData>,
+  layout: EntityLayout | null,
+  styled = true,
+): React.ReactNode {
+  const block = entityBlockById(id)
+  const style = layout?.style?.[id]
+  const contentProps = layout?.content?.[id]
+
+  let inner: React.ReactNode
+  if (block && block.category === 'content' && hasContent(id, contentProps)) {
+    inner = <ContentBlockView id={id} props={contentProps ?? {}} />
+  } else {
+    const Block = MEMBER_PROFILE_BLOCKS[id]
+    if (!Block) return null
+    inner = <Block member={identity} data={data} />
+  }
+  const body = styled ? <BlockStyleFrame style={style}>{inner}</BlockStyleFrame> : inner
+  return (
+    <Suspense key={id} fallback={null}>
+      {body}
+    </Suspense>
+  )
+}
+
 /**
  * Render EVERY candidate member block once, server-side, into a node map keyed by block id (ADR-516
  * Phase C). This is what makes the in-rail builder's bench↔page placement instant: the node already
- * exists, so placing/benching a block just moves it in the LiveProfileGrid — no round-trip. Each block
- * fetches its data server-side already, so rendering the few unplaced ones is cheap. Fail-safe: each block
- * sits in its own <Suspense fallback={null}> and renders nothing when its slice is absent.
+ * exists, so placing/benching a block just moves it in the LiveProfileGrid — no round-trip. Rendered
+ * UNSTYLED (styled=false); LiveProfileGrid applies each block's style frame client-side (instant style
+ * edits). Fail-safe: each block sits in its own <Suspense fallback={null}> and renders nothing when empty.
  */
-export function renderMemberBlockNodes(member: SpotlightData): Record<string, React.ReactNode> {
+export function renderMemberBlockNodes(
+  member: SpotlightData,
+  layout: EntityLayout | null = null,
+): Record<string, React.ReactNode> {
   const identity = toMemberEntity(member)
   const data = resolveMemberBlockData(member)
   const nodes: Record<string, React.ReactNode> = {}
-  for (const [id, Block] of Object.entries(MEMBER_PROFILE_BLOCKS)) {
-    nodes[id] = (
-      <Suspense key={id} fallback={null}>
-        <Block member={identity} data={data} />
-      </Suspense>
-    )
+  for (const id of Object.keys(MEMBER_PROFILE_BLOCKS)) {
+    nodes[id] = renderMemberBlock(id, identity, data, layout, false)
   }
   return nodes
 }
@@ -101,15 +133,11 @@ export function MemberProfileModules({
 }) {
   const identity = toMemberEntity(member)
   const data = resolveMemberBlockData(member)
+  const gridLayout = grid ?? null
 
   const renderBlock = (id: string) => {
-    const Block = MEMBER_PROFILE_BLOCKS[id]
-    if (!Block) return null
-    const node = (
-      <Suspense key={id} fallback={null}>
-        <Block member={identity} data={data} />
-      </Suspense>
-    )
+    const node = renderMemberBlock(id, identity, data, gridLayout, true)
+    if (node === null) return null
     // OWNER wrap (fail-safe): with `editHref` set, sheathe the block in the click-to-edit frame, which
     // collapses itself on an honest-empty block so no phantom pencil floats over blank space. Absent
     // (visitor / non-owner), the block returns exactly as before. The `key` moves to the outermost node.

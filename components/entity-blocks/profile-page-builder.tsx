@@ -578,7 +578,7 @@ export function EntityPageBuilder({
                       type="button"
                       aria-pressed={row.columns === n}
                       onClick={() => onSetColumns(row.id, n)}
-                      className={`px-1.5 py-0.5 text-2xs font-semibold ${
+                      className={`min-h-[28px] px-2 py-1 text-2xs font-semibold ${
                         row.columns === n ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
                       }`}
                     >
@@ -587,39 +587,8 @@ export function EntityPageBuilder({
                   ))}
                 </div>
 
-                {/* Split control (2-column rows only): 1/2 even, or a 2/3 lead column on either side. */}
-                {row.columns === 2 && (
-                  <div
-                    className="flex overflow-hidden rounded-md border border-border"
-                    role="group"
-                    aria-label={`Column split for row ${index + 1}`}
-                  >
-                    {(
-                      [
-                        { r: 'even' as const, label: '1/2', aria: 'Even halves' },
-                        { r: 'lead' as const, label: '2/3', aria: 'Two thirds, then one third' },
-                        { r: 'trail' as const, label: '1/3', aria: 'One third, then two thirds' },
-                      ]
-                    ).map(({ r, label: lbl, aria }) => {
-                      const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === r
-                      return (
-                        <button
-                          key={r}
-                          type="button"
-                          aria-pressed={active}
-                          aria-label={`${aria} for row ${index + 1}`}
-                          onClick={() => onSetRatio(row.id, r)}
-                          className={`px-1.5 py-0.5 text-2xs font-semibold ${
-                            active ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
-                          }`}
-                        >
-                          {lbl}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
+                {/* The column split (1/2 · 2/3 · 1/3) lives in the row menu, not the strip, so a 2-column
+                    row's controls fit the narrow rail (the split is only meaningful on a 2-column row). */}
                 <span className="min-w-0 flex-1 truncate px-1 text-2xs text-subtle">
                   Row {index + 1}
                 </span>
@@ -657,26 +626,39 @@ export function EntityPageBuilder({
                   </button>
                   {openMenu === `row:${row.id}` && (
                     <Menu>
+                      {/* Column split (2-column rows only): 1/2 even, or a wider 2/3 lead column either side. */}
+                      {row.columns === 2 && (
+                        <>
+                          <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Column split</p>
+                          <div className="flex gap-1 px-2 pb-1.5 pt-1">
+                            {(
+                              [
+                                { r: 'even' as const, label: '1/2' },
+                                { r: 'lead' as const, label: '2/3' },
+                                { r: 'trail' as const, label: '1/3' },
+                              ]
+                            ).map(({ r, label: lbl }) => {
+                              const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === r
+                              return (
+                                <button
+                                  key={r}
+                                  type="button"
+                                  aria-pressed={active}
+                                  onClick={() => onSetRatio(row.id, r)}
+                                  className={`min-h-[32px] flex-1 rounded border text-2xs font-semibold ${
+                                    active ? 'border-primary bg-primary text-on-primary' : 'border-border text-muted hover:border-primary hover:text-text'
+                                  }`}
+                                >
+                                  {lbl}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </>
+                      )}
                       <MenuItem onClick={() => onRemoveRow(row.id, index)} danger>
                         <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete row
                       </MenuItem>
-                      <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Move to position</p>
-                      <div className="flex flex-wrap gap-1 px-2 pb-1.5 pt-1">
-                        {layout.rows.map((_, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            disabled={i === index}
-                            onClick={() => {
-                              onMoveRow(index, i)
-                              setOpenMenu(null)
-                            }}
-                            className="h-6 w-6 rounded border border-border text-2xs font-semibold text-muted hover:border-primary hover:text-text disabled:opacity-30"
-                          >
-                            {i + 1}
-                          </button>
-                        ))}
-                      </div>
                     </Menu>
                   )}
                 </div>
@@ -740,17 +722,6 @@ export function EntityPageBuilder({
                 </div>
               )}
 
-              {/* Inline add-row on hover between rows. */}
-              <div className="flex justify-center pb-1">
-                <button
-                  type="button"
-                  onClick={() => onAddRow(index + 1)}
-                  aria-label={`Add a row after row ${index + 1}`}
-                  className="rounded-full p-0.5 text-subtle opacity-0 transition-opacity hover:bg-surface-elevated hover:text-text focus:opacity-100 group-hover:opacity-100"
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              </div>
             </li>
           )
         })}

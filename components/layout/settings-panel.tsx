@@ -515,12 +515,16 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const hasContent = sections.length > 0 || !!pageGroup || !!hub
 
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
+  // `space.mode` is console-only (ADR-527: no rail section + no bank), so it is excluded from the search
+  // index — otherwise searching "Mode" surfaced an inert result that did nothing.
   const searchApps: SearchableApp[] = [
     ...personalApps,
     ...(manager || isOperator || isSpace
       ? applyOverrides(appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []),
-  ].map((a) => ({
+  ]
+    .filter((a) => a.id !== 'space.mode')
+    .map((a) => ({
     id: a.id,
     label: a.label,
     description: a.description,
