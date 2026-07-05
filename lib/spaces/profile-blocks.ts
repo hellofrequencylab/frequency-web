@@ -46,8 +46,8 @@ export interface ProfileBlockDef {
 export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'about', label: 'About', description: 'Who this space is and what it offers.', requiresFunction: null, types: ['*'], order: 10 },
   { id: 'highlights', label: 'Highlights', description: 'Live counts and standout stats.', requiresFunction: null, types: ['*'], order: 20 },
-  { id: 'offerings', label: 'Offerings', description: 'The services or products members can book or buy.', requiresFunction: null, types: ['practitioner', 'business', 'coaching'], order: 30 },
-  { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', requiresFunction: 'availability', types: ['practitioner'], order: 40 },
+  { id: 'offerings', label: 'Offerings', description: 'The services or products members can book or buy.', requiresFunction: null, types: ['*'], order: 30 },
+  { id: 'booking', label: 'Booking', description: 'Pick a time and book a session.', requiresFunction: 'availability', types: ['*'], order: 40 },
   { id: 'events', label: 'Events', description: 'Upcoming events to show up to.', requiresFunction: null, types: ['*'], order: 50 },
   { id: 'practices', label: 'Practices and journeys', description: 'Practices and journeys to start here.', requiresFunction: null, types: ['*'], order: 60 },
   { id: 'circles', label: 'Circles', description: 'The community circles inside this space.', requiresFunction: null, types: ['*'], order: 70 },
@@ -56,7 +56,7 @@ export const PROFILE_BLOCKS: readonly ProfileBlockDef[] = [
   { id: 'faq', label: 'FAQ', description: 'Common questions, answered.', requiresFunction: null, types: ['*'], order: 100 },
   { id: 'updates', label: 'Updates', description: 'Recent posts from this space.', requiresFunction: null, types: ['*'], order: 110 },
   { id: 'contact', label: 'Contact and hours', description: 'How and when to reach this space.', requiresFunction: null, types: ['*'], order: 120 },
-  { id: 'business', label: 'Business presence', description: 'Find this space online.', requiresFunction: null, types: ['business', 'organization'], order: 130 },
+  { id: 'business', label: 'Business presence', description: 'Find this space online.', requiresFunction: null, types: ['*'], order: 130 },
 ] as const
 
 /** A profile block by id, or null. */
