@@ -18,10 +18,13 @@ const GRID_COLS: Record<number, string> = {
   4: 'sm:grid-cols-2 lg:grid-cols-4',
 }
 
-/** A 2-column row's grid class: even 50/50, or `lead` = 66/33 (a wider first column + a rail). Stacks on
- *  mobile either way. */
+/** A 2-column row's grid class: even 50/50, `lead` = 66/33 (wider first column), or `trail` = 33/66
+ *  (wider second column). Stacks on mobile either way. */
 function columnsClass(columns: number, ratio: string | undefined): string {
-  if (columns === 2 && ratio === 'lead') return 'sm:grid-cols-[2fr_1fr]'
+  if (columns === 2) {
+    if (ratio === 'lead') return 'sm:grid-cols-[2fr_1fr]'
+    if (ratio === 'trail') return 'sm:grid-cols-[1fr_2fr]'
+  }
   return GRID_COLS[columns] ?? ''
 }
 

@@ -252,6 +252,47 @@ describe('2-column ratio (even / lead = 66/33)', () => {
     )
     expect(clean?.rows?.[0]).toEqual({ id: 'r0', columns: 1, slots: ['links'] })
   })
+
+  it('carries a trail (33/66) ratio for a space 2-column row', () => {
+    const clean = sanitizeEntityLayout(
+      { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'trail' }] },
+      'space',
+    )
+    expect(clean?.rows?.[0].ratio).toBe('trail')
+    expect(resolveRows(clean, 'space')?.[0].ratio).toBe('trail')
+  })
+})
+
+describe('per-block content + style (ADR-528)', () => {
+  it('parses + sanitizes content and style, keyed by block id', () => {
+    const raw = {
+      rows: [{ id: 'r0', columns: 1, slots: ['heading'] }],
+      content: { heading: { text: 'Hi', bogus: 'x' }, __proto__: { text: 'no' } },
+      style: { heading: { background: true, pad: 'md' } },
+    }
+    const clean = sanitizeEntityLayout(raw, 'space')
+    expect(clean?.content).toEqual({ heading: { text: 'Hi' } })
+    expect(clean?.style).toEqual({ heading: { background: true, pad: 'md' } })
+  })
+
+  it('drops a wrong-kind block content bag on sanitize', () => {
+    // 'offerings' is space-only; its content bag must not survive a member sanitize.
+    const clean = sanitizeEntityLayout(
+      { rows: [{ id: 'r0', columns: 1, slots: ['links'] }], content: { offerings: { title: 'x' } } },
+      'member',
+    )
+    expect(clean?.content).toBeUndefined()
+  })
+
+  it('mergeEntityLayout carries content + style onto the effective grid', () => {
+    const saved = parseEntityLayout({
+      content: { heading: { text: 'Hi' } },
+      style: { heading: { align: 'center' } },
+    })
+    const merged = mergeEntityLayout(['heading', 'links'], saved, 'space')
+    expect(merged.content).toEqual({ heading: { text: 'Hi' } })
+    expect(merged.style).toEqual({ heading: { align: 'center' } })
+  })
 })
 
 describe('templateToRows (all 7 templates)', () => {

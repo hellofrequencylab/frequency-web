@@ -43,6 +43,15 @@ describe('EntityGrid (data-driven rows)', () => {
     expect(html).toContain('grid gap-6 sm:grid-cols-[2fr_1fr]')
   })
 
+  it('renders a trail-ratio 2-column row as a 33/66 grid', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'trail' }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).toContain('grid gap-6 sm:grid-cols-[1fr_2fr]')
+  })
+
   it('renders nothing for an empty (null) cell', () => {
     const rows = [{ id: 'r0', columns: 2 as const, slots: ['about', null] }]
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)

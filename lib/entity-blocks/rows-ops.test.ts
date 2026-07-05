@@ -5,6 +5,8 @@ import {
   moveRow,
   setRowColumns,
   setRowRatio,
+  setBlockContent,
+  setBlockStyle,
   placeBlock,
   moveBlock,
   benchBlock,
@@ -132,10 +134,32 @@ describe('setRowColumns', () => {
   })
 })
 
+describe('setBlockContent / setBlockStyle (ADR-528)', () => {
+  it('sets and clears a block content bag', () => {
+    const withContent = setBlockContent(base(), 'about', { title: 'Us' })
+    expect(withContent.content).toEqual({ about: { title: 'Us' } })
+    const cleared = setBlockContent(withContent, 'about', undefined)
+    expect(cleared.content).toBeUndefined()
+  })
+  it('sets and clears a block style bag', () => {
+    const withStyle = setBlockStyle(base(), 'about', { background: true })
+    expect(withStyle.style).toEqual({ about: { background: true } })
+    const cleared = setBlockStyle(withStyle, 'about', {})
+    expect(cleared.style).toBeUndefined()
+  })
+  it('ignores an unknown block id', () => {
+    expect(setBlockContent(base(), 'nope', { title: 'x' })).toEqual(base())
+  })
+})
+
 describe('setRowRatio', () => {
   it('sets a lead (66/33) ratio on a 2-column row', () => {
     const out = setRowRatio(base(), 'r1', 'lead')
     expect(out.rows[1].ratio).toBe('lead')
+  })
+  it('sets a trail (33/66) ratio on a 2-column row', () => {
+    const out = setRowRatio(base(), 'r1', 'trail')
+    expect(out.rows[1].ratio).toBe('trail')
   })
   it('is a no-op on a 1-column row (ratio has no meaning)', () => {
     const out = setRowRatio(base(), 'r0', 'lead')

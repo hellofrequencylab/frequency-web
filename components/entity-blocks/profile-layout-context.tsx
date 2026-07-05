@@ -11,6 +11,7 @@ import {
 } from 'react'
 import { usePathname } from 'next/navigation'
 import type { RowDef } from '@/lib/entity-blocks/layout'
+import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import type { EntityKind } from '@/lib/entity-blocks/registry'
 import { deriveBench, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { adminScopeFor, railArchetypeFor } from '@/lib/layout/page-chrome'
@@ -48,12 +49,16 @@ interface EntityLayoutContextValue {
   seeded: boolean
   rows: RowDef[]
   hidden: string[]
+  /** Per-block authored content (ADR-528), keyed by block id. */
+  content: Record<string, Record<string, unknown>>
+  /** Per-block style (ADR-528), keyed by block id. */
+  style: Record<string, BlockStyle>
   /** The derived "not shown" tray for the kind (palette − placed − hidden). */
   bench: string[]
   /** Apply a new working layout: repaint now, persist debounced. */
   apply: (next: BuilderLayout) => void
   /** Seed the store from the persisted layout. Idempotent — only the FIRST seed wins per mount. */
-  seed: (rows: RowDef[], hidden: string[]) => void
+  seed: (rows: RowDef[], hidden: string[], content?: Record<string, Record<string, unknown>>, style?: Record<string, BlockStyle>) => void
   saving: boolean
   error: string | null
 }
@@ -74,6 +79,8 @@ export function EntityLayoutProvider({
   const [seeded, setSeeded] = useState(false)
   const [rows, setRows] = useState<RowDef[]>([])
   const [hidden, setHidden] = useState<string[]>([])
+  const [content, setContent] = useState<Record<string, Record<string, unknown>>>({})
+  const [style, setStyle] = useState<Record<string, BlockStyle>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -90,7 +97,7 @@ export function EntityLayoutProvider({
     setSaving(true)
     setError(null)
     try {
-      const res = await save({ rows: next.rows, hidden: next.hidden })
+      const res = await save({ rows: next.rows, hidden: next.hidden, content: next.content, style: next.style })
       if (res?.error) setError(res.error)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save your layout.')
@@ -104,6 +111,8 @@ export function EntityLayoutProvider({
       seededRef.current = true
       setRows(next.rows)
       setHidden(next.hidden)
+      setContent(next.content ?? {})
+      setStyle(next.style ?? {})
       setSeeded(true)
       pending.current = next
       if (timer.current) clearTimeout(timer.current)
@@ -112,13 +121,23 @@ export function EntityLayoutProvider({
     [flush],
   )
 
-  const seed = useCallback((r: RowDef[], h: string[]) => {
-    if (seededRef.current) return
-    seededRef.current = true
-    setRows(r)
-    setHidden(h)
-    setSeeded(true)
-  }, [])
+  const seed = useCallback(
+    (
+      r: RowDef[],
+      h: string[],
+      c?: Record<string, Record<string, unknown>>,
+      s?: Record<string, BlockStyle>,
+    ) => {
+      if (seededRef.current) return
+      seededRef.current = true
+      setRows(r)
+      setHidden(h)
+      setContent(c ?? {})
+      setStyle(s ?? {})
+      setSeeded(true)
+    },
+    [],
+  )
 
   // Flush any pending save on unmount / navigation so a mid-debounce edit is never lost.
   useEffect(() => {
@@ -131,7 +150,9 @@ export function EntityLayoutProvider({
   const bench = deriveBench({ rows, hidden }, kind)
 
   return (
-    <EntityLayoutCtx.Provider value={{ kind, seeded, rows, hidden, bench, apply, seed, saving, error }}>
+    <EntityLayoutCtx.Provider
+      value={{ kind, seeded, rows, hidden, content, style, bench, apply, seed, saving, error }}
+    >
       {children}
     </EntityLayoutCtx.Provider>
   )

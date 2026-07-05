@@ -1,4 +1,5 @@
 import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
+import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle } from './block-content'
 import {
   isTemplateId,
   slotIds,
@@ -44,9 +45,10 @@ function isKnownSlotId(id: string): boolean {
 export type RowColumns = 1 | 2 | 3 | 4
 
 /** A 2-column row's split (ignored for any other column count):
- *  - `even` — 50 / 50 (the default; absent === even).
- *  - `lead` — 66 / 33, the first column wider (a lead column + a rail). */
-export type RowRatio = 'even' | 'lead'
+ *  - `even`  — 50 / 50 (the default; absent === even).
+ *  - `lead`  — 66 / 33, the FIRST column wider (a lead column + a rail).
+ *  - `trail` — 33 / 66, the SECOND column wider (a rail + a lead column). */
+export type RowRatio = 'even' | 'lead' | 'trail'
 
 /** One row of the freeform layout: `columns` cells, each a block id or null (empty). Invariant:
  *  `slots.length === columns`. `id` is a safe generated token (see ROW_ID_RE), never used as an object key.
@@ -77,7 +79,8 @@ export function maxColumnsForKind(kind: EntityKind): RowColumns {
  *  shape stays minimal; only a genuine `lead` split is ever persisted. Non-2-column callers pass columns
  *  so the ratio is dropped when it cannot apply. */
 function normalizeRatio(raw: unknown, columns: number): RowRatio | undefined {
-  return columns === 2 && raw === 'lead' ? 'lead' : undefined
+  if (columns !== 2) return undefined
+  return raw === 'lead' || raw === 'trail' ? raw : undefined
 }
 
 /** The operator's saved GRID arrangement, persisted per surface (space → spaces.preferences.profileLayout,
@@ -93,6 +96,10 @@ export interface EntityLayout {
   hidden?: string[]
   /** Back-compat single-column fallback: a flat ordered id list = the default slot. */
   order?: string[]
+  /** Per-block authored content (ADR-528), keyed by block id. Validated on parse + sanitize. */
+  content?: Record<string, Record<string, unknown>>
+  /** Per-block style (ADR-528), keyed by block id. Validated on parse + sanitize. */
+  style?: Record<string, BlockStyle>
 }
 
 // Rows-shape validation bounds. A layout is user-originated, so every bound is enforced on parse.
@@ -192,7 +199,15 @@ function strArr(value: unknown): string[] {
  */
 export function parseEntityLayout(raw: unknown): EntityLayout | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
-  const o = raw as { rows?: unknown; template?: unknown; slots?: unknown; hidden?: unknown; order?: unknown }
+  const o = raw as {
+    rows?: unknown
+    template?: unknown
+    slots?: unknown
+    hidden?: unknown
+    order?: unknown
+    content?: unknown
+    style?: unknown
+  }
   const out: EntityLayout = {}
 
   const rows = parseRows(o.rows)
@@ -215,6 +230,12 @@ export function parseEntityLayout(raw: unknown): EntityLayout | null {
 
   const order = strArr(o.order)
   if (order.length) out.order = order
+
+  const content = sanitizeContentMap(o.content)
+  if (content) out.content = content
+
+  const style = sanitizeStyleMap(o.style)
+  if (style) out.style = style
 
   return Object.keys(out).length ? out : null
 }
@@ -272,7 +293,12 @@ export function mergeEntityLayout(
   // 3. Append any remaining valid default id (new / untouched, not hidden) to the default slot.
   for (const id of valid) place(def, id)
 
-  return { template, slots: out, hidden: [...hidden] }
+  // Carry the per-block content + style through unchanged (ADR-528): they were validated on save and are
+  // keyed by block id, independent of slot placement, so a renderer reads them off the effective grid.
+  const merged: EntityLayout = { template, slots: out, hidden: [...hidden] }
+  if (saved?.content) merged.content = saved.content
+  if (saved?.style) merged.style = saved.style
+  return merged
 }
 
 /**
@@ -317,6 +343,24 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
       return block !== null && blockSupportsKind(block, kind)
     })
     if (clean.length) out.hidden = [...new Set(clean)]
+  }
+  // Content + style were already validated by parseEntityLayout (block-id allowlist + per-field / enum
+  // sanitize); keep only the entries whose block supports this kind, so a wrong-kind bag is dropped.
+  if (parsed.content) {
+    const content: Record<string, Record<string, unknown>> = {}
+    for (const [id, props] of Object.entries(parsed.content)) {
+      const block = entityBlockById(id)
+      if (block && blockSupportsKind(block, kind)) content[id] = props
+    }
+    if (Object.keys(content).length) out.content = content
+  }
+  if (parsed.style) {
+    const style: Record<string, BlockStyle> = {}
+    for (const [id, s] of Object.entries(parsed.style)) {
+      const block = entityBlockById(id)
+      if (block && blockSupportsKind(block, kind)) style[id] = s
+    }
+    if (Object.keys(style).length) out.style = style
   }
   return Object.keys(out).length ? out : null
 }

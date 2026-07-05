@@ -81,7 +81,7 @@ export async function saveSpaceProfileLayout(
   // legacy template / slots) sanitizes to unified space ids; a flat S3 write sanitizes to ProfileBlockIds.
   // `node` is the value stored at preferences.profileLayout, or null to clear it.
   let node: Record<string, unknown> | null
-  if (layout && (layout.rows || layout.template || layout.slots)) {
+  if (layout && (layout.rows || layout.template || layout.slots || layout.content || layout.style)) {
     node = sanitizeEntityLayout(layout, 'space') as Record<string, unknown> | null
   } else {
     const order = sanitizeIds(layout?.order)
