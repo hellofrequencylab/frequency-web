@@ -44,7 +44,7 @@ export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
 // ── Field schema (drives the editor + the sanitizer) ──────────────────────────────────────────────────
 
 /** The kinds of field the inline editor can render, and the sanitizer enforces. */
-export type FieldType = 'text' | 'textarea' | 'url' | 'links' | 'images'
+export type FieldType = 'text' | 'textarea' | 'url' | 'links' | 'images' | 'features'
 
 /** One editable field on a block's content bag. */
 export interface FieldDef {
@@ -56,6 +56,15 @@ export interface FieldDef {
 
 /** The CONTENT-block field schemas (the operator authors these). */
 const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
+  // The SPACE free-form blocks (ADR-542).
+  callout: [
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'A short, bold headline' },
+    { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Say a bit more' },
+    { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Learn more' },
+    { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
+    { key: 'image', label: 'Image URL', type: 'url', placeholder: 'https://' },
+  ],
+  features: [{ key: 'items', label: 'Features', type: 'features' }],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Section heading' }],
   text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Write a paragraph' }],
   links: [{ key: 'items', label: 'Links', type: 'links' }],
@@ -124,6 +133,18 @@ function sanitizeLink(raw: unknown): { label: string; url: string } | null {
   return { label: str(o.label, MAX_LABEL) || url, url }
 }
 
+/** Sanitize one Features item to `{ icon, title, text }` (ADR-542), dropping it (null) when it carries no
+ *  title and no text. `icon` is a short free-text token (a Lucide icon name or an emoji); it is bounded and
+ *  never used as an object key. */
+function sanitizeFeature(raw: unknown): { icon: string; title: string; text: string } | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  const title = str(o.title, MAX_LABEL)
+  const text = str(o.text, MAX_TEXT)
+  if (!title && !text) return null
+  return { icon: str(o.icon, 40), title, text }
+}
+
 /**
  * Validate a block's authored content bag against its field schema (unknown keys dropped, values coerced +
  * bounded, urls made safe). Returns undefined when nothing usable survives, so the stored blob stays sparse.
@@ -159,6 +180,16 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
           ? v.slice(0, MAX_ITEMS).map(safeUrl).filter((u) => u.length > 0)
           : []
         if (imgs.length) out[field.key] = imgs
+        break
+      }
+      case 'features': {
+        const items = Array.isArray(v)
+          ? v
+              .slice(0, MAX_ITEMS)
+              .map(sanitizeFeature)
+              .filter((x): x is { icon: string; title: string; text: string } => x !== null)
+          : []
+        if (items.length) out[field.key] = items
         break
       }
     }

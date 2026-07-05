@@ -51,8 +51,8 @@ describe('saveMemberGridLayout - rows sanitize', () => {
     // Member is single-column (ADR-526): the 2-col row clamps to 1, keeping 'about'; the columns:9 row is
     // dropped; the unknown-id row keeps its null cell.
     expect(grid.rows).toEqual([
-      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, slots: ['about'] },
-      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, slots: [null] },
+      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, cells: [['about']] },
+      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, cells: [[]] },
     ])
     expect(grid.hidden).toEqual(['links'])
   })

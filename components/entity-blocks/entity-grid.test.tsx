@@ -27,7 +27,7 @@ describe('EntityGrid (data-driven rows)', () => {
 
   it('renders a multi-column row as a grid with per-cell @container', () => {
     // A SPACE keeps a 2-column row (a member is clamped to a single column).
-    const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }] }, 'space')
+    const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']] }] }, 'space')
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     expect(html).toContain('grid gap-6 sm:grid-cols-2')
     expect(html).toContain('data-block="about"')
@@ -36,7 +36,7 @@ describe('EntityGrid (data-driven rows)', () => {
 
   it('renders a lead-ratio 2-column row as a 66/33 grid', () => {
     const rows = resolveRows(
-      { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' }] },
+      { rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']], ratio: 'lead' }] },
       'space',
     )
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
@@ -45,7 +45,7 @@ describe('EntityGrid (data-driven rows)', () => {
 
   it('renders a trail-ratio 2-column row as a 33/66 grid', () => {
     const rows = resolveRows(
-      { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'trail' }] },
+      { rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']], ratio: 'trail' }] },
       'space',
     )
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
@@ -53,7 +53,7 @@ describe('EntityGrid (data-driven rows)', () => {
   })
 
   it('renders nothing for an empty (null) cell', () => {
-    const rows = [{ id: 'r0', columns: 2 as const, slots: ['about', null] }]
+    const rows = [{ id: 'r0', columns: 2 as const, cells: [['about'], []] }]
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     expect(html).toContain('data-block="about"')
     expect(html).not.toContain('data-block="null"')

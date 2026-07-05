@@ -50,15 +50,20 @@ export type RowColumns = 1 | 2 | 3 | 4
  *  - `trail` — 33 / 66, the SECOND column wider (a rail + a lead column). */
 export type RowRatio = 'even' | 'lead' | 'trail'
 
-/** One row of the freeform layout: `columns` cells, each a block id or null (empty). Invariant:
- *  `slots.length === columns`. `id` is a safe generated token (see ROW_ID_RE), never used as an object key.
- *  `ratio` only applies when `columns === 2` (a wider lead column); absent means an even split. */
+/** One row of the freeform layout: `columns` columns, each a STACK of block ids (ADR-542). Invariant:
+ *  `cells.length === columns`; each `cells[i]` is the ordered box ids stacked top-to-bottom in column i
+ *  (an empty column is `[]`). A block id appears at most once across the WHOLE layout (global dedup). `id`
+ *  is a safe generated token (see ROW_ID_RE), never used as an object key. `ratio` only applies when
+ *  `columns === 2` (a wider lead column); absent means an even split. */
 export interface RowDef {
   id: string
   columns: RowColumns
-  slots: (string | null)[]
+  cells: string[][]
   ratio?: RowRatio
 }
+
+/** Max boxes stacked in one column (bound on user-originated data). */
+const MAX_STACK = 12
 
 /** The maximum columns a kind's page builder may use. The MEMBER profile is a single-column block LIST
  *  (no layout editor) — every row is one block. The SPACE profile is a two-column layout editor (with a
@@ -112,13 +117,23 @@ function isRowColumns(v: unknown): v is RowColumns {
   return typeof v === 'number' && VALID_COLUMNS.has(v)
 }
 
+/** Read the raw per-column stacks off a saved row, accepting BOTH the new `cells` shape (a list of stacks)
+ *  and the legacy `slots` shape (one id-or-null per column, ADR-516). Returns a list of raw stacks aligned
+ *  to nothing yet (the caller clamps to `columns`). */
+function rawCells(o: { cells?: unknown; slots?: unknown }): unknown[][] {
+  if (Array.isArray(o.cells)) return o.cells.map((c) => (Array.isArray(c) ? c : []))
+  // Legacy: `slots` was `(string|null)[]`, one cell per column → each becomes a 1-deep stack (or empty).
+  if (Array.isArray(o.slots)) return o.slots.map((s) => (typeof s === 'string' ? [s] : []))
+  return []
+}
+
 /**
  * Fail-safe read of a saved `rows` array. Validates the SHAPE (positional, so no slot-key allowlist):
- * clamps to MAX_ROWS; drops a row whose `columns` is not in {1,2,3,4}; clamps each row's `slots` to its
- * `columns`; keeps a cell only when it is a KNOWN registry block id (kind-agnostic here — kind filtering
- * is applied in sanitize/resolve, mirroring how the legacy slots path defers kind to those stages),
- * else null; dedupes a block id across ALL rows (a later repeat becomes null); and regenerates any id
- * that is not a safe token. Returns null when nothing usable survives.
+ * clamps to MAX_ROWS; drops a row whose `columns` is not in {1,2,3,4}; clamps each row's stacks to its
+ * `columns` and each stack to MAX_STACK; keeps a box only when it is a KNOWN registry block id (kind-
+ * agnostic here — kind filtering is applied in sanitize/resolve); dedupes a block id across ALL rows (a
+ * later repeat is dropped); and regenerates any id that is not a safe token. Accepts the legacy `slots`
+ * shape (one id per column) via rawCells. Returns null when nothing usable survives.
  */
 function parseRows(raw: unknown): RowDef[] | null {
   if (!Array.isArray(raw)) return null
@@ -126,35 +141,36 @@ function parseRows(raw: unknown): RowDef[] | null {
   const out: RowDef[] = []
   for (const r of raw.slice(0, MAX_ROWS)) {
     if (!r || typeof r !== 'object' || Array.isArray(r)) continue
-    const o = r as { id?: unknown; columns?: unknown; slots?: unknown; ratio?: unknown }
+    const o = r as { id?: unknown; columns?: unknown; cells?: unknown; slots?: unknown; ratio?: unknown }
     if (!isRowColumns(o.columns)) continue
     const columns = o.columns
-    const rawSlots = Array.isArray(o.slots) ? o.slots : []
-    const slots: (string | null)[] = []
+    const raws = rawCells(o)
+    const cells: string[][] = []
     for (let i = 0; i < columns; i++) {
-      const s = rawSlots[i]
-      if (typeof s === 'string' && entityBlockById(s) !== null && !seen.has(s)) {
-        seen.add(s)
-        slots.push(s)
-      } else {
-        slots.push(null)
+      const stack: string[] = []
+      for (const s of Array.isArray(raws[i]) ? raws[i].slice(0, MAX_STACK) : []) {
+        if (typeof s === 'string' && entityBlockById(s) !== null && !seen.has(s)) {
+          seen.add(s)
+          stack.push(s)
+        }
       }
+      cells.push(stack)
     }
     const id = typeof o.id === 'string' && ROW_ID_RE.test(o.id) ? o.id : `r${out.length}`
     const ratio = normalizeRatio(o.ratio, columns)
-    out.push(ratio ? { id, columns, slots, ratio } : { id, columns, slots })
+    out.push(ratio ? { id, columns, cells, ratio } : { id, columns, cells })
   }
   return out.length ? out : null
 }
 
-/** Clamp a row to a kind's max columns (see MAX_COLUMNS_BY_KIND): keep the first `max` cells, drop any
- *  overflow block (it falls to the derived bench), and clear a now-inapplicable ratio. Total. */
+/** Clamp a row to a kind's max columns (see MAX_COLUMNS_BY_KIND): keep the first `max` columns, drop any
+ *  overflow column's boxes (they fall to the derived bench), and clear a now-inapplicable ratio. Total. */
 function clampRowColumns(row: RowDef, max: RowColumns): RowDef {
   if (row.columns <= max) return row
-  const slots = row.slots.slice(0, max)
+  const cells = row.cells.slice(0, max)
   const columns = max
   const ratio = normalizeRatio(row.ratio, columns)
-  return ratio ? { ...row, columns, slots, ratio } : { id: row.id, columns, slots }
+  return ratio ? { ...row, columns, cells, ratio } : { id: row.id, columns, cells }
 }
 
 /** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe, and clamp
@@ -166,22 +182,23 @@ function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | 
   const out: RowDef[] = []
   for (const raw of rows.slice(0, MAX_ROWS)) {
     const row = clampRowColumns(raw, max)
-    const slots: (string | null)[] = []
+    const cells: string[][] = []
     for (let i = 0; i < row.columns; i++) {
-      const s = row.slots[i] ?? null
-      if (s !== null && !seen.has(s)) {
-        const block = entityBlockById(s)
-        if (block !== null && blockSupportsKind(block, kind)) {
-          seen.add(s)
-          slots.push(s)
-          continue
+      const stack: string[] = []
+      for (const s of (row.cells[i] ?? []).slice(0, MAX_STACK)) {
+        if (typeof s === 'string' && !seen.has(s)) {
+          const block = entityBlockById(s)
+          if (block !== null && blockSupportsKind(block, kind)) {
+            seen.add(s)
+            stack.push(s)
+          }
         }
       }
-      slots.push(null)
+      cells.push(stack)
     }
     const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
     const ratio = normalizeRatio(row.ratio, row.columns)
-    out.push(ratio ? { id, columns: row.columns, slots, ratio } : { id, columns: row.columns, slots })
+    out.push(ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells })
   }
   return out.length ? out : undefined
 }
@@ -392,16 +409,17 @@ function rowsBuilder() {
     rows,
     /** One 1-column row per id (full-width stack). */
     full(ids: string[]) {
-      for (const id of ids) rows.push({ id: `r${n++}`, columns: 1, slots: [id] })
+      for (const id of ids) rows.push({ id: `r${n++}`, columns: 1, cells: [[id]] })
     },
-    /** N-column rows, zipping the given per-column id lists down the rows. Skips an all-empty row. */
+    /** N-column rows, zipping the given per-column id lists down the rows (each cell a single-box stack).
+     *  Skips an all-empty row. */
     group(columns: RowColumns, lists: string[][]) {
       const max = lists.reduce((m, l) => Math.max(m, l.length), 0)
       for (let i = 0; i < max; i++) {
-        const slots: (string | null)[] = lists.slice(0, columns).map((l) => l[i] ?? null)
-        while (slots.length < columns) slots.push(null)
-        if (slots.every((s) => s === null)) continue
-        rows.push({ id: `r${n++}`, columns, slots })
+        const picked: (string | null)[] = lists.slice(0, columns).map((l) => l[i] ?? null)
+        while (picked.length < columns) picked.push(null)
+        if (picked.every((s) => s === null)) continue
+        rows.push({ id: `r${n++}`, columns, cells: picked.map((s) => (s ? [s] : [])) })
       }
     },
   }
@@ -464,7 +482,12 @@ export function templateToRows(
 /** The three starter seeds. */
 export type StarterId = 'basic' | 'showcase' | 'minimal'
 
-const r = (id: string, columns: RowColumns, slots: (string | null)[]): RowDef => ({ id, columns, slots })
+/** A starter row: `cells` are the per-column single-box stacks (a null column is empty). */
+const r = (id: string, columns: RowColumns, slots: (string | null)[]): RowDef => ({
+  id,
+  columns,
+  cells: slots.map((s) => (s ? [s] : [])),
+})
 
 const MEMBER_STARTERS: Record<StarterId, readonly RowDef[]> = {
   // The in-app member default (ADR-522): `about` + `stats` are NOT here — the profile chrome already
@@ -508,7 +531,7 @@ export const STARTER_LAYOUTS: Record<EntityKind, Record<StarterId, readonly RowD
 
 /** A fresh, deep-copied RowDef[] for a starter seed (safe to hand to a mutable editor / renderer). */
 export function starterRows(kind: EntityKind, id: StarterId): RowDef[] {
-  return STARTER_LAYOUTS[kind][id].map((row) => ({ ...row, slots: [...row.slots] }))
+  return STARTER_LAYOUTS[kind][id].map((row) => ({ ...row, cells: row.cells.map((c) => [...c]) }))
 }
 
 /**
@@ -529,22 +552,23 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
     const out: RowDef[] = []
     for (const raw of layout.rows.slice(0, MAX_ROWS)) {
       const row = clampRowColumns(raw, max)
-      const slots: (string | null)[] = []
+      const cells: string[][] = []
       for (let i = 0; i < row.columns; i++) {
-        const s = row.slots[i] ?? null
-        if (s !== null && !hidden.has(s) && !seen.has(s)) {
-          const block = entityBlockById(s)
-          if (block !== null && blockSupportsKind(block, kind)) {
-            seen.add(s)
-            slots.push(s)
-            continue
+        const stack: string[] = []
+        for (const s of (row.cells[i] ?? []).slice(0, MAX_STACK)) {
+          if (typeof s === 'string' && !hidden.has(s) && !seen.has(s)) {
+            const block = entityBlockById(s)
+            if (block !== null && blockSupportsKind(block, kind)) {
+              seen.add(s)
+              stack.push(s)
+            }
           }
         }
-        slots.push(null)
+        cells.push(stack)
       }
       const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
       const ratio = normalizeRatio(row.ratio, row.columns)
-      out.push(ratio ? { id, columns: row.columns, slots, ratio } : { id, columns: row.columns, slots })
+      out.push(ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells })
     }
     return out
   }

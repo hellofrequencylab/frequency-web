@@ -41,17 +41,17 @@ export function EntityGrid({
   return (
     <div className="@container space-y-6">
       {rows.map((row) => {
-        // A full-width row emits its block directly into the stack — no wrapper — so the default
-        // single-column layout is byte-identical to what the `single` template rendered before.
+        // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid
+        // wrapper — so a single-column layout renders as N stacked blocks in one `space-y-6` container.
         if (row.columns === 1) {
-          const id = row.slots[0]
-          return id ? renderBlock(id) : null
+          const stack = row.cells[0] ?? []
+          return stack.map((id) => renderBlock(id))
         }
         return (
           <div key={row.id} className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
-            {row.slots.map((id, i) => (
+            {row.cells.map((stack, i) => (
               <div key={`${row.id}-${i}`} className="@container space-y-6">
-                {id ? renderBlock(id) : null}
+                {stack.map((id) => renderBlock(id))}
               </div>
             ))}
           </div>

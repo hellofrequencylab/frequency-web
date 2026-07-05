@@ -44,7 +44,7 @@ import {
   hideBlock,
   unhideBlock,
   removeBlock,
-  swapCells,
+  nudgeBox,
   setBlockContent,
   setBlockStyle,
   placedIds,
@@ -185,19 +185,15 @@ export function EntityPageBuilder({
   const bench = store.bench.filter((id) => !lockedSet.has(id) && CORE_PROFILE_BLOCK_IDS.has(id))
   const placed = placedIds(layout.rows)
 
-  // Every empty slot, as a move target (reading order) — powers the bench "Place in".
+  // Every column, as a move target (reading order) — powers the bench "Place in" (a column is a stack now,
+  // so every column can always accept another block: ADR-542).
   const emptySlots = layout.rows.flatMap((r, ri) =>
-    r.slots.flatMap((id, ci) => (id === null ? [{ rowId: r.id, ri, ci }] : [])),
+    r.cells.map((_stack, ci) => ({ rowId: r.id, ri, ci })),
   )
 
   // Every row as a SECTION move target (item 5): the block menu lists these so a block jumps section to
-  // section in one tap, no drag needed. `full` marks a row with no empty slot (the move then spawns a new
-  // section just below it).
-  const moveTargets = layout.rows.map((r, ri) => ({
-    rowId: r.id,
-    ri,
-    full: r.slots.every((s) => s !== null),
-  }))
+  // section in one tap, no drag needed. A column stack always has room, so `full` is never set.
+  const moveTargets = layout.rows.map((r, ri) => ({ rowId: r.id, ri, full: false }))
 
   // ── Row actions ──
   function onAddRow(at?: number) {
@@ -265,20 +261,9 @@ export function EntityPageBuilder({
     const ri = layout.rows.findIndex((r) => r.id === rowId)
     const target = layout.rows[ri]
     if (!target) return
-    const emptyCol = target.slots.findIndex((s) => s === null)
-    if (emptyCol >= 0) {
-      mutate(placeBlock(layout, blockId, rowId, emptyCol))
-      say(`${label(blockId)} moved to section ${ri + 1}.`)
-    } else {
-      const withRow = addRow(layout, ri + 1)
-      if (withRow.rows.length === layout.rows.length) {
-        say('That is the maximum number of sections.')
-        setOpenMenu(null)
-        return
-      }
-      mutate(placeBlock(withRow, blockId, withRow.rows[ri + 1].id, 0))
-      say(`Section ${ri + 1} was full, so ${label(blockId)} moved to a new section below it.`)
-    }
+    // A column is a stack (ADR-542), so section 1's first column always has room — append the block there.
+    mutate(placeBlock(layout, blockId, rowId, 0))
+    say(`${label(blockId)} moved to section ${ri + 1}.`)
     setOpenMenu(null)
   }
   function onMoveToNewSection(blockId: string) {
@@ -293,15 +278,19 @@ export function EntityPageBuilder({
     setOpenMenu(null)
   }
 
-  // Block up/down = swap with the previous / next slot in reading order.
-  const slotSeq = layout.rows.flatMap((r) => r.slots.map((id, ci) => ({ rowId: r.id, ci, id })))
+  // Block up/down: the MEMBER list (single column, one block per row) moves the whole row; a SPACE column
+  // stack nudges the block one step within its column (ADR-542).
+  const slotSeq = layout.rows.flatMap((r) =>
+    r.cells.flatMap((stack, ci) => stack.map((id) => ({ rowId: r.id, ci, id }))),
+  )
   function moveBlockBy(blockId: string, delta: -1 | 1) {
-    const idx = slotSeq.findIndex((s) => s.id === blockId)
-    const to = idx + delta
-    if (idx < 0 || to < 0 || to >= slotSeq.length) return
-    const a = slotSeq[idx]
-    const b = slotSeq[to]
-    mutate(swapCells(layout, a.rowId, a.ci, b.rowId, b.ci))
+    if (maxColumns === 1) {
+      const from = layout.rows.findIndex((r) => (r.cells[0] ?? []).includes(blockId))
+      if (from < 0) return
+      mutate(moveRow(layout, from, from + delta))
+    } else {
+      mutate(nudgeBox(layout, blockId, delta))
+    }
     say(`${label(blockId)} moved ${delta < 0 ? 'up' : 'down'}.`)
   }
 
@@ -320,7 +309,7 @@ export function EntityPageBuilder({
     say(`Started from the ${id} layout.`)
   }
   function onBlank() {
-    mutate({ rows: [{ id: `r${Math.random().toString(36).slice(2, 8)}`, columns: 1, slots: [null] }], hidden: [] })
+    mutate({ rows: [{ id: `r${Math.random().toString(36).slice(2, 8)}`, columns: 1, cells: [[]] }], hidden: [] })
     say('Started from blank.')
   }
 
@@ -413,12 +402,12 @@ export function EntityPageBuilder({
   // Starters (the wireframe seeds) are a SPACE affordance only — the member profile is a fixed single-
   // column list with no layout to seed, so it never shows them.
   const showStarters =
-    maxColumns > 1 && (!customized || layout.rows.every((r) => r.slots.every((s) => s === null)))
+    maxColumns > 1 && (!customized || layout.rows.every((r) => r.cells.every((stack) => stack.length === 0)))
 
   // The MEMBER list: the placed blocks in reading order (each is its own 1-column row). Drives the simple
   // block-list view; empty when the member has benched everything.
   const memberBlocks = layout.rows
-    .map((r) => r.slots[0] ?? null)
+    .map((r) => r.cells[0]?.[0] ?? null)
     .filter((s): s is string => s !== null)
 
   // Member drag-reorder: dropping a dragged block onto another moves its row to that block's position.
@@ -426,8 +415,8 @@ export function EntityPageBuilder({
     const id = dragBlock.current
     dragBlock.current = null
     if (!id || id === targetBlockId) return
-    const from = layout.rows.findIndex((r) => r.slots[0] === id)
-    const to = layout.rows.findIndex((r) => r.slots[0] === targetBlockId)
+    const from = layout.rows.findIndex((r) => r.cells[0]?.[0] === id)
+    const to = layout.rows.findIndex((r) => r.cells[0]?.[0] === targetBlockId)
     if (from < 0 || to < 0) return
     mutate(moveRow(layout, from, to))
     say(`${label(id)} moved.`)
@@ -725,17 +714,18 @@ export function EntityPageBuilder({
                 </div>
               </div>
 
-              {/* Slots */}
+              {/* Columns — each holds a STACK of blocks (ADR-542); a drop appends to the column. */}
               {!isCollapsed && (
                 <div className={`grid gap-1.5 px-2 pb-2 ${row.columns > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  {row.slots.map((id, col) => (
+                  {row.cells.map((stack, col) => (
                     <div
                       key={`${row.id}-${col}`}
-                      onDragOver={(e) => dragBlock.current && id === null && e.preventDefault()}
-                      onDrop={(e) => id === null && dropOnSlot(e, row.id, col)}
+                      className="space-y-1.5"
+                      onDragOver={(e) => dragBlock.current && e.preventDefault()}
+                      onDrop={(e) => dropOnSlot(e, row.id, col)}
                     >
-                      {id ? (
-                        <>
+                      {stack.map((id) => (
+                        <div key={id}>
                           <BlockPill
                             id={id}
                             hidden={layout.hidden.includes(id)}
@@ -763,8 +753,9 @@ export function EntityPageBuilder({
                             onConfirmDelete={() => onDelete(id)}
                           />
                           {editPanelFor(id)}
-                        </>
-                      ) : addingAt && addingAt.rowId === row.id && addingAt.col === col ? (
+                        </div>
+                      ))}
+                      {addingAt && addingAt.rowId === row.id && addingAt.col === col ? (
                         <BlockPicker
                           palette={palette}
                           taken={new Set([...placed, ...layout.hidden])}

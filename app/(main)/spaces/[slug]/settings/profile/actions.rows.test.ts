@@ -65,8 +65,8 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
     expect(patch.preferences.accent).toBe('sky')
     const grid = patch.preferences.profileLayout
     expect(grid.rows).toEqual([
-      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 2, slots: ['offerings', null] },
-      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, slots: [null] },
+      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 2, cells: [['offerings'], []] },
+      { id: expect.stringMatching(/^r[0-9a-z]+$/i), columns: 1, cells: [[]] },
     ])
     expect(grid.hidden).toEqual(['events'])
   })
@@ -74,7 +74,7 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
   it('refuses a non-manager (fail-closed, no write)', async () => {
     resolveSpaceManageAccess.mockResolvedValue({ canManage: false, staffViewing: true })
     const res = await saveSpaceProfileLayout('space-1', {
-      rows: [{ id: 'r0', columns: 1, slots: ['about'] }],
+      rows: [{ id: 'r0', columns: 1, cells: [['about']] }],
     })
     expect('error' in res && res.error).toBeTruthy()
     expect(update).not.toHaveBeenCalled()
@@ -84,14 +84,14 @@ describe('saveSpaceProfileLayout - rows sanitize', () => {
 describe('saveSpaceGridLayout - slug-keyed store flush', () => {
   it('resolves the space by slug and persists the sanitized rows', async () => {
     const res = await saveSpaceGridLayout('calm', {
-      rows: [{ id: 'r0', columns: 1, slots: ['about'] }],
+      rows: [{ id: 'r0', columns: 1, cells: [['about']] }],
       hidden: [],
     })
     expect(res).toEqual({})
     expect(getVisibleSpaceBySlug).toHaveBeenCalledWith('calm', 'caller-1')
     expect(update).toHaveBeenCalledTimes(1)
     const patch = update.mock.calls[0][0] as { preferences: { profileLayout: { rows: unknown[] } } }
-    expect(patch.preferences.profileLayout.rows).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+    expect(patch.preferences.profileLayout.rows).toEqual([{ id: 'r0', columns: 1, cells: [['about']] }])
   })
 
   it('returns an error when the slug does not resolve', async () => {

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutGrid } from 'lucide-react'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
-import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
+import { SpaceLayoutRailNote } from '@/components/spaces/space-layout-rail-note'
 import { RailModuleLoading } from './rail-module-loading'
 
 // SPACE PAGE — the inline editor module for the standardized admin bar (ADR-514). Mirrors
@@ -15,11 +15,11 @@ import { RailModuleLoading } from './rail-module-loading'
 // the focus echo). The getter re-gates server-side and returns null when the viewer cannot manage this
 // Space, so a non-manager sees nothing here (the fail-safe). Every write re-gates in its own action.
 //
-// ADR-516 Phase D: on the Space profile ROOT (where the shared space-layout store is mounted) the
-// SpacePageBuilder mounts ABOVE the panel — the freeform rows/slots outline editor that repaints the live
-// page behind the slide-over. It self-guards to a space store on the matching slug, so on every other
-// Space surface (manage / settings, where the member store is mounted) it renders nothing and only the
-// panel shows.
+// ADR-542: the freeform layout is edited ON THE PAGE now (the WYSIWYG OnPageEditor over the live grid), so
+// the in-rail rows builder is retired here. On the Space profile ROOT (where the shared space-layout store
+// is mounted) a compact SpaceLayoutRailNote mounts ABOVE the panel — it points the owner at the on-page
+// editor and lets them restore a hidden section. It self-guards to a space store, so on every other Space
+// surface (manage / settings, where the member store is mounted) it renders nothing and only the panel shows.
 
 type Data = NonNullable<Awaited<ReturnType<typeof getSpacePageData>>>
 
@@ -62,12 +62,14 @@ export function SpacePageModule() {
           Page
         </h3>
         <p className="text-sm text-muted">
-          Your pages, cover, accent, and block order. Open the full editor to add and edit any block.
+          Your pages, cover, and accent. Arrange the sections on your page right on the page itself.
         </p>
       </header>
-      {/* The in-rail page builder (ADR-516 Phase D) — mounts only on the Space profile root, where the
-          space-layout store wraps both this rail and the live page it edits. */}
-      <SpacePageBuilder slug={data.slug} />
+      {/* ADR-542: the space page layout is edited ON THE PAGE now (the WYSIWYG OnPageEditor over the live
+          grid), so the cramped in-rail rows builder is retired. This compact note points the owner there and
+          lets them restore a hidden section. It reads the same space-layout store, so it only shows on the
+          Space profile root; every other Space surface renders just the panel below. */}
+      <SpaceLayoutRailNote />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}

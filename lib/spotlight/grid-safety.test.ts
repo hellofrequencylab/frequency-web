@@ -49,7 +49,7 @@ describe('ADR-522: grid render keeps a published Puck spotlight non-blank', () =
   it('resolveRows(null) yields a non-empty default member layout', () => {
     const rows = resolveRows(null, 'member')
     expect(rows.length).toBeGreaterThan(0)
-    const placed = rows.flatMap((r) => r.slots).filter((s): s is string => s !== null)
+    const placed = rows.flatMap((r) => r.cells.flat()).filter((s): s is string => s !== null)
     expect(placed.length).toBeGreaterThan(0)
   })
 
