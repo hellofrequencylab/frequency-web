@@ -51,4 +51,4 @@ Family → modules (each gated by its featureKey; shows only when enabled):
 - **P5 — Account/"You" + global onto the contract; retire duplication.** Personal set + global onto the manifest; delete legacy `ENTITY_SURFACES`/`SPACE_SURFACES` divergence; one renderer everywhere. Docs → git + Notion. ADR-548.
 
 ## Status
-- [x] P0 · [x] P1 (console) · [x] P1b (rail) · [ ] P2 · [ ] P3 · [ ] P4 · [ ] P5
+- [x] P0 · [x] P1 (console) · [x] P1b (rail) · [x] P2 (inline bodies + snapshots) · [ ] P3 · [ ] P4 · [ ] P5

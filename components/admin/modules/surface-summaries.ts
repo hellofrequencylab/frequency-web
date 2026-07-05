@@ -3,6 +3,9 @@ import {
   getSpaceCrmSummary,
   getSpaceServicesSummary,
   getSpaceCampaignsSummary,
+  getSpaceBookingSummary,
+  getSpaceMembershipsSummary,
+  getSpaceTicketsSummary,
 } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 
 // SURFACE SUMMARIES — the client-boundary map for the Phase 2 "keep it in the rail" summary cards
@@ -55,5 +58,20 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
     // The Email sends meter (ADR-519). Email is banked in the Reach group (ADR-520), so this line shows
     // only if Email is ever surfaced as a body card; its ladder also lives in the Plan and usage hub.
     meterKey: 'space_email',
+  },
+  // The three commerce services with a cheap, honest single stat (modular menu P2, ADR-545): Booking,
+  // Memberships, and Tickets. Each is a plain count (no meter) so the rail card shows a glanceable line.
+  // Donations / Enrollment / Check-in stay plain link-rows (no cheap single-stat), so they are absent here.
+  'space.booking': {
+    getter: getSpaceBookingSummary,
+    format: (n) => (n.count === 1 ? '1 booking window' : `${n.count} booking windows`),
+  },
+  'space.memberships': {
+    getter: getSpaceMembershipsSummary,
+    format: (n) => (n.count === 1 ? '1 tier' : `${n.count} tiers`),
+  },
+  'space.tickets': {
+    getter: getSpaceTicketsSummary,
+    format: (n) => (n.count === 1 ? '1 ticket tier' : `${n.count} ticket tiers`),
   },
 }

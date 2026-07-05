@@ -37,6 +37,35 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
     label: 'Offerings',
     fullHref: (slug) => `/spaces/${slug}/settings/offerings`,
   },
+  // The six INDEPENDENT commerce service panels (modular menu P2, ADR-545): each opens its chrome-free
+  // manager INLINE, matching Members/Store/QR/Email/Billing. Labels come from the module catalog
+  // (lib/admin/modules/space-modules.ts). "Open full page" targets the same /settings/* route the module
+  // deep-links to (which lands on the unified Offerings surface anchored to this section). Narrow managers,
+  // so no `bounded` flag.
+  booking: {
+    label: 'Booking',
+    fullHref: (slug) => `/spaces/${slug}/settings/availability`,
+  },
+  memberships: {
+    label: 'Memberships',
+    fullHref: (slug) => `/spaces/${slug}/settings/memberships`,
+  },
+  donations: {
+    label: 'Donations',
+    fullHref: (slug) => `/spaces/${slug}/settings/donations`,
+  },
+  enroll: {
+    label: 'Enrollment',
+    fullHref: (slug) => `/spaces/${slug}/settings/enroll`,
+  },
+  tickets: {
+    label: 'Tickets',
+    fullHref: (slug) => `/spaces/${slug}/settings/tickets`,
+  },
+  checkin: {
+    label: 'Check in',
+    fullHref: (slug) => `/spaces/${slug}/settings/checkin`,
+  },
   services: {
     label: 'Services',
     fullHref: (slug) => `/spaces/${slug}/settings/services`,
@@ -78,4 +107,13 @@ export const PANEL_SURFACE_TO_ID: Record<string, string> = {
   'space.comms': 'email',
   'space.billing': 'billing',
   'space.engage.crm': 'crm',
+  // The seven independent commerce surfaces (ADR-544b split) now open INLINE too (P2, ADR-545): Store
+  // (space.services) already mapped above; these six map each to its own service panel so the rail row
+  // renders the manager in the profile body instead of deep-linking to /settings/*.
+  'space.booking': 'booking',
+  'space.memberships': 'memberships',
+  'space.donations': 'donations',
+  'space.enroll': 'enroll',
+  'space.tickets': 'tickets',
+  'space.checkin': 'checkin',
 }
