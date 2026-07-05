@@ -1,58 +1,25 @@
 import { notFound } from 'next/navigation'
-import { Users } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { listSpaceMembers, type SpaceRole, type SpaceMemberStatus } from '@/lib/spaces/membership'
-import { listInvites } from '@/lib/spaces/invites'
-import { getSeatUsage } from '@/lib/spaces/seats'
-import { billingLive } from '@/lib/pricing/settings'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { PersonCard } from '@/components/cards/person-card'
-import { EmptyState } from '@/components/ui/empty-state'
-import { SectionHeader } from '@/components/ui/section-header'
-import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
-import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
-import { InviteForm } from '@/components/spaces/invite-form'
-import { RosterManager, type RosterRow } from '@/components/spaces/roster-manager'
-import { SeatCounter } from '@/components/spaces/seat-counter'
+import { MembersBody } from './members-body'
 
 // MEMBERS — the owner back-end's TEAM surface (entity-spaces owner hub). A centered, no-rail Focus
 // surface (registered 'none' for /spaces/<slug>/settings/members in page-chrome.ts, alongside the
-// other settings sub-surfaces). It resolves the Space, gates RENDER on canManage || staffViewing
-// (404s otherwise so a non-editor / non-staff viewer cannot tell the surface exists), then lists who
-// is already on the team and the role each one holds.
+// other settings sub-surfaces). This page is the STANDALONE route (the "full admin" reachable from the
+// console sub-menu + a deep link); the same team UI ALSO renders inline in the Space profile body as
+// the Members `?panel=` workspace (Stage D1). Both share ONE source: the chrome-free <MembersBody>. This
+// page keeps the page chrome (FocusTemplate) + the notFound gate, so the standalone route is unchanged.
 //
-// SCOPE: this is the People module (Entity Management Overhaul EM2-2). A manager (canManageMembers,
-// owner / admin) gets the full roster TABLE — per-member role assignment along the per-Space ladder,
-// remove, suspend / reactivate, and bulk multi-select ops (RosterManager, a client surface backed by
-// the canManageMembers-gated actions in lib/spaces/roster.ts, RE-CHECKED server-side). They can also
-// invite a teammate by email (space_invites — lib/spaces/invites.ts). Email DELIVERY is not built yet,
-// so the invite section surfaces a copyable link to share by hand and says so plainly (CONTENT-VOICE
-// skeptic test). The OWNER is always seated first as Owner (all-powerful on their own Space; they hold
-// no member row, so we seat them explicitly and the manager can never act on them).
-//
-// A STAFF PREVIEW (a janitor) does NOT manage the Space, so they get a READ-ONLY roster grid (no
-// invite, no management controls); every write stays gated server-side regardless.
-//
-// READ NOTE: listSpaceMembers reads through the service-role admin client (NOT gated on
-// canEditProfile), so a STAFF PREVIEW (a janitor) sees the real roster here.
-//
-// COPY: plain labels, the space-role nouns (Owner / Admin / Moderator / Editor / Member), no em/en
-// dashes.
+// It gates RENDER on canManage || staffViewing (404s otherwise so a non-editor / non-staff viewer cannot
+// tell the surface exists), then wraps <MembersBody> in the FocusTemplate. The FeatureLockedNotice vs full
+// roster branch (and every read) lives inside MembersBody; this page only picks the matching template
+// chrome (a locked Space keeps the plain, non-wide framing) so the standalone render is byte-identical.
 
 export const metadata = {
   title: 'Members',
-}
-
-// Space-role value to its member-facing noun. (viewer reads as the plain "Member".)
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'Admin',
-  moderator: 'Moderator',
-  editor: 'Editor',
-  viewer: 'Member',
 }
 
 export default async function SpaceMembersPage({
@@ -79,94 +46,20 @@ export default async function SpaceMembersPage({
 
   const brandName = space.brandName ?? space.name
 
-  // PER-SPACE FUNCTION GATE (per-space-roles Phase 2). Members defaults to editor (the old
-  // canEditProfile threshold), so behavior is unchanged unless an operator/owner tunes it. A staff
-  // janitor keeps the read-only roster preview (every write stays gated server-side).
+  // Pick the FocusTemplate chrome to match MembersBody's own branch (kept identical to before): a
+  // feature-locked Space (Members function off / role-gated for a non-staff viewer) reads with the plain
+  // framing + short description; otherwise the wide roster framing. MembersBody re-derives this same
+  // condition to render the matching body, so the two never diverge.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!staffViewing && !spaceFunctionAccess(space, 'members', caps.role)) {
+  const featureLocked = !staffViewing && !spaceFunctionAccess(space, 'members', caps.role)
+
+  if (featureLocked) {
     return (
-      <FocusTemplate
-        eyebrow={brandName}
-        title="Members"
-        description="The team for this space."
-      >
-        <FeatureLockedNotice
-          brandName={brandName}
-          slug={space.slug}
-          type={space.type}
-          label="Members"
-          reason={spaceFunctionAccess(space, 'members', 'admin') ? 'role' : 'disabled'}
-          canManageMembers={caps.canManageMembers}
-        />
+      <FocusTemplate eyebrow={brandName} title="Members" description="The team for this space.">
+        <MembersBody slug={slug} />
       </FocusTemplate>
     )
   }
-
-  // The INVITE section is owner / admin only (canManageMembers); a staff janitor previewing the
-  // Space does not manage it, so they see the roster read-only without the invite controls. The
-  // pending-invite list is gated the same way inside listInvites (fail-safe to []), so this only
-  // decides whether to mount the section.
-  const pendingInvites = caps.canManageMembers ? await listInvites(space.id) : []
-
-  // SEAT USAGE (Phase D, ADR-465). A manager (owner / admin) sees a "X of Y operator seats used"
-  // counter + an "add a seat" link to the plan and billing page. While billing is OFF this is a
-  // PREVIEW (the limit is not enforced yet); when billing goes live the same counter reflects the real
-  // licensed allowance + enforcement. Read once here (two cheap queries) for managers only.
-  const [seatUsage, billingIsLive] = caps.canManageMembers
-    ? await Promise.all([getSeatUsage(space.id), billingLive()])
-    : [null, false]
-
-  // The team: the OWNER first (always seated as Owner), then members (active + suspended; an invited
-  // row has no accepted seat yet, so it is excluded — it lives in the pending-invite list above). The
-  // owner's effective role + status are fixed (admin / active). De-duped by profile id: an owner who
-  // also carries a member row appears once, as the Owner.
-  const members = (await listSpaceMembers(space.id)).filter(
-    (m) => m.status === 'active' || m.status === 'suspended',
-  )
-  // profileId -> { role, status, isOwner } — the management facts each row needs.
-  const facts = new Map<string, { role: SpaceRole; status: SpaceMemberStatus; isOwner: boolean }>()
-  if (space.ownerProfileId)
-    facts.set(space.ownerProfileId, { role: 'admin', status: 'active', isOwner: true })
-  for (const m of members) {
-    if (!facts.has(m.profileId)) facts.set(m.profileId, { role: m.role, status: m.status, isOwner: false })
-  }
-  const profileIds = [...facts.keys()]
-
-  // Resolve each person's public profile card (handle + name + avatar). A row with no handle/name (an
-  // incomplete profile) is dropped so every row has a valid link. Suspended members are NOT gated on
-  // is_active here — that flag is the profile's own account state, unrelated to space membership — so a
-  // suspended teammate still resolves and shows in the roster.
-  const { data: profileData } = await createAdminClient()
-    .from('profiles')
-    .select('id, handle, display_name, avatar_url, is_demo')
-    .in('id', profileIds.length > 0 ? profileIds : ['00000000-0000-0000-0000-000000000000'])
-    .eq('is_active', true)
-
-  // Owner first, then members in ladder order (admin -> moderator -> editor -> viewer), active before
-  // suspended, so the most-privileged + active rows read at the top.
-  const RANK: Record<SpaceRole, number> = { admin: 3, moderator: 2, editor: 1, viewer: 0 }
-  const rows: RosterRow[] = (profileData ?? [])
-    .flatMap((p) => {
-      const f = facts.get(p.id as string)
-      if (!f || !p.handle || !p.display_name) return []
-      return [
-        {
-          profileId: p.id as string,
-          handle: p.handle as string,
-          displayName: p.display_name as string,
-          avatarUrl: (p.avatar_url as string | null) ?? null,
-          isDemo: (p as { is_demo?: boolean }).is_demo ?? false,
-          isOwner: f.isOwner,
-          role: f.role,
-          status: f.status,
-        } satisfies RosterRow,
-      ]
-    })
-    .sort((a, b) => {
-      if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1
-      if (a.status !== b.status) return a.status === 'active' ? -1 : 1
-      return RANK[b.role] - RANK[a.role]
-    })
 
   return (
     <FocusTemplate
@@ -175,61 +68,7 @@ export default async function SpaceMembersPage({
       description="Who is on your team, and the role each one holds. Invite a teammate by email below, then share their link until email delivery ships."
       width="wide"
     >
-      {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
-
-      {caps.canManageMembers && seatUsage && (
-        <section className="mb-8">
-          <SeatCounter
-            usage={seatUsage}
-            billingHref={`/spaces/${space.slug}/settings/billing`}
-            enforced={billingIsLive}
-            canManage={caps.canManageMembers}
-          />
-        </section>
-      )}
-
-      {caps.canManageMembers && (
-        <section className="mb-10">
-          <SectionHeader title="Invite a teammate" />
-          <InviteForm spaceId={space.id} initialInvites={pendingInvites} />
-        </section>
-      )}
-
-      <section>
-        <SectionHeader title="On the team" count={rows.length} />
-        {rows.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title="No members yet."
-            description="When someone accepts an invite, they show here with their role."
-          />
-        ) : caps.canManageMembers ? (
-          // A manager (owner / admin) gets the full roster table: role assignment, remove, suspend /
-          // reactivate, and bulk multi-select ops. Every write re-checks canManageMembers server-side.
-          <RosterManager spaceId={space.id} rows={rows} />
-        ) : (
-          // A staff janitor previewing the Space reads the roster only (no management controls).
-          <div className="grid gap-4 sm:grid-cols-2">
-            {rows.map((r) => (
-              <PersonCard
-                key={r.profileId}
-                handle={r.handle}
-                displayName={r.displayName}
-                avatarUrl={r.avatarUrl}
-                isDemo={r.isDemo}
-                meta={
-                  <span className="font-medium text-primary-strong">
-                    {r.isOwner ? 'Owner' : ROLE_LABEL[r.role] ?? 'Member'}
-                    {r.status === 'suspended' && (
-                      <span className="ml-2 font-medium text-warning">Suspended</span>
-                    )}
-                  </span>
-                }
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      <MembersBody slug={slug} />
     </FocusTemplate>
   )
 }

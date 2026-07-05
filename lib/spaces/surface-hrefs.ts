@@ -6,6 +6,8 @@
 // The console re-exports `hrefForSurface` from here, so its unit test (console.test.ts) and every existing
 // caller are unchanged. See app/(main)/spaces/[slug]/manage/console.tsx.
 
+import { PANEL_SURFACE_TO_ID } from '@/components/spaces/workspace/surface-panels'
+
 /** Map a Space surface id to the sub-page it opens, given the Space slug. Danger has no href (the console
  *  renders its delete control inline; the rail falls back to the /manage console); an unmapped id is
  *  skipped (defensive, should not happen).
@@ -66,4 +68,16 @@ export function hrefForSurface(id: string, slug: string): string | null {
     default:
       return null
   }
+}
+
+/** The RAIL's Space-surface href: a surface that maps to an INLINE panel (PANEL_SURFACE_TO_ID) opens the
+ *  Space page with `?panel=<id>` so it renders in the profile body (hero + menu persist — Stage D1),
+ *  instead of navigating to its standalone route. Every other surface (incl. CRM) falls through to its
+ *  normal full route via hrefForSurface, so the /manage console + the bottom bank are UNCHANGED (they keep
+ *  importing hrefForSurface). Only the rail's Space link-rows call this. Nullable like hrefForSurface (a
+ *  non-panel surface with no route — Danger — stays null so the caller's /manage fallback applies). */
+export function panelHrefForSurface(id: string, slug: string): string | null {
+  const panel = PANEL_SURFACE_TO_ID[id]
+  if (panel) return `/spaces/${slug}?panel=${panel}`
+  return hrefForSurface(id, slug)
 }
