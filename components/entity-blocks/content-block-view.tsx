@@ -21,7 +21,9 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   const pad =
     style.pad === 'lg' ? 'p-8' : style.pad === 'md' ? 'p-5' : style.pad === 'sm' ? 'p-3' : style.background ? 'p-5' : ''
   const align = style.align === 'center' ? 'text-center' : style.align === 'end' ? 'text-right' : ''
-  const card = style.background ? 'rounded-2xl border border-border bg-surface-elevated' : ''
+  // `background: true` fills the block with the plain WHITE surface (bg-surface) against the warm page
+  // canvas — a clean "white background on / off", not a second elevated/tinted card layer stacked on top.
+  const card = style.background ? 'rounded-2xl border border-border bg-surface' : ''
   const cls = [card, pad, align].filter(Boolean).join(' ')
   return <div className={cls}>{children}</div>
 }
