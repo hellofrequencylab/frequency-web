@@ -11327,3 +11327,18 @@ About↔Story needs **no migration** — both stores already exist and already r
 - **Load UX (bug 3).** The bar **scrolls its body to the top** whenever it opens or its scope changes; each self-fetching rail module now shows a shared **`RailModuleLoading` ("Working…")** indicator (spinner + polite live region) instead of a bare pulse skeleton; and the detail-restore above means the rail's functions reload on refresh rather than staying blank.
 
 **Consequences.** Refresh no longer strands squished content behind a missing rail, and the rail restores its scope + content; cover style switches both ways instantly; the rail starts at the top and shows honest "Working…" feedback. Full app speed-up of the per-module self-fetch is deferred to the inline-workspace stage. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-535: Space rail rework, Stage B — the standardized sections (Identity & Branding · Info & Connect · Settings)
+
+**Status:** Accepted (2026-07-05). No migration. Regroups ADR-533's two sections into the owner's standard set.
+
+**Context.** Owner directive: the rail should open with a small, standard set of sections that any rail can reuse, split by WHAT the content is: what shows in the header hero, the forward-facing marketing/connect info, and the lower settings. ADR-533's "Business info + Branding" split (text vs visual) did not match that; name/tagline belong with the hero, and ratings/visibility are settings, not marketing.
+
+**Decision.** Regroup into three standardized sections (Spaces first; the block set generalizes to other rails later):
+- **Section 1 — Identity & Branding** (`space.branding`, `place` slot, priority 10, renders FIRST): everything in the header hero — brand name, tagline, header image, logo, cover style, accent. Name + tagline save on BLUR; images/cover/accent each save on their own action (no Save button). `SpaceBrandingForm` gained the name + tagline fields; `getSpaceBrandingData` now returns them.
+- **Section 2 — Info & Connect** (`space.basics`, priority 15): the forward-facing content a Spotlight/profile shows — About, Story, contact (address/hours/phone/email/website), and social links. One Save writes the About column + the profileData blob. Renamed the form `SpaceBusinessInfoForm → SpaceInfoConnectForm`; dropped name/tagline (→ Identity & Branding) and ratings/visibility (→ Settings).
+- **Lower Settings** (`space.settings`, NEW, `safety` slot, priority 70 — sorts late): the knobs pulled out of the forward-facing sections — rating + count, and visibility. New `SpaceSettingsForm` + module + `getSpaceSettingsData`. `setSpaceBusinessInfo` MERGES, so ratings here and Story/contact in Info & Connect never clobber each other.
+- **Page settings visible.** The Page panel's "More page settings" `<details>` disclosure is unwrapped — Pages + External website render directly on the rail (owner directive: visible, not hidden).
+- **Console:** the new `place`/`safety` slots cluster into the identity console group so the `/manage` console keeps its seven ADR-520 groups; `space.settings` gets an icon + href.
+
+**Consequences.** The rail reads Identity & Branding → Info & Connect → Page → …services… → Settings, a standard shape. Every field still has exactly one editor. Deferred: the page-organizer rework (Stage C) and the inline-workspace (Stage D). The standalone `/settings/basics` page still uses the older combined form pending its migration. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.

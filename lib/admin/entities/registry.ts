@@ -295,28 +295,46 @@ export interface SpaceSurface {
 export const SPACE_SURFACES: readonly SpaceSurface[] = [
   // Basics — profile, brand, visibility (the `profile` function gates the form; the surface itself
   // is always present for a manager). Every type.
+  // Info & Connect (the standardized rail, Section 2 · ADR-535) — the forward-facing marketing + connect
+  // content a Spotlight/profile shows: About, Story, contact, and links. (The stable id stays `space.basics`
+  // so the spine order + console binding are unchanged.) Renders BELOW Identity & Branding (priority 15 vs
+  // its 10). Always present for a manager, inline in the standard band.
   {
     id: 'space.basics',
     tier: 'standard',
-    priority: 10,
+    priority: 15,
     slot: 'basics',
-    label: 'Business info',
-    desc: 'Your name, story, contact details, and links, all in one place.',
+    label: 'Info and Connect',
+    desc: 'Your about, story, contact details, and links.',
     requiredFunction: null,
     types: ['*'],
     render: 'inline',
   },
-  // Branding (the profile+identity rework, Section 2) — the VISUAL half split out of the old Basics form:
-  // header image, logo, cover style, and accent. Its own section (the `place` spine slot, relabelled
-  // "Branding" for the Space scope in SPACE_GROUP_META) so it sits right below Business info. Always
-  // present for a manager (no per-tool function), inline in the standard band.
+  // Identity & Branding (Section 1 · ADR-535) — everything in the header HERO: name, tagline, header image,
+  // logo, cover style, and accent. Its own section (the `place` spine slot, relabelled "Identity and
+  // Branding" for the Space scope in SPACE_GROUP_META); priority 10 puts it FIRST in the standard band.
   {
     id: 'space.branding',
     tier: 'standard',
-    priority: 15,
+    priority: 10,
     slot: 'place',
-    label: 'Branding',
-    desc: 'Your header image, logo, cover style, and brand colour.',
+    label: 'Identity and Branding',
+    desc: 'Your name, tagline, header image, logo, cover style, and colour.',
+    requiredFunction: null,
+    types: ['*'],
+    render: 'inline',
+  },
+  // Settings (the lower Settings section · ADR-535) — the less-frequent knobs pulled out of the
+  // forward-facing sections: the star rating + count and who can find this space (visibility). Its own
+  // section on the `safety` spine slot (unused for Space), relabelled "Settings"; a high priority sorts it
+  // LATE in the primary band (after the services), so it reads as a settings footer, not a headline.
+  {
+    id: 'space.settings',
+    tier: 'primary',
+    priority: 70,
+    slot: 'safety',
+    label: 'Settings',
+    desc: 'Your rating and who can find this space.',
     requiredFunction: null,
     types: ['*'],
     render: 'inline',

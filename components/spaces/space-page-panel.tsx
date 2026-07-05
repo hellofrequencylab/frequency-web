@@ -9,7 +9,6 @@ import {
   ArrowUp,
   ArrowUpRight,
   Check,
-  ChevronDown,
   Globe,
   LayoutGrid,
   Loader2,
@@ -130,19 +129,9 @@ export function SpacePagePanel({
           Business info section, so each field has exactly one editor. This panel keeps only the page-level
           controls: the block editor above, plus Pages + External website below. */}
 
-      {/* MORE PAGE SETTINGS: the heavier, less-frequent controls (pages, external website)
-          tucked behind ONE disclosure so the panel LEADS with the quick tweaks (grid, cover, accent,
-          focus). A closed <details> keeps its children mounted, so every control stays reachable +
-          keyboard-operable + reachable by a read-only staff previewer. Default closed. */}
-      <details className="group rounded-lg border border-border">
-        <summary className="flex cursor-pointer select-none items-center gap-2 rounded-lg px-3 py-3 text-sm font-medium text-subtle outline-none transition-colors hover:text-text focus-visible:ring-2 focus-visible:ring-primary/50 motion-reduce:transition-none [&::-webkit-details-marker]:hidden">
-          More page settings
-          <ChevronDown
-            className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-            aria-hidden
-          />
-        </summary>
-        <div className="space-y-8 border-t border-border px-3 pb-3 pt-6">
+      {/* PAGE SETTINGS: pages + external website, VISIBLE on the rail (ADR-535), not tucked behind a
+          disclosure — the operator directive to surface these directly. */}
+      <div className="space-y-8">
           {/* PAGES: the operator-defined nav. Pick the page you are editing, rename / reorder / delete, or
               add a new one. Home is your required main page (never deletable, always first). */}
           <section>
@@ -229,8 +218,7 @@ export function SpacePagePanel({
               </p>
             </section>
           )}
-        </div>
-      </details>
+      </div>
     </div>
   )
 }

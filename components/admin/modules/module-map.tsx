@@ -32,6 +32,7 @@ import { JourneyExportModule } from './journey-export-module'
 import { JourneyDangerModule } from './journey-danger-module'
 import { SpaceBasicsModule } from './space-basics-module'
 import { SpaceBrandingModule } from './space-branding-module'
+import { SpaceSettingsModule } from './space-settings-module'
 import { SpacePageModule } from './space-page-module'
 import { SpaceAutonomyModule } from './space-autonomy-module'
 import { SpacePipelineModule } from './space-pipeline-module'
@@ -87,10 +88,13 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // data and mounts the existing editor in the flattened bar. The Space's feature workflows (Members,
   // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
   // link-row instead, so they are NOT in this map.
+  // Info & Connect (Section 2, ADR-535): About, Story, contact, links. (Stable id stays `space.basics`.)
   'space.basics': SpaceBasicsModule,
-  // Branding (Section 2 of the profile+identity rework): header/logo images, cover style, accent — the
-  // visual half split out of the old Basics form so every field has exactly one editor.
+  // Identity & Branding (Section 1, ADR-535): name, tagline, header/logo images, cover style, accent — the
+  // header-hero half.
   'space.branding': SpaceBrandingModule,
+  // Settings (the lower section, ADR-535): rating + visibility, pulled out of the forward-facing sections.
+  'space.settings': SpaceSettingsModule,
   // `space.mode` intentionally has NO inline component: Mode is a creation-time PRESET edited on the full
   // /manage/mode page (reachable from the manage console), never as a rail section (ADR-527 removed the
   // former rail "Starter" chip). The surface stays in the registry for the console link only.

@@ -114,13 +114,17 @@ export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData 
   }
 }
 
-// ── Branding (space.branding) ──────────────────────────────────────────────────────────────────────────
-// The SpaceBrandingForm prop bundle (Section 2 of the profile+identity rework): the header + logo images,
-// the Hero cover style, and the brand accent — every VISUAL field, in one place. Read-gated exactly like
-// Basics (manage access + the `profile` function); each control re-gates its own write server-side.
+// ── Identity & Branding (space.branding) ─────────────────────────────────────────────────────────────
+// The Identity & Branding form bundle (Section 1 of the standardized rail, ADR-535): everything that shows
+// in the header HERO — brand name, tagline, header + logo images, the Hero cover style, and the brand
+// accent. Read-gated exactly like Info & Connect (manage access + the `profile` function); each control
+// re-gates its own write server-side.
 
 interface SpaceBrandingData {
+  spaceId: string
   slug: string
+  brandName: string
+  tagline: string
   coverImageUrl: string | null
   brandLogoUrl: string | null
   coverScrim: ReturnType<typeof readCoverScrim>
@@ -128,8 +132,8 @@ interface SpaceBrandingData {
   readOnly: boolean
 }
 
-/** The Branding editor's data, or null when the viewer cannot manage this Space (fail-safe → the wrapper
- *  renders nothing). Mirrors getSpaceBasicsData's gate. */
+/** The Identity & Branding editor's data, or null when the viewer cannot manage this Space (fail-safe →
+ *  the wrapper renders nothing). Mirrors getSpaceBasicsData's gate. */
 export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingData | null> {
   const caller = await getCallerProfile()
   const viewerProfileId = caller?.id ?? null
@@ -146,13 +150,61 @@ export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingD
 
   const caps = await getSpaceCapabilities(space, viewerProfileId)
   const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+  const extras = await readProfileExtras(space.id)
 
   return {
+    spaceId: space.id,
     slug: space.slug,
+    brandName: space.brandName ?? '',
+    tagline: extras.tagline ?? '',
     coverImageUrl: space.coverImageUrl ?? null,
     brandLogoUrl: space.brandLogoUrl ?? null,
     coverScrim: readCoverScrim(space.preferences),
     accent: space.brandAccent ?? '',
+    readOnly: staffViewing || !canUseProfile,
+  }
+}
+
+// ── Settings (space.settings) ────────────────────────────────────────────────────────────────────────
+// The lower Settings section (ADR-535): the less-frequent knobs pulled OUT of the forward-facing sections —
+// the star rating + count, and who can find this space (visibility). Read-gated like Info & Connect; each
+// write re-gates server-side.
+
+interface SpaceSettingsData {
+  spaceId: string
+  slug: string
+  rating: string
+  ratingCount: string
+  visibility: 'network' | 'private'
+  readOnly: boolean
+}
+
+/** The Settings section's data, or null when the viewer cannot manage this Space (fail-safe). */
+export async function getSpaceSettingsData(slug: string): Promise<SpaceSettingsData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+  const extras = await readProfileExtras(space.id)
+  const business = readProfileData(space.preferences)
+
+  return {
+    spaceId: space.id,
+    slug: space.slug,
+    rating: business.rating ?? '',
+    ratingCount: business.ratingCount ?? '',
+    visibility: extras.visibility === 'private' ? 'private' : 'network',
     readOnly: staffViewing || !canUseProfile,
   }
 }

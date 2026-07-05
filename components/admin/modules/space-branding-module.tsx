@@ -46,7 +46,10 @@ export function SpaceBrandingModule() {
   return (
     <section className="min-w-0">
       <SpaceBrandingForm
+        spaceId={data.spaceId}
         slug={data.slug}
+        brandName={data.brandName}
+        tagline={data.tagline}
         coverImageUrl={data.coverImageUrl}
         brandLogoUrl={data.brandLogoUrl}
         coverScrim={data.coverScrim}
