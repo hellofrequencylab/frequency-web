@@ -2,22 +2,11 @@
 // 'use server' actions file — a Server Actions file may only export async functions, so a
 // synchronous helper exported there fails the production build). Imported by both the
 // action and its unit test.
-
-import { parseEntityLayout } from '@/lib/entity-blocks/layout'
-import { DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
-
-// ── PROFILE GRID TEMPLATE (the interior shape) ─────────────────────────────────────────────────────
-// The block-picker profile is arranged into a structural TEMPLATE (single column, main + side, etc.),
-// stored at preferences.profileLayout.template (the EntityLayout node the grid editor writes). The Page
-// panel's inline structural chooser (ADR-515 Phase 3) reads it to tint the chosen tile. Fail-safe to the
-// single-column DEFAULT_TEMPLATE for any missing / malformed value.
-
-/** Read the operator's chosen profile grid template off a raw preferences blob. Default-safe. PURE. */
-export function readProfileTemplate(preferences: unknown): TemplateId {
-  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return DEFAULT_TEMPLATE
-  const node = (preferences as Record<string, unknown>).profileLayout
-  return parseEntityLayout(node)?.template ?? DEFAULT_TEMPLATE
-}
+//
+// The structural-template reader (`readProfileTemplate`) was retired with the template picker (ADR-526):
+// the freeform rows model superseded the fixed templates, so a space profile no longer stores or reads a
+// `template`. The legacy `template` key is still tolerated on READ by the entity-layout model itself
+// (resolveRows), so any old saved value keeps rendering.
 
 // ── COVER SIZE (always Hero, ADR-526) ──────────────────────────────────────────────────────────────
 // A Space profile ALWAYS uses the tall, immersive `hero` cover (never the compact `header` band) — the
