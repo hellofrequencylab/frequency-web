@@ -11369,3 +11369,18 @@ About↔Story needs **no migration** — both stores already exist and already r
 The short column is threaded fail-safe into the render bag: `getSpaceAbout(spaceId)` (an untyped admin read of `spaces.about`, empty ⇒ `''`) joins the existing request-cached `getSpaceLiveContent` pass and is exposed as `SpaceContentData.aboutShort`. `story` is registered (`lib/entity-blocks/registry.ts` order 15, `ProfileBlockId`, `PROFILE_BLOCKS`), added to `CORE_PROFILE_BLOCK_IDS`, and wired into `SPACE_PROFILE_BLOCKS`. Space-only (a member profile never sees `story`).
 
 **Consequences.** Operators can place About and Story independently, matching the two Info & Connect fields. No migration (both stores already existed). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-538: Space rail rework, Stage D1 — services open INLINE in the space page (?panel), starting with Members
+
+**Status:** Accepted (2026-07-05). No migration. First sub-stage of the inline workspace (Stage D).
+
+**Context.** Owner directive: the space page is the single workspace. The hero + tab menu stay fixed at the top; a primary function (a service manager, a deeper settings editor) should open in the BODY below them, never navigating the operator off the page. Today those managers are separate routes (`/spaces/<slug>/crm`, `/settings/*`). Confirmed decisions: the panel REPLACES the profile body; it must be fast and never leave the page; CRM stays full-width at its own route (the one exception); the standalone routes keep working as deep links (the "full admin" reachable from the console), while primary editing happens inline.
+
+**Decision (the seam, proven on Members).** The hero + menu live in the route-group layout `(profile)/layout.tsx`, and an App Router layout does NOT re-render on a query-string change, so a `?panel=<id>` soft-navigation swaps ONLY the page body while the hero + menu persist. Concretely:
+- `(profile)/page.tsx` reads `searchParams.panel`; for a viewer who passes the SAME owner/manage gate that already picks `OwnerSpaceLayoutPreview`, and a known panel id, it renders `<SpaceBodyPanel>` INSTEAD of the profile body (else unchanged). Visitors never see a panel.
+- `components/spaces/workspace/surface-panels.ts` is the registry (`SURFACE_PANELS`, `isPanelId`, `PANEL_SURFACE_TO_ID`) — one row per panelable surface (D1: `members`).
+- `SpaceBodyPanel` renders a light inline header (label · "Back to page" → `/spaces/<slug>` · "Open full page" → the standalone route) over the manager's chrome-free body.
+- Each manager body is extracted into a chrome-free, self-gating Server Component (`settings/members/members-body.tsx`); the standalone route keeps rendering it inside its `FocusTemplate`, so deep links are unchanged.
+- The RAIL links via a new `panelHrefForSurface` (a panelable surface → `?panel=`, else the normal route); `hrefForSurface` is UNTOUCHED, so the `/manage` console + the bottom bank keep their full routes (the "full admin sub-menu"). CRM is never a panel.
+
+**Consequences.** Clicking Members in the rail now opens the roster inline under the persistent hero + menu; the standalone `/settings/members` route still works for deep links. The seam (registry + `panelHrefForSurface` + chrome-free body) is the template the remaining services (D2), deep-settings editors (D3), and menu polish (D4) reuse — CRM excepted (full-width). Gate green: `tsc --noEmit`, eslint, vitest (3932 passed), check:canon, check:authz.

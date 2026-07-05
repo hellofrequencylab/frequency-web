@@ -10,6 +10,8 @@ import { parseEntityLayout, mergeEntityLayout } from '@/lib/entity-blocks/layout
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-preview'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
+import { SpaceBodyPanel } from '@/components/spaces/workspace/space-body-panel'
+import { isPanelId } from '@/components/spaces/workspace/surface-panels'
 
 // The profile's HOME page body (ADR-508 U3 LIVE CUTOVER). The Home body now renders through the
 // MODULE ENGINE (the block-picker grid), NOT Puck: it resolves the Space, builds the small render
@@ -23,7 +25,7 @@ import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 // The body is wrapped in its OWN <Suspense> with the shared profile-body skeleton, so the chrome never
 // blocks on the Space read while the modules resolve (D5). Each section inside the module render carries
 // its own <Suspense>, so a slow section never blocks the ones above it.
-async function SpaceProfileBody({ slug }: { slug: string }) {
+async function SpaceProfileBody({ slug, panel }: { slug: string; panel?: string }) {
   const viewerProfileId = await getMyProfileId()
   const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
   if (!space) notFound()
@@ -59,16 +61,33 @@ async function SpaceProfileBody({ slug }: { slug: string }) {
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
 
+  // INLINE WORKSPACE seam (Stage D1): a manager who soft-navigated to `?panel=<id>` gets that surface
+  // rendered INLINE here, REPLACING the profile body, while the (profile) layout's hero + tab menu stay
+  // put (the layout does not re-render on a query change). Same gate that picks the owner preview below;
+  // only a KNOWN panel id (isPanelId) branches, so an unknown / absent panel falls through to normal.
+  // A visitor / non-owner never sees a panel (canSeeAsOwner is false).
+  if (canSeeAsOwner && isPanelId(panel)) return <SpaceBodyPanel slug={space.slug} panel={panel} />
+
   if (canSeeAsOwner) return <OwnerSpaceLayoutPreview slug={space.slug} />
 
   return <SpaceProfileModules space={toProfileContext(space)} grid={grid} />
 }
 
-export default async function SpaceLandingPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function SpaceLandingPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ panel?: string | string[] }>
+}) {
   const { slug } = await params
+  // The inline-workspace selector (Stage D1). A soft-nav to `?panel=members` swaps only this body — the
+  // (profile) layout's hero + menu persist. The body re-gates on manage + a known panel id.
+  const { panel } = await searchParams
+  const panelId = typeof panel === 'string' ? panel : undefined
   return (
     <Suspense fallback={<ProfileBodySkeleton />}>
-      <SpaceProfileBody slug={slug} />
+      <SpaceProfileBody slug={slug} panel={panelId} />
     </Suspense>
   )
 }

@@ -26,7 +26,7 @@ import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
-import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
+import { hrefForSurface, panelHrefForSurface } from '@/lib/spaces/surface-hrefs'
 import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
 import { bankForScope, type BankLink } from '@/lib/admin/rail-bank'
 
@@ -330,13 +330,17 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     const app = appById.get(id)
     if (!app) return null
     if (app.surfaces.editor?.render === 'link') {
-      // Space link-rows resolve their href via hrefForSurface (Danger + unmapped fall back to the
-      // /manage console, so every row is a working link). Core/personal link surfaces resolve via
-      // hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal "You" feature workflows
-      // (Account and privacy, Billing) → their /settings/* page; every core entity stays `inline`, so
-      // no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
+      // Space link-rows resolve their href via panelHrefForSurface: a surface that maps to an INLINE
+      // panel (Stage D1 — only Members today) opens `/spaces/<slug>?panel=<id>` so it renders in the
+      // profile body without navigating away; every other surface (incl. CRM) falls through to its full
+      // route (hrefForSurface), and Danger + unmapped fall back to the /manage console, so every row is a
+      // working link. The /manage console + bottom bank keep importing hrefForSurface, so full routes stay
+      // the deep-link "full admin". Core/personal link surfaces resolve via hrefForEntitySurface (ADR-514
+      // Phase C/D): today that is the personal "You" feature workflows (Account and privacy, Billing) →
+      // their /settings/* page; every core entity stays `inline`, so no core-entity id resolves here yet.
+      // An unresolved href draws nothing (fail-safe).
       const href = spaceSlug
-        ? hrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
+        ? panelHrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
         : hrefForEntitySurface(id, scope)
       if (!href) return null
       // "Keep it in the rail" (Phase 2, ADR-514): a link surface with a glanceable stat draws a compact
