@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getSpaceBrandingData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpaceBrandingForm } from '@/components/spaces/space-branding-form'
+import { RailModuleLoading } from './rail-module-loading'
 
 // SPACE BRANDING — Section 2 of the Space rail (the profile+identity rework). Reads the Space slug from the
 // live path, calls the read-gated getSpaceBrandingData(slug) on mount, and renders the SpaceBrandingForm
@@ -39,9 +40,7 @@ export function SpaceBrandingModule() {
   }, [slug])
 
   if (!slug) return null
-  if (loading) {
-    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-  }
+  if (loading) return <RailModuleLoading />
   if (!data) return null // not permitted / not found → no chrome
 
   return (

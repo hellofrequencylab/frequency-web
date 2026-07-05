@@ -51,6 +51,17 @@ export function SpaceBrandingForm({
   const [coverUrl, setCoverUrl] = useState<string | null>(coverImageUrl)
   const [logoUrl, setLogoUrl] = useState<string | null>(brandLogoUrl)
 
+  // Track the cover scrim OPTIMISTICALLY: the buttons key off local state, not the server prop (which only
+  // updates on router.refresh()). Without this, after picking one scrim the other button stayed "active +
+  // disabled" until a reload, so you could not switch back (bug 2). Reflect an external prop change back in
+  // with React's render-time adjust-on-prop-change pattern (no effect).
+  const [scrim, setScrim] = useState<CoverScrim>(coverScrim)
+  const [seenScrim, setSeenScrim] = useState<CoverScrim>(coverScrim)
+  if (coverScrim !== seenScrim) {
+    setSeenScrim(coverScrim)
+    setScrim(coverScrim)
+  }
+
   function run<T = void>(fn: () => Promise<ActionResult<T>>) {
     setError(null)
     start(async () => {
@@ -115,13 +126,16 @@ export function SpaceBrandingForm({
         <SectionHeader title="Cover style" />
         <div className="grid grid-cols-2 gap-2">
           {COVER_SCRIMS.map((c) => {
-            const active = coverScrim === c.value
+            const active = scrim === c.value
             return (
               <button
                 key={c.value}
                 type="button"
                 disabled={readOnly || pending || active}
-                onClick={() => run(() => setSpaceCoverScrim(slug, c.value))}
+                onClick={() => {
+                  setScrim(c.value) // optimistic: flip the active state now, not after the refresh
+                  run(() => setSpaceCoverScrim(slug, c.value))
+                }}
                 aria-pressed={active}
                 title={c.tagline}
                 className={cn(
@@ -137,7 +151,7 @@ export function SpaceBrandingForm({
             )
           })}
         </div>
-        <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === coverScrim)?.tagline}</p>
+        <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
       </section>
 
       {/* THEME ACCENT — the brand colour that paints buttons, the active tab, and highlights. */}

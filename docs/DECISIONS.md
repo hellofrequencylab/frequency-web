@@ -11314,3 +11314,16 @@ About↔Story needs **no migration** — both stores already exist and already r
 **Deferred to later stages:** the page-editor rework (Section 3), a "More Pages" coming-soon section (Section 4), services rendered as one expandable summary-block section each, and pinning Billing + Danger at the bottom. The standalone `/settings/basics` + `/settings` pages still use the older combined `SpaceSettingsForm` and will be migrated to the split forms in a follow-up.
 
 **Consequences.** The Space rail now leads with two clean, non-overlapping sections; every identity/business/brand field has exactly one home. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-534: Space rail rework, Stage A — three admin-rail bug fixes (squish, cover re-select, load UX)
+
+**Status:** Accepted (2026-07-05). No migration.
+
+**Context.** Operator-reported bugs on the Space edit rail: (1) refreshing with the rail open came back with the rail GONE but the content still squished; (2) the cover-style buttons let you pick Blend but would not let you switch back to Shade until a reload; (3) the rail loaded slowly, did not always start at the top, and gave no feedback while a section was fetching.
+
+**Decision.**
+- **Squish/rail mismatch (bug 1).** The bar persists `open` in localStorage and reported it to the shell, which sizes the content column down. But a Space rail resolves its apps from the click-time `detail.spaceType`, which a hard refresh loses, so the panel rendered nothing (`hasContent` false) while the shell still squeezed the content. Two fixes: the bar now reports `open && hasContent` (the squeeze tracks what actually renders), AND it **persists the last typed-open `detail`** (scope + caps + spaceType + spaceFns, all serializable) to `sessionStorage` keyed by path, restoring it on hydrate so the Space rail **repopulates on refresh** instead of coming back empty.
+- **Cover re-select (bug 2).** `SpaceBrandingForm`'s scrim buttons keyed their active/disabled state off the server `coverScrim` prop, which only updates on `router.refresh()`, so after one pick the other button stayed disabled until a reload. The buttons now track the selection in **optimistic local state** (synced back from the prop with the render-time adjust-on-prop-change pattern).
+- **Load UX (bug 3).** The bar **scrolls its body to the top** whenever it opens or its scope changes; each self-fetching rail module now shows a shared **`RailModuleLoading` ("Working…")** indicator (spinner + polite live region) instead of a bare pulse skeleton; and the detail-restore above means the rail's functions reload on refresh rather than staying blank.
+
+**Consequences.** Refresh no longer strands squished content behind a missing rail, and the rail restores its scope + content; cover style switches both ways instantly; the rail starts at the top and shows honest "Working…" feedback. Full app speed-up of the per-module self-fetch is deferred to the inline-workspace stage. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
