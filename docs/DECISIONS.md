@@ -11342,3 +11342,16 @@ About↔Story needs **no migration** — both stores already exist and already r
 - **Console:** the new `place`/`safety` slots cluster into the identity console group so the `/manage` console keeps its seven ADR-520 groups; `space.settings` gets an icon + href.
 
 **Consequences.** The rail reads Identity & Branding → Info & Connect → Page → …services… → Settings, a standard shape. Every field still has exactly one editor. Deferred: the page-organizer rework (Stage C) and the inline-workspace (Stage D). The standalone `/settings/basics` page still uses the older combined form pending its migration. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.
+
+## ADR-536: Space rail rework, Stage C — the simplified page organizer (curated connected palette, two-way split, arrange-on-top)
+
+**Status:** Accepted (2026-07-05). No migration.
+
+**Context.** The page organizer offered ~20 blocks but only ~6 rendered — the rest were data blocks with no wired source (practices, circles, faq, updates, highlights) or rarely-used content blocks (gallery, quote, embed, divider), so the operator kept placing blocks that showed nothing ("19-20 listed, 6 working"). The split control had three ratios, and the "Add row" control sat below the rows. Owner directive: make it super simple — only blocks that connect to real profile info, one split adjuster (50/50 or Main/Side), and arrange controls above the blocks.
+
+**Decision.**
+- **Curated, connected palette.** `CORE_PROFILE_BLOCK_IDS` is narrowed to the blocks that show live profile info or a wired feature: About, Offerings, Book, Events, Team, Reviews, Contact, **Find us online** (`business`, re-added — it renders the Info & Connect socials), plus the content blocks Heading, Text, Image. A new `KIND_PALETTE_EXCLUSIONS` drops the authored `links` list from the SPACE palette (Find us online covers links) while keeping it for the MEMBER (whose bio-link list is `links`). Retired blocks still RENDER if already placed (fail-safe); they just cannot be re-added.
+- **Two split options.** The 2-column split control offers only **50/50** and **Main / Side** (a wider main column on the LEFT). The legacy wider-right `trail` still renders if a layout has it, but the control coerces it to Main / Side, so there is never a third choice.
+- **Arrange controls on top.** The primary "Add row" action moved ABOVE the rows outline (it was below), so building the page reads top-down; the duplicate bottom control was removed.
+
+**Consequences.** The organizer offers ~11 blocks that all render something real, one clear split adjuster, and a top-down arrange flow. Click-to-edit (the inline block panel) and the section-level move (ADR-532) are unchanged. Deferred to follow-ups: splitting About (short) vs Story (long) into two distinct blocks, and the inline-workspace stage (services + deeper settings rendering in the page body). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.

@@ -574,6 +574,16 @@ export function EntityPageBuilder({
       {/* SPACE (rows + up-to-2 columns, ADR-526 P2): the freeform rows editor. */}
       {maxColumns > 1 && (
         <>
+      {/* ARRANGE controls ON TOP (ADR-536, owner directive): the primary "Add row" action leads the editor,
+          above the rows it creates, so building the page reads top-down. Add a row at the end (natural
+          reading order); the row's own controls then split it and place blocks. */}
+      <button
+        type="button"
+        onClick={() => onAddRow()}
+        className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+      >
+        <Plus className="h-4 w-4" aria-hidden /> Add row
+      </button>
       {/* The rows outline. */}
       <ol className="space-y-2">
         {layout.rows.map((row, index) => {
@@ -673,19 +683,23 @@ export function EntityPageBuilder({
                   </button>
                   {openMenu === `row:${row.id}` && (
                     <Menu>
-                      {/* Column split (2-column rows only): 1/2 even, or a wider 2/3 lead column either side. */}
+                      {/* Column split (2-column rows only): TWO options only (ADR-536, owner directive) —
+                          50/50, or Main / Side (a wider main column on the LEFT). The legacy wider-right
+                          `trail` still renders if a layout already has it, but the control coerces it to
+                          Main / Side, so there is never a third choice to reason about. */}
                       {row.columns === 2 && (
                         <>
                           <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Column split</p>
                           <div className="flex gap-1 px-2 pb-1.5 pt-1">
                             {(
                               [
-                                { r: 'even' as const, label: '1/2' },
-                                { r: 'lead' as const, label: '2/3' },
-                                { r: 'trail' as const, label: '1/3' },
+                                { r: 'even' as const, label: '50 / 50' },
+                                { r: 'lead' as const, label: 'Main / Side' },
                               ]
                             ).map(({ r, label: lbl }) => {
-                              const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === r
+                              // 50/50 is active when the row is even (or unset); Main / Side is active for
+                              // either wider-column ratio (lead or the legacy trail).
+                              const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === 'lead' || row.ratio === 'trail'
                               return (
                                 <button
                                   key={r}
@@ -775,15 +789,6 @@ export function EntityPageBuilder({
           )
         })}
       </ol>
-
-      {/* Persistent add-row */}
-      <button
-        type="button"
-        onClick={() => onAddRow()}
-        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border py-2.5 text-sm font-semibold text-muted transition-colors hover:border-primary hover:text-text"
-      >
-        <Plus className="h-4 w-4" aria-hidden /> Add row
-      </button>
 
       {/* Bench tray */}
       <Bench

@@ -97,13 +97,17 @@ export function blocksForKind(kind: EntityKind): EntityBlockDef[] {
   return ENTITY_BLOCKS.filter((b) => blockSupportsKind(b, kind)).slice().sort((a, b) => a.order - b.order)
 }
 
-/** The CURATED profile block set (ADR-529, owner directive: "narrow it down to best practice without it
- *  being overwhelming"). This is the OFFERED palette — the block-picker + bench only surface these. A block
- *  NOT here is retired from the offer (existing placements still RENDER, fail-safe; they just cannot be
- *  re-added). Kept: the core data sections + the four essential content blocks. Retired: highlights,
- *  practices, circles, business, faq, updates + gallery, quote, embed, divider. */
+/** The CURATED profile block set (ADR-529 → ADR-536, owner directive: "super simple, only the blocks that
+ *  actually connect to real profile info"). This is the OFFERED palette — the block-picker + bench only
+ *  surface these, so the operator never sees a block that renders empty (the old "20 listed, 6 working"
+ *  mess). A block NOT here is retired from the offer (existing placements still RENDER, fail-safe; they just
+ *  cannot be re-added). Kept: the CONNECTED data sections that show live profile info (About, Offerings,
+ *  Book, Events, Team, Reviews, Contact, Find-us-online) + the standard/custom content blocks (Heading,
+ *  Text, Image). Retired: highlights, practices, circles, faq, updates (no wired data) + gallery, quote,
+ *  embed, divider (rarely used), and the authored `links` block (Find-us-online covers links now). */
 export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
-  // Core data sections (the space profile spine).
+  // Connected data sections — each shows live profile info the operator entered in Identity & Branding /
+  // Info & Connect, or a wired feature.
   'about',
   'offerings',
   'booking',
@@ -111,16 +115,27 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'team',
   'reviews',
   'contact',
+  'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
   // Member-only data section (kept for the member profile).
   'topfriends',
-  // The four essential content blocks.
+  // Content blocks: Heading (standard), Text + Image (custom), and the authored Links list (MEMBER bio-links).
   'heading',
   'text',
   'links',
   'image',
 ])
 
-/** The curated, best-practice palette for a profile builder: `blocksForKind` narrowed to the core set. */
+/** Block ids curated OUT of a specific kind's palette (ADR-536), even though they are in the core set for the
+ *  other kind. A SPACE uses the connected "Find us online" (`business`) block for its links, so the authored
+ *  `links` list is dropped from the space palette (it stays for the member, whose bio-link list is `links`). */
+const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
+  space: new Set(['links']),
+  member: new Set(),
+}
+
+/** The curated, best-practice palette for a profile builder: `blocksForKind` narrowed to the core set, minus
+ *  the per-kind exclusions. */
 export function profilePaletteForKind(kind: EntityKind): EntityBlockDef[] {
-  return blocksForKind(kind).filter((b) => CORE_PROFILE_BLOCK_IDS.has(b.id))
+  const excluded = KIND_PALETTE_EXCLUSIONS[kind]
+  return blocksForKind(kind).filter((b) => CORE_PROFILE_BLOCK_IDS.has(b.id) && !excluded.has(b.id))
 }
