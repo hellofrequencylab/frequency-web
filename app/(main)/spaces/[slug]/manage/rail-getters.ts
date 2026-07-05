@@ -36,20 +36,14 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverSize, readCoverScrim, readProfileTemplate } from './layout/preferences'
+import { readCoverScrim } from './layout/preferences'
 import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
 import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
-import type { TemplateId } from '@/lib/widgets/templates'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
-import {
-  resolveMode,
-  listVariantsForType,
-  modeHasFocusChoice,
-} from '@/lib/spaces/modes'
+import { resolveMode } from '@/lib/spaces/modes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
-import type { FocusChoiceLike } from '@/components/spaces/space-page-panel'
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
 // The SpaceSettingsForm prop bundle the /settings/basics page assembles (basics/page.tsx). Read-gated on
@@ -126,16 +120,13 @@ interface SpacePageData {
   pages: ReturnType<typeof readProfilePages>
   activePageSlug: string
   maxPages: number
-  coverSize: ReturnType<typeof readCoverSize>
   coverScrim: ReturnType<typeof readCoverScrim>
   accent: string
-  profileTemplate: TemplateId
   businessInfo: SpaceProfileData
   coverImageUrl: string | null
   brandLogoUrl: string | null
   websitePublished: boolean
   canManagePages: boolean
-  focus: { choices: FocusChoiceLike[] } | null
   readOnly: boolean
 }
 
@@ -160,39 +151,24 @@ export async function getSpacePageData(
   if (!canManage && !staffViewing) return null
   if (!isConsoleSpaceType(space.type)) return null
 
-  const coverSize = readCoverSize(space.preferences)
   const coverScrim = readCoverScrim(space.preferences)
 
   const pages = readProfilePages(space.preferences)
   const requested = (pageSlug ?? HOME_SLUG).trim().toLowerCase()
   const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
 
-  const mode = resolveMode(space.type, space.modeVariant)
-  const focusChoices: FocusChoiceLike[] =
-    mode && modeHasFocusChoice(space.type)
-      ? listVariantsForType(space.type).map((m) => ({
-          variant: m.variant,
-          label: m.focusLabel,
-          tagline: m.tagline,
-          active: m.variant === mode.variant,
-        }))
-      : []
-
   return {
     slug,
     pages,
     activePageSlug,
     maxPages: MAX_PROFILE_PAGES,
-    coverSize,
     coverScrim,
     accent: space.brandAccent ?? '',
-    profileTemplate: readProfileTemplate(space.preferences),
     businessInfo: readProfileData(space.preferences),
     coverImageUrl: space.coverImageUrl ?? null,
     brandLogoUrl: space.brandLogoUrl ?? null,
     websitePublished: readWebsitePublished(space.preferences),
     canManagePages: spaceCanUseFullWebsite(space),
-    focus: focusChoices.length > 0 ? { choices: focusChoices } : null,
     readOnly: staffViewing && !canManage,
   }
 }

@@ -5,25 +5,17 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, spaceCanUseFullWebsite } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import {
-  resolveMode,
-  listVariantsForType,
-  modeHasFocusChoice,
-} from '@/lib/spaces/modes'
-import {
   readProfilePages,
   hasPage,
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverSize, readCoverScrim, readProfileTemplate } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
-import {
-  SpacePagePanel,
-  type FocusChoiceLike,
-} from '@/components/spaces/space-page-panel'
+import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 
 // SPACE PAGE SETTINGS (multi-page model). The "Page" quick-edit surface in the unified console: a
 // compact panel that manages the operator-defined PAGES (create / rename / reorder / delete + pick the
@@ -65,7 +57,6 @@ export default async function SpacePageSettingsPage({
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const coverSize = readCoverSize(space.preferences)
   const coverScrim = readCoverScrim(space.preferences)
 
   // The operator's ordered nav pages, and which one is being edited (`?page=`, default Home). A stale /
@@ -73,19 +64,6 @@ export default async function SpacePageSettingsPage({
   const pages = readProfilePages(space.preferences)
   const requested = (page ?? HOME_SLUG).trim().toLowerCase()
   const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
-
-  // The Focus echo: reuse the mode page's model (the type's variants, default first). Only when the Mode
-  // has more than one Focus; otherwise omit the section.
-  const mode = resolveMode(space.type, space.modeVariant)
-  const focusChoices: FocusChoiceLike[] =
-    mode && modeHasFocusChoice(space.type)
-      ? listVariantsForType(space.type).map((m) => ({
-          variant: m.variant,
-          label: m.focusLabel,
-          tagline: m.tagline,
-          active: m.variant === mode.variant,
-        }))
-      : []
 
   return (
     <FocusTemplate
@@ -104,16 +82,13 @@ export default async function SpacePageSettingsPage({
         pages={pages}
         activePageSlug={activePageSlug}
         maxPages={MAX_PROFILE_PAGES}
-        coverSize={coverSize}
         coverScrim={coverScrim}
         accent={space.brandAccent ?? ''}
-        profileTemplate={readProfileTemplate(space.preferences)}
         businessInfo={readProfileData(space.preferences)}
         coverImageUrl={space.coverImageUrl}
         brandLogoUrl={space.brandLogoUrl}
         websitePublished={readWebsitePublished(space.preferences)}
         canManagePages={spaceCanUseFullWebsite(space)}
-        focus={focusChoices.length > 0 ? { choices: focusChoices } : null}
         readOnly={staffViewing && !canManage}
       />
     </FocusTemplate>

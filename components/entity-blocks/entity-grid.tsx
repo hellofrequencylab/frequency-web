@@ -18,6 +18,13 @@ const GRID_COLS: Record<number, string> = {
   4: 'sm:grid-cols-2 lg:grid-cols-4',
 }
 
+/** A 2-column row's grid class: even 50/50, or `lead` = 66/33 (a wider first column + a rail). Stacks on
+ *  mobile either way. */
+function columnsClass(columns: number, ratio: string | undefined): string {
+  if (columns === 2 && ratio === 'lead') return 'sm:grid-cols-[2fr_1fr]'
+  return GRID_COLS[columns] ?? ''
+}
+
 export function EntityGrid({
   rows,
   renderBlock,
@@ -38,7 +45,7 @@ export function EntityGrid({
           return id ? renderBlock(id) : null
         }
         return (
-          <div key={row.id} className={`grid gap-6 ${GRID_COLS[row.columns] ?? ''}`}>
+          <div key={row.id} className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
             {row.slots.map((id, i) => (
               <div key={`${row.id}-${i}`} className="@container space-y-6">
                 {id ? renderBlock(id) : null}

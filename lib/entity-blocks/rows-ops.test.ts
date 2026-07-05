@@ -4,6 +4,7 @@ import {
   removeRow,
   moveRow,
   setRowColumns,
+  setRowRatio,
   placeBlock,
   moveBlock,
   benchBlock,
@@ -122,6 +123,28 @@ describe('setRowColumns', () => {
   it('rejects an out-of-range column count', () => {
     expect(setRowColumns(base(), 'r0', 5)).toEqual(base())
     expect(setRowColumns(base(), 'r0', 0)).toEqual(base())
+  })
+  it('drops a lead ratio when a 2-column row narrows to 1', () => {
+    const wide = setRowRatio(base(), 'r1', 'lead') // r1 is 2-col
+    expect(wide.rows[1].ratio).toBe('lead')
+    const narrow = setRowColumns(wide, 'r1', 1)
+    expect(narrow.rows[1].ratio).toBeUndefined()
+  })
+})
+
+describe('setRowRatio', () => {
+  it('sets a lead (66/33) ratio on a 2-column row', () => {
+    const out = setRowRatio(base(), 'r1', 'lead')
+    expect(out.rows[1].ratio).toBe('lead')
+  })
+  it('is a no-op on a 1-column row (ratio has no meaning)', () => {
+    const out = setRowRatio(base(), 'r0', 'lead')
+    expect(out.rows[0].ratio).toBeUndefined()
+  })
+  it('even clears back to the sparse default (undefined)', () => {
+    const lead = setRowRatio(base(), 'r1', 'lead')
+    const even = setRowRatio(lead, 'r1', 'even')
+    expect(even.rows[1].ratio).toBeUndefined()
   })
 })
 
