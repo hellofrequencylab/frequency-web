@@ -77,6 +77,13 @@ function AdminBarTopBar({
 
 const STORAGE_OPEN = 'freq-settings-open'
 const STORAGE_WIDTH = 'freq-settings-width'
+// The last typed-open DETAIL (scope + caps + spaceType + spaceFns), stored per-tab with the path it was
+// opened on. On a hard refresh the CustomEvent that carried it is gone, so a Space rail (which resolves its
+// apps from detail.spaceType) would come back EMPTY — the bar reported open while the panel rendered null,
+// leaving the content squished with no rail (bug 1), and the rail never reloaded its functions (bug 3).
+// Restoring the detail on hydrate rebuilds the scope so the rail repopulates. sessionStorage: same tab
+// only, cleared when the tab closes; the modules still re-gate server-side, so a stale detail is fail-safe.
+const STORAGE_DETAIL = 'freq-admin-detail'
 
 // The rail-width floor (w-72 = 18rem = 288px): at rest the bar is exactly this, so it
 // covers the rail and nothing moves. The cap keeps the body readable when widened; ARROW
@@ -126,6 +133,7 @@ export function AdminBar({
   const [query, setQuery] = useState('')
 
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const bodyScrollRef = useRef<HTMLDivElement>(null)
 
   const pathname = usePathname()
   const isDesktop = useIsDesktop()
@@ -156,8 +164,17 @@ export function AdminBar({
   }, [])
   useEffect(() => {
     function onTyped(e: Event) {
-      setDetail((e as CustomEvent<OpenAdminBarDetail>).detail)
+      const d = (e as CustomEvent<OpenAdminBarDetail>).detail
+      setDetail(d)
       setOpen(true)
+      // Remember this scoped open so a refresh can rebuild the rail (bug 1 + bug 3). Keyed by the path it
+      // was opened on, so restore only fires when the same page reloads. Read the LIVE path (the []-scoped
+      // listener's closure has none).
+      try {
+        sessionStorage.setItem(STORAGE_DETAIL, JSON.stringify({ path: window.location.pathname, detail: d }))
+      } catch {
+        /* storage full / unavailable — the bar still works, it just will not restore on refresh */
+      }
     }
     window.addEventListener(OPEN_ADMIN_BAR, onTyped)
     return () => window.removeEventListener(OPEN_ADMIN_BAR, onTyped)
@@ -190,6 +207,20 @@ export function AdminBar({
     /* eslint-disable react-hooks/set-state-in-effect */
     if (savedOpen) setOpen(true)
     if (Number.isFinite(savedWidth) && savedWidth > 0) setWidth(clampWidth(savedWidth))
+    // Restore the scoped detail if the bar was open on THIS same page — rebuilds a Space rail's scope so it
+    // repopulates on refresh instead of coming back empty (bug 1 + bug 3). Path-guarded so a stored detail
+    // from another route never bleeds in.
+    if (savedOpen) {
+      try {
+        const raw = sessionStorage.getItem(STORAGE_DETAIL)
+        if (raw) {
+          const parsed = JSON.parse(raw) as { path?: string; detail?: OpenAdminBarDetail }
+          if (parsed?.path === window.location.pathname && parsed.detail) setDetail(parsed.detail)
+        }
+      } catch {
+        /* malformed / unavailable — fall back to the path-derived scope, as before */
+      }
+    }
     setHydrated(true)
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [isDesktop, hydrated])
@@ -199,8 +230,18 @@ export function AdminBar({
     if (!hydrated) return
     localStorage.setItem(STORAGE_OPEN, open ? '1' : '0')
     localStorage.setItem(STORAGE_WIDTH, String(width))
-    onStateChange?.({ open, width, resizing })
-  }, [open, width, resizing, hydrated, onStateChange])
+    // Report the EFFECTIVE open to the shell — `open && hasContent`. The panel renders nothing when there is
+    // no content (e.g. a Space rail before its scope is restored), so reporting bare `open` would size the
+    // content column down for a rail that is not there (bug 1: "rail gone but content squished"). Gating on
+    // hasContent keeps the squeeze in lock-step with what actually renders.
+    onStateChange?.({ open: open && hasContent, width, resizing })
+  }, [open, width, resizing, hydrated, hasContent, onStateChange])
+
+  // Always START AT THE TOP when the bar opens or its scope changes (bug 3): a prior scroll position or a
+  // deep-linked section could leave the rail scrolled down on open. Reset the one scroll region to the top.
+  useEffect(() => {
+    if (open) bodyScrollRef.current?.scrollTo?.({ top: 0 })
+  }, [open, resetKey])
 
   // Desktop slide-in choreography: show on open (next frame), reset on close.
   useEffect(() => {
@@ -306,7 +347,7 @@ export function AdminBar({
           />
 
           {/* Body — the ONLY scroll region, below the top bar. */}
-          <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
             <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
           </div>
         </div>
@@ -331,7 +372,7 @@ export function AdminBar({
         {/* The fixed top bar (search + close) sits ABOVE the scroll region, so nothing can render above the
             search on scroll — the search is the top of the sheet (ADR-516 Phase E). */}
         <AdminBarTopBar query={query} onQueryChange={setQuery} onClose={() => setOpen(false)} />
-        <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
+        <div ref={bodyScrollRef} className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5">
           <AdminBarBody key={resetKey} model={model} query={query} onQueryChange={setQuery} />
         </div>
       </div>

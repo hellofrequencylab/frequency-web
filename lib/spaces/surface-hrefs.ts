@@ -22,8 +22,12 @@ export function hrefForSurface(id: string, slug: string): string | null {
       // looping "Open basics" straight back to this console).
       return `${base}/settings/basics`
     case 'space.branding':
-      // Branding is a rail-inline section (header/logo/cover/accent) with no standalone page yet; the
-      // console links it to the basics editor, which still carries those fields. Non-looping.
+      // Identity & Branding is a rail-inline section with no standalone page yet; the console links it to
+      // the basics editor, which still carries those fields. Non-looping.
+      return `${base}/settings/basics`
+    case 'space.settings':
+      // The lower Settings section (rating + visibility) is rail-inline; link the console card to the basics
+      // editor, which still carries visibility. Non-looping.
       return `${base}/settings/basics`
     case 'space.mode':
       return `${base}/manage/mode`

@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   Palette,
   QrCode,
+  SlidersHorizontal,
   ShieldCheck,
   Sparkles,
   Store,
@@ -79,6 +80,7 @@ const SPACE_CONSOLE_GROUPS: readonly AdminSlot[] = [
 const ICON_FOR: Record<string, LucideIcon> = {
   'space.basics': IdCard,
   'space.branding': Palette,
+  'space.settings': SlidersHorizontal,
   'space.mode': Sparkles,
   'space.layout': LayoutTemplate,
   'space.offerings': HandCoins,
@@ -94,11 +96,11 @@ const ICON_FOR: Record<string, LucideIcon> = {
   'space.danger': Trash2,
 }
 
-/** The console group (spine slot) a surface belongs to. PURE. Branding lives in its OWN rail section
- *  (the `place` slot, relabelled "Branding"), but in the compact console it clusters into the
- *  Identity/Business-info group so the console keeps its seven ADR-520 groups. */
+/** The console group (spine slot) a surface belongs to. PURE. Identity & Branding (`place` slot) and the
+ *  lower Settings section (`safety` slot) each have their OWN rail section, but in the compact console they
+ *  cluster into the identity group so the console keeps its seven ADR-520 groups. */
 export function groupForSurface(surface: SpaceSurface): AdminSlot {
-  return surface.slot === 'place' ? 'basics' : surface.slot
+  return surface.slot === 'place' || surface.slot === 'safety' ? 'basics' : surface.slot
 }
 
 /**

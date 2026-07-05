@@ -126,6 +126,7 @@ describe('entity registry · spaceSurfacesFor', () => {
     'space.services',
     'space.reach',
     'space.comms',
+    'space.settings',
     'space.insights',
     'space.billing',
     'space.danger',
@@ -150,10 +151,10 @@ describe('entity registry · spaceSurfacesFor', () => {
     expect(FULL_SPINE.some((id) => id === 'space.engage.donations')).toBe(false)
   })
 
-  it('falls back to only the always-on Basics + Mode + Branding + Layout + Services + Danger when the viewer can use no tool', () => {
-    // The null-gated surfaces (Basics / Mode / Branding / Layout / Services / Danger) render for a manager
-    // regardless of which tools are on. Offerings is hidden under deny (no usable commerce function), and the
-    // function-gated surfaces (People / CRM / autonomy / QR / email / insights / billing) drop out.
+  it('falls back to only the always-on identity + page + services + settings + danger when the viewer can use no tool', () => {
+    // The null-gated surfaces render for a manager regardless of which tools are on. Offerings is hidden
+    // under deny (no usable commerce function), and the function-gated surfaces (People / CRM / autonomy /
+    // QR / email / insights / billing) drop out.
     for (const type of CONSOLE_TYPES) {
       expect(spaceSurfacesFor(type, deny).map((s) => s.id), type).toEqual([
         'space.basics',
@@ -161,6 +162,7 @@ describe('entity registry · spaceSurfacesFor', () => {
         'space.branding',
         'space.layout',
         'space.services',
+        'space.settings',
         'space.danger',
       ])
     }
@@ -213,8 +215,8 @@ describe('entity registry · spaceSurfacesFor', () => {
     // Primary: Audience (Members 10, CRM 15, autonomy 20, pipeline 25), Offerings & money (Offerings 30,
     // Services 40), Reach (QR 50, Email 55). Extra: Growth (Insights 20, Plan and usage 30), Danger (99).
     const TIERS: Record<string, { tier: RailTier; priority: number }> = {
-      'space.basics': { tier: 'standard', priority: 10 },
-      'space.branding': { tier: 'standard', priority: 15 },
+      'space.basics': { tier: 'standard', priority: 15 },
+      'space.branding': { tier: 'standard', priority: 10 },
       'space.layout': { tier: 'standard', priority: 20 },
       'space.mode': { tier: 'standard', priority: 30 },
       'space.people': { tier: 'primary', priority: 10 },
@@ -225,6 +227,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.services': { tier: 'primary', priority: 40 },
       'space.reach': { tier: 'primary', priority: 50 },
       'space.comms': { tier: 'primary', priority: 55 },
+      'space.settings': { tier: 'primary', priority: 70 },
       'space.insights': { tier: 'extra', priority: 20 },
       'space.billing': { tier: 'extra', priority: 30 },
       'space.danger': { tier: 'extra', priority: 99 },
@@ -274,6 +277,7 @@ describe('entity registry · spaceSurfacesFor', () => {
       'space.engage.crm',
       'space.autonomy',
       'space.pipeline',
+      'space.settings',
       'space.danger',
     ])
 

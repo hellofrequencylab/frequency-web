@@ -3,15 +3,16 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { getSpaceBasicsData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
-import { SpaceBusinessInfoForm } from '@/components/spaces/space-business-info-form'
+import { SpaceInfoConnectForm } from '@/components/spaces/space-business-info-form'
+import { RailModuleLoading } from './rail-module-loading'
 
-// SPACE BUSINESS INFO — Section 1 of the Space rail (the profile+identity rework). Reads the Space slug
-// from the live path, calls the read-gated getSpaceBasicsData(slug) on mount, and renders the consolidated
-// SpaceBusinessInfoForm inline: every WORD about the space (name, tagline, About, Story, contact, socials,
-// visibility) in one place. The getter re-gates server-side and returns null when the viewer cannot manage
-// this Space, so a non-manager sees nothing here (fail-safe). The form's own actions re-check canEditProfile.
+// SPACE INFO & CONNECT — Section 2 of the standardized rail (ADR-535). Reads the Space slug from the live
+// path, calls the read-gated getSpaceBasicsData(slug) on mount, and renders the SpaceInfoConnectForm inline:
+// the forward-facing marketing + connect content (About, Story, contact, links). Name + tagline live in
+// Identity & Branding; ratings + visibility live in Settings. The getter re-gates server-side and returns
+// null when the viewer cannot manage this Space (fail-safe). The form's own actions re-check canEditProfile.
 //
-// No module header: the rail already labels this group "Business info" (SPACE_GROUP_META).
+// No module header: the rail already labels this group "Info & Connect" (SPACE_GROUP_META).
 
 type Data = NonNullable<Awaited<ReturnType<typeof getSpaceBasicsData>>>
 
@@ -41,22 +42,15 @@ export function SpaceBasicsModule() {
   }, [slug])
 
   if (!slug) return null
-  if (loading) {
-    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-  }
+  if (loading) return <RailModuleLoading />
   if (!data) return null // not permitted / not found → no chrome
 
   return (
     <section className="min-w-0">
-      <SpaceBusinessInfoForm
+      <SpaceInfoConnectForm
         spaceId={data.spaceId}
         slug={data.slug}
-        identity={{
-          brandName: data.initial.brandName,
-          about: data.initial.about,
-          tagline: data.initial.tagline,
-          visibility: data.initial.visibility,
-        }}
+        about={data.initial.about}
         business={data.business}
         readOnly={data.readOnly}
       />

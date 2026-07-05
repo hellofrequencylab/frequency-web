@@ -6,6 +6,7 @@ import { LayoutGrid } from 'lucide-react'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
+import { RailModuleLoading } from './rail-module-loading'
 
 // SPACE PAGE — the inline editor module for the standardized admin bar (ADR-514). Mirrors
 // circle-settings-module: reads the Space slug from the live path (and which page's blocks to edit from
@@ -50,9 +51,7 @@ export function SpacePageModule() {
   }, [slug])
 
   if (!slug) return null
-  if (loading) {
-    return <div className="h-48 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
-  }
+  if (loading) return <RailModuleLoading />
   if (!data) return null // not permitted / not found → no chrome
 
   return (

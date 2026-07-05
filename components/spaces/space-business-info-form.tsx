@@ -7,26 +7,21 @@ import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Label } from '@/components/ui/field'
 import { isError, type ActionResult } from '@/lib/action-result'
-import { TextField, TextareaField, VisibilityField, FormError } from '@/components/spaces/space-form'
+import { TextareaField, FormError } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { draftSpaceBioAction, suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
+import { draftSpaceBioAction } from '@/app/(main)/spaces/copilot-actions'
 import type { SpaceProfileData, SpaceSocialLink } from '@/lib/spaces/profile-data'
 
-// THE SPACE BUSINESS INFO FORM (Space rail Section 1 — the profile+identity rework). The ONE place an
-// operator edits every WORD about their space: name, tagline, About (short intro), Story (longer
-// narrative), and the business/contact block (address, hours, phone, email, website, rating, socials),
-// plus who can find it. It writes the two stores each field already lives in, on ONE Save:
-//   • the profile COLUMNS (brand name, tagline, About, visibility) via updateSpaceProfile, and
-//   • the central profileData BLOB (Story, address, hours, phone, email, website, rating, socials) via
-//     setSpaceBusinessInfo — the single source every block that shows business details reads.
-// Both actions re-gate server-side (canEditProfile), so this client is convenience, never the gate.
-// Images + brand colour live in the BRANDING section (SpaceBrandingForm), so they are NOT here — every
-// field has exactly one editor now. Copy runs CONTENT-VOICE: plain labels, no narrated feelings, no em
-// dashes.
+// THE INFO & CONNECT FORM (Space rail Section 2 — the standardized rail, ADR-535). The ONE place an
+// operator writes the forward-facing marketing + connect content a Spotlight/profile shows: About (a short
+// intro), Story (the longer narrative), the contact block (address, hours, phone, email, website), and the
+// social/business links. Name + tagline live in Identity & Branding; ratings + visibility live in the lower
+// Settings section, so neither is here. One Save writes the two stores each field lives in — the About
+// COLUMN via updateSpaceProfile, and the profileData BLOB (Story + contact + socials) via setSpaceBusinessInfo
+// (which MERGES, so the ratings owned by Settings are preserved). Copy runs CONTENT-VOICE: no em dashes.
 
-// The branded social platforms exposed as labeled URL inputs (website has its own field above). Order =
-// display order; only non-empty links persist to socials[].
+// The branded social platforms exposed as labeled URL inputs (website has its own field above).
 const SOCIAL_PLATFORMS: { key: string; label: string }[] = [
   { key: 'linkedin', label: 'LinkedIn' },
   { key: 'facebook', label: 'Facebook' },
@@ -38,36 +33,24 @@ const SOCIAL_PLATFORMS: { key: string; label: string }[] = [
   { key: 'tiktok', label: 'TikTok' },
 ]
 
-/** The profile-column values this form edits (the same bundle getSpaceBasicsData assembles). */
-export interface BusinessIdentityValues {
-  brandName: string
-  /** The short About intro — the `spaces.about` COLUMN (band subtitle + About module). */
-  about: string
-  tagline: string
-  visibility: 'network' | 'private'
-}
-
-export function SpaceBusinessInfoForm({
+export function SpaceInfoConnectForm({
   spaceId,
   slug,
-  identity,
+  about: initialAbout,
   business,
   readOnly = false,
 }: {
   spaceId: string
   slug: string
-  /** The profile-column identity fields (name / tagline / About / visibility). */
-  identity: BusinessIdentityValues
+  /** The short About intro — the `spaces.about` COLUMN. */
+  about: string
   /** The central business blob (Story lives here as `about`, plus contact + socials). */
   business: SpaceProfileData
   readOnly?: boolean
 }) {
   const router = useRouter()
 
-  const [brandName, setBrandName] = useState(identity.brandName)
-  const [tagline, setTagline] = useState(identity.tagline)
-  const [about, setAbout] = useState(identity.about)
-  const [visibility, setVisibility] = useState<'network' | 'private'>(identity.visibility)
+  const [about, setAbout] = useState(initialAbout)
 
   // The business blob. Socials become a key→url map for the fixed inputs; on save they fold back into the
   // socials[] the model stores.
@@ -80,8 +63,6 @@ export function SpaceBusinessInfoForm({
     phone: business.phone ?? '',
     email: business.email ?? '',
     website: business.website ?? '',
-    rating: business.rating ?? '',
-    ratingCount: business.ratingCount ?? '',
     socials: socialMap,
   })
   const setBizField = (key: keyof typeof biz, value: string) => setBiz((f) => ({ ...f, [key]: value }))
@@ -92,17 +73,11 @@ export function SpaceBusinessInfoForm({
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
 
-  // Vera draft state, per field (each button shows its own spinner + error).
   const [bioBusy, startBio] = useTransition()
-  const [taglineBusy, startTagline] = useTransition()
   const [veraError, setVeraError] = useState<string | null>(null)
-  function runDraft(
-    action: () => Promise<ActionResult<string>>,
-    apply: (text: string) => void,
-    start: (cb: () => void) => void,
-  ) {
+  function runDraft(action: () => Promise<ActionResult<string>>, apply: (text: string) => void) {
     setVeraError(null)
-    start(async () => {
+    startBio(async () => {
       const result = await action()
       if (isError(result)) {
         setVeraError(result.error)
@@ -120,14 +95,10 @@ export function SpaceBusinessInfoForm({
         platform: p.key,
         url: (biz.socials[p.key] ?? '').trim(),
       })).filter((s) => s.url)
-      // Two writes, one Save: the profile columns + the central business blob. Both re-gate server-side.
+      // Two writes, one Save: the About column + the central business blob (Story + contact + socials).
+      // Ratings live in the Settings section; setSpaceBusinessInfo MERGES, so omitting them preserves them.
       const [colResult, bizResult] = await Promise.all([
-        updateSpaceProfile(spaceId, {
-          brandName: brandName.trim() || null,
-          about: about.trim() || null,
-          tagline: tagline.trim() || null,
-          visibility,
-        }),
+        updateSpaceProfile(spaceId, { about: about.trim() || null }),
         setSpaceBusinessInfo(slug, {
           about: biz.story.trim(),
           address: biz.address.trim(),
@@ -135,8 +106,6 @@ export function SpaceBusinessInfoForm({
           phone: biz.phone.trim(),
           email: biz.email.trim(),
           website: biz.website.trim(),
-          rating: biz.rating.trim(),
-          ratingCount: biz.ratingCount.trim(),
           socials,
         }),
       ])
@@ -147,18 +116,6 @@ export function SpaceBusinessInfoForm({
     })
   }
 
-  const veraButton = (onClick: () => void, busy: boolean, label: string) => (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={busy || bioBusy || taglineBusy}
-      className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
-    >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
-      {label}
-    </button>
-  )
-
   return (
     <form
       className="space-y-8 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
@@ -168,33 +125,9 @@ export function SpaceBusinessInfoForm({
       }}
     >
       <fieldset disabled={readOnly} className="contents">
-        {/* NAME + WORDS */}
+        {/* ABOUT + STORY — the words a visitor reads. */}
         <section className="space-y-5">
-          <SectionHeader title="Name & story" />
-          <TextField
-            id="brand-name"
-            label="Brand name"
-            hint="Shown in your space header."
-            value={brandName}
-            onChange={setBrandName}
-            placeholder="River Yoga"
-            maxLength={200}
-          />
-          <TextareaField
-            id="tagline"
-            label="Tagline"
-            hint="One plain line that says what you do."
-            value={tagline}
-            onChange={setTagline}
-            placeholder="Slow, breath-led yoga by the river."
-            rows={2}
-            maxLength={200}
-            action={veraButton(
-              () => runDraft(() => suggestTaglineAction(spaceId), setTagline, startTagline),
-              taglineBusy,
-              'Suggest with Vera',
-            )}
-          />
+          <SectionHeader title="About & story" />
           <TextareaField
             id="about"
             label="About"
@@ -214,15 +147,21 @@ export function SpaceBusinessInfoForm({
             placeholder="Tell people who you are and what they can expect."
             rows={6}
             maxLength={4000}
-            action={veraButton(
-              () => runDraft(() => draftSpaceBioAction(spaceId), (t) => setBizField('story', t), startBio),
-              bioBusy,
-              'Draft with Vera',
-            )}
+            action={
+              <button
+                type="button"
+                onClick={() => runDraft(() => draftSpaceBioAction(spaceId), (t) => setBizField('story', t))}
+                disabled={bioBusy}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
+              >
+                {bioBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5" aria-hidden />}
+                Draft with Vera
+              </button>
+            }
           />
           <p className="text-xs text-subtle">
-            Vera is AI. The Draft and Suggest buttons write a starting point you review and edit; nothing
-            is saved or published until you do.
+            Vera is AI. The Draft button writes a starting point you review and edit; nothing is saved or
+            published until you do.
           </p>
         </section>
 
@@ -244,10 +183,6 @@ export function SpaceBusinessInfoForm({
             rows={2}
             maxLength={500}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <BizInput id="biz-rating" label="Rating" value={biz.rating} onChange={(v) => setBizField('rating', v)} placeholder="4.8" />
-            <BizInput id="biz-rating-count" label="Rating count" value={biz.ratingCount} onChange={(v) => setBizField('ratingCount', v)} placeholder="126 reviews" />
-          </div>
           <div>
             <Label className="mb-1.5 block font-semibold">Social and business links</Label>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -266,12 +201,6 @@ export function SpaceBusinessInfoForm({
               ))}
             </div>
           </div>
-        </section>
-
-        {/* VISIBILITY — who can find this space. */}
-        <section className="space-y-3">
-          <SectionHeader title="Visibility" />
-          <VisibilityField value={visibility} onChange={setVisibility} />
         </section>
 
         {veraError && (
