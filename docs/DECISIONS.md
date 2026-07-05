@@ -11271,3 +11271,28 @@ check:canon, check:authz. No em dashes in touched copy; semantic tokens only.
 - **Editor simplified for the narrow rail (audit 2).** The row strip carried two look-alike segmented controls (columns + split) plus row up/down + a menu, overflowing the 288px rail on a 2-column row. The **column split (1/2 · 2/3 · 1/3) moved into the row menu** (it only applies to a 2-column row), the redundant **"Move to position" grid was removed** (up/down covers it), the **dead hover-only "Add row"** between rows was removed (it never revealed — its `<li>` had no `group` class — and the persistent Add row already covers it), the per-block **Style controls collapsed behind a "Style" disclosure** so the panel leads with content, and the **column control's touch target** was enlarged.
 
 **Consequences.** Members' inline edits now render; the rail search no longer surfaces a dead result; the block builder fits the narrow/mobile rail and reads as fewer, clearer controls. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz. Deferred (documented, lower priority): touch drag-handles remain desktop-only (up/down arrows + the Move-to / Place-in menus are the touch reorder path), and a further 44px-touch-target sweep across every builder icon button.
+
+## ADR-531: The per-block background toggle fills WHITE, not an elevated tinted card
+
+**Status:** Accepted (2026-07-05). No migration.
+
+**Context.** The per-block style control (ADR-528) offered a "Card background" switch that painted `bg-surface-elevated` (#FAF6EC, the warm cream elevated tone) behind the block. Against the page canvas (`--color-canvas` #FBF8F1, also warm cream) the two tones are nearly identical, so switching it "on" read as stacking a second faintly-tinted layer on top of the canvas rather than giving the block a distinct background — the operator's feedback: "turn the white background on / off, not add another background layer."
+
+**Decision.** `BlockStyleFrame`'s background fill is now the plain white surface (`bg-surface`, #FFFFFF) instead of `bg-surface-elevated`. White reads as a crisp, deliberate card against the warm canvas, so the toggle is an honest "white background on / off." The control is relabeled **"White background"** to match. Everything else about the frame is unchanged (same `rounded-2xl border`, same padding default, applied client-side in `LiveProfileGrid` for instant preview).
+
+**Consequences.** The background toggle now does what it says — one white surface, no stacked tint. Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon.
+
+## ADR-532: Condense + reorder the Space Basics rail — one name per header, pictures first, section-level block move
+
+**Status:** Accepted (2026-07-05). No migration.
+
+**Context.** Operator feedback on the Space admin rail (Basics editor + page builder): the rail stacked three near-synonymous labels before the first field ("IDENTITY" group → "Basics" module → "Identity" section), pinned a redundant identity strip (cover + logo thumbnail + name + Edit) that duplicated fields already in the form, buried the header/logo uploaders below the text, wrapped the brand swatches beside the color well, and made moving a page block between sections awkward (the block menu's "Move to" only listed empty column slots, and drag is desktop-only).
+
+**Decision.**
+- **One name per header (no doubles).** The `SpaceBasicsModule`'s own "Basics" title + description is dropped: the rail already labels the group "Identity" (`SPACE_GROUP_META`), so the form's own section headers carry the structure. The form's leading section is renamed **"Identity" → "Name & bio"** so nothing echoes the group label.
+- **Remove the identity strip.** `SpaceIdentityStrip` (the "cover + logo + name + Edit" card pinned atop the rail) is deleted along with its `getSpaceIdentityData` getter and the `identityStrip` field on the admin-bar model — the Basics form itself now shows and edits those images at the top.
+- **Pictures first, header full-width.** The Basics form reorders to **Pictures (header banner + logo) → Name & bio → Brand → Visibility**. The header image spans the full width (a true banner preview, not a squeezed half column); the logo sits beneath at a constrained square size.
+- **Brand swatches on a full line.** `AccentPicker` stacks: the color well + hex + Default on top, the suggested on-brand swatches as one full-width row (`grid-cols-8`) beneath.
+- **Section-level block move (touch-friendly).** The page-builder block menu replaces the empty-slot-only "Move to (Row X, column Y)" list with **"Move to section N"** for every row plus **"New section"**. Moving fills the target row's first empty slot, or — if that row is full — drops the block into a fresh section just below it; "New section" appends a row at the end. Both no-op cleanly at the `MAX_ROWS` cap. This works with a tap (no drag), so it functions on mobile; up/down arrows and desktop drag are unchanged.
+
+**Consequences.** The Space Basics rail reads top-to-bottom with a single header per level and the visitor-facing images up top; blocks relocate section-to-section on any device. Member (single-column) editor is untouched (its block menu passes no sections). Gate green: `tsc --noEmit`, eslint, vitest (3929 passed), check:canon, check:authz.

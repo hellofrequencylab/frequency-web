@@ -151,9 +151,58 @@ export function SpaceSettingsForm({
           edit nothing. Save lives outside it and is gated on `readOnly` directly. `display: contents`
           keeps the fieldset out of the layout box model. */}
       <fieldset disabled={readOnly} className="contents">
-        {/* IDENTITY — the name and words. */}
+        {/* PICTURES — the header (cover) banner + the logo, at the TOP so the operator sets what a visitor
+            sees first (item 1). The header spans the FULL width (a true banner preview, not a squeezed half
+            column); the logo sits beneath at a square-ish size. Each saves on upload through the owner-gated
+            setSpaceImages (same columns as the business info form). */}
+        <section className="space-y-3">
+          <SectionHeader title="Pictures" />
+          <ImageUpload
+            value={coverUrl}
+            onChange={(v) => {
+              setCoverUrl(v)
+              saveImage({ coverImageUrl: v })
+            }}
+            label="Header image"
+            hint="Wide banner across the top of your page. About 1600 by 500."
+            folder="space-covers"
+            disabled={readOnly}
+            uploadFn={(file) => {
+              const fd = new FormData()
+              fd.append('file', file)
+              return uploadSpaceImage(slug, 'cover', fd)
+            }}
+          />
+          <div className="max-w-[12rem]">
+            <ImageUpload
+              value={logoUrl}
+              onChange={(v) => {
+                setLogoUrl(v)
+                saveImage({ brandLogoUrl: v })
+              }}
+              label="Logo"
+              hint="Your profile image. A square reads best."
+              folder="space-logos"
+              disabled={readOnly}
+              uploadFn={(file) => {
+                const fd = new FormData()
+                fd.append('file', file)
+                return uploadSpaceImage(slug, 'logo', fd)
+              }}
+            />
+          </div>
+          {imgPending && (
+            <p className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving your image…
+            </p>
+          )}
+          {imgError && <FormError message={imgError} />}
+        </section>
+
+        {/* NAME & BIO — the words. Renamed from "Identity" so it does not echo the rail's own "Identity"
+            group header (item 3: no double names). */}
         <section className="space-y-5">
-          <SectionHeader title="Identity" />
+          <SectionHeader title="Name & bio" />
           <TextField
             id="brand-name"
             label="Brand name"
@@ -197,52 +246,6 @@ export function SpaceSettingsForm({
             Vera is AI. The Draft and Suggest buttons write a starting point you review and edit; nothing
             is saved or published until you do.
           </p>
-        </section>
-
-        {/* IMAGES — the header (cover) and the logo, where you set your other identity images. Each saves
-            on upload through the owner-gated setSpaceImages (same columns as the business info form). */}
-        <section className="space-y-3">
-          <SectionHeader title="Images" />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ImageUpload
-              value={coverUrl}
-              onChange={(v) => {
-                setCoverUrl(v)
-                saveImage({ coverImageUrl: v })
-              }}
-              label="Header image"
-              hint="Wide banner across the top of your page. About 1600 by 500."
-              folder="space-covers"
-              disabled={readOnly}
-              uploadFn={(file) => {
-                const fd = new FormData()
-                fd.append('file', file)
-                return uploadSpaceImage(slug, 'cover', fd)
-              }}
-            />
-            <ImageUpload
-              value={logoUrl}
-              onChange={(v) => {
-                setLogoUrl(v)
-                saveImage({ brandLogoUrl: v })
-              }}
-              label="Logo"
-              hint="Your logo or mark, shown as your profile image. A square reads best."
-              folder="space-logos"
-              disabled={readOnly}
-              uploadFn={(file) => {
-                const fd = new FormData()
-                fd.append('file', file)
-                return uploadSpaceImage(slug, 'logo', fd)
-              }}
-            />
-          </div>
-          {imgPending && (
-            <p className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving your image…
-            </p>
-          )}
-          {imgError && <FormError message={imgError} />}
         </section>
 
         {/* BRAND — the accent color (a real color picker + on-brand swatches). */}

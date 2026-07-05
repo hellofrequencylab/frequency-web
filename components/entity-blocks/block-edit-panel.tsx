@@ -217,7 +217,7 @@ function StyleControls({ style, onChange }: { style: BlockStyle; onChange: (next
       </summary>
       <div className="mt-2 space-y-2">
         <label className="flex items-center justify-between gap-2">
-          <span className="text-xs text-text">Card background</span>
+          <span className="text-xs text-text">White background</span>
           <input
             type="checkbox"
             checked={style.background === true}

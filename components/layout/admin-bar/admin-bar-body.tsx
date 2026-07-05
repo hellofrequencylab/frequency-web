@@ -241,11 +241,6 @@ export function AdminBarBody({
         // ── The band-ordered sections (standard + primary inline), then the operator Page group + locked
         //    rows, then the ONE "More" disclosure (extra band) at the very bottom. ──
         <>
-          {/* The compact Space identity strip (cover + logo + name), pinned at the very top of the
-              standard tier (Phase 2 "keep it in the rail", ADR-514). Self-fetches + fail-safe (renders
-              nothing for a non-manager); non-search branch only, so search results stay unaffected. */}
-          {model.identityStrip}
-
           {/* ── The Hub (ADR-516 Phase B): on the `hub` archetype the body IS the stats + quick-links Hub
               (member or Space), promoted from the pinned foot. Rendered ABOVE any operator page-management
               sections, which survive on a content hub. The Hub owns the bank, so the foot bank below is
