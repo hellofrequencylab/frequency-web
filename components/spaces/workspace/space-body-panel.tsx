@@ -9,6 +9,7 @@ import { ServicesBody } from '@/app/(main)/spaces/[slug]/settings/services/servi
 import { QrBody } from '@/app/(main)/spaces/[slug]/settings/qr/qr-body'
 import { EmailBody } from '@/app/(main)/spaces/[slug]/settings/email/email-body'
 import { BillingBody } from '@/app/(main)/spaces/[slug]/settings/billing/billing-body'
+import { CrmBody } from '@/app/(main)/spaces/[slug]/crm/crm-body'
 
 // INLINE WORKSPACE — the panel BODY (Stage D1). The Space profile's persistent hero + tab menu live in
 // the (profile) route-group layout, so a `?panel=<id>` soft-navigation swaps ONLY this body (the layout
@@ -33,6 +34,7 @@ const PANEL_BODIES: Record<string, PanelBody> = {
   qr: QrBody,
   email: EmailBody,
   billing: BillingBody,
+  crm: CrmBody,
 }
 
 export function SpaceBodyPanel({ slug, panel }: { slug: string; panel: string }) {
@@ -71,12 +73,20 @@ export function SpaceBodyPanel({ slug, panel }: { slug: string; panel: string })
         </Link>
       </header>
 
-      {/* The matched panel body (D2: Members, Offerings, Services, QR, Email, Plan and usage). The registry
-          keeps the label + full-route mapping in one place; PANEL_BODIES maps the id to its body. The body
-          is wrapped in its OWN Suspense (Stage D4) so switching panels paints the header + skeleton INSTANTLY
-          while the new body streams, instead of a blank/janky swap. Reuses the shared profile-body skeleton. */}
+      {/* The matched panel body (D2: Members, Offerings, Services, QR, Email, Plan and usage; D5: CRM). The
+          registry keeps the label + full-route mapping in one place; PANEL_BODIES maps the id to its body.
+          The body is wrapped in its OWN Suspense (Stage D4) so switching panels paints the header + skeleton
+          INSTANTLY while the new body streams, instead of a blank/janky swap. Reuses the shared profile-body
+          skeleton. A BOUNDED panel (Stage D5: the wide CRM board) is wrapped in an `overflow-x-auto` box so
+          it horizontal-scrolls WITHIN the panel column instead of breaking the page layout out full-width. */}
       <Suspense fallback={<ProfileBodySkeleton />}>
-        <Body slug={slug} />
+        {entry.bounded ? (
+          <div className="overflow-x-auto">
+            <Body slug={slug} />
+          </div>
+        ) : (
+          <Body slug={slug} />
+        )}
       </Suspense>
     </div>
   )
