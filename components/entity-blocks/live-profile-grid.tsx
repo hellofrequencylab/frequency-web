@@ -6,21 +6,19 @@ import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import { EntityGrid } from './entity-grid'
 import { BlockStyleFrame } from './content-block-view'
 import { useProfileLayout } from './profile-layout-context'
-import { OnPageEditor } from './on-page-editor'
 
-// THE LIVE PROFILE GRID (ADR-516 Phase C). The WYSIWYG surface the in-rail builder edits. Every candidate
-// member block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
+// THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
+// candidate block is rendered ONCE, server-side, into a keyed node map (`nodes`); this client wrapper places
 // those already-rendered nodes into the freeform rows and subscribes to the shared ProfileLayoutContext.
-// When the builder edits (reorder / column count / place-from-bench / bench / hide) the context repaints
+// When the SIDEBAR arranger edits (reorder / columns / move-between-rows / bench / hide) the context repaints
 // this grid INSTANTLY — zero round-trip — because the node for a moved block already exists in the DOM;
 // placing it just moves it. When nothing is editing (or no provider is mounted) it renders the persisted
 // `initialRows`, visually identical to a plain server render. Fail-safe: an unknown / hidden id renders
 // nothing, and with no provider it falls straight back to the server layout.
 //
-// ON-PAGE EDIT (ADR-542): when `editable` is set (the owner's space live preview only), once the shared
-// store has seeded, this swaps the plain grid for the OnPageEditor — the same block nodes with direct-
-// manipulation chrome overlaid, right on the page. A visitor / non-owner never passes `editable`, so their
-// render stays byte-identical (no chrome, no store dependency).
+// ADR-542 (revised): the page is the LIVE RESULT only — no editing chrome is ever overlaid here. The owner
+// arranges the page in the sidebar (SpacePageBuilder) and watches this preview update; the visitor sees the
+// identical render. Direct-manipulation-on-the-page was tried and removed at the owner's request.
 
 export function LiveProfileGrid({
   nodes,
@@ -28,9 +26,6 @@ export function LiveProfileGrid({
   initialHidden = [],
   initialContent = {},
   initialStyle = {},
-  editable = false,
-  editSlug,
-  lockedIds,
 }: {
   /** Every candidate block, pre-rendered server-side (UNSTYLED) and keyed by block id. */
   nodes: Record<string, ReactNode>
@@ -42,12 +37,6 @@ export function LiveProfileGrid({
   initialContent?: Record<string, Record<string, unknown>>
   /** The persisted per-block style (ADR-528/529) — applied CLIENT-side so a style edit shows instantly. */
   initialStyle?: Record<string, BlockStyle>
-  /** OWNER-only (ADR-542): overlay the on-page WYSIWYG editing chrome once the store has seeded. */
-  editable?: boolean
-  /** The space slug (edit mode only) — builds each data block's "Manage" deep-link. */
-  editSlug?: string
-  /** Block ids the space cannot offer yet (edit mode only) — held out of the Add-block palette. */
-  lockedIds?: string[]
 }) {
   const store = useProfileLayout()
 
@@ -73,12 +62,6 @@ export function LiveProfileGrid({
     const node = nodes[id]
     if (node == null) return null
     return <BlockStyleFrame style={style[id]}>{node}</BlockStyleFrame>
-  }
-
-  // OWNER on-page editor (ADR-542): once the store has seeded, swap the plain grid for the editing overlay.
-  // Before the seed (first paint) fall through to the identical server render, so there is no empty flash.
-  if (editable && editSlug && store?.kind === 'space' && store.seeded) {
-    return <OnPageEditor renderBlock={renderBlock} slug={editSlug} lockedIds={lockedIds} />
   }
 
   return <EntityGrid rows={displayRows} renderBlock={renderBlock} />

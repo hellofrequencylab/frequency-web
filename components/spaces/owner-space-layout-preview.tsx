@@ -4,9 +4,8 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
-import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modules'
+import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
-import { blocksForKind } from '@/lib/entity-blocks/registry'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
 import { LiveProfileGrid } from '@/components/entity-blocks/live-profile-grid'
 
@@ -60,14 +59,8 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   const rows = resolveRows(saved, 'space')
   const hidden = saved?.hidden ?? []
 
-  // Feature-locked blocks (a DATA block whose required SPACE_FUNCTION is off) — held out of the on-page
-  // Add-block palette, matching the visitor render's palette so the owner is never offered a block that
-  // would render empty.
-  const enabled = enabledFunctionKeys(space)
-  const lockedIds = blocksForKind('space')
-    .filter((b) => b.requiresFunction != null && !enabled.has(b.requiresFunction))
-    .map((b) => b.id)
-
+  // The page is the LIVE RESULT only (ADR-542 revised): no editing chrome here. The owner arranges the page
+  // in the sidebar (SpacePageBuilder) and this preview repaints through the shared store.
   return (
     <div className="@container/profile">
       <LiveProfileGrid
@@ -76,9 +69,6 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
         initialHidden={hidden}
         initialContent={saved?.content ?? {}}
         initialStyle={saved?.style ?? {}}
-        editable
-        editSlug={context.slug}
-        lockedIds={lockedIds}
       />
     </div>
   )

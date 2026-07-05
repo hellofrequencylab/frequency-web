@@ -288,10 +288,39 @@ export function EntityPageBuilder({
       const from = layout.rows.findIndex((r) => (r.cells[0] ?? []).includes(blockId))
       if (from < 0) return
       mutate(moveRow(layout, from, from + delta))
-    } else {
-      mutate(nudgeBox(layout, blockId, delta))
+      say(`${label(blockId)} moved ${delta < 0 ? 'up' : 'down'}.`)
+      return
     }
-    say(`${label(blockId)} moved ${delta < 0 ? 'up' : 'down'}.`)
+    // SPACE: find the block's position, then move it — within its column stack when it can, otherwise ACROSS
+    // to the adjacent row (same column when that row has it), so up/down carries a section from row to row.
+    let ri = -1
+    let ci = -1
+    let pi = -1
+    for (let r = 0; r < layout.rows.length && ri < 0; r++) {
+      for (let c = 0; c < layout.rows[r].cells.length; c++) {
+        const idx = layout.rows[r].cells[c].indexOf(blockId)
+        if (idx >= 0) {
+          ri = r
+          ci = c
+          pi = idx
+          break
+        }
+      }
+    }
+    if (ri < 0) return
+    const stack = layout.rows[ri].cells[ci]
+    if ((delta < 0 && pi > 0) || (delta > 0 && pi < stack.length - 1)) {
+      mutate(nudgeBox(layout, blockId, delta))
+      say(`${label(blockId)} moved ${delta < 0 ? 'up' : 'down'}.`)
+      return
+    }
+    const targetRow = layout.rows[ri + delta]
+    if (!targetRow) return
+    const targetCol = Math.min(ci, targetRow.columns - 1)
+    // Moving up drops the block at the FOOT of the target row's column; moving down at its HEAD.
+    const at = delta < 0 ? (targetRow.cells[targetCol]?.length ?? 0) : 0
+    mutate(placeBlock(layout, blockId, targetRow.id, targetCol, at))
+    say(`${label(blockId)} moved to section ${ri + delta + 1}.`)
   }
 
   // Member (single-column list): add a block as a new 1-column row at the end. No rows UI is exposed, so
