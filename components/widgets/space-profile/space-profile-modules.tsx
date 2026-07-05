@@ -12,6 +12,7 @@ import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
 
 import { AboutBlock } from './about'
+import { StoryBlock } from './story'
 import { HighlightsBlock } from './highlights'
 import { OfferingsBlock } from './offerings'
 import { BookingBlock } from './booking'
@@ -44,6 +45,7 @@ type BlockComponent = (props: { space: SpaceProfileContext; data: SpaceContentDa
  *  is one row here + its block file. */
 export const SPACE_PROFILE_BLOCKS: Record<ProfileBlockId, BlockComponent> = {
   about: AboutBlock,
+  story: StoryBlock,
   highlights: HighlightsBlock,
   offerings: OfferingsBlock,
   booking: BookingBlock,

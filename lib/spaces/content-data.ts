@@ -161,6 +161,10 @@ export type SpaceTeamMember = {
  *  and fail-safe (empty when there are no rows), so a block renders nothing rather than throwing. */
 export type SpaceContentData = {
   spaceId: string
+  /** The SHORT about intro from the `spaces.about` COLUMN (ADR-535), for the `about` profile block. The
+   *  longer narrative (the `story` block) reads `profile.about` off the preferences blob instead. Empty
+   *  string when unset, so the about block renders nothing (fail-safe). */
+  aboutShort: string
   updates: SpaceUpdateItem[]
   reviews: SpaceReviewsData
   faqs: SpaceFaqItem[]
@@ -222,6 +226,26 @@ function str(v: unknown): string {
 }
 function strOrNull(v: unknown): string | null {
   return typeof v === 'string' && v.length > 0 ? v : null
+}
+
+/** The SHORT about intro from the `spaces.about` COLUMN (ADR-535), for the `about` profile block. Read
+ *  through the untyped admin handle (the column is not in the generated types yet, ADR-246), the same
+ *  seam readProfileExtras uses. The longer narrative lives in preferences.profileData (the `story`
+ *  block). FAIL-SAFE to '' (an unset column ⇒ the about block renders nothing). */
+export async function getSpaceAbout(spaceId: string): Promise<string> {
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { about?: unknown } | null }> }
+        }
+      }
+    }
+    const { data } = await admin.from('spaces').select('about').eq('id', spaceId).maybeSingle()
+    return str(data?.about).trim()
+  } catch {
+    return ''
+  }
 }
 
 /** The latest PUBLISHED brand Updates for a Space, newest first. Fail-safe to []. */
@@ -335,8 +359,9 @@ export interface SpaceContentInput {
  *  (which injects the same rows into the blocks) both read through here, so the two never disagree
  *  AND the queries run once per request. React.cache: per-request, primitive-keyed. */
 const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) => {
-  const [updates, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
+  const [aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team] =
     await Promise.all([
+      getSpaceAbout(spaceId),
       getSpaceUpdates(spaceId),
       getSpaceReviews(spaceId),
       getSpaceFaqs(spaceId),
@@ -348,7 +373,7 @@ const getSpaceLiveContent = cache(async (spaceId: string, slug: string | null) =
       getSpaceCommunity(spaceId),
       getSpaceTeam(spaceId),
     ])
-  return { updates, reviews, faqs, highlights, stats, events, booking, practices, community, team }
+  return { aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team }
 })
 
 /** Which live sections currently have real rows, for the pre-populated anchor menu (the chrome shows
@@ -374,7 +399,7 @@ export async function getSpaceContentData(
   input?: SpaceContentInput,
 ): Promise<SpaceContentData> {
   const slug = input?.slug?.trim() || null
-  const { updates, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
+  const { aboutShort, updates, reviews, faqs, highlights, stats, events, booking, practices, community, team } =
     await getSpaceLiveContent(spaceId, slug)
   const identity: SpaceIdentity | undefined = input
     ? {
@@ -388,6 +413,7 @@ export async function getSpaceContentData(
     : undefined
   return {
     spaceId,
+    aboutShort,
     updates,
     reviews,
     faqs,

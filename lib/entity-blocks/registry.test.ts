@@ -59,7 +59,7 @@ describe('unified entity-block registry', () => {
     const space = profilePaletteForKind('space').map((b) => b.id)
     // Core kept (SPACE): the connected data sections + Find-us-online + the content blocks. `business`
     // replaces the authored `links` for a space (Find us online covers links).
-    for (const id of ['about', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'heading', 'text', 'image']) {
+    for (const id of ['about', 'story', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'heading', 'text', 'image']) {
       expect(space).toContain(id)
     }
     // Retired / excluded from the SPACE palette (no wired data, rarely used, or covered by business):
