@@ -37,6 +37,7 @@ import { SpacePipelineModule } from './space-pipeline-module'
 import { PersonalProfileModule } from './personal-profile-module'
 import { PersonalSpotlightModule } from './personal-spotlight-module'
 import { PersonalLayoutModule } from './personal-layout-module'
+import { PersonalAppearanceModule } from './personal-appearance-module'
 
 // The render layer of the admin-module registry (ADR-250 step 1). The catalog
 // (lib/admin/modules/registry.ts) stays pure metadata — it must, because the module
@@ -102,4 +103,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'account.profile': PersonalProfileModule,
   'account.spotlight': PersonalSpotlightModule,
   'account.layout': PersonalLayoutModule,
+  // The Spotlight appearance surface (ADR-525): skin, header, background, and Top Friends — the grid-side
+  // replacement for the retired Puck editor's look controls. Inline in the body next to Spotlight/Layout.
+  'account.spotlightAppearance': PersonalAppearanceModule,
 }

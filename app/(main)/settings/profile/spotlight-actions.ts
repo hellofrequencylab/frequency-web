@@ -3,7 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { readSpotlightEnabled } from '@/lib/profile/spotlight-flags'
+import {
+  readSpotlightEnabled,
+  withSpotlightTheme,
+  withSpotlightBackground,
+} from '@/lib/profile/spotlight-flags'
+import { validateSpotlightTheme } from '@/lib/spotlight/theme'
+import { validateSpotlightBackground } from '@/lib/spotlight/blocks/validate'
 import {
   normalizeTopFriendIds,
   keepAcceptedFriends,
@@ -115,6 +121,81 @@ export async function uploadSpotlightImage(
   if (error) return { error: error.message }
 
   return { path }
+}
+
+// ── Page appearance: theme + background (ADR-525) ──────────────────────────────
+// The Puck Spotlight editor carried the writers for the page THEME (header framing + fonts + colours) and
+// the page BACKGROUND (image + focus/dim/zoom); both were retired with it (ADR-524). These are the minimal
+// owner-gated replacements the grid-side Appearance rail uses. Each writes the SAME validated meta.spotlight
+// shape lib/spotlight/data.ts reads back (spotlightThemeStyles + SpotlightShell consume it), so the public
+// page renders exactly as before. Owner-only + SESSION-DERIVED (the write binds to the authed user's own
+// row, never a target id), VALIDATED on write (the read path re-validates on render, so this is belt-and-
+// braces), and Spotlight must be enabled, matching uploadSpotlightImage and the retired writers' posture.
+
+/**
+ * Save the member's Spotlight page theme (header show/height/focusY + fonts, plus the colour/card fields).
+ * The whole theme blob is coerced to the safe subset by validateSpotlightTheme, so untouched fields are
+ * defaulted — the caller merges its edit over the current theme and sends the FULL object so nothing it did
+ * not touch is lost. Owner-only, session-derived.
+ */
+export async function setSpotlightTheme(rawTheme: unknown): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+  if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
+    return { error: 'Your Spotlight page is not turned on yet.' }
+  }
+
+  const safe = validateSpotlightTheme(rawTheme)
+  const nextMeta = withSpotlightTheme((me as { meta?: unknown }).meta, safe)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) return { error: error.message }
+
+  revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
+  return {}
+}
+
+/**
+ * Save the member's Spotlight page background (the assetPath from uploadSpotlightImage, plus focusX/focusY/
+ * dim/zoom framing). validateSpotlightBackground pins the assetPath to the owner's own storage folder
+ * (`<authUserId>/spotlight/…`) and clamps the framing numbers, so a tampered path or value can never reach
+ * the public renderer. Owner-only, session-derived.
+ */
+export async function setSpotlightBackground(rawBackground: unknown): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: me } = await supabase
+    .from('profiles')
+    .select('handle, meta')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  if (!me) return { error: 'Profile not found' }
+  if (!readSpotlightEnabled((me as { meta?: unknown }).meta)) {
+    return { error: 'Your Spotlight page is not turned on yet.' }
+  }
+
+  const safe = validateSpotlightBackground(rawBackground, user.id)
+  const nextMeta = withSpotlightBackground((me as { meta?: unknown }).meta, safe)
+  const { error } = await supabase
+    .from('profiles')
+    .update({ meta: nextMeta as never })
+    .eq('auth_user_id', user.id)
+  if (error) return { error: error.message }
+
+  revalidateSpotlight((me as { handle?: string | null }).handle ?? null)
+  return {}
 }
 
 // ── Top Friends (the "Top 8") ────────────────────────────────────────────────

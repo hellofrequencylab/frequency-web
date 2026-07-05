@@ -639,6 +639,28 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     // The Layout editor arranges the member's own profile page, so it belongs only on that page (ADR-516).
     surfaces: [/^\/people\/[^/]+/],
   },
+  // The Spotlight appearance surface (ADR-525): the grid-side home for the LOOKS that lost their editor when
+  // the Puck Spotlight editor was retired (ADR-524) — the profile skin, the Spotlight header framing + fonts,
+  // the page background, and Top Friends. Their VALUES still render on the public /spotlight/<handle> page;
+  // this restores the edit UI. Inline in the body next to Spotlight/Layout, mounting on the member's own
+  // profile + the profile settings page (ADR-516). Self-fetches getAppearanceRailData; renders nothing when
+  // signed out or the member cannot enable Spotlight (fail-safe). NOT the browser-palette `account.appearance`
+  // (which stays a bank link) — this is the Spotlight page's own look.
+  {
+    id: 'account.spotlightAppearance',
+    label: 'Spotlight look',
+    desc: 'Your page skin, header, background, and Top Friends.',
+    Icon: Palette,
+    scopes: ['global'],
+    requiredCapability: 'account.manage',
+    slot: 'account',
+    surface: 'sidebar',
+    render: 'inline',
+    order: 18,
+    tier: 'primary',
+    priority: 25,
+    surfaces: [/^\/people\/[^/]+/, /^\/settings\/profile(?:$|\/)/],
+  },
   // ── Bank surfaces (ADR-515 Phase 2): the secondary account surfaces leave the body and render as
   //    bottom-bank buttons, each linking to its /settings/* page via hrefForEntitySurface. `render:
   //    'link'` is honest (they link out) but moot for a bank item (settings-panel resolves the bank by
