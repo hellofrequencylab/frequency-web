@@ -300,8 +300,23 @@ export const SPACE_SURFACES: readonly SpaceSurface[] = [
     tier: 'standard',
     priority: 10,
     slot: 'basics',
-    label: 'Basics',
-    desc: 'Name, brand, about, and who can find this space.',
+    label: 'Business info',
+    desc: 'Your name, story, contact details, and links, all in one place.',
+    requiredFunction: null,
+    types: ['*'],
+    render: 'inline',
+  },
+  // Branding (the profile+identity rework, Section 2) — the VISUAL half split out of the old Basics form:
+  // header image, logo, cover style, and accent. Its own section (the `place` spine slot, relabelled
+  // "Branding" for the Space scope in SPACE_GROUP_META) so it sits right below Business info. Always
+  // present for a manager (no per-tool function), inline in the standard band.
+  {
+    id: 'space.branding',
+    tier: 'standard',
+    priority: 15,
+    slot: 'place',
+    label: 'Branding',
+    desc: 'Your header image, logo, cover style, and brand colour.',
     requiredFunction: null,
     types: ['*'],
     render: 'inline',

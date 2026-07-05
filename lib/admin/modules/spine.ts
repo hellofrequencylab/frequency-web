@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   HandCoins,
   TrendingUp,
+  Palette,
 } from 'lucide-react'
 import type { AdminSlot } from './registry'
 
@@ -85,7 +86,11 @@ export const PERSONAL_META: SpineMeta = SPINE_META.account
 // it is not a group here. Labels pass NAMING.md + CONTENT-VOICE.md §10 (no em dashes; "&" is allowed, as
 // in "Place & Time"). Owner-approved group names.
 export const SPACE_GROUP_META: Partial<Record<AdminSlot, SpineMeta>> = {
-  basics: { label: 'Identity', Icon: Info },
+  basics: { label: 'Business info', Icon: Info },
+  // Branding (the profile+identity rework, Section 2): the `place` spine slot is repurposed as the Space's
+  // Branding section (header/logo/cover/accent). The per-scope relabel keeps every OTHER scope's
+  // "Place & Time" header untouched.
+  place: { label: 'Branding', Icon: Palette },
   layout: { label: 'Page', Icon: LayoutGrid },
   people: { label: 'Audience', Icon: Users },
   engage: { label: 'Offerings & money', Icon: HandCoins },

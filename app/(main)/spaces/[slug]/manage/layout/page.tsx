@@ -10,8 +10,6 @@ import {
   HOME_SLUG,
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
-import { readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
-import { readProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { FocusTemplate } from '@/components/templates'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
@@ -57,7 +55,6 @@ export default async function SpacePageSettingsPage({
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName?.trim() || space.name
-  const coverScrim = readCoverScrim(space.preferences)
 
   // The operator's ordered nav pages, and which one is being edited (`?page=`, default Home). A stale /
   // unknown slug (e.g. a just-deleted page) clamps to Home rather than erroring.
@@ -69,7 +66,7 @@ export default async function SpacePageSettingsPage({
     <FocusTemplate
       eyebrow="Manage space"
       title="Page"
-      description="Manage your profile pages, size your cover, choose your accent, and reorder or hide blocks. Open the full editor to add and edit any block."
+      description="Manage your profile pages and reorder or hide blocks. Cover style and accent live in Branding; your name, story, and contact live in Business info."
       width="wide"
     >
       {staffViewing && !canManage && (
@@ -82,11 +79,6 @@ export default async function SpacePageSettingsPage({
         pages={pages}
         activePageSlug={activePageSlug}
         maxPages={MAX_PROFILE_PAGES}
-        coverScrim={coverScrim}
-        accent={space.brandAccent ?? ''}
-        businessInfo={readProfileData(space.preferences)}
-        coverImageUrl={space.coverImageUrl}
-        brandLogoUrl={space.brandLogoUrl}
         websitePublished={readWebsitePublished(space.preferences)}
         canManagePages={spaceCanUseFullWebsite(space)}
         readOnly={staffViewing && !canManage}
