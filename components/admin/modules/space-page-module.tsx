@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutGrid } from 'lucide-react'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
-import { SpaceLayoutRailNote } from '@/components/spaces/space-layout-rail-note'
+import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
 import { RailModuleLoading } from './rail-module-loading'
 
 // SPACE PAGE — the inline editor module for the standardized admin bar (ADR-514). Mirrors
@@ -15,11 +15,11 @@ import { RailModuleLoading } from './rail-module-loading'
 // the focus echo). The getter re-gates server-side and returns null when the viewer cannot manage this
 // Space, so a non-manager sees nothing here (the fail-safe). Every write re-gates in its own action.
 //
-// ADR-542: the freeform layout is edited ON THE PAGE now (the WYSIWYG OnPageEditor over the live grid), so
-// the in-rail rows builder is retired here. On the Space profile ROOT (where the shared space-layout store
-// is mounted) a compact SpaceLayoutRailNote mounts ABOVE the panel — it points the owner at the on-page
-// editor and lets them restore a hidden section. It self-guards to a space store, so on every other Space
-// surface (manage / settings, where the member store is mounted) it renders nothing and only the panel shows.
+// ADR-542 (revised): the page is arranged from the SIDEBAR — the SpacePageBuilder (rows + columns + move-
+// between-rows) lives here, and the page itself shows the LIVE RESULT (no editing chrome). Every edit flows
+// through the shared space-layout store, so the on-page preview repaints instantly. On the Space profile
+// ROOT (where the shared space-layout store is mounted) the builder mounts ABOVE the panel; the builder
+// self-guards to a space store, so on every other Space surface it renders nothing and only the panel shows.
 
 type Data = NonNullable<Awaited<ReturnType<typeof getSpacePageData>>>
 
@@ -62,14 +62,13 @@ export function SpacePageModule() {
           Page
         </h3>
         <p className="text-sm text-muted">
-          Your pages, cover, and accent. Arrange the sections on your page right on the page itself.
+          Arrange the sections of your page into rows and columns here. The page beside you updates as you go.
         </p>
       </header>
-      {/* ADR-542: the space page layout is edited ON THE PAGE now (the WYSIWYG OnPageEditor over the live
-          grid), so the cramped in-rail rows builder is retired. This compact note points the owner there and
-          lets them restore a hidden section. It reads the same space-layout store, so it only shows on the
-          Space profile root; every other Space surface renders just the panel below. */}
-      <SpaceLayoutRailNote />
+      {/* ADR-542 (revised): the sidebar arranger. Rows + columns + move a section between rows; the page
+          shows the live result. It reads the shared space-layout store, so it only shows on the Space
+          profile root; every other Space surface renders just the panel below. */}
+      <SpacePageBuilder slug={data.slug} />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}
