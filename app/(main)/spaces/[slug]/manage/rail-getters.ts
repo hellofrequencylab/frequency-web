@@ -42,7 +42,6 @@ import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
-import { resolveMode } from '@/lib/spaces/modes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
@@ -222,47 +221,10 @@ export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutR
   }
 }
 
-// NOTE: Space Mode is edited via the Starter chip → /manage/mode (getSpaceStarterChip below + the full
-// /manage/mode page), NOT an inline rail module. The former `getSpaceModeData` getter + its
-// `SpaceModeModule` (which the rail unconditionally filtered out of the section list, so it never
-// rendered) were removed as dead wiring — the `space.mode` surface stays in the registry only for the
-// console link + the Starter chip's "Change" affordance.
-
-// ── Starter chip (Space menu regroup, ADR-520) ───────────────────────────────────────────────────────
-// The compact "Starter: {preset}" chip pinned under Identity in the Space rail. A Starter (the Space Mode)
-// arranges the page + suggests a pipeline; every tool stays available; it can change any time. This is a
-// FREE framing, never a gate — so this getter only reads the current preset label and re-gates on manage
-// access alone (a non-manager gets null → the chip renders nothing). READ-ONLY + serializable.
-
-interface SpaceStarterChipData {
-  slug: string
-  /** The current Starter (Mode/Focus) preset label, e.g. "Coach" or "Studio". */
-  label: string
-}
-
-/** The Starter chip's data, or null when the viewer cannot manage this Space / the type has no Mode
- *  (fail-safe → the chip renders nothing). Re-gates on manage access; Mode is free framing, so there is
- *  no per-tool function gate. */
-export async function getSpaceStarterChip(slug: string): Promise<SpaceStarterChipData | null> {
-  const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
-
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
-  if (!space) return null
-
-  const { canManage, staffViewing } = await resolveSpaceManageAccess(
-    space,
-    viewerProfileId,
-    caller?.webRole,
-  )
-  if (!canManage && !staffViewing) return null
-  if (!isConsoleSpaceType(space.type)) return null
-
-  const mode = resolveMode(space.type, space.modeVariant)
-  if (!mode) return null
-
-  return { slug: space.slug, label: mode.focusLabel || mode.modeLabel }
-}
+// NOTE: Space Mode is a creation-time PRESET (framing/labels/pipeline seed) and is edited on the full
+// `/spaces/<slug>/manage/mode` page reachable from the manage console. The rail no longer surfaces it: the
+// former inline `SpaceModeModule` and the "Starter" chip (getSpaceStarterChip) were removed (ADR-527) once
+// universal functions + the freeform layout editor made Mode purely a starting preset, not a rail control.
 
 // ── Vera autonomy (space.autonomy) ───────────────────────────────────────────────────────────────────
 // The inline rail control for the per-Space Vera autonomy dial (Resonance Engine Phase 3 · ADR-384;

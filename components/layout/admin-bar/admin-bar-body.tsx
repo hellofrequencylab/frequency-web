@@ -246,11 +246,6 @@ export function AdminBarBody({
               nothing for a non-manager); non-search branch only, so search results stay unaffected. */}
           {model.identityStrip}
 
-          {/* The Space Starter chip (ADR-520): a compact "Starter: {preset}" chip pinned just under the
-              identity strip, demoting Space Mode to a glanceable chip. Self-fetches + fail-safe; non-search
-              branch only. */}
-          {model.starterChip}
-
           {/* ── The Hub (ADR-516 Phase B): on the `hub` archetype the body IS the stats + quick-links Hub
               (member or Space), promoted from the pinned foot. Rendered ABOVE any operator page-management
               sections, which survive on a content hub. The Hub owns the bank, so the foot bank below is

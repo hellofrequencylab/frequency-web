@@ -87,8 +87,9 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   // CRM, Offerings, Services, QR, Email, Insights, Billing, Danger) stay `render: 'link'` and draw a
   // link-row instead, so they are NOT in this map.
   'space.basics': SpaceBasicsModule,
-  // `space.mode` intentionally has NO inline component: Mode is edited via the Starter chip → /manage/mode
-  // (ADR-520), never as a rail section. The surface stays in the registry for the console link + chip only.
+  // `space.mode` intentionally has NO inline component: Mode is a creation-time PRESET edited on the full
+  // /manage/mode page (reachable from the manage console), never as a rail section (ADR-527 removed the
+  // former rail "Starter" chip). The surface stays in the registry for the console link only.
   'space.layout': SpacePageModule,
   // Vera autonomy (ADR-517 Phase F): an inline owner-gated control that reuses setSpaceAutonomy.
   'space.autonomy': SpaceAutonomyModule,

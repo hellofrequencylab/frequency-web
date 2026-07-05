@@ -11217,3 +11217,15 @@ check:canon, check:authz. No em dashes in touched copy; semantic tokens only.
 - **Space page-panel cleanup.** Removed the Type/Focus switcher (Mode stays a free preset via the Starter chip, ADR-517), the structural template picker (superseded by freeform rows), and the cover-size toggle (always Hero now). Their server actions (`setSpaceCoverSize`, `setSpaceProfileTemplate`) and the dead `getSpacePageData` fields (`coverSize` / `profileTemplate` / `focus`) were deleted; the Hero scrim control now always shows.
 
 **Consequences.** Each profile kind gets an editor matched to what it is: members manage a clean single-column list, spaces compose a two-column page with a real 66/33 option. The clamp makes the model self-correcting for any legacy layout. No migration and no public-render regression for existing single-column profiles (a 1-column rows layout is unchanged). Gate green: `tsc --noEmit`, eslint (touched files), vitest (`lib/entity-blocks/` · `components/entity-blocks/` · `lib/spaces/`), check:canon, check:authz. New/updated tests cover the per-kind clamp, the 66/33 ratio through parse/sanitize/resolve, `setRowRatio`, and the `sm:grid-cols-[2fr_1fr]` render.
+
+## ADR-527: Cleanup — retire the rail Starter chip and the code orphaned by the ADR-526 profile redesign
+
+**Status:** Accepted (2026-07-05). No migration; no user-facing feature removed beyond the rail chip.
+
+**Context.** ADR-526 split the profile editors and removed the space page panel's Type/Focus switcher, template picker, and cover-size toggle. That left three orphans: the rail "Starter" chip (ADR-520, a compact "Starter: {preset}" chip that duplicated Mode framing in the Space rail), the legacy `BlockGridEditor` (the pre-ADR-516 template+slots editor, superseded by the freeform `EntityPageBuilder` and with zero remaining importers), and `readProfileTemplate` (the dead reader for the retired template picker).
+
+**Decision.**
+- **Removed the rail Starter chip.** Deleted `components/admin/modules/space-starter-chip.tsx` and `getSpaceStarterChip` (rail-getters), and unwired `starterChip` from the settings-panel model + `admin-bar-body` render. Space **Mode stays a creation-time preset** — it still drives labels, the seeded CRM pipeline (`lib/crm/stage-templates.ts`), nav emphasis, marketing personas, and the creation wizard — and is still editable on the full `/spaces/<slug>/manage/mode` page reachable from the manage console. Only the redundant rail chip is gone; `lib/spaces/modes.ts` (`resolveMode` et al.) is untouched.
+- **Deleted dead code.** `components/entity-blocks/block-grid-editor.tsx` (no importers) and `readProfileTemplate` (unused after ADR-526). The legacy `template` key is still tolerated on READ by the entity-layout model (`resolveRows`), so any old saved layout keeps rendering.
+
+**Consequences.** The Space rail is leaner (identity strip, then the sections — no Mode chip) and the tree carries no dead editor/reader. Mode as a concept is unaffected. Gate green: `tsc --noEmit`, eslint (touched files), vitest, check:canon, check:authz.
