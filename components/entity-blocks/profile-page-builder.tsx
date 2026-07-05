@@ -20,7 +20,10 @@ import { blocksForKind, entityBlockById, MEMBER_CHROME_BLOCK_IDS, type EntityKin
 import {
   starterRows,
   STARTER_LAYOUTS,
+  maxColumnsForKind,
   type RowDef,
+  type RowColumns,
+  type RowRatio,
   type StarterId,
 } from '@/lib/entity-blocks/layout'
 import {
@@ -28,6 +31,7 @@ import {
   removeRow,
   moveRow,
   setRowColumns,
+  setRowRatio,
   placeBlock,
   benchBlock,
   hideBlock,
@@ -42,17 +46,25 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { BlockPicker } from './block-picker'
 
-// THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space). An OUTLINE
-// editor, not a mini-canvas: the live profile/space page behind this same-route slide-over is the WYSIWYG
-// surface (LiveProfileGrid). Rows are collapsible strips with a drag handle, a [1][2][3][4] column control,
-// a collapse chevron and a row menu; each column slot is a pill holding a block (with its own control
-// cluster) or a "+ Add block" picker. A Bench tray holds the blocks not shown. Everything edits the SHARED
-// entity-layout store, so a change repaints the page instantly and persists debounced. Reorder is available
-// THREE ways — drag, up/down arrows, and a "Move to" menu — with a real keyboard grab + aria-live pattern
-// (the primary touch / AT path). ONE component drives both kinds: it is parameterized by `kind`, the seed
-// loader, and the self-owner match id, and guards on the store's `kind` so it never seeds the wrong store.
-// Space blocks locked behind a function the space lacks are held out of the picker + bench (lockedIds).
-// Semantic DAWN tokens, no hex, voice canon (no em dashes).
+// THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
+// two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
+// slide-over is the WYSIWYG surface (LiveProfileGrid). Everything edits the SHARED entity-layout store, so a
+// change repaints the page instantly and persists debounced.
+//
+// ONE component, TWO shapes keyed off maxColumnsForKind(kind):
+//   • MEMBER (max 1 column) — a simple single-column BLOCK LIST (ADR-526 P1). No layout editor: no column
+//     control, no rows, no ratio. Each block is a strip with on/off, up/down, and a remove-to-bench control;
+//     an "Add block" picker appends one; a Bench tray holds the rest. The member profile is always a stacked
+//     list, so the chrome (header image, identity, Standing card) owns the frame and the list owns content.
+//   • SPACE (max 2 columns) — the freeform ROWS editor (ADR-526 P2): collapsible row strips with a drag
+//     handle, a [1][2] column control, a 50/50 · 66/33 ratio toggle on a 2-column row, a collapse chevron
+//     and a row menu; each column slot is a pill holding a block (its own control cluster) or a "+ Add
+//     block" picker. A Bench tray holds the blocks not shown.
+//
+// Reorder is available THREE ways — drag, up/down arrows, and a "Move to" menu — with a real keyboard grab +
+// aria-live pattern (the primary touch / AT path). Guards on the store's `kind` so it never seeds the wrong
+// store. Space blocks locked behind a function the space lacks are held out of the picker + bench
+// (lockedIds). Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
 const label = (id: string): string => entityBlockById(id)?.label ?? id
 
@@ -129,6 +141,7 @@ export function EntityPageBuilder({
   // store of its own kind (fail-safe: a non-owner / wrong-kind store renders nothing).
   if (!store || store.kind !== kind || !matchId || matchId !== pageId) return null
 
+  const maxColumns = maxColumnsForKind(kind)
   const lockedSet = new Set(lockedIds)
   const palette = blocksForKind(kind).filter((b) => !lockedSet.has(b.id))
   const layout: BuilderLayout = { rows: store.rows, hidden: store.hidden }
@@ -159,6 +172,10 @@ export function EntityPageBuilder({
   function onSetColumns(rowId: string, n: 1 | 2 | 3 | 4) {
     mutate(setRowColumns(layout, rowId, n))
     say(`Row set to ${n} ${n === 1 ? 'column' : 'columns'}.`)
+  }
+  function onSetRatio(rowId: string, ratio: RowRatio) {
+    mutate(setRowRatio(layout, rowId, ratio))
+    say(ratio === 'lead' ? 'Row split to two thirds and one third.' : 'Row split evenly.')
   }
 
   // ── Block actions ──
@@ -196,6 +213,16 @@ export function EntityPageBuilder({
     const b = slotSeq[to]
     mutate(swapCells(layout, a.rowId, a.ci, b.rowId, b.ci))
     say(`${label(blockId)} moved ${delta < 0 ? 'up' : 'down'}.`)
+  }
+
+  // Member (single-column list): add a block as a new 1-column row at the end. No rows UI is exposed, so
+  // the member never manages rows directly — placing a block just appends its strip to the list.
+  function onAddMemberBlock(blockId: string) {
+    const withRow = addRow(layout)
+    const newRow = withRow.rows[withRow.rows.length - 1]
+    mutate(placeBlock(withRow, blockId, newRow.id, 0))
+    say(`${label(blockId)} added.`)
+    setAddingAt(null)
   }
 
   function onStarter(id: StarterId) {
@@ -277,7 +304,50 @@ export function EntityPageBuilder({
     }
   }
 
-  const showStarters = !customized || layout.rows.every((r) => r.slots.every((s) => s === null))
+  // Starters (the wireframe seeds) are a SPACE affordance only — the member profile is a fixed single-
+  // column list with no layout to seed, so it never shows them.
+  const showStarters =
+    maxColumns > 1 && (!customized || layout.rows.every((r) => r.slots.every((s) => s === null)))
+
+  // The MEMBER list: the placed blocks in reading order (each is its own 1-column row). Drives the simple
+  // block-list view; empty when the member has benched everything.
+  const memberBlocks = layout.rows
+    .map((r) => r.slots[0] ?? null)
+    .filter((s): s is string => s !== null)
+
+  // Member drag-reorder: dropping a dragged block onto another moves its row to that block's position.
+  function memberDropOn(targetBlockId: string) {
+    const id = dragBlock.current
+    dragBlock.current = null
+    if (!id || id === targetBlockId) return
+    const from = layout.rows.findIndex((r) => r.slots[0] === id)
+    const to = layout.rows.findIndex((r) => r.slots[0] === targetBlockId)
+    if (from < 0 || to < 0) return
+    mutate(moveRow(layout, from, to))
+    say(`${label(id)} moved.`)
+  }
+
+  const header = (
+    <header className="flex items-center justify-between gap-2">
+      <div>
+        <h3 className="text-sm font-bold text-text">Your page</h3>
+        <p className="text-xs text-muted">
+          {maxColumns > 1
+            ? 'Arrange the blocks on your page into rows and columns. Changes save on their own.'
+            : 'Turn blocks on or off and set their order. Changes save on their own.'}
+        </p>
+      </div>
+      {store.saving ? (
+        <span className="flex items-center gap-1 text-2xs text-subtle">
+          <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
+        </span>
+      ) : (
+        <span className="flex items-center gap-1 text-2xs text-subtle">
+          <Check className="h-3 w-3 text-success" aria-hidden /> Saved
+        </span>
+      )}
+    </header>
+  )
 
   return (
     <section className="min-w-0 space-y-3" aria-label="Profile page builder">
@@ -286,21 +356,7 @@ export function EntityPageBuilder({
         {announce}
       </p>
 
-      <header className="flex items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-bold text-text">Your page</h3>
-          <p className="text-xs text-muted">Arrange the blocks on your profile. Changes save on their own.</p>
-        </div>
-        {store.saving ? (
-          <span className="flex items-center gap-1 text-2xs text-subtle">
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
-          </span>
-        ) : (
-          <span className="flex items-center gap-1 text-2xs text-subtle">
-            <Check className="h-3 w-3 text-success" aria-hidden /> Saved
-          </span>
-        )}
-      </header>
+      {header}
 
       {store.error && (
         <p className="rounded-lg bg-danger-bg px-3 py-2 text-xs font-medium text-danger" role="alert">
@@ -337,6 +393,76 @@ export function EntityPageBuilder({
         </div>
       )}
 
+      {/* MEMBER (single-column block LIST, ADR-526 P1): no rows, no columns. Each placed block is a strip
+          with on/off + up/down + a menu; an "Add block" row appends an unplaced one. */}
+      {maxColumns === 1 && (
+        <div className="space-y-3">
+          {memberBlocks.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border px-3 py-6 text-center text-xs text-muted">
+              No blocks on your page yet. Add one below.
+            </p>
+          ) : (
+            <ol className="space-y-2">
+              {memberBlocks.map((id, index) => (
+                <li
+                  key={id}
+                  onDragOver={(e) => dragBlock.current && e.preventDefault()}
+                  onDrop={() => memberDropOn(id)}
+                >
+                  <BlockPill
+                    id={id}
+                    hidden={layout.hidden.includes(id)}
+                    grabbed={grab?.kind === 'block' && grab.id === id}
+                    menuOpen={openMenu === `block:${id}`}
+                    canUp={index > 0}
+                    canDown={index < memberBlocks.length - 1}
+                    emptySlots={[]}
+                    confirmDelete={confirmDelete === id}
+                    onDragStart={() => (dragBlock.current = id)}
+                    onDragEnd={() => (dragBlock.current = null)}
+                    onHandleKey={(e) => blockHandleKey(e, id)}
+                    onUp={() => moveBlockBy(id, -1)}
+                    onDown={() => moveBlockBy(id, 1)}
+                    onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
+                    onMoveTo={() => {}}
+                    onToggleHide={() => onToggleHide(id)}
+                    onBench={() => onBench(id)}
+                    onAskDelete={() => setConfirmDelete(id)}
+                    onCancelDelete={() => setConfirmDelete(null)}
+                    onConfirmDelete={() => onDelete(id)}
+                  />
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {bench.length > 0 && (
+            <section
+              aria-label="Add a block"
+              className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-2"
+            >
+              <p className="px-1 text-2xs font-semibold uppercase tracking-wide text-subtle">Add a block</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {bench.map((id) => (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      onClick={() => onAddMemberBlock(id)}
+                      className="flex items-center gap-1 rounded-full border border-dashed border-border bg-surface px-2.5 py-1 text-2xs font-semibold text-text transition-colors hover:border-primary hover:text-primary-strong"
+                    >
+                      <Plus className="h-3.5 w-3.5" aria-hidden /> {label(id)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* SPACE (rows + up-to-2 columns, ADR-526 P2): the freeform rows editor. */}
+      {maxColumns > 1 && (
+        <>
       {/* The rows outline. */}
       <ol className="space-y-2">
         {layout.rows.map((row, index) => {
@@ -380,9 +506,9 @@ export function EntityPageBuilder({
                   {isCollapsed ? <ChevronRight className="h-4 w-4" aria-hidden /> : <ChevronDown className="h-4 w-4" aria-hidden />}
                 </button>
 
-                {/* Segmented column-count control */}
+                {/* Segmented column-count control (capped at the kind's max: space = [1][2]). */}
                 <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label={`Columns for row ${index + 1}`}>
-                  {([1, 2, 3, 4] as const).map((n) => (
+                  {Array.from({ length: maxColumns }, (_, i) => (i + 1) as RowColumns).map((n) => (
                     <button
                       key={n}
                       type="button"
@@ -396,6 +522,37 @@ export function EntityPageBuilder({
                     </button>
                   ))}
                 </div>
+
+                {/* Split control (2-column rows only): 50/50 even, or 66/33 lead column. */}
+                {row.columns === 2 && (
+                  <div
+                    className="flex overflow-hidden rounded-md border border-border"
+                    role="group"
+                    aria-label={`Column split for row ${index + 1}`}
+                  >
+                    {(
+                      [
+                        { r: 'even' as const, label: '50/50' },
+                        { r: 'lead' as const, label: '66/33' },
+                      ]
+                    ).map(({ r, label: lbl }) => {
+                      const active = r === 'lead' ? row.ratio === 'lead' : row.ratio !== 'lead'
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => onSetRatio(row.id, r)}
+                          className={`px-1.5 py-0.5 text-2xs font-semibold ${
+                            active ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
 
                 <span className="min-w-0 flex-1 truncate px-1 text-2xs text-subtle">
                   Row {index + 1}
@@ -547,6 +704,8 @@ export function EntityPageBuilder({
         onDragEnd={() => (dragBlock.current = null)}
         onPlace={(id, t) => onPlace(id, t.rowId, t.ci)}
       />
+        </>
+      )}
     </section>
   )
 }
@@ -641,10 +800,17 @@ function BlockPill({
       >
         <GripVertical className="h-4 w-4" aria-hidden />
       </button>
-      <span className="min-w-0 flex-1 truncate text-xs font-semibold text-text">
+      {/* The label is a button: clicking a block opens its controls (edit / hide / move / remove). */}
+      <button
+        type="button"
+        onClick={onToggleMenu}
+        aria-label={`Edit ${label(id)}`}
+        aria-expanded={menuOpen}
+        className="min-w-0 flex-1 truncate text-left text-xs font-semibold text-text transition-colors hover:text-primary-strong"
+      >
         {label(id)}
         {hidden && <span className="ml-1 text-2xs font-normal text-subtle">(hidden)</span>}
-      </span>
+      </button>
       <button
         type="button"
         aria-label={`Move ${label(id)} up`}

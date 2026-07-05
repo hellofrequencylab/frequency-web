@@ -192,9 +192,65 @@ describe('rows validation (parseEntityLayout)', () => {
   })
 
   it('drops wrong-kind ids on sanitize', () => {
-    // 'offerings' is space-only; sanitizing for a member must null it.
-    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'offerings'] }] }, 'member')
+    // 'topfriends' is member-only; sanitizing for a SPACE (which keeps the 2-column row) must null it.
+    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'topfriends'] }] }, 'space')
     expect(clean?.rows?.[0].slots).toEqual(['about', null])
+  })
+})
+
+// ── ADR-526: per-kind max columns (member = single-column list; space = up to two) + 2-col ratio ───────
+
+describe('per-kind max columns clamp', () => {
+  it('clamps a member layout to a single column (drops the overflow block to the bench)', () => {
+    // 'about'+'stats' are both valid member blocks; a member row can only be one column, so the second
+    // cell is dropped and the row narrows to 1 column.
+    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }] }, 'member')
+    expect(clean?.rows).toEqual([{ id: 'r0', columns: 1, slots: ['about'] }])
+  })
+
+  it('clamps a space layout to at most two columns', () => {
+    const clean = sanitizeEntityLayout(
+      { rows: [{ id: 'r0', columns: 3, slots: ['about', 'stats', 'offerings'] }] },
+      'space',
+    )
+    expect(clean?.rows).toEqual([{ id: 'r0', columns: 2, slots: ['about', 'stats'] }])
+  })
+
+  it('resolveRows clamps a member 2-col row to one column on read', () => {
+    const layout: EntityLayout = { rows: [{ id: 'r0', columns: 2, slots: ['links', 'topfriends'] }] }
+    expect(resolveRows(layout, 'member')).toEqual([{ id: 'r0', columns: 1, slots: ['links'] }])
+  })
+})
+
+describe('2-column ratio (even / lead = 66/33)', () => {
+  it('parses and keeps a lead ratio on a 2-column row', () => {
+    const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' }] })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' })
+  })
+
+  it('drops a ratio on a non-2-column row (even is the implicit default)', () => {
+    const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 1, slots: ['about'], ratio: 'lead' }] })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 1, slots: ['about'] })
+  })
+
+  it('normalizes an unknown ratio value away', () => {
+    const parsed = parseEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'wat' }] })
+    expect(parsed?.rows?.[0]).toEqual({ id: 'r0', columns: 2, slots: ['about', 'stats'] })
+  })
+
+  it('carries the lead ratio through sanitize + resolve for a space', () => {
+    const raw = { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' }] }
+    const clean = sanitizeEntityLayout(raw, 'space')
+    expect(clean?.rows?.[0].ratio).toBe('lead')
+    expect(resolveRows(clean, 'space')?.[0].ratio).toBe('lead')
+  })
+
+  it('drops the ratio when a member row is clamped out of 2 columns', () => {
+    const clean = sanitizeEntityLayout(
+      { rows: [{ id: 'r0', columns: 2, slots: ['links', 'topfriends'], ratio: 'lead' }] },
+      'member',
+    )
+    expect(clean?.rows?.[0]).toEqual({ id: 'r0', columns: 1, slots: ['links'] })
   })
 })
 
@@ -265,11 +321,12 @@ describe('templateToRows (all 7 templates)', () => {
 
 describe('resolveRows fallbacks', () => {
   it('rows present → validated rows, hidden dropped', () => {
+    // Uses a SPACE (which keeps a 2-column row) to prove hidden ids null their cell positionally.
     const layout: EntityLayout = {
       rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }],
       hidden: ['stats'],
     }
-    expect(resolveRows(layout, 'member')).toEqual([{ id: 'r0', columns: 2, slots: ['about', null] }])
+    expect(resolveRows(layout, 'space')).toEqual([{ id: 'r0', columns: 2, slots: ['about', null] }])
   })
 
   it('legacy template + slots → templateToRows', () => {

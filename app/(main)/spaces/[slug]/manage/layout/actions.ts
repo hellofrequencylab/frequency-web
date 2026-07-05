@@ -30,11 +30,8 @@ import {
   type LayoutPreset,
 } from '@/lib/spaces/layout-presets'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { isTemplateId, type TemplateId } from '@/lib/widgets/templates'
 import {
-  nextCoverSizePreferences,
   nextCoverScrimPreferences,
-  type CoverSize,
   type CoverScrim,
 } from './preferences'
 
@@ -89,63 +86,6 @@ async function writePreferences(
   }
   const { error } = await db.from('spaces').update({ preferences }).eq('id', spaceId)
   return !error
-}
-
-/**
- * Set the public Space header's COVER SIZE: 'header' (a compact identity band) or 'hero' (a tall,
- * immersive cover). Read by the profile layout off preferences.coverSize. NON-DESTRUCTIVE: only the
- * `coverSize` node is written, every other preferences key preserved. Owner/admin/editor-gated
- * (staff preview fails closed). Returns ActionResult.
- */
-export async function setSpaceCoverSize(slug: string, size: CoverSize): Promise<ActionResult> {
-  if (size !== 'header' && size !== 'hero') return fail('Pick a cover size.')
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  const next = nextCoverSizePreferences(auth.preferences, size)
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update the cover size. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`)
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
-}
-
-/**
- * Set the Space PROFILE's structural GRID TEMPLATE (single / main-side / two-col / three-col / header-*)
- * - the interior shape the block-picker arranges the profile into. Written to the `template` key of
- * preferences.profileLayout (the SAME node mergeEntityLayout / the standalone grid editor read + write),
- * NON-DESTRUCTIVELY: only `template` is set, every other profileLayout key (slots / hidden / order) and
- * every other preferences key preserved. This surfaces the structural chooser INLINE in the rail's Page
- * panel (ADR-515 Phase 3, the owner directive "every admin bar should have the layout chooser"); the full
- * drag-and-drop grid editor stays the deep "Edit your profile" own-page link. Owner/admin/editor-gated
- * (staff preview fails closed, exactly like setSpaceCoverSize / setSpaceAccent). Returns ActionResult.
- */
-export async function setSpaceProfileTemplate(slug: string, template: TemplateId): Promise<ActionResult> {
-  if (!isTemplateId(template)) return fail('Pick a layout.')
-
-  const auth = await authorizeEditor(slug)
-  if (!auth) return fail('You do not have access to edit this page.')
-
-  // Preserve every existing profileLayout key (slots / hidden / order); set only `template`. A malformed
-  // node (not a plain object) is replaced by a fresh one carrying just the template (fail-safe on read).
-  const existing = auth.preferences.profileLayout
-  const layoutNode =
-    existing && typeof existing === 'object' && !Array.isArray(existing)
-      ? { ...(existing as Record<string, unknown>) }
-      : {}
-  layoutNode.template = template
-
-  const next = { ...auth.preferences, profileLayout: layoutNode }
-  if (!(await writePreferences(auth.spaceId, next))) {
-    return fail('Could not update the layout. Try again.')
-  }
-
-  revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/manage/layout`)
-  return ok()
 }
 
 /**

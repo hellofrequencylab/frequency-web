@@ -1,5 +1,5 @@
 import { entityBlockById, blocksForKind, type EntityKind } from './registry'
-import type { RowDef, RowColumns } from './layout'
+import type { RowDef, RowColumns, RowRatio } from './layout'
 
 // PURE ROWS MUTATION HELPERS for the in-rail Profile page builder (ADR-516 Phase C). Every function is
 // IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index / unknown id
@@ -62,7 +62,9 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     let id = typeof raw.id === 'string' && ROW_ID_RE.test(raw.id) ? raw.id : genRowId(seenRowIds)
     if (seenRowIds.has(id)) id = genRowId(seenRowIds)
     seenRowIds.add(id)
-    rows.push({ id, columns, slots })
+    // The ratio only applies to a 2-column row; drop it otherwise, and keep only the sparse `lead` value.
+    const ratio: RowRatio | undefined = columns === 2 && raw.ratio === 'lead' ? 'lead' : undefined
+    rows.push(ratio ? { id, columns, slots, ratio } : { id, columns, slots })
   }
   const hidden = [...new Set(layout.hidden.filter((id) => entityBlockById(id) !== null))]
   return { rows, hidden }
@@ -132,8 +134,21 @@ export function setRowColumns(layout: BuilderLayout, rowId: string, n: number): 
     const blocks = row.slots.filter((s): s is string => s !== null)
     const slots: (string | null)[] = []
     for (let i = 0; i < n; i++) slots.push(blocks[i] ?? null)
-    return { ...row, columns: n, slots }
+    // Leaving a 2-column row drops any lead ratio (normalize enforces this too; being explicit is cheap).
+    const ratio = n === 2 ? row.ratio : undefined
+    return { ...row, columns: n, slots, ratio }
   })
+  return normalize({ ...layout, rows })
+}
+
+/**
+ * Set a 2-column row's split ratio ('even' = 50/50, 'lead' = 66/33 with a wider first column). A no-op
+ * for an unknown row id or a row that is not 2 columns (the ratio has no meaning otherwise). Immutable.
+ */
+export function setRowRatio(layout: BuilderLayout, rowId: string, ratio: RowRatio): BuilderLayout {
+  const rows = layout.rows.map((row) =>
+    row.id === rowId && row.columns === 2 ? { ...row, ratio } : row,
+  )
   return normalize({ ...layout, rows })
 }
 

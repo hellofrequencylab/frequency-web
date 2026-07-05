@@ -19,27 +19,19 @@ export function readProfileTemplate(preferences: unknown): TemplateId {
   return parseEntityLayout(node)?.template ?? DEFAULT_TEMPLATE
 }
 
-// ── COVER SIZE (Header vs Hero) ──────────────────────────────────────────────────────────────────
-// The public Space header's cover band has two sizes: a compact `header` band (the default) and a
-// tall `hero` band. It rides the same untyped `preferences` tail as the layout override, read by the
-// public profile layout and written by the Layout manage panel. Fail-safe to `header` for any missing
-// or malformed value, so an un-migrated Space renders the compact band.
+// ── COVER SIZE (always Hero, ADR-526) ──────────────────────────────────────────────────────────────
+// A Space profile ALWAYS uses the tall, immersive `hero` cover (never the compact `header` band) — the
+// operator toggle was retired (ADR-526: "Space profile always uses Hero image layout"). This reader is
+// kept as the ONE seam the public layout + manage page read, and now returns a constant so the whole app
+// renders hero uniformly regardless of any stale `coverSize` value a preferences blob still carries.
 
 export type CoverSize = 'header' | 'hero'
 
-/** Read the operator's chosen cover size off a raw preferences blob. Default-safe to 'header'. PURE. */
-export function readCoverSize(preferences: unknown): CoverSize {
-  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return 'header'
-  return (preferences as Record<string, unknown>).coverSize === 'hero' ? 'hero' : 'header'
-}
-
-/** Compute the next preferences blob for a cover-size change. Non-destructive: only the `coverSize`
- *  node is written, every other key preserved. PURE. */
-export function nextCoverSizePreferences(
-  current: Record<string, unknown>,
-  size: CoverSize,
-): Record<string, unknown> {
-  return { ...current, coverSize: size }
+/** The Space cover size. ALWAYS 'hero' (ADR-526) — the header option was removed. Keeps its optional
+ *  `preferences` param so existing call sites (which pass the blob) are unchanged. PURE + total. */
+export function readCoverSize(preferences?: unknown): CoverSize {
+  void preferences
+  return 'hero'
 }
 
 // ── HERO COVER SCRIM (Shade vs Blend) ────────────────────────────────────────────────────────────

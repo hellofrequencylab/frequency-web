@@ -22,23 +22,18 @@ import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ProfilePage } from '@/lib/spaces/profile-pages'
-import type { CoverSize, CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import type { CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
-  setSpaceCoverSize,
   setSpaceCoverScrim,
   setSpaceAccent,
-  setSpaceProfileTemplate,
   createSpacePage,
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
   setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
-import { switchSpaceFocus } from '@/app/(main)/spaces/[slug]/manage/mode/actions'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { SpaceBusinessForm } from '@/components/spaces/space-business-form'
-import { TemplateThumbnail } from '@/components/admin/page-settings/layout-editor'
-import { TEMPLATES, type TemplateId } from '@/lib/widgets/templates'
 import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
@@ -50,23 +45,9 @@ import type { SpaceProfileData } from '@/lib/spaces/profile-data'
 // fast inline feedback only. DAWN semantic tokens only (no hex), sentence-case copy, no em dashes
 // (CONTENT-VOICE §10).
 
-/** A focus choice mirroring the mode view's shape, kept LOCAL so this surface stays decoupled from the
- *  mode settings module (it only needs these fields to render the echo). */
-export interface FocusChoiceLike {
-  variant: string
-  label: string
-  tagline: string
-  active: boolean
-}
-
-// The two public-header cover sizes, each with a plain forward function (CONTENT-VOICE, no em dashes).
-const COVER_SIZES: { value: CoverSize; label: string; tagline: string }[] = [
-  { value: 'header', label: 'Header', tagline: 'A compact band. Good when the page is the point.' },
-  { value: 'hero', label: 'Hero', tagline: 'A tall, immersive cover. Good for a strong first image.' },
-]
-
-// The two Hero scrim treatments (only shown for the Hero cover size, where the identity overlays the
-// image). Plain forward taglines, no em dashes (CONTENT-VOICE).
+// The two Hero cover-scrim treatments. A Space profile ALWAYS uses the Hero cover (ADR-526), where the
+// identity (logo + name + actions) overlays the image, so the scrim choice is always relevant. Plain
+// forward taglines, no em dashes (CONTENT-VOICE).
 const COVER_SCRIMS: { value: CoverScrim; label: string; tagline: string }[] = [
   { value: 'shade', label: 'Shade', tagline: 'A soft dark fade so your name stays readable on any photo.' },
   { value: 'blend', label: 'Blend', tagline: 'The photo melts into the page. Best with a calm image.' },
@@ -77,16 +58,13 @@ export function SpacePagePanel({
   pages,
   activePageSlug,
   maxPages,
-  coverSize,
   coverScrim,
   accent,
-  profileTemplate,
   businessInfo,
   coverImageUrl = null,
   brandLogoUrl = null,
   websitePublished = false,
   canManagePages = false,
-  focus,
   readOnly = false,
 }: {
   slug: string
@@ -96,15 +74,10 @@ export function SpacePagePanel({
   activePageSlug: string
   /** The most pages a Space may expose, so the panel warns at the cap. */
   maxPages: number
-  /** The chosen public-header cover size (Header vs Hero), for the Cover size toggle. */
-  coverSize: CoverSize
-  /** The chosen Hero scrim treatment (Shade vs Blend), for the Cover style toggle (Hero only). */
+  /** The chosen Hero scrim treatment (Shade vs Blend). The Space cover is always Hero (ADR-526). */
   coverScrim: CoverScrim
   /** The Space's stored brand accent token, or '' for none (the per-role default paints). */
   accent: string
-  /** The Space profile's chosen structural grid template (single / main-side / …), for the inline
-   *  layout chooser. Default-safe upstream (readProfileTemplate) to the single-column template. */
-  profileTemplate: TemplateId
   /** The Space's CENTRAL business info (single source of truth), for the Business info form. */
   businessInfo: SpaceProfileData
   /** The Space's current header (cover) image URL, for the Business info form's upload control. */
@@ -117,8 +90,6 @@ export function SpacePagePanel({
    *  space_full_website). Default-deny: a Space gets one continuous home page until it unlocks this,
    *  when the Pages manager shows an upsell instead of the add control. */
   canManagePages?: boolean
-  /** The Focus switcher echo, or null to omit it. */
-  focus: { choices: FocusChoiceLike[] } | null
   /** A staff previewer (read-only): the controls render disabled. */
   readOnly?: boolean
 }) {
@@ -126,9 +97,6 @@ export function SpacePagePanel({
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  // The structural grid template, seeded from the server prop and updated optimistically so the chosen
-  // tile tints at once (the inline module self-fetches once on mount, so it does not re-read on refresh).
-  const [template, setTemplate] = useState<TemplateId>(profileTemplate)
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     setError(null)
@@ -186,109 +154,22 @@ export function SpacePagePanel({
         </section>
       )}
 
-      {/* Type / focus echo (the full mode settings live at /manage/mode). */}
-      {focus && focus.choices.length > 0 && (
-        <section>
-          <SectionHeader title="Type and focus" />
-          <p className="-mt-2 mb-3 text-sm text-muted">
-            How this space runs shapes the layout we suggest. Switching keeps all your data.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {focus.choices.map((c) => (
-              <button
-                key={c.variant}
-                type="button"
-                disabled={readOnly || pending || c.active}
-                onClick={() => run(() => switchSpaceFocus(slug, c.variant))}
-                aria-pressed={c.active}
-                className={cn(
-                  'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  c.active
-                    ? 'border-primary bg-primary-bg'
-                    : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center gap-2 text-sm font-semibold text-text">
-                  {c.label}
-                  {c.active && <Check className="h-4 w-4 text-primary" aria-hidden />}
-                </span>
-                <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
-              </button>
-            ))}
-          </div>
-          <Link
-            href={`/spaces/${slug}/manage/mode`}
-            className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline"
-          >
-            More mode settings
-            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
-        </section>
-      )}
-
-      {/* LAYOUT: the structural grid template the profile arranges into (single column, main + side, and
-          so on). Pick the shape by clicking its picture; the full drag-and-drop block editor stays behind
-          "Edit your profile" above. Writes only the `template` node, so your block placements are kept.
-          Leads the quick tweaks (ADR-515 Phase 3, the owner directive: every admin bar carries the layout
-          chooser). */}
+      {/* Cover style (scrim): the Space cover is always Hero (ADR-526), where the identity overlays the image.
+          Shade keeps text legible on any photo; Blend fades the photo into the page. */}
       <section>
-        <SectionHeader title="Layout" />
+        <SectionHeader title="Cover style" />
         <p className="-mt-2 mb-3 text-sm text-muted">
-          The shape your profile arranges into. Pick a layout, then arrange your blocks in the full editor.
-        </p>
-        <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))]">
-          {TEMPLATES.map((t) => {
-            const active = template === t.id
-            return (
-              <button
-                key={t.id}
-                type="button"
-                disabled={readOnly || pending || active}
-                onClick={() => {
-                  setTemplate(t.id)
-                  run(() => setSpaceProfileTemplate(slug, t.id))
-                }}
-                aria-pressed={active}
-                title={t.description}
-                className={cn(
-                  'flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active
-                    ? 'border-primary bg-primary-bg/40 ring-1 ring-primary'
-                    : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex h-9 w-14 items-center justify-center">
-                  <TemplateThumbnail id={t.id} active={active} />
-                </span>
-                <span
-                  className={cn(
-                    'text-center text-2xs font-semibold leading-tight',
-                    active ? 'text-primary-strong' : 'text-muted',
-                  )}
-                >
-                  {t.label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* Cover size: the public header's cover band height (compact Header vs tall Hero). */}
-      <section>
-        <SectionHeader title="Cover size" />
-        <p className="-mt-2 mb-3 text-sm text-muted">
-          How tall your cover image shows at the top of your public page.
+          How your name and buttons sit on the Hero cover image.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
-          {COVER_SIZES.map((c) => {
-            const active = coverSize === c.value
+          {COVER_SCRIMS.map((c) => {
+            const active = coverScrim === c.value
             return (
               <button
                 key={c.value}
                 type="button"
                 disabled={readOnly || pending || active}
-                onClick={() => run(() => setSpaceCoverSize(slug, c.value))}
+                onClick={() => run(() => setSpaceCoverScrim(slug, c.value))}
                 aria-pressed={active}
                 className={cn(
                   'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
@@ -307,43 +188,6 @@ export function SpacePagePanel({
           })}
         </div>
       </section>
-
-      {/* Cover style (scrim): only meaningful for the Hero size, where the identity overlays the image.
-          Shade keeps text legible on any photo; Blend fades the photo into the page. */}
-      {coverSize === 'hero' && (
-        <section>
-          <SectionHeader title="Cover style" />
-          <p className="-mt-2 mb-3 text-sm text-muted">
-            How your name and buttons sit on the Hero cover image.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {COVER_SCRIMS.map((c) => {
-              const active = coverScrim === c.value
-              return (
-                <button
-                  key={c.value}
-                  type="button"
-                  disabled={readOnly || pending || active}
-                  onClick={() => run(() => setSpaceCoverScrim(slug, c.value))}
-                  aria-pressed={active}
-                  className={cn(
-                    'rounded-xl border p-4 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active
-                      ? 'border-primary bg-primary-bg'
-                      : 'border-border bg-surface hover:border-border-strong',
-                  )}
-                >
-                  <span className="flex items-center gap-2 text-sm font-semibold text-text">
-                    {c.label}
-                    {active && <Check className="h-4 w-4 text-primary" aria-hidden />}
-                  </span>
-                  <span className="mt-1 block text-xs text-muted">{c.tagline}</span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Theme / accent: the brand color that paints the page. A real color picker + on-brand swatches
           (shared AccentPicker); each pick persists at once through the owner-gated setSpaceAccent. */}

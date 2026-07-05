@@ -39,15 +39,45 @@ function isKnownSlotId(id: string): boolean {
 // null, block ids deduped across all rows). `inactive` (blocks not placed on the page) is DERIVED, never
 // stored: palette − (blocks in rows) − hidden.
 
-/** A row's column count. Equal columns; the renderer stacks them on mobile and lays them N-up at lg. */
+/** A row's column count. Equal columns by default; the renderer stacks them on mobile and lays them N-up
+ *  at lg. A 2-column row may carry a `ratio` to make the first column wider (see RowRatio). */
 export type RowColumns = 1 | 2 | 3 | 4
 
-/** One row of the freeform layout: `columns` equal cells, each a block id or null (empty). Invariant:
- *  `slots.length === columns`. `id` is a safe generated token (see ROW_ID_RE), never used as an object key. */
+/** A 2-column row's split (ignored for any other column count):
+ *  - `even` — 50 / 50 (the default; absent === even).
+ *  - `lead` — 66 / 33, the first column wider (a lead column + a rail). */
+export type RowRatio = 'even' | 'lead'
+
+/** One row of the freeform layout: `columns` cells, each a block id or null (empty). Invariant:
+ *  `slots.length === columns`. `id` is a safe generated token (see ROW_ID_RE), never used as an object key.
+ *  `ratio` only applies when `columns === 2` (a wider lead column); absent means an even split. */
 export interface RowDef {
   id: string
   columns: RowColumns
   slots: (string | null)[]
+  ratio?: RowRatio
+}
+
+/** The maximum columns a kind's page builder may use. The MEMBER profile is a single-column block LIST
+ *  (no layout editor) — every row is one block. The SPACE profile is a two-column layout editor (with a
+ *  per-row 50/50 or 66/33 split). This is the AUTHORITY: the server sanitize clamps a saved layout to it,
+ *  and the renderer clamps on read, so a member layout can never persist / render more than one column and
+ *  a space never more than two. */
+export const MAX_COLUMNS_BY_KIND: Record<EntityKind, RowColumns> = {
+  member: 1,
+  space: 2,
+}
+
+/** The max columns for a kind (see MAX_COLUMNS_BY_KIND). */
+export function maxColumnsForKind(kind: EntityKind): RowColumns {
+  return MAX_COLUMNS_BY_KIND[kind]
+}
+
+/** A valid RowRatio, or undefined. `even` is normalized to undefined (the absent default) so the stored
+ *  shape stays minimal; only a genuine `lead` split is ever persisted. Non-2-column callers pass columns
+ *  so the ratio is dropped when it cannot apply. */
+function normalizeRatio(raw: unknown, columns: number): RowRatio | undefined {
+  return columns === 2 && raw === 'lead' ? 'lead' : undefined
 }
 
 /** The operator's saved GRID arrangement, persisted per surface (space → spaces.preferences.profileLayout,
@@ -89,7 +119,7 @@ function parseRows(raw: unknown): RowDef[] | null {
   const out: RowDef[] = []
   for (const r of raw.slice(0, MAX_ROWS)) {
     if (!r || typeof r !== 'object' || Array.isArray(r)) continue
-    const o = r as { id?: unknown; columns?: unknown; slots?: unknown }
+    const o = r as { id?: unknown; columns?: unknown; slots?: unknown; ratio?: unknown }
     if (!isRowColumns(o.columns)) continue
     const columns = o.columns
     const rawSlots = Array.isArray(o.slots) ? o.slots : []
@@ -104,17 +134,31 @@ function parseRows(raw: unknown): RowDef[] | null {
       }
     }
     const id = typeof o.id === 'string' && ROW_ID_RE.test(o.id) ? o.id : `r${out.length}`
-    out.push({ id, columns, slots })
+    const ratio = normalizeRatio(o.ratio, columns)
+    out.push(ratio ? { id, columns, slots, ratio } : { id, columns, slots })
   }
   return out.length ? out : null
 }
 
-/** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe). Total. */
+/** Clamp a row to a kind's max columns (see MAX_COLUMNS_BY_KIND): keep the first `max` cells, drop any
+ *  overflow block (it falls to the derived bench), and clear a now-inapplicable ratio. Total. */
+function clampRowColumns(row: RowDef, max: RowColumns): RowDef {
+  if (row.columns <= max) return row
+  const slots = row.slots.slice(0, max)
+  const columns = max
+  const ratio = normalizeRatio(row.ratio, columns)
+  return ratio ? { ...row, columns, slots, ratio } : { id: row.id, columns, slots }
+}
+
+/** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe, and clamp
+ *  each row to the kind's max columns so a member layout is single-column and a space at most two). Total. */
 function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | undefined {
   if (!rows || !rows.length) return undefined
+  const max = maxColumnsForKind(kind)
   const seen = new Set<string>()
   const out: RowDef[] = []
-  for (const row of rows.slice(0, MAX_ROWS)) {
+  for (const raw of rows.slice(0, MAX_ROWS)) {
+    const row = clampRowColumns(raw, max)
     const slots: (string | null)[] = []
     for (let i = 0; i < row.columns; i++) {
       const s = row.slots[i] ?? null
@@ -129,7 +173,8 @@ function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | 
       slots.push(null)
     }
     const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
-    out.push({ id, columns: row.columns, slots })
+    const ratio = normalizeRatio(row.ratio, row.columns)
+    out.push(ratio ? { id, columns: row.columns, slots, ratio } : { id, columns: row.columns, slots })
   }
   return out.length ? out : undefined
 }
@@ -380,10 +425,11 @@ const r = (id: string, columns: RowColumns, slots: (string | null)[]): RowDef =>
 const MEMBER_STARTERS: Record<StarterId, readonly RowDef[]> = {
   // The in-app member default (ADR-522): `about` + `stats` are NOT here — the profile chrome already
   // renders the bio (identity band) and the Zaps/Gems/Streak/Rank (Standing card), so the member grid
-  // leads with the blocks the chrome does NOT own: links, then Top Friends.
+  // leads with the blocks the chrome does NOT own: links, then Top Friends. The MEMBER profile is a
+  // single-column block LIST (maxColumnsForKind('member') === 1), so every starter row is one column.
   basic: [r('r0', 1, ['links']), r('r1', 1, ['topfriends'])],
-  // Links + Top Friends 2-up.
-  showcase: [r('r0', 2, ['links', 'topfriends'])],
+  // Links, then Top Friends (stacked — member is single-column).
+  showcase: [r('r0', 1, ['links']), r('r1', 1, ['topfriends'])],
   // Just the bio-link row.
   minimal: [r('r0', 1, ['links'])],
 }
@@ -422,11 +468,13 @@ export function starterRows(kind: EntityKind, id: StarterId): RowDef[] {
  * the exact current effective render for existing data.
  */
 export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowDef[] {
+  const max = maxColumnsForKind(kind)
   if (layout?.rows && layout.rows.length) {
     const hidden = new Set(layout.hidden ?? [])
     const seen = new Set<string>()
     const out: RowDef[] = []
-    for (const row of layout.rows.slice(0, MAX_ROWS)) {
+    for (const raw of layout.rows.slice(0, MAX_ROWS)) {
+      const row = clampRowColumns(raw, max)
       const slots: (string | null)[] = []
       for (let i = 0; i < row.columns; i++) {
         const s = row.slots[i] ?? null
@@ -440,7 +488,9 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
         }
         slots.push(null)
       }
-      out.push({ id: ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`, columns: row.columns, slots })
+      const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
+      const ratio = normalizeRatio(row.ratio, row.columns)
+      out.push(ratio ? { id, columns: row.columns, slots, ratio } : { id, columns: row.columns, slots })
     }
     return out
   }
@@ -448,7 +498,9 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
     const tpl = isTemplateId(layout.template) ? layout.template : DEFAULT_TEMPLATE
     const def = defaultSlotId(tpl)
     const slots = layout.slots ?? (layout.order ? { [def]: layout.order } : {})
-    return templateToRows(tpl, slots, kind)
+    // The legacy template geometry can emit 3/4-column rows; clamp them to the kind max so an old space
+    // layout renders within the two-column model (overflow blocks drop to nothing, matching sanitize).
+    return templateToRows(tpl, slots, kind).map((row) => clampRowColumns(row, max))
   }
   return starterRows(kind, 'basic')
 }

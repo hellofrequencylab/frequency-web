@@ -26,11 +26,21 @@ describe('EntityGrid (data-driven rows)', () => {
   })
 
   it('renders a multi-column row as a grid with per-cell @container', () => {
-    const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }] }, 'member')
+    // A SPACE keeps a 2-column row (a member is clamped to a single column).
+    const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'] }] }, 'space')
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     expect(html).toContain('grid gap-6 sm:grid-cols-2')
     expect(html).toContain('data-block="about"')
     expect(html).toContain('data-block="stats"')
+  })
+
+  it('renders a lead-ratio 2-column row as a 66/33 grid', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 2, slots: ['about', 'stats'], ratio: 'lead' }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).toContain('grid gap-6 sm:grid-cols-[2fr_1fr]')
   })
 
   it('renders nothing for an empty (null) cell', () => {

@@ -74,16 +74,13 @@ export function SpacePageModule() {
         pages={data.pages}
         activePageSlug={data.activePageSlug}
         maxPages={data.maxPages}
-        coverSize={data.coverSize}
         coverScrim={data.coverScrim}
         accent={data.accent}
-        profileTemplate={data.profileTemplate}
         businessInfo={data.businessInfo}
         coverImageUrl={data.coverImageUrl}
         brandLogoUrl={data.brandLogoUrl}
         websitePublished={data.websitePublished}
         canManagePages={data.canManagePages}
-        focus={data.focus}
         readOnly={data.readOnly}
       />
     </section>
