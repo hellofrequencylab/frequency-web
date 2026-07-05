@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { ChevronDown, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SURFACE_PANELS, isPanelId } from '@/components/spaces/workspace/surface-panels'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
 
 // THE PERSISTENT SPACE MENU + INLINE FOLD-OUT. Rendered as a direct child of the profile page root
@@ -33,10 +34,22 @@ export function SpaceProfileMenu({
   const pathname = usePathname()
   const [open, setOpen] = useState<Panel | null>(null)
 
+  // The open inline WORKSPACE panel (Stage D4). A `?panel=<id>` soft-nav swaps only the profile body while
+  // this menu stays put, so the operator is on a workspace surface — NOT viewing Home — yet the pathname is
+  // still the index. Read the query so the menu reflects that: Home drops its active styling and a small
+  // "you are editing" affordance names the open surface. Only an owner ever renders a live panel, so gate on
+  // an admin control being present (a visitor's stray `?panel` is ignored and Home stays active for them).
+  const searchParams = useSearchParams()
+  const isOwner = manageNode != null || crmNode != null
+  const rawPanel = searchParams.get('panel') ?? undefined
+  const openPanelLabel = isOwner && isPanelId(rawPanel) ? SURFACE_PANELS[rawPanel].label : null
+
   const indexHref = tabs[0]?.href
   const isActive = (tab: SpaceProfileTab): boolean => {
     if (tab.href.includes('#')) return false
-    if (tab.href === indexHref) return pathname === tab.href
+    // Home is the index route; when a workspace panel is open the operator is on that surface, so Home must
+    // not read as active even though the pathname is unchanged.
+    if (tab.href === indexHref) return pathname === tab.href && openPanelLabel == null
     return pathname === tab.href || pathname.startsWith(`${tab.href}/`)
   }
 
@@ -96,6 +109,21 @@ export function SpaceProfileMenu({
           )}
         </nav>
       </div>
+
+      {/* The open-panel affordance (Stage D4): when a `?panel=<id>` workspace surface is open, name it right
+          under the menu so the current surface stays legible (Home no longer reads active). aria-current marks
+          it as the location the operator is on. Owner-gated (openPanelLabel is null otherwise). */}
+      {openPanelLabel && (
+        <div className="flex items-center gap-2 py-2 text-sm">
+          <span className="text-muted">You are editing</span>
+          <span
+            aria-current="page"
+            className="inline-flex items-center rounded-lg bg-primary-bg px-2.5 py-1 font-medium text-primary-strong"
+          >
+            {openPanelLabel}
+          </span>
+        </div>
+      )}
 
       {/* The slide-open fold-out: a capped, scrollable, intentionally CRAMPED reveal directly under the
           menu, on the same page. Both nodes stay mounted (owner-only) so opening/closing animates via a

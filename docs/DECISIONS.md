@@ -11398,3 +11398,11 @@ The short column is threaded fail-safe into the render bag: `getSpaceAbout(space
 - **CRM stays full-width** at its own route (never a panel), per the owner directive; Insights (shares the QR route) and Danger are left as full-route/inline as before.
 
 **Consequences.** Every primary service now opens inline in the space page under the persistent hero + menu; each standalone route still works as a deep link. Deferred: deep-settings full editors as panels (D3), menu active-state + polish (D4), optional route redirects (D5). Gate green: `tsc --noEmit`, eslint, vitest (3932 passed), check:canon, check:authz.
+
+## ADR-540: Space rail rework, Stage D4 — inline workspace panel polish
+
+**Status:** Accepted (2026-07-05). No migration. Polish on the D1/D2 inline service panels.
+
+**Decision.** Three polish items on the `?panel=` inline service panels: (1) the panel body streams behind a `<Suspense>` `ProfileBodySkeleton` so switching panels shows an instant skeleton, not a blank swap; (2) the panel header (label · Back to page · Open full page) is sticky beneath the profile menu, so the exit stays reachable while scrolling a long manager; (3) `SpaceProfileMenu` reads `?panel` and drops Home's active pill when a panel is open, plus a compact "You are editing <label>" affordance (aria-current) so the open panel reads as the current surface. Standalone routes byte-identical. Gate green: `tsc`, eslint, vitest (3932), check:canon, check:authz.
+
+**Consequences.** The inline service panels feel finished. NOTE: this stage polished the SERVICE panels; it did NOT address the page-layout editor, which is tracked separately (the owner's core ask — see the next planning cycle).
