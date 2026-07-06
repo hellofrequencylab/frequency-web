@@ -283,6 +283,24 @@ export function spaceFunctionAccess(
   return atLeastSpaceRole(viewerSpaceRole, minRole)
 }
 
+/**
+ * THE per-viewer usable-function set for a Space menu — the ONE resolution shared by BOTH owner surfaces
+ * so they can never drift: the /manage console (SpaceManageBoard → resolveSpaceMenu) and the standardized
+ * admin rail (its Customize trigger passes this as `spaceFns` → the rail's `canUseSpaceFn` gate). Walks the
+ * function registry and keeps the ones this viewer may use: a STAFF previewer sees them all (read-only,
+ * every write re-gates in its sub-page); otherwise `spaceFunctionAccess` (enabled + role). Was duplicated
+ * inline in manage-board.tsx and the profile layout with identical logic. PURE.
+ */
+export function usableSpaceFunctions(
+  space: ({ featureRoles?: unknown } & SpaceLike) | null | undefined,
+  viewerSpaceRole: SpaceRole | null | undefined,
+  staffViewing: boolean,
+): SpaceFunctionKey[] {
+  return SPACE_FUNCTIONS.filter(
+    (fn) => staffViewing || spaceFunctionAccess(space, fn.key, viewerSpaceRole),
+  ).map((fn) => fn.key)
+}
+
 // ── Per-TYPE seed defaults (operator-set; merged over the code defaults at provision time) ──────────
 //
 // An operator may pre-configure each Space TYPE so every NEW Space of that type starts with a function's

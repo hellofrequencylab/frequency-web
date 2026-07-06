@@ -8,7 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceVisibility } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess, SPACE_FUNCTIONS, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { usableSpaceFunctions, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
@@ -140,16 +140,15 @@ export default async function SpaceProfileChromeLayout({
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
 
-  // The per-Space FUNCTIONS this viewer may use — resolved the SAME way the /manage console does
-  // (spaceFunctionAccess over the viewer's space role; a staff previewer sees them all), so the
-  // standardized admin rail gates the Space's surfaces exactly as the console does. Only computed for a
-  // manager (the Customize trigger is owner-gated), so a visitor never pays the space-capabilities read.
+  // The per-Space FUNCTIONS this viewer may use — resolved by the SHARED helper the /manage console also
+  // feeds (usableSpaceFunctions: spaceFunctionAccess over the viewer's space role; a staff previewer sees
+  // them all), so the standardized admin rail gates the Space's surfaces exactly as the console does and
+  // the two can never drift. Only computed for a manager (the Customize trigger is owner-gated), so a
+  // visitor never pays the space-capabilities read.
   let spaceFns: SpaceFunctionKey[] = []
   if (canSeeAsOwner) {
     const spaceCaps = await getSpaceCapabilities(space, caller?.id ?? null)
-    spaceFns = SPACE_FUNCTIONS.filter(
-      (fn) => manage.staffViewing || spaceFunctionAccess(space, fn.key, spaceCaps.role),
-    ).map((fn) => fn.key)
+    spaceFns = usableSpaceFunctions(space, spaceCaps.role, manage.staffViewing)
   }
 
   // The owner's Module Manager menu overrides (modular menu P3b, ADR-546b): the module order + hidden set

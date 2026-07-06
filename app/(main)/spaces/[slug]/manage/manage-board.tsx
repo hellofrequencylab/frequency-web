@@ -1,11 +1,11 @@
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
+import { usableSpaceFunctions } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { resolveMode, readModePreferences, effectiveNavEmphasis } from '@/lib/spaces/modes'
 import { isStaff } from '@/lib/core/roles'
-import { spaceModuleManifest } from '@/lib/admin/modules/space-modules'
+import { resolveSpaceMenu } from '@/lib/admin/modules/space-menu'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceManageConsole } from './console'
 
@@ -44,29 +44,24 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
   // the legacy cockpit. A staff previewer sees them all (read-only; every write stays gated in the
   // sub-page). Basics + Danger have no per-tool function and always render for a manager.
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const canUse = (fn: SpaceFunctionKey): boolean =>
-    staffViewing || spaceFunctionAccess(space, fn, caps.role)
+  // The per-Space FUNCTIONS this viewer may use — resolved by the SHARED helper the rail's Customize
+  // trigger also feeds (usableSpaceFunctions), so the console + rail gate the Space menu identically and
+  // can never drift. A staff previewer sees them all (read-only; every write re-gates in its sub-page).
+  const usable = new Set(usableSpaceFunctions(space, caps.role, staffViewing))
 
-  // MODULES (docs/MODULAR-MENU.md — P1, ADR-544): the console now renders the SPACE menu from the P0
-  // module manifest instead of the legacy space surface spine (retired in P4, ADR-547), so the service
-  // split (7 independent
-  // commerce modules) + the CRM consolidation (one module absorbing autonomy + pipeline) go live. Take
-  // the full catalog (entitlements `{}` = default-on) and gate each module by the SAME authoritative
-  // `canUse` the surfaces used (role + plan + entitlement via spaceFunctionAccess): a shell module
-  // (`gate.kind === 'always'`) always shows; a service module shows only when its function is usable, so
-  // a space with a function off (e.g. availability) drops that module, matching the legacy gating. The
-  // console groups these into scannable clusters itself (console.tsx) and does NOT pre-reorder by Mode.
-  //
-  // MODULE MANAGER OVERRIDES (P3, ADR-546): feed the owner's persisted menu overrides — the module ORDER
-  // and the HIDDEN set (spaces.preferences.moduleMenu, read fail-safe) — into the manifest, so a hidden
-  // module drops from the console and the owner's order applies. The Module Manager itself (space.modules)
-  // is OWNER/ADMIN only (caps.canManageMembers), narrower than the console's editor-level manage gate, so a
-  // mere editor / staff previewer never sees the menu-management entry point.
+  // MODULES (docs/MODULAR-MENU.md — P1, ADR-544): the console renders the SPACE menu from the P0 module
+  // catalog (SPACE_MODULES) via the SHARED resolver (lib/admin/modules/space-menu.ts resolveSpaceMenu) —
+  // the SAME catalog + gate the rail derives its App lane from (SPACE_EDITOR_APPS), so the service split
+  // (7 independent commerce modules) + the CRM consolidation stay in lock-step across both owner surfaces.
+  // The resolver gates a shell module always (except the Module Manager, which needs canManageMenu), a
+  // service module iff its function is usable, and applies the owner's Module Manager overrides — the ORDER
+  // + HIDDEN set (spaces.preferences.moduleMenu, read fail-safe). The console groups the flat result into
+  // its scannable clusters itself (console.tsx) and does NOT pre-reorder by Mode.
   const menu = readModuleMenuPrefs(space.preferences)
-  const modules = spaceModuleManifest({}, { order: menu.order, hidden: menu.hidden }).filter((m) => {
-    if (m.id === 'space.modules') return caps.canManageMembers
-    return m.gate.kind === 'always' || canUse(m.gate.fn)
-  })
+  const modules = resolveSpaceMenu(
+    { canUse: (fn) => usable.has(fn), canManageMenu: caps.canManageMembers },
+    { order: menu.order, hidden: menu.hidden },
+  )
 
   // MODE EMPHASIS (Space Modes M3, ADR-461/464): resolve the Space's Mode ONCE (no N+1) and hand the
   // console the emphasized FUNCTION list as framing only.
