@@ -114,7 +114,7 @@ export async function CrmBody({
 
           {/* Funnel analytics (ADR-381): a read-only conversion + engagement view. */}
           <Suspense fallback={<FunnelSkeleton />}>
-            <CrmFunnelPanel spaceId={space.id} />
+            <CrmFunnelPanel spaceId={space.id} slug={space.slug} />
           </Suspense>
 
           <Suspense fallback={<ListSkeleton />}>

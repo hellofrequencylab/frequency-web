@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeConversionRate, buildFunnel } from './crm-funnel'
+import { computeConversionRate, buildFunnel, buildAtRiskSummary, type ContactRiskRow } from './crm-funnel'
 import type { CrmStage, CrmDeal } from '@/lib/crm/pipeline'
 
 // PURE funnel derivation (ADR-381). What is locked here, all network-free (the pure helpers take plain
@@ -110,5 +110,56 @@ describe('buildFunnel - normal conversion', () => {
     const f = buildFunnel(stages, [deal({ stage_id: 's1', value: Number.NaN, status: 'open' })])
     expect(f.totalValue).toBe(0)
     expect(f.stages.find((s) => s.id === 's1')?.value).toBe(0)
+  })
+})
+
+// ── At-risk / churn summary fold (ADR-560) ────────────────────────────────────────────────────────
+// The cockpit's at-risk slice is derived live by the PURE scorer over the raw contact signals, so it
+// works before any writer persists into contacts.risk_score. Locked here: only flagged contacts are
+// counted, the worst score leads, the list is capped, and a row missing an id is skipped.
+const NOW = Date.parse('2026-07-06T00:00:00.000Z')
+const daysAgoIso = (d: number) => new Date(NOW - d * 86_400_000).toISOString()
+
+function contactRow(over: Partial<ContactRiskRow> = {}): ContactRiskRow {
+  return { id: 'c', email: 'a@b.co', display_name: null, consent_state: 'subscribed', engagement_score: 80, last_seen_at: daysAgoIso(1), ...over }
+}
+
+describe('buildAtRiskSummary', () => {
+  it('empty rows -> zero summary', () => {
+    expect(buildAtRiskSummary([], 8, NOW)).toEqual({ count: 0, top: [] })
+  })
+
+  it('counts only flagged contacts and skips healthy ones', () => {
+    const s = buildAtRiskSummary(
+      [
+        contactRow({ id: 'healthy' }),
+        contactRow({ id: 'cold', last_seen_at: daysAgoIso(200), engagement_score: 5, consent_state: 'unsubscribed' }),
+      ],
+      8,
+      NOW,
+    )
+    expect(s.count).toBe(1)
+    expect(s.top[0]?.id).toBe('cold')
+    expect(s.top[0]?.factors.length).toBeGreaterThan(0)
+  })
+
+  it('orders by score desc and caps the list', () => {
+    const rows = Array.from({ length: 10 }, (_, i) =>
+      contactRow({ id: `c${i}`, last_seen_at: daysAgoIso(200), engagement_score: 0, consent_state: 'unsubscribed' }),
+    )
+    const s = buildAtRiskSummary(rows, 3, NOW)
+    expect(s.count).toBe(10)
+    expect(s.top).toHaveLength(3)
+    const scores = s.top.map((c) => c.score)
+    expect([...scores].sort((a, b) => b - a)).toEqual(scores)
+  })
+
+  it('skips a row with no id (cannot be acted on)', () => {
+    const s = buildAtRiskSummary(
+      [contactRow({ id: null, last_seen_at: daysAgoIso(300), engagement_score: 0, consent_state: 'unsubscribed' })],
+      8,
+      NOW,
+    )
+    expect(s.count).toBe(0)
   })
 })

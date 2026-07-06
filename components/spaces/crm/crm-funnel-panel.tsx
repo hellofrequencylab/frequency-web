@@ -1,9 +1,15 @@
-import { GitCompareArrows, MailCheck, Target, Users } from 'lucide-react'
-import { getSpaceCrmFunnel, type ContactReach, type FunnelStage } from '@/lib/spaces/crm-funnel'
+import { GitCompareArrows, MailCheck, Target, TrendingDown, Users } from 'lucide-react'
+import {
+  getSpaceCrmFunnel,
+  type AtRiskSummary,
+  type ContactReach,
+  type FunnelStage,
+} from '@/lib/spaces/crm-funnel'
 import { formatMoney } from '@/lib/crm/pipeline'
 import { SectionHeader } from '@/components/ui/section-header'
 import { StatCard } from '@/components/ui/stat-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AtRiskWinBackButton } from './at-risk-winback-button'
 
 // PER-SPACE CRM FUNNEL PANEL (ADR-381). A read-only conversion + engagement view on the CRM board: a
 // stage-by-stage funnel (count + value + share of the pipeline), a headline conversion rate, and a
@@ -71,13 +77,58 @@ function ContactConsentBar({ reach }: { reach: ContactReach }) {
   )
 }
 
-export async function CrmFunnelPanel({ spaceId }: { spaceId: string }) {
+/** The at-risk / churn slice (ADR-560): how many of the Space's contacts are going cold, and the worst
+ *  few with WHY (the scorer's factors) + a manual win-back trigger. Presentational; the caller renders
+ *  it only when there is at least one at-risk contact, so a healthy CRM never shows an alarm. `slug` is
+ *  threaded to the win-back action. */
+function AtRiskPanel({ atRisk, slug }: { atRisk: AtRiskSummary; slug: string }) {
+  return (
+    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <TrendingDown className="h-4 w-4 shrink-0 text-warning" aria-hidden />
+          <p className="text-sm font-medium text-text">Going cold</p>
+        </div>
+        <span className="text-xs tabular-nums text-subtle">
+          {atRisk.count} at risk
+        </span>
+      </div>
+      <ul className="space-y-2">
+        {atRisk.top.map((c) => (
+          <li
+            key={c.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-elevated px-3 py-2"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-text">{c.displayName || c.email || 'Contact'}</p>
+              {c.factors.length > 0 && (
+                <p className="truncate text-xs text-muted">
+                  {c.factors.map((f) => f.label).join(' · ')}
+                </p>
+              )}
+            </div>
+            <AtRiskWinBackButton slug={slug} contactId={c.id} />
+          </li>
+        ))}
+      </ul>
+      {atRisk.count > atRisk.top.length && (
+        <p className="mt-2 text-xs text-subtle">
+          Showing the {atRisk.top.length} most at risk of {atRisk.count}.
+        </p>
+      )}
+    </div>
+  )
+}
+
+export async function CrmFunnelPanel({ spaceId, slug }: { spaceId: string; slug: string }) {
   const funnel = await getSpaceCrmFunnel(spaceId)
 
   if (funnel.totalDeals === 0) {
     return (
       <section>
         <SectionHeader title="Funnel" />
+        {/* Even with no deals to chart, a Space may have contacts going cold worth winning back. */}
+        {funnel.atRisk.count > 0 && <AtRiskPanel atRisk={funnel.atRisk} slug={slug} />}
         <EmptyState
           icon={Target}
           title="No deals to chart yet."
@@ -137,6 +188,12 @@ export async function CrmFunnelPanel({ spaceId }: { spaceId: string }) {
           Hidden when the Space has no contacts, so an empty CRM never shows an empty bar. */}
       {funnel.reach.total > 0 && (
         <ContactConsentBar reach={funnel.reach} />
+      )}
+
+      {/* At-risk / churn (ADR-560): the contacts going cold + a manual win-back. Only shown when at
+          least one contact is flagged, so a healthy CRM never shows an alarm. */}
+      {funnel.atRisk.count > 0 && (
+        <AtRiskPanel atRisk={funnel.atRisk} slug={slug} />
       )}
 
       {/* The stage-by-stage funnel: a labeled bar per stage, scaled to the widest stage. */}

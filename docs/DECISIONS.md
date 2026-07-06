@@ -11649,3 +11649,48 @@ load-bearing lock.
 gone and the standard enforced by CI, so it can be developed further (add catalog rows) without
 being overwritten. Gate green: tsc, eslint, vitest (+ check:menu + the two drift guards), check:canon,
 check:authz. `docs/MENU-CONTRACT.md` is the reference; `AGENTS.md` carries the one-line rule.
+
+## ADR-560: Per-Space contact at-risk / churn scoring (the win-back gap)
+
+**Status:** Accepted (2026-07-06). Migration file-only until applied via the Supabase SQL editor.
+
+**Context.** The platform already scores at-risk in three places, none of them the space CONTACT:
+a member's practice-streak `atRisk` (`lib/practice-streak.ts`), re-activation playbook markers
+(`lib/spaces/ai-usage.ts` `REACTIVATION_MARKERS`), and the per-PROFILE `member_engagement_scores`
+churn_risk matview for the platform cockpit (ADR-383). A Space owner looking at their CRM board had
+no signal for which of THEIR contacts were going cold, and no win-back hook off it.
+
+**Decision.** Add a per-Space contact churn signal on the contact itself, a pure scorer, and a
+cockpit surface with a manual win-back trigger.
+- **Shape (lowest-risk).** Three PROJECTION columns on `public.contacts` mirroring the existing
+  `engagement_score numeric` column: `risk_score numeric [0,100]`, `at_risk boolean`, `risk_factors
+  jsonb`, plus a partial `(space_id, risk_score desc) where at_risk` index
+  (`20261017000000_contact_at_risk.sql`). A side table / matview was rejected (ADR-560 §3): it would
+  duplicate the space_id/RLS surface for no v1 benefit, since the contact row already carries every
+  raw signal the v1 rules need. A `not valid` [0,100] check guards writes without an apply-time scan.
+- **RLS.** `contacts` already carries the canonical per-Space policies (ADR, 20260905000000: read via
+  `is_space_member(space_id)` or staff, writes via `can_write_space_content(space_id)`). RLS gates the
+  ROW, so the new columns inherit those policies with NO new policy; the migration re-asserts the
+  enable + read policy idempotently. A cross-space contract test
+  (`test/contract/tenancy-entity-modules.test.ts`) proves the new cockpit read binds `space_id` on the
+  RLS-bypassing admin path (filter-presence + a two-space leak oracle).
+- **Scoring (rules first, ML seam).** `lib/spaces/contact-risk.ts` is a PURE, unit-tested rules-based
+  scorer: recency of last contact/activity (ramped, saturating), engagement decay, unsubscribe,
+  payment-overdue/dunning, no-show, and the streak-at-risk signal, producing a `[0,100]` score, an
+  `atRisk` flag (threshold 50), and the contributing factors. Fail-safe + no risk-by-absence: a signal
+  we do not have contributes nothing. `scoreContactRisk(signals)` takes a plain struct, so a future
+  model can replace or blend with no caller change.
+- **Surface.** `lib/spaces/crm-funnel.ts` gains an `atRisk` summary (count + worst offenders) derived
+  LIVE by the scorer over the raw contact signals, so it works before any writer persists into
+  `risk_score`. The CRM funnel panel renders a "Going cold" list with the factors + a "Win back"
+  button that runs the existing value-led `reengage_winback` play through the already-governed
+  `runSpacePlaybookAction` (suggest-by-default, circuit-breaker, autonomy gate all intact).
+
+**Deferrals.** (1) No writer/cron persists `risk_score`/`at_risk` yet — the cockpit derives live; the
+columns are the durable seam for a batch writer or ML model. (2) `lib/database.types.ts` NOT
+regenerated (no live-DB access in this workflow); the new columns are read UNTYPED per ADR-246, as
+`contacts` already is in this module. (3) The win-back is the MANUAL leg; enrolling an at-risk contact
+into a win-back SEQUENCE automatically lands with the automation work, with no change to the button.
+
+**Consequences.** Space owners see which contacts are going cold and can act in one click. Gate green:
+tsc, eslint, vitest (+ the new scorer/summary/contract suites), check:authz, check:rls.
