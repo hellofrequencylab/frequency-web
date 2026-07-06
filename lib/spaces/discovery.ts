@@ -15,6 +15,7 @@
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { listFollowedSpaceIds } from './follows'
+import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
 
 /** One networked Space as the directory consumes it — the brand anchor, the type, and a couple of
@@ -205,7 +206,7 @@ export const listNetworkedSpaces = cache(
         id: r.id,
         slug: r.slug,
         name: r.brand_name?.trim() || r.name,
-        type: r.type as SpaceType,
+        type: normalizeSpaceType(r.type),
         tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
         logoUrl: r.brand_logo_url,
         memberCount: counts.get(r.id) ?? null,

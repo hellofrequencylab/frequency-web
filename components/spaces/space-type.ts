@@ -1,3 +1,5 @@
+import { normalizeSpaceType } from '@/lib/spaces/types'
+
 // The entity-Space TYPE label map for the directory + cards (ENTITY-SPACES-BUILD §A.4). One place
 // turns a `spaces.type` value into the member-facing badge label, so every surface reads the same
 // noun. Copy obeys NAMING + CONTENT-VOICE: plain proper nouns, title case, no jargon.
@@ -19,8 +21,10 @@ const TYPE_LABEL: Record<string, string> = Object.fromEntries(
   DIRECTORY_TYPES.map((t) => [t.value, t.label]),
 )
 
-/** The member-facing label for a Space type. An unknown/internal type title-cases its raw value
- *  (e.g. 'lab' -> 'Lab') so the badge is never blank. */
+/** The member-facing label for a Space type. Runs the raw value through the legacy normalizer first
+ *  (ADR-552), so an unmigrated row still holding a retired type (`practitioner`, `coaching`, ...) reads
+ *  "Business" rather than title-casing the stale value. Belt-and-suspenders with the read-time
+ *  normalizer at the Space mapper: the chip is correct even on a code path that passes a raw type. */
 export function spaceTypeLabel(type: string): string {
-  return TYPE_LABEL[type] ?? type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return TYPE_LABEL[normalizeSpaceType(type)] ?? 'Business'
 }
