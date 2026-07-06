@@ -104,8 +104,8 @@ export function computeLoadoutTotal(
     })
   }
 
-  // The Pro base is always the first line.
-  pushLine('pro_base', true, 1)
+  // The Business base is always the first line (ADR-552).
+  pushLine('business_base', true, 1)
 
   // One line per active add-on. Only AI is a metered add-on now (not per-seat), so qty is always 1.
   for (const addon of normalizeAddons(addons)) {

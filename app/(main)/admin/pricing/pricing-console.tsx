@@ -79,14 +79,13 @@ function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
   return (
     <AdminSection
       title="Catalog"
-      description="The Pro base, the Business base, the AI Engine add-on, the nonprofit seat, and the organization plan. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
+      description="The Business base, the AI Engine add-on, and the Non Profit seat. Each price shows a list anchor and a lower founding price. The founding price is what a member is charged today; the list price is the anchor it sits under. Set the monthly amounts; the yearly is two months free unless you override it."
     >
       <FormSection
-        title="Tier bases"
-        description="The Pro base (solo) and the Business base (the full-depth team tier). Marketing, team roles, and branding come with the Business tier, not as separate add-ons."
+        title="Business base"
+        description="The single paid base (the full-depth tier). CRM, marketing, team roles, and branding all come with Business. Free-vs-paid is a usage state within Business, not a separate plan."
       >
         <div className="space-y-4">
-          <CatalogItemRow item={byKey.pro_base} />
           <CatalogItemRow item={byKey.business_base} />
         </div>
       </FormSection>
@@ -110,18 +109,17 @@ function CatalogSection({ catalog }: { catalog: CatalogConfig }) {
       </FormSection>
 
       <FormSection
-        title="Nonprofit and organization"
-        description="The nonprofit licensed seat (per seat) and the organization plan (custom, anchored)."
+        title="Non Profit"
+        description="The Non Profit licensed seat (per seat). Verified 501(c)(3) organizations get the full Business depth, discounted."
       >
         <div className="space-y-4">
           <CatalogItemRow item={byKey.nonprofit_seat} />
-          <CatalogItemRow item={byKey.organization} />
         </div>
       </FormSection>
 
       <FormSection
         title="Seats"
-        description="The minimum licensed seats a seat plan bills. A nonprofit pays for at least this many seats even with fewer members."
+        description="The minimum licensed seats a seat plan bills. A Non Profit pays for at least this many seats even with fewer members."
       >
         <SeatConfigRow bundledFloor={catalog.seat.bundledFloor} seatItem={byKey.nonprofit_seat} />
       </FormSection>
@@ -345,11 +343,8 @@ const TIER_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'tier_supporter_enabled', label: 'Supporter' },
 ]
 const PLAN_FLAGS: { key: PricingFlagKey; label: string }[] = [
-  { key: 'plan_practitioner_enabled', label: 'Practitioner' },
   { key: 'plan_business_enabled', label: 'Business' },
-  { key: 'plan_nonprofit_enabled', label: 'Nonprofit' },
-  { key: 'plan_organization_enabled', label: 'Organization' },
-  { key: 'plan_whitelabel_enabled', label: 'White-label' },
+  { key: 'plan_nonprofit_enabled', label: 'Non Profit' },
 ]
 const GAMIFICATION_FLAGS: { key: PricingFlagKey; label: string }[] = [
   { key: 'gamification_full_member', label: 'Member (free)' },
@@ -393,8 +388,8 @@ function SwitchesSection({ flags }: { flags: Record<PricingFlagKey, boolean> }) 
             share. Not sold here, so it has no switch.
           </p>
           <p>
-            <span className="font-semibold text-text">Organization</span> is custom. It is built and working, but not
-            sold self-serve, so its switch stays off.
+            <span className="font-semibold text-text">Free</span> is a usage state within Business, not a separate plan.
+            A free Space keeps every tool, capped by usage, and goes Business to lift the caps.
           </p>
         </div>
       </FormSection>
@@ -476,11 +471,8 @@ const TIER_PRICE_ROWS: { key: string; label: string; list?: boolean }[] = [
   { key: 'tier.supporter', label: 'Supporter (retired tier)' },
 ]
 const PLAN_PRICE_ROWS: { key: string; label: string; setup?: boolean }[] = [
-  { key: 'plan.practitioner', label: 'Practitioner' },
   { key: 'plan.business', label: 'Business' },
-  { key: 'plan.nonprofit', label: 'Nonprofit' },
-  { key: 'plan.organization', label: 'Organization' },
-  { key: 'plan.whitelabel', label: 'White-label', setup: true },
+  { key: 'plan.nonprofit', label: 'Non Profit' },
 ]
 
 function PlansSection({ values }: { values: PricingDefaults }) {
@@ -500,7 +492,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
         </div>
       </FormSection>
 
-      <FormSection title="Space plans" description="The plans a space (practitioner, business, organization) pays for.">
+      <FormSection title="Space plans" description="The plans a space (Business, Non Profit) pays for.">
         <div className="space-y-4">
           {PLAN_PRICE_ROWS.map((r) => (
             <PriceRow
@@ -508,11 +500,7 @@ function PlansSection({ values }: { values: PricingDefaults }) {
               settingKey={r.key}
               label={r.label}
               showSetup={r.setup}
-              price={
-                values.plan[
-                  r.key.split('.')[1] as 'practitioner' | 'business' | 'nonprofit' | 'organization' | 'whitelabel'
-                ]
-              }
+              price={values.plan[r.key.split('.')[1] as 'business' | 'nonprofit']}
             />
           ))}
         </div>
@@ -635,9 +623,8 @@ function Field({
 }
 
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
-  const [p, setP] = useState(String(rate.practitioner_bps / 100))
   const [b, setB] = useState(String(rate.business_bps / 100))
-  const [o, setO] = useState(String(rate.organization_bps / 100))
+  const [n, setN] = useState(String(rate.nonprofit_bps / 100))
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -647,9 +634,8 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
     setSaved(false)
     start(async () => {
       const res = await saveTakeRate({
-        practitioner_bps: Math.round((Number(p) || 0) * 100),
         business_bps: Math.round((Number(b) || 0) * 100),
-        organization_bps: Math.round((Number(o) || 0) * 100),
+        nonprofit_bps: Math.round((Number(n) || 0) * 100),
       })
       if (isError(res)) setError(res.error)
       else {
@@ -662,9 +648,8 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
-        <Field label="Practitioner %" value={p} onChange={setP} />
         <Field label="Business %" value={b} onChange={setB} />
-        <Field label="Organization %" value={o} onChange={setO} />
+        <Field label="Non Profit %" value={n} onChange={setN} />
         <div className="flex items-center gap-2">
           <SaveCue pending={pending} saved={saved} />
           <Button size="sm" variant="secondary" onClick={save} disabled={pending}>
@@ -723,8 +708,8 @@ function KnobsRow({ vera, trial, annual }: { vera: number; trial: number; annual
 // ── Feature gates ─────────────────────────────────────────────────────────────────────
 
 const TIER_OPTIONS = ['free', 'crew', 'supporter']
-// The space-tier ladder a feature gate ranks on (ADR-472): free < pro < business ~ nonprofit < org.
-const PLAN_OPTIONS = ['free', 'pro', 'business', 'nonprofit', 'organization']
+// The space-tier ladder a feature gate ranks on (ADR-552): free < business ~ nonprofit.
+const PLAN_OPTIONS = ['free', 'business', 'nonprofit']
 
 function FeatureGatesSection({ gates }: { gates: FeatureGateRow[] }) {
   return (
@@ -899,7 +884,7 @@ function StripeStatusSection({ stripe }: { stripe: PricingConsoleData['stripe'] 
 
       <FormSection
         title="Sync the catalog to Stripe"
-        description="Create or update one Stripe product per catalog item (Pro base, the four add-ons, the nonprofit seat, and organization), each with its list and founding prices for monthly and yearly. Run this after you change a catalog price. It is idempotent and safe while billing is off: it only creates products and prices, it never charges anyone."
+        description="Create or update one Stripe product per catalog item (the Business base, the AI Engine add-on, and the Non Profit seat), each with its list and founding prices for monthly and yearly. Run this after you change a catalog price. It is idempotent and safe while billing is off: it only creates products and prices, it never charges anyone."
       >
         <SyncRow
           configured={stripe.configured}

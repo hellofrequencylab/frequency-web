@@ -15,42 +15,42 @@
 // `spaceHasEntitlement` UNION reader consumes (lib/spaces/entitlements.ts). We do NOT restructure
 // the readers here; this only computes the keys they read.
 
-/** The Space billing tiers (the spaces.plan label). 'free' = no paid plan. Four first-class tiers
- *  (ADR-472): free < pro < business ~ nonprofit < organization, ordered by CAPABILITY (gates.ts
- *  PLAN_RANK ranks on this), not price. Business / Nonprofit / Organization are all FULL depth, so
- *  they out-rank Pro to clear every gate. */
-export const SPACE_PLANS = ['free', 'pro', 'business', 'nonprofit', 'organization'] as const
+/** The Space billing tiers (the spaces.plan label). 'free' = no paid plan (ADR-552). The model collapses
+ *  to THREE: free < business ~ nonprofit, ordered by CAPABILITY (gates.ts PLAN_RANK ranks on this), not
+ *  price. Free-vs-paid is a USAGE STATE within Business, not a separate plan name. Business and Nonprofit
+ *  are both FULL depth (identical key set); Nonprofit is the verified-501c3 discounted sibling. */
+export const SPACE_PLANS = ['free', 'business', 'nonprofit'] as const
 
 export type SpacePlan = (typeof SPACE_PLANS)[number]
 
-/** Operator-facing label for a Space tier (member/operator copy, plain voice, no em dashes). */
+/** Operator-facing label for a Space tier (member/operator copy, plain voice, no em dashes). The two
+ *  public designators are "Business" and "Non Profit" (NAMING.md, ADR-552). */
 export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
-  pro: 'Pro',
   business: 'Business',
-  nonprofit: 'Nonprofit',
-  organization: 'Organization',
+  nonprofit: 'Non Profit',
 }
 
-// LEGACY -> NEW plan remap (ADR-472). `business` is now a FIRST-CLASS tier, so it is NOT remapped (it
-// passes through asSpacePlan unchanged). Only the truly retired labels narrow forward; this code ships
-// BEFORE any backfill, so a Space may still carry an old label, and asSpacePlan NARROWS it at READ time
-// so capabilities resolve correctly during the transition window:
-//   practitioner | partner -> pro   (partner is a comped Pro, spaces.is_comped)
-//   whitelabel             -> business   (white-label implied full branding, now a Business-base depth
-//                                         capability, so it folds to the full-depth Business tier)
+// LEGACY -> NEW plan remap (ADR-552). The retired tier names narrow forward at READ time so a Space still
+// carrying an old `spaces.plan` label resolves to the right first-class tier (this ships BEFORE any
+// backfill). `business` and `nonprofit` are first-class, so they pass through asSpacePlan unchanged:
+//   pro | practitioner | partner -> business   (the former paid-entry tiers fold into Business)
+//   organization                 -> nonprofit  (the org DB value is renamed to nonprofit, ADR-552 §3)
+//   whitelabel                   -> business   (white-label is a Business-depth capability, not a tier)
 // Any unknown label -> free (default-deny). Safe because no prod row uses these legacy labels.
 const LEGACY_PLAN_REMAP: Record<string, SpacePlan> = {
-  practitioner: 'pro',
-  partner: 'pro',
+  pro: 'business',
+  practitioner: 'business',
+  partner: 'business',
+  organization: 'nonprofit',
   whitelabel: 'business',
 }
 
 /** Narrow an arbitrary string (e.g. the raw `spaces.plan`) to a known SpacePlan, defaulting to 'free'
  *  for null/unknown values (default-deny: an unrecognized plan grants nothing). TOLERANT of the OLD
- *  labels during the transition window: practitioner/partner narrow to 'pro' and whitelabel narrows to
- *  'business' so a Space still carrying a legacy label resolves to the right tier. See
- *  LEGACY_PLAN_REMAP. ('business' is a first-class tier now, so it passes through unchanged.) */
+ *  labels during the transition window: pro/practitioner/partner/whitelabel narrow to 'business' and
+ *  organization narrows to 'nonprofit' so a Space still carrying a legacy label resolves to the right
+ *  tier. See LEGACY_PLAN_REMAP. ('business'/'nonprofit' are first-class, so they pass through unchanged.) */
 export function asSpacePlan(raw: string | null | undefined): SpacePlan {
   const v = raw ?? ''
   if ((SPACE_PLANS as readonly string[]).includes(v)) return v as SpacePlan
@@ -64,26 +64,21 @@ export function isSpacePlanLabel(raw: string | null | undefined): boolean {
   return (SPACE_PLANS as readonly string[]).includes(v) || v in LEGACY_PLAN_REMAP
 }
 
-// ── Tier depth sets + the sole metered add-on (ADR-472, PRICING-LADDER-PLAN.md §1b) ───────────────
-// The four old Pro add-ons FOLD INTO TIER DEPTH; AI Engine stays the SOLE metered add-on. The keys
-// here are the EXISTING `spaces.entitlements` capability keys the readers already gate on (e.g. 'crm',
-// 'email', 'crm.resonance'); a tier/add-on grant is one key, never a schema change.
+// ── Business tier depth + the sole metered add-on (ADR-552, folding ADR-472) ───────────────────────
+// Every paid tool folds into the SINGLE paid tier depth (Business); AI Engine stays the SOLE metered
+// add-on. The keys here are the EXISTING `spaces.entitlements` capability keys the readers already gate
+// on (e.g. 'crm', 'email', 'crm.resonance'); a tier/add-on grant is one key, never a schema change.
 //
-// THE TIER DEPTH BOUNDARY (non-regressive choice). Today's `practitioner` plan grants
-// ['crm', 'crm.playbooks']. The new Pro tier REPLACES practitioner, so Pro depth MUST keep BOTH or a
-// practitioner would lose the governed-playbooks depth (a regression). So Pro = ['crm', 'crm.playbooks']:
-// the CRM (pipeline/contacts/notes) plus the Practitioner+ governed auto-execution + advanced segments
-// lever. The marketing / team / branding keys (formerly add-ons) now ride the FULL-depth tiers
-// (Business / Nonprofit / Organization). The resonance DEPTH (crm.resonance / crm.resonance_ai) is the
-// AI Engine METERED add-on, in NO tier base.
+// THE COLLAPSE (ADR-552, folding the former Pro core into Business). The former `pro`/`practitioner`
+// depth (['crm', 'crm.playbooks']) folds INTO Business, so a former practitioner keeps the CRM +
+// governed-playbooks depth (no regression). Business carries the FULL depth: CRM, governed playbooks,
+// marketing (email/automation/multi-pipeline/reporting), Team seats, and Branding (white-label). Nonprofit
+// is the same depth. The resonance DEPTH (crm.resonance / crm.resonance_ai) is the AI Engine METERED
+// add-on, in NO tier base.
 
-/** Pro tier depth keys, the capped core (CRM + governed playbooks). The solo-operator entry tier.
- *  Includes `crm.playbooks` so a former practitioner does not regress (see boundary note). */
-export const PRO_CORE_ENTITLEMENT_KEYS: readonly string[] = ['crm', 'crm.playbooks']
-
-/** Business tier depth keys = Pro core ∪ marketing ∪ team ∪ branding (the FULL depth). This is the
- *  union the three former add-ons (Marketing email/automation/multi-pipeline/reporting, Team seats,
- *  Branding white-label) now live in, since the Pro→Business jump IS the depth jump (ADR-472 §1b). */
+/** Business tier depth keys = the FULL paid depth (CRM + governed playbooks + marketing + team +
+ *  branding). Business and Nonprofit both grant this exact set; free grants nothing. The former Pro core
+ *  (['crm', 'crm.playbooks']) folds in here so a former practitioner does not regress (ADR-552). */
 export const BUSINESS_DEPTH_ENTITLEMENT_KEYS: readonly string[] = [
   'crm',
   'crm.playbooks',
@@ -126,34 +121,27 @@ export function planKeysWithAddons(plan: SpacePlan, addons: readonly AddonKey[])
   return [...set]
 }
 
-// The tier depth sets (no add-ons), the seed for the tier map below. free = nothing; pro = capped core;
-// business / nonprofit / organization = the SAME full depth (Business depth set). The Org "expanded +
-// custom" differentiation is delivered by Modes + white-glove, NOT by fictional entitlement keys: no
-// gate consumes an Org-only reader key today, so org == business at the key level (ADR-472 §1b). If a
-// genuine Org-grade reader key ever lands, add it to organization here.
+// The tier depth sets (no add-ons), the seed for the tier map below. free = nothing; business /
+// nonprofit = the SAME full depth (Business depth set). ADR-552 collapsed the ladder to two paid tiers
+// that are identical at the key level; Nonprofit's difference is price + verification, not entitlements.
 const BASE_PLAN_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
-  pro: PRO_CORE_ENTITLEMENT_KEYS,
   business: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   nonprofit: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-  organization: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
 }
 
-// The tier -> entitlement-keys map (ADR-472). Each tier grants the keys its BASE depth unlocks; the
-// resolver writes them into `entitlements.billing` (set-to-target). free = nothing. pro = capped core.
-// business / nonprofit / organization = the full Business depth (marketing + team + branding folded in).
+// The tier -> entitlement-keys map (ADR-552). Each tier grants the keys its BASE depth unlocks; the
+// resolver writes them into `entitlements.billing` (set-to-target). free = nothing. business / nonprofit
+// = the full Business depth (marketing + team + branding folded in).
 //
-// AI-DEPTH note: crm.playbooks rides Pro core (non-regressive, see boundary note); crm.resonance +
-// crm.resonance_ai ride the AI Engine METERED add-on and are in NO tier base (the deliberate ADR-472
-// change: nonprofit/org NO LONGER bundle AI). The free wedge (Today suggest-only + summaries +
-// read-only scoring) is NEVER a key here, every Space gets it (fail-closed in spaceAiDepth).
-// crm.autonomy (Phase 3) is a per-Space DIAL, deliberately NOT in any map.
+// AI-DEPTH note: crm.playbooks rides the Business depth; crm.resonance + crm.resonance_ai ride the AI
+// Engine METERED add-on and are in NO tier base (nonprofit does NOT bundle AI). The free wedge (Today
+// suggest-only + summaries + read-only scoring) is NEVER a key here, every Space gets it (fail-closed in
+// spaceAiDepth). crm.autonomy (Phase 3) is a per-Space DIAL, deliberately NOT in any map.
 const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
-  pro: PRO_CORE_ENTITLEMENT_KEYS,
   business: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
   nonprofit: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
-  organization: BUSINESS_DEPTH_ENTITLEMENT_KEYS,
 }
 
 /** The `spaces.entitlements.billing` keys a tier unlocks (base tier only, no add-ons; code source of

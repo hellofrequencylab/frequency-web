@@ -1,5 +1,5 @@
-// SPACE PLAN CHECKOUT (Pricing P2, ADR-363). A subscription Checkout for a Space OWNER to buy a plan
-// (practitioner/business/organization/white-label). The customer is the space owner; the resolved
+// SPACE PLAN CHECKOUT (Pricing P2, ADR-363; collapsed ADR-552). A subscription Checkout for a Space
+// OWNER to buy a plan (business / nonprofit). The customer is the space owner; the resolved
 // Stripe Price comes from pricing_stripe_prices (the synced public price for the plan+period). The
 // webhook reconciles the subscription back to setSpacePlan(space_id, plan) once it is active.
 //
@@ -26,12 +26,9 @@ import {
 import { itemKeyForCatalogKey, readLockedPriceId } from './space-subscription-items'
 
 /** The per-plan enable flag for a space plan (must be ON, with billing live, to sell it). */
-const PLAN_FLAG: Record<SpacePlanKey, 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled' | 'plan_whitelabel_enabled'> = {
-  practitioner: 'plan_practitioner_enabled',
+const PLAN_FLAG: Record<SpacePlanKey, 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
   business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
-  organization: 'plan_organization_enabled',
-  whitelabel: 'plan_whitelabel_enabled',
 }
 
 /** Is this plan sellable right now? billingLive() AND the per-plan switch. GATED. */
@@ -43,21 +40,16 @@ export async function spacePlanSellable(plan: SpacePlan | string): Promise<boole
   return flags[PLAN_FLAG[key]] === true
 }
 
-// ADR-460/472: the tier labels (pro/business/nonprofit/organization) map onto the existing per-plan
-// switches until the surface PR adds dedicated `plan_pro_enabled` / `plan_business_enabled`. Pro reuses
-// the practitioner switch (Pro replaces practitioner as the entry paid tier); Business reuses the legacy
-// business switch; nonprofit/organization map 1:1. Always GATED on billingLive(), so this is FALSE while
-// billing is OFF (no live loadout checkout today).
-const LOADOUT_FLAG: Record<'pro' | 'business' | 'nonprofit' | 'organization', 'plan_practitioner_enabled' | 'plan_business_enabled' | 'plan_nonprofit_enabled' | 'plan_organization_enabled'> = {
-  pro: 'plan_practitioner_enabled',
+// ADR-552: the two paid tiers (business/nonprofit) map 1:1 onto their per-plan switches. Always GATED on
+// billingLive(), so this is FALSE while billing is OFF (no live loadout checkout today).
+const LOADOUT_FLAG: Record<'business' | 'nonprofit', 'plan_business_enabled' | 'plan_nonprofit_enabled'> = {
   business: 'plan_business_enabled',
   nonprofit: 'plan_nonprofit_enabled',
-  organization: 'plan_organization_enabled',
 }
 
-/** Is a tier (pro/business/nonprofit/organization) sellable right now? billingLive() AND its mapped
- *  per-plan switch. GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
-export async function spaceLoadoutSellable(plan: 'pro' | 'business' | 'nonprofit' | 'organization'): Promise<boolean> {
+/** Is a tier (business/nonprofit) sellable right now? billingLive() AND its mapped per-plan switch.
+ *  GATED, FAIL-SAFE FALSE. The loadout checkout gates on this. */
+export async function spaceLoadoutSellable(plan: 'business' | 'nonprofit'): Promise<boolean> {
   try {
     if (!(await billingLive())) return false
     const flags = await loadPricingFlags()
@@ -79,7 +71,7 @@ export async function createSpacePlanCheckout(
   if (!stripe) return null
   const planKey = asSpacePlanKey(plan)
   if (!planKey) return null
-  if (!offersPeriod(planKey, billingPeriod)) return null // e.g. no annual for organization/whitelabel
+  if (!offersPeriod(planKey, billingPeriod)) return null // both business + nonprofit offer monthly + annual
   if (!(await spacePlanSellable(planKey))) return null
 
   // Resolve the synced public Price for this plan+period.
@@ -145,11 +137,10 @@ export async function createSpacePlanCheckout(
 /** The loadout the caller selects: the base tier, the active add-ons, and the seat counts. Monthly or
  *  yearly via `interval`. */
 export interface SpaceLoadout {
-  /** The base tier the loadout is for. 'pro' = the Pro base; 'business' = the Business base (full
-   *  depth); 'nonprofit' = the seat item; 'organization' = the org item. The AI add-on layers on any
-   *  paid tier. 'free' is not a checkout. */
-  plan: 'pro' | 'business' | 'nonprofit' | 'organization'
-  /** The active metered add-ons (only AI now, ADR-472). Ignored for nonprofit/organization framing. */
+  /** The base tier the loadout is for. 'business' = the Business base (full depth); 'nonprofit' = the
+   *  per-seat item. The AI add-on layers on any paid tier. 'free' is not a checkout. */
+  plan: 'business' | 'nonprofit'
+  /** The active metered add-ons (only AI now, ADR-552). Ignored for nonprofit framing. */
   addons?: readonly (AddonKey | string)[]
   /** Licensed seat count for seat items (Nonprofit seat quantity; tier-level Team seats, Phase D). Min 1. */
   seatQuantity?: number
@@ -173,15 +164,12 @@ async function resolveLoadoutPriceId(
   return resolveStripePriceId(catalogPriceKey(catalogKey, interval, false))
 }
 
-/** The catalog item keys + their seat-ness a loadout maps to. PURE. Pro -> pro_base; Business ->
- *  business_base; both plus one item per active metered add-on (only AI now). Nonprofit -> the seat item;
- *  Organization -> the org item. (ADR-472: the Marketing/Team/Branding add-on items are gone; their
- *  depth rides the tier base, so a paid tier is one base item plus the optional AI add-on.) */
+/** The catalog item keys + their seat-ness a loadout maps to. PURE (ADR-552). Business -> business_base
+ *  plus one item per active metered add-on (only AI now); Nonprofit -> the per-seat item. The Business
+ *  base is the full depth; the AI add-on layers on top. */
 function catalogKeysForLoadout(loadout: SpaceLoadout): { key: CatalogItemKey; perSeat: boolean }[] {
-  if (loadout.plan === 'organization') return [{ key: 'organization', perSeat: false }]
   if (loadout.plan === 'nonprofit') return [{ key: 'nonprofit_seat', perSeat: true }]
-  const baseKey: CatalogItemKey = loadout.plan === 'business' ? 'business_base' : 'pro_base'
-  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: baseKey, perSeat: false }]
+  const out: { key: CatalogItemKey; perSeat: boolean }[] = [{ key: 'business_base', perSeat: false }]
   const addons = [...new Set((loadout.addons ?? []).map((a) => asAddonKey(typeof a === 'string' ? a : null)).filter((a): a is AddonKey => a !== null))]
   for (const addon of addons) {
     const catalogKey = asCatalogItemKey(`addon_${addon}`)
@@ -254,7 +242,7 @@ export async function createSpaceLoadoutCheckout(
     if (!priceId) {
       // The base item failing to resolve is fatal (no plan to sell); a missing add-on price just drops
       // that add-on from the loadout rather than blocking the whole checkout.
-      if (key === 'pro_base' || key === 'business_base' || key === 'nonprofit_seat' || key === 'organization') return null
+      if (key === 'business_base' || key === 'nonprofit_seat') return null
       continue
     }
     lineItems.push({ price: priceId, quantity: perSeat ? seatQuantity : 1 })

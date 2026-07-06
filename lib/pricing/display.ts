@@ -7,21 +7,15 @@
 // "coming soon" CTA, never a broken button).
 //
 // Voice: plain, no em dashes (CONTENT-VOICE §10). Labels come from the naming canon (Crew, Supporter,
-// Practitioner, Business, Organization, White-label).
+// Business, Non Profit).
 
 import type { PricingDefaults, TierPrice } from './settings'
 
-// LEGACY price-catalog labels (ADR-458). This P3 price ladder still renders the legacy plan rows
-// (practitioner/business/nonprofit/organization/whitelabel) keyed to the pricing_settings.plan VALUE
-// shape, which Phase C / F rewrites into the commercial Pro + add-ons surface. It is deliberately
-// decoupled from the new SPACE_PLAN_LABEL (free/pro/nonprofit/organization) so Phase A can collapse
-// the plan model without churning the existing display rows. Plain voice, no em dashes.
+// Price-catalog labels (ADR-552). The paid space ladder is Business + Non Profit, keyed to the
+// pricing_settings.plan VALUE shape. Plain voice, no em dashes.
 const PRICE_CATALOG_LABEL: Record<string, string> = {
-  practitioner: 'Practitioner',
   business: 'Business',
-  nonprofit: 'Nonprofit',
-  organization: 'Organization',
-  whitelabel: 'White-label',
+  nonprofit: 'Non Profit',
 }
 
 /** Cents to a plain price label, e.g. 900 -> "$9", 950 -> "$9.50". Whole dollars drop the cents.
@@ -47,15 +41,12 @@ export interface PriceRow {
   monthly: string
   /** Annual price label, or null when the row is monthly-only. */
   annual: string | null
-  /** One-time setup price label (white-label only), or null. */
-  setup: string | null
   /** The MONTHLY list-anchor label (ADR-463), e.g. "$12", or null when there is no anchor. The monthly
    *  price is the founding price the anchor sits under. */
   list: string | null
   /** Raw cents, for callers that need to compute (e.g. annual savings). */
   monthlyCents: number
   annualCents: number | null
-  setupCents: number | null
   listCents: number | null
 }
 
@@ -69,11 +60,9 @@ export function priceRow(key: string, label: string, price: TierPrice): PriceRow
     label,
     monthly: formatCents(price.monthly_cents),
     annual: price.annual_cents != null ? formatCents(price.annual_cents) : null,
-    setup: price.setup_cents != null ? formatCents(price.setup_cents) : null,
     list: hasAnchor ? formatCents(price.list_cents as number) : null,
     monthlyCents: price.monthly_cents,
     annualCents: price.annual_cents ?? null,
-    setupCents: price.setup_cents ?? null,
     listCents: hasAnchor ? (price.list_cents as number) : null,
   }
 }
@@ -87,20 +76,13 @@ export function memberTierRows(values: PricingDefaults): PriceRow[] {
   ]
 }
 
-/** The PAID space plans as display rows, in ladder order (practitioner -> white-label). PURE.
- *  'free' is the baseline and is rendered by the caller, not part of the paid ladder here.
- *
- *  Nonprofit (the $29 verified-501c3 plan) rides between business and organization: it is the plan
- *  built FOR a Space of type `organization` (a nonprofit), so an organization owner has to be able
- *  to FIND it on their own billing ladder. The 'organization' row above it is the high-end custom
- *  plan (built, not publicly sold) for large orgs; the two read as a clear ladder once both show. */
+/** The PAID space plans as display rows, in ladder order (Business, Non Profit). PURE (ADR-552).
+ *  'free' is the baseline and is rendered by the caller, not part of the paid ladder here. Non Profit is
+ *  the $29 verified-501c3 sibling of Business (same depth, discounted). */
 export function spacePlanRows(values: PricingDefaults): PriceRow[] {
   const labelFor = (p: string): string => PRICE_CATALOG_LABEL[p] ?? p
   return [
-    priceRow('practitioner', labelFor('practitioner'), values.plan.practitioner),
     priceRow('business', labelFor('business'), values.plan.business),
     priceRow('nonprofit', labelFor('nonprofit'), values.plan.nonprofit),
-    priceRow('organization', labelFor('organization'), values.plan.organization),
-    priceRow('whitelabel', labelFor('whitelabel'), values.plan.whitelabel),
   ]
 }

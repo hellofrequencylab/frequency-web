@@ -37,14 +37,12 @@ import type { GateAxis } from './gates'
 export const PLACEHOLDER_PRICING = true
 
 /** @placeholder Monthly price point per Space plan, in cents. Mirrors the code catalog founding rates
- *  (lib/billing/pricing-keys.ts CATALOG): Pro $19, Business $49, Nonprofit $12/seat, Organization from
- *  $199. THE ONE place to swap real Space prices when billing goes live. Preview only; never charged. */
+ *  (lib/billing/pricing-keys.ts CATALOG): Business $49, Non Profit $12/seat; free at $0. THE ONE place to
+ *  swap real Space prices when billing goes live. Preview only; never charged. */
 export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   free: 0,
-  pro: 1900,
   business: 4900,
   nonprofit: 1200,
-  organization: 19900,
 }
 
 /** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults
@@ -57,13 +55,13 @@ export const PLACEHOLDER_MEMBER_PRICE_CENTS: Record<EntitlementTier, number> = {
 }
 
 // ── The ascending display ladders per axis (a clean upgrade path) ───────────────────────────────────
-// The RANGE the selector moves across. Space uses free → pro → business → organization (nonprofit is a
-// sibling verified-501c3 plan, sold separately, so it is not a rung on the generic upgrade range).
+// The RANGE the selector moves across. Space uses free → business (ADR-552: free-vs-paid is a usage
+// state within Business; Non Profit is a sibling verified-501c3 plan, sold separately, not a rung here).
 // Personal uses free → crew (Supporter is retired to a pay-what-you-want badge, not a sold rung).
 
-/** The Space plan rungs the range selector shows, ascending. A clean upgrade path (nonprofit is sold
+/** The Space plan rungs the range selector shows, ascending. A clean upgrade path (Non Profit is sold
  *  separately, so it is not a rung here). */
-export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'pro', 'business', 'organization']
+export const SPACE_LADDER_TIERS: readonly SpacePlan[] = ['free', 'business']
 
 /** The personal membership rungs the range selector shows, ascending (Supporter is retired). */
 export const MEMBER_LADDER_TIERS: readonly EntitlementTier[] = ['free', 'crew']
@@ -100,7 +98,6 @@ export function tierPriceLabel(axis: GateAxis, tier: string): string {
   if (cents === 0) return 'Free'
   const base = formatCents(cents)
   if (axis === 'plan' && tier === 'nonprofit') return `${base}/seat/mo`
-  if (axis === 'plan' && tier === 'organization') return `from ${base}/mo`
   return `${base}/mo`
 }
 
@@ -121,13 +118,11 @@ interface RawFeatureLadder {
   rungs: { tier: string; unlocks: string }[]
 }
 
-/** Build the four standard Space rungs (free → pro → business → organization) with per-feature copy. */
-function spaceRungs(free: string, pro: string, business: string, organization: string) {
+/** Build the two standard Space rungs (free → business) with per-feature copy (ADR-552). */
+function spaceRungs(free: string, business: string) {
   return [
     { tier: 'free', unlocks: free },
-    { tier: 'pro', unlocks: pro },
     { tier: 'business', unlocks: business },
-    { tier: 'organization', unlocks: organization },
   ]
 }
 
@@ -135,102 +130,84 @@ const RAW_FEATURE_LADDERS: Record<string, RawFeatureLadder> = {
   // ── Space functions (plan axis; the CRM/Email/… tier seam FUNCTION_FEATURE_KEY maps to) ──────────
   space_crm: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'CRM',
     rungs: spaceRungs(
       'A preview of the pipeline with a capped number of contacts.',
-      'The full CRM: pipeline, contacts, private notes, and governed playbooks.',
-      'Everything in Pro, plus multiple pipelines and team roles.',
-      'Custom pipelines and shared governance across every Space.',
+      'The full CRM: pipeline, contacts, private notes, governed playbooks, multiple pipelines, and team roles.',
     ),
   },
   space_email: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Email',
     rungs: spaceRungs(
-      'Not included on the free plan.',
-      'Write, send, and schedule campaigns to your own contacts.',
+      'A capped number of email sends each month.',
       'Higher sending limits, automations, and saved templates.',
-      'Custom volume and deliverability support.',
     ),
   },
   space_automation: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Automations',
     rungs: spaceRungs(
-      'Not included on the free plan.',
-      'Governed playbooks that run the safe, reversible moves for you.',
-      'More automations and multi-step sequences.',
-      'Custom automation with review controls.',
+      'One pipeline, no automations.',
+      'Governed playbooks and multi-step sequences that run the safe, reversible moves for you.',
     ),
   },
   space_team: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Team roles',
     rungs: spaceRungs(
       'One operator seat.',
-      'One operator seat with the full toolset.',
       'Add teammates with roles: editor, moderator, and admin.',
-      'Unlimited seats with governance across every Space.',
     ),
   },
   space_multi_pipeline: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Multiple pipelines',
     rungs: spaceRungs(
-      'Not included on the free plan.',
       'One pipeline for your Space.',
       'Multiple pipelines, one per segment or program.',
-      'Custom pipelines shared across Spaces.',
     ),
   },
   space_whitelabel: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Your own brand and domain',
     rungs: spaceRungs(
-      'Runs on a Frequency address.',
       'Your accent and logo on a Frequency address.',
-      'Your own custom domain and full branding.',
-      'White-label across every Space, sold high touch.',
+      'Your own custom domain and full branding, badge off.',
     ),
   },
   // ── Space AI depth (plan axis; the Resonance Engine paid depth · ADR-387) ────────────────────────
   space_crm_playbooks: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Governed playbooks',
     rungs: spaceRungs(
       'Vera suggests moves; you approve each one by hand.',
       'Governed auto-execution of the safe, reversible moves, plus advanced segments.',
-      'More action volume and multi-step playbooks.',
-      'Custom playbooks with review controls.',
     ),
   },
   space_crm_resonance: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Resonance view',
     rungs: spaceRungs(
       'Read-only scoring in the free wedge.',
       'The resonance view: who is close by with your vibe, and who is going quiet.',
-      'The resonance view across every segment and pipeline.',
-      'Custom resonance reporting across Spaces.',
     ),
   },
   space_crm_resonance_ai: {
     axis: 'plan',
-    minTier: 'pro',
+    minTier: 'business',
     title: 'Resonance Graph',
     rungs: spaceRungs(
       'Read-only scoring in the free wedge.',
       'Predictive alerts, the full Resonance Graph, and managed matching.',
-      'The full graph across every segment and pipeline.',
-      'Custom matching and graph reporting across Spaces.',
     ),
   },
   // ── Personal membership (tier axis; free < crew) ─────────────────────────────────────────────────

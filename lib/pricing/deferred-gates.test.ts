@@ -92,14 +92,14 @@ describe('REMAINING-WORK #4 — space_* feature gates resolve consistently via f
     expect(await featureAllowed('space_email', { plan: 'free' }, { billingLive: false })).toBe(true)
   })
 
-  it('ON: the collapsed plan ladder bites (the paid floor for space_* is pro · ADR-458)', async () => {
-    // The coarse plan-rank gate is now a single paid floor of 'pro'; the fine per-feature gating is the
-    // entitlement-key union (spaceHasEntitlement), not this ladder. Legacy 'business' narrows to pro.
+  it('ON: the collapsed plan ladder bites (the paid floor for space_* is business · ADR-552)', async () => {
+    // The coarse plan-rank gate is now a single paid floor of 'business'; the fine per-feature gating is
+    // the entitlement-key union (spaceHasEntitlement), not this ladder.
     expect(await featureAllowed('space_crm', { plan: 'free' }, { billingLive: true })).toBe(false)
-    expect(await featureAllowed('space_crm', { plan: 'pro' }, { billingLive: true })).toBe(true)
+    expect(await featureAllowed('space_crm', { plan: 'business' }, { billingLive: true })).toBe(true)
     expect(await featureAllowed('space_email', { plan: 'free' }, { billingLive: true })).toBe(false)
-    // A legacy label narrows to pro through asSpacePlan inside the gate, so it still clears.
-    expect(await featureAllowed('space_email', { plan: 'business' as never }, { billingLive: true })).toBe(true)
+    // A legacy label narrows to business through asSpacePlan inside the gate, so it still clears.
+    expect(await featureAllowed('space_email', { plan: 'pro' as never }, { billingLive: true })).toBe(true)
   })
 })
 

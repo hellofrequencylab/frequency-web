@@ -50,17 +50,22 @@ export function asItemKey(raw: string | null | undefined): ItemKey | null {
   return (ITEM_KEYS as readonly string[]).includes(raw ?? '') ? (raw as ItemKey) : null
 }
 
-/** The DB item_key for a catalog item key (pro_base -> base; business_base -> business; addon_ai -> ai;
- *  the rest map 1:1). PURE. Returns null for an unknown catalog key. */
+/** The DB item_key for a catalog item key (business_base -> business; addon_ai -> ai; nonprofit_seat
+ *  maps 1:1). PURE (ADR-552). The RETIRED catalog keys pro_base / organization are kept RESOLVABLE for a
+ *  grandfathered legacy subscription row (pro_base -> the legacy 'base' item; organization -> its own
+ *  legacy item), so an old multi-item sub still narrows to a plan. Returns null for an unknown key. */
 export function itemKeyForCatalogKey(catalogKey: string | null | undefined): ItemKey | null {
   const key = asCatalogItemKey(catalogKey)
-  if (!key) return null
-  if (key === 'pro_base') return 'base'
   if (key === 'business_base') return 'business'
-  const addon = addonKeyForCatalogItem(key)
-  if (addon) return addon
-  // nonprofit_seat / organization map 1:1.
-  return asItemKey(key)
+  if (key) {
+    const addon = addonKeyForCatalogItem(key)
+    if (addon) return addon
+    if (key === 'nonprofit_seat') return 'nonprofit_seat'
+  }
+  // RETIRED (ADR-552), kept resolvable for legacy rows: the former Pro base + Organization catalog keys.
+  if (catalogKey === 'pro_base') return 'base'
+  if (catalogKey === 'organization') return 'organization'
+  return null
 }
 
 /** A reconciled subscription item: the DB item_key plus the per-item fields the row persists. */
@@ -73,14 +78,14 @@ export interface ReconciledItem {
   lockedPriceId: string | null
 }
 
-/** The base TIER a set of item keys implies. PURE. Highest-ranked wins: an 'organization' item ->
- *  organization; a 'nonprofit_seat' item -> nonprofit; a 'business' item -> business; otherwise a 'base'
- *  item -> pro; an empty set -> free. Organization/Nonprofit/Business out-rank Pro (full depth). */
+/** The base TIER a set of item keys implies. PURE (ADR-552). Highest-ranked wins: nonprofit > business >
+ *  free. The legacy 'organization' item folds to nonprofit; a 'nonprofit_seat' item -> nonprofit; a
+ *  'business' item OR the legacy 'base' (former Pro) item -> business; an empty set -> free. */
 export function planForItemKeys(itemKeys: readonly ItemKey[]): SpacePlan {
-  if (itemKeys.includes('organization')) return 'organization'
+  if (itemKeys.includes('organization')) return 'nonprofit' // legacy org folds to nonprofit
   if (itemKeys.includes('nonprofit_seat')) return 'nonprofit'
   if (itemKeys.includes('business')) return 'business'
-  if (itemKeys.includes('base')) return 'pro'
+  if (itemKeys.includes('base')) return 'business' // legacy Pro base folds to business
   return 'free'
 }
 

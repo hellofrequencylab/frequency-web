@@ -141,11 +141,10 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** Save the take-rate (basis points per plan). */
+/** Save the take-rate (basis points per plan · ADR-552: Business + Non Profit). */
 export async function saveTakeRate(rate: {
-  practitioner_bps: number
   business_bps: number
-  organization_bps: number
+  nonprofit_bps: number
 }): Promise<ActionResult> {
   const ctx = await requireAdmin('janitor')
   const clamp = (n: unknown) => Math.min(10000, Math.max(0, Math.round(Number(n) || 0)))
@@ -153,9 +152,8 @@ export async function saveTakeRate(rate: {
     await setPricingSetting(
       'take_rate',
       {
-        practitioner_bps: clamp(rate.practitioner_bps),
         business_bps: clamp(rate.business_bps),
-        organization_bps: clamp(rate.organization_bps),
+        nonprofit_bps: clamp(rate.nonprofit_bps),
       },
       ctx.profileId,
     )

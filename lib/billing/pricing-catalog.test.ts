@@ -33,19 +33,17 @@ describe('yearlyFromMonthly (two months free)', () => {
   })
 })
 
-describe('the clean catalog shape (re-tiered · ADR-472)', () => {
-  it('holds exactly the five tier items (Pro base, Business base, AI add-on, nonprofit seat, org)', () => {
+describe('the clean catalog shape (collapsed · ADR-552)', () => {
+  it('holds exactly the three items (Business base, AI add-on, nonprofit seat)', () => {
     expect([...CATALOG_ITEM_KEYS]).toEqual([
-      'pro_base',
       'business_base',
       'addon_ai',
       'nonprofit_seat',
-      'organization',
     ])
-    expect(catalogItems()).toHaveLength(5)
+    expect(catalogItems()).toHaveLength(3)
   })
 
-  it('Business base: $49 base, the full-depth team tier, not per seat', () => {
+  it('Business base: $49 base, the full-depth paid tier, not per seat', () => {
     const biz = catalogItem('business_base')
     expect(biz.month.foundingCents).toBe(4900)
     expect(biz.month.listCents).toBe(4900) // no separate anchor published today (founding == list)
@@ -69,15 +67,6 @@ describe('the clean catalog shape (re-tiered · ADR-472)', () => {
     }
   })
 
-  it('Pro base: $29 list / $19 founding monthly (the headline anchor)', () => {
-    const pro = catalogItem('pro_base')
-    expect(pro.month.listCents).toBe(2900)
-    expect(pro.month.foundingCents).toBe(1900)
-    expect(pro.year.listCents).toBe(29000)
-    expect(pro.year.foundingCents).toBe(19000)
-    expect(pro.perSeat).toBe(false)
-  })
-
   it('Nonprofit seat: $15 list / $12 founding per seat, marked perSeat', () => {
     const np = catalogItem('nonprofit_seat')
     expect(np.month.listCents).toBe(1500)
@@ -85,52 +74,47 @@ describe('the clean catalog shape (re-tiered · ADR-472)', () => {
     expect(np.perSeat).toBe(true)
   })
 
-  it('the AI add-on is metered (not per-seat); tier bases are not per-seat', () => {
+  it('the AI add-on is metered (not per-seat); the Business base is not per-seat', () => {
     expect(catalogItem('addon_ai').perSeat).toBe(false)
-    expect(catalogItem('pro_base').perSeat).toBe(false)
     expect(catalogItem('business_base').perSeat).toBe(false)
-  })
-
-  it('Organization keeps the $249 list / $199 founding floor anchor', () => {
-    const org = catalogItem('organization')
-    expect(org.month.listCents).toBe(24900)
-    expect(org.month.foundingCents).toBe(19900)
   })
 })
 
 describe('catalog price keys', () => {
   it('the founding (charged) key is <item>_<interval>; the list anchor adds _list', () => {
-    expect(catalogPriceKey('pro_base', 'month')).toBe('pro_base_month')
-    expect(catalogPriceKey('pro_base', 'year')).toBe('pro_base_year')
-    expect(catalogPriceKey('pro_base', 'month', true)).toBe('pro_base_month_list')
+    expect(catalogPriceKey('business_base', 'month')).toBe('business_base_month')
+    expect(catalogPriceKey('business_base', 'year')).toBe('business_base_year')
+    expect(catalogPriceKey('business_base', 'month', true)).toBe('business_base_month_list')
     expect(catalogPriceKey('business_base', 'year', true)).toBe('business_base_year_list')
   })
 
-  it('allCatalogPriceKeys = 5 items x 2 intervals x 2 variants = 20 keys', () => {
+  it('allCatalogPriceKeys = 3 items x 2 intervals x 2 variants = 12 keys', () => {
     const keys = allCatalogPriceKeys()
-    expect(keys).toHaveLength(20)
-    expect(keys).toContain('pro_base_month')
-    expect(keys).toContain('pro_base_month_list')
+    expect(keys).toHaveLength(12)
     expect(keys).toContain('business_base_month')
+    expect(keys).toContain('business_base_month_list')
+    expect(keys).toContain('addon_ai_month')
     expect(keys).toContain('nonprofit_seat_year')
-    expect(keys).toContain('organization_month_list')
+    // the retired items are NOT in the live catalog
+    expect(keys).not.toContain('pro_base_month')
+    expect(keys).not.toContain('organization_month_list')
     // every key is unique
     expect(new Set(keys).size).toBe(keys.length)
   })
 })
 
-describe('add-on item bridge + narrowing (re-tiered · ADR-472)', () => {
+describe('add-on item bridge + narrowing (collapsed · ADR-552)', () => {
   it('maps addon_ai to the sole entitlement add-on key; tier items map to null', () => {
     expect(addonKeyForCatalogItem('addon_ai')).toBe('ai')
-    expect(addonKeyForCatalogItem('pro_base')).toBeNull()
     expect(addonKeyForCatalogItem('business_base')).toBeNull()
     expect(addonKeyForCatalogItem('nonprofit_seat')).toBeNull()
-    expect(addonKeyForCatalogItem('organization')).toBeNull()
   })
 
-  it('asCatalogItemKey is default-deny (the retired add-on items no longer narrow)', () => {
-    expect(asCatalogItemKey('pro_base')).toBe('pro_base')
+  it('asCatalogItemKey is default-deny (the retired items no longer narrow)', () => {
     expect(asCatalogItemKey('business_base')).toBe('business_base')
+    expect(asCatalogItemKey('addon_ai')).toBe('addon_ai')
+    expect(asCatalogItemKey('pro_base')).toBeNull() // retired (ADR-552)
+    expect(asCatalogItemKey('organization')).toBeNull() // retired (ADR-552)
     expect(asCatalogItemKey('addon_marketing')).toBeNull() // retired (ADR-472)
     expect(asCatalogItemKey('nonsense')).toBeNull()
     expect(asCatalogItemKey(null)).toBeNull()
@@ -138,14 +122,17 @@ describe('add-on item bridge + narrowing (re-tiered · ADR-472)', () => {
 })
 
 describe('retired legacy keys (kept resolvable, never deleted)', () => {
-  it('covers the retired tiers + the retired add-on items, and excludes the live catalog', () => {
-    // Pre-ladder per-plan tiers.
+  it('covers the retired tiers + the retired catalog items, and excludes the live catalog', () => {
+    // Pre-ladder + collapsed per-plan tiers (ADR-552).
     expect(RETIRED_CATALOG_KEYS).toContain('practitioner_monthly')
-    expect(RETIRED_CATALOG_KEYS).toContain('business_annual')
+    expect(RETIRED_CATALOG_KEYS).toContain('organization_monthly')
     expect(RETIRED_CATALOG_KEYS).toContain('whitelabel_monthly')
     expect(RETIRED_CATALOG_KEYS).toContain('supporter_monthly')
     expect(RETIRED_CATALOG_KEYS).toContain('supporter_monthly_founder')
-    // The Marketing/Team/Branding add-on catalog items retired by ADR-472 (founding + _list variants).
+    // The retired CATALOG items: Pro base + Organization (ADR-552), Marketing/Team/Branding (ADR-472).
+    expect(RETIRED_CATALOG_KEYS).toContain('pro_base_month')
+    expect(RETIRED_CATALOG_KEYS).toContain('pro_base_year_list')
+    expect(RETIRED_CATALOG_KEYS).toContain('organization_month')
     expect(RETIRED_CATALOG_KEYS).toContain('addon_marketing_month')
     expect(RETIRED_CATALOG_KEYS).toContain('addon_marketing_year_list')
     expect(RETIRED_CATALOG_KEYS).toContain('addon_team_month')

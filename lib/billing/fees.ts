@@ -23,7 +23,7 @@ export function platformFeeCents(grossCents: number): number {
 
 // ── Space-plan take-rate (Pricing P2, ADR-363) ────────────────────────────────────────────
 // A paid SPACE membership is a Connect destination charge; the platform's application fee is the
-// take-rate SET BY THE SPACE'S PLAN (8% practitioner / 5% business / 3% organization, editable at
+// take-rate SET BY THE SPACE'S PLAN (5% Business / 3% Non Profit, editable at
 // /admin/pricing → pricing_settings.take_rate). The pure math lives in lib/billing/pricing-keys.ts
 // (takeRateCents); this IO wrapper reads the operator take-rate and applies it. FAIL-SAFE: any error
 // falls back to the seeded defaults via getPricingValues, never to a 0% fee that under-collects.

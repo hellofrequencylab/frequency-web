@@ -3,8 +3,8 @@
 // STATIC: it renders entirely from the CODE catalog (lib/billing/pricing-keys.ts CATALOG, surfaced via
 // lib/pricing/catalog-config.ts defaultCatalogConfig) and the pure loadout math (lib/pricing/loadout.ts
 // computeLoadoutTotal), so there are ZERO per-request DB billing reads. This module turns those code
-// defaults into the table model (Pro / Nonprofit / Organization) and the "by who you are" loadout strip
-// the page renders, plus the JSON-LD Offer inputs and the answer-engine ladder summary. PURE +
+// defaults into the table model (Business / Non Profit) and the "by who you are" loadout strip the page
+// renders, plus the JSON-LD Offer inputs and the answer-engine ladder summary. PURE +
 // framework-independent (no React / Stripe / Supabase / Next), so it is trivially unit-testable and
 // shared by the page render, the JSON-LD spine, and the llms.txt ladder line.
 //
@@ -44,11 +44,9 @@ export function pricingCatalog(): Record<CatalogItemKey, ResolvedCatalogItem> {
 
 // ── The three commercial tiers (the pricing TABLE columns) ──────────────────────────────────────────
 
-/** The price MODEL for one tier column. `kind` decides how the headline price reads:
- *  - `flat`   : a list anchor struck over a founding price (Pro).
- *  - `perSeat`: the same, but per licensed seat (Nonprofit).
- *  - `from`   : a "from $X" floor anchor, sales-assist (Organization).
- *  TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization). */
+/** The price MODEL for one tier column (ADR-552). `kind` decides how the headline price reads:
+ *  - `flat`   : a list anchor struck over a founding price (Business).
+ *  - `perSeat`: the same, but per licensed seat (Non Profit). */
 export type TierPriceKind = 'flat' | 'perSeat' | 'from'
 
 /** One add-on row value in a tier column: a price string for Pro, or a plain "included" / coverage note
@@ -62,8 +60,8 @@ export interface TierAddonCell {
 
 /** One commercial tier column of the pricing table. Pure data the page renders. */
 export interface PricingTier {
-  /** A stable id for keys + JSON-LD (`pro` / `nonprofit` / `organization`). */
-  id: 'pro' | 'nonprofit' | 'organization'
+  /** A stable id for keys + JSON-LD (`business` / `nonprofit`). */
+  id: 'business' | 'nonprofit'
   /** The display name. */
   name: string
   /** How the headline price reads. */
@@ -105,60 +103,43 @@ export function proAddonPrice(addon: AddonKey): string {
   return item.perSeat ? `+${amount}/seat/mo` : `+${amount}/mo`
 }
 
-/** Build the three commercial tier columns from the CODE catalog. PURE — no DB, no per-request read.
- *  The Pro headline is the base price; Nonprofit is the per-seat price; Organization is the floor
- *  anchor. The add-on cells now carry only the AI Engine (ADR-472): metered on Pro, available on every
- *  tier; the former Marketing/Team/Branding add-ons fold into the depth each tier already includes.
- *  TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization) with the
- *  Business base from cat.business_base, instead of the three columns kept here for a minimal change. */
+/** Build the two commercial tier columns from the CODE catalog (ADR-552). PURE — no DB, no per-request
+ *  read. Business is the single paid base (full depth); Non Profit is the verified-501c3 per-seat sibling
+ *  (same depth, discounted). The add-on cells carry only the AI Engine: metered on Business, available on
+ *  every paid tier. Free-vs-paid is a usage state within Business, so there is no third column. */
 export function pricingTiers(): PricingTier[] {
   const cat = pricingCatalog()
 
-  // The AI Engine is the only metered add-on. It is priced on Pro and available on every paid tier.
-  const proAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
+  // The AI Engine is the only metered add-on. It is priced on Business and available on every paid tier.
   const tierAddons: TierAddonCell[] = PRICING_ADDONS.map((a) => ({ addon: a.key, value: proAddonPrice(a.key) }))
 
   return [
     {
-      id: 'pro',
-      name: 'Pro',
+      id: 'business',
+      name: 'Business',
       priceKind: 'flat',
-      price: { month: cat.pro_base.month, year: cat.pro_base.year },
+      price: { month: cat.business_base.month, year: cat.business_base.year },
       featured: true,
       forWho: 'Coaches, service and product businesses, studios, and practitioners.',
       billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'Branded Space site, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, CRM, and analytics. One seat.',
-      addons: proAddons,
-      takeRate: '5% on what you sell',
+        'Everything: branded multi-page site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics.',
+      addons: tierAddons,
+      takeRate: '3% on what you sell',
       cta: { label: 'Start a Space', href: '/spaces' },
     },
     {
       id: 'nonprofit',
-      name: 'Nonprofit',
+      name: 'Non Profit',
       priceKind: 'perSeat',
       price: { month: cat.nonprofit_seat.month, year: cat.nonprofit_seat.year },
       featured: false,
       forWho: 'Verified 501(c)(3) organizations.',
       billing: 'Per licensed seat. Three-seat minimum.',
       coreIncluded:
-        'Full Business depth: marketing automation, full CRM, team roles, and your own domain. Discounted, with donation framing.',
+        'The full Business depth: marketing automation, full CRM, team roles, and your own domain. Discounted, with donation and volunteer framing.',
       addons: tierAddons,
       takeRate: '3% on what you raise',
-      cta: { label: 'Talk to us', href: '/about' },
-    },
-    {
-      id: 'organization',
-      name: 'Organization',
-      priceKind: 'from',
-      price: { month: cat.organization.month, year: cat.organization.year },
-      featured: false,
-      forWho: 'Enterprise and multi-Space teams.',
-      billing: 'Sales-assist. We size it with you.',
-      coreIncluded:
-        'Full Business depth plus custom, white-label, and governance: SSO and federation across Spaces.',
-      addons: tierAddons,
-      takeRate: 'Custom',
       cta: { label: 'Talk to us', href: '/about' },
     },
   ]

@@ -28,9 +28,10 @@ describe('FeatureMeterRange — renders the allowance ladder per tier', () => {
 
   it('frames tiers as allowances (pay to play), never as locked / unlock', () => {
     const out = html(<FeatureMeterRange ladder={CRM} currentTier="free" upgradeHref="/spaces/x/settings/billing" />)
-    // The allowance dimension header + an allowance line are present.
+    // The allowance dimension header + an allowance line are present (ADR-552: the upgrade rung is
+    // Business, whose CRM allowance is unlimited, so the line reads "Unlimited contacts").
     expect(out).toContain('allowance')
-    expect(out).toContain('Up to')
+    expect(out).toMatch(/Up to|Unlimited contacts/)
     // No lock-wall language.
     expect(out.toLowerCase()).not.toContain('unlock')
     expect(out.toLowerCase()).not.toContain('locked')
