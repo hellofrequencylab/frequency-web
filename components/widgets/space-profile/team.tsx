@@ -7,14 +7,21 @@ import { ModuleSection } from './section'
 // TEAM — the people who run this space. Reads the team roster off the data bag (getSpaceTeam: active
 // space_members holding an operator role, joined to their public profile). FAIL-SAFE: no team, no
 // section (an operator who has added no team, or a soloed space, renders nothing — never invented data).
-export function TeamBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
+export function TeamBlock({
+  data,
+  header,
+}: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  header?: { eyebrow?: string; heading?: string }
+}) {
   const team = data.team ?? []
   if (team.length === 0) return null
   return (
     <ModuleSection anchor="team">
       <div>
-        <p className="text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">The people</p>
-        <h2 className="mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">Team</h2>
+        <p className="text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header?.eyebrow ?? 'The people'}</p>
+        <h2 className="mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header?.heading ?? 'Team'}</h2>
         <ul className="mt-6 grid gap-4 @sm/profile:grid-cols-2 @xl/profile:grid-cols-3">
           {team.map((member) => (
             <li

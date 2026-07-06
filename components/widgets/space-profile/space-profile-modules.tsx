@@ -6,6 +6,7 @@ import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { resolveDataHeader } from '@/lib/entity-blocks/block-content'
 import { blocksForKind, entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
@@ -43,6 +44,9 @@ import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authore
 type BlockComponent = (props: {
   space: SpaceProfileContext
   data: SpaceContentData
+  /** The owner's EFFECTIVE header for this block (ADR-542): the authored eyebrow/title override, already
+   *  folded over the block's default (resolveDataHeader), so the block draws the owner's real header. */
+  header?: { eyebrow?: string; heading?: string }
   /** About/Story only (ADR-542): the owner's inline-authored body, taking precedence over the data bag. */
   authoredBody?: string
 }) => React.ReactNode
@@ -85,24 +89,11 @@ function toProfileBlockId(id: string): ProfileBlockId | null {
 
 type SpaceAuthored = ReturnType<typeof resolveSpaceAuthoredContent>
 
-/** The DATA-block quick header (ADR-528): an optional operator-authored section title + intro line,
- *  rendered above a live-data block. Null when neither is set. */
-function DataQuickHeader({ props }: { props: Record<string, unknown> | undefined }) {
-  const title = typeof props?.title === 'string' ? props.title : ''
-  const intro = typeof props?.intro === 'string' ? props.intro : ''
-  if (!title && !intro) return null
-  return (
-    <div className="mb-4">
-      {title && <h2 className="text-2xl font-bold text-text">{title}</h2>}
-      {intro && <p className="mt-1 text-sm text-muted">{intro}</p>}
-    </div>
-  )
-}
-
 /** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame), wrapped in its
  *  per-block STYLE frame (ADR-528). CONTENT ids render the operator's inline-authored content (from the
  *  layout's `content` bag, falling back to any legacy Puck-doc content); DATA ids render live space data
- *  under an optional authored title/intro. Shared by the live render and the render-all-once node map.
+ *  under the owner's authored eyebrow/title (folded into the block's own header). Shared by the live render
+ *  and the render-all-once node map.
  *  Unknown / empty id → null. */
 function renderSpaceBlock(
   id: string,
@@ -127,25 +118,19 @@ function renderSpaceBlock(
     }
   } else if (Object.hasOwn(EXTRA_DATA_BLOCKS, id)) {
     const Block = EXTRA_DATA_BLOCKS[id]
-    inner = (
-      <>
-        <DataQuickHeader props={contentProps} />
-        <Block space={space} data={data} />
-      </>
-    )
+    // The owner's authored eyebrow/title REPLACE the block's real header (ADR-542), default-filled.
+    inner = <Block space={space} data={data} header={resolveDataHeader(id, contentProps)} />
   } else {
     const blockId = toProfileBlockId(id)
     if (!blockId) return null
     const Block = SPACE_PROFILE_BLOCKS[blockId]
     // About + Story carry the owner's inline-authored body (ADR-542); it takes precedence over the data bag
-    // inside the block. Other data blocks ignore the prop.
+    // inside the block. Other data blocks ignore the prop. Every data block draws the owner's real header
+    // (authored eyebrow/title over the block default) — no separate header stacked above it.
     const authoredBody =
       (id === 'about' || id === 'story') && typeof contentProps?.body === 'string' ? contentProps.body : undefined
     inner = (
-      <>
-        <DataQuickHeader props={contentProps} />
-        <Block space={space} data={data} authoredBody={authoredBody} />
-      </>
+      <Block space={space} data={data} header={resolveDataHeader(id, contentProps)} authoredBody={authoredBody} />
     )
   }
   if (inner == null) return null

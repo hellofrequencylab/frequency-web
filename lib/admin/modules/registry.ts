@@ -95,7 +95,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'circle.settings',
     label: 'Circle settings',
-    desc: 'Name, description, type, capacity, and status — edited in place.',
+    desc: 'Name, description, type, capacity, and status. Edited in place.',
     Icon: Settings,
     scopes: ['circle'],
     requiredCapability: 'circle.editSettings',
@@ -209,7 +209,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'hub.settings',
     label: 'Hub settings',
-    desc: 'Name and status — edited in place.',
+    desc: 'Name and status. Edited in place.',
     Icon: Building2,
     scopes: ['hub'],
     requiredCapability: 'hub.manage',
@@ -290,7 +290,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'nexus.settings',
     label: 'Nexus settings',
-    desc: 'Name, capacity, and status — edited in place.',
+    desc: 'Name, capacity, and status. Edited in place.',
     Icon: Network,
     scopes: ['nexus'],
     requiredCapability: 'nexus.manage',
@@ -369,7 +369,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'event.settings',
     label: 'Event settings',
-    desc: 'Title, description, location, and time — edited in place.',
+    desc: 'Title, description, location, and time. Edited in place.',
     Icon: CalendarDays,
     scopes: ['event'],
     requiredCapability: 'event.editSettings',
@@ -425,7 +425,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'practice.settings',
     label: 'Practice settings',
-    desc: 'Cover, title, summary and details — edited in place.',
+    desc: 'Cover, title, summary, and details. Edited in place.',
     Icon: Sparkles,
     scopes: ['practice'],
     requiredCapability: 'practice.editSettings',
@@ -457,7 +457,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   {
     id: 'channel.settings',
     label: 'Channel settings',
-    desc: 'Name, description, category, and visibility — platform-curated, staff only.',
+    desc: 'Name, description, category, and visibility. Platform-curated, staff only.',
     Icon: Hash,
     scopes: ['channel'],
     requiredCapability: 'channel.manage',

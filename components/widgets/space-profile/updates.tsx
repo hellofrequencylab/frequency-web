@@ -5,11 +5,18 @@ import { ModuleSection } from './section'
 
 // UPDATES — the brand's recent posts feed (latest few). Reads the live rows off the data bag;
 // FAIL-SAFE: no published updates, no section.
-export function UpdatesBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
+export function UpdatesBlock({
+  data,
+  header,
+}: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  header?: { eyebrow?: string; heading?: string }
+}) {
   if (data.updates.length === 0) return null
   return (
     <ModuleSection anchor="updates">
-      <SpaceUpdatesBlock eyebrow="Latest" heading="From the team" updates={data.updates} limit={3} />
+      <SpaceUpdatesBlock eyebrow={header?.eyebrow ?? 'Latest'} heading={header?.heading ?? 'From the team'} updates={data.updates} limit={3} />
     </ModuleSection>
   )
 }

@@ -5,6 +5,8 @@ import {
   sanitizeContentMap,
   sanitizeStyleMap,
   fieldsForBlock,
+  resolveDataHeader,
+  blockDrawsOwnCard,
   safeUrl,
 } from './block-content'
 
@@ -32,17 +34,47 @@ describe('sanitizeBlockStyle', () => {
       pad: 'md',
       align: 'center',
     })
-    // defaults (none / start) and a non-true background collapse away
-    expect(sanitizeBlockStyle({ background: false, pad: 'none', align: 'start' })).toBeUndefined()
+    // pad none / align start collapse away; an explicit background:false is KEPT (item 6, "card off")
+    expect(sanitizeBlockStyle({ background: false, pad: 'none', align: 'start' })).toEqual({ background: false })
     expect(sanitizeBlockStyle({ pad: 'nope', align: 'weird' })).toBeUndefined()
+    // an ABSENT background is the block default — nothing to persist
+    expect(sanitizeBlockStyle({ pad: 'none' })).toBeUndefined()
+  })
+})
+
+describe('blockDrawsOwnCard', () => {
+  it('is true for data sections + self-carding content, false for plain content', () => {
+    expect(blockDrawsOwnCard('about')).toBe(true)
+    expect(blockDrawsOwnCard('offerings')).toBe(true)
+    expect(blockDrawsOwnCard('callout')).toBe(true)
+    expect(blockDrawsOwnCard('features')).toBe(true)
+    expect(blockDrawsOwnCard('text')).toBe(false)
+    expect(blockDrawsOwnCard('gallery')).toBe(false)
+    expect(blockDrawsOwnCard('nope')).toBe(false)
+  })
+})
+
+describe('resolveDataHeader (eyebrow/title override the block header)', () => {
+  it('returns the trimmed override, or undefined to keep the block default', () => {
+    expect(resolveDataHeader('about', { eyebrow: '  Meet us  ', title: '  Who we are  ' })).toEqual({
+      eyebrow: 'Meet us',
+      heading: 'Who we are',
+    })
+    expect(resolveDataHeader('about', { eyebrow: '   ', title: '' })).toEqual({
+      eyebrow: undefined,
+      heading: undefined,
+    })
+    expect(resolveDataHeader('about', undefined)).toEqual({ eyebrow: undefined, heading: undefined })
   })
 })
 
 describe('fieldsForBlock', () => {
-  it('gives content blocks their schema and data blocks the quick fields', () => {
+  it('gives content blocks their schema and data blocks the eyebrow/title header fields', () => {
     expect(fieldsForBlock('heading').map((f) => f.key)).toEqual(['text'])
     expect(fieldsForBlock('links').map((f) => f.type)).toEqual(['links'])
-    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['title', 'intro'])
+    // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542).
+    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title'])
+    expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
   })
 })
@@ -68,11 +100,15 @@ describe('sanitizeBlockContent', () => {
       images: ['https://x/1.jpg'],
     })
   })
-  it('keeps only title/intro for a data block', () => {
-    expect(sanitizeBlockContent('offerings', { title: 'Services', intro: 'What we do', price: 9 })).toEqual({
-      title: 'Services',
-      intro: 'What we do',
-    })
+  it('keeps only eyebrow/title for a header-only data block', () => {
+    expect(
+      sanitizeBlockContent('offerings', { eyebrow: 'Our menu', title: 'Services', intro: 'dropped', price: 9 }),
+    ).toEqual({ eyebrow: 'Our menu', title: 'Services' })
+  })
+  it('keeps eyebrow/title/body for About + Story (ADR-542)', () => {
+    expect(
+      sanitizeBlockContent('about', { eyebrow: 'Hi', title: 'Who we are', body: 'A calm studio.', bogus: 1 }),
+    ).toEqual({ eyebrow: 'Hi', title: 'Who we are', body: 'A calm studio.' })
   })
   it('sanitizes a callout (ADR-542): text fields bounded, button url made safe, bad image dropped', () => {
     expect(

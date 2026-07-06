@@ -3,8 +3,9 @@
 import { useEffect, type ReactNode } from 'react'
 import type { RowDef } from '@/lib/entity-blocks/layout'
 import type { BlockStyle } from '@/lib/entity-blocks/block-content'
+import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from './entity-grid'
-import { BlockStyleFrame } from './content-block-view'
+import { BlockStyleFrame, ContentBlockView, hasContent } from './content-block-view'
 import { useProfileLayout } from './profile-layout-context'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
@@ -49,6 +50,7 @@ export function LiveProfileGrid({
   const rows = store?.seeded ? store.rows : initialRows
   const hidden = new Set(store?.seeded ? store.hidden : initialHidden)
   const style = store?.seeded ? store.style : initialStyle
+  const content = store?.seeded ? store.content : initialContent
 
   // Drop hidden boxes from each column stack so a hidden block leaves the render (kept in the store).
   const displayRows: RowDef[] = rows.map((row) => ({
@@ -56,10 +58,21 @@ export function LiveProfileGrid({
     cells: row.cells.map((stack) => stack.filter((id) => !hidden.has(id))),
   }))
 
-  // Apply each block's STYLE frame here (client-side) so a background / spacing / alignment edit shows
-  // instantly — the server nodes are rendered unstyled (renderSpaceBlockNodes styled=false).
+  // Render each block, applying its STYLE frame here (client-side) so a background / spacing / alignment
+  // edit shows instantly (the server nodes are rendered unstyled). A CONTENT block's body is ALSO drawn
+  // client-side from the shared store (ContentBlockView) so a content edit — a Callout title, a gallery
+  // image, a link — repaints the page THE INSTANT it is typed, with no server round-trip (ADR-542 item A).
+  // A DATA block keeps its server node (its live-data body cannot be reproduced on the client); its authored
+  // header/body reconcile through the debounced save (the builder refreshes just those).
   const renderBlock = (id: string): ReactNode => {
-    const node = nodes[id]
+    const block = entityBlockById(id)
+    let node: ReactNode
+    if (block?.category === 'content') {
+      const props = content[id]
+      node = hasContent(id, props) ? <ContentBlockView id={id} props={props ?? {}} /> : nodes[id]
+    } else {
+      node = nodes[id]
+    }
     if (node == null) return null
     return <BlockStyleFrame style={style[id]}>{node}</BlockStyleFrame>
   }

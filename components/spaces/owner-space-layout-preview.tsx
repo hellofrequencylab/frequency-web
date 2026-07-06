@@ -61,8 +61,10 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
 
   // The page is the LIVE RESULT only (ADR-542 revised): no editing chrome here. The owner arranges the page
   // in the sidebar (SpacePageBuilder) and this preview repaints through the shared store.
+  // Breathing room (item 2): a right gutter at lg+ so the arranged page never crowds against the admin rail
+  // sliding in from the right — the content and the rail read as two calm columns, not one cramped edge.
   return (
-    <div className="@container/profile">
+    <div className="@container/profile lg:pr-4 xl:pr-8">
       <LiveProfileGrid
         nodes={nodes}
         initialRows={rows}
