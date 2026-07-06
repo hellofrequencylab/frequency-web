@@ -6,7 +6,10 @@ import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { readProfileData } from '@/lib/spaces/profile-data'
+import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { SpaceSettingsForm, type SpaceSettingsValues } from '../settings-form'
+import { ProfileCompletenessCard } from '../profile-completeness-card'
 
 // SPACE BASICS EDITOR — the console's "Basics" section target (ADR-441 EM1-3 hotfix). The unified
 // /spaces/<slug>/manage console links its Basics section here. It is a DEDICATED sub-page (NOT the
@@ -90,6 +93,14 @@ export default async function SpaceBasicsPage({
 
   const brandName = space.brandName ?? space.name
 
+  // The SEARCH-READINESS inputs for the completeness meter: the identity fields off the Space + the
+  // extras read above, the offerings / socials off the central profileData (preferences), and the
+  // visible review count off the reviews summary (the same read that feeds the profile's
+  // AggregateRating schema). One extra round-trip for the reviews count; everything else is already
+  // in hand.
+  const profileData = readProfileData(space.preferences)
+  const reviews = await getSpaceReviews(space.id)
+
   return (
     <FocusTemplate
       eyebrow={brandName}
@@ -97,6 +108,19 @@ export default async function SpaceBasicsPage({
       description="Your space's name, brand, about, and who can find it. Changes show up on your space page."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
+
+      <ProfileCompletenessCard
+        input={{
+          brandName: space.brandName,
+          tagline: extras.tagline,
+          about: extras.about ?? profileData.about,
+          logoUrl: space.brandLogoUrl,
+          coverUrl: space.coverImageUrl,
+          offeringsCount: profileData.offerings?.length ?? 0,
+          reviewCount: reviews.count,
+          socialCount: profileData.socials?.length ?? 0,
+        }}
+      />
 
       <SpaceSettingsForm
         spaceId={space.id}

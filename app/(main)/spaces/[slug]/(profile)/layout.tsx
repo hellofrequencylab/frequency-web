@@ -28,6 +28,7 @@ import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
+import { getSpaceReviews } from '@/lib/spaces/content-data'
 
 // ── THE NETWORKED ENTITY PROFILE CHROME (ENTITY-SPACES-BUILD §A.4 / §B.1) ────────────────────────
 // This is the profile's ONE cohesive header for every public tab (Facebook/LinkedIn business-page
@@ -139,6 +140,16 @@ export default async function SpaceProfileChromeLayout({
   const manage = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole ?? null)
   const canSeeAsOwner = manage.canManage || manage.staffViewing
   const isNetwork = visibility !== 'private'
+
+  // Review stars for the profile's structured data (AggregateRating): only a NETWORK Space emits schema,
+  // so only then do we pay the reviews read. Passed to spaceSchema, which emits the node ONLY when there
+  // is a real average AND ≥1 review (a null/zero rating is dropped so answer engines never see malformed
+  // schema).
+  const reviews = isNetwork ? await getSpaceReviews(space.id) : null
+  const aggregateRating =
+    reviews && reviews.average != null && reviews.count > 0
+      ? { ratingValue: reviews.average, reviewCount: reviews.count }
+      : undefined
 
   // The per-Space FUNCTIONS this viewer may use — resolved by the SHARED helper the /manage console also
   // feeds (usableSpaceFunctions: spaceFunctionAccess over the viewer's space role; a staff previewer sees
@@ -442,6 +453,7 @@ export default async function SpaceProfileChromeLayout({
               name: brandName,
               tagline,
               logoUrl: space.brandLogoUrl,
+              aggregateRating,
             }),
             breadcrumbSchema([
               { name: 'Spaces', path: '/spaces' },
