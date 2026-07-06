@@ -9,10 +9,13 @@ import { ModuleSection } from './section'
 // body). The SHORT intro is the separate `about` block.
 export function StoryBlock({
   data,
+  header,
   authoredBody,
 }: {
   space: SpaceProfileContext
   data: SpaceContentData
+  /** The owner's authored eyebrow/title override (undefined = keep the default). */
+  header?: { eyebrow?: string; heading?: string }
   /** The owner's inline-authored Story text (from the block's content bag); precedence over the data bag. */
   authoredBody?: string
 }) {
@@ -20,7 +23,7 @@ export function StoryBlock({
   if (!body) return null
   return (
     <ModuleSection anchor="story">
-      <SpaceAboutBlock eyebrow="About" heading="Our story" body={body} />
+      <SpaceAboutBlock eyebrow={header?.eyebrow ?? 'About'} heading={header?.heading ?? 'Our story'} body={body} />
     </ModuleSection>
   )
 }

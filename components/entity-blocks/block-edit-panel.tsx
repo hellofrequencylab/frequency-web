@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
-import { fieldsForBlock, type BlockStyle, type FieldDef } from '@/lib/entity-blocks/block-content'
+import { blockDrawsOwnCard, fieldsForBlock, type BlockStyle, type FieldDef } from '@/lib/entity-blocks/block-content'
 
 /** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
  *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
@@ -12,7 +12,7 @@ export type UploadImage = (file: File) => Promise<{ url: string } | { error: str
 
 // THE INLINE BLOCK EDIT PANEL (ADR-528). Expands under a block in the in-rail builder when the operator
 // clicks it. CONTENT blocks get their authored fields (text / link / image / ...); DATA blocks get an
-// on/off switch + a couple of quick fields (title / intro) + a link to that feature's own manager. Every
+// on/off switch + its real eyebrow / title (+ body for About/Story) + a link to that feature's own manager. Every
 // block gets the STYLE controls (card background, spacing, alignment). Controlled: it holds no state, it
 // reads the block's current content/style bag and calls back on every change (the builder applies it to
 // the shared store, which repaints + debounce-saves). Semantic DAWN tokens, no hex, voice canon.
@@ -82,6 +82,11 @@ export function BlockEditPanel({
           onChange={(v) => setField(field.key, v)}
         />
       ))}
+
+      {/* Background on/off (item 6): a PROMINENT per-box control, not buried in Style. Default reflects
+          what is actually on the page — a self-carding box (a data section, a Callout) reads on; a plain
+          content block reads off. Turning it off strips the white card; on gives a bare block one. */}
+      <BackgroundToggle id={id} style={style} onChange={onStyle} />
 
       {/* DATA block: deep-edit link to the feature's own manager */}
       {isData && editHref && (
@@ -408,11 +413,47 @@ function LinksEditor({
   )
 }
 
-/** The per-block style controls: background on/off, spacing step, alignment. */
+/** The prominent per-box Background control (item 6). A self-carding box (data section / Callout / Features)
+ *  defaults ON and turning it off strips its white card; a plain content block defaults OFF and turning it
+ *  on adds one. The toggle reads true to what is on the page, so `background: absent` never looks wrong. */
+function BackgroundToggle({
+  id,
+  style,
+  onChange,
+}: {
+  id: string
+  style: BlockStyle
+  onChange: (next: BlockStyle) => void
+}) {
+  const selfCards = blockDrawsOwnCard(id)
+  const checked = selfCards ? style.background !== false : style.background === true
+  const set = (on: boolean) => {
+    const next: BlockStyle = { ...style }
+    // Self-carding: on = default (absent), off = explicit false (strip). Plain block: on = explicit true
+    // (add a card), off = default (absent). This keeps the persisted blob minimal (ADR-528).
+    const bg = selfCards ? (on ? undefined : false) : on ? true : undefined
+    if (bg === undefined) delete next.background
+    else next.background = bg
+    onChange(next)
+  }
+  return (
+    <label className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+      <span className="text-xs font-semibold text-text">Background</span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => set(e.target.checked)}
+        className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+      />
+    </label>
+  )
+}
+
+/** The per-block style controls: spacing step + alignment (Background is its own prominent control above). */
 function StyleControls({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
   const set = (patch: Partial<BlockStyle>) => {
     const next: BlockStyle = { ...style, ...patch }
-    if (!next.background) delete next.background
+    if (next.background === undefined) delete next.background
     if (next.pad === 'none') delete next.pad
     if (next.align === 'start') delete next.align
     onChange(next)
@@ -425,15 +466,6 @@ function StyleControls({ style, onChange }: { style: BlockStyle; onChange: (next
         Style
       </summary>
       <div className="mt-2 space-y-2">
-        <label className="flex items-center justify-between gap-2">
-          <span className="text-xs text-text">White background</span>
-          <input
-            type="checkbox"
-            checked={style.background === true}
-            onChange={(e) => set({ background: e.target.checked })}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-          />
-        </label>
         <Segmented
           aria="Spacing"
           options={[

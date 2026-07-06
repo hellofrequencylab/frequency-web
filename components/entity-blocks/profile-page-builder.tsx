@@ -28,8 +28,6 @@ import {
   STARTER_LAYOUTS,
   maxColumnsForKind,
   type RowDef,
-  type RowColumns,
-  type RowRatio,
   type StarterId,
 } from '@/lib/entity-blocks/layout'
 import {
@@ -44,8 +42,6 @@ import {
   unhideBlock,
   removeBlock,
   nudgeBox,
-  setBlockContent,
-  setBlockStyle,
   placedIds,
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
@@ -127,10 +123,11 @@ export function EntityPageBuilder({
   const dragRow = useRef<string | null>(null)
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Content / style edits change what a block RENDERS (not just where it sits), so the server-rendered
-  // live-preview nodes need to re-render. Debounce a router.refresh past the store's save window so the
-  // preview reconciles after the edit persists (structural edits stay instant and never refresh).
-  const refreshSoon = useCallback(() => {
+  // A DATA block's header/body is server-rendered from the space's LIVE data (offerings, events, team...),
+  // so an authored eyebrow/title/body edit to one cannot repaint purely client-side. Debounce a single
+  // router.refresh PAST the store's save window to reconcile just those. CONTENT blocks + STYLE never touch
+  // this — they repaint instantly from the shared store (LiveProfileGrid), with no round-trip (ADR-542).
+  const refreshDataSoon = useCallback(() => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current)
     refreshTimer.current = setTimeout(() => router.refresh(), 900)
   }, [router])
@@ -217,13 +214,21 @@ export function EntityPageBuilder({
     mutate(moveRow(layout, from, to))
     say(`Row moved to position ${to + 1} of ${layout.rows.length}.`)
   }
-  function onSetColumns(rowId: string, n: 1 | 2 | 3 | 4) {
-    mutate(setRowColumns(layout, rowId, n))
-    say(`Row set to ${n} ${n === 1 ? 'column' : 'columns'}.`)
-  }
-  function onSetRatio(rowId: string, ratio: RowRatio) {
-    mutate(setRowRatio(layout, rowId, ratio))
-    say(ratio === 'lead' ? 'Row split to two thirds and one third.' : 'Row split evenly.')
+  // ONE explicit row-layout picker (ADR-542 item 5): Full (1 column), 50 / 50 (2 even columns), or
+  // Main / Side (2 columns, a wider lead column). Full MERGES the row back to one column (setRowColumns
+  // folds every box onto the kept column, so nothing is lost — the fix for a block stranded half-width).
+  // Both ops compose on ONE layout value so the ratio is not applied to a stale pre-widen snapshot.
+  function onSetRowLayout(rowId: string, choice: 'full' | 'even' | 'lead') {
+    let next = setRowColumns(layout, rowId, choice === 'full' ? 1 : 2)
+    if (choice !== 'full') next = setRowRatio(next, rowId, choice)
+    mutate(next)
+    say(
+      choice === 'full'
+        ? 'Row set to full width.'
+        : choice === 'lead'
+          ? 'Row split into a main and a side column.'
+          : 'Row split into two even columns.',
+    )
   }
 
   // ── Block actions ──
@@ -244,14 +249,18 @@ export function EntityPageBuilder({
     say(`${label(blockId)} ${hidden ? 'shown' : 'hidden'}.`)
     setOpenMenu(null)
   }
-  // Content / style edits (ADR-528): persist + refresh the preview (the block's render changes).
+  // Content / style edits (ADR-528 → ADR-542): merge against the FRESHEST store state (store.applyContent /
+  // applyStyle read the latest bag, not this render-time `layout` snapshot), so a burst of field edits never
+  // clobbers an earlier one ("only the title saved"). The live preview repaints INSTANTLY from the store
+  // (LiveProfileGrid renders content client-side) — no router.refresh, no server round-trip.
   function onEditContent(blockId: string, props: Record<string, unknown>) {
-    mutate(setBlockContent(layout, blockId, Object.keys(props).length ? props : undefined))
-    refreshSoon()
+    store?.applyContent(blockId, Object.keys(props).length ? props : undefined)
+    setCustomized(true)
+    if (entityBlockById(blockId)?.category === 'data') refreshDataSoon()
   }
   function onEditStyle(blockId: string, style: BlockStyle) {
-    mutate(setBlockStyle(layout, blockId, Object.keys(style).length ? style : undefined))
-    refreshSoon()
+    store?.applyStyle(blockId, Object.keys(style).length ? style : undefined)
+    setCustomized(true)
   }
   function onDelete(blockId: string) {
     mutate(removeBlock(layout, blockId))
@@ -670,25 +679,15 @@ export function EntityPageBuilder({
                   {isCollapsed ? <ChevronRight className="h-4 w-4" aria-hidden /> : <ChevronDown className="h-4 w-4" aria-hidden />}
                 </button>
 
-                {/* Segmented column-count control (capped at the kind's max: space = [1][2]). */}
-                <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label={`Columns for row ${index + 1}`}>
-                  {Array.from({ length: maxColumns }, (_, i) => (i + 1) as RowColumns).map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-pressed={row.columns === n}
-                      onClick={() => onSetColumns(row.id, n)}
-                      className={`min-h-[28px] px-2 py-1 text-2xs font-semibold ${
-                        row.columns === n ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
+                {/* ONE explicit row-layout picker (ADR-542 item 5): Full · 50/50 · Main/Side, each with a
+                    small diagram. Choosing Full merges the row back to a single column (nothing lost). */}
+                <RowLayoutPicker
+                  index={index}
+                  columns={row.columns}
+                  ratio={row.ratio}
+                  onChoose={(choice) => onSetRowLayout(row.id, choice)}
+                />
 
-                {/* The column split (1/2 · 2/3 · 1/3) lives in the row menu, not the strip, so a 2-column
-                    row's controls fit the narrow rail (the split is only meaningful on a 2-column row). */}
                 <span className="min-w-0 flex-1 truncate px-1 text-2xs text-subtle">
                   Row {index + 1}
                 </span>
@@ -726,40 +725,8 @@ export function EntityPageBuilder({
                   </button>
                   {openMenu === `row:${row.id}` && (
                     <Menu>
-                      {/* Column split (2-column rows only): TWO options only (ADR-536, owner directive) —
-                          50/50, or Main / Side (a wider main column on the LEFT). The legacy wider-right
-                          `trail` still renders if a layout already has it, but the control coerces it to
-                          Main / Side, so there is never a third choice to reason about. */}
-                      {row.columns === 2 && (
-                        <>
-                          <p className="px-2.5 pt-1.5 text-3xs font-semibold uppercase tracking-wide text-subtle">Column split</p>
-                          <div className="flex gap-1 px-2 pb-1.5 pt-1">
-                            {(
-                              [
-                                { r: 'even' as const, label: '50 / 50' },
-                                { r: 'lead' as const, label: 'Main / Side' },
-                              ]
-                            ).map(({ r, label: lbl }) => {
-                              // 50/50 is active when the row is even (or unset); Main / Side is active for
-                              // either wider-column ratio (lead or the legacy trail).
-                              const active = r === 'even' ? row.ratio !== 'lead' && row.ratio !== 'trail' : row.ratio === 'lead' || row.ratio === 'trail'
-                              return (
-                                <button
-                                  key={r}
-                                  type="button"
-                                  aria-pressed={active}
-                                  onClick={() => onSetRatio(row.id, r)}
-                                  className={`min-h-[32px] flex-1 rounded border text-2xs font-semibold ${
-                                    active ? 'border-primary bg-primary text-on-primary' : 'border-border text-muted hover:border-primary hover:text-text'
-                                  }`}
-                                >
-                                  {lbl}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </>
-                      )}
+                      {/* The row layout (Full · 50/50 · Main/Side) is the strip's own picker now; the menu
+                          keeps just the destructive action. */}
                       <MenuItem onClick={() => onRemoveRow(row.id, index)} danger>
                         <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete row
                       </MenuItem>
@@ -1183,6 +1150,65 @@ function MenuItem({ children, onClick, danger = false }: { children: React.React
     >
       {children}
     </button>
+  )
+}
+
+// ── The row layout picker (ADR-542 item 5) ──
+type RowLayoutChoice = 'full' | 'even' | 'lead'
+/** The three row layouts, each with a tiny visual diagram: Full (one column), 50 / 50 (two even), and
+ *  Main / Side (a wide lead column + a rail). Full always returns a split row to a single column. */
+function RowLayoutPicker({
+  index,
+  columns,
+  ratio,
+  onChoose,
+}: {
+  index: number
+  columns: number
+  ratio: string | undefined
+  onChoose: (choice: RowLayoutChoice) => void
+}) {
+  // Which layout is active. A 2-column row with a wider column (lead, or the legacy trail) reads as
+  // Main / Side; an even / unset 2-column row is 50 / 50; anything else is Full.
+  const active: RowLayoutChoice =
+    columns >= 2 ? (ratio === 'lead' || ratio === 'trail' ? 'lead' : 'even') : 'full'
+  const options: { choice: RowLayoutChoice; label: string; bars: string[] }[] = [
+    { choice: 'full', label: 'Full width', bars: ['flex-1'] },
+    { choice: 'even', label: '50 / 50', bars: ['flex-1', 'flex-1'] },
+    { choice: 'lead', label: 'Main and side', bars: ['flex-[2]', 'flex-1'] },
+  ]
+  return (
+    <div
+      className="flex overflow-hidden rounded-md border border-border"
+      role="group"
+      aria-label={`Layout for row ${index + 1}`}
+    >
+      {options.map(({ choice, label, bars }) => {
+        const on = active === choice
+        return (
+          <button
+            key={choice}
+            type="button"
+            aria-pressed={on}
+            aria-label={label}
+            title={label}
+            onClick={() => onChoose(choice)}
+            className={`flex min-h-[28px] w-8 items-center justify-center px-1.5 py-1 ${
+              on ? 'bg-primary' : 'bg-surface hover:bg-surface-elevated'
+            }`}
+          >
+            <span className="flex w-full gap-0.5" aria-hidden>
+              {bars.map((b, i) => (
+                <span
+                  key={i}
+                  className={`h-3 rounded-[1px] ${b} ${on ? 'bg-on-primary' : 'bg-border-strong'}`}
+                />
+              ))}
+            </span>
+          </button>
+        )
+      })}
+    </div>
   )
 }
 

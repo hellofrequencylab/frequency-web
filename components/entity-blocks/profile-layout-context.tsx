@@ -13,7 +13,12 @@ import { usePathname } from 'next/navigation'
 import type { RowDef } from '@/lib/entity-blocks/layout'
 import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import type { EntityKind } from '@/lib/entity-blocks/registry'
-import { deriveBench, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
+import {
+  deriveBench,
+  setBlockContent,
+  setBlockStyle,
+  type BuilderLayout,
+} from '@/lib/entity-blocks/rows-ops'
 import { adminScopeFor, railArchetypeFor } from '@/lib/layout/page-chrome'
 import { saveMemberGridLayout } from '@/app/(main)/settings/profile/spotlight-actions'
 import { saveSpaceGridLayout } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
@@ -57,6 +62,12 @@ interface EntityLayoutContextValue {
   bench: string[]
   /** Apply a new working layout: repaint now, persist debounced. */
   apply: (next: BuilderLayout) => void
+  /** Merge one block's authored content against the FRESHEST store state (ADR-542 fix for the stale-
+   *  closure drop: rapid field edits each merge over the latest bag, so no earlier field is clobbered).
+   *  Passing an empty/undefined bag clears the block's content. */
+  applyContent: (blockId: string, props: Record<string, unknown> | undefined) => void
+  /** Merge one block's style against the FRESHEST store state (same stale-closure fix as applyContent). */
+  applyStyle: (blockId: string, style: BlockStyle | undefined) => void
   /** Seed the store from the persisted layout. Idempotent — only the FIRST seed wins per mount. */
   seed: (rows: RowDef[], hidden: string[], content?: Record<string, Record<string, unknown>>, style?: Record<string, BlockStyle>) => void
   saving: boolean
@@ -89,6 +100,10 @@ export function EntityLayoutProvider({
   const pending = useRef<BuilderLayout | null>(null)
   // A ref guard so the FIRST seed wins (the builder + the live preview both try; whoever mounts first).
   const seededRef = useRef(false)
+  // A MIRROR of the current working layout, always the freshest value (state is async). The merge-safe
+  // content/style updaters read THIS, not a render-time snapshot, so a burst of field edits each fold over
+  // the latest bag — the fix for "only the title saved" (a stale captured layout clobbering earlier writes).
+  const latest = useRef<BuilderLayout>({ rows: [], hidden: [], content: {}, style: {} })
 
   const flush = useCallback(async () => {
     const next = pending.current
@@ -109,6 +124,7 @@ export function EntityLayoutProvider({
   const apply = useCallback(
     (next: BuilderLayout) => {
       seededRef.current = true
+      latest.current = { rows: next.rows, hidden: next.hidden, content: next.content ?? {}, style: next.style ?? {} }
       setRows(next.rows)
       setHidden(next.hidden)
       setContent(next.content ?? {})
@@ -121,6 +137,22 @@ export function EntityLayoutProvider({
     [flush],
   )
 
+  // Merge-safe content/style: fold the one field bag over the FRESHEST layout (latest ref), then apply.
+  // rows-ops setBlockContent/setBlockStyle are immutable + normalize, so this never clobbers a sibling
+  // field that settled a beat earlier (the stale-closure bug).
+  const applyContent = useCallback(
+    (blockId: string, props: Record<string, unknown> | undefined) => {
+      apply(setBlockContent(latest.current, blockId, props && Object.keys(props).length ? props : undefined))
+    },
+    [apply],
+  )
+  const applyStyle = useCallback(
+    (blockId: string, s: BlockStyle | undefined) => {
+      apply(setBlockStyle(latest.current, blockId, s && Object.keys(s).length ? s : undefined))
+    },
+    [apply],
+  )
+
   const seed = useCallback(
     (
       r: RowDef[],
@@ -130,6 +162,7 @@ export function EntityLayoutProvider({
     ) => {
       if (seededRef.current) return
       seededRef.current = true
+      latest.current = { rows: r, hidden: h, content: c ?? {}, style: s ?? {} }
       setRows(r)
       setHidden(h)
       setContent(c ?? {})
@@ -151,7 +184,7 @@ export function EntityLayoutProvider({
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, bench, apply, seed, saving, error }}
+      value={{ kind, seeded, rows, hidden, content, style, bench, apply, applyContent, applyStyle, seed, saving, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>

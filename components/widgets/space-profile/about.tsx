@@ -9,10 +9,13 @@ import { ModuleSection } from './section'
 // body). The longer narrative is the separate `story` block (profileData.about).
 export function AboutBlock({
   data,
+  header,
   authoredBody,
 }: {
   space: SpaceProfileContext
   data: SpaceContentData
+  /** The owner's authored eyebrow/title override (undefined = keep the default). */
+  header?: { eyebrow?: string; heading?: string }
   /** The owner's inline-authored About text (from the block's content bag); precedence over the data bag. */
   authoredBody?: string
 }) {
@@ -20,7 +23,7 @@ export function AboutBlock({
   if (!body) return null
   return (
     <ModuleSection anchor="about">
-      <SpaceAboutBlock eyebrow="About" heading="About this space" body={body} />
+      <SpaceAboutBlock eyebrow={header?.eyebrow ?? 'About'} heading={header?.heading ?? 'About this space'} body={body} />
     </ModuleSection>
   )
 }

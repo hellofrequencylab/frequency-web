@@ -12,12 +12,19 @@ import { ModuleSection } from './section'
 // space into a single cross-space browse surface. That needs a new cross-space read (a query over all
 // spaces' preferences.profileData.offerings filtered to isServiceListed) plus a new public route; it is
 // a documented follow-up, not built here. This per-space storefront is the read model it will reuse.
-export function OfferingsBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
+export function OfferingsBlock({
+  data,
+  header,
+}: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  header?: { eyebrow?: string; heading?: string }
+}) {
   const items = (data.profile?.offerings ?? []).filter(isServiceListed)
   if (items.length === 0) return null
   return (
     <ModuleSection anchor="offerings">
-      <SpaceOfferingsBlock eyebrow="Offerings" heading="What we offer" items={items} />
+      <SpaceOfferingsBlock eyebrow={header?.eyebrow ?? 'Offerings'} heading={header?.heading ?? 'What we offer'} items={items} />
     </ModuleSection>
   )
 }

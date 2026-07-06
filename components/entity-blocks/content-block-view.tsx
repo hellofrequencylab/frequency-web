@@ -17,15 +17,19 @@ function s(props: Record<string, unknown>, key: string): string {
  *  passthrough (no wrapper element beyond alignment) when the style is empty, so an unstyled block renders
  *  exactly as before. */
 export function BlockStyleFrame({ style, children }: { style: BlockStyle | undefined; children: ReactNode }) {
-  if (!style || (!style.background && !style.pad && !style.align)) return <>{children}</>
-  const pad =
-    style.pad === 'lg' ? 'p-8' : style.pad === 'md' ? 'p-5' : style.pad === 'sm' ? 'p-3' : style.background ? 'p-5' : ''
+  const bgOff = style?.background === false
+  const bgOn = style?.background === true
+  if (!style || (style.background === undefined && !style.pad && !style.align)) return <>{children}</>
+  const pad = style.pad === 'lg' ? 'p-8' : style.pad === 'md' ? 'p-5' : style.pad === 'sm' ? 'p-3' : bgOn ? 'p-5' : ''
   const align = style.align === 'center' ? 'text-center' : style.align === 'end' ? 'text-right' : ''
   // `background: true` fills the block with the plain WHITE surface (bg-surface) against the warm page
-  // canvas — a clean "white background on / off", not a second elevated/tinted card layer stacked on top.
-  const card = style.background ? 'rounded-2xl border border-border bg-surface' : ''
-  const cls = [card, pad, align].filter(Boolean).join(' ')
-  return <div className={cls}>{children}</div>
+  // canvas — a clean "white background on", not a second elevated/tinted card layer on top.
+  const card = bgOn ? 'rounded-2xl border border-border bg-surface' : ''
+  // `background: false` (item 6) STRIPS the white box a self-carding block draws: it flattens the block's
+  // own root card (border + fill + shadow) to transparent, so the section reads flush on the page canvas.
+  const strip = bgOff ? '[&>*]:!border-transparent [&>*]:!bg-transparent [&>*]:!shadow-none' : ''
+  const cls = [card, strip, pad, align].filter(Boolean).join(' ')
+  return cls ? <div className={cls}>{children}</div> : <>{children}</>
 }
 
 /** Render ONE authored content block by id from its sanitized props. Returns null when it has no content,

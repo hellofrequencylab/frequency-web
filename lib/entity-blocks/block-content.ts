@@ -10,15 +10,18 @@ import { ENTITY_BLOCKS, entityBlockById, type EntityBlockDef } from './registry'
 // Two shapes:
 //   • CONTENT blocks (heading/text/links/image/gallery/quote/embed/divider) — the operator authors their
 //     content inline; each field is edited in the rail and rendered by our own ContentBlockView.
-//   • DATA blocks (about/offerings/events/...) — bound to live data; they only carry two QUICK fields
-//     (a section title + an intro line) that override the block's default heading, plus on/off (hidden).
+//   • DATA blocks (about/offerings/events/...) — bound to live data; they carry an EYEBROW + TITLE that
+//     REPLACE the block's real rendered header (About/Story also carry a body), plus on/off (hidden).
 // Every block also carries an optional STYLE bag: a card background on/off, a spacing step, and alignment.
 
 // ── Style ────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Per-block presentation: an optional card background, a vertical spacing step, and text alignment. */
 export interface BlockStyle {
-  /** Wrap the block in a card surface (border + padded background). Absent / false = no card. */
+  /** The box's white card (border + padded surface). Three states (ADR-542 item 6):
+   *  - `true`   — force a card (a block that draws none, e.g. Text, gains one).
+   *  - `false`  — force NO card: strip the card a self-carding block draws (the owner's "turn the white box off").
+   *  - absent   — the block's own default (a self-carding block keeps its card; others stay flat). */
   background?: boolean
   /** Inner padding step. Absent === 'none'. */
   pad?: 'none' | 'sm' | 'md' | 'lg'
@@ -34,7 +37,9 @@ export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
   const o = raw as Record<string, unknown>
   const out: BlockStyle = {}
+  // Keep BOTH booleans: `true` forces a card, `false` forces none (item 6). Only `absent` = the default.
   if (o.background === true) out.background = true
+  else if (o.background === false) out.background = false
   if (typeof o.pad === 'string' && PAD_VALUES.has(o.pad) && o.pad !== 'none') out.pad = o.pad as BlockStyle['pad']
   if (typeof o.align === 'string' && ALIGN_VALUES.has(o.align) && o.align !== 'start')
     out.align = o.align as BlockStyle['align']
@@ -84,23 +89,26 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   divider: [],
 }
 
-/** The QUICK fields every DATA block carries (a title + intro override the block's default heading). */
-const DATA_QUICK_FIELDS: readonly FieldDef[] = [
-  { key: 'title', label: 'Section title', type: 'text', placeholder: 'Override the heading' },
-  { key: 'intro', label: 'Intro line', type: 'text', placeholder: 'A short line under the heading' },
+/** The header fields every DATA block carries (ADR-542): an EYEBROW (the small pre-text kicker) and a
+ *  TITLE (the heading), which REPLACE what the block actually renders — its real eyebrow + heading —
+ *  falling back to the block's default when left empty. This is the owner directive "edit the block's real
+ *  eyebrow / title", not a second header stacked above it. */
+const DATA_HEADER_FIELDS: readonly FieldDef[] = [
+  { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the title' },
+  { key: 'title', label: 'Title', type: 'text', placeholder: 'The section heading' },
 ]
 
-/** Per-id DATA-block field schemas that go BEYOND the quick title/intro (ADR-542). About + Story are the
+/** Per-id DATA-block field schemas that go BEYOND the eyebrow/title (ADR-542). About + Story are the
  *  space's identity prose: the owner writes the actual body right here (a `body` textarea, persisted in the
  *  authored bag and rendered by the block, taking precedence over the space's stored about/story data), so
- *  the section is never empty for want of a place to type. The quick title/intro still lead. */
+ *  the section is never empty for want of a place to type. The eyebrow/title still lead. */
 const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   about: [
-    ...DATA_QUICK_FIELDS,
+    ...DATA_HEADER_FIELDS,
     { key: 'body', label: 'About text', type: 'textarea', placeholder: 'A short intro to your space' },
   ],
   story: [
-    ...DATA_QUICK_FIELDS,
+    ...DATA_HEADER_FIELDS,
     { key: 'body', label: 'Story text', type: 'textarea', placeholder: 'The longer story of your space' },
   ],
 }
@@ -110,13 +118,41 @@ export function isContentBlock(block: EntityBlockDef): boolean {
   return block.category === 'content'
 }
 
+/** The content ids that draw their OWN white card (so the Background toggle DEFAULTS to on for them, and
+ *  turning it off strips that card). Every DATA block also self-cards. The plain content blocks (Text,
+ *  Heading, Links, Image, Gallery, Quote, Embed, Divider) draw no card, so their toggle defaults off and
+ *  turning it ON adds a frame card. */
+const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set(['callout', 'features'])
+
+/** Whether a block renders its own white card by default (item 6). Drives the Background toggle's default
+ *  state + write semantics so the control reads true to what is on the page. */
+export function blockDrawsOwnCard(id: string): boolean {
+  const block = entityBlockById(id)
+  if (!block) return false
+  return block.category === 'data' || SELF_CARDING_CONTENT_IDS.has(id)
+}
+
 /** The editable fields for a block id: the content schema for a content block, the quick fields for a data
  *  block, or [] for an unknown id. */
 export function fieldsForBlock(id: string): readonly FieldDef[] {
   const block = entityBlockById(id)
   if (!block) return []
   if (isContentBlock(block)) return CONTENT_FIELDS[id] ?? []
-  return DATA_BLOCK_FIELDS[id] ?? DATA_QUICK_FIELDS
+  return DATA_BLOCK_FIELDS[id] ?? DATA_HEADER_FIELDS
+}
+
+/** The owner's authored header OVERRIDE for a DATA block: the `eyebrow` field maps to the block's real
+ *  eyebrow, the `title` field to its real heading. Each is undefined when blank, so the block keeps its own
+ *  default (the wrapper owns the fallback copy — one source, no drift). Pure; used by the render path so a
+ *  data block draws the owner's real header instead of a separate one stacked above it (ADR-542). */
+export function resolveDataHeader(
+  id: string,
+  props: Record<string, unknown> | undefined,
+): { eyebrow?: string; heading?: string } {
+  void id
+  const eyebrow = typeof props?.eyebrow === 'string' && props.eyebrow.trim() ? props.eyebrow.trim() : undefined
+  const heading = typeof props?.title === 'string' && props.title.trim() ? props.title.trim() : undefined
+  return { eyebrow, heading }
 }
 
 // ── URL safety ────────────────────────────────────────────────────────────────────────────────────────

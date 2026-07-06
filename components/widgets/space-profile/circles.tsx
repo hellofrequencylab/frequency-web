@@ -5,12 +5,19 @@ import { ModuleSection } from './section'
 
 // CIRCLES — the space's live active community circles. Reads the list off the data bag;
 // FAIL-SAFE: no active circles, no section.
-export function CirclesBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
+export function CirclesBlock({
+  data,
+  header,
+}: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  header?: { eyebrow?: string; heading?: string }
+}) {
   const circles = data.community ?? []
   if (circles.length === 0) return null
   return (
     <ModuleSection anchor="circles">
-      <SpaceCommunityBlock eyebrow="Community" heading="Circles" circles={circles} />
+      <SpaceCommunityBlock eyebrow={header?.eyebrow ?? 'Community'} heading={header?.heading ?? 'Circles'} circles={circles} />
     </ModuleSection>
   )
 }

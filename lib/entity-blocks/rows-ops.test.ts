@@ -164,6 +164,49 @@ describe('setBlockContent / setBlockStyle (ADR-528)', () => {
   it('ignores an unknown block id', () => {
     expect(setBlockContent(base(), 'nope', { title: 'x' })).toEqual(base())
   })
+
+  // ADR-542 item 8 (the "only the title saved" bug): the store's applyContent folds each field edit over
+  // the FRESHEST layout (a ref), so a burst of edits accumulates every field instead of the last write
+  // clobbering the earlier ones. This models that: each write reads the RESULT of the previous (as the
+  // ref does), and every field survives.
+  it('accumulates a burst of field edits when each merges over the latest layout (stale-closure fix)', () => {
+    let layout = base()
+    const fields: Array<[string, unknown]> = [
+      ['title', 'Join us'],
+      ['body', 'Come along'],
+      ['buttonLabel', 'Book'],
+      ['buttonUrl', 'https://x.com/book'],
+      ['image', 'https://x.com/a.jpg'],
+    ]
+    // Simulate the panel firing one field at a time, each folding the single key over the LATEST bag.
+    for (const [key, value] of fields) {
+      const merged = { ...(layout.content?.callout ?? {}), [key]: value }
+      layout = setBlockContent(layout, 'callout', merged)
+    }
+    expect(layout.content?.callout).toEqual({
+      title: 'Join us',
+      body: 'Come along',
+      buttonLabel: 'Book',
+      buttonUrl: 'https://x.com/book',
+      image: 'https://x.com/a.jpg',
+    })
+  })
+
+  // The bug it replaces: folding each field over a STALE snapshot (captured once) keeps only the LAST
+  // field written — proof the "merge against the freshest state" contract is what saves the other fields.
+  it('a stale captured snapshot drops every field but the last (the bug being fixed)', () => {
+    const snapshot = base() // captured once, never updated (the render-time closure)
+    let layout = base()
+    for (const [key, value] of [
+      ['title', 'Join us'],
+      ['body', 'Come along'],
+      ['buttonLabel', 'Book'],
+    ] as Array<[string, unknown]>) {
+      // Each write merges over the STALE snapshot's (empty) callout bag → only this one key.
+      layout = setBlockContent(layout, 'callout', { ...(snapshot.content?.callout ?? {}), [key]: value })
+    }
+    expect(layout.content?.callout).toEqual({ buttonLabel: 'Book' })
+  })
 })
 
 describe('setRowRatio', () => {

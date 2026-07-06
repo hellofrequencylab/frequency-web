@@ -8,7 +8,14 @@ import { ModuleSection } from './section'
 // "Find us online" is links-only and the rating stands on its own. When the operator has set a rating it
 // renders a compact rating card; otherwise it stays the on-brand "coming soon" card (member reviews are
 // still off, owner decision). FAIL-SAFE: reads the central profile data, renders nothing broken.
-export function ReviewsBlock({ data }: { space: SpaceProfileContext; data: SpaceContentData }) {
+export function ReviewsBlock({
+  data,
+  header,
+}: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  header?: { eyebrow?: string; heading?: string }
+}) {
   // The operator-entered rating is a display string, e.g. "4.8" (+ an optional "126 reviews" count).
   const ratingStr = data.profile?.rating?.trim()
   const count = data.profile?.ratingCount?.trim()
@@ -19,6 +26,16 @@ export function ReviewsBlock({ data }: { space: SpaceProfileContext; data: Space
     return (
       <ModuleSection anchor="reviews">
         <div className="rounded-2xl border border-border bg-surface p-6">
+          {(header?.eyebrow || header?.heading) && (
+            <div className="mb-4">
+              {header?.eyebrow && (
+                <p className="text-2xs font-bold uppercase tracking-[0.2em] text-primary-strong">{header.eyebrow}</p>
+              )}
+              {header?.heading && (
+                <h2 className="mt-1.5 text-xl font-bold tracking-tight text-text sm:text-2xl">{header.heading}</h2>
+              )}
+            </div>
+          )}
           <div className="flex items-baseline gap-3">
             <span className="text-4xl font-bold text-text">{ratingStr}</span>
             <span className="flex" aria-hidden>
