@@ -85,14 +85,17 @@ interface RawMeter {
  *  feature set; a feature with no natural quantity is NOT here (see NON_METERED_FEATURES). */
 const RAW_METERS: Record<string, RawMeter> = {
   // ── Space functions (plan axis: free < business · ADR-552) ───────────────────────────────────────
+  // The FREE allowances are the docs/BUSINESS-MODEL-PLAN §2 numbers (usage becomes the paywall);
+  // Business is high/unlimited (null) except the two real cost dials (email sends, AI), which stay a
+  // high step. Everything is still dormant while `billing_live` is OFF (withinAllowance short-circuits).
   space_crm: {
     axis: 'plan',
     title: 'CRM',
     dimension: 'Contacts',
     unit: 'contacts',
     period: null,
-    // @placeholder contact caps — owner sets real numbers before go-live.
-    allowances: { free: 100, business: null },
+    // Free: 250 contacts (activation → scale lever, §2). Business: unlimited.
+    allowances: { free: 250, business: null },
   },
   space_email: {
     axis: 'plan',
@@ -100,8 +103,53 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Email sends',
     unit: 'sends',
     period: 'month',
-    // @placeholder monthly send volume — owner sets real numbers before go-live.
-    allowances: { free: 200, business: 50_000 },
+    // Free: 300 sends / mo (§2). Business: a high step (email is a real cost dial, not unlimited · §2).
+    allowances: { free: 300, business: 25_000 },
+  },
+  space_bookings: {
+    axis: 'plan',
+    title: 'Bookings',
+    dimension: 'Bookings',
+    unit: 'bookings',
+    period: 'month',
+    // Free: 15 bookings / mo (activation lever, §2). Business: unlimited.
+    allowances: { free: 15, business: null },
+  },
+  space_journey: {
+    axis: 'plan',
+    title: 'Journey enrollees',
+    dimension: 'Active enrollees',
+    unit: 'enrollees',
+    period: null,
+    // Free: 10 active enrollees (activation lever, §2). Business: unlimited.
+    allowances: { free: 10, business: null },
+  },
+  space_memberships: {
+    axis: 'plan',
+    title: 'Memberships',
+    dimension: 'Active memberships',
+    unit: 'members',
+    period: null,
+    // Free: 10 active members, one tier (scale lever, §2). Business: unlimited, multi-tier.
+    allowances: { free: 10, business: null },
+  },
+  space_tickets: {
+    axis: 'plan',
+    title: 'Tickets',
+    dimension: 'Tickets',
+    unit: 'tickets',
+    period: null,
+    // Free: 50 tickets across one event (scale lever, §2). Business: unlimited.
+    allowances: { free: 50, business: null },
+  },
+  space_qr: {
+    axis: 'plan',
+    title: 'QR codes',
+    dimension: 'QR codes',
+    unit: 'codes',
+    period: null,
+    // Free: 3 QR codes (scale lever, §2). Business: unlimited.
+    allowances: { free: 3, business: null },
   },
   space_automation: {
     axis: 'plan',
@@ -109,8 +157,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Active automations',
     unit: 'automations',
     period: null,
-    // @placeholder active-automation counts — owner sets real numbers before go-live.
-    allowances: { free: 1, business: null },
+    // Free: no automations (§2: "1 pipeline, no automations"). Business: unlimited.
+    allowances: { free: 0, business: null },
   },
   space_team: {
     axis: 'plan',
@@ -118,8 +166,8 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Team seats',
     unit: 'seats',
     period: null,
-    // @placeholder seat counts — owner sets real numbers before go-live.
-    allowances: { free: 1, business: 25 },
+    // Free: 1 seat (§2). Business: unlimited, billed per seat (§2: +$9 / seat / mo).
+    allowances: { free: 1, business: null },
   },
   space_multi_pipeline: {
     axis: 'plan',
@@ -127,18 +175,27 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Pipelines',
     unit: 'pipelines',
     period: null,
-    // @placeholder pipeline counts — owner sets real numbers before go-live.
+    // Free: 1 pipeline (§2). Business: unlimited.
     allowances: { free: 1, business: null },
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
+  space_vera: {
+    axis: 'plan',
+    title: 'Vera',
+    dimension: 'Vera messages',
+    unit: 'messages',
+    period: 'day',
+    // Free: ~10 Vera messages / day (§2; mirrors PRICING_DEFAULTS.vera_free_daily_cap). Business: more.
+    allowances: { free: 10, business: 200 },
+  },
   space_crm_playbooks: {
     axis: 'plan',
     title: 'Governed playbooks',
     dimension: 'Playbook runs',
     unit: 'runs',
     period: 'month',
-    // @placeholder monthly playbook auto-runs — owner sets real numbers before go-live.
-    allowances: { free: 20, business: 5_000 },
+    // Free: no playbooks (§2: free AI is suggest-only, no autonomous playbooks). Business: a high step.
+    allowances: { free: 0, business: 5_000 },
   },
   space_crm_resonance_ai: {
     axis: 'plan',
@@ -146,7 +203,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     dimension: 'Resonance matches',
     unit: 'matches',
     period: 'month',
-    // @placeholder monthly AI resonance matches — owner sets real numbers before go-live.
+    // Free: read-only wedge scoring; Business: the full Resonance Graph, a high step (AI is a cost dial).
     allowances: { free: 10, business: 2_000 },
   },
   // ── Personal membership (tier axis: free < crew) ─────────────────────────────────────────────────

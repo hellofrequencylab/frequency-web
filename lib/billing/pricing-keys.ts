@@ -81,35 +81,58 @@ export function asSpacePlanKey(plan: SpacePlan | string | null | undefined): Spa
   return (SPACE_PLAN_KEYS as readonly string[]).includes(plan ?? '') ? (plan as SpacePlanKey) : null
 }
 
-/** The take-rate basis points key in pricing_settings.take_rate for a space plan. PURE (ADR-552).
- *  Business and Nonprofit have explicit bps; a free/legacy/unknown plan defaults to the Business rate
- *  (the paid entry rate) so a misconfigured space never charges a 0% (under-collect) fee. */
+/** The take-rate basis points in pricing_settings.take_rate for a space, keyed on PAYING-STATE, not the
+ *  plan label (ADR-552). In the collapsed model a free space and a paying Business can BOTH carry
+ *  spaces.plan = 'business' (free-vs-paid is a usage state within Business), so the rate cannot key on
+ *  the label alone: it turns on whether the space has a LIVE paid subscription (`isPaying`). PURE.
+ *
+ *   - Non Profit → nonprofit_bps (a verified-501c3 plan is inherently paid).
+ *   - Business → business_bps when paying (a live subscription item), else the higher free_bps.
+ *   - free / legacy / unknown plan → free_bps (the higher rate). Never under-collect: an un-resolved or
+ *     not-paying space pays the HIGHER free rate, so a misconfiguration over-collects, never charges 0%. */
 export function takeRateBpsForPlan(
   plan: SpacePlan | string | null | undefined,
-  takeRate: { business_bps: number; nonprofit_bps: number },
+  takeRate: { free_bps: number; business_bps: number; nonprofit_bps: number },
+  isPaying = false,
 ): number {
   switch (asSpacePlanKey(plan)) {
     case 'nonprofit':
       return takeRate.nonprofit_bps
     case 'business':
-      return takeRate.business_bps
+      // A Business pays the lower rate only with a live paid subscription; a free Business pays free_bps.
+      return isPaying ? takeRate.business_bps : takeRate.free_bps
     default:
-      // free / legacy / unknown plan: no published rate → fall back to the Business rate so a
-      // misconfigured space never charges a 0% (under-collect) fee.
-      return takeRate.business_bps
+      // free / legacy / unknown plan: no live paid subscription → the higher free rate (never
+      // under-collect; the free rate is now the HIGHER of the two).
+      return takeRate.free_bps
   }
 }
 
-/** The application-fee cents on a gross charge for a space plan's take-rate. PURE (no I/O).
+/** The application-fee cents on a gross charge for a space's take-rate, by paying-state. PURE (no I/O).
  *  Floors fractional cents so the recipient is never short-changed (mirrors platformFeeCents). */
 export function takeRateCents(
   grossCents: number,
   plan: SpacePlan | string | null | undefined,
-  takeRate: { business_bps: number; nonprofit_bps: number },
+  takeRate: { free_bps: number; business_bps: number; nonprofit_bps: number },
+  isPaying = false,
 ): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
-  const bps = takeRateBpsForPlan(plan, takeRate)
+  const bps = takeRateBpsForPlan(plan, takeRate, isPaying)
   return Math.floor((grossCents * bps) / 10000)
+}
+
+/** The monthly take-rate saving (cents) a not-yet-paying space would get on paid Business: the bps
+ *  delta (free rate minus the paid Business rate) applied to its trailing monthly processed volume.
+ *  PURE (ADR-552, the self-funding trigger). Returns 0 when the delta or the volume is non-positive, so
+ *  the "you'd have saved $X" nudge only ever shows a real, positive saving. Floors to whole cents. */
+export function monthlyTakeRateSavingsCents(
+  trailingVolumeCents: number,
+  takeRate: { free_bps: number; business_bps: number },
+): number {
+  if (!Number.isFinite(trailingVolumeCents) || trailingVolumeCents <= 0) return 0
+  const deltaBps = takeRate.free_bps - takeRate.business_bps
+  if (deltaBps <= 0) return 0
+  return Math.floor((trailingVolumeCents * deltaBps) / 10000)
 }
 
 /** The price key a member should be charged at, honoring the founder lock. PURE selection logic

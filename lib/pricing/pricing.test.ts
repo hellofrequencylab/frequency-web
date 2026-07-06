@@ -250,11 +250,12 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
   })
 
-  it('take-rate decreases from Business to Non Profit (5% > 3%)', () => {
+  it('take-rate: free usage 5%, paying Business + Non Profit 3% (ADR-552 Phase 3)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    expect(t.business_bps).toBe(500)
+    expect(t.free_bps).toBe(500) // free usage pays the higher rate (the self-funding trigger)
+    expect(t.business_bps).toBe(300) // a paying Business pays the lower rate
     expect(t.nonprofit_bps).toBe(300)
-    expect(t.business_bps).toBeGreaterThan(t.nonprofit_bps)
+    expect(t.free_bps).toBeGreaterThan(t.business_bps)
   })
 
   it('vera free cap is the spec value (10/day)', () => {

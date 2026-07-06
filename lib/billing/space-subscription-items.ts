@@ -188,6 +188,36 @@ export async function persistSpaceSubscriptionItems(
   }
 }
 
+/** Does a Space have a LIVE paid subscription right now? The paying-state signal the take-rate keys on
+ *  (ADR-552): a free Business and a paying Business can share spaces.plan = 'business' (free-vs-paid is a
+ *  usage state within Business), so the take-rate cannot key on the plan label alone. TRUE when any
+ *  space_subscription_items row for the Space is in a live status (active / trialing / past_due); a
+ *  canceled / pending / absent row reads NOT paying. Service-role; FAIL-SAFE to FALSE — an error reads
+ *  NOT paying, so the space pays the higher free rate (over-collect, never under-collect). */
+export async function spaceIsPaying(spaceId: string | null | undefined): Promise<boolean> {
+  if (!spaceId) return false
+  try {
+    const db = createAdminClient()
+    const { data } = (await (db as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (c1: string, v1: string) => {
+            in: (c2: string, vals: string[]) => { limit: (n: number) => Promise<{ data: unknown[] | null }> }
+          }
+        }
+      }
+    })
+      .from('space_subscription_items')
+      .select('id')
+      .eq('space_id', spaceId)
+      .in('status', ['active', 'trialing', 'past_due'])
+      .limit(1)) as { data: unknown[] | null }
+    return Array.isArray(data) && data.length > 0
+  } catch {
+    return false
+  }
+}
+
 /** Read a Space's grandfathered locked price id for a given DB item_key (or null when none/lapsed).
  *  The checkout path re-bills this id so a founding subscriber keeps their founding rate on a renewal /
  *  add-on toggle. Service-role; FAIL-SAFE to null (no lock -> pay the current price). */

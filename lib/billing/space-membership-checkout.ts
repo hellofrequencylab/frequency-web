@@ -14,6 +14,7 @@ import { billingLive } from '@/lib/pricing/settings'
 import { asSpacePlan } from '@/lib/pricing/plans'
 import { getConnectStatus } from './connect'
 import { spaceTakeRateCents } from './fees'
+import { spaceIsPaying } from './space-subscription-items'
 
 export interface SpaceMembershipCheckoutResult {
   url?: string
@@ -68,8 +69,9 @@ export async function createSpaceMembershipCheckout(
     const amount = Math.round(tier.price_cents ?? 0)
     if (!Number.isFinite(amount) || amount <= 0) return { reason: 'free_tier' } // a $0 tier takes no charge (v1 join path)
 
-    // The application fee is the SPACE plan's take-rate (8/5/3%), read fail-safe from pricing_settings.
-    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan))
+    // The application fee is the SPACE's take-rate for its paying-state, read fail-safe from
+    // pricing_settings: a free space pays the higher free rate, a paying Business the lower rate (ADR-552).
+    const fee = await spaceTakeRateCents(amount, asSpacePlan(space.plan), await spaceIsPaying(spaceId))
     const interval: 'month' | 'year' = tier.interval === 'year' ? 'year' : 'month'
 
     const metadata = { kind: 'space_membership', space_id: spaceId, tier_id: tierId, member_id: memberId }

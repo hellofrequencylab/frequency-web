@@ -13,6 +13,8 @@ import { SeatCounter } from '@/components/spaces/seat-counter'
 import { SectionHeader } from '@/components/ui/section-header'
 import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
+import { monthlyTakeRateSavingsCents } from '@/lib/billing/pricing-keys'
+import { spaceTrailingProcessedCents } from '@/lib/commerce/orders'
 import { GoBusinessCta } from './go-business'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
@@ -72,14 +74,23 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatUsage, billingIsLive] = await Promise.all([
+  const [values, businessSellable, seatUsage, billingIsLive, trailingVolumeCents] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
     getSeatUsage(space.id),
     billingLive(),
+    spaceTrailingProcessedCents(space.id),
   ])
 
   const isPaid = currentPlan !== 'free'
+
+  // The "you'd have saved $X" nudge (ADR-552, the self-funding trigger): the take-rate delta a free
+  // space would get on paid Business, applied to its trailing monthly processed volume. Whole dollars,
+  // shown only when it is a real, positive saving and they are not already paying. Plain voice, no
+  // "unlock", no em dashes (CONTENT-VOICE.md). Volume is sourced from settled commerce orders (the one
+  // per-space money read that exists); it undercounts ticket/tip/dues channels until those are wired.
+  const savingsCents = monthlyTakeRateSavingsCents(trailingVolumeCents, values.take_rate)
+  const savingsDollars = Math.floor(savingsCents / 100)
 
   return (
     <>
@@ -122,6 +133,11 @@ export async function BillingBody({ slug }: { slug: string }) {
             read-only (the fieldset disables it). Already-paid Business spaces do not see the CTA. */}
         {!isPaid && (
           <fieldset disabled={staffViewing} className="contents">
+            {savingsDollars > 0 && (
+              <p className="mb-3 text-sm font-medium text-text">
+                You&rsquo;d have saved ${savingsDollars.toLocaleString('en-US')} this month on Business.
+              </p>
+            )}
             <GoBusinessCta slug={space.slug} sellable={businessSellable} trialDays={values.trial.days} />
           </fieldset>
         )}

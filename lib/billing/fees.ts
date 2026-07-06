@@ -23,15 +23,24 @@ export function platformFeeCents(grossCents: number): number {
 
 // ── Space-plan take-rate (Pricing P2, ADR-363) ────────────────────────────────────────────
 // A paid SPACE membership is a Connect destination charge; the platform's application fee is the
-// take-rate SET BY THE SPACE'S PLAN (5% Business / 3% Non Profit, editable at
-// /admin/pricing → pricing_settings.take_rate). The pure math lives in lib/billing/pricing-keys.ts
-// (takeRateCents); this IO wrapper reads the operator take-rate and applies it. FAIL-SAFE: any error
-// falls back to the seeded defaults via getPricingValues, never to a 0% fee that under-collects.
+// take-rate SET BY THE SPACE'S PAYING-STATE (5% free usage / 3% paying Business / 3% Non Profit,
+// editable at /admin/pricing → pricing_settings.take_rate). Free-vs-paid is a usage state within
+// Business (ADR-552), so the rate keys on `isPaying` (a live subscription item), not the plan label:
+// the caller resolves it via lib/billing/space-subscription-items.ts spaceIsPaying(spaceId). The pure
+// math lives in lib/billing/pricing-keys.ts (takeRateCents); this IO wrapper reads the operator
+// take-rate and applies it. FAIL-SAFE: any error falls back to the seeded defaults via
+// getPricingValues, never to a 0% fee that under-collects.
 
-/** The application fee (cents) on a paid space membership, by the SPACE's plan take-rate. Reads the
- *  operator pricing_settings (fail-safe to the seeded defaults). Server-only (dynamic imports keep
- *  the pure platformFee* helpers above client-safe). Floors fractional cents (recipient never short). */
-export async function spaceTakeRateCents(grossCents: number, plan: string | null | undefined): Promise<number> {
+/** The application fee (cents) on a paid space charge, by the SPACE's take-rate for its paying-state.
+ *  `isPaying` = the space has a LIVE paid subscription (resolve with spaceIsPaying); a free / not-paying
+ *  space pays the higher free rate. Reads the operator pricing_settings (fail-safe to the seeded
+ *  defaults). Server-only (dynamic imports keep the pure platformFee* helpers above client-safe). Floors
+ *  fractional cents (recipient never short). */
+export async function spaceTakeRateCents(
+  grossCents: number,
+  plan: string | null | undefined,
+  isPaying = false,
+): Promise<number> {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   try {
     const [{ getPricingValues }, { takeRateCents }] = await Promise.all([
@@ -39,7 +48,7 @@ export async function spaceTakeRateCents(grossCents: number, plan: string | null
       import('./pricing-keys'),
     ])
     const values = await getPricingValues()
-    return takeRateCents(grossCents, plan, values.take_rate)
+    return takeRateCents(grossCents, plan, values.take_rate, isPaying)
   } catch {
     // Fail-safe to the platform default fee rather than 0 (never under-collect on an error).
     return platformFeeCents(grossCents)
