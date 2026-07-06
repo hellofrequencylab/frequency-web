@@ -9,7 +9,7 @@ import { Input, Label, Textarea } from '@/components/ui/field'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isError } from '@/lib/action-result'
 import type { AudienceFilter } from '@/lib/spaces/audiences'
-import type { SpaceDripSequence } from '@/lib/spaces/automation'
+import type { SpaceDripSequence } from '@/lib/spaces/automation-types'
 import {
   createSpaceSequence,
   addSequenceStep,

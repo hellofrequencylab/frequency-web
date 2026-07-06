@@ -13,7 +13,7 @@ import {
   SPACE_AUTOMATION_TRIGGERS,
   type SpaceAutomationRule,
   type SpaceAutomationTrigger,
-} from '@/lib/spaces/automation'
+} from '@/lib/spaces/automation-types'
 import {
   createSpaceRule,
   setSpaceRuleEnabled,

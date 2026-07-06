@@ -23,63 +23,30 @@ import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { definitionToFilter, type AudienceFilter } from '@/lib/spaces/audiences'
+import { definitionToFilter } from '@/lib/spaces/audiences'
+import {
+  SPACE_AUTOMATION_TRIGGERS,
+  SPACE_AUTOMATION_ACTIONS,
+  type SpaceAutomationTrigger,
+  type SpaceAutomationAction,
+  type EmailAudienceConfig,
+  type SpaceAutomationRule,
+  type SpaceDripStep,
+  type SpaceDripSequence,
+} from '@/lib/spaces/automation-types'
 
-// ── Types + constants ───────────────────────────────────────────────────────────────────────────
-
-/** The events a Space rule can trigger on. Space-scoped analogues of the root engagement triggers,
- *  phrased in operator terms. Free-text in the DB (no enum) so adding a trigger needs no migration; the
- *  validator gates writes to this known list. Today these are the shape the UI offers; the runner that
- *  fires them off Space CRM events is a follow-on (the rule is persisted + editable now). */
-export const SPACE_AUTOMATION_TRIGGERS = [
-  'contact.created', // a new contact enters this Space's CRM
-  'contact.tagged', // a contact gains a tag
-  'deal.stage_changed', // a contact/deal moves pipeline stage
-  'member.joined', // someone joins a membership tier
-] as const
-export type SpaceAutomationTrigger = (typeof SPACE_AUTOMATION_TRIGGERS)[number]
-
-/** The actions a Space rule can take. Today only 'email_audience' (send an email to a resolved
- *  audience). Free-text in the DB; the validator gates writes to this list. */
-export const SPACE_AUTOMATION_ACTIONS = ['email_audience'] as const
-export type SpaceAutomationAction = (typeof SPACE_AUTOMATION_ACTIONS)[number]
-
-/** The action payload for 'email_audience': who to email + the email itself. */
-export interface EmailAudienceConfig {
-  audience: AudienceFilter
-  subject: string
-  body: string
-}
-
-/** One automation rule as the app consumes it (camelCased). */
-export interface SpaceAutomationRule {
-  id: string
-  name: string
-  triggerEvent: SpaceAutomationTrigger
-  actionType: SpaceAutomationAction
-  config: EmailAudienceConfig
-  enabled: boolean
-  createdAt: string | null
-}
-
-/** One step of a drip sequence (camelCased). */
-export interface SpaceDripStep {
-  id: string
-  order: number
-  delayHours: number
-  subject: string
-  body: string
-  enabled: boolean
-}
-
-/** One drip sequence with its ordered steps. */
-export interface SpaceDripSequence {
-  id: string
-  name: string
-  audience: AudienceFilter
-  enabled: boolean
-  steps: SpaceDripStep[]
-  createdAt: string | null
+// The client-safe types + constants live in ./automation-types (no server-only imports) so a CLIENT
+// component can import them without pulling this server-only IO module into the client bundle. This
+// module RE-EXPORTS them so server callers keep one import surface.
+export {
+  SPACE_AUTOMATION_TRIGGERS,
+  SPACE_AUTOMATION_ACTIONS,
+  type SpaceAutomationTrigger,
+  type SpaceAutomationAction,
+  type EmailAudienceConfig,
+  type SpaceAutomationRule,
+  type SpaceDripStep,
+  type SpaceDripSequence,
 }
 
 const MAX_NAME_LEN = 80
