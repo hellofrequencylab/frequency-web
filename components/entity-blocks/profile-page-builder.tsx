@@ -20,7 +20,6 @@ import {
 import {
   entityBlockById,
   profilePaletteForKind,
-  CORE_PROFILE_BLOCK_IDS,
   MEMBER_CHROME_BLOCK_IDS,
   type EntityKind,
 } from '@/lib/entity-blocks/registry'
@@ -55,7 +54,8 @@ import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { useProfileLayout } from './profile-layout-context'
 import { BlockPicker } from './block-picker'
-import { BlockEditPanel } from './block-edit-panel'
+import { BlockEditPanel, type UploadImage } from './block-edit-panel'
+import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -96,6 +96,7 @@ export function EntityPageBuilder({
   kind,
   loadRailData,
   editHrefFor,
+  uploadImage,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -104,6 +105,8 @@ export function EntityPageBuilder({
   loadRailData: () => Promise<BuilderRailData | null>
   /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
   editHrefFor?: (blockId: string) => string | null
+  /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
+  uploadImage?: UploadImage
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -171,18 +174,22 @@ export function EntityPageBuilder({
 
   const maxColumns = maxColumnsForKind(kind)
   const lockedSet = new Set(lockedIds)
-  // The curated best-practice palette (ADR-529): only the core blocks are offered.
+  // The curated best-practice palette (ADR-529 → ADR-542): only the per-kind palette blocks are offered.
+  // A SPACE never sees Heading/Text/Links/Image (KIND_PALETTE_EXCLUSIONS) — the connected sections + the
+  // free-form Callout / Image gallery / Features cover those.
   const palette = profilePaletteForKind(kind).filter((b) => !lockedSet.has(b.id))
+  const paletteIds = new Set(palette.map((b) => b.id))
   const layout: BuilderLayout = {
     rows: store.rows,
     hidden: store.hidden,
     content: store.content,
     style: store.style,
   }
-  // The derived bench, minus any function-locked block the space cannot offer yet + any non-core block
-  // retired from the curated palette (ADR-529) — a retired block that is still placed keeps rendering, but
-  // it is never offered back from the bench.
-  const bench = store.bench.filter((id) => !lockedSet.has(id) && CORE_PROFILE_BLOCK_IDS.has(id))
+  // The derived bench, narrowed to the SAME curated per-kind palette the picker offers (ADR-542). Using the
+  // per-kind palette (not the union CORE set) is what keeps a SPACE bench free of Heading/Text/Links/Image:
+  // those are in the union core set but excluded from the space palette. A retired/off-palette block that is
+  // still placed keeps rendering, but it is never offered back from the bench.
+  const bench = store.bench.filter((id) => paletteIds.has(id))
   const placed = placedIds(layout.rows)
 
   // Every column, as a move target (reading order) — powers the bench "Place in" (a column is a stack now,
@@ -315,7 +322,24 @@ export function EntityPageBuilder({
       return
     }
     const targetRow = layout.rows[ri + delta]
-    if (!targetRow) return
+    if (!targetRow) {
+      // At the top / bottom edge of the layout. A block SHARING its row (a 2-column row, or a stacked
+      // column) must never dead-end here (bug: "moved the Team box, cut to half size, now it's stuck") —
+      // give it a full-width escape by spawning a fresh 1-column row just beyond the edge and moving it
+      // there. A block already alone in its own full-width row at the edge is genuinely at the end (its
+      // up/down control is disabled), so nothing to do. Bails cleanly at the MAX_ROWS cap.
+      const soloFullWidth = layout.rows[ri].columns === 1 && stack.length === 1
+      if (soloFullWidth) return
+      const insertAt = delta < 0 ? ri : ri + 1
+      const withRow = addRow(layout, insertAt)
+      if (withRow.rows.length === layout.rows.length) {
+        say('That is the maximum number of sections.')
+        return
+      }
+      mutate(placeBlock(withRow, blockId, withRow.rows[insertAt].id, 0))
+      say(`${label(blockId)} moved to a new full-width section.`)
+      return
+    }
     const targetCol = Math.min(ci, targetRow.columns - 1)
     // Moving up drops the block at the FOOT of the target row's column; moving down at its HEAD.
     const at = delta < 0 ? (targetRow.cells[targetCol]?.length ?? 0) : 0
@@ -422,6 +446,7 @@ export function EntityPageBuilder({
         style={store.style[id] ?? {}}
         hidden={layout.hidden.includes(id)}
         editHref={editHrefFor?.(id) ?? null}
+        uploadImage={uploadImage}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
         onToggleHide={() => onToggleHide(id)}
@@ -851,11 +876,22 @@ export function SpacePageBuilder({ slug }: { slug: string }) {
       ? { matchId: d.slug, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: d.lockedIds }
       : null
   }, [slug])
+  // The block editor's image fields (Callout image, Image gallery) upload through the SAME owner-gated,
+  // service-role path as the space cover/logo (event-media bucket), so no browser Storage session is needed.
+  const uploadImage = useCallback<UploadImage>(
+    (file) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return uploadSpaceBlockImage(slug, fd)
+    },
+    [slug],
+  )
   return (
     <EntityPageBuilder
       pageId={slug}
       kind="space"
       loadRailData={load}
+      uploadImage={uploadImage}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

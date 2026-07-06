@@ -40,7 +40,12 @@ import { SPACE_CONTENT_BLOCKS, type SpaceContentBlockComponent } from './authore
 // mounts it with the operator's effective GRID, and the staff /profile-preview route mounts it the same
 // way. Both feed the function-only palette (blocksForKind('space')), so the two renders stay uniform.
 
-type BlockComponent = (props: { space: SpaceProfileContext; data: SpaceContentData }) => React.ReactNode
+type BlockComponent = (props: {
+  space: SpaceProfileContext
+  data: SpaceContentData
+  /** About/Story only (ADR-542): the owner's inline-authored body, taking precedence over the data bag. */
+  authoredBody?: string
+}) => React.ReactNode
 
 /** The id -> section component map (parity with the S1 PROFILE_BLOCKS registry ids). Adding a section
  *  is one row here + its block file. */
@@ -132,10 +137,14 @@ function renderSpaceBlock(
     const blockId = toProfileBlockId(id)
     if (!blockId) return null
     const Block = SPACE_PROFILE_BLOCKS[blockId]
+    // About + Story carry the owner's inline-authored body (ADR-542); it takes precedence over the data bag
+    // inside the block. Other data blocks ignore the prop.
+    const authoredBody =
+      (id === 'about' || id === 'story') && typeof contentProps?.body === 'string' ? contentProps.body : undefined
     inner = (
       <>
         <DataQuickHeader props={contentProps} />
-        <Block space={space} data={data} />
+        <Block space={space} data={data} authoredBody={authoredBody} />
       </>
     )
   }
