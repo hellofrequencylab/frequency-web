@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCircleCapabilities } from '@/lib/core/load-capabilities'
-import { surfacesFor } from '@/lib/admin/entities/registry'
+import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { CircleManageConsole } from './console'
+import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
 
-// The circle OWNER CONSOLE (ADR-441 EM1-2, Pass 1 first slice). The unified
-// `/{entity}/[id]/manage` Dashboard surface: a host (or a guide/mentor who leads the
-// parent hub/nexus, or staff) manages their circle here, organized by the 9-category
-// spine. Pass 1 composes Basics + Danger from the existing kit; later slices add the
-// rest of the spine (People needs a migration and is deferred).
+// The circle OWNER CONSOLE (ADR-441 EM1-2). The unified `/{entity}/[id]/manage` Dashboard
+// surface: a host (or a guide/mentor who leads the parent hub/nexus, or staff) manages
+// their circle here, organized by the 9-category spine. It renders the SAME module set the
+// standardized rail shows for a circle (resolveEntityConsole → appsForScope) via the shared
+// EntityManageConsole — the thin two-row `ENTITY_SURFACES` registry it used to compose
+// (Basics + Danger only) is retired, so the console no longer lags the rail.
 //
 // SECURITY: this is a Server Component, gated server-side on `circle.editSettings` via
 // the one capability resolver (getCircleCapabilities → resolveCapabilities). A viewer
@@ -42,11 +43,13 @@ export default async function CircleManagePage({
     .maybeSingle()
   if (!circle) notFound()
 
-  // GATE: resolve what the viewer can do on THIS circle. No edit gate ⇒ the console
-  // does not exist for them (notFound, not a redirect — we never reveal the route).
+  // GATE: resolve what the viewer can do on THIS circle. No manage module ⇒ the console
+  // does not exist for them (notFound, not a redirect — we never reveal the route). The
+  // gate resolves the SAME module set the console renders (resolveEntityConsole), so
+  // "reaches the console" and "sees at least one module" can never disagree.
   const caps = await getCircleCapabilities(circle.id)
-  const surfaces = surfacesFor('circle', caps)
-  if (surfaces.length === 0) notFound()
+  const modules = resolveEntityConsole({ kind: 'circle', id: circle.slug }, { caps })
+  if (modules.length === 0) notFound()
 
   const cap = circle.member_cap || 0
   const pct = cap > 0 ? Math.min(100, Math.round((circle.member_count / cap) * 100)) : 0
@@ -67,7 +70,7 @@ export default async function CircleManagePage({
         </>
       }
     >
-      <CircleManageConsole surfaces={surfaces} />
+      <EntityManageConsole caps={[...caps]} />
     </DashboardTemplate>
   )
 }

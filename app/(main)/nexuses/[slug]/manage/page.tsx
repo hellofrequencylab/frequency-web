@@ -2,15 +2,16 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getNexusCapabilities } from '@/lib/core/load-capabilities'
-import { surfacesFor } from '@/lib/admin/entities/registry'
+import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { NexusManageConsole } from './console'
+import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
 
-// The nexus OWNER CONSOLE (ADR-441 EM1-3). The unified `/{entity}/[id]/manage` surface,
-// rolled onto nexus from the circle template: the nexus's mentor (or a janitor) manages
-// it here, organized by the 9-category spine. Pass 1 composes Basics from the existing
-// settings module; Danger is header-only until nexus gets a delete action.
+// The nexus OWNER CONSOLE (ADR-441 EM1-3). The unified `/{entity}/[id]/manage` surface:
+// the nexus's mentor (or a janitor) manages it here, organized by the 9-category spine. It
+// renders the SAME module set the standardized rail shows for a nexus (resolveEntityConsole
+// → appsForScope) via the shared EntityManageConsole — including the nexus People / Layout
+// / Insights / Danger (archive) modules the thin `ENTITY_SURFACES` registry never surfaced.
 //
 // SECURITY: a Server Component gated server-side on `nexus.manage` via the one resolver
 // (getNexusCapabilities → resolveCapabilities). A viewer who cannot manage this nexus
@@ -38,8 +39,8 @@ export default async function NexusManagePage({
   if (!nexus) notFound()
 
   const caps = await getNexusCapabilities(nexus.id)
-  const surfaces = surfacesFor('nexus', caps)
-  if (surfaces.length === 0) notFound()
+  const modules = resolveEntityConsole({ kind: 'nexus', id: nexus.slug }, { caps })
+  if (modules.length === 0) notFound()
 
   const statusLabel = nexus.status.charAt(0).toUpperCase() + nexus.status.slice(1)
 
@@ -57,7 +58,7 @@ export default async function NexusManagePage({
         </>
       }
     >
-      <NexusManageConsole surfaces={surfaces} />
+      <EntityManageConsole caps={[...caps]} />
     </DashboardTemplate>
   )
 }

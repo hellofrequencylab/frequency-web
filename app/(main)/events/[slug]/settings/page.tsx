@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
-import { surfacesFor } from '@/lib/admin/entities/registry'
 import { DashboardTemplate } from '@/components/templates'
 import { EventManageConsole } from './console'
 
@@ -37,9 +36,10 @@ export default async function EventSettingsPage({
     .maybeSingle()
   if (!ev) notFound()
 
+  // GATE: only a viewer who can edit this event's settings reaches the console (notFound, not a redirect —
+  // we never reveal a private event via the route). Every surface's mutation re-checks the SAME capability.
   const caps = await getEventCapabilities(ev.id)
-  const surfaces = surfacesFor('event', caps)
-  if (surfaces.length === 0) notFound()
+  if (!caps.has('event.editSettings')) notFound()
 
   return (
     <DashboardTemplate
@@ -49,7 +49,7 @@ export default async function EventSettingsPage({
       back={{ href: `/events/${ev.slug}/manage`, label: 'Back to manage' }}
       width="default"
     >
-      <EventManageConsole surfaces={surfaces} eventId={ev.id} slug={ev.slug} />
+      <EventManageConsole eventId={ev.id} slug={ev.slug} />
     </DashboardTemplate>
   )
 }
