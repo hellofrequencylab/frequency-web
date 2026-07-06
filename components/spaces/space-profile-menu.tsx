@@ -71,7 +71,7 @@ export function SpaceProfileMenu({
       {/* The menu bar: pinned under the global header. A rule ABOVE it, and NONE under it (per design),
           over an opaque canvas backdrop so content scrolls cleanly beneath. */}
       <div className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 border-t border-border bg-canvas/95 backdrop-blur-sm">
-        <nav className="flex items-center gap-1 overflow-x-auto py-2">
+        <nav className="flex items-center gap-1 overflow-x-auto py-3 sm:py-2.5">
           {tabs.map((tab) => {
             const active = isActive(tab)
             return (
