@@ -141,3 +141,32 @@ describe('Module Manager (space.modules) + hide/family metadata', () => {
     }
   })
 })
+
+// ADR-546b (docs/MODULAR-MENU.md P3b): the RAIL presentation fields the manifest now carries, so the
+// standardized rail can render from SPACE_MODULES with its shipped band + bank layout byte-identical.
+describe('rail presentation metadata (priority + placement)', () => {
+  it('gives every module a numeric rail priority (within-band order)', () => {
+    for (const m of SPACE_MODULES) {
+      expect(typeof m.priority, `${m.id} needs a rail priority`).toBe('number')
+    }
+  })
+
+  it('banks exactly the back-office reach + growth destinations (QR · Email · Insights · Plan and usage)', () => {
+    const banked = SPACE_MODULES.filter((m) => m.placement === 'bank').map((m) => m.id).sort()
+    expect(banked).toEqual(['space.billing', 'space.comms', 'space.insights', 'space.reach'].sort())
+  })
+
+  it('never banks Danger (destructive is never a bottom-bank quick-link)', () => {
+    expect(spaceModuleById('space.danger')!.placement ?? 'inline').toBe('inline')
+  })
+
+  it('keeps Settings a late footer in the primary band (priority above the services)', () => {
+    // The rail priority differs from the catalog `order`: Settings sorts LAST in the primary band (a
+    // settings footer, not a headline), so its rail priority is high even though its catalog order is low.
+    const settings = spaceModuleById('space.settings')!
+    const services = ['space.people', 'space.crm', 'space.booking', 'space.services'].map(
+      (id) => spaceModuleById(id)!,
+    )
+    for (const s of services) expect(settings.priority!).toBeGreaterThan(s.priority!)
+  })
+})

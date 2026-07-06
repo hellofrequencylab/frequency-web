@@ -39,9 +39,17 @@ export interface OpenAdminBarDetail {
    *  space role, staff preview seeing all). The panel builds `canUseSpaceFn` from this list to gate the
    *  Space editor Apps. Serializable (a string[] of function keys). Absent ⇒ only the always-on floor. */
   spaceFns?: SpaceFunctionKey[]
+  /** For a `space` scope (modular menu P3b, ADR-546b): the owner's Module Manager menu overrides
+   *  (spaces.preferences.moduleMenu — the module `order` + `hidden` set, read fail-safe via
+   *  `readModuleMenuPrefs`), so the RAIL honors hiding + reordering exactly as the /manage console does.
+   *  Serializable (plain string arrays). Absent ⇒ the manifest's default (catalog) order + no hiding. */
+  moduleMenu?: { order?: string[]; hidden?: string[] }
 }
 
 /** Open the standardized admin bar, optionally pre-scoped. Client-only (uses `window`). */
 export function openAdminBar(detail?: OpenAdminBarDetail): void {
   window.dispatchEvent(new CustomEvent<OpenAdminBarDetail>(OPEN_ADMIN_BAR, { detail: detail ?? {} }))
 }
+
+/** A serializable Module Manager menu-overrides shape (order + hidden), reused by the Space trigger. */
+export type OpenAdminBarModuleMenu = NonNullable<OpenAdminBarDetail['moduleMenu']>

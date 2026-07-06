@@ -4,7 +4,7 @@ import { toAdminModule, toLayoutMeta, toElementDef } from './adapters'
 import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES } from '@/lib/widgets/modules'
 import { REGISTRY_NAMES, TEMPLATE_PILLARS } from '@/lib/library/element-catalog'
-import { SPACE_SURFACES } from '@/lib/admin/entities/registry'
+import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import { groupIntoTiers, tierForApp } from '@/lib/admin/modules/spine'
 
 // LP1 superset conformance + adapter round-trip (docs/LOOM-PLATFORM.md §7): every existing registry id
@@ -33,73 +33,60 @@ describe('editor superset ← ADMIN_MODULES', () => {
     }
   })
 
-  it('editor Apps are exactly ADMIN_MODULES + the Space surface lane (no extra editor Apps)', () => {
-    // The editor lane is ADMIN_MODULES (capability-gated) PLUS the Space surface lane (spaceType-scoped,
-    // spaceFunction/none-gated — ENTITY-MANAGEMENT / PR C). A Space surface is NOT an AdminModule (it lives
-    // outside the Capability spine), so it adds its own editor App keyed by id.
+  it('editor Apps are exactly ADMIN_MODULES + the Space module lane (no extra editor Apps)', () => {
+    // The editor lane is ADMIN_MODULES (capability-gated) PLUS the Space MODULE lane (spaceType-scoped,
+    // spaceFunction/none-gated). A Space module is NOT an AdminModule (it lives outside the Capability
+    // spine), so it adds its own editor App keyed by the module id. Modular menu P3b (ADR-546b): the lane
+    // now derives from the P0 module manifest (SPACE_MODULES) instead of the legacy SPACE_SURFACES.
     const editorIds = APPS.filter((a) => a.surfaces.editor).map((a) => a.id).sort()
-    const want = [...ADMIN_MODULES.map((m) => m.id), ...SPACE_SURFACES.map((s) => s.id)].sort()
+    const want = [...ADMIN_MODULES.map((m) => m.id), ...SPACE_MODULES.map((m) => m.id)].sort()
     expect(editorIds).toEqual(want)
   })
 })
 
-describe('Space editor lane ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C)', () => {
+describe('Space editor lane ← SPACE_MODULES (modular menu P3b, ADR-546b)', () => {
   const spaceEditorApps = APPS.filter(
     (a) => a.surfaces.editor && a.scopes.some((s) => s.on === 'spaceType'),
   )
 
-  it('one editor App per Space surface, keyed by the surface id', () => {
-    expect(spaceEditorApps.map((a) => a.id).sort()).toEqual(SPACE_SURFACES.map((s) => s.id).sort())
+  it('one editor App per Space module, keyed by the module id', () => {
+    expect(spaceEditorApps.map((a) => a.id).sort()).toEqual(SPACE_MODULES.map((m) => m.id).sort())
   })
 
-  it('bridges each surface onto the App gate: a functioned surface → spaceFunction, else none', () => {
-    for (const s of SPACE_SURFACES) {
-      const app = spaceEditorApps.find((a) => a.id === s.id)!
-      if (s.requiredFunction) {
-        expect(app.gate).toEqual({ system: 'spaceFunction', fn: s.requiredFunction })
+  it('bridges each module onto the App gate: a feature module → spaceFunction, a shell module → none', () => {
+    for (const m of SPACE_MODULES) {
+      const app = spaceEditorApps.find((a) => a.id === m.id)!
+      if (m.gate.kind === 'feature') {
+        expect(app.gate).toEqual({ system: 'spaceFunction', fn: m.gate.fn })
       } else {
         expect(app.gate).toEqual({ system: 'none' })
       }
-      // Placement is by Space TYPE (never a scopeKind) — this is the dormant {on:'spaceType'} plumbing.
-      expect(app.scopes.every((sc) => sc.on === 'spaceType')).toBe(true)
+      // Placement is by Space TYPE — every module applies to every type ('*'); the per-type shaping is the
+      // function gate (canUseSpaceFn), never a scopeKind.
+      expect(app.scopes).toEqual([{ on: 'spaceType', type: '*' }])
     }
   })
 
-  it('carries each surface `render` onto the editor App (inline-first rail, ADR-514)', () => {
-    for (const s of SPACE_SURFACES) {
-      const app = spaceEditorApps.find((a) => a.id === s.id)!
-      expect(app.surfaces.editor?.render, s.id).toBe(s.render)
+  it('maps each module `render` onto the editor App: inline → inline, panel/link → link', () => {
+    for (const m of SPACE_MODULES) {
+      const app = spaceEditorApps.find((a) => a.id === m.id)!
+      expect(app.surfaces.editor?.render, m.id).toBe(m.render === 'inline' ? 'inline' : 'link')
     }
   })
 
-  it('classifies config surfaces INLINE and every feature workflow as a LINK', () => {
+  it('classifies the shell config modules INLINE and every service / link module as a LINK', () => {
     // The owner directive (ADR-514): the standardized rail renders config inline ("everything in view")
-    // and links out ONLY for feature workflows. Basics / Mode / Page are config; the rest are workflows.
-    const renderById = new Map(SPACE_SURFACES.map((s) => [s.id, s.render]))
-    // Config surfaces render INLINE (Identity / Info / Settings / Mode / Page); every feature workflow LINKS
-    // out. Modular menu P1b (ADR-544b): the seven Offerings & money surfaces are independent link-rows, and
-    // autonomy + pipeline are gone (folded into CRM).
-    const INLINE = ['space.basics', 'space.branding', 'space.settings', 'space.mode', 'space.layout']
-    const LINK = [
-      'space.booking',
-      'space.memberships',
-      'space.donations',
-      'space.enroll',
-      'space.tickets',
-      'space.checkin',
-      'space.services',
-      'space.people',
-      'space.engage.crm',
-      'space.reach',
-      'space.comms',
-      'space.insights',
-      'space.billing',
-      'space.danger',
-    ]
-    for (const id of INLINE) expect(renderById.get(id), id).toBe('inline')
-    for (const id of LINK) expect(renderById.get(id), id).toBe('link')
-    // Every Space surface is accounted for above (no unclassified surface slipped in).
-    expect(SPACE_SURFACES.map((s) => s.id).sort()).toEqual([...INLINE, ...LINK].sort())
+    // and links out for every feature workflow. Identity / Info / Settings / Page mount inline editors;
+    // every other module (the services, QR, Email, Insights, Billing, the Module Manager, Danger) links out
+    // (a `panel` module renders a link-row whose body opens on-page via `?panel=`).
+    const INLINE = ['space.branding', 'space.basics', 'space.settings', 'space.layout']
+    for (const id of INLINE) {
+      expect(APPS.find((a) => a.id === id)?.surfaces.editor?.render, id).toBe('inline')
+    }
+    for (const app of spaceEditorApps) {
+      if (INLINE.includes(app.id)) continue
+      expect(app.surfaces.editor?.render, app.id).toBe('link')
+    }
   })
 })
 
@@ -115,11 +102,11 @@ describe('three-tier rail axis flows through the catalog', () => {
     }
   })
 
-  it('carries each Space surface tier/priority onto its editor App', () => {
-    for (const s of SPACE_SURFACES) {
-      const app = APPS.find((a) => a.id === s.id && a.surfaces.editor)!
-      expect(app.surfaces.editor?.tier, s.id).toBe(s.tier)
-      expect(app.surfaces.editor?.priority, s.id).toBe(s.priority)
+  it('carries each Space module tier/priority onto its editor App', () => {
+    for (const m of SPACE_MODULES) {
+      const app = APPS.find((a) => a.id === m.id && a.surfaces.editor)!
+      expect(app.surfaces.editor?.tier, m.id).toBe(m.tier)
+      expect(app.surfaces.editor?.priority, m.id).toBe(m.priority)
     }
   })
 
@@ -141,8 +128,8 @@ describe('three-tier rail axis flows through the catalog', () => {
 
   // DANGER REACHABILITY (risk hold): a destructive surface must stay reachable — it lands in the EXTRA
   // band (under "More") AND stays in the catalog the search index is built from.
-  it('keeps a Danger surface in the extra group AND in the search index (catalog)', () => {
-    const danger = SPACE_SURFACES.find((s) => s.id === 'space.danger')!
+  it('keeps the Danger module in the extra group AND in the search index (catalog)', () => {
+    const danger = SPACE_MODULES.find((m) => m.id === 'space.danger')!
     // In the catalog (the search index source) as an editor App.
     const app = APPS.find((a) => a.id === 'space.danger' && a.surfaces.editor)
     expect(app).toBeTruthy()
