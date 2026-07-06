@@ -120,6 +120,7 @@ let resolvedSpace: { id: string; slug: string } | null = { id: 'space-A', slug: 
 vi.mock('./store', () => ({ getSpaceById: async () => resolvedSpace }))
 
 let canEdit = true
+let hasAutomation = true
 vi.mock('./entitlements', () => ({
   getSpaceCapabilities: async () => ({
     isOwner: canEdit,
@@ -129,6 +130,24 @@ vi.mock('./entitlements', () => ({
     canManageMembers: canEdit,
     canInvite: canEdit,
   }),
+  // requireAutomationEditor (the RUNNER lever's gate) reads this: the Space's plan must grant automation.
+  spaceHasEntitlement: (_space: unknown, key: string) => (key === 'automation' ? hasAutomation : false),
+}))
+
+// startSequenceForAudience resolves the sequence's audience + enrolls each contact. Mock both deps so the
+// gating + enroll-count behavior is exercised network-free.
+let mockAudience: { contactId: string; email: string }[] = [{ contactId: 'c1', email: 'a@x.com' }]
+vi.mock('./audiences', () => ({
+  resolveAudience: async () => mockAudience,
+  definitionToFilter: (raw: unknown) => (raw && typeof raw === 'object' ? raw : {}),
+}))
+let enrollOutcome = true
+const enrollCalls: { spaceId: string; sequenceId: string; contactId: string }[] = []
+vi.mock('./drip-enroll', () => ({
+  enrollContactInSequence: async (spaceId: string, sequenceId: string, contactId: string) => {
+    enrollCalls.push({ spaceId, sequenceId, contactId })
+    return { enrolled: enrollOutcome }
+  },
 }))
 
 // A chainable recorder that captures the .eq() filters + terminal verb, and returns a row on insert.
@@ -179,6 +198,7 @@ import {
   deleteSequenceStep,
   setSpaceSequenceEnabled,
   deleteSpaceSequence,
+  startSequenceForAudience,
 } from './automation'
 
 beforeEach(() => {
@@ -186,6 +206,10 @@ beforeEach(() => {
   currentProfileId = 'editor-1'
   resolvedSpace = { id: 'space-A', slug: 'river' }
   canEdit = true
+  hasAutomation = true
+  mockAudience = [{ contactId: 'c1', email: 'a@x.com' }]
+  enrollOutcome = true
+  enrollCalls.length = 0
 })
 
 const goodRule = {
@@ -252,5 +276,44 @@ describe('automation permission gating', () => {
     const res = await addSequenceStep('space-A', 'seq1', { subject: 's', body: 'b', delayHours: 24 })
     expect('error' in res).toBe(true)
     expect(rec.calls.some((c) => c.verb === 'insert')).toBe(false)
+  })
+})
+
+// ── startSequenceForAudience: the RUNNER lever, gated on canEditProfile AND the automation entitlement ─
+describe('startSequenceForAudience gating + enroll', () => {
+  it('a non-editor cannot start a sequence (nothing enrolled)', async () => {
+    canEdit = false
+    const res = await startSequenceForAudience('space-A', 'seq1')
+    expect('error' in res).toBe(true)
+    expect(enrollCalls.length).toBe(0)
+  })
+
+  it('a Space without the automation entitlement cannot start a sequence (nothing enrolled)', async () => {
+    hasAutomation = false
+    const res = await startSequenceForAudience('space-A', 'seq1')
+    expect('error' in res).toBe(true)
+    expect(enrollCalls.length).toBe(0)
+  })
+
+  it('an editor on an entitled Space enrolls the resolved audience', async () => {
+    mockAudience = [
+      { contactId: 'c1', email: 'a@x.com' },
+      { contactId: 'c2', email: 'b@x.com' },
+    ]
+    const res = await startSequenceForAudience('space-A', 'seq1')
+    expect('error' in res).toBe(false)
+    if (!('error' in res)) expect(res.data.enrolled).toBe(2)
+    // Each enroll is space + sequence scoped (proves the runner lever binds the Space).
+    expect(enrollCalls).toEqual([
+      { spaceId: 'space-A', sequenceId: 'seq1', contactId: 'c1' },
+      { spaceId: 'space-A', sequenceId: 'seq1', contactId: 'c2' },
+    ])
+  })
+
+  it('an already-enrolled audience reports zero newly enrolled (idempotent)', async () => {
+    enrollOutcome = false // every enroll is a no-op (already enrolled)
+    const res = await startSequenceForAudience('space-A', 'seq1')
+    expect('error' in res).toBe(false)
+    if (!('error' in res)) expect(res.data.enrolled).toBe(0)
   })
 })

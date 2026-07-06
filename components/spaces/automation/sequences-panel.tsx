@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, Loader2, Plus, Trash2, Layers } from 'lucide-react'
+import { Clock, Loader2, Plus, Trash2, Layers, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Input, Label, Textarea } from '@/components/ui/field'
@@ -16,6 +16,7 @@ import {
   deleteSequenceStep,
   setSpaceSequenceEnabled,
   deleteSpaceSequence,
+  startSequenceForAudience,
 } from '@/lib/spaces/automation-actions'
 import { AudienceSelect, audienceLabel } from './audience-select'
 
@@ -50,6 +51,7 @@ export function SequencesPanel({
   const router = useRouter()
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   // New-sequence form.
   const [showForm, setShowForm] = useState(false)
@@ -90,6 +92,28 @@ export function SequencesPanel({
     })
   }
 
+  // START a sequence over its saved audience: enroll every matching contact at step one. The runner cron
+  // then drips each step on schedule. Gated server-side on the automation entitlement + editor role.
+  function onStart(id: string) {
+    if (readOnly || pending) return
+    setError(null)
+    setNotice(null)
+    start(async () => {
+      const res = await startSequenceForAudience(spaceId, slug, id)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      const { enrolled } = res.data
+      setNotice(
+        enrolled === 0
+          ? 'No new contacts to enroll (everyone matching is already in this sequence).'
+          : `Started. Enrolled ${enrolled} ${enrolled === 1 ? 'contact' : 'contacts'}.`,
+      )
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-4">
       {sequences.length === 0 && !showForm ? (
@@ -114,6 +138,17 @@ export function SequencesPanel({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
+                  {!readOnly && seq.enabled && seq.steps.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => onStart(seq.id)}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
+                      aria-label="Start sequence for its audience"
+                    >
+                      <Play className="h-3.5 w-3.5" /> Start
+                    </button>
+                  )}
                   <Switch
                     checked={seq.enabled}
                     onCheckedChange={(v) => onToggle(seq.id, v)}
@@ -149,6 +184,7 @@ export function SequencesPanel({
       )}
 
       {error && <p className="text-sm text-danger">{error}</p>}
+      {notice && <p className="text-sm text-muted">{notice}</p>}
 
       {!readOnly &&
         (showForm ? (

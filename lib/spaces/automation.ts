@@ -21,9 +21,10 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { getSpaceById } from '@/lib/spaces/store'
-import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { getSpaceCapabilities, spaceHasEntitlement } from '@/lib/spaces/entitlements'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
-import { definitionToFilter, type AudienceFilter } from '@/lib/spaces/audiences'
+import { definitionToFilter, resolveAudience, type AudienceFilter } from '@/lib/spaces/audiences'
+import { enrollContactInSequence } from '@/lib/spaces/drip-enroll'
 
 // ── Types + constants ───────────────────────────────────────────────────────────────────────────
 
@@ -228,6 +229,22 @@ async function requireSpaceEditor(spaceId: string): Promise<{ ok: true } | Actio
   const caps = await getSpaceCapabilities(space, profileId)
   if (!caps.canEditProfile)
     return fail('You do not have permission to manage automation for this space.')
+  return { ok: true }
+}
+
+/** Editor gate PLUS the `crm.space.automation` entitlement (spaceHasEntitlement 'automation'). Used by
+ *  the RUNNER-facing action (starting a sequence), which is the live automation lever — not just a rule
+ *  edit — so it must be gated on the plan entitlement as well as the editor role. Fail-closed. */
+async function requireAutomationEditor(spaceId: string): Promise<{ ok: true } | ActionResult<never>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to manage automation.')
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canEditProfile)
+    return fail('You do not have permission to manage automation for this space.')
+  if (!spaceHasEntitlement(space, 'automation'))
+    return fail('Automation is not available on this space plan.')
   return { ok: true }
 }
 
@@ -498,6 +515,42 @@ export async function setSpaceSequenceEnabled(
     return fail('Could not update the sequence. Try again.')
   }
   return ok()
+}
+
+/**
+ * START a drip sequence over its saved audience: enroll every contact the sequence's audience resolves
+ * to into the sequence, at its first step. This is the operator's manual RUNNER lever (the trigger path
+ * enrolls on a CRM event; this enrolls the standing audience on demand). Gated on canEditProfile AND the
+ * `crm.space.automation` entitlement (requireAutomationEditor). The sequence must belong to THIS Space
+ * and be ENABLED. Each enroll is idempotent (a contact already enrolled is a no-op) and space-scoped, so
+ * re-running only adds newly-matching contacts. Returns how many were newly enrolled. Fail-closed.
+ */
+export async function startSequenceForAudience(
+  spaceId: string,
+  sequenceId: string,
+): Promise<ActionResult<{ enrolled: number }>> {
+  const gate = await requireAutomationEditor(spaceId)
+  if ('error' in gate) return gate
+
+  const seq = await readSequence(sequenceId, spaceId)
+  if (!seq) return fail('Sequence not found.')
+  if (seq.enabled === false) return fail('Turn the sequence on before starting it.')
+
+  const audience = definitionToFilter(seq.audience)
+  let recipients: { contactId: string; email: string }[]
+  try {
+    recipients = await resolveAudience(spaceId, audience)
+  } catch {
+    return fail('Could not resolve the audience. Try again.')
+  }
+  if (recipients.length === 0) return ok({ enrolled: 0 })
+
+  let enrolled = 0
+  for (const r of recipients) {
+    const res = await enrollContactInSequence(spaceId, sequenceId, r.contactId)
+    if (res.enrolled) enrolled++
+  }
+  return ok({ enrolled })
 }
 
 /** Delete a sequence (its steps cascade via the FK). Gated on canEditProfile AND the sequence belonging

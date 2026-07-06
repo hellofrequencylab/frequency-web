@@ -4,6 +4,7 @@
 // linked_contact_id. Server-only (contacts is service-role).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 
 /** Upsert the scanned contact into `contacts` and link it to the personal card.
  *  Returns the contacts.id (or null). Existing rows keep their own source/consent —
@@ -91,6 +92,7 @@ export async function syncContactToSpaceCrm(input: {
       .maybeSingle()
 
     let contactId = (existing as { id?: string } | null)?.id ?? null
+    let wasNew = false
 
     if (contactId) {
       // Touch only; never clobber an existing lead/member's source or consent_state.
@@ -116,6 +118,7 @@ export async function syncContactToSpaceCrm(input: {
         .select('id')
         .maybeSingle()
       contactId = (inserted as { id?: string } | null)?.id ?? null
+      wasNew = !!contactId // a fresh contact row was created — fire the automation trigger below.
     }
 
     if (contactId) {
@@ -124,6 +127,13 @@ export async function syncContactToSpaceCrm(input: {
         .update({ linked_contact_id: contactId })
         .eq('id', input.networkContactId)
         .eq('owner_id', input.ownerId)
+
+      // AUTOMATION TRIGGER (ADR-561): a contact just entered this Space's CRM. Fire the 'contact.created'
+      // trigger so any enabled rule enrolls it into its drip sequence. FIRE-SAFE + fire-and-forget:
+      // fireSpaceTrigger never throws (it swallows its own errors), and we do not await it into the
+      // graduation path, so a rule error can never break the import. Only fires when a NEW contact row
+      // was inserted (the else branch below sets `wasNew`); a touch of an existing contact does not.
+      if (wasNew) void fireSpaceTrigger(input.spaceId, 'contact.created', { contactId })
     }
     return contactId
   } catch {
