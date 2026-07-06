@@ -25,6 +25,20 @@ export function isConsoleSpaceType(type: SpaceType): boolean {
   return CONSOLE_SPACE_TYPES.includes(type)
 }
 
+/** Read-time legacy normalizer (ADR-552). The type collapse shrank `spaces.type` to
+ *  business/nonprofit/root, but the backfill migration ships FILE-ONLY, so live rows can still hold a
+ *  retired value (`practitioner`, `coaching`, `event_space`, `lab`, `partner`, or `organization`). Every
+ *  DB row -> Space mapping runs its raw `type` through this so the runtime value is ALWAYS a valid
+ *  SpaceType -- otherwise a legacy row fails `isConsoleSpaceType` (breaking the manage console + page
+ *  builder) and `spaceTypeLabel` (wrong chip). `organization` -> `nonprofit`; `root` stays the hidden
+ *  host; everything else (incl. the retired public types + the collapsed `business`) folds into
+ *  `business`. Mirrors the plan-side `LEGACY_PLAN_REMAP`. Idempotent. */
+export function normalizeSpaceType(raw: string | null | undefined): SpaceType {
+  if (raw === 'nonprofit' || raw === 'organization') return 'nonprofit'
+  if (raw === 'root') return 'root'
+  return 'business'
+}
+
 /** The owner-management entry point for a Space, by type (ADR-441 EM1-3 / EM2-3). The unified
  *  `/manage` console serves every provisionable type (coaching joined with Space Modes M3); only
  *  `root` opens the legacy `/settings` hub. PURE (a type + slug in, a path out), so it is the one

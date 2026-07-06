@@ -28,7 +28,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { atLeastSpaceRole, isSpaceRole } from './membership'
-import { spaceManageHref, type SpaceType } from './types'
+import { normalizeSpaceType, spaceManageHref, type SpaceType } from './types'
 
 /** One managed Space as the launcher consumes it — the brand anchor, its type, the
  *  viewer's relationship to it, and the deep-link target. Camel-cased; only the fields
@@ -179,8 +179,8 @@ function mapManaged(r: ManagedSpaceRow, isOwner: boolean): ManagedSpace {
     id: r.id,
     slug: r.slug,
     name: r.brand_name?.trim() || r.name,
-    type: r.type as SpaceType,
+    type: normalizeSpaceType(r.type),
     isOwner,
-    settingsHref: spaceManageHref(r.type as SpaceType, r.slug),
+    settingsHref: spaceManageHref(normalizeSpaceType(r.type), r.slug),
   }
 }

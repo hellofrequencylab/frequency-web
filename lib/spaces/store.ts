@@ -6,7 +6,8 @@
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { Space, SpaceStatus, SpaceType } from './types'
+import { normalizeSpaceType } from './types'
+import type { Space, SpaceStatus } from './types'
 
 // The columns the Space reads project, including the brand_* fields (20260626000000_space_brand.sql),
 // the plan ENTITLEMENTS (20260711000000_*), and the per-function role overrides
@@ -55,7 +56,7 @@ function mapSpace(r: SpaceRow): Space {
     id: r.id,
     slug: r.slug,
     name: r.name,
-    type: r.type as SpaceType,
+    type: normalizeSpaceType(r.type),
     status: r.status as SpaceStatus,
     entityId: r.entity_id,
     skin: r.skin,
