@@ -29,8 +29,8 @@ import type { AdminSlot } from './registry'
 // `spaceFunctionAccess` / `spaces.entitlements`. This module declares the space menu as a catalog of
 // INDEPENDENT, self-contained modules on the same shape the other scopes use, gated by a feature key so the
 // Module Manager (P3) can flip each on and off. PURE + framework-free (types + data only), so it is trivially
-// testable and safe to import anywhere. ADDITIVE: nothing renders from this yet (P1 wires the rail + console
-// to `spaceModuleManifest`); today's SPACE_SURFACES render path is untouched.
+// testable and safe to import anywhere. This IS the space menu: the rail (P3b) and the /manage console (P1)
+// both render from `spaceModuleManifest`, and the duplicate `SPACE_SURFACES` registry was retired in P4 (ADR-547).
 
 /** The menu family a module belongs to (a coarser grouping than the engineering spine `slot`). */
 export type SpaceModuleFamily = 'space' | 'audience' | 'offerings' | 'reach' | 'growth' | 'system'
@@ -48,7 +48,7 @@ export type SpaceModuleRender = 'inline' | 'panel' | 'link'
 /** ONE self-contained admin module: a primary area or a service, with a header, a gate, a body, and a wire
  *  into its deep-editing route. */
 export interface SpaceModule {
-  /** Stable id (kept compatible with the existing SPACE_SURFACES ids where one already exists). */
+  /** Stable id (kept compatible with the legacy space surface ids where one already existed). */
   id: string
   /** Member-facing name (naming/voice canon). */
   label: string
@@ -71,7 +71,7 @@ export interface SpaceModule {
   tier: 'standard' | 'primary' | 'extra'
   /** RAIL within-band order (P3b, ADR-546b): lower renders higher WITHIN the module's tier + slot band on
    *  the standardized admin rail. Distinct from `order` (the catalog/console order): it mirrors the rail
-   *  priority the legacy SPACE_SURFACES carried, so retargeting the rail onto the manifest keeps the
+   *  priority the legacy space surface rows carried, so rendering the rail from the manifest keeps the
    *  shipped band order byte-identical (e.g. Settings stays a late footer). Defaults to `order` when
    *  omitted. Ignored by the console + Module Manager (which order by `order`). */
   priority?: number

@@ -31,7 +31,7 @@ export type AppSurfaceKind = 'editor' | 'page' | 'rail' | 'element'
  * Where an App may attach — the union of placement scopes, one per registry world it bridges:
  *   - `scopeKind`  — an AdminModule scope (circle / event / hub / …), matched against `Scope['kind']`.
  *   - `route`      — a ROUTE_MODULE_IDS key ('*', a section '/seg/*', or an exact route '/lead').
- *   - `spaceType`  — a Space profile type ('*' = every type), mirroring SpaceSurface.types.
+ *   - `spaceType`  — a Space profile type ('*' = every type; a Space module applies to every type).
  *   - `library`    — a code-drawn element (no placement scope; it lives in The Loom).
  */
 export type AppScope =

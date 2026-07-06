@@ -81,7 +81,7 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'journey.builder': JourneyBuilderModule,
   'journey.export': JourneyExportModule,
   'journey.danger': JourneyDangerModule,
-  // Space inline config surfaces (inline-first rail, ADR-514). These are the SPACE_SURFACES whose
+  // Space inline config surfaces (inline-first rail, ADR-514). These are the space modules whose
   // `render` is 'inline' — Basics / Branding / Settings / Page — each a thin wrapper that self-fetches its
   // read-gated data and mounts the existing editor in the flattened bar. The Space's feature workflows
   // (Members, CRM, the seven Offerings & money surfaces, QR, Email, Insights, Billing, Danger) stay

@@ -37,7 +37,7 @@ describe('editor superset ← ADMIN_MODULES', () => {
     // The editor lane is ADMIN_MODULES (capability-gated) PLUS the Space MODULE lane (spaceType-scoped,
     // spaceFunction/none-gated). A Space module is NOT an AdminModule (it lives outside the Capability
     // spine), so it adds its own editor App keyed by the module id. Modular menu P3b (ADR-546b): the lane
-    // now derives from the P0 module manifest (SPACE_MODULES) instead of the legacy SPACE_SURFACES.
+    // now derives from the P0 module manifest (SPACE_MODULES) instead of the legacy space surface spine.
     const editorIds = APPS.filter((a) => a.surfaces.editor).map((a) => a.id).sort()
     const want = [...ADMIN_MODULES.map((m) => m.id), ...SPACE_MODULES.map((m) => m.id)].sort()
     expect(editorIds).toEqual(want)

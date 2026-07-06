@@ -124,7 +124,7 @@ export type Scope =
       // the community Capability world: its authority is the per-Space role ladder + spaceFunctionAccess
       // (SpaceRole + spaces.entitlements/feature_roles), never a `Capability`. So this scope carries only
       // its id and the resolver grants an EMPTY capability set for it (the Space rail gates on spaceFns,
-      // carried on the AdminBar detail, not on this set). See lib/admin/entities/registry.ts SPACE_SURFACES.
+      // carried on the AdminBar detail, not on this set). See lib/admin/modules/space-modules.ts (the space menu).
       kind: 'space'
       /** The Space's DB id (spaces.id). */
       id: string

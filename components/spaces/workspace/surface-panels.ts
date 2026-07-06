@@ -7,7 +7,7 @@
 // Server-Component page/body AND the client admin rail (lib/spaces/surface-hrefs.ts → settings-panel).
 //
 // Adding a surface later is ONE row: register it in SURFACE_PANELS (keyed by its panel id) and, if the
-// rail should open it inline, add its SPACE_SURFACES id → panel id here in PANEL_SURFACE_TO_ID.
+// rail should open it inline, add its space surface id → panel id here in PANEL_SURFACE_TO_ID.
 
 /** One inline panel: the member-facing label (its heading) + the standalone "full page" route it maps
  *  to (the same full-admin sub-page the console + deep links keep using). */
@@ -95,7 +95,7 @@ export function isPanelId(id: string | undefined): id is string {
   return id != null && Object.prototype.hasOwnProperty.call(SURFACE_PANELS, id)
 }
 
-/** Translate a SPACE_SURFACES id (what the admin rail knows) → a panel id (what the page renders). Only
+/** Translate a space surface id (what the admin rail knows) → a panel id (what the page renders). Only
  *  the surfaces that open inline appear here; every other surface (Insights shares the QR anchor, Danger has
  *  no route) has no entry, so the rail falls through to its normal full route. D1 panel-ized `space.people`
  *  (Members); D2 added the service managers; D5 adds `space.engage.crm` (the bounded CRM board). */

@@ -48,7 +48,8 @@ export async function SpaceManageBoard({ slug }: { slug: string }) {
     staffViewing || spaceFunctionAccess(space, fn, caps.role)
 
   // MODULES (docs/MODULAR-MENU.md — P1, ADR-544): the console now renders the SPACE menu from the P0
-  // module manifest instead of the legacy SPACE_SURFACES spine, so the service split (7 independent
+  // module manifest instead of the legacy space surface spine (retired in P4, ADR-547), so the service
+  // split (7 independent
   // commerce modules) + the CRM consolidation (one module absorbing autonomy + pipeline) go live. Take
   // the full catalog (entitlements `{}` = default-on) and gate each module by the SAME authoritative
   // `canUse` the surfaces used (role + plan + entitlement via spaceFunctionAccess): a shell module
