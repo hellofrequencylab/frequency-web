@@ -23,6 +23,10 @@ import {
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import type { AdminSlot } from './registry'
 
+// LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
+// may derive from. Extend it by adding a row here; never hand-roll a parallel menu list or rewrite the
+// rail to add an item. `pnpm check:menu` + the drift-guard tests enforce this in CI.
+//
 // THE UNIVERSAL MODULE CONTRACT for the SPACE menu (ADR-543, docs/MODULAR-MENU.md — P0). Space is the one
 // scope that never joined the `AdminModule` registry (lib/admin/modules/registry.ts) because it has NO
 // `Capability` values — it gates on a `SpaceFunctionKey` + role via `resolveSpaceManageAccess` /

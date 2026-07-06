@@ -63,3 +63,18 @@ One shell, five templates, one chrome map. Full spec:
   `EmptyState`. No `text-[10/11px]` content type; semantic tokens only.
 - **Speed is structural:** Server Components by default; never block the shell on slow
   awaits — push them behind per-section `<Suspense>` (PAGE-FRAMEWORK §5).
+
+# Admin menu — a locked, machine-enforced contract (extend the catalog, never rewrite the rail)
+
+The operator admin menu + rail + `/manage` consoles all derive from ONE source. Do NOT hand-roll
+a per-scope menu, rewrite the rail to add an item, or reintroduce a parallel registry. Full spec:
+[`docs/MENU-CONTRACT.md`](docs/MENU-CONTRACT.md) (ADR-553). Enforced in CI by `pnpm check:menu` +
+the drift-guard tests, so a violation fails the build.
+
+- **To add or change a menu item:** edit a row in `SPACE_MODULES`
+  (`lib/admin/modules/space-modules.ts`) or `ADMIN_MODULES` (`lib/admin/modules/registry.ts`).
+  The rail (`appsForScope`) and both consoles (`resolveSpaceMenu` / `resolveEntityConsole`) pick
+  it up. A tweak is a data edit, not a render edit.
+- **Never** touch the rail render (`components/layout/settings-panel.tsx`, `lib/apps/*`,
+  `components/layout/admin-bar/*`) to change what's IN the menu, and never re-declare a `*_MODULES`
+  catalog or a `*_SURFACES` registry elsewhere. If you think you need to, you don't — add a catalog row.
