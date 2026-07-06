@@ -197,25 +197,63 @@ export default async function SpaceProfileChromeLayout({
       />
     ) : null
 
-  // The identity ACTION ROW: the emphasized primary CTA, then Connect, then the single Customize tool.
-  // Follow is NOT here — it sits above the name in the lockup (nameLockup). This row sits RIGHT of the
-  // avatar + name lockup on the SAME line (wrapping below only when the row runs out of room). `onInk`
-  // swaps the secondary/owner affordances to on-cover styling for the Hero overlay while the primary
-  // CTA stays the same accent.
+  // The quiet social FOLLOW chip, factored out so it can sit ABOVE the name on desktop (in the lockup) and
+  // move into the mobile action card below the cover (where every button lives on a phone). Null for a
+  // signed-out visitor. `onInk` paints it for legibility over a Hero cover photo.
+  const followButton = (onInk = false) =>
+    viewerProfileId ? (
+      <FollowSpaceButton
+        spaceId={space.id}
+        spaceName={brandName}
+        initialFollowing={viewerFollows}
+        className={onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')}
+      />
+    ) : null
+
+  // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and
+  // the mobile action card render the identical buttons. `onInk` swaps Connect to on-cover styling; the
+  // primary CTA keeps its accent everywhere.
+  const primaryCta = () => (
+    <Link href={ctaHref} className={primaryCtaClasses}>
+      {ctaLabel}
+    </Link>
+  )
+  const connectLink = (onInk = false) => (
+    <Link
+      href="/codes"
+      aria-label={`Connect with ${brandName}`}
+      title="Connect"
+      className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'sm', 'px-2.5')}
+    >
+      <QrCode className="h-4 w-4" aria-hidden />
+    </Link>
+  )
+
+  // The identity ACTION ROW (desktop, ≥sm): the emphasized primary CTA, then Connect, then the single
+  // Customize tool. Follow is NOT here on desktop — it sits above the name in the lockup (nameLockup). This
+  // row sits RIGHT of the avatar + name lockup on the SAME line (wrapping below only when the row runs out
+  // of room). `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while
+  // the primary CTA stays the same accent. Hidden on mobile — the buttons move to `mobileActionBand`.
   const identityActions = (onInk = false) => (
     <div className="flex flex-wrap items-center gap-2">
-      <Link href={ctaHref} className={primaryCtaClasses}>
-        {ctaLabel}
-      </Link>
-      <Link
-        href="/codes"
-        aria-label={`Connect with ${brandName}`}
-        title="Connect"
-        className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'sm', 'px-2.5')}
-      >
-        <QrCode className="h-4 w-4" aria-hidden />
-      </Link>
+      {primaryCta()}
+      {connectLink(onInk)}
       {ownerTools(onInk)}
+    </div>
+  )
+
+  // MOBILE action card (<sm): every action — Follow, the primary CTA, Connect, Customize — collected into
+  // ONE left-aligned white card that sits UNDER the cover, so the phone hero stays a clean identity band
+  // and the buttons get their own breathing room (the operator's ask). Always on-surface styling (never
+  // on-ink), since it is a white card, not a photo overlay. `sm:hidden` — desktop keeps the overlaid row.
+  const mobileActionBand = (
+    <div className="mt-4 rounded-xl border border-border bg-surface p-4 sm:hidden">
+      <div className="flex flex-wrap items-center gap-2">
+        {followButton(false)}
+        {primaryCta()}
+        {connectLink(false)}
+        {ownerTools(false)}
+      </div>
     </div>
   )
 
@@ -236,14 +274,9 @@ export default async function SpaceProfileChromeLayout({
   const nameLockup = (onInk = false) => (
     <div className="min-w-0">
       {viewerProfileId && (
-        <div className="mb-2">
-          <FollowSpaceButton
-            spaceId={space.id}
-            spaceName={brandName}
-            initialFollowing={viewerFollows}
-            className={onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')}
-          />
-        </div>
+        // Desktop only: Follow sits above the name. On mobile it moves to the white action card under the
+        // cover (mobileActionBand), so the phone hero reads as a clean identity band.
+        <div className="mb-2 hidden sm:block">{followButton(onInk)}</div>
       )}
       <div className="flex flex-wrap items-center gap-2">
         <h1
@@ -289,7 +322,9 @@ export default async function SpaceProfileChromeLayout({
             </div>
             <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
           </div>
-          <div className="pb-1">{identityActions(heroOnInk)}</div>
+          {/* Desktop only: the action row overlays the cover bottom-right. On mobile it moves to the white
+              action card under the cover, so the phone hero holds only the identity. */}
+          <div className="hidden pb-1 sm:block">{identityActions(heroOnInk)}</div>
         </div>
       </div>
     </div>
@@ -321,13 +356,16 @@ export default async function SpaceProfileChromeLayout({
     <div>
       {!isHero && (
         // HEADER identity: the logo chip is owned by the cover (hanging half-off it), so this row is the
-        // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left,
-        // actions pushed right, wrapping under only when the row runs out of room.
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 pt-14 sm:pt-16">
+        // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left, actions
+        // pushed right on desktop; on mobile the name lockup stays and the actions drop to the white card
+        // below (mobileActionBand).
+        <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
           <div className="min-w-0">{nameLockup(false)}</div>
-          <div>{identityActions(false)}</div>
+          <div className="hidden sm:block">{identityActions(false)}</div>
         </div>
       )}
+      {/* Mobile-only white action card under the cover (both Hero and Header sizes). */}
+      {mobileActionBand}
     </div>
   )
 

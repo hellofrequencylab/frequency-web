@@ -91,14 +91,20 @@ export function EntityPageBuilder({
   pageId,
   kind,
   loadRailData,
+  seed,
   editHrefFor,
   uploadImage,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
   kind: EntityKind
-  /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing). */
+  /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing).
+   *  Skipped entirely when `seed` is supplied (the rail bundle already fetched it — ADR-550). */
   loadRailData: () => Promise<BuilderRailData | null>
+  /** A PRE-FETCHED seed from the shared rail bundle (ADR-550). When supplied (including an explicit
+   *  `null`, meaning "the viewer cannot edit"), the builder uses it and skips its own loadRailData fetch.
+   *  `undefined` keeps the original behavior — the builder self-fetches through loadRailData. */
+  seed?: BuilderRailData | null
   /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
@@ -121,36 +127,55 @@ export function EntityPageBuilder({
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // A DATA block's header/body is server-rendered from the space's LIVE data (offerings, events, team...),
-  // so an authored eyebrow/title/body edit to one cannot repaint purely client-side. Debounce a single
-  // router.refresh PAST the store's save window to reconcile just those. CONTENT blocks + STYLE never touch
-  // this — they repaint instantly from the shared store (LiveProfileGrid), with no round-trip (ADR-542).
-  const refreshDataSoon = useCallback(() => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current)
-    refreshTimer.current = setTimeout(() => router.refresh(), 900)
-  }, [router])
-  useEffect(() => () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current)
-  }, [])
+  // so an authored eyebrow/title/body edit to one cannot repaint purely client-side — it needs a server
+  // re-render. The OLD approach fired a fixed 900ms timer that RACED the ~600ms debounced save: when the
+  // refresh landed before the save persisted, the server re-read the OLD title and "nothing happened" until
+  // a later edit finally won the race. Instead, mark the data edit DIRTY and reconcile the INSTANT the save
+  // completes — watch the store's `saving` flag fall from true to false, then router.refresh() once. A
+  // `reconciling` flag keeps the Saving indicator up from the keystroke through the reconciled paint, so the
+  // edit always shows a working state. CONTENT blocks + STYLE never set this — they repaint instantly from
+  // the shared store (LiveProfileGrid), with no round-trip (ADR-542).
+  const dataDirty = useRef(false)
+  const wasSaving = useRef(false)
+  const [reconciling, setReconciling] = useState(false)
+  useEffect(() => {
+    const saving = !!store?.saving
+    if (wasSaving.current && !saving && dataDirty.current) {
+      dataDirty.current = false
+      wasSaving.current = saving
+      router.refresh()
+      const t = setTimeout(() => setReconciling(false), 500)
+      return () => clearTimeout(t)
+    }
+    wasSaving.current = saving
+  }, [store?.saving, router])
 
   // Seed the shared store from the persisted layout (idempotent — the live preview may have seeded first).
   // Only seed a store of the SAME kind, so a builder mounted beside the wrong provider never pollutes it.
+  // When the rail bundle already supplied a `seed` (ADR-550), apply it directly and skip the round-trip.
   useEffect(() => {
     let active = true
-    loadRailData().then((d) => {
+    const apply = (d: BuilderRailData | null) => {
       if (!active) return
       setMatchId(d?.matchId ?? null)
       setLockedIds(d?.lockedIds ?? [])
       setCustomized(!!d?.customized)
       if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
-    })
+    }
+    if (seed !== undefined) {
+      apply(seed)
+      return () => {
+        active = false
+      }
+    }
+    loadRailData().then(apply)
     return () => {
       active = false
     }
-  }, [store, kind, loadRailData])
+  }, [store, kind, loadRailData, seed])
 
   const say = useCallback((msg: string) => setAnnounce(msg), [])
   const mutate = useCallback(
@@ -256,7 +281,12 @@ export function EntityPageBuilder({
   function onEditContent(blockId: string, props: Record<string, unknown>) {
     store?.applyContent(blockId, Object.keys(props).length ? props : undefined)
     setCustomized(true)
-    if (entityBlockById(blockId)?.category === 'data') refreshDataSoon()
+    // A DATA block's authored header/body needs the server reconcile (see the effect above): flag it dirty
+    // and show the working indicator now, so it stays up from this keystroke until the reconciled paint.
+    if (entityBlockById(blockId)?.category === 'data') {
+      dataDirty.current = true
+      setReconciling(true)
+    }
   }
   function onEditStyle(blockId: string, style: BlockStyle) {
     store?.applyStyle(blockId, Object.keys(style).length ? style : undefined)
@@ -495,12 +525,12 @@ export function EntityPageBuilder({
             : 'Turn blocks on or off and set their order. Changes save on their own.'}
         </p>
       </div>
-      {store.saving ? (
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+      {store.saving || reconciling ? (
+        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
         </span>
       ) : (
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
           <Check className="h-3 w-3 text-success" aria-hidden /> Saved
         </span>
       )}
@@ -836,7 +866,7 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
 /** The SPACE page builder — a Space's public-profile layout, mounted in the `space.layout` rail surface on
  *  the Space profile ROOT (ADR-516 Phase D). Adapts the owner-gated space seed getter (matchId = the slug;
  *  function-locked blocks are held out of the picker + bench). */
-export function SpacePageBuilder({ slug }: { slug: string }) {
+export function SpacePageBuilder({ slug, seed }: { slug: string; seed?: BuilderRailData | null }) {
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getSpaceLayoutRailData(slug)
     return d
@@ -858,6 +888,7 @@ export function SpacePageBuilder({ slug }: { slug: string }) {
       pageId={slug}
       kind="space"
       loadRailData={load}
+      seed={seed}
       uploadImage={uploadImage}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.

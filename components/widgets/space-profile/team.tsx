@@ -44,8 +44,10 @@ export function TeamBlock({
                   {getInitials(member.name)}
                 </span>
               )}
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-text">{member.name}</span>
+              <span className="min-w-0 flex-1">
+                {/* Full name, wrapping when the column is narrow (never truncated to nothing): the card is a
+                    rectangle that always shows who this is. flex-1 gives the name the row's remaining width. */}
+                <span className="block break-words text-sm font-semibold text-text">{member.name}</span>
                 {member.handle && <span className="block truncate text-xs text-muted">@{member.handle}</span>}
               </span>
             </li>

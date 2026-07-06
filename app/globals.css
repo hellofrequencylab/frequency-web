@@ -844,6 +844,21 @@
   }
 }
 
+/* ── Entity block "background off" strip (ADR-551) ──────────────────────────────
+   The per-box Background toggle (block-edit-panel) can flatten a section onto the warm
+   page canvas. A DATA section wraps its white card INSIDE a ModuleSection <section>, so
+   the card sits below the style frame's direct child — the old `[&>*]` direct-child
+   strip only hit the empty wrapper and never reached the card (the "background selector
+   does nothing" bug). This unlayered rule flattens EVERY white card (bg-surface /
+   bg-surface-elevated) nested at any depth under a flagged frame to transparent, with no
+   border or shadow, so the section reads flush no matter how deep its card nests.
+   Unlayered so it beats the utility-layer bg/border/shadow classes it overrides. */
+.entity-bg-strip [class*='bg-surface'] {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 /* The profile hero stats skeleton tile height — a named size for the streamed
    hero-stats placeholders (and the matching profile-body fallback), so the figure
    lives in ONE place instead of a duplicated `h-[58px]` arbitrary value. Exposed via

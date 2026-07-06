@@ -25,9 +25,11 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   // `background: true` fills the block with the plain WHITE surface (bg-surface) against the warm page
   // canvas — a clean "white background on", not a second elevated/tinted card layer on top.
   const card = bgOn ? 'rounded-2xl border border-border bg-surface' : ''
-  // `background: false` (item 6) STRIPS the white box a self-carding block draws: it flattens the block's
-  // own root card (border + fill + shadow) to transparent, so the section reads flush on the page canvas.
-  const strip = bgOff ? '[&>*]:!border-transparent [&>*]:!bg-transparent [&>*]:!shadow-none' : ''
+  // `background: false` (item 6) STRIPS the white box a self-carding block draws. A DATA section nests its
+  // card inside a ModuleSection <section>, so a direct-child strip misses it — the `.entity-bg-strip` rule
+  // (globals.css, ADR-551) flattens every bg-surface card nested at ANY depth to transparent (no border, no
+  // shadow), so the section reads flush on the page canvas regardless of how the block nests.
+  const strip = bgOff ? 'entity-bg-strip' : ''
   const cls = [card, strip, pad, align].filter(Boolean).join(' ')
   return cls ? <div className={cls}>{children}</div> : <>{children}</>
 }
