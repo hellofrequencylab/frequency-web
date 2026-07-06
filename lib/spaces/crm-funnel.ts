@@ -26,6 +26,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isJanitor } from '@/lib/core/roles'
 import { getStages, getDeals, type CrmStage, type CrmDeal } from '@/lib/crm/pipeline'
 import { getSpaceEmailStats, type SpaceEmailStats } from '@/lib/spaces/email-analytics'
+import { scoreContactRisk, type RiskFactor } from '@/lib/spaces/contact-risk'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -50,6 +51,27 @@ export interface ContactReach {
   unsubscribed: number
 }
 
+/** One at-risk contact the cockpit surfaces: enough to name them, show WHY, and offer a win-back. The
+ *  `factors` come straight from the pure scorer so the panel can explain the flag. */
+export interface AtRiskContact {
+  id: string
+  email: string
+  displayName: string | null
+  score: number
+  factors: RiskFactor[]
+}
+
+/** The per-Space at-risk / churn slice the cockpit shows: how many of THIS Space's contacts are going
+ *  cold, and the worst few (highest score first) so an owner can act. Derived by the PURE scorer
+ *  (lib/spaces/contact-risk.ts) over the raw signals already on the contact row, so it works before any
+ *  writer persists into contacts.risk_score. */
+export interface AtRiskSummary {
+  /** How many of the Space's contacts scored at-risk. */
+  count: number
+  /** The worst offenders (capped), highest score first, for the cockpit list + the win-back hook. */
+  top: AtRiskContact[]
+}
+
 /** The whole snapshot the panel renders. All counts are whole numbers; `conversionRate` is a fraction
  *  in [0, 1] (the panel renders it as a percentage). `email` is the deliverability snapshot reused
  *  from lib/spaces/email-analytics.ts. */
@@ -64,6 +86,8 @@ export interface CrmFunnel {
   /** wonCount / (deals that entered the funnel), a fraction in [0, 1]. 0 when there are no deals. */
   conversionRate: number
   reach: ContactReach
+  /** The at-risk / churn slice (count + worst offenders), derived by the pure scorer. */
+  atRisk: AtRiskSummary
   email: SpaceEmailStats
 }
 
@@ -80,6 +104,11 @@ const ZERO_EMAIL: SpaceEmailStats = {
 
 const ZERO_REACH: ContactReach = { total: 0, subscribed: 0, unsubscribed: 0 }
 
+const ZERO_AT_RISK: AtRiskSummary = { count: 0, top: [] }
+
+/** Most at-risk contacts to surface in the cockpit list (the worst offenders; the count is unbounded). */
+const AT_RISK_TOP_LIMIT = 8
+
 const EMPTY_FUNNEL: CrmFunnel = {
   stages: [],
   totalDeals: 0,
@@ -87,6 +116,7 @@ const EMPTY_FUNNEL: CrmFunnel = {
   wonCount: 0,
   conversionRate: 0,
   reach: ZERO_REACH,
+  atRisk: ZERO_AT_RISK,
   email: ZERO_EMAIL,
 }
 
@@ -155,14 +185,59 @@ function consentBucket(raw: unknown): 'subscribed' | 'unsubscribed' | null {
   return null
 }
 
+// ── PURE: fold the raw contact-risk rows into the at-risk summary ─────────────────────────────────
+
+/** A raw contact row carrying the signals the pure scorer weighs. All optional/untyped: the columns
+ *  the at-risk write layer maintains (risk_score / at_risk) may not exist yet (ADR-246), so we always
+ *  derive live from the base signals here and never depend on the projection columns being populated. */
+export type ContactRiskRow = {
+  id?: string | null
+  email?: string | null
+  display_name?: string | null
+  consent_state?: string | null
+  engagement_score?: number | null
+  last_seen_at?: string | null
+}
+
+/**
+ * Fold contact rows into the at-risk summary: score each with the PURE scorer, count the flagged, and
+ * return the worst `limit` (highest score first). PURE so the whole derivation is unit-testable with no
+ * DB. `now` is threaded so tests pin the clock. A row missing an id is skipped (it cannot be acted on).
+ */
+export function buildAtRiskSummary(
+  rows: ContactRiskRow[],
+  limit = AT_RISK_TOP_LIMIT,
+  now?: number,
+): AtRiskSummary {
+  const scored: AtRiskContact[] = []
+  for (const r of rows) {
+    if (!r?.id) continue
+    const { score, atRisk, factors } = scoreContactRisk({
+      lastSeenAt: r.last_seen_at ?? null,
+      engagementScore: typeof r.engagement_score === 'number' ? r.engagement_score : null,
+      consentState: r.consent_state ?? null,
+      now,
+    })
+    if (!atRisk) continue
+    scored.push({
+      id: r.id,
+      email: r.email ?? '',
+      displayName: r.display_name ?? null,
+      score,
+      factors,
+    })
+  }
+  scored.sort((a, b) => b.score - a.score)
+  return { count: scored.length, top: scored.slice(0, Math.max(0, limit)) }
+}
+
 // ── IO seam: the untyped contacts read (table not in generated types yet, ADR-246) ────────────────
 
-type ContactConsentRow = { consent_state: string | null }
 type ContactQuery = {
   select: (cols: string) => ContactQuery
   eq: (col: string, val: string) => ContactQuery
   then: (
-    resolve: (r: { data: ContactConsentRow[] | null; error: unknown }) => unknown,
+    resolve: (r: { data: Record<string, unknown>[] | null; error: unknown }) => unknown,
   ) => Promise<unknown>
 }
 
@@ -202,6 +277,23 @@ async function getContactReach(spaceId: string): Promise<ContactReach> {
   }
 }
 
+/** The at-risk / churn summary for a Space: score every one of the Space's OWN contacts (space_id
+ *  filter, so another Space's contacts can never leak in) with the PURE scorer and fold to the count +
+ *  worst offenders. Reads the raw signals already on the contact row, so it works BEFORE any writer
+ *  persists into contacts.risk_score. FAIL-SAFE to an empty summary on a missing table / column / any
+ *  error (ADR-246: the extra columns may be absent pre-regeneration; only base columns are selected). */
+async function getAtRiskSummary(spaceId: string): Promise<AtRiskSummary> {
+  try {
+    const { data, error } = await contactsTable()
+      .select('id, email, display_name, consent_state, engagement_score, last_seen_at')
+      .eq('space_id', spaceId)
+    if (error || !data) return ZERO_AT_RISK
+    return buildAtRiskSummary(data as ContactRiskRow[])
+  } catch {
+    return ZERO_AT_RISK
+  }
+}
+
 // ── PUBLIC READ (gated, fail-safe) ────────────────────────────────────────────────────────────────
 
 /**
@@ -223,15 +315,17 @@ export async function getSpaceCrmFunnel(spaceId: string): Promise<CrmFunnel> {
 
   try {
     // getStages / getDeals are space-scoped + fail-safe ([] on error); getSpaceEmailStats self-gates
-    // and is fail-safe (zeros); getContactReach is fail-safe (zeros). So the snapshot can never throw.
-    const [stages, deals, reach, email] = await Promise.all([
+    // and is fail-safe (zeros); getContactReach + getAtRiskSummary are fail-safe (zeros / empty). So the
+    // snapshot can never throw.
+    const [stages, deals, reach, atRisk, email] = await Promise.all([
       getStages(spaceId),
       getDeals(spaceId),
       getContactReach(spaceId),
+      getAtRiskSummary(spaceId),
       getSpaceEmailStats(spaceId),
     ])
     const funnel = buildFunnel(stages, deals)
-    return { ...funnel, reach, email }
+    return { ...funnel, reach, atRisk, email }
   } catch {
     return EMPTY_FUNNEL
   }

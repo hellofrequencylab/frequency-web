@@ -189,6 +189,42 @@ describe('audiences: contact + tag reads bind the Space', () => {
   })
 })
 
+// ── lib/spaces/crm-funnel.ts - per-Space contact AT-RISK / churn slice (ADR-560) ─────────────────
+// The cockpit's at-risk read scores THIS Space's contacts and must never reach another Space's rows.
+// getSpaceCrmFunnel is owner-gated (the owner-A seam above seats the owner of whichever id asks) and
+// reads contacts through the RLS-bypassing admin client, so the .eq('space_id') filter is the ONLY
+// tenancy gate at this layer. These contracts lock it: the FILTER is recorded, and a two-space leak
+// oracle proves only Space A's at-risk contacts come back.
+describe('crm-funnel: the at-risk contact read binds the Space', () => {
+  it('getSpaceCrmFunnel scores contacts scoped by space_id (filter recorded)', async () => {
+    const { getSpaceCrmFunnel } = await import('@/lib/spaces/crm-funnel')
+    await getSpaceCrmFunnel(SPACE_A)
+    // Both the reach read and the at-risk read filter the Space; either recording proves the bind.
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('only Space A contacts are scored for at-risk (two-space leak oracle)', async () => {
+    // A cold Space A contact and a cold Space B contact; only A's may ever surface.
+    const cold = { last_seen_at: '2020-01-01T00:00:00.000Z', engagement_score: 0, consent_state: 'unsubscribed' }
+    h.client = makeTwoSpaceDb({
+      contacts: [
+        { id: 'cA', space_id: SPACE_A, email: 'a@a.com', display_name: 'A', ...cold },
+        { id: 'cB', space_id: SPACE_B, email: 'b@b.com', display_name: 'B', ...cold },
+      ],
+    })
+    const funnel = await getSpaceCrmFunnelFresh()
+    // LEAK ORACLE: only Space A's cold contact is counted / listed (B's is never reachable).
+    expect(funnel.atRisk.count).toBe(1)
+    expect(funnel.atRisk.top.map((c) => c.email)).toEqual(['a@a.com'])
+  })
+})
+
+// Re-import inside the test so the fresh two-space db is picked up by the module's admin-client cast.
+async function getSpaceCrmFunnelFresh() {
+  const { getSpaceCrmFunnel } = await import('@/lib/spaces/crm-funnel')
+  return getSpaceCrmFunnel(SPACE_A)
+}
+
 // ── lib/spaces/campaigns.ts - email campaigns (email module) ─────────────────────────────────────
 describe('campaigns: list + single-read bind space_id', () => {
   it('listSpaceCampaigns binds space_id', async () => {
