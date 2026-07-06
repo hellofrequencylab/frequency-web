@@ -8,7 +8,7 @@ function makeSpace(over: Partial<Space>): Space {
     id: 's1',
     slug: 'demo',
     name: 'Demo',
-    type: 'practitioner',
+    type: 'business',
     status: 'active',
     entityId: 'e1',
     skin: 'default',

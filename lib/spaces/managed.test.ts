@@ -92,7 +92,7 @@ function space(over: Partial<SpaceRow>): SpaceRow {
     id: over.id ?? 's',
     slug: over.slug ?? 's',
     name: over.name ?? 'Space',
-    type: over.type ?? 'practitioner',
+    type: over.type ?? 'business',
     status: over.status ?? 'active',
     brand_name: over.brand_name ?? null,
     owner_profile_id: over.owner_profile_id ?? null,
@@ -113,7 +113,7 @@ describe('listManagedSpaces (the launcher reader, tenancy + fail-safe)', () => {
   it('returns the Spaces the viewer OWNS, brand name leading, with the manage deep link', async () => {
     currentProfileId = 'owner-1'
     store.spaces = [
-      // A practitioner is a CONSOLE type (ADR-441 EM1-3), so its manage entry is the unified /manage.
+      // A business is a CONSOLE type (ADR-441 EM1-3), so its manage entry is the unified /manage.
       space({ id: 'a', slug: 'river-yoga', name: 'River Yoga', brand_name: 'River', owner_profile_id: 'owner-1' }),
     ]
     const out = await listManagedSpaces()
@@ -126,21 +126,22 @@ describe('listManagedSpaces (the launcher reader, tenancy + fail-safe)', () => {
     })
   })
 
-  it('routes a CONSOLE type (event_space) to the unified /manage console (ADR-441 EM2-3)', async () => {
+  it('routes a CONSOLE type (nonprofit) to the unified /manage console (ADR-441 EM2-3)', async () => {
     currentProfileId = 'owner-2'
     store.spaces = [
-      space({ id: 'c', slug: 'the-loft', name: 'The Loft', type: 'event_space', owner_profile_id: 'owner-2' }),
+      space({ id: 'c', slug: 'the-loft', name: 'The Loft', type: 'nonprofit', owner_profile_id: 'owner-2' }),
     ]
     const out = await listManagedSpaces()
     expect(out).toHaveLength(1)
     expect(out[0].settingsHref).toBe('/spaces/the-loft/manage')
   })
 
-  it('routes coaching to the unified /manage console (Space Modes M3, ADR-461/464)', async () => {
-    // Coaching joined the console with Space Modes M3; it no longer falls back to the legacy /settings hub.
+  it('routes a business to the unified /manage console (ADR-552 collapse)', async () => {
+    // After the collapse every provisionable type (business / nonprofit) is a console type; only the
+    // hidden `root` host keeps the legacy /settings hub.
     currentProfileId = 'owner-3'
     store.spaces = [
-      space({ id: 'd', slug: 'the-academy', name: 'The Academy', type: 'coaching', owner_profile_id: 'owner-3' }),
+      space({ id: 'd', slug: 'the-academy', name: 'The Academy', type: 'business', owner_profile_id: 'owner-3' }),
     ]
     const out = await listManagedSpaces()
     expect(out).toHaveLength(1)

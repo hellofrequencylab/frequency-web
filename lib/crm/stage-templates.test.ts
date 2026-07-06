@@ -13,10 +13,10 @@ describe('seedStagesForSpace', () => {
     const cases: ReadonlyArray<{ type: SpaceType; variant?: string | null }> = [
       { type: 'business', variant: 'service' },
       { type: 'business', variant: 'product' },
-      { type: 'coaching', variant: 'packages' },
-      { type: 'practitioner', variant: 'appointments' },
-      { type: 'organization', variant: 'donations' },
-      { type: 'event_space', variant: 'ticketed' },
+      { type: 'business', variant: 'packages' },
+      { type: 'business', variant: 'appointments' },
+      { type: 'business', variant: 'ticketed' },
+      { type: 'nonprofit', variant: 'donations' },
       { type: 'business', variant: null }, // null → the type's default Focus
     ]
     for (const { type, variant } of cases) {
@@ -28,8 +28,8 @@ describe('seedStagesForSpace', () => {
   })
 
   it('an unknown variant resolves to the type default Focus (matches resolveMode fallback)', () => {
-    const fallback = resolveMode('coaching', null)!.pipeline.map((s) => ({ name: s.name, kind: s.kind }))
-    expect(seedStagesForSpace('coaching', 'not-a-real-focus')).toEqual(fallback)
+    const fallback = resolveMode('business', null)!.pipeline.map((s) => ({ name: s.name, kind: s.kind }))
+    expect(seedStagesForSpace('business', 'not-a-real-focus')).toEqual(fallback)
   })
 
   it('a type with NO Mode preset (root / null / undefined) falls back to the generic funnel', () => {
@@ -40,7 +40,7 @@ describe('seedStagesForSpace', () => {
   })
 
   it('every seeded pipeline is a non-empty, ordered funnel: open start, at least one won and one lost', () => {
-    for (const t of ['business', 'practitioner', 'coaching', 'organization', 'event_space', 'root'] as SpaceType[]) {
+    for (const t of ['business', 'nonprofit', 'root'] as SpaceType[]) {
       const stages = seedStagesForSpace(t)
       expect(stages.length).toBeGreaterThan(0)
       expect(stages[0]!.kind).toBe('open')

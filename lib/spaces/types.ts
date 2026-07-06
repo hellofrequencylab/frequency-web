@@ -2,41 +2,22 @@
 // tenant of the one app/DB: its own type, brand/skin, domain, entity (money partition), a
 // network-connected switch, and the set of registered verticals it turns on.
 
-// The canonical role-type set (reconciled in ADR-339, see docs/SPACES.md). Every value a
-// `spaces.type` row can hold lives here. PROVISIONABLE types (a member can stand one up in the
-// create wizard) are the ones with a registered blueprint in lib/spaces/blueprints.ts: root,
-// practitioner, business, organization, coaching, event_space. `lab` and `partner` are live
-// platform/internal role values (an operator-gated CHECK and the §1 type facet, docs/SPACES.md)
-// but their blueprints are intentionally DEFERRED to item ADMIN-05, so they are NOT yet
-// provisionable through the wizard. They stay in the union so existing rows and the discovery /
-// label paths type-check; do not remove them when adding the blueprints.
-export type SpaceType =
-  | 'root'
-  | 'practitioner'
-  | 'business'
-  | 'organization'
-  | 'coaching'
-  | 'event_space'
-  | 'lab'
-  | 'partner'
+// The canonical Space-type set (ADR-552, docs/BUSINESS-MODEL-PLAN.md §4 Phase 1). The public type
+// system collapsed from 8 types to TWO — `business` and `nonprofit` — plus the hidden platform host
+// `root`. Everything the old set carried (practitioner, coaching, event_space, lab, partner) folds
+// into free FOCUS presets under Business (lib/spaces/modes.ts); the former `organization` was renamed
+// to `nonprofit`. `root` stays here (and in the spaces_type_check CHECK): it is the platform host
+// (rootEntityId(), delete/suspend guards) and is never member-facing.
+export type SpaceType = 'root' | 'business' | 'nonprofit'
 
 export type SpaceStatus = 'active' | 'suspended' | 'archived'
 
 // The Space types the unified owner CONSOLE (/spaces/<slug>/manage) serves (ADR-441 EM1-3, completed
 // in EM2-3 "all Space profiles"). The console notFound()s for every other type, so they stay on the
-// legacy /settings hub. Every PROVISIONABLE type is now served, including `coaching` (brought onto the
-// console with Space Modes M3, ADR-461/464; it previously fell back to the legacy /settings hub);
-// `root` is the never-provisioned platform host. Keep this list in lockstep with the type gate in
+// legacy /settings hub. Every PROVISIONABLE type is served; `root` is the never-provisioned platform
+// host and keeps the legacy /settings hub. Keep this list in lockstep with the type gate in
 // app/(main)/spaces/[slug]/manage/page.tsx (the page imports `isConsoleSpaceType`).
-const CONSOLE_SPACE_TYPES: readonly SpaceType[] = [
-  'practitioner',
-  'organization',
-  'business',
-  'coaching',
-  'event_space',
-  'lab',
-  'partner',
-]
+const CONSOLE_SPACE_TYPES: readonly SpaceType[] = ['business', 'nonprofit']
 
 /** Does the unified `/manage` console serve this Space type? The one predicate the manage page and
  *  `spaceManageHref` both read, so the route gate and the "Manage" affordance never drift. */

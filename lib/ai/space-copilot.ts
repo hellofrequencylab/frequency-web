@@ -58,13 +58,8 @@ export interface OfferingContext {
 // ── Plain-language labels for each Space type (so the model frames the copy right) ──────────
 const TYPE_LABEL: Record<SpaceType, string> = {
   root: 'space',
-  practitioner: 'practitioner',
   business: 'business',
-  organization: 'organization',
-  coaching: 'coach',
-  event_space: 'event space',
-  lab: 'lab',
-  partner: 'partner',
+  nonprofit: 'nonprofit',
 }
 
 function typeLabel(type: SpaceType | null | undefined): string {
@@ -232,17 +227,10 @@ export async function suggestTagline(ctx: SpaceContext): Promise<string> {
 export function fallbackTagline(ctx: SpaceContext): string {
   const label = typeLabel(ctx.type)
   switch (ctx.type) {
-    case 'coaching':
-      return 'Coaching that meets you where you are'
-    case 'practitioner':
-      return 'A practice you can settle into'
     case 'business':
-    case 'partner':
       return 'A place to start something good'
-    case 'organization':
+    case 'nonprofit':
       return 'People, gathered around the work'
-    case 'lab':
-      return 'Where the work gets made'
     default:
       return `A ${label} on Frequency`
   }

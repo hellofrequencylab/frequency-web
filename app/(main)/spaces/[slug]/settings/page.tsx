@@ -194,16 +194,15 @@ export default async function SpaceSettingsPage({
           />
         )}
 
-        {/* As of EM2-3 ("all Space profiles") every provisionable type except coaching is a CONSOLE
-            type: this hub redirects them to /spaces/<slug>/manage above (isConsoleSpaceType), so only
-            coaching (and root) ever render here. The type-specific cards below are coaching's; the
-            business / event_space branches were removed because they are now unreachable (the
-            redirect fires first). Every settings sub-page they used (memberships, tickets, checkin)
+        {/* As of the ADR-552 collapse every provisionable type (business / nonprofit) is a CONSOLE type:
+            this hub redirects them to /spaces/<slug>/manage above (isConsoleSpaceType), so only `root`
+            ever renders here. The enrollment card below is universal (gated purely on the `enroll`
+            function, no longer forked on the retired `coaching` type); every settings sub-page it uses
             stays in place as the console's section targets. */}
 
-        {space.type === 'coaching' && canUse('enroll') && (
-          // The Coaching academy's enrollment lives on its own Focus surface (the program editor + the
-          // enrollee list). No money in v1 (ADMIN-02).
+        {canUse('enroll') && (
+          // Enrollment lives on its own Focus surface (the program editor + the enrollee list). No money
+          // in v1 (ADMIN-02).
           <HubCard
             href={`/spaces/${space.slug}/settings/enroll`}
             icon={GraduationCap}

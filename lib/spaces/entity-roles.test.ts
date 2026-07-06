@@ -15,18 +15,19 @@ describe('previewableEntityRoles', () => {
     expect(roles.map((r) => r.label)).toEqual(provisionableTypes().map((t) => t.label))
   })
 
-  it('covers the live entity roles and excludes root', () => {
+  it('covers the two public entity roles and excludes root', () => {
     const types = previewableEntityRoles().map((r) => r.type)
-    for (const live of ['practitioner', 'business', 'organization', 'coaching', 'event_space', 'lab', 'partner']) {
+    // After the ADR-552 collapse the provisionable set is just business + nonprofit.
+    for (const live of ['business', 'nonprofit']) {
       expect(types).toContain(live)
     }
     expect(types).not.toContain('root')
   })
 
-  it('includes lab and partner exactly when they are provisionable', () => {
-    const types = previewableEntityRoles().map((r) => r.type)
-    expect(types.includes('lab')).toBe(isProvisionableType('lab'))
-    expect(types.includes('partner')).toBe(isProvisionableType('partner'))
+  it('excludes the retired types exactly because they are no longer provisionable', () => {
+    const types = previewableEntityRoles().map((r) => r.type) as string[]
+    expect(types.includes('practitioner')).toBe(isProvisionableType('practitioner'))
+    expect(types.includes('coaching')).toBe(isProvisionableType('coaching'))
   })
 })
 

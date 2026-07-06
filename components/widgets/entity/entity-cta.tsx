@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
+import { resolveMode, type ModeVariant } from '@/lib/spaces/modes'
 import { listEventsForSpace } from '@/lib/events/store'
 import { ModuleCard } from '@/components/modules/module-card'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -14,56 +15,71 @@ import { TicketsMember } from '@/components/spaces/tickets/tickets-member'
 import { EntityCtaLink } from '@/components/widgets/entity/entity-cta-link'
 
 // ENTITY MODULE - Action / Book (ENTITY-SPACES-BUILD section B.2, row `entity-booking`). A
-// self-fetching RSC for a blueprint's action tab. It reads the active Space and branches by role:
+// self-fetching RSC for a Space's action tab. After the ADR-552 type collapse the transactional widget
+// is chosen by the Space's resolved FOCUS (mode_variant, via lib/spaces/modes.ts resolveMode), NOT by
+// its type: a Business with the "appointments" Focus still books, one with "ticketed" still sells
+// tickets, and a Nonprofit with "donations" still takes donations. Focus is FREE framing (never a
+// gate), so this only picks which deep surface leads; every surface stays reachable:
 //
-//   PRACTITIONER ("Book"-type CTA): renders the real 1:1 BOOKING surface (ENTITY-SPACES-SYSTEM
-//   section 2.4, booking v1). The member sees the next ~14 days of open slots (in the Space's
-//   timezone, labeled), picks one, and confirms. The slot fetch sits behind <Suspense> so the tab
-//   paints instantly (PAGE-FRAMEWORK section 5).
+//   BOOKING (appointments Focus): the real 1:1 BOOKING surface (ENTITY-SPACES-SYSTEM 2.4, booking v1).
+//   The member sees the next ~14 days of open slots (in the Space's timezone, labeled), picks one, and
+//   confirms.
 //
-//   BUSINESS ("Join"-type CTA): renders the real MEMBERSHIP surface (ENTITY-SPACES-SYSTEM section
-//   2.5, memberships v1). The member sees the Space's active tiers (name / price / benefits) and
-//   joins one, or, if already a member, sees their tier + a Cancel. v1 takes NO payment: joining
-//   registers the member, and the copy says so plainly (CONTENT-VOICE skeptic test). The tier fetch
-//   sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK section 5).
+//   MEMBERSHIP (service / product / membership Focus): the real MEMBERSHIP surface (ENTITY-SPACES-SYSTEM
+//   2.5). The member sees the active tiers (name / price / benefits) and joins one, or sees their tier +
+//   a Cancel. v1 takes NO payment: joining registers the member, and the copy says so plainly.
 //
-//   ORGANIZATION ("Donate"-type CTA): renders the real DONATE surface (MASTER-PLAN ADMIN-04, fed by
-//   the owner's donation ask from ADMIN-01). The member sees the fund label, description, and the
-//   owner's suggested amounts. v1 takes NO money: giving is not wired up yet and the copy says so
-//   plainly (CONTENT-VOICE skeptic test). DonateMember fires the `space.cta_click` event on mount.
+//   DONATE (donations Focus): the real DONATE surface (MASTER-PLAN ADMIN-04). The member sees the fund
+//   label, description, and suggested amounts. v1 takes NO money; the copy says so plainly. DonateMember
+//   fires the `space.cta_click` event on mount.
 //
-//   COACHING ("Enroll"-type CTA): renders the real ENROLL surface (MASTER-PLAN ADMIN-04, fed by the
-//   owner's published program from ADMIN-02). The member sees the program details + seats left and
-//   enrolls (or, if already enrolled, sees their status + a Cancel). v1 takes NO payment: enrolling
-//   reserves a seat, and the copy says so plainly. The Enroll button fires `space.cta_click`.
+//   ENROLL (packages / cohort / programs Focus): the real ENROLL surface (MASTER-PLAN ADMIN-04). The
+//   member sees the program details + seats left and enrolls (or sees their status + a Cancel). v1 takes
+//   NO payment: enrolling reserves a seat.
 //
-//   EVENT SPACE ("Get tickets"-type CTA): renders the real TICKETS surface (MASTER-PLAN ADMIN-04, fed
-//   by the owner's tiers from ADMIN-03). The member sees the free / RSVP tiers and reserves a spot (or,
-//   if already reserved, sees their spot + a Cancel). v1 takes NO money: a tier is free entry or a
-//   no-charge RSVP, and the copy says so plainly. The Reserve button fires `space.cta_click`.
+//   TICKETS (ticketed Focus): the real TICKETS surface (MASTER-PLAN ADMIN-04). The member sees the free /
+//   RSVP tiers and reserves a spot (or sees their spot + a Cancel). v1 takes NO money.
 //
-//   Each deep surface fetch sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK §5),
-//   and each names its empty state with EmptyState. So that operators keep seeing CTA performance just
-//   as the placeholder session list recorded it, every one of these surfaces fires a `space.cta_click`
-//   event (Epic 1.11) on the member's primary interaction.
+//   Each deep surface fetch sits behind <Suspense> so the tab paints instantly (PAGE-FRAMEWORK §5), and
+//   each fires a `space.cta_click` event (Epic 1.11) on the member's primary interaction.
 //
-//   REMAINING ROLES (anything without a deep engine, e.g. hub / lab / partner): fall through to the
-//   Space's own upcoming sessions, each routing to the session page to RSVP. The primary CTA there
-//   records a `space.cta_click` event (Epic 1.11) via EntityCtaLink.
+//   NO FOCUS (the platform host `root`, whose type resolves to no Mode): falls through to the Space's own
+//   upcoming sessions, each routing to the session page to RSVP. The primary CTA there records a
+//   `space.cta_click` event (Epic 1.11) via EntityCtaLink.
 //
 // NULL only when there is no active Space.
 //
-// COPY: the CTA is the per-type default primary-CTA label (profile-config, operator-overridable);
-// the empty names the situation + next step; no em/en dashes, no narrated feelings (CONTENT-VOICE
-// section 10).
+// COPY: the CTA is the per-type default primary-CTA label (profile-config, operator-overridable); the
+// empty names the situation + next step; no em/en dashes, no narrated feelings (CONTENT-VOICE §10).
+
+// The transactional widget a Focus (mode_variant) leads with. Keyed by the resolved Focus so every
+// widget path stays reachable regardless of the (now two-value) Space type. A Focus not listed
+// (or a Space with no Mode) falls through to the upcoming-sessions list below.
+type CtaKind = 'booking' | 'membership' | 'donate' | 'enroll' | 'tickets'
+const CTA_KIND_BY_VARIANT: Partial<Record<ModeVariant, CtaKind>> = {
+  appointments: 'booking',
+  service: 'membership',
+  product: 'membership',
+  membership: 'membership',
+  packages: 'enroll',
+  cohort: 'enroll',
+  programs: 'enroll',
+  donations: 'donate',
+  ticketed: 'tickets',
+}
+
 export async function EntityCta() {
   const space = getActiveSpace()
   if (!space) return null
   const ctaLabel = defaultPrimaryCtaLabel(space.type)
 
-  // Practitioner is the role whose deep feature is real 1:1 booking (the "Book" CTA). Render the
-  // live booking surface for it; every other role keeps the placeholder session list below.
-  if (space.type === 'practitioner') {
+  // Pick the transactional widget from the resolved FOCUS (mode_variant), not the type. A null Mode
+  // (the `root` host) has no Focus, so it falls through to the sessions list below.
+  const mode = resolveMode(space.type, space.modeVariant)
+  const ctaKind = mode ? CTA_KIND_BY_VARIANT[mode.variant] : undefined
+
+  // The appointments Focus leads with real 1:1 booking (the "Book" CTA).
+  if (ctaKind === 'booking') {
     return (
       <ModuleCard title="Book a session" tile>
         <Suspense fallback={<BookingSkeleton />}>
@@ -73,9 +89,8 @@ export async function EntityCta() {
     )
   }
 
-  // Business is the role whose deep feature is memberships (the "Join" CTA). Render the live
-  // membership/join surface for it; every other role keeps the placeholder session list below.
-  if (space.type === 'business') {
+  // The service / product / membership Focuses lead with memberships (the "Join" CTA).
+  if (ctaKind === 'membership') {
     return (
       <ModuleCard title="Become a member" tile>
         <Suspense fallback={<MembershipSkeleton />}>
@@ -85,9 +100,8 @@ export async function EntityCta() {
     )
   }
 
-  // Organization is the role whose deep feature is donations (the "Donate" CTA). Render the live
-  // Donate surface (owner-configured ask). v1 takes no money; giving is not wired up yet.
-  if (space.type === 'organization') {
+  // The donations Focus leads with the Donate surface (owner-configured ask). v1 takes no money.
+  if (ctaKind === 'donate') {
     return (
       <ModuleCard title={ctaLabel} tile>
         <Suspense fallback={<MembershipSkeleton />}>
@@ -97,9 +111,8 @@ export async function EntityCta() {
     )
   }
 
-  // Coaching is the role whose deep feature is enrollment (the "Enroll" CTA). Render the live Enroll
-  // surface (owner-published program + seats). v1 takes no payment; enrolling reserves a seat.
-  if (space.type === 'coaching') {
+  // The packages / cohort / programs Focuses lead with enrollment (the "Enroll" CTA). v1 reserves a seat.
+  if (ctaKind === 'enroll') {
     return (
       <ModuleCard title="Enroll in the program" tile>
         <Suspense fallback={<MembershipSkeleton />}>
@@ -109,9 +122,8 @@ export async function EntityCta() {
     )
   }
 
-  // Event Space is the role whose deep feature is ticketing (the "Get tickets" CTA). Render the live
-  // Tickets surface (owner tiers, free / RSVP). v1 takes no money; reserving records a spot.
-  if (space.type === 'event_space') {
+  // The ticketed Focus leads with the Tickets surface (owner tiers, free / RSVP). v1 records a spot.
+  if (ctaKind === 'tickets') {
     return (
       <ModuleCard title="Get tickets" tile>
         <Suspense fallback={<MembershipSkeleton />}>

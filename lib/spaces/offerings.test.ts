@@ -15,15 +15,8 @@ import type { SpaceType } from './types'
 const ALL_ANCHORS = OFFERING_SECTIONS.map((s) => s.anchor)
 const ALL_FNS = OFFERING_SECTIONS.map((s) => s.requiredFunction)
 
-const CONSOLE_TYPES: readonly SpaceType[] = [
-  'practitioner',
-  'business',
-  'organization',
-  'event_space',
-  'coaching',
-  'lab',
-  'partner',
-]
+// After the ADR-552 collapse the public types are business + nonprofit (+ the hidden root host).
+const CONSOLE_TYPES: readonly SpaceType[] = ['business', 'nonprofit']
 
 describe('offerings catalog · offeringSectionsForType (UNIVERSAL)', () => {
   for (const type of CONSOLE_TYPES) {
@@ -39,8 +32,8 @@ describe('offerings catalog · offeringSectionsForType (UNIVERSAL)', () => {
   })
 
   it('exposes every section function for every type so the console gates the card on usability', () => {
-    expect(offeringFunctionsForType('event_space')).toEqual(ALL_FNS)
-    expect(offeringFunctionsForType('lab')).toEqual(ALL_FNS)
+    expect(offeringFunctionsForType('business')).toEqual(ALL_FNS)
+    expect(offeringFunctionsForType('nonprofit')).toEqual(ALL_FNS)
   })
 
   it('has unique anchors (each is a distinct page section id)', () => {

@@ -58,7 +58,7 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
   // manifest. With every function usable the two align exactly, id AND order (every module gates purely on
   // its own function, so the rail and the console resolve the identical set for a given viewer).
   const everyFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => true }
-  const OFFERING_TYPES: SpaceType[] = ['practitioner', 'business', 'organization', 'event_space']
+  const OFFERING_TYPES: SpaceType[] = ['business', 'nonprofit']
 
   it('matches the module manifest id set for each offering-bearing type', () => {
     for (const type of OFFERING_TYPES) {
@@ -73,7 +73,7 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
     // email, billing) drop; the always-on (gate 'none') floor — Identity / Info / Settings / Page / Store /
     // the Module Manager / Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
     const noFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => false }
-    const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, noFn, 'editor').map((a) => a.id)
+    const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'business' }, noFn, 'editor').map((a) => a.id)
     expect(got).toContain('space.basics')
     expect(got).toContain('space.danger')
     expect(got).toContain('space.modules') // the Module Manager (always-on shell) stays
@@ -85,7 +85,7 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
     // rail while every other module stays put. The hidden/order ride on scope.moduleMenu (the Customize
     // trigger passes the owner's saved spaces.preferences.moduleMenu).
     const hidden = appsForScope(
-      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { hidden: ['space.booking'] } },
+      { kind: 'space', id: 'x', spaceType: 'business', moduleMenu: { hidden: ['space.booking'] } },
       everyFn,
       'editor',
     ).map((a) => a.id)
@@ -94,7 +94,7 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
 
     // Reorder CRM ahead of Members within the Audience band: CRM's within-band priority now sorts first.
     const apps = appsForScope(
-      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { order: ['space.crm', 'space.people'] } },
+      { kind: 'space', id: 'x', spaceType: 'business', moduleMenu: { order: ['space.crm', 'space.people'] } },
       everyFn,
       'editor',
     )
@@ -105,11 +105,11 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
 
   it('an empty menu override is byte-for-byte the default manifest set (no reorder, no hiding)', () => {
     const withEmpty = appsForScope(
-      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { order: [], hidden: [] } },
+      { kind: 'space', id: 'x', spaceType: 'business', moduleMenu: { order: [], hidden: [] } },
       everyFn,
       'editor',
     )
-    const plain = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, everyFn, 'editor')
+    const plain = appsForScope({ kind: 'space', id: 'x', spaceType: 'business' }, everyFn, 'editor')
     expect(withEmpty).toEqual(plain)
   })
 
@@ -118,7 +118,7 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
   })
 
   it('a Space scope carries no layout-module page blocks', () => {
-    expect(appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, everyFn, 'page')).toEqual([])
+    expect(appsForScope({ kind: 'space', id: 'x', spaceType: 'business' }, everyFn, 'page')).toEqual([])
   })
 })
 

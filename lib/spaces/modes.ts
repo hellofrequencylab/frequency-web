@@ -98,14 +98,13 @@ export interface ModeProfile {
 }
 
 // ── Default Focus per Mode (the variant a null `mode_variant` resolves to) ────────────────────────
-// Per the plan §2a. A type absent here (root) has no Focus; resolveMode falls to null (generic console).
+// After the ADR-552 type collapse there are two public Modes — `business` and `nonprofit`. Every
+// former type (practitioner / coaching / event_space / lab) is now a free FOCUS preset UNDER Business,
+// so `business` carries many focuses and `nonprofit` its own small set. A type absent here (root) has
+// no Focus; resolveMode falls to null (generic console).
 const DEFAULT_VARIANT: Partial<Record<SpaceType, ModeVariant>> = {
   business: 'service',
-  coaching: 'packages',
-  practitioner: 'appointments',
-  event_space: 'ticketed',
-  organization: 'donations',
-  lab: 'cohort',
+  nonprofit: 'donations',
 }
 
 // ── The registered ModeProfiles, keyed `${type}:${variant}` ───────────────────────────────────────
@@ -163,7 +162,7 @@ const BUSINESS_PRODUCT: ModeProfile = {
 
 // Coaching · packages (default): multi-session packages + 1:1 scheduling.
 const COACHING_PACKAGES: ModeProfile = {
-  type: 'coaching',
+  type: 'business',
   variant: 'packages',
   modeLabel: 'Coach',
   focusLabel: 'Packages and scheduling',
@@ -188,7 +187,7 @@ const COACHING_PACKAGES: ModeProfile = {
 
 // Coaching · cohort: programs / curriculum / enrollment.
 const COACHING_COHORT: ModeProfile = {
-  type: 'coaching',
+  type: 'business',
   variant: 'cohort',
   modeLabel: 'Coach',
   focusLabel: 'Programs and cohorts',
@@ -213,7 +212,7 @@ const COACHING_COHORT: ModeProfile = {
 
 // Practitioner · appointments (default): 1:1 booking.
 const PRACTITIONER_APPOINTMENTS: ModeProfile = {
-  type: 'practitioner',
+  type: 'business',
   variant: 'appointments',
   modeLabel: 'Practitioner',
   focusLabel: '1:1 sessions',
@@ -237,7 +236,7 @@ const PRACTITIONER_APPOINTMENTS: ModeProfile = {
 
 // Practitioner · programs: paid program enrollment.
 const PRACTITIONER_PROGRAMS: ModeProfile = {
-  type: 'practitioner',
+  type: 'business',
   variant: 'programs',
   modeLabel: 'Practitioner',
   focusLabel: 'Paid programs',
@@ -261,7 +260,7 @@ const PRACTITIONER_PROGRAMS: ModeProfile = {
 
 // Event Space · ticketed (default): tickets / passes.
 const EVENT_TICKETED: ModeProfile = {
-  type: 'event_space',
+  type: 'business',
   variant: 'ticketed',
   modeLabel: 'Event space',
   focusLabel: 'Tickets and passes',
@@ -284,7 +283,7 @@ const EVENT_TICKETED: ModeProfile = {
 
 // Event Space · membership: recurring access.
 const EVENT_MEMBERSHIP: ModeProfile = {
-  type: 'event_space',
+  type: 'business',
   variant: 'membership',
   modeLabel: 'Event space',
   focusLabel: 'Recurring access',
@@ -307,7 +306,7 @@ const EVENT_MEMBERSHIP: ModeProfile = {
 
 // Organization · donations (default): giving + supporters.
 const ORG_DONATIONS: ModeProfile = {
-  type: 'organization',
+  type: 'nonprofit',
   variant: 'donations',
   modeLabel: 'Nonprofit',
   focusLabel: 'Donations and supporters',
@@ -331,7 +330,7 @@ const ORG_DONATIONS: ModeProfile = {
 
 // Organization · programs: enrollment + impact.
 const ORG_PROGRAMS: ModeProfile = {
-  type: 'organization',
+  type: 'nonprofit',
   variant: 'programs',
   modeLabel: 'Nonprofit',
   focusLabel: 'Programs and enrollment',
@@ -353,41 +352,22 @@ const ORG_PROGRAMS: ModeProfile = {
   ],
 }
 
-// Lab · cohort (default): experiments / cohorts (internal for now).
-const LAB_COHORT: ModeProfile = {
-  type: 'lab',
-  variant: 'cohort',
-  modeLabel: 'Lab',
-  focusLabel: 'Experiments and cohorts',
-  tagline: 'Run experiments with cohorts and gather the people in the room.',
-  navEmphasis: ['members', 'qr'],
-  defaultToggles: ['members', 'qr'],
-  pipeline: [
-    { name: 'New', kind: 'open' },
-    { name: 'Active', kind: 'open' },
-    { name: 'Won', kind: 'won' },
-    { name: 'Lost', kind: 'lost' },
-  ],
-  lexicon: { people: 'Regulars', person: 'Regular', offerings: 'Sessions', offering: 'Session' },
-  recommendedAddons: [],
-  nextBestActions: [{ label: 'Invite a regular', surface: 'space.people' }],
-}
-
-/** Every registered ModeProfile, keyed `${type}:${variant}`. The default Focus per type is in
- *  DEFAULT_VARIANT above. A new Mode/Focus is one entry here + (if a new Focus) its DEFAULT_VARIANT
- *  line, never a core edit. */
+/** Every registered ModeProfile, keyed `${type}:${variant}`. After the ADR-552 collapse every former
+ *  public type is a free FOCUS under `business` (appointments / packages / cohort / programs / ticketed
+ *  / membership / service / product), and `nonprofit` carries its own set (donations / programs). The
+ *  default Focus per type is in DEFAULT_VARIANT above. A new Mode/Focus is one entry here + (if a new
+ *  Focus) its DEFAULT_VARIANT line, never a core edit. */
 const MODES: Record<string, ModeProfile> = {
   'business:service': BUSINESS_SERVICE,
   'business:product': BUSINESS_PRODUCT,
-  'coaching:packages': COACHING_PACKAGES,
-  'coaching:cohort': COACHING_COHORT,
-  'practitioner:appointments': PRACTITIONER_APPOINTMENTS,
-  'practitioner:programs': PRACTITIONER_PROGRAMS,
-  'event_space:ticketed': EVENT_TICKETED,
-  'event_space:membership': EVENT_MEMBERSHIP,
-  'organization:donations': ORG_DONATIONS,
-  'organization:programs': ORG_PROGRAMS,
-  'lab:cohort': LAB_COHORT,
+  'business:packages': COACHING_PACKAGES,
+  'business:cohort': COACHING_COHORT,
+  'business:appointments': PRACTITIONER_APPOINTMENTS,
+  'business:programs': PRACTITIONER_PROGRAMS,
+  'business:ticketed': EVENT_TICKETED,
+  'business:membership': EVENT_MEMBERSHIP,
+  'nonprofit:donations': ORG_DONATIONS,
+  'nonprofit:programs': ORG_PROGRAMS,
 }
 
 function key(type: SpaceType, variant: ModeVariant): string {
@@ -468,18 +448,20 @@ export interface ModeChoice {
   hint: string
 }
 
-// The wizard's curated "what do you run?" order (plan §3a). One row per meaningful operating model, each
-// a (type, variant). This is the FRONT DOOR copy: plain headlines a member self-selects. Kept as an
-// explicit list (not every registered Mode) so the picker stays the 7 operator-true choices the plan
-// specifies, while the registry can carry more variants for the switcher.
+// The wizard's curated "what do you run?" order (plan §3a). One row per meaningful operating model. This
+// is the FRONT DOOR copy: plain headlines a member self-selects. After the ADR-552 collapse EVERY
+// non-nonprofit choice provisions a `business` Space; the human distinction (Coach / Practitioner /
+// Studio / ...) is carried entirely by the FOCUS variant, which tailors the starter preset for free and
+// never gates. Only "Nonprofit" provisions the `nonprofit` type. Each row maps to a distinct
+// (type, variant) so the radio ids stay unique.
 const WIZARD_CHOICES: readonly { type: SpaceType; variant: ModeVariant; label: string; hint: string }[] = [
-  { type: 'coaching', variant: 'packages', label: 'Coach', hint: 'Packages and scheduling' },
+  { type: 'business', variant: 'packages', label: 'Coach', hint: 'Packages and scheduling' },
+  { type: 'business', variant: 'appointments', label: 'Practitioner', hint: '1:1 sessions' },
   { type: 'business', variant: 'service', label: 'Service business', hint: 'Bookings and quotes' },
   { type: 'business', variant: 'product', label: 'Product business', hint: 'Catalog and storefront' },
-  { type: 'business', variant: 'service', label: 'Studio or gym', hint: 'Classes and memberships' },
-  { type: 'practitioner', variant: 'appointments', label: 'Practitioner', hint: '1:1 sessions' },
-  { type: 'organization', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
-  { type: 'event_space', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
+  { type: 'business', variant: 'membership', label: 'Studio or gym', hint: 'Classes and memberships' },
+  { type: 'business', variant: 'ticketed', label: 'Event space', hint: 'Tickets and check in' },
+  { type: 'nonprofit', variant: 'donations', label: 'Nonprofit', hint: 'Programs and donations' },
 ]
 
 /** The create wizard's "what do you run?" choices, in plan §3a order. Only choices whose (type, variant)

@@ -339,22 +339,18 @@ describe('personSchema', () => {
 // ── spaceSchema ───────────────────────────────────────────────────────────────
 
 describe('spaceSchema', () => {
-  it('maps a practitioner to a Person', () => {
-    const result = spaceSchema({ slug: 'river-yoga', type: 'practitioner', name: 'River Yoga' })
-    expect(result['@type']).toBe('Person')
+  it('maps a business to a LocalBusiness', () => {
+    const result = spaceSchema({ slug: 'river-yoga', type: 'business', name: 'River Yoga' })
+    expect(result['@type']).toBe('LocalBusiness')
     expect(result.name).toBe('River Yoga')
     expect(result.url).toBe(`${SITE_URL}/spaces/river-yoga`)
   })
 
-  it('maps business / event_space / coaching to LocalBusiness', () => {
-    for (const type of ['business', 'event_space', 'coaching']) {
-      const result = spaceSchema({ slug: 's', type, name: 'N' })
-      expect(result['@type']).toBe('LocalBusiness')
-    }
-  })
-
-  it('maps an organization (and any unknown type) to Organization', () => {
-    expect(spaceSchema({ slug: 's', type: 'organization', name: 'N' })['@type']).toBe('Organization')
+  it('maps a nonprofit (and any unknown / host type) to Organization', () => {
+    // After the ADR-552 collapse the two public types are business -> LocalBusiness and nonprofit ->
+    // Organization; the hidden `root` host and any unknown value also fall back to Organization.
+    expect(spaceSchema({ slug: 's', type: 'nonprofit', name: 'N' })['@type']).toBe('Organization')
+    expect(spaceSchema({ slug: 's', type: 'root', name: 'N' })['@type']).toBe('Organization')
     expect(spaceSchema({ slug: 's', type: 'mystery', name: 'N' })['@type']).toBe('Organization')
   })
 
@@ -374,7 +370,7 @@ describe('spaceSchema', () => {
   })
 
   it('omits description when there is no tagline', () => {
-    const result = spaceSchema({ slug: 'sp', type: 'practitioner', name: 'N' })
+    const result = spaceSchema({ slug: 'sp', type: 'business', name: 'N' })
     expect(result).not.toHaveProperty('description')
   })
 })

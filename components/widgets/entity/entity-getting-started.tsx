@@ -25,11 +25,8 @@ import { buttonClasses } from '@/components/ui/button'
 // What lands on a profile, by role — the plain "here's what's coming" list. Role-specific so the
 // promise matches the Space's job (§5): a venue talks events, a coach talks curriculum.
 const COMING: Record<string, string[]> = {
-  practitioner: ['Sessions you can book', 'Practices and Journeys to try', 'Circles to join'],
-  business: ['Classes on the schedule', 'Memberships to join', 'The team behind the studio'],
-  organization: ['Programs and the work behind them', 'Ways to support', 'Circles to take part in'],
-  coaching: ['The curriculum and how it runs', 'Programs to enroll in', 'The coaches you will work with'],
-  event_space: ['Events with tickets', 'What the venue hosts', 'Circles around the space'],
+  business: ['Sessions and classes to book', 'Memberships to join', 'The team behind the space'],
+  nonprofit: ['Programs and the work behind them', 'Ways to support', 'Circles to take part in'],
 }
 const DEFAULT_COMING = ['Sessions to book', 'Practices to try', 'Circles to join']
 
