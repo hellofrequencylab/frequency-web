@@ -53,7 +53,7 @@ export interface Persona {
 export const PERSONAS: Persona[] = [
   {
     slug: 'coaches',
-    type: 'coaching',
+    type: 'business',
     variant: 'packages',
     audience: 'Coaches',
     focus: 'Sell multi-session packages, fill your calendar, and keep a client CRM in one place.',
@@ -105,7 +105,7 @@ export const PERSONAS: Persona[] = [
   },
   {
     slug: 'nonprofits',
-    type: 'organization',
+    type: 'nonprofit',
     variant: 'donations',
     audience: 'Nonprofits',
     focus: 'Raise money, grow your supporters, and run your programs, on the full-depth tier.',
@@ -118,7 +118,7 @@ export const PERSONAS: Persona[] = [
   },
   {
     slug: 'event-spaces',
-    type: 'event_space',
+    type: 'business',
     variant: 'ticketed',
     audience: 'Event spaces',
     focus: 'Sell tickets, check attendees in, and fill the room, on the Pro base.',

@@ -22,13 +22,8 @@ export const HOST_ACCENT = '--color-primary'
  *  column overrides this; it is only the fallback. Matches the legacy blueprint defaults. */
 const ACCENT_BY_TYPE: Record<SpaceType, string> = {
   root: HOST_ACCENT,
-  practitioner: '--color-primary',
   business: '--color-broadcast',
-  organization: '--color-signal',
-  coaching: '--color-info',
-  event_space: '--color-warning',
-  lab: '--color-success',
-  partner: '--color-broadcast',
+  nonprofit: '--color-signal',
 }
 
 /** The default brand accent token for a Space type (host amber for unknown types). */
@@ -40,13 +35,8 @@ export function defaultAccentForType(type: string): string {
  *  NAMING + CONTENT-VOICE). The operator can override the label per Space. */
 const CTA_LABEL_BY_TYPE: Record<SpaceType, string> = {
   root: 'Get started',
-  practitioner: 'Book',
   business: 'Become a member',
-  organization: 'Donate',
-  coaching: 'Enroll',
-  event_space: 'Get tickets',
-  lab: 'Visit',
-  partner: 'Join',
+  nonprofit: 'Donate',
 }
 
 /** The default primary-CTA label for a Space type ("Get started" for unknown types). */
@@ -75,13 +65,8 @@ export function defaultHeroStats(): string[] {
 
 /** The provisionable Space types in canonical display order, each a `{ value, label }` choice. */
 const PROVISIONABLE_TYPES: readonly { value: SpaceType; label: string }[] = [
-  { value: 'practitioner', label: 'Practitioner' },
   { value: 'business', label: 'Business' },
-  { value: 'organization', label: 'Organization' },
-  { value: 'coaching', label: 'Coaching' },
-  { value: 'event_space', label: 'Event Space' },
-  { value: 'lab', label: 'Lab' },
-  { value: 'partner', label: 'Partner' },
+  { value: 'nonprofit', label: 'Non Profit' },
 ]
 
 /** The provisionable Space types as `{ value, label }` choices, in canonical order. A fresh

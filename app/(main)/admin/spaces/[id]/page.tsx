@@ -169,9 +169,10 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
           title="Preview owner back-end"
           description="Open this Space's owner surfaces read-only, exactly as the owner sees them. Changes are disabled in preview."
         >
-          {/* The per-type link set MIRRORS the live owner settings hub one-for-one (read its page.tsx
-              for the source-of-truth gating + routes): the same type-gated surfaces, then the four
-              universal owner tools every type shares. Keep these in lockstep so the two never drift. */}
+          {/* After the ADR-552 collapse every commerce surface is UNIVERSAL (every function applies to
+              every type). The two public types just lead with a different set: a Business previews the
+              booking / membership / ticketing / check-in surfaces, a Nonprofit the donations + enrollment
+              surfaces. Read the owner console for the live source-of-truth gating. */}
           <div className="space-y-3">
             <PreviewLink
               href={spaceManageHref(space.type, space.slug)}
@@ -179,53 +180,49 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
               title="Manage hub"
               description="The owner's settings hub: profile, brand, and visibility."
             />
-            {space.type === 'practitioner' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/availability`}
-                icon={CalendarClock}
-                title="Availability and bookings"
-                description="The weekly booking windows and the owner's calendar."
-              />
-            )}
             {space.type === 'business' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/memberships`}
-                icon={BadgeCheck}
-                title="Memberships"
-                description="The membership tiers and who has joined."
-              />
+              <>
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/availability`}
+                  icon={CalendarClock}
+                  title="Availability and bookings"
+                  description="The weekly booking windows and the owner's calendar."
+                />
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/memberships`}
+                  icon={BadgeCheck}
+                  title="Memberships"
+                  description="The membership tiers and who has joined."
+                />
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/tickets`}
+                  icon={Ticket}
+                  title="Tickets"
+                  description="The free or RSVP ticket tiers and who has reserved a spot."
+                />
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/checkin`}
+                  icon={DoorOpen}
+                  title="Check in"
+                  description="The door code and the live roster of who checked in."
+                />
+              </>
             )}
-            {space.type === 'organization' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/donations`}
-                icon={HeartHandshake}
-                title="Donations"
-                description="The fund, its description, and the suggested amounts members can pick."
-              />
-            )}
-            {space.type === 'coaching' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/enroll`}
-                icon={GraduationCap}
-                title="Enrollment"
-                description="The program definition and who has enrolled."
-              />
-            )}
-            {space.type === 'event_space' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/checkin`}
-                icon={DoorOpen}
-                title="Check in"
-                description="The door code and the live roster of who checked in."
-              />
-            )}
-            {space.type === 'event_space' && (
-              <PreviewLink
-                href={`/spaces/${space.slug}/settings/tickets`}
-                icon={Ticket}
-                title="Tickets"
-                description="The free or RSVP ticket tiers and who has reserved a spot."
-              />
+            {space.type === 'nonprofit' && (
+              <>
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/donations`}
+                  icon={HeartHandshake}
+                  title="Donations"
+                  description="The fund, its description, and the suggested amounts members can pick."
+                />
+                <PreviewLink
+                  href={`/spaces/${space.slug}/settings/enroll`}
+                  icon={GraduationCap}
+                  title="Enrollment"
+                  description="The program definition and who has enrolled."
+                />
+              </>
             )}
             {/* The universal four every Space type composes (Members, QR, CRM, Email). */}
             <PreviewLink

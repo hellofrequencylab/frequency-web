@@ -20,7 +20,7 @@ import {
 
 const PRACTITIONER: SpaceContext = {
   name: 'Still Point',
-  type: 'practitioner',
+  type: 'business',
   brandName: 'Still Point',
   about: 'breathwork and rest sessions for people who sit at a desk all day',
 }
@@ -51,7 +51,7 @@ describe('deterministic fallbacks (AI off → still useful copy)', () => {
   it('fallbackBio grounds in the brand, type, and the owner words', () => {
     const bio = fallbackBio(PRACTITIONER)
     expect(bio).toContain('Still Point')
-    expect(bio).toContain('practitioner')
+    expect(bio).toContain('business')
     expect(bio).toContain('breathwork')
     expect(bio.length).toBeGreaterThan(20)
     noEmDash(bio)
@@ -83,13 +83,13 @@ describe('deterministic fallbacks (AI off → still useful copy)', () => {
   })
 
   it('fallbackTagline is short, plain, and type-aware', () => {
-    const tag = fallbackTagline({ type: 'coaching' })
+    const tag = fallbackTagline({ type: 'business' })
     expect(tag.length).toBeGreaterThan(0)
     expect(tag.length).toBeLessThanOrEqual(80)
     expect(tag).not.toMatch(/\.$/) // no trailing period on a tagline
     noEmDash(tag)
-    noEmDash(fallbackTagline({ type: 'practitioner' }))
-    noEmDash(fallbackTagline({ type: 'lab' }))
+    noEmDash(fallbackTagline({ type: 'nonprofit' }))
+    noEmDash(fallbackTagline({ type: 'root' }))
     noEmDash(fallbackTagline({}))
   })
 })
@@ -174,7 +174,7 @@ describe('spaceId flows into the cost ledger (no network)', () => {
     const out = await drafter({
       spaceId: 'space-123',
       name: 'Still Point',
-      type: 'practitioner',
+      type: 'business',
       profileId: 'profile-9',
     })
 

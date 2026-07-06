@@ -106,7 +106,7 @@ async function run(input: Parameters<typeof createSpace>[0]): Promise<
   }
 }
 
-const VALID = { type: 'practitioner', name: 'River Yoga', slug: 'river-yoga' }
+const VALID = { type: 'business', name: 'River Yoga', slug: 'river-yoga' }
 
 describe('createSpace — permission', () => {
   it('rejects an anonymous caller and writes nothing', async () => {
@@ -167,7 +167,7 @@ describe('createSpace — happy path', () => {
     expect(row).toMatchObject({
       slug: 'river-yoga',
       name: 'River Yoga',
-      type: 'practitioner',
+      type: 'business',
       status: 'active',
       entity_id: ROOT_ENTITY, // resolved at runtime, not hardcoded
       plan: 'free',

@@ -55,7 +55,7 @@ describe('the registry', () => {
 describe('type scoping (UNIVERSAL — ADR-517 Phase F)', () => {
   it('EVERY function applies to EVERY type: every profile is the same functionally', () => {
     const allKeys = SPACE_FUNCTIONS.map((f) => f.key)
-    for (const type of ['practitioner', 'business', 'organization', 'event_space', 'coaching', 'lab', 'partner'] as const) {
+    for (const type of ['business', 'nonprofit', 'root'] as const) {
       const keys = functionsForType(type).map((f) => f.key)
       expect(keys).toEqual(allKeys) // full registry, no per-type restriction
     }
@@ -169,10 +169,12 @@ describe('spaceFunctionAccess (the gate — UNIVERSAL, ADR-517 Phase F)', () => 
 
 describe('SpaceType guard (Phase 2)', () => {
   it('SPACE_TYPES carries the member-facing + platform types and isSpaceType fails closed', () => {
-    expect(SPACE_TYPES).toContain('practitioner')
-    expect(SPACE_TYPES).toContain('event_space')
+    // After the ADR-552 collapse: two public types (business / nonprofit) + the hidden platform host.
+    expect(SPACE_TYPES).toContain('business')
+    expect(SPACE_TYPES).toContain('nonprofit')
     expect(SPACE_TYPES).toContain('root')
     expect(isSpaceType('business')).toBe(true)
+    expect(isSpaceType('practitioner')).toBe(false)
     expect(isSpaceType('made-up')).toBe(false)
     expect(isSpaceType(null)).toBe(false)
     expect(isSpaceType(42)).toBe(false)

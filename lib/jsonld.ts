@@ -312,18 +312,16 @@ export function personSchema(p: { name: string; path: string; image?: string | n
 
 // ── Space (entity profile) ──────────────────────────────────────────────────────
 // A networked entity Space (/spaces/<slug>) is a PUBLIC profile by design (visibility = 'network'),
-// so it is a real schema.org node, not a city-redacted one: a Person for a practitioner, a
-// LocalBusiness for a place-based business / event space / coaching academy, and a plain Organization
-// for an organization (non-profit). The per-type @type maps off the Space's role so an answer engine
-// knows what kind of thing it is. NETWORK spaces only: a Private space never reaches this builder
-// (the page emits noindex and omits the schema). Brand name + tagline only; no member data.
+// so it is a real schema.org node, not a city-redacted one. After the ADR-552 type collapse there are
+// two public types: a `business` (whatever its free Focus, place-based or not) maps to LocalBusiness,
+// and a `nonprofit` maps to a plain Organization. The @type maps off the Space's type so an answer
+// engine knows what kind of thing it is. NETWORK spaces only: a Private space never reaches this
+// builder (the page emits noindex and omits the schema). Brand name + tagline only; no member data.
 
-/** The @type a Space's role maps to. Practitioner is a Person; business / event space / coaching are
- *  place-based LocalBusinesses; organization is a plain Organization. Unknown/internal roots fall
- *  back to Organization so the node is never blank. */
-function spaceSchemaType(type: string): 'Person' | 'LocalBusiness' | 'Organization' {
-  if (type === 'practitioner') return 'Person'
-  if (type === 'business' || type === 'event_space' || type === 'coaching') return 'LocalBusiness'
+/** The @type a Space's type maps to: `business` is a place-based LocalBusiness; `nonprofit` (and any
+ *  unknown/internal host like `root`) is a plain Organization, so the node is never blank. */
+function spaceSchemaType(type: string): 'LocalBusiness' | 'Organization' {
+  if (type === 'business') return 'LocalBusiness'
   return 'Organization'
 }
 

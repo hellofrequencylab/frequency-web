@@ -24,8 +24,8 @@ describe('profile block registry', () => {
 })
 
 describe('defaultProfileLayout (fresh default from type + enabled functions)', () => {
-  it('a practitioner with availability + members gets booking and team, in order', () => {
-    const layout = defaultProfileLayout('practitioner', fns('availability', 'members'))
+  it('a business with availability + members gets booking and team, in order', () => {
+    const layout = defaultProfileLayout('business', fns('availability', 'members'))
     expect(layout).toContain('booking')
     expect(layout).toContain('team')
     expect(layout).toContain('offerings')
@@ -35,7 +35,7 @@ describe('defaultProfileLayout (fresh default from type + enabled functions)', (
   })
 
   it('drops function-gated blocks when the function is off', () => {
-    const layout = defaultProfileLayout('practitioner', fns())
+    const layout = defaultProfileLayout('business', fns())
     expect(layout).not.toContain('booking') // needs availability
     expect(layout).not.toContain('team') // needs members
     expect(layout).toContain('about') // universal content stays
@@ -47,15 +47,15 @@ describe('defaultProfileLayout (fresh default from type + enabled functions)', (
     // function-only palette the live grid path (blocksForKind('space')) also uses.
     const withFns = fns('availability', 'members')
     const biz = defaultProfileLayout('business', withFns)
-    const prac = defaultProfileLayout('practitioner', withFns)
-    expect(biz).toEqual(prac)
-    expect(prac).toContain('booking') // availability on => booking, on any type
-    expect(prac).toContain('business') // universal content, on any type
-    expect(prac).toContain('offerings')
+    const np = defaultProfileLayout('nonprofit', withFns)
+    expect(biz).toEqual(np)
+    expect(np).toContain('booking') // availability on => booking, on any type
+    expect(np).toContain('business') // universal content, on any type
+    expect(np).toContain('offerings')
   })
 
   it('always includes the universal content sections', () => {
-    const layout = defaultProfileLayout('organization', fns())
+    const layout = defaultProfileLayout('nonprofit', fns())
     for (const id of ['about', 'highlights', 'events', 'reviews', 'faq', 'updates', 'contact'] as const) {
       expect(layout).toContain(id)
     }

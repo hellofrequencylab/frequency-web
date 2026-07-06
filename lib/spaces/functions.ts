@@ -31,16 +31,7 @@ import type { SpaceType } from './types'
  *  type-defaults editor and the seed-from-defaults path validate against this list (fail-closed for an
  *  unknown type). `root` is the platform host (not member-facing), but it stays here so the union is
  *  complete; the editor renders only the provisionable, member-facing types. */
-export const SPACE_TYPES: readonly SpaceType[] = [
-  'root',
-  'practitioner',
-  'business',
-  'organization',
-  'coaching',
-  'event_space',
-  'lab',
-  'partner',
-] as const
+export const SPACE_TYPES: readonly SpaceType[] = ['root', 'business', 'nonprofit'] as const
 
 /** Is `value` a known SpaceType? Fail-closed for unknown / future values. */
 export function isSpaceType(value: unknown): value is SpaceType {

@@ -22,14 +22,9 @@ import type { SpaceType } from './types'
 //   3. NON-GATING: the resolver returns null for a type with no preset rather than throwing, so a
 //      missing Mode reads as "no preset", not "no access".
 
-const MODE_TYPES: SpaceType[] = [
-  'business',
-  'coaching',
-  'practitioner',
-  'event_space',
-  'organization',
-  'lab',
-]
+// After the ADR-552 collapse there are two public Modes: `business` (carrying every former type's Focus
+// as a free preset) and `nonprofit`. `root` has no Mode.
+const MODE_TYPES: SpaceType[] = ['business', 'nonprofit']
 
 describe('resolveMode', () => {
   it('returns the exact registered profile for a known (type, variant)', () => {
@@ -41,17 +36,13 @@ describe('resolveMode', () => {
 
   it('falls back to the type default Focus when the variant is null', () => {
     expect(resolveMode('business', null)?.variant).toBe('service')
-    expect(resolveMode('coaching', null)?.variant).toBe('packages')
-    expect(resolveMode('practitioner', null)?.variant).toBe('appointments')
-    expect(resolveMode('event_space', null)?.variant).toBe('ticketed')
-    expect(resolveMode('organization', null)?.variant).toBe('donations')
-    expect(resolveMode('lab', null)?.variant).toBe('cohort')
+    expect(resolveMode('nonprofit', null)?.variant).toBe('donations')
   })
 
   it('falls back to the type default Focus when the variant is unknown / out-of-mode', () => {
     expect(resolveMode('business', 'does-not-exist')?.variant).toBe('service')
     // A variant valid for ANOTHER type is not valid here, so it falls back to the default.
-    expect(resolveMode('business', 'cohort')?.variant).toBe('service')
+    expect(resolveMode('business', 'donations')?.variant).toBe('service')
   })
 
   it('returns null for a type with no Mode (root / unknown) so Mode never gates', () => {
@@ -62,7 +53,7 @@ describe('resolveMode', () => {
   })
 
   it('resolves the default variant identically whether variant is null or the explicit default', () => {
-    expect(resolveMode('coaching', null)).toBe(resolveMode('coaching', 'packages'))
+    expect(resolveMode('business', null)).toBe(resolveMode('business', 'service'))
   })
 })
 
@@ -85,7 +76,23 @@ describe('listVariantsForType', () => {
   it('lists the default Focus first', () => {
     const variants = listVariantsForType('business')
     expect(variants[0]?.variant).toBe('service')
-    expect(variants.map((v) => v.variant).sort()).toEqual(['product', 'service'])
+    // Business carries every former type's Focus as a free preset (ADR-552).
+    expect(variants.map((v) => v.variant).sort()).toEqual([
+      'appointments',
+      'cohort',
+      'membership',
+      'packages',
+      'product',
+      'programs',
+      'service',
+      'ticketed',
+    ])
+  })
+
+  it('lists the nonprofit Focuses, default first', () => {
+    const variants = listVariantsForType('nonprofit')
+    expect(variants[0]?.variant).toBe('donations')
+    expect(variants.map((v) => v.variant).sort()).toEqual(['donations', 'programs'])
   })
 
   it('is empty for a type with no Mode', () => {
@@ -95,10 +102,9 @@ describe('listVariantsForType', () => {
 })
 
 describe('modeHasFocusChoice', () => {
-  it('is true for multi-Focus modes and false for single-Focus / no-Mode types', () => {
+  it('is true for multi-Focus modes and false for a no-Mode type', () => {
     expect(modeHasFocusChoice('business')).toBe(true)
-    expect(modeHasFocusChoice('coaching')).toBe(true)
-    expect(modeHasFocusChoice('lab')).toBe(false) // only one Focus
+    expect(modeHasFocusChoice('nonprofit')).toBe(true)
     expect(modeHasFocusChoice('root')).toBe(false)
   })
 })
@@ -189,17 +195,17 @@ describe('readModePreferences', () => {
 
 describe('effectiveNavEmphasis (operator overrides win)', () => {
   it('falls back to the Mode emphasis with no overrides', () => {
-    const mode = resolveMode('coaching', 'packages')
+    const mode = resolveMode('business', 'packages')
     expect(effectiveNavEmphasis(mode, {})).toEqual(mode?.navEmphasis)
   })
 
   it('a hand-sorted navOrder wins over the Mode emphasis', () => {
-    const mode = resolveMode('coaching', 'packages')
+    const mode = resolveMode('business', 'packages')
     expect(effectiveNavEmphasis(mode, { navOrder: ['crm', 'qr'] })).toEqual(['crm', 'qr'])
   })
 
   it('a toggle-OFF removes a module and a toggle-ON appends one', () => {
-    const mode = resolveMode('practitioner', 'appointments') // ['availability','crm','members','email','qr']
+    const mode = resolveMode('business', 'appointments') // ['availability','crm','members','email','qr']
     const out = effectiveNavEmphasis(mode, { toggles: { availability: false, tickets: true } })
     expect(out).not.toContain('availability')
     expect(out).toContain('tickets')

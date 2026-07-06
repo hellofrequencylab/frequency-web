@@ -252,6 +252,28 @@
   **Not "Studio"** (locked for the creation tool + the future Calm/Studio *mode* axis)
   and **not "Signal"** (a retired rank, below). Locked June 2026 (ADR-423).
 
+## Business pages (Spaces): two designators
+
+- **A Space has exactly two public designators: "Business" and "Non Profit"** (ADR-552,
+  July 2026). Each word is simultaneously the **type** (what the profile is, `spaces.type ∈
+  {business, nonprofit}`, plus the hidden platform `root`) AND the **plan** (how it bills,
+  `spaces.plan ∈ {free, business, nonprofit}`). One word covers both layers on purpose — there
+  is **no third vocabulary**: no "Pro", no "Organization", no "Practitioner" as a public type,
+  no tier names.
+- **Free vs paid is not a different plan name.** A paid Business is just a free Business using
+  more (usage + seats). Copy never says "upgrade to Pro" or names a second plan; it says "Go
+  Business" and talks in terms of usage ("keep going", "you'd have saved $X"). Same for Non Profit.
+- **Casing:** "Business" and "Non Profit" (two words, both capitalized) as the designator / chip.
+  In running sentences, sentence case applies as normal.
+- **The public profile chip** shows only "Business" or "Non Profit" (never the old type labels).
+- **Focus** = a free sub-preset under a type (`spaces.mode_variant`, e.g. appointments, packages,
+  service, ticketed). Practitioner / Coach / Studio / Event live here as *framing only* — they
+  tune the starter layout, pipeline, and lexicon, never gate anything, and are not public
+  designators (not shown as the chip).
+- **Retired as public type / plan words:** `pro`, `practitioner`, `organization`, `coaching`,
+  `event_space`, `lab`, `partner`, `whitelabel` (as a tier). They may persist as archived catalog
+  keys or Focus ids, but never as a member-facing type or plan name.
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·

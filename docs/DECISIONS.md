@@ -11563,3 +11563,49 @@ The short column is threaded fail-safe into the render bag: `getSpaceAbout(space
 - **Team card shows the full name.** The member card's name wrapper lacked `flex-1`, so with `min-w-0` + `truncate` the name collapsed to nothing in a narrow (Main/Side) column. The wrapper is now `flex-1 min-w-0` and the name wraps (`break-words`, no truncate), so the card is a rectangle that always shows who the person is.
 
 **Consequences.** Presentation + client-store timing only — no schema, no server actions, no gate weakened. Gate green: `tsc`, eslint, vitest (entity-blocks), check:canon, check:authz.
+
+## ADR-552: Two programs, one simple system — collapse spaces to Business / Non Profit, usage-metered
+
+**Status:** Accepted (2026-07-06). Approved owner direction. Finalizes the space model into two
+types and two paid programs. Full plan + phased build: `docs/BUSINESS-MODEL-PLAN.md`. Ships
+behind `billing_live = OFF`; nothing charges until an operator flips it.
+
+**Context.** The space model accumulated two orthogonal ladders — 8 `spaces.type` values and a
+5+ plan tier stack (`free/pro/business/nonprofit/organization` + whitelabel + an add-on loadout)
+— on top of a system that ADR-517/519 had already made functionally universal (every tool on for
+every space; monetize usage, never access). The result was a lot of surface for a model whose
+intent is now simple: one page free, every tool on but capped, pay to use more. The owner directed
+a strip-down to the simplest thing that can grow later.
+
+**Decision.**
+- **Two types:** `business` and `nonprofit` (plus the hidden platform `root`). Every removed type
+  (practitioner, coaching, organization→nonprofit, event_space, lab, partner) folds into a free
+  **Focus** preset under Business (or the nonprofit set). Focus stays free framing — starter
+  layout, CRM pipeline seed, lexicon — and never gates.
+- **Two programs:** `business` and `nonprofit`, plus `free`. Free-vs-paid is **not a separate plan
+  name** — it is a usage state within Business. You stay "Business" and pay as you use more + per
+  seat. This retires `pro`, `organization`, and `whitelabel` as tiers (archived, never deleted, so
+  grandfathered subscriptions still resolve).
+- **Naming:** "Business" and "Non Profit" are each simultaneously the type and the plan — one word,
+  no third vocabulary. Recorded in `docs/NAMING.md`.
+- **Paywall = usage + seats + take-rate**, never a feature lock. Free is a genuine taste with caps
+  that make upgrading a no-brainer at the moment of success (see the free allowance table + the
+  "you'd have saved $X" take-rate math in the plan doc).
+- **Defaults chosen (reversible):** `organization` DB value renamed to `nonprofit`; free take-rate
+  5% / Business 3%; a small daily Vera AI taste on free; Focus presets kept.
+
+**Alternatives.** (1) Keep the 4-tier ladder (ADR-472) — rejected: more surface than the intent
+needs, and it reintroduces the tier vocabulary the owner wants gone. (2) Scale Business price by
+unlocking features (per-feature tiers) — rejected: contradicts ADR-519's "all features available,
+never show a lock" and reintroduces paywalls; the usage-meter engine already models the right thing
+(pay for more, not for access). (3) Keep all 8 types, only collapse the plans — rejected: the type
+sprawl is most of the admin/wizard complexity, and every capability is already universal, so the
+types earn nothing but a starter preset, which Focus already provides.
+
+**Consequences.** A large but overwhelmingly mechanical collapse: type/label edits + a plan-catalog
+prune + one genuine logic move (the `entity-cta.tsx` transactional fork re-bases from `type` onto
+`mode_variant`). It also unlocks a round of admin simplification (one menu+features surface, delete
+~9 dead settings routes, a one-field create wizard). Executed as the phased build in
+`docs/BUSINESS-MODEL-PLAN.md` (Phase 0 docs → 1 types → 2 plans → 3 usage numbers → 4 ease-of-use →
+5 profile polish → 6 copy/go-live). No behavior changes for a live space until `billing_live` is
+flipped; every retired catalog item is archived so existing subscriptions keep resolving.

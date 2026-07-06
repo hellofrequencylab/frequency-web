@@ -86,9 +86,9 @@ describe('mergeProfileLayout', () => {
 })
 
 describe('effectiveProfileLayout (default + saved, off a space)', () => {
-  // A practitioner with no plan-gated functions: universal blocks apply; 'booking'/'team' need
+  // A business with no plan-gated functions: universal blocks apply; 'booking'/'team' need
   // availability/members which are OFF here, so they are absent from the fresh default.
-  const space = { type: 'practitioner' as const, entitlements: {} }
+  const space = { type: 'business' as const, entitlements: {} }
 
   it('a null / malformed blob yields the fresh default', () => {
     const fresh = effectiveProfileLayout(space, undefined)
