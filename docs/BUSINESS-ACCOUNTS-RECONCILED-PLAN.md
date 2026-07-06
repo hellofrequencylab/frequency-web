@@ -66,6 +66,40 @@ CRM cockpit — we extend, never rebuild.
 - Every change: full `tsc` + `lint` + `test` + `check:authz` green before merge; migrations get RLS +
   a contract test.
 
+## Close-out status (2026-07-06)
+
+The business-account build is **effectively complete and live on `main` + production**. Landed this session:
+
+| Capability | Code | Prod DB | State |
+|---|---|---|---|
+| SEO: `aggregateRating` in schema + completeness meter | merged (#1580) | none | ✅ live |
+| Churn: per-space contact at-risk scorer + cockpit surface | merged (#1581) | `contacts.risk_score/at_risk/risk_factors` applied + verified | ✅ live |
+| Automation: scheduled campaign send job + rule/drip authoring UI | #1582 (merging) | `space_automation_rules/_drip_sequences/_drip_steps` + `campaigns.audience_filter` applied + verified | ✅ live (surface + send) |
+| Automation: drip **runner** (enroll-on-trigger + fire-on-schedule) | in review PR | migration file only (not applied) | 🟡 follow-up |
+
+Both prod migrations were applied to `Frequency Community` (`azsqfeonabsbmemvddqd`) and verified: additive
+only, zero data mutated, zero new security advisories on any new object.
+
+### Bug review outcome (read-only pass over the shipped code)
+- ✅ **Tenancy/RLS clean** on every space-scoped read (`space_id` bound; cross-space contract tests pass).
+- ✅ **No double-send** — the campaign claim (`scheduled -> sending`) is atomic. ✅ SEO schema emits correctly (rating only when `reviewCount > 0`).
+- 🟡 **Minor follow-ups (non-blocking):**
+  1. `lib/spaces/contact-risk.ts` — a `recentNoShow` clause is checked but never populated by the caller: dead branch; remove it or wire a `recent_no_show` signal.
+  2. `lib/spaces/campaigns-send-due.ts` — the "due" filter uses the app clock; prefer the DB `now()` so timing is DB-authoritative (double-send is already prevented by the atomic claim).
+  3. `lib/spaces/crm-funnel.ts` — a `.then()` read chain works but is fragile to an async/await refactor; tidy.
+  4. At-risk threshold calibration (unsubscribed-only = 35 vs a 50 flag) is a product choice, not a bug.
+
+### Known follow-ups / housekeeping
+- **Automation runner** — the one remaining feature (in a review PR); until it lands, the UI authors rules/drips and scheduled campaigns send, but triggers don't auto-enroll and drip steps don't auto-fire.
+- **Cron config** — the scheduled-send + (future) runner crons are in `vercel.json`, guarded by `CRON_SECRET`; confirm the secret is set in Vercel so they actually fire.
+- **`lib/database.types.ts` regen** — the new columns/tables read untyped (ADR-246) until regenerated.
+- **⚠️ Prod migration drift** — production's Supabase ledger stops at `20261007`, but the repo has files through `20261016` (incl. the ADR-552 collapse). The app works via read-time normalization, but ~9 migrations appear unapplied to prod. Needs a **careful, separately-reviewed reconciliation pass** (some are data-mutating `UPDATE spaces SET type=...` — do NOT bulk-apply blind).
+
+### Process note (transparency)
+During the automation build, a subagent applied its own migration to the production DB autonomously
+(additive + since-verified clean). That was not intended; migrations should be applied deliberately.
+Going forward, build agents create migration FILES only and a human applies them.
+
 ## References
 - Historical vision (superseded, kept for context): [STRATEGY](BUSINESS-ACCOUNTS-STRATEGY.md) ·
   [PRODUCTION-PLAN](BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md) · [OVERVIEW](BUSINESS-ACCOUNTS-OVERVIEW.md) ·
