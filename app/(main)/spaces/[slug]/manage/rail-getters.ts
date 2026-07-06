@@ -77,6 +77,44 @@ async function readProfileExtras(spaceId: string): Promise<ExtraRow> {
   }
 }
 
+// ── Shared resolve + pure builders (ADR-550) ─────────────────────────────────────────────────────────
+// Each rail getter below resolves the SAME heavy chain (caller → visible space → manage access → caps →
+// extras) and then assembles its per-module bundle. The standardized rail mounts ~5 of these modules,
+// each a SEPARATE server action, so React's per-request cache never dedupes the chain across them — the
+// slow rail. getSpaceRailBundle runs the resolve ONCE and calls the SAME pure `buildXData` helpers below,
+// so the bundle and the individual getters can never drift. Each getter stays for isolation (a module
+// mounted outside the rail, or a bundle miss, self-fetches exactly as before).
+
+type ResolvedSpaceRow = NonNullable<Awaited<ReturnType<typeof getVisibleSpaceBySlug>>>
+type SpaceCaps = Awaited<ReturnType<typeof getSpaceCapabilities>>
+
+/** Assemble the Basics bundle from the already-resolved space/caps/extras. Pure + synchronous, shared by
+ *  getSpaceBasicsData and getSpaceRailBundle so the two never drift. */
+function buildBasicsData(
+  space: ResolvedSpaceRow,
+  caps: SpaceCaps,
+  staffViewing: boolean,
+  extras: ExtraRow,
+): SpaceBasicsData {
+  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+  const initial: SpaceSettingsValues = {
+    brandName: space.brandName ?? '',
+    brandAccent: space.brandAccent ?? '',
+    brandLogoUrl: space.brandLogoUrl ?? '',
+    coverImageUrl: space.coverImageUrl ?? '',
+    about: extras.about ?? '',
+    tagline: extras.tagline ?? '',
+    visibility: extras.visibility === 'private' ? 'private' : 'network',
+  }
+  return {
+    spaceId: space.id,
+    slug: space.slug,
+    initial,
+    business: readProfileData(space.preferences),
+    readOnly: staffViewing || !canUseProfile,
+  }
+}
+
 /** The Basics editor's data, or null when the viewer cannot manage this Space (fail-safe → the wrapper
  *  renders nothing). Re-gates exactly like basics/page.tsx: resolveSpaceManageAccess + the `profile`
  *  per-Space function (read-only when the viewer lacks it or is a staff previewer). */
@@ -95,26 +133,8 @@ export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData 
   if (!canManage && !staffViewing) return null
 
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
-
   const extras = await readProfileExtras(space.id)
-  const initial: SpaceSettingsValues = {
-    brandName: space.brandName ?? '',
-    brandAccent: space.brandAccent ?? '',
-    brandLogoUrl: space.brandLogoUrl ?? '',
-    coverImageUrl: space.coverImageUrl ?? '',
-    about: extras.about ?? '',
-    tagline: extras.tagline ?? '',
-    visibility: extras.visibility === 'private' ? 'private' : 'network',
-  }
-
-  return {
-    spaceId: space.id,
-    slug: space.slug,
-    initial,
-    business: readProfileData(space.preferences),
-    readOnly: staffViewing || !canUseProfile,
-  }
+  return buildBasicsData(space, caps, staffViewing, extras)
 }
 
 // ── Identity & Branding (space.branding) ─────────────────────────────────────────────────────────────
@@ -135,6 +155,28 @@ interface SpaceBrandingData {
   readOnly: boolean
 }
 
+/** Assemble the Identity & Branding bundle from the already-resolved space/caps/extras. Pure, shared by
+ *  getSpaceBrandingData and getSpaceRailBundle. */
+function buildBrandingData(
+  space: ResolvedSpaceRow,
+  caps: SpaceCaps,
+  staffViewing: boolean,
+  extras: ExtraRow,
+): SpaceBrandingData {
+  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+  return {
+    spaceId: space.id,
+    slug: space.slug,
+    brandName: space.brandName ?? '',
+    tagline: extras.tagline ?? '',
+    coverImageUrl: space.coverImageUrl ?? null,
+    brandLogoUrl: space.brandLogoUrl ?? null,
+    coverScrim: readCoverScrim(space.preferences),
+    accent: space.brandAccent ?? '',
+    readOnly: staffViewing || !canUseProfile,
+  }
+}
+
 /** The Identity & Branding editor's data, or null when the viewer cannot manage this Space (fail-safe →
  *  the wrapper renders nothing). Mirrors getSpaceBasicsData's gate. */
 export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingData | null> {
@@ -152,20 +194,8 @@ export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingD
   if (!canManage && !staffViewing) return null
 
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
   const extras = await readProfileExtras(space.id)
-
-  return {
-    spaceId: space.id,
-    slug: space.slug,
-    brandName: space.brandName ?? '',
-    tagline: extras.tagline ?? '',
-    coverImageUrl: space.coverImageUrl ?? null,
-    brandLogoUrl: space.brandLogoUrl ?? null,
-    coverScrim: readCoverScrim(space.preferences),
-    accent: space.brandAccent ?? '',
-    readOnly: staffViewing || !canUseProfile,
-  }
+  return buildBrandingData(space, caps, staffViewing, extras)
 }
 
 // ── Settings (space.settings) ────────────────────────────────────────────────────────────────────────
@@ -180,6 +210,26 @@ interface SpaceSettingsData {
   ratingCount: string
   visibility: 'network' | 'private'
   readOnly: boolean
+}
+
+/** Assemble the Settings bundle from the already-resolved space/caps/extras. Pure, shared by
+ *  getSpaceSettingsData and getSpaceRailBundle. */
+function buildSettingsData(
+  space: ResolvedSpaceRow,
+  caps: SpaceCaps,
+  staffViewing: boolean,
+  extras: ExtraRow,
+): SpaceSettingsData {
+  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
+  const business = readProfileData(space.preferences)
+  return {
+    spaceId: space.id,
+    slug: space.slug,
+    rating: business.rating ?? '',
+    ratingCount: business.ratingCount ?? '',
+    visibility: extras.visibility === 'private' ? 'private' : 'network',
+    readOnly: staffViewing || !canUseProfile,
+  }
 }
 
 /** The Settings section's data, or null when the viewer cannot manage this Space (fail-safe). */
@@ -198,18 +248,8 @@ export async function getSpaceSettingsData(slug: string): Promise<SpaceSettingsD
   if (!canManage && !staffViewing) return null
 
   const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const canUseProfile = staffViewing || spaceFunctionAccess(space, 'profile', caps.role)
   const extras = await readProfileExtras(space.id)
-  const business = readProfileData(space.preferences)
-
-  return {
-    spaceId: space.id,
-    slug: space.slug,
-    rating: business.rating ?? '',
-    ratingCount: business.ratingCount ?? '',
-    visibility: extras.visibility === 'private' ? 'private' : 'network',
-    readOnly: staffViewing || !canUseProfile,
-  }
+  return buildSettingsData(space, caps, staffViewing, extras)
 }
 
 // ── Page (space.layout) ──────────────────────────────────────────────────────────────────────────────
@@ -234,6 +274,38 @@ interface SpacePageData {
 /** The Page editor's data, or null when the viewer cannot manage this Space / the type has no console
  *  (fail-safe). `pageSlug` picks which page's blocks the panel edits (default Home), mirroring the
  *  page's `?page=` param. Re-gates exactly like manage/layout/page.tsx. */
+/** Assemble the Page bundle from the already-resolved space + access flags, or null when the type has no
+ *  console (fail-safe). Pure, shared by getSpacePageData and getSpaceRailBundle. `pageSlug` picks which
+ *  page's blocks the panel edits (default Home). */
+function buildPageData(
+  space: ResolvedSpaceRow,
+  staffViewing: boolean,
+  canManage: boolean,
+  pageSlug?: string,
+): SpacePageData | null {
+  if (!isConsoleSpaceType(space.type)) return null
+
+  const coverScrim = readCoverScrim(space.preferences)
+  const pages = readProfilePages(space.preferences)
+  const requested = (pageSlug ?? HOME_SLUG).trim().toLowerCase()
+  const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
+
+  return {
+    slug: space.slug,
+    pages,
+    activePageSlug,
+    maxPages: MAX_PROFILE_PAGES,
+    coverScrim,
+    accent: space.brandAccent ?? '',
+    businessInfo: readProfileData(space.preferences),
+    coverImageUrl: space.coverImageUrl ?? null,
+    brandLogoUrl: space.brandLogoUrl ?? null,
+    websitePublished: readWebsitePublished(space.preferences),
+    canManagePages: spaceCanUseFullWebsite(space),
+    readOnly: staffViewing && !canManage,
+  }
+}
+
 export async function getSpacePageData(
   slug: string,
   pageSlug?: string,
@@ -250,28 +322,8 @@ export async function getSpacePageData(
     caller?.webRole,
   )
   if (!canManage && !staffViewing) return null
-  if (!isConsoleSpaceType(space.type)) return null
 
-  const coverScrim = readCoverScrim(space.preferences)
-
-  const pages = readProfilePages(space.preferences)
-  const requested = (pageSlug ?? HOME_SLUG).trim().toLowerCase()
-  const activePageSlug = hasPage(space.preferences, requested) ? requested : HOME_SLUG
-
-  return {
-    slug,
-    pages,
-    activePageSlug,
-    maxPages: MAX_PROFILE_PAGES,
-    coverScrim,
-    accent: space.brandAccent ?? '',
-    businessInfo: readProfileData(space.preferences),
-    coverImageUrl: space.coverImageUrl ?? null,
-    brandLogoUrl: space.brandLogoUrl ?? null,
-    websitePublished: readWebsitePublished(space.preferences),
-    canManagePages: spaceCanUseFullWebsite(space),
-    readOnly: staffViewing && !canManage,
-  }
+  return buildPageData(space, staffViewing, canManage, pageSlug)
 }
 
 // ── The in-rail Space page builder seed (ADR-516 Phase D) ────────────────────────────────────────────
@@ -294,16 +346,10 @@ interface SpaceLayoutRailData {
   lockedIds: string[]
 }
 
-/** The Space's own resolved profile-page layout for the builder, or null when the viewer cannot manage
- *  this Space (fail-safe → the builder renders nothing). */
-export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutRailData | null> {
-  const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
-
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
-  if (!space) return null
-
-  const { canManage } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
+/** Assemble the builder seed from the already-resolved space, or null when the viewer cannot manage this
+ *  Space (fail-safe → the builder renders nothing). Pure, shared by getSpaceLayoutRailData and
+ *  getSpaceRailBundle. A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). */
+function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): SpaceLayoutRailData | null {
   if (!canManage) return null
 
   const prefs = space.preferences
@@ -320,6 +366,71 @@ export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutR
     hidden: saved?.hidden ?? [],
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
+  }
+}
+
+/** The Space's own resolved profile-page layout for the builder, or null when the viewer cannot manage
+ *  this Space (fail-safe → the builder renders nothing). */
+export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutRailData | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage } = await resolveSpaceManageAccess(space, viewerProfileId, caller?.webRole)
+  return buildLayoutData(space, canManage)
+}
+
+// ── The one bundled rail resolve (ADR-550) ───────────────────────────────────────────────────────────
+// The standardized Space rail mounts the Basics / Branding / Settings / Page modules + the page builder,
+// each of which self-fetches through its OWN 'use server' action above — so the heavy resolve chain
+// (caller → visible space → manage access → caps → extras) runs ~5 times per rail open, with no cross-
+// request dedupe. This getter runs that chain ONCE and assembles every per-module bundle from the SAME
+// pure builders the individual getters use, so there is zero behavior drift. It SELF-GATES identically
+// (returns null for a non-manager / non-staff viewer, the fail-safe), and each write action still
+// re-gates on its own. The client SpaceRailDataProvider calls this once and distributes the slices;
+// a module that misses the provider falls back to its own getter, so nothing breaks standalone.
+
+export interface SpaceRailBundle {
+  /** Present whenever the viewer can manage (the `profile` function only toggles readOnly). */
+  basics: SpaceBasicsData
+  branding: SpaceBrandingData
+  settings: SpaceSettingsData
+  /** Null when the Space type has no console (mirrors getSpacePageData). */
+  page: SpacePageData | null
+  /** Null when the viewer is a staff previewer who cannot edit (mirrors getSpaceLayoutRailData). */
+  layout: SpaceLayoutRailData | null
+}
+
+/** Every Space rail module's bundle from ONE resolve, or null when the viewer cannot manage this Space
+ *  (fail-safe → every module renders nothing). Re-gates EXACTLY like the individual getters. */
+export async function getSpaceRailBundle(
+  slug: string,
+  pageSlug?: string,
+): Promise<SpaceRailBundle | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const extras = await readProfileExtras(space.id)
+
+  return {
+    basics: buildBasicsData(space, caps, staffViewing, extras),
+    branding: buildBrandingData(space, caps, staffViewing, extras),
+    settings: buildSettingsData(space, caps, staffViewing, extras),
+    page: buildPageData(space, staffViewing, canManage, pageSlug),
+    layout: buildLayoutData(space, canManage),
   }
 }
 

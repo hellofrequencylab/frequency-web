@@ -91,14 +91,20 @@ export function EntityPageBuilder({
   pageId,
   kind,
   loadRailData,
+  seed,
   editHrefFor,
   uploadImage,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
   kind: EntityKind
-  /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing). */
+  /** Read-gated seed loader; returns null when the viewer cannot edit (fail-safe → renders nothing).
+   *  Skipped entirely when `seed` is supplied (the rail bundle already fetched it — ADR-550). */
   loadRailData: () => Promise<BuilderRailData | null>
+  /** A PRE-FETCHED seed from the shared rail bundle (ADR-550). When supplied (including an explicit
+   *  `null`, meaning "the viewer cannot edit"), the builder uses it and skips its own loadRailData fetch.
+   *  `undefined` keeps the original behavior — the builder self-fetches through loadRailData. */
+  seed?: BuilderRailData | null
   /** For a DATA block, the href of that feature's own manager (the edit panel's "Manage" link). */
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
@@ -137,20 +143,28 @@ export function EntityPageBuilder({
 
   // Seed the shared store from the persisted layout (idempotent — the live preview may have seeded first).
   // Only seed a store of the SAME kind, so a builder mounted beside the wrong provider never pollutes it.
+  // When the rail bundle already supplied a `seed` (ADR-550), apply it directly and skip the round-trip.
   useEffect(() => {
     let active = true
-    loadRailData().then((d) => {
+    const apply = (d: BuilderRailData | null) => {
       if (!active) return
       setMatchId(d?.matchId ?? null)
       setLockedIds(d?.lockedIds ?? [])
       setCustomized(!!d?.customized)
       if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
-    })
+    }
+    if (seed !== undefined) {
+      apply(seed)
+      return () => {
+        active = false
+      }
+    }
+    loadRailData().then(apply)
     return () => {
       active = false
     }
-  }, [store, kind, loadRailData])
+  }, [store, kind, loadRailData, seed])
 
   const say = useCallback((msg: string) => setAnnounce(msg), [])
   const mutate = useCallback(
@@ -836,7 +850,7 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
 /** The SPACE page builder — a Space's public-profile layout, mounted in the `space.layout` rail surface on
  *  the Space profile ROOT (ADR-516 Phase D). Adapts the owner-gated space seed getter (matchId = the slug;
  *  function-locked blocks are held out of the picker + bench). */
-export function SpacePageBuilder({ slug }: { slug: string }) {
+export function SpacePageBuilder({ slug, seed }: { slug: string; seed?: BuilderRailData | null }) {
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getSpaceLayoutRailData(slug)
     return d
@@ -858,6 +872,7 @@ export function SpacePageBuilder({ slug }: { slug: string }) {
       pageId={slug}
       kind="space"
       loadRailData={load}
+      seed={seed}
       uploadImage={uploadImage}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.

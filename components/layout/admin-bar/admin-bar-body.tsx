@@ -11,6 +11,7 @@ import type {
   SearchableApp,
 } from '@/components/layout/settings-panel'
 import { HubRail } from '@/components/layout/admin-bar/hub-rail'
+import { SpaceRailDataProvider } from '@/components/admin/modules/space-rail-data'
 import { railArchetypeFor } from '@/lib/layout/page-chrome'
 import { scoreResult, rankResults, orderByRelevance, contextualEntrySlot } from '@/lib/admin/rail-intel'
 import { getProfileCompletenessRail } from '@/app/(main)/settings/rail-getters'
@@ -68,6 +69,10 @@ export function AdminBarBody({
 
   const pathname = usePathname()
   const archetype = railArchetypeFor(pathname)
+  // ADR-550: on a Space route, fetch the whole rail bundle ONCE here and provide it to every Space module
+  // below (Basics / Branding / Settings / Page + the builder), replacing their ~5 duplicate resolves with
+  // one. Null off a Space route → the provider is inert and modules self-fetch exactly as before.
+  const spaceSlug = pathname.match(/^\/spaces\/([^/]+)/)?.[1] ?? null
 
   // Section elements by (tier:slot) key, so a search result can scroll to its section once the list
   // remounts (a slot can live in two bands, so the key carries the band).
@@ -194,7 +199,9 @@ export function AdminBarBody({
   return (
     // The "Search settings" input now lives in the panel's fixed top bar (admin-bar.tsx), ABOVE this scroll
     // region — so nothing renders above the search on scroll (ADR-516 Phase E). This body renders only the
-    // results / sections below it.
+    // results / sections below it. Wrapped in the Space rail-data provider (ADR-550) so the Space modules
+    // read their slices from ONE bundle instead of each self-fetching the same heavy resolve.
+    <SpaceRailDataProvider slug={spaceSlug}>
     <div className="space-y-4">
       {q ? (
         // ── SEARCH results — a flat list across all scoped apps (derived filter, not a screen). ──
@@ -340,5 +347,6 @@ export function AdminBarBody({
         </>
       )}
     </div>
+    </SpaceRailDataProvider>
   )
 }
