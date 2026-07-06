@@ -69,7 +69,7 @@ function baseBank(scope: AdminScope | null, viewer: BankViewer, slug: string | n
       const out: BankLink[] = [
         { label: 'Manage console', icon: Settings, href: `/spaces/${urlSlug}/manage` },
       ]
-      pushLink(out, 'CRM', Users, hrefForSurface('space.engage.crm', urlSlug))
+      pushLink(out, 'CRM', Users, hrefForSurface('space.crm', urlSlug))
       pushLink(out, 'Insights', BarChart3, hrefForSurface('space.insights', urlSlug))
       pushLink(out, 'Billing', CreditCard, hrefForSurface('space.billing', urlSlug))
       return out

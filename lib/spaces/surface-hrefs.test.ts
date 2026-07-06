@@ -13,9 +13,9 @@ describe('panelHrefForSurface (rail-only inline-panel translation)', () => {
     expect(panelHrefForSurface('space.people', slug)).not.toBe(hrefForSurface('space.people', slug))
   })
 
-  it('opens CRM (space.engage.crm) inline via ?panel=crm — the bounded board panel (Stage D5)', () => {
-    expect(panelHrefForSurface('space.engage.crm', slug)).toBe(`/spaces/${slug}?panel=crm`)
-    expect(panelHrefForSurface('space.engage.crm', slug)).not.toBe(hrefForSurface('space.engage.crm', slug))
+  it('opens CRM (space.crm) inline via ?panel=crm — the bounded board panel (Stage D5)', () => {
+    expect(panelHrefForSurface('space.crm', slug)).toBe(`/spaces/${slug}?panel=crm`)
+    expect(panelHrefForSurface('space.crm', slug)).not.toBe(hrefForSurface('space.crm', slug))
   })
 
   it('falls through to the full route for a non-panel surface', () => {

@@ -21,8 +21,6 @@ import {
   resolveSpaceManageAccess,
   getSpaceCapabilities,
   spaceCanUseFullWebsite,
-  spaceAutonomyLevel,
-  type AutonomyLevel,
 } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess, type SpaceFunctionKey } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
@@ -30,8 +28,7 @@ import { listSpaceMembers } from '@/lib/spaces/membership'
 import { listSpaceAvailability } from '@/lib/spaces/booking'
 import { listAllMembershipTiers } from '@/lib/spaces/memberships'
 import { listAllTicketTiers } from '@/lib/spaces/tickets'
-import { getDeals, getStages, type StageKind } from '@/lib/crm/pipeline'
-import { resolveStageManagerAccess } from '@/lib/crm/stages'
+import { getDeals } from '@/lib/crm/pipeline'
 import { listSpaceCampaigns } from '@/lib/spaces/campaigns'
 import {
   readProfilePages,
@@ -438,67 +435,6 @@ export async function getSpaceRailBundle(
 // `/spaces/<slug>/manage/mode` page reachable from the manage console. The rail no longer surfaces it: the
 // former inline `SpaceModeModule` and the "Starter" chip (getSpaceStarterChip) were removed (ADR-527) once
 // universal functions + the freeform layout editor made Mode purely a starting preset, not a rail control.
-
-// ── Vera autonomy (space.autonomy) ───────────────────────────────────────────────────────────────────
-// The inline rail control for the per-Space Vera autonomy dial (Resonance Engine Phase 3 · ADR-384;
-// rail control ADR-517 Phase F GAP 2). Reuses the existing setSpaceAutonomy write; this getter only
-// READS the current level and re-gates the SAME owner/admin authority the setter enforces
-// (caps.canManageMembers). Returns null for anyone who cannot change it (including a staff previewer, who
-// gets no write), so the inline module renders nothing — the write authority is never widened.
-
-interface SpaceAutonomyData {
-  slug: string
-  level: AutonomyLevel
-}
-
-/** The Vera autonomy control's data, or null when the viewer cannot manage this Space's members
- *  (owner/admin only, matching setSpaceAutonomy). Fail-safe -> the inline module renders nothing. */
-export async function getSpaceAutonomyData(slug: string): Promise<SpaceAutonomyData | null> {
-  const caller = await getCallerProfile()
-  const viewerProfileId = caller?.id ?? null
-
-  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
-  if (!space) return null
-
-  const { canManage, staffViewing } = await resolveSpaceManageAccess(
-    space,
-    viewerProfileId,
-    caller?.webRole,
-  )
-  if (!canManage && !staffViewing) return null
-
-  // Owner / admin only (the SAME gate setSpaceAutonomy re-checks). A mere editor or a staff previewer
-  // cannot change autonomy, so they get no control.
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  if (!caps.canManageMembers) return null
-
-  return { slug: space.slug, level: spaceAutonomyLevel(space) }
-}
-
-// ── Pipeline (space.pipeline) ────────────────────────────────────────────────────────────────────────
-// The compact stage list for the inline rail Pipeline module (ADR-517 Phase F2 · audit GAP 1: "the on
-// screen pipeline gets an admin function in the bar"). Re-gates EXACTLY like the stage write actions
-// (lib/crm/stages.ts requireStageManager): manage access (canManage; a staff previewer is not canManage,
-// so gets nothing) PLUS the `crm` function. Returns null for anyone who cannot edit the pipeline, so the
-// inline module renders nothing — the editor authority is never widened. READ-ONLY + serializable.
-
-interface SpacePipelineData {
-  slug: string
-  /** The Space's stages, in order (id + name + kind), for the compact rail preview. */
-  stages: { id: string; name: string; kind: StageKind }[]
-}
-
-/** The rail Pipeline module's data, or null when the viewer cannot edit this Space's pipeline. Re-gates
- *  through the EXACT same seam the stage writes use (resolveStageManagerAccess: manage access + the crm
- *  function; a staff previewer / non-manager gets null), so the inline module never widens the editor
- *  authority. Fail-safe -> the module renders nothing. */
-export async function getSpacePipelineData(slug: string): Promise<SpacePipelineData | null> {
-  const access = await resolveStageManagerAccess(slug)
-  if (!access) return null
-
-  const stages = await getStages(access.spaceId)
-  return { slug: access.slug, stages: stages.map((s) => ({ id: s.id, name: s.name, kind: s.kind })) }
-}
 
 // ── Rail summary getters (Phase 2 "keep it in the rail") ─────────────────────────────────────────────
 // TINY, serializable, fail-safe reads that feed the primary feature link-rows their glanceable inline

@@ -61,7 +61,7 @@ function AdminBarTopBar({
 // ONE themed chrome element that merges the desktop settings slide-over (formerly
 // SettingsDrawer) and the mobile full-screen sheet (formerly MobileSettingsSheet) into a
 // single component. A shared core owns the open state, the stored trigger `detail`, the
-// `open-admin-bar` + legacy `open-settings` listeners, the shared settings BODY
+// `open-admin-bar` listener, the shared settings BODY
 // (useSettingsPanel) and the `hasContent` guard; a `useIsDesktop()` branch then renders:
 //   • DESKTOP (lg+): a RESIZABLE `<aside>` that slides out over the right-rail column. By
 //     default it sits at exactly the rail width, so it COVERS the rail and nothing reflows.
@@ -70,7 +70,7 @@ function AdminBarTopBar({
 //     the bar grows. Open + width persist in localStorage.
 //   • MOBILE (< lg): a full-screen sheet rendered through `createPortal(sheet, document.body)`
 //     so it escapes the `hidden lg:flex` rail column it is mounted inside and covers the
-//     viewport. Same content, same `open-admin-bar` / `open-settings` triggers.
+//     viewport. Same content, same `open-admin-bar` trigger.
 //
 // Its CONTENT comes from `useSettingsPanel()` — the manager/operator registry modules plus the
 // operator "Page" group. QR & Share is NOT here (it split into QrShareDropdown). Tokens only.
@@ -108,10 +108,6 @@ export interface AdminBarState {
   resizing: boolean
 }
 
-/** Migration shim: the old name for {@link AdminBarState}. Kept during the Phase-2 rollout so
- *  any lingering import resolves. Prefer `AdminBarState`. */
-export type SettingsDrawerState = AdminBarState
-
 export function AdminBar({
   onStateChange,
 }: {
@@ -119,8 +115,8 @@ export function AdminBar({
   onStateChange?: (state: AdminBarState) => void
 }) {
   const [open, setOpen] = useState(false)
-  // The pre-scoped detail a typed `open-admin-bar` dispatch carried (scope + caps). Undefined on the
-  // legacy bare `open-settings` path, where the panel resolves exactly as it did before.
+  // The pre-scoped detail a typed `open-admin-bar` dispatch carried (scope + caps). Undefined until a
+  // typed dispatch sets it, where the panel resolves from the path-derived scope.
   const [detail, setDetail] = useState<OpenAdminBarDetail | undefined>(undefined)
   const [width, setWidth] = useState(RAIL_WIDTH)
   const [resizing, setResizing] = useState(false)
@@ -149,19 +145,9 @@ export function AdminBar({
     setQuery('')
   }, [resetKey])
 
-  // ── Shared trigger seam. TWO listeners during the migration (docs/ADMIN-RAIL.md): ──
-  //   • legacy bare `open-settings` (D.6) — TOGGLES as it always has and clears any pre-scoped detail,
-  //     so anything still dispatching it behaves exactly as before.
-  //   • typed `open-admin-bar` — stores the dispatch's { scope, caps } and OPENS (never toggles), so a
-  //     deep-link from an "Edit" button always lands open, pointed at that scope.
-  useEffect(() => {
-    function onLegacy() {
-      setDetail(undefined)
-      setOpen((o) => !o)
-    }
-    window.addEventListener('open-settings', onLegacy)
-    return () => window.removeEventListener('open-settings', onLegacy)
-  }, [])
+  // ── The trigger seam (docs/ADMIN-RAIL.md): the typed `open-admin-bar` event stores the dispatch's
+  //   { scope, caps } and OPENS (never toggles), so a deep-link from an "Edit" button always lands open,
+  //   pointed at that scope. ──
   useEffect(() => {
     function onTyped(e: Event) {
       const d = (e as CustomEvent<OpenAdminBarDetail>).detail
