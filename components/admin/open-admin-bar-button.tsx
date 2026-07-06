@@ -4,7 +4,7 @@ import type { AdminScope } from '@/lib/layout/page-chrome'
 import type { Capability } from '@/lib/core/capabilities'
 import type { SpaceType } from '@/lib/spaces/types'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
-import { openAdminBar } from './open-admin-bar'
+import { openAdminBar, type OpenAdminBarModuleMenu } from './open-admin-bar'
 
 // The ONE trigger for the standardized admin bar (docs/ADMIN-RAIL.md Phase 1). It collapses the former
 // per-entity "Edit" buttons: a Server Component page renders this in a header actions slot with the
@@ -20,6 +20,7 @@ export function OpenAdminBarButton({
   caps,
   spaceType,
   spaceFns,
+  moduleMenu,
   label,
   icon,
   className,
@@ -32,6 +33,9 @@ export function OpenAdminBarButton({
    *  viewer may use, so the panel resolves the Space's editor Apps by type + function (not by Capability). */
   spaceType?: SpaceType
   spaceFns?: SpaceFunctionKey[]
+  /** For a `space` scope (modular menu P3b): the owner's Module Manager menu overrides (order + hidden),
+   *  so the RAIL honors hiding + reordering like the console. */
+  moduleMenu?: OpenAdminBarModuleMenu
   /** The button label (voice canon: no em dashes). */
   label: string
   /** A pre-rendered icon element (e.g. `<Settings className="h-4 w-4" />`); crosses the RSC boundary
@@ -42,7 +46,7 @@ export function OpenAdminBarButton({
   return (
     <button
       type="button"
-      onClick={() => openAdminBar({ scope, caps, spaceType, spaceFns })}
+      onClick={() => openAdminBar({ scope, caps, spaceType, spaceFns, moduleMenu })}
       className={className ?? DEFAULT_CLASS}
     >
       {icon}

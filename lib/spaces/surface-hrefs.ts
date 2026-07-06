@@ -7,7 +7,7 @@
 // caller are unchanged. See app/(main)/spaces/[slug]/manage/console.tsx.
 
 import { PANEL_SURFACE_TO_ID, isPanelId } from '@/components/spaces/workspace/surface-panels'
-import type { SpaceModule } from '@/lib/admin/modules/space-modules'
+import { spaceModuleById, type SpaceModule } from '@/lib/admin/modules/space-modules'
 
 /** Map a Space surface id to the sub-page it opens, given the Space slug. Danger has no href (the console
  *  renders its delete control inline; the rail falls back to the /manage console); an unmapped id is
@@ -131,4 +131,15 @@ export function panelHrefForModule(module: SpaceModule, slug: string): string | 
   const panel = MODULE_PANEL_ID[module.id]
   if (panel && isPanelId(panel)) return `/spaces/${slug}?panel=${panel}`
   return module.deepLink ? module.deepLink(slug) : null
+}
+
+/** THE RAIL's Space link-row href by MODULE ID (modular menu P3b, ADR-546b). The standardized admin rail
+ *  now resolves its Space rows from the module manifest (lib/apps/catalog.ts SPACE_EDITOR_APPS ← SPACE_MODULES),
+ *  so a row carries the module id (`space.crm`, not the legacy surface id `space.engage.crm`). This looks the
+ *  module up and delegates to `panelHrefForModule` (panel-first, deep-link fallback), so the rail keeps the
+ *  Stage-D5 on-page `?panel=` behavior with no per-id special-casing. Nullable: Danger has no panel + no
+ *  deepLink, so it stays null (the caller falls back to the /manage console); an unknown id is null. PURE. */
+export function panelHrefForModuleId(id: string, slug: string): string | null {
+  const mod = spaceModuleById(id)
+  return mod ? panelHrefForModule(mod, slug) : null
 }

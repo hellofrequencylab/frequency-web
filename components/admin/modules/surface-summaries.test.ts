@@ -27,7 +27,7 @@ describe('SURFACE_SUMMARIES — the card-vs-plain-link rule', () => {
       [
         'space.booking',
         'space.comms',
-        'space.engage.crm',
+        'space.crm',
         'space.memberships',
         'space.people',
         'space.services',
@@ -52,7 +52,7 @@ describe('SURFACE_SUMMARIES — the card-vs-plain-link rule', () => {
   // ADR-520 P2: the metered surfaces carry a feature-meter key so the card can show a usage line; the
   // non-metered ones (Members / Services) do not.
   it('carries a meterKey on the metered surfaces (CRM contacts, Email sends) and none on the rest', () => {
-    expect(SURFACE_SUMMARIES['space.engage.crm'].meterKey).toBe('space_crm')
+    expect(SURFACE_SUMMARIES['space.crm'].meterKey).toBe('space_crm')
     expect(SURFACE_SUMMARIES['space.comms'].meterKey).toBe('space_email')
     expect(SURFACE_SUMMARIES['space.people'].meterKey).toBeUndefined()
     expect(SURFACE_SUMMARIES['space.services'].meterKey).toBeUndefined()
@@ -68,8 +68,8 @@ describe('SURFACE_SUMMARIES — the stat copy', () => {
     ['space.people', 0, '0 members'],
     ['space.people', 1, '1 member'],
     ['space.people', 7, '7 members'],
-    ['space.engage.crm', 1, '1 in your pipeline'],
-    ['space.engage.crm', 12, '12 in your pipeline'],
+    ['space.crm', 1, '1 in your pipeline'],
+    ['space.crm', 12, '12 in your pipeline'],
     ['space.services', 1, '1 item listed'],
     ['space.services', 3, '3 items listed'],
     ['space.comms', 1, '1 campaign'],

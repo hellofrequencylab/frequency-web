@@ -3,7 +3,7 @@ import { Circle } from 'lucide-react'
 import { appsForScope, showsAdminBar, lockedAppsForScope, isAttainableGate } from './for-scope'
 import { APPS } from './catalog'
 import { modulesForScopeKind, type ScopeKind } from '@/lib/admin/modules/registry'
-import { spaceSurfacesFor } from '@/lib/admin/entities/registry'
+import { spaceModuleManifest } from '@/lib/admin/modules/space-modules'
 import type { SpaceType } from '@/lib/spaces/types'
 import type { App, AppViewer } from './types'
 
@@ -51,34 +51,66 @@ describe('appsForScope — editor apps preserve modulesForScopeKind behavior (LP
   })
 })
 
-describe('appsForScope — Space editor apps reproduce spaceSurfacesFor (ENTITY-MANAGEMENT / PR C)', () => {
+describe('appsForScope — Space editor apps render from the module manifest (modular menu P3b, ADR-546b)', () => {
   // A Space profile resolves its editor apps by spaceType + the viewer's per-Space functions, so
-  // appsForScope({ kind:'space', spaceType }, viewerHoldingEveryFn, 'editor') reproduces the same spine
-  // surfaces the /manage console renders via spaceSurfacesFor(type, canUse) — the behavior-preservation
-  // guarantee that lets the standardized rail replace the bespoke SpaceCustomizeDrawer. With every function
-  // usable the two align exactly, id AND order (modular menu P1b, ADR-544b: every surface, including the
-  // seven independent commerce surfaces, gates purely on its own function, so the rail and the console
-  // resolve the identical set for a given viewer).
+  // appsForScope({ kind:'space', spaceType }, viewerHoldingEveryFn, 'editor') resolves the SAME independent
+  // module set the /manage console renders via spaceModuleManifest — P3b retargets the rail lane onto the P0
+  // manifest. With every function usable the two align exactly, id AND order (every module gates purely on
+  // its own function, so the rail and the console resolve the identical set for a given viewer).
   const everyFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => true }
   const OFFERING_TYPES: SpaceType[] = ['practitioner', 'business', 'organization', 'event_space']
 
-  it('matches spaceSurfacesFor id + order for each offering-bearing type', () => {
+  it('matches the module manifest id set for each offering-bearing type', () => {
     for (const type of OFFERING_TYPES) {
       const got = appsForScope({ kind: 'space', id: 'x', spaceType: type }, everyFn, 'editor').map((a) => a.id)
-      const want = spaceSurfacesFor(type, () => true).map((s) => s.id)
-      expect(got, type).toEqual(want)
+      const want = spaceModuleManifest({}).map((m) => m.id)
+      expect(new Set(got), type).toEqual(new Set(want))
     }
   })
 
   it('gates on the viewer functions: a no-function viewer keeps only the always-on floor', () => {
-    // With no functions the functioned surfaces (members, crm, the six functioned commerce surfaces, qr,
-    // email, billing) drop; the always-on (gate 'none') floor — Identity / Info / Settings / Mode / Page /
-    // Store / Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
+    // With no functions the functioned modules (members, crm, the six functioned commerce modules, qr,
+    // email, billing) drop; the always-on (gate 'none') floor — Identity / Info / Settings / Page / Store /
+    // the Module Manager / Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
     const noFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => false }
     const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, noFn, 'editor').map((a) => a.id)
     expect(got).toContain('space.basics')
     expect(got).toContain('space.danger')
+    expect(got).toContain('space.modules') // the Module Manager (always-on shell) stays
     expect(got).not.toContain('space.people') // members function absent
+  })
+
+  it('honors the Module Manager overrides on the scope: HIDDEN drops, ORDER reorders (P3b)', () => {
+    // Hiding a module removes it from the rail set (like the console); reordering within a band permutes the
+    // rail while every other module stays put. The hidden/order ride on scope.moduleMenu (the Customize
+    // trigger passes the owner's saved spaces.preferences.moduleMenu).
+    const hidden = appsForScope(
+      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { hidden: ['space.booking'] } },
+      everyFn,
+      'editor',
+    ).map((a) => a.id)
+    expect(hidden).not.toContain('space.booking')
+    expect(hidden).toContain('space.people')
+
+    // Reorder CRM ahead of Members within the Audience band: CRM's within-band priority now sorts first.
+    const apps = appsForScope(
+      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { order: ['space.crm', 'space.people'] } },
+      everyFn,
+      'editor',
+    )
+    const crm = apps.find((a) => a.id === 'space.crm')!
+    const people = apps.find((a) => a.id === 'space.people')!
+    expect(crm.surfaces.editor!.priority!).toBeLessThan(people.surfaces.editor!.priority!)
+  })
+
+  it('an empty menu override is byte-for-byte the default manifest set (no reorder, no hiding)', () => {
+    const withEmpty = appsForScope(
+      { kind: 'space', id: 'x', spaceType: 'practitioner', moduleMenu: { order: [], hidden: [] } },
+      everyFn,
+      'editor',
+    )
+    const plain = appsForScope({ kind: 'space', id: 'x', spaceType: 'practitioner' }, everyFn, 'editor')
+    expect(withEmpty).toEqual(plain)
   })
 
   it('fail-closed: an untyped Space scope (path-derived, no type) resolves nothing', () => {

@@ -40,7 +40,10 @@ export const SURFACE_SUMMARIES: Record<string, SurfaceSummaryEntry> = {
     getter: getSpaceMembersSummary,
     format: (n) => (n.count === 1 ? '1 member' : `${n.count} members`),
   },
-  'space.engage.crm': {
+  // CRM is keyed by the MODULE id `space.crm` (modular menu P3b, ADR-546b): the rail now renders Space rows
+  // from the module manifest, so the summary card is looked up by the module id, not the legacy surface id
+  // `space.engage.crm`.
+  'space.crm': {
     getter: getSpaceCrmSummary,
     format: (n) => (n.count === 1 ? '1 in your pipeline' : `${n.count} in your pipeline`),
     // The CRM contacts meter (ADR-519). CRM stays an inline card in the Audience group (ADR-520) so this

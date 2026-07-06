@@ -22,8 +22,7 @@
 import { ADMIN_MODULES } from '@/lib/admin/modules/registry'
 import { LAYOUT_MODULES, ROUTE_MODULE_IDS } from '@/lib/widgets/modules'
 import type { ElementRegistry, PillarSlug } from '@/lib/library/element-catalog'
-import { SPACE_SURFACES } from '@/lib/admin/entities/registry'
-import { SPINE_ORDER, SPINE_META } from '@/lib/admin/modules/spine'
+import { SPACE_MODULES } from '@/lib/admin/modules/space-modules'
 import type { App } from './types'
 
 // ── editor Apps ← ADMIN_MODULES ───────────────────────────────────────────────────────────────────
@@ -160,48 +159,48 @@ const ELEMENT_APPS: App[] = ELEMENT_SEEDS.map((e): App => ({
   version: 1,
 }))
 
-// ── Space editor Apps ← SPACE_SURFACES (ENTITY-MANAGEMENT / PR C) ────────────────────────────────────
+// ── Space editor Apps ← SPACE_MODULES (modular menu P3b, ADR-546b) ────────────────────────────────────
 // A Space profile lives OUTSIDE the community Capability spine (SpaceRole + spaceFunctionAccess, not a
-// Capability), so its manageable surfaces (lib/admin/entities/registry.ts SPACE_SURFACES) become editor
-// Apps keyed by `{ on:'spaceType' }` + a `spaceFunction` gate — the dormant Space App plumbing the
-// contract already carried ({on:'spaceType'} scope, {system:'spaceFunction'} gate, AppViewer.canUseSpaceFn).
-// This lights the standardized admin rail for a Space's owner "Customize" trigger, resolving the same
-// 9-spine surfaces spaceSurfacesFor(type, canUse) drives the /manage console with. Spine-SORTED so the
-// resolved order matches spaceSurfacesFor (which spine-sorts too); the Icon is the surface's spine-slot
-// icon (SPINE_META) — the rail renders these as link-rows into the existing /settings/* sub-pages, so a
-// glanceable per-category icon is all it needs. requiredFunction null ⇒ gate 'none' (Basics / Page / Mode /
-// Services / Danger are always-on for a manager, the fail-safe floor); a functioned surface ⇒ its spaceFunction gate.
-const SPACE_EDITOR_APPS: App[] = [...SPACE_SURFACES]
-  .sort((a, b) => SPINE_ORDER.indexOf(a.slot) - SPINE_ORDER.indexOf(b.slot))
-  .map((s, i): App => ({
-    id: s.id,
-    label: s.label,
-    description: s.desc,
-    category: s.slot,
-    scopes: s.types.map((type) => ({ on: 'spaceType' as const, type })),
-    gate: s.requiredFunction
-      ? { system: 'spaceFunction', fn: s.requiredFunction }
-      : { system: 'none' },
-    surfaces: {
-      editor: {
-        surface: 'sidebar',
-        Icon: SPINE_META[s.slot].Icon,
-        order: (i + 1) * 10,
-        render: s.render,
-        // The three-tier rail axis (ADR-514 three-tier reorg), carried through exactly like `render`.
-        ...(s.tier !== undefined ? { tier: s.tier } : {}),
-        ...(s.priority !== undefined ? { priority: s.priority } : {}),
-        // The uniform-rail placement axis (ADR-515), carried through exactly like `render`/`tier`.
-        ...(s.placement !== undefined ? { placement: s.placement } : {}),
-        // The per-module surface predicate (ADR-516 Phase B), carried through by reference (unused by any
-        // Space surface this phase — present for symmetry).
-        ...(s.surfaces !== undefined ? { surfaces: s.surfaces } : {}),
-      },
+// Capability), so its manageable modules become editor Apps keyed by `{ on:'spaceType' }` + a
+// `spaceFunction` gate — the dormant Space App plumbing the contract already carried ({on:'spaceType'}
+// scope, {system:'spaceFunction'} gate, AppViewer.canUseSpaceFn). P3b RETARGETS this lane from the legacy
+// SPACE_SURFACES onto the P0 module manifest (lib/admin/modules/space-modules.ts SPACE_MODULES): one App
+// per INDEPENDENT module, so the rail renders the SAME catalog the /manage console + Module Manager do
+// (service split + one CRM module + the Module Manager entry `space.modules`). The Module Manager's
+// per-space order/hidden overrides ride the AdminScope and apply in `appsForScope` (for-scope.ts), not
+// here — this stays the pure, catalog-wide superset. Each module's own Icon renders the rail row; the
+// rail band (`tier`), within-band order (`priority`), and bottom-bank placement (`placement`) carry
+// through from the module, so the shipped rail layout (QR · Email · Insights · Plan and usage banked,
+// Danger under "More") is byte-identical. `render` maps `inline` → an inline editor (MODULE_COMPONENTS)
+// and `panel`/`link` → a link-row (its href resolves panel-first via panelHrefForModule). An always-on
+// shell module ⇒ gate 'none'; a service module ⇒ its `spaceFunction` gate (default-on, per-viewer).
+const SPACE_EDITOR_APPS: App[] = SPACE_MODULES.map((m): App => ({
+  id: m.id,
+  label: m.label,
+  description: m.desc,
+  category: m.slot,
+  // Every module applies to every Space type ('*'); the per-type shaping is the function gate
+  // (canUseSpaceFn), exactly as the legacy surfaces (all `types: ['*']`) resolved.
+  scopes: [{ on: 'spaceType', type: '*' }],
+  gate: m.gate.kind === 'feature' ? { system: 'spaceFunction', fn: m.gate.fn } : { system: 'none' },
+  surfaces: {
+    editor: {
+      surface: 'sidebar',
+      Icon: m.Icon,
+      order: m.order,
+      // A `panel` module renders as a link-row (its body opens on-page via `?panel=`); only a truly
+      // inline shell editor mounts its component. So inline ⇒ inline, panel|link ⇒ link.
+      render: m.render === 'inline' ? 'inline' : 'link',
+      tier: m.tier,
+      // The rail within-band order + bank placement (ADR-546b), carried through from the module.
+      ...(m.priority !== undefined ? { priority: m.priority } : {}),
+      ...(m.placement !== undefined ? { placement: m.placement } : {}),
     },
-    themeable: false,
-    status: 'final',
-    version: 1,
-  }))
+  },
+  themeable: false,
+  status: 'final',
+  version: 1,
+}))
 
 /** THE catalog — the composed, uniform view of every feature. LP2 will invert the registries onto it. */
 export const APPS: readonly App[] = [...EDITOR_APPS, ...PAGE_APPS, ...ELEMENT_APPS, ...SPACE_EDITOR_APPS]

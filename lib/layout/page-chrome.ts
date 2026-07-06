@@ -241,6 +241,12 @@ export interface AdminScope {
    *  Capability). Absent on every other kind and on a path-derived Space scope (the URL can't know the
    *  type); the Space "Customize" trigger carries it on the AdminBar detail. Serializable (a plain enum). */
   spaceType?: SpaceType
+  /** For a `space` scope only (modular menu P3b, ADR-546b): the owner's Module Manager menu overrides
+   *  (spaces.preferences.moduleMenu — the module `order` + `hidden` set), so the rail honors them exactly
+   *  as the /manage console does. The Space "Customize" trigger carries them on the AdminBar detail
+   *  (read fail-safe via `readModuleMenuPrefs`); `appsForScope` drops hidden modules + applies the order.
+   *  Serializable (plain string arrays). Absent ⇒ the manifest's default (catalog) order + no hiding. */
+  moduleMenu?: { order?: readonly string[]; hidden?: readonly string[] }
 }
 
 // Entity-detail route prefixes → the scope kind they manage; the SECOND path segment is the

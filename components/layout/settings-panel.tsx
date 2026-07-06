@@ -26,7 +26,7 @@ import { usePageAdmin } from '@/components/layout/page-admin-context'
 import { CONTENT_EDIT_ROUTES } from '@/lib/layout/editable-content'
 import { isStaff, atLeastRole } from '@/lib/core/roles'
 import { PageSettingsModule } from '@/components/admin/page-settings/page-settings-module'
-import { hrefForSurface, panelHrefForSurface } from '@/lib/spaces/surface-hrefs'
+import { hrefForSurface, panelHrefForModuleId } from '@/lib/spaces/surface-hrefs'
 import { hrefForEntitySurface } from '@/lib/admin/entity-surface-hrefs'
 import { bankForScope, type BankLink } from '@/lib/admin/rail-bank'
 
@@ -209,7 +209,14 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // opened from the typed trigger — the shell's generic cog is suppressed on Space profiles anyway.
   const scope: AdminScope | null =
     rawScope && rawScope.kind === 'space' && detail?.spaceType
-      ? { ...rawScope, spaceType: detail.spaceType }
+      ? {
+          ...rawScope,
+          spaceType: detail.spaceType,
+          // The owner's Module Manager overrides (modular menu P3b, ADR-546b): carried on the trigger so
+          // appsForScope drops hidden modules + applies the owner order for the Space rail, exactly as the
+          // /manage console does. Absent ⇒ the manifest default (no hiding, catalog order).
+          ...(detail.moduleMenu ? { moduleMenu: detail.moduleMenu } : {}),
+        }
       : rawScope
   const isSpace = scope?.kind === 'space'
   const spaceSlug = isSpace ? spaceSlugFromPath(pathname) : null
@@ -330,17 +337,17 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     const app = appById.get(id)
     if (!app) return null
     if (app.surfaces.editor?.render === 'link') {
-      // Space link-rows resolve their href via panelHrefForSurface: a surface that maps to an INLINE
-      // panel (Stage D1 — only Members today) opens `/spaces/<slug>?panel=<id>` so it renders in the
-      // profile body without navigating away; every other surface (incl. CRM) falls through to its full
-      // route (hrefForSurface), and Danger + unmapped fall back to the /manage console, so every row is a
-      // working link. The /manage console + bottom bank keep importing hrefForSurface, so full routes stay
-      // the deep-link "full admin". Core/personal link surfaces resolve via hrefForEntitySurface (ADR-514
-      // Phase C/D): today that is the personal "You" feature workflows (Account and privacy, Billing) →
-      // their /settings/* page; every core entity stays `inline`, so no core-entity id resolves here yet.
-      // An unresolved href draws nothing (fail-safe).
+      // Space link-rows resolve their href via panelHrefForModuleId (modular menu P3b, ADR-546b): the rail
+      // now renders Space rows from the module manifest, so a row carries the MODULE id. A module with an
+      // on-page panel (Members / CRM / Store / QR / Email / Billing + the six commerce services) opens
+      // `/spaces/<slug>?panel=<id>` so it renders in the profile body without navigating away (the Stage-D5
+      // no-regression); every other module (Insights) falls through to its deep route; Danger has no panel
+      // + no deepLink and falls back to the /manage console, so every row is a working link. Core/personal
+      // link surfaces resolve via hrefForEntitySurface (ADR-514 Phase C/D): today that is the personal
+      // "You" feature workflows (Account and privacy, Billing) → their /settings/* page; every core entity
+      // stays `inline`, so no core-entity id resolves here yet. An unresolved href draws nothing (fail-safe).
       const href = spaceSlug
-        ? panelHrefForSurface(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
+        ? panelHrefForModuleId(id, spaceSlug) ?? `/spaces/${spaceSlug}/manage`
         : hrefForEntitySurface(id, scope)
       if (!href) return null
       // "Keep it in the rail" (Phase 2, ADR-514): a link surface with a glanceable stat draws a compact

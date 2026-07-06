@@ -20,6 +20,7 @@ import { readTagline } from '@/lib/spaces/tagline'
 import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { SpaceProfileMenu } from '@/components/spaces/space-profile-menu'
 import { SpaceManageBoard } from '@/app/(main)/spaces/[slug]/manage/manage-board'
 import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
@@ -151,6 +152,11 @@ export default async function SpaceProfileChromeLayout({
     ).map((fn) => fn.key)
   }
 
+  // The owner's Module Manager menu overrides (modular menu P3b, ADR-546b): the module order + hidden set
+  // saved at spaces.preferences.moduleMenu, read fail-safe. Passed to the Customize trigger so the RAIL
+  // honors hiding + reordering exactly as the /manage console does (the console reads the same node).
+  const moduleMenu = readModuleMenuPrefs(space.preferences)
+
   const base = `/spaces/${space.slug}`
 
   // The profile sub-nav (Home + section anchors + custom pages, plus the operator's Manage/CRM links)
@@ -184,6 +190,7 @@ export default async function SpaceProfileChromeLayout({
         scope={{ kind: 'space', id: space.id }}
         spaceType={space.type}
         spaceFns={spaceFns}
+        moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden }}
         label={manage.staffViewing ? 'Customize (staff)' : 'Customize'}
         icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
         className={ownerToolClasses(onInk)}
