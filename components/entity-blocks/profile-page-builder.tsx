@@ -127,19 +127,30 @@ export function EntityPageBuilder({
 
   const dragBlock = useRef<string | null>(null)
   const dragRow = useRef<string | null>(null)
-  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // A DATA block's header/body is server-rendered from the space's LIVE data (offerings, events, team...),
-  // so an authored eyebrow/title/body edit to one cannot repaint purely client-side. Debounce a single
-  // router.refresh PAST the store's save window to reconcile just those. CONTENT blocks + STYLE never touch
-  // this — they repaint instantly from the shared store (LiveProfileGrid), with no round-trip (ADR-542).
-  const refreshDataSoon = useCallback(() => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current)
-    refreshTimer.current = setTimeout(() => router.refresh(), 900)
-  }, [router])
-  useEffect(() => () => {
-    if (refreshTimer.current) clearTimeout(refreshTimer.current)
-  }, [])
+  // so an authored eyebrow/title/body edit to one cannot repaint purely client-side — it needs a server
+  // re-render. The OLD approach fired a fixed 900ms timer that RACED the ~600ms debounced save: when the
+  // refresh landed before the save persisted, the server re-read the OLD title and "nothing happened" until
+  // a later edit finally won the race. Instead, mark the data edit DIRTY and reconcile the INSTANT the save
+  // completes — watch the store's `saving` flag fall from true to false, then router.refresh() once. A
+  // `reconciling` flag keeps the Saving indicator up from the keystroke through the reconciled paint, so the
+  // edit always shows a working state. CONTENT blocks + STYLE never set this — they repaint instantly from
+  // the shared store (LiveProfileGrid), with no round-trip (ADR-542).
+  const dataDirty = useRef(false)
+  const wasSaving = useRef(false)
+  const [reconciling, setReconciling] = useState(false)
+  useEffect(() => {
+    const saving = !!store?.saving
+    if (wasSaving.current && !saving && dataDirty.current) {
+      dataDirty.current = false
+      wasSaving.current = saving
+      router.refresh()
+      const t = setTimeout(() => setReconciling(false), 500)
+      return () => clearTimeout(t)
+    }
+    wasSaving.current = saving
+  }, [store?.saving, router])
 
   // Seed the shared store from the persisted layout (idempotent — the live preview may have seeded first).
   // Only seed a store of the SAME kind, so a builder mounted beside the wrong provider never pollutes it.
@@ -270,7 +281,12 @@ export function EntityPageBuilder({
   function onEditContent(blockId: string, props: Record<string, unknown>) {
     store?.applyContent(blockId, Object.keys(props).length ? props : undefined)
     setCustomized(true)
-    if (entityBlockById(blockId)?.category === 'data') refreshDataSoon()
+    // A DATA block's authored header/body needs the server reconcile (see the effect above): flag it dirty
+    // and show the working indicator now, so it stays up from this keystroke until the reconciled paint.
+    if (entityBlockById(blockId)?.category === 'data') {
+      dataDirty.current = true
+      setReconciling(true)
+    }
   }
   function onEditStyle(blockId: string, style: BlockStyle) {
     store?.applyStyle(blockId, Object.keys(style).length ? style : undefined)
@@ -509,12 +525,12 @@ export function EntityPageBuilder({
             : 'Turn blocks on or off and set their order. Changes save on their own.'}
         </p>
       </div>
-      {store.saving ? (
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+      {store.saving || reconciling ? (
+        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving
         </span>
       ) : (
-        <span className="flex items-center gap-1 text-2xs text-subtle">
+        <span className="flex items-center gap-1 text-2xs text-subtle" role="status" aria-live="polite">
           <Check className="h-3 w-3 text-success" aria-hidden /> Saved
         </span>
       )}
