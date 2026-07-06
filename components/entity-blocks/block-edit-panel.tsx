@@ -1,9 +1,14 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Plus, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type BlockStyle, type FieldDef } from '@/lib/entity-blocks/block-content'
+
+/** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
+ *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
+export type UploadImage = (file: File) => Promise<{ url: string } | { error: string }>
 
 // THE INLINE BLOCK EDIT PANEL (ADR-528). Expands under a block in the in-rail builder when the operator
 // clicks it. CONTENT blocks get their authored fields (text / link / image / ...); DATA blocks get an
@@ -22,6 +27,7 @@ export function BlockEditPanel({
   style,
   hidden,
   editHref,
+  uploadImage,
   onContent,
   onStyle,
   onToggleHide,
@@ -32,6 +38,8 @@ export function BlockEditPanel({
   hidden: boolean
   /** For a DATA block: the href of that feature's own manager ("Manage Offerings"), or null. */
   editHref: string | null
+  /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
+  uploadImage?: UploadImage
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
   onToggleHide: () => void
@@ -66,7 +74,13 @@ export function BlockEditPanel({
 
       {/* Fields */}
       {fields.map((field) => (
-        <FieldEditor key={field.key} field={field} value={content[field.key]} onChange={(v) => setField(field.key, v)} />
+        <FieldEditor
+          key={field.key}
+          field={field}
+          value={content[field.key]}
+          uploadImage={uploadImage}
+          onChange={(v) => setField(field.key, v)}
+        />
       ))}
 
       {/* DATA block: deep-edit link to the feature's own manager */}
@@ -90,23 +104,30 @@ export function BlockEditPanel({
 function FieldEditor({
   field,
   value,
+  uploadImage,
   onChange,
 }: {
   field: FieldDef
   value: unknown
+  uploadImage?: UploadImage
   onChange: (v: unknown) => void
 }) {
   if (field.type === 'text' || field.type === 'url') {
+    const str = typeof value === 'string' ? value : ''
+    const canUpload = field.upload && !!uploadImage
     return (
       <label className="block space-y-1">
         <span className={labelCls}>{field.label}</span>
         <input
           type={field.type === 'url' ? 'url' : 'text'}
-          value={typeof value === 'string' ? value : ''}
+          value={str}
           placeholder={field.placeholder}
           onChange={(e) => onChange(e.target.value)}
           className={inputCls}
         />
+        {canUpload && uploadImage && (
+          <UploadButton uploadImage={uploadImage} onUploaded={(urls) => onChange(urls[urls.length - 1])} />
+        )}
       </label>
     )
   }
@@ -125,22 +146,210 @@ function FieldEditor({
     )
   }
   if (field.type === 'images') {
-    const text = Array.isArray(value) ? (value as unknown[]).filter((v) => typeof v === 'string').join('\n') : ''
-    return (
-      <label className="block space-y-1">
-        <span className={labelCls}>{field.label}</span>
-        <textarea
-          rows={3}
-          value={text}
-          placeholder={'One image URL per line'}
-          onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
-          className={inputCls}
-        />
-      </label>
-    )
+    return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
+  }
+  if (field.type === 'features') {
+    return <FeaturesEditor label={field.label} value={value} onChange={onChange} />
   }
   // links
   return <LinksEditor label={field.label} value={value} onChange={onChange} />
+}
+
+/** The image-list editor (ADR-542): the pasteable "one URL per line" textarea PLUS an Upload control that
+ *  appends each uploaded image's URL, so a single "Image gallery" block takes one or many images by upload
+ *  or link. Empty lines are dropped; the value is always a clean string[]. */
+function ImagesEditor({
+  label,
+  value,
+  uploadImage,
+  onChange,
+}: {
+  label: string
+  value: unknown
+  uploadImage?: UploadImage
+  onChange: (v: unknown) => void
+}) {
+  const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
+  const text = urls.join('\n')
+  return (
+    <div className="space-y-1.5">
+      <span className={labelCls}>{label}</span>
+      <textarea
+        rows={3}
+        value={text}
+        placeholder="One image URL per line"
+        onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+        className={inputCls}
+      />
+      {uploadImage && (
+        <UploadButton
+          uploadImage={uploadImage}
+          multiple
+          label="Upload images"
+          onUploaded={(added) => onChange([...urls, ...added])}
+        />
+      )}
+    </div>
+  )
+}
+
+/** The Features editor (ADR-542): a repeater of {icon, title, text} items with add / remove / reorder. The
+ *  icon is a short token (an emoji or a word); title + text are free text. Empty items are pruned on write. */
+function FeaturesEditor({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  const items: Array<{ icon: string; title: string; text: string }> = Array.isArray(value)
+    ? (value as Array<Record<string, unknown>>).map((it) => ({
+        icon: typeof it.icon === 'string' ? it.icon : '',
+        title: typeof it.title === 'string' ? it.title : '',
+        text: typeof it.text === 'string' ? it.text : '',
+      }))
+    : []
+  const update = (next: Array<{ icon: string; title: string; text: string }>) =>
+    onChange(next.filter((it) => it.icon || it.title || it.text))
+  const move = (i: number, delta: -1 | 1) => {
+    const j = i + delta
+    if (j < 0 || j >= items.length) return
+    const next = [...items]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    update(next)
+  }
+  return (
+    <div className="space-y-1.5">
+      <span className={labelCls}>{label}</span>
+      {items.map((it, i) => (
+        <div key={i} className="space-y-1.5 rounded-lg border border-border bg-surface p-2">
+          <div className="flex items-center gap-1.5">
+            <input
+              value={it.icon}
+              placeholder="Icon or emoji"
+              onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, icon: e.target.value } : x)))}
+              className={`${inputCls} w-24`}
+            />
+            <input
+              value={it.title}
+              placeholder="Title"
+              onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+              className={inputCls}
+            />
+          </div>
+          <textarea
+            rows={2}
+            value={it.text}
+            placeholder="Description"
+            onChange={(e) => update(items.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
+            className={inputCls}
+          />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label={`Move feature ${i + 1} up`}
+              disabled={i === 0}
+              onClick={() => move(i, -1)}
+              className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
+            >
+              <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+            </button>
+            <button
+              type="button"
+              aria-label={`Move feature ${i + 1} down`}
+              disabled={i === items.length - 1}
+              onClick={() => move(i, 1)}
+              className="rounded p-1 text-subtle hover:text-text disabled:opacity-30"
+            >
+              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+            </button>
+            <button
+              type="button"
+              aria-label={`Remove feature ${i + 1}`}
+              onClick={() => update(items.filter((_, j) => j !== i))}
+              className="ml-auto rounded p-1 text-subtle hover:bg-danger-bg hover:text-danger"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => update([...items, { icon: '', title: '', text: '' }])}
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden /> Add feature
+      </button>
+    </div>
+  )
+}
+
+/** The inline image UPLOAD control (ADR-542): picks a file (or several when `multiple`), runs it through the
+ *  injected gated server upload, and hands back the resulting public URL(s). Reuses the space cover/logo
+ *  upload path (event-media, service-role) via the injected action; it invents no bucket of its own. */
+function UploadButton({
+  uploadImage,
+  multiple = false,
+  label = 'Upload image',
+  onUploaded,
+}: {
+  uploadImage: UploadImage
+  multiple?: boolean
+  label?: string
+  onUploaded: (urls: string[]) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handle(files: FileList) {
+    setBusy(true)
+    setError(null)
+    const urls: string[] = []
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) {
+        setError('Choose an image file.')
+        continue
+      }
+      const res = await uploadImage(file)
+      if ('error' in res) {
+        setError(res.error)
+        continue
+      }
+      urls.push(res.url)
+    }
+    if (urls.length) onUploaded(urls)
+    setBusy(false)
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-60"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Upload className="h-3.5 w-3.5" aria-hidden />}
+        {busy ? 'Uploading' : label}
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length) void handle(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      {error && <p className="text-2xs text-danger">{error}</p>}
+    </div>
+  )
 }
 
 /** The link-list editor: a row of {label, url} pairs with add / remove. */

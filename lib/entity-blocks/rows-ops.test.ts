@@ -220,6 +220,31 @@ describe('placeBlock / moveBlock', () => {
   })
 })
 
+describe('2-column escape + column round-trip (ADR-542 stuck-block regression)', () => {
+  // The reported bug: a block dragged into a 2-column row is stuck at half width. A space layout with a
+  // 2-col row [about | offerings] above an empty 1-col row.
+  function twoCol(): BuilderLayout {
+    return { rows: [row('r0', 2, ['about', 'offerings']), row('r1', 1, [null])], hidden: [] }
+  }
+  it('moves a block OUT of a 2-column row into a 1-column row at full width', () => {
+    const out = placeBlock(twoCol(), 'about', 'r1', 0)
+    // about now sits alone in the 1-column row → full width; its old 2-col column is freed, nothing lost.
+    expect(out.rows[1]).toEqual({ id: 'r1', columns: 1, cells: [['about']] })
+    expect(out.rows[0].cells).toEqual([[], ['offerings']])
+    expect(placedIds(out.rows)).toEqual(new Set(['about', 'offerings']))
+  })
+  it('narrows a 2-col row to 1 col at full width, merging both blocks (nothing lost)', () => {
+    const narrowed = setRowColumns(twoCol(), 'r0', 1)
+    expect(narrowed.rows[0]).toEqual({ id: 'r0', columns: 1, cells: [['about', 'offerings']] })
+  })
+  it('narrow then widen round-trips losslessly (no block dropped or stuck)', () => {
+    const narrowed = setRowColumns(twoCol(), 'r0', 1)
+    const widened = setRowColumns(narrowed, 'r0', 2)
+    expect(widened.rows[0].columns).toBe(2)
+    expect(placedIds(widened.rows)).toEqual(new Set(['about', 'offerings']))
+  })
+})
+
 describe('benchBlock', () => {
   it('frees the slot and derives to the bench', () => {
     const out = benchBlock(base(), 'stats')

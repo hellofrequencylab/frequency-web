@@ -262,6 +262,39 @@ export async function uploadSpaceImage(
 }
 
 /**
+ * Upload an image for a PROFILE BLOCK (a Callout image, or an Image gallery photo; ADR-542) and return its
+ * public URL. Reuses the SAME server-side, service-role upload path as the cover/logo (uploadSpaceImage):
+ * the public `event-media` bucket under a space-scoped path (spaces/<id>/blocks/...), so it never depends on
+ * a live browser Storage session and invents no new bucket. The caller (the in-rail block editor) writes the
+ * returned URL into the block's authored content bag. Owner/admin/editor-gated (staff preview fails closed).
+ */
+export async function uploadSpaceBlockImage(
+  slug: string,
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return { error: 'You do not have access to edit this page.' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
+  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
+  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `spaces/${auth.spaceId}/blocks/${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+
+  const { error } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
+  if (error) return { error: error.message }
+
+  const { data } = admin.storage.from('event-media').getPublicUrl(path)
+  return { url: data.publicUrl }
+}
+
+/**
  * Set the Hero cover SCRIM treatment ('shade' dark scrim vs 'blend' fade-to-canvas). Owner/admin/
  * editor-gated (staff preview fails closed). Only affects the Hero cover size. Returns ActionResult.
  */

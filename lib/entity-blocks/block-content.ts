@@ -52,6 +52,9 @@ export interface FieldDef {
   label: string
   type: FieldType
   placeholder?: string
+  /** Image field: the inline editor offers an UPLOAD control (ADR-542) beside the URL input, wired to the
+   *  surface's gated upload action. Set on the image URL / image-list fields (callout image, gallery). */
+  upload?: boolean
 }
 
 /** The CONTENT-block field schemas (the operator authors these). */
@@ -62,17 +65,17 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Say a bit more' },
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Learn more' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
-    { key: 'image', label: 'Image URL', type: 'url', placeholder: 'https://' },
+    { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
   ],
   features: [{ key: 'items', label: 'Features', type: 'features' }],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Section heading' }],
   text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Write a paragraph' }],
   links: [{ key: 'items', label: 'Links', type: 'links' }],
   image: [
-    { key: 'src', label: 'Image URL', type: 'url', placeholder: 'https://' },
+    { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Describe the image' },
   ],
-  gallery: [{ key: 'images', label: 'Image URLs', type: 'images' }],
+  gallery: [{ key: 'images', label: 'Images', type: 'images', upload: true }],
   quote: [
     { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The quote' },
     { key: 'by', label: 'Attribution', type: 'text', placeholder: 'Who said it' },
@@ -87,6 +90,21 @@ const DATA_QUICK_FIELDS: readonly FieldDef[] = [
   { key: 'intro', label: 'Intro line', type: 'text', placeholder: 'A short line under the heading' },
 ]
 
+/** Per-id DATA-block field schemas that go BEYOND the quick title/intro (ADR-542). About + Story are the
+ *  space's identity prose: the owner writes the actual body right here (a `body` textarea, persisted in the
+ *  authored bag and rendered by the block, taking precedence over the space's stored about/story data), so
+ *  the section is never empty for want of a place to type. The quick title/intro still lead. */
+const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
+  about: [
+    ...DATA_QUICK_FIELDS,
+    { key: 'body', label: 'About text', type: 'textarea', placeholder: 'A short intro to your space' },
+  ],
+  story: [
+    ...DATA_QUICK_FIELDS,
+    { key: 'body', label: 'Story text', type: 'textarea', placeholder: 'The longer story of your space' },
+  ],
+}
+
 /** A content block is one whose category is `content` in the registry. */
 export function isContentBlock(block: EntityBlockDef): boolean {
   return block.category === 'content'
@@ -98,7 +116,7 @@ export function fieldsForBlock(id: string): readonly FieldDef[] {
   const block = entityBlockById(id)
   if (!block) return []
   if (isContentBlock(block)) return CONTENT_FIELDS[id] ?? []
-  return DATA_QUICK_FIELDS
+  return DATA_BLOCK_FIELDS[id] ?? DATA_QUICK_FIELDS
 }
 
 // ── URL safety ────────────────────────────────────────────────────────────────────────────────────────

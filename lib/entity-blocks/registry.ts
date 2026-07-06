@@ -70,7 +70,7 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'links', label: 'Links', description: 'A row of links (the bio-link list).', category: 'content', kinds: ['member', 'space'], order: 220 },
   { id: 'image', label: 'Image', description: 'A single image.', category: 'content', kinds: ['member', 'space'], order: 230 },
   { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space'], order: 235 },
-  { id: 'gallery', label: 'Gallery', description: 'A grid of images.', category: 'content', kinds: ['member', 'space'], order: 240 },
+  { id: 'gallery', label: 'Image gallery', description: 'One or many images you upload or link.', category: 'content', kinds: ['member', 'space'], order: 240 },
   { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space'], order: 250 },
   { id: 'embed', label: 'Embed', description: 'An embedded video or player.', category: 'content', kinds: ['member', 'space'], order: 260 },
   { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space'], order: 270 },
