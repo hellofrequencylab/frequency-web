@@ -325,25 +325,98 @@ function spaceSchemaType(type: string): 'LocalBusiness' | 'Organization' {
   return 'Organization'
 }
 
-export function spaceSchema(space: {
+/** The optional, backward-compatible superset input for spaceSchema. Every field beyond the base
+ *  four is OPTIONAL and emitted only when present, so existing callers are unchanged. This is the
+ *  single place the LocalBusiness/Organization node is shaped; callers PASS values (reviews ->
+ *  aggregateRating, socials -> sameAs, etc.) as sources land, never re-declare the signature. */
+export interface SpaceSchemaInput {
   slug: string
   type: string
   name: string
   tagline?: string | null
   logoUrl?: string | null
-}) {
+  /** Social / profile URLs that identify this same entity (entity resolution + AIO citation). */
+  sameAs?: readonly (string | null | undefined)[] | null
+  telephone?: string | null
+  /** A relative price indicator, e.g. '$' or '$$'. */
+  priceRange?: string | null
+  address?: {
+    streetAddress?: string | null
+    addressLocality?: string | null
+    addressRegion?: string | null
+    postalCode?: string | null
+    addressCountry?: string | null
+  } | null
+  geo?: { latitude: number; longitude: number } | null
+  /** schema.org openingHours strings, e.g. 'Mo-Fr 09:00-17:00'. */
+  openingHours?: readonly (string | null | undefined)[] | null
+  /** A place or region served (for services without a storefront). */
+  areaServed?: string | null
+  /** Emitted ONLY when reviewCount > 0. Never emit a null/zero rating: answer engines silently drop
+   *  malformed schema, which would negate the SEO investment. */
+  aggregateRating?: { ratingValue: number; reviewCount: number } | null
+}
+
+/** Drop null/empty/whitespace entries from an optional string list. */
+function cleanStrings(list: readonly (string | null | undefined)[] | null | undefined): string[] {
+  return (list ?? []).filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+}
+
+/** A schema.org PostalAddress from the present sub-fields, or null when none are set. */
+function postalAddress(a: SpaceSchemaInput['address']) {
+  if (!a) return null
+  const entries = Object.entries({
+    streetAddress: a.streetAddress,
+    addressLocality: a.addressLocality,
+    addressRegion: a.addressRegion,
+    postalCode: a.postalCode,
+    addressCountry: a.addressCountry,
+  }).filter(([, v]) => typeof v === 'string' && v.trim().length > 0)
+  if (entries.length === 0) return null
+  return { '@type': 'PostalAddress', ...Object.fromEntries(entries) }
+}
+
+export function spaceSchema(space: SpaceSchemaInput) {
   const url = abs(`/spaces/${space.slug}`)
   const ogImage = abs(`/spaces/${space.slug}/opengraph-image`)
   // The operator's own logo (an arbitrary URL) is the primary image when set, then the per-Space OG
   // card, then the site image as a final fallback, so the node always has an image (rich-result bar).
   const image = [...(space.logoUrl ? [space.logoUrl] : []), ogImage, abs('/opengraph-image')]
+
+  const sameAs = cleanStrings(space.sameAs)
+  const openingHours = cleanStrings(space.openingHours)
+  const address = postalAddress(space.address)
+  const geo =
+    space.geo && Number.isFinite(space.geo.latitude) && Number.isFinite(space.geo.longitude)
+      ? { '@type': 'GeoCoordinates', latitude: space.geo.latitude, longitude: space.geo.longitude }
+      : null
+  const rating =
+    space.aggregateRating && space.aggregateRating.reviewCount > 0
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: space.aggregateRating.ratingValue,
+          reviewCount: space.aggregateRating.reviewCount,
+        }
+      : null
+
   return {
     '@context': 'https://schema.org',
     '@type': spaceSchemaType(space.type),
+    // A stable entity URI so search + answer engines resolve the Space as one entity across the
+    // network profile and any future custom domain (AIO).
+    '@id': url,
     name: space.name,
     url,
     image,
     ...(space.tagline ? { description: space.tagline } : {}),
+    ...(sameAs.length ? { sameAs } : {}),
+    ...(space.telephone ? { telephone: space.telephone } : {}),
+    ...(space.priceRange ? { priceRange: space.priceRange } : {}),
+    ...(address ? { address } : {}),
+    ...(geo ? { geo } : {}),
+    ...(openingHours.length ? { openingHours } : {}),
+    ...(space.areaServed ? { areaServed: space.areaServed } : {}),
+    ...(rating ? { aggregateRating: rating } : {}),
   }
 }
 
@@ -361,6 +434,23 @@ export function partnerListSchema(
       position: i + 1,
       url: abs(`/discover/partners/${p.slug}`),
       name: p.name,
+    })),
+  }
+}
+
+/** An ItemList of Space profiles, for a directory / programmatic hub page (SEO). Each item points at
+ *  the Space's public profile so an answer engine can walk the list to the entity nodes. */
+export function spaceListSchema(spaces: { slug: string; name: string }[], listName: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: listName,
+    numberOfItems: spaces.length,
+    itemListElement: spaces.map((s, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: abs(`/spaces/${s.slug}`),
+      name: s.name,
     })),
   }
 }
