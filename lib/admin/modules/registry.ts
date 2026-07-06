@@ -1,3 +1,7 @@
+// LOCKED CONTRACT (ADR-553, docs/MENU-CONTRACT.md): one of the only three module catalogs the admin menu
+// may derive from. Add a module row here to extend the menu; never hand-roll a parallel list or rewrite
+// the rail/console to add an item. `pnpm check:menu` + the drift-guard tests enforce it in CI.
+//
 // The admin-module registry — the content engine for the page admin dock
 // (EMBEDDED-ADMIN.md / ADR-133, Phase 2). Each module declares the scope it
 // attaches to and the capability it requires; `modulesFor` filters the catalog by

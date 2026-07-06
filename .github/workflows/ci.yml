@@ -44,6 +44,8 @@ jobs:
         run: pnpm check:authz
       - name: Canon check (member copy)
         run: pnpm check:canon
+      - name: Admin-menu contract check
+        run: pnpm check:menu
       - name: SEO/sitemap coherence
         run: pnpm check:seo
       - name: RLS coverage (static shift-left of the DB advisors)

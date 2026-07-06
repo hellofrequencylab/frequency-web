@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getHubCapabilities } from '@/lib/core/load-capabilities'
-import { surfacesFor } from '@/lib/admin/entities/registry'
+import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { HubManageConsole } from './console'
+import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
 
-// The hub OWNER CONSOLE (ADR-441 EM1-3). The unified `/{entity}/[id]/manage` surface,
-// rolled onto hub from the circle template (app/(main)/circles/[slug]/manage/page.tsx):
-// a guide of this hub, a mentor of its parent nexus, or a janitor manages it here,
-// organized by the 9-category spine. Pass 1 composes Basics from the existing settings
-// module; Danger is header-only until hub gets a delete action.
+// The hub OWNER CONSOLE (ADR-441 EM1-3). The unified `/{entity}/[id]/manage` surface: a
+// guide of this hub, a mentor of its parent nexus, or a janitor manages it here, organized
+// by the 9-category spine. It renders the SAME module set the standardized rail shows for a
+// hub (resolveEntityConsole → appsForScope) via the shared EntityManageConsole — including
+// the hub People / Layout / Insights / Danger (archive) modules the thin `ENTITY_SURFACES`
+// registry it replaced never surfaced.
 //
 // SECURITY: a Server Component gated server-side on `hub.manage` via the one resolver
 // (getHubCapabilities → resolveCapabilities). A viewer who cannot manage this hub gets
@@ -42,8 +43,8 @@ export default async function HubManagePage({
   // GATE: resolve what the viewer can do on THIS hub. No manage gate ⇒ the console does
   // not exist for them (notFound, not a redirect — we never reveal the route).
   const caps = await getHubCapabilities(hub.id)
-  const surfaces = surfacesFor('hub', caps)
-  if (surfaces.length === 0) notFound()
+  const modules = resolveEntityConsole({ kind: 'hub', id: hub.slug }, { caps })
+  if (modules.length === 0) notFound()
 
   const statusLabel = hub.status.charAt(0).toUpperCase() + hub.status.slice(1)
 
@@ -56,7 +57,7 @@ export default async function HubManagePage({
       width="default"
       stats={<StatCard label="Status" value={statusLabel} />}
     >
-      <HubManageConsole surfaces={surfaces} />
+      <EntityManageConsole caps={[...caps]} />
     </DashboardTemplate>
   )
 }

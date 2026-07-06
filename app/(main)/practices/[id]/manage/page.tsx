@@ -2,16 +2,17 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
-import { surfacesFor } from '@/lib/admin/entities/registry'
+import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { PracticeManageConsole } from './console'
+import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
 
 // The practice OWNER CONSOLE (ADR-441 EM1-3). The unified `/{entity}/[id]/manage`
-// surface, rolled onto practice from the circle template: the practice's owner (its
-// creator), staff, or whoever manages its parent space manages it here. Pass 1 composes
-// Basics from the existing settings module, which embeds its own DangerDelete (so the
-// Danger surface is header-only, like circle).
+// surface: the practice's owner (its creator), staff, or whoever manages its parent space
+// manages it here. It renders the SAME module set the standardized rail shows for a
+// practice (resolveEntityConsole → appsForScope) via the shared EntityManageConsole — the
+// Settings module (which embeds its own DangerDelete) plus the Insights module the thin
+// `ENTITY_SURFACES` registry it replaced never surfaced.
 //
 // SECURITY: a Server Component gated server-side on `practice.editSettings` via the one
 // resolver (getPracticeCapabilities → resolveCapabilities). A viewer who cannot manage
@@ -39,8 +40,8 @@ export default async function PracticeManagePage({
   if (!practice) notFound()
 
   const caps = await getPracticeCapabilities(practice.id)
-  const surfaces = surfacesFor('practice', caps)
-  if (surfaces.length === 0) notFound()
+  const modules = resolveEntityConsole({ kind: 'practice', id: practice.id }, { caps })
+  if (modules.length === 0) notFound()
 
   return (
     <DashboardTemplate
@@ -59,7 +60,7 @@ export default async function PracticeManagePage({
         </>
       }
     >
-      <PracticeManageConsole surfaces={surfaces} />
+      <EntityManageConsole caps={[...caps]} />
     </DashboardTemplate>
   )
 }

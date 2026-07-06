@@ -32,8 +32,6 @@ export function hrefForSurface(id: string, slug: string): string | null {
       // The lower Settings section (rating + visibility) is rail-inline; link the console card to the basics
       // editor, which still carries visibility. Non-looping.
       return `${base}/settings/basics`
-    case 'space.mode':
-      return `${base}/manage/mode`
     case 'space.layout':
       return `${base}/manage/layout`
     case 'space.offerings':
@@ -60,14 +58,8 @@ export function hrefForSurface(id: string, slug: string): string | null {
       return `${base}/settings/offerings#checkin`
     case 'space.people':
       return `${base}/settings/members`
-    case 'space.engage.crm':
+    case 'space.crm':
       return `${base}/crm`
-    case 'space.autonomy':
-      // The Vera autonomy dial renders inline in the rail; its full home is the CRM cockpit page.
-      return `${base}/crm`
-    case 'space.pipeline':
-      // The stage preview renders inline in the rail; its full editor is the CRM board's Pipeline view.
-      return `${base}/crm?view=pipeline`
     case 'space.services':
       // The storefront services editor (item 10): CRUD the store items + their pricing + visibility.
       return `${base}/settings/services`

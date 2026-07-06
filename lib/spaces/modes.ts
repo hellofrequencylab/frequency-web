@@ -132,7 +132,7 @@ const BUSINESS_SERVICE: ModeProfile = {
   recommendedAddons: ['marketing'],
   nextBestActions: [
     { label: 'Set your booking times', surface: 'space.offerings' },
-    { label: 'Add a service to quote', surface: 'space.engage.crm' },
+    { label: 'Add a service to quote', surface: 'space.crm' },
   ],
 }
 
@@ -156,7 +156,7 @@ const BUSINESS_PRODUCT: ModeProfile = {
   recommendedAddons: ['marketing', 'branding'],
   nextBestActions: [
     { label: 'List a product', surface: 'space.offerings' },
-    { label: 'Recover a cart', surface: 'space.engage.crm' },
+    { label: 'Recover a cart', surface: 'space.crm' },
   ],
 }
 
@@ -181,7 +181,7 @@ const COACHING_PACKAGES: ModeProfile = {
   recommendedAddons: ['ai', 'marketing'],
   nextBestActions: [
     { label: 'Fill your calendar', surface: 'space.offerings' },
-    { label: 'Renew a client', surface: 'space.engage.crm' },
+    { label: 'Renew a client', surface: 'space.crm' },
   ],
 }
 
@@ -205,7 +205,7 @@ const COACHING_COHORT: ModeProfile = {
   lexicon: { people: 'Students', person: 'Student', offerings: 'Programs', offering: 'Program' },
   recommendedAddons: ['ai', 'marketing'],
   nextBestActions: [
-    { label: 'Open enrollment', surface: 'space.engage.crm' },
+    { label: 'Open enrollment', surface: 'space.crm' },
     { label: 'Welcome your cohort', surface: 'space.comms' },
   ],
 }
@@ -230,7 +230,7 @@ const PRACTITIONER_APPOINTMENTS: ModeProfile = {
   recommendedAddons: ['ai'],
   nextBestActions: [
     { label: 'Set your availability', surface: 'space.offerings' },
-    { label: 'Follow up on an inquiry', surface: 'space.engage.crm' },
+    { label: 'Follow up on an inquiry', surface: 'space.crm' },
   ],
 }
 
@@ -253,7 +253,7 @@ const PRACTITIONER_PROGRAMS: ModeProfile = {
   lexicon: { people: 'Clients', person: 'Client', offerings: 'Programs', offering: 'Program' },
   recommendedAddons: ['ai'],
   nextBestActions: [
-    { label: 'Open a program', surface: 'space.engage.crm' },
+    { label: 'Open a program', surface: 'space.crm' },
     { label: 'Set your availability', surface: 'space.offerings' },
   ],
 }
@@ -324,7 +324,7 @@ const ORG_DONATIONS: ModeProfile = {
   recommendedAddons: ['marketing'],
   nextBestActions: [
     { label: 'Set up your fund', surface: 'space.offerings' },
-    { label: 'Thank a supporter', surface: 'space.engage.crm' },
+    { label: 'Thank a supporter', surface: 'space.crm' },
   ],
 }
 

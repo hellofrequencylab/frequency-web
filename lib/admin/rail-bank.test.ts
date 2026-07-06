@@ -37,7 +37,7 @@ describe('bankForScope', () => {
     const bank = bankForScope({ kind: 'space', id: 'sunrise' })
     expect(bank.length).toBeGreaterThanOrEqual(1)
     expect(hrefs(bank)).toContain('/spaces/sunrise/manage')
-    expect(hrefs(bank)).toContain('/spaces/sunrise/crm') // hrefForSurface('space.engage.crm')
+    expect(hrefs(bank)).toContain('/spaces/sunrise/crm') // hrefForSurface('space.crm')
     expect(hrefs(bank)).toContain('/spaces/sunrise/settings/billing')
     expect(bank.every((l) => !!l.label && l.icon != null && !!l.href)).toBe(true)
   })

@@ -98,7 +98,7 @@ export function isPanelId(id: string | undefined): id is string {
 /** Translate a space surface id (what the admin rail knows) → a panel id (what the page renders). Only
  *  the surfaces that open inline appear here; every other surface (Insights shares the QR anchor, Danger has
  *  no route) has no entry, so the rail falls through to its normal full route. D1 panel-ized `space.people`
- *  (Members); D2 added the service managers; D5 adds `space.engage.crm` (the bounded CRM board). */
+ *  (Members); D2 added the service managers; D5 adds the bounded CRM board, keyed by the module id `space.crm`. */
 export const PANEL_SURFACE_TO_ID: Record<string, string> = {
   'space.people': 'members',
   'space.offerings': 'offerings',
@@ -106,7 +106,7 @@ export const PANEL_SURFACE_TO_ID: Record<string, string> = {
   'space.reach': 'qr',
   'space.comms': 'email',
   'space.billing': 'billing',
-  'space.engage.crm': 'crm',
+  'space.crm': 'crm',
   // The seven independent commerce surfaces (ADR-544b split) now open INLINE too (P2, ADR-545): Store
   // (space.services) already mapped above; these six map each to its own service panel so the rail row
   // renders the manager in the profile body instead of deep-linking to /settings/*.

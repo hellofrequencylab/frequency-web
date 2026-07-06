@@ -314,9 +314,6 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }
   const inlineApps = apps.filter((a) => {
     if (isBankPlacement(a)) return false
-    // NOTE: `space.mode` needs no explicit filter here — it is `render: 'inline'` but has NO bound
-    // MODULE_COMPONENT (Mode is edited via the Starter chip → /manage/mode, ADR-520), so nodeForApp
-    // returns null for it and the railItems loop drops it. The chip renders Mode independently below.
     if (!surfacesMatch(a)) return false
     // The Hub shows stats, never an inline PERSONAL editor. The surface predicate already drops the
     // personal editors on most hub pages (they only match /people/* + /settings/profile); this also
@@ -514,15 +511,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   const hasContent = sections.length > 0 || !!pageGroup || !!hub
 
   // Every scoped app (personal + manage + page blocks), mapped to a lightweight search row (P1/P6).
-  // `space.mode` is console-only (ADR-527: no rail section + no bank), so it is excluded from the search
-  // index — otherwise searching "Mode" surfaced an inert result that did nothing.
   const searchApps: SearchableApp[] = [
     ...personalApps,
     ...(manager || isOperator || isSpace
       ? applyOverrides(appsForScope(scope, viewer).filter((a) => !PERSONAL_MODULE_IDS.has(a.id)))
       : []),
   ]
-    .filter((a) => a.id !== 'space.mode')
     .map((a) => ({
     id: a.id,
     label: a.label,

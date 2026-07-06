@@ -11609,3 +11609,43 @@ prune + one genuine logic move (the `entity-cta.tsx` transactional fork re-bases
 `docs/BUSINESS-MODEL-PLAN.md` (Phase 0 docs → 1 types → 2 plans → 3 usage numbers → 4 ease-of-use →
 5 profile polish → 6 copy/go-live). No behavior changes for a live space until `billing_live` is
 flipped; every retired catalog item is archived so existing subscriptions keep resolving.
+
+## ADR-553: The admin menu contract is locked and machine-enforced
+
+**Status:** Accepted (2026-07-06). Full spec: `docs/MENU-CONTRACT.md`. Closes the admin-menu
+standardization (the menu-consolidation #1572 + cleanup Phases B/C). No behavior change from this
+ADR itself; it adds the guardrail.
+
+**Context.** The operator admin menu + rail had drifted across iterations: a rail that was already
+unified (appsForScope over one App catalog) but fed by parallel source registries, a `/manage`
+console that was unified only for Space while core entities rendered from a thin legacy
+`ENTITY_SURFACES`, and a scatter of dead/duplicated menu code. The owner asked for one system used
+the same way for every scope AND a way to keep it from being accidentally overwritten (including by
+an AI agent) while still allowing small tweaks and further development.
+
+**Decision.** Standardize on ONE source of truth and enforce it in CI.
+- **One catalog set.** `SPACE_MODULES`, `ADMIN_MODULES`, `LAYOUT_MODULES` are the only module
+  catalogs. Every surface derives from them: the rail via `appsForScope`, the Space console via
+  `resolveSpaceMenu`, the entity consoles via `resolveEntityConsole` (new, wrapping the same
+  `appsForScope`) rendered by the shared `EntityManageConsole`. `ENTITY_SURFACES` retired (Phase C).
+- **Machine-enforced lock.** `pnpm check:menu` (`scripts/check-menu.mjs`, a new CI step) fails a PR
+  that hand-rolls a parallel `*_MODULES` catalog or reintroduces a retired parallel registry
+  (`SPACE_SURFACES`/`ENTITY_SURFACES`); escape hatch `// menu-ok: <reason>` or an allowlisted file
+  with a reason. Runtime drift-guard tests (`space-menu.test.ts`, `entity-console.test.ts`) assert
+  the console and rail resolve the identical module set per scope. An `AGENTS.md` rule points every
+  agent at the contract.
+- **Extension model.** A menu tweak = editing a catalog row (label/icon/order/gate/group). Adding a
+  scope = registering modules in `ADMIN_MODULES`. Neither touches the renderers. This is why "little
+  tweaks" are safe by construction and the guard blocks turning a tweak into a rewrite.
+
+**Alternatives.** (1) Merge the two gate systems (Capability vs SpaceFunctionKey) / fully unify the
+console+rail into one renderer — declined for now: Space's function-gating and its panel-style
+console vs the entities' inline-editor console are real differences; forcing one renderer risked the
+proven surfaces. The contract locks the SHARED source + resolvers; per-surface presentation stays.
+(2) CODEOWNERS path protection — not available (solo-repo template). The CI gate + tests are the
+load-bearing lock.
+
+**Consequences.** The admin menu is now one system every scope resolves through, with the leftovers
+gone and the standard enforced by CI, so it can be developed further (add catalog rows) without
+being overwritten. Gate green: tsc, eslint, vitest (+ check:menu + the two drift guards), check:canon,
+check:authz. `docs/MENU-CONTRACT.md` is the reference; `AGENTS.md` carries the one-line rule.
