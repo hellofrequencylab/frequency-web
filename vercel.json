@@ -13,6 +13,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/space-campaigns",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/embed-help",
       "schedule": "20 3 * * *"
     },

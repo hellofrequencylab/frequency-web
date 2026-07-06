@@ -61,14 +61,16 @@ export async function updateSpaceCampaign(
   return res
 }
 
-/** Schedule a campaign for a future send time. Gated on canEditProfile (see the implementation). */
+/** Schedule a campaign for a future send time, to a chosen audience. Gated on canEditProfile (see the
+ *  implementation). The audience is persisted so the scheduled-send cron resolves recipients later. */
 export async function scheduleSpaceCampaign(
   spaceId: string,
   slug: string,
   id: string,
   when: string,
+  filter: AudienceFilter = {},
 ): Promise<ActionResult> {
-  const res = await scheduleSpaceCampaignImpl(spaceId, id, when)
+  const res = await scheduleSpaceCampaignImpl(spaceId, id, when, filter)
   if (!('error' in res)) revalidateEmail(slug)
   return res
 }

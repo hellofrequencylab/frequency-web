@@ -521,3 +521,53 @@ describe('entity-about: the inline about reader binds the Space by id', () => {
     expect(data?.about).toBe('About A') // never 'About B'
   })
 })
+
+// ── lib/spaces/automation.ts - per-Space rules + drip sequences (automation module, R5) ──────────
+// The three tables (space_automation_rules / space_drip_sequences / space_drip_steps) are service-role
+// only (RLS enabled, NO policies), so the .eq('space_id', ...) filter each reader/writer applies is the
+// ONLY tenancy gate at that layer. Prove list reads + every mutation bind space_id, so a Space A caller
+// can never read or write Space B's automation. (The write gate on canEditProfile is proven in the
+// per-module unit test lib/spaces/automation.test.ts; this locks the SCOPING FILTER.)
+describe('automation: rule + sequence reads/writes bind space_id', () => {
+  it('listSpaceRules binds space_id', async () => {
+    const { listSpaceRules } = await import('@/lib/spaces/automation')
+    await listSpaceRules(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('listSpaceSequences binds space_id', async () => {
+    const { listSpaceSequences } = await import('@/lib/spaces/automation')
+    await listSpaceSequences(SPACE_A)
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('setSpaceRuleEnabled binds space_id on the update', async () => {
+    const { setSpaceRuleEnabled } = await import('@/lib/spaces/automation')
+    await setSpaceRuleEnabled(SPACE_A, 'rule-1', false)
+    expectScopedMutation(rec(), 'update', SPACE_A)
+  })
+
+  it('deleteSpaceRule binds space_id on the delete', async () => {
+    const { deleteSpaceRule } = await import('@/lib/spaces/automation')
+    await deleteSpaceRule(SPACE_A, 'rule-1')
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+  })
+
+  it('setSpaceSequenceEnabled binds space_id on the update', async () => {
+    const { setSpaceSequenceEnabled } = await import('@/lib/spaces/automation')
+    await setSpaceSequenceEnabled(SPACE_A, 'seq-1', false)
+    expectScopedMutation(rec(), 'update', SPACE_A)
+  })
+
+  it('deleteSpaceSequence binds space_id on the delete', async () => {
+    const { deleteSpaceSequence } = await import('@/lib/spaces/automation')
+    await deleteSpaceSequence(SPACE_A, 'seq-1')
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+  })
+
+  it('deleteSequenceStep binds space_id on the delete', async () => {
+    const { deleteSequenceStep } = await import('@/lib/spaces/automation')
+    await deleteSequenceStep(SPACE_A, 'step-1')
+    expectScopedMutation(rec(), 'delete', SPACE_A)
+  })
+})
