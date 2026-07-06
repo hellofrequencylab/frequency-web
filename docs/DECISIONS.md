@@ -11694,3 +11694,48 @@ into a win-back SEQUENCE automatically lands with the automation work, with no c
 
 **Consequences.** Space owners see which contacts are going cold and can act in one click. Gate green:
 tsc, eslint, vitest (+ the new scorer/summary/contract suites), check:authz, check:rls.
+## ADR-561: Space automation — scheduled campaign send job + per-Space rule/drip UI (R4/R5)
+
+**Context.** Business-accounts Automation had per-Space campaigns that were composable + schedulable
+(`campaigns.scheduled_for`) and a `crm.space.automation` entitlement gate, but no job actually FIRED a
+scheduled campaign, and there was no operator surface to build automation rules or drip sequences over a
+Space's own contacts. The root `automation_rules` + `nurture_sequences` tables are platform-scoped
+(engagement events / per-persona), not per-Space.
+
+**Decision.**
+- **R4 — scheduled send job.** A Vercel Cron route `/api/cron/space-campaigns` (every 5 min, guarded by
+  `CRON_SECRET`, following the existing `publish-scheduled`/`nurture` cron pattern) drives a pure
+  `sendDueCampaigns()` (`lib/spaces/campaigns-send-due.ts`). Idempotency is a CLAIM: for each due
+  campaign a conditional update flips `status 'scheduled' -> 'sending'` while re-asserting
+  `status='scheduled'` in the WHERE, so exactly one overlapping run wins and sends; the loser sees no
+  due row. The winner resolves the campaign's stored `audience_filter` over the Space's OWN contacts and
+  delivers through a NEW session-less seam `sendSpaceCampaignSystem` (extracted from `sendSpaceCampaign`
+  by lifting the post-authz body into `deliverSpaceCampaign`), which re-runs every anti-spam gate
+  (email-function, kill-switch, daily cap, consent + suppression, per-recipient unsubscribe, the
+  `outreach_sends` ledger). `scheduleSpaceCampaign` now persists the chosen audience + requires a
+  subject/body. New column `campaigns.audience_filter jsonb` + a partial due-index; `'sending'` is a new
+  transient status value (status is free-text, no enum change).
+- **R5 — automation rule + drip UI.** Three new Space-scoped, service-role-only tables
+  (`space_automation_rules`, `space_drip_sequences`, `space_drip_steps`) with RLS enabled + NO policies,
+  reached only through gated server actions (`lib/spaces/automation.ts` + `automation-actions.ts`,
+  mirroring `lib/spaces/segments.ts`): every read/write filters `space_id`, every write gates on
+  `canEditProfile`. The operator surface is a Focus page at `/spaces/<slug>/settings/automation`
+  (rules panel + drip-sequence editor), self-gated on the `crm.space.automation` entitlement (an upgrade
+  notice when the plan lacks it). It is mounted by ADDING ONE ROW to `SPACE_MODULES` (`space.automation`,
+  a `link` module in the reach family riding the `crm` feature gate), honoring the locked
+  MENU-CONTRACT — no hand-rolled menu, `pnpm check:menu` + drift guards stay green.
+
+**Alternatives.** (1) Reuse `nurture_sequences` for drips — declined: it is per-persona + platform
+service-role, not per-Space; bending it would break its tenancy model. (2) A new `automation`
+SpaceFunctionKey for the menu gate — declined: automation is a CRM amplifier gated on an entitlement,
+not a function; the catalog row rides the existing `crm` gate and the surface enforces the real
+entitlement. (3) A DB advisory lock / queue table for idempotency — the conditional-claim UPDATE is
+simpler, needs no new infra, and Postgres already serializes the racing updates.
+
+**Consequences.** Scheduled Space campaigns now actually send (exactly once), and operators can author
+rules + drip sequences. The rule/drip RUNNER (firing rules off Space CRM events, dripping sequence steps
+on a schedule) is a follow-on: the surface persists + edits them now, but nothing yet enrolls contacts or
+fires the steps. New cron wiring in `vercel.json`. Contract test in
+`test/contract/tenancy-entity-modules.test.ts` locks the `space_id` binding on every automation
+read/write; unit tests cover the pure validators, permission gating, and the idempotent claim. Gate
+green: tsc, eslint, vitest (4015), check:menu, check:authz.

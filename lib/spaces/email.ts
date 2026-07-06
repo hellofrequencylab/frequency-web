@@ -289,6 +289,46 @@ export async function sendSpaceCampaign(
   if (!spaceFunctionAccess(space, 'email', caps.role))
     return fail('Email is not available on this space plan, or your role cannot use it.')
 
+  // Authz passed; the kill-switch + cap + consent + suppression + ledger all live in the shared
+  // delivery core, which both this interactive path and the SYSTEM (cron) path call.
+  return deliverSpaceCampaign(space, input)
+}
+
+/**
+ * SYSTEM send: deliver a Space campaign WITHOUT an interactive caller session. This is the entry point
+ * for the scheduled-send cron (R4, lib/spaces/campaigns-send-due.ts), which runs off a CRON_SECRET, not
+ * a signed-in owner. The scheduling ACTION (scheduleSpaceCampaign) already gated on canEditProfile when
+ * the owner scheduled the campaign, so the cron does not re-check a per-caller permission (there is no
+ * caller). It DOES re-run every anti-spam gate in the delivery core: the Space is resolved (not found ->
+ * error), the per-Space `email` function must be enabled, the kill-switch must be ON, the daily cap
+ * applies, and each recipient is consent + suppression gated. Fail-closed on any miss; sends NOTHING.
+ */
+export async function sendSpaceCampaignSystem(
+  spaceId: string,
+  input: SendSpaceCampaignInput,
+): Promise<ActionResult<SendSpaceCampaignResult>> {
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+  // PER-SPACE FUNCTION GATE (defense in depth): the Space's plan/role config must still grant email.
+  // A null role checks the space-level default; the cron acts as the Space, not a member, so this
+  // guards against a Space whose email function was turned off after a campaign was scheduled.
+  if (!spaceFunctionAccess(space, 'email', null))
+    return fail('Email is not available on this space plan.')
+  return deliverSpaceCampaign(space, input)
+}
+
+/**
+ * The shared, post-authorization delivery core. Called by BOTH sendSpaceCampaign (interactive, after
+ * the canEditProfile gate) and sendSpaceCampaignSystem (cron, no session). Enforces the kill-switch,
+ * daily cap, consent + suppression, per-recipient unsubscribe, and the outreach_sends ledger + CRM
+ * timeline. `space` is the already-resolved Space (both callers resolve it first). Fail-closed.
+ */
+async function deliverSpaceCampaign(
+  space: NonNullable<Awaited<ReturnType<typeof getSpaceById>>>,
+  input: SendSpaceCampaignInput,
+): Promise<ActionResult<SendSpaceCampaignResult>> {
+  const spaceId = space.id
+
   // (b) KILL-SWITCH: fail closed if email is not explicitly enabled for this Space.
   if (!(await isSpaceEmailEnabled(spaceId))) {
     return fail('Email is turned off for this space. Turn it on in settings before sending.')

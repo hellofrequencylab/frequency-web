@@ -15,6 +15,7 @@ import {
   Store,
   QrCode,
   Mail,
+  Workflow,
   BarChart3,
   CreditCard,
   Blocks,
@@ -116,6 +117,12 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
   { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank' },
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank' },
+  // Automation is a CRM AMPLIFIER (gated on the `crm.space.automation` capability = spaces.entitlements
+  // 'automation'). The menu catalog only gates on a SpaceFunctionKey, so this row rides the `crm` feature
+  // gate (automation lives alongside the CRM); the SURFACE itself self-gates on the automation entitlement
+  // and shows an upgrade notice when the plan lacks it (like the Email surface's own plan gate). A `link`
+  // row out to its own Focus route (rules + drip editor); never banked.
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 82, tier: 'extra', priority: 56 },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
   { id: 'space.insights', label: 'Insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank' },

@@ -303,17 +303,20 @@ export async function updateSpaceCampaign(
 
 /**
  * Schedule a campaign to send at `when` (an ISO string or Date, must be in the future). Gated on
- * canEditProfile AND the campaign belonging to the Space. Sets scheduled_for + status 'scheduled'. A
- * past / unparseable time is rejected (fail-closed) so a schedule never silently sends now. A sent
- * campaign cannot be re-scheduled.
+ * canEditProfile AND the campaign belonging to the Space. Sets scheduled_for + status 'scheduled' and
+ * PERSISTS the chosen audience (`filter`) so the scheduled-send cron can resolve recipients with no
+ * live picker. A past / unparseable time is rejected (fail-closed) so a schedule never silently sends
+ * now. A sent campaign cannot be re-scheduled.
  *
- * NOTE: the backbone agent's send pipeline picks up scheduled campaigns (scheduled_for in the past,
- * status 'scheduled') and delivers them. This action only records the intent; it never sends.
+ * The scheduled-send cron (lib/spaces/campaigns-send-due.ts, R4) picks up due scheduled campaigns
+ * (scheduled_for in the past, status 'scheduled'), claims each exactly once, resolves the stored
+ * audience_filter, and delivers. This action only records the intent; it never sends.
  */
 export async function scheduleSpaceCampaign(
   spaceId: string,
   id: string,
   when: string | Date,
+  filter: AudienceFilter = {},
 ): Promise<ActionResult> {
   const gate = await requireSpaceEditor(spaceId)
   if ('error' in gate) return gate
@@ -322,13 +325,15 @@ export async function scheduleSpaceCampaign(
   if (!existing) return fail('Campaign not found.')
   if (toCampaignStatus(existing.status) === 'sent')
     return fail('This campaign has already gone out, so it cannot be scheduled.')
+  if (!normalizeSubject(existing.subject)) return fail('Give your campaign a subject before scheduling.')
+  if (!normalizeBody(existing.body ?? '').trim()) return fail('Write your campaign before scheduling.')
 
   const iso = parseScheduleTime(when)
   if (!iso) return fail('Pick a send time in the future.')
 
   try {
     const { error } = await campaignsTable()
-      .update({ scheduled_for: iso, status: 'scheduled' })
+      .update({ scheduled_for: iso, status: 'scheduled', audience_filter: filter })
       .eq('id', id)
       .eq('space_id', spaceId)
       .maybeSingle()

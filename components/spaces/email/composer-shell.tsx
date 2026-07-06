@@ -103,7 +103,7 @@ export function ComposerShell({
     start(async () => {
       const id = await ensureDraft()
       if (!id) return
-      const res = await scheduleSpaceCampaign(spaceId, slug, id, when)
+      const res = await scheduleSpaceCampaign(spaceId, slug, id, when, filter)
       if (isError(res)) {
         setError(res.error)
         return
