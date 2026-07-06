@@ -11,15 +11,16 @@ import {
   type SpaceModuleFamily,
 } from '@/lib/admin/modules/space-modules'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
+import { SPACE_ROLES, type SpaceRole } from '@/lib/spaces/membership'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Switch } from '@/components/ui/switch'
-import { setSpaceFeatureEnabled } from '../../settings/features/actions'
-import { saveSpaceModuleMenu } from './actions'
+import { setSpaceFeatureEnabled, setSpaceFeatureMinRole, saveSpaceModuleMenu } from './actions'
 
-// The Module Manager grid (ADR-546, docs/MODULAR-MENU.md — P3, client). The owner turns each SERVICE
-// feature on or off, reorders the modules in their menu, and hides the ones they do not use. Three writes,
-// each optimistic with rollback, all gated owner/admin server-side:
-//   • feature ON/OFF   -> setSpaceFeatureEnabled (spaces.entitlements; the shipped Phase-G path).
+// The Module Manager grid (ADR-546, docs/MODULAR-MENU.md — P3, client). The ONE place an owner manages
+// their menu + features (ADR-552 Phase 4 folded the retired settings/features surface in here). Each row
+// owns every control that module has, all optimistic with rollback and all gated owner/admin server-side:
+//   • feature ON/OFF   -> setSpaceFeatureEnabled (spaces.entitlements).
+//   • lowest role       -> setSpaceFeatureMinRole (spaces.feature_roles) — who on the team can use it.
 //   • reorder / hide    -> saveSpaceModuleMenu (spaces.preferences.moduleMenu).
 // The shell config surfaces (Identity / Info / Page / Settings), Danger, and this Module Manager itself are
 // never toggleable or hideable (hard-disabled) so the owner can never strand themselves. Rows group by
@@ -35,6 +36,14 @@ const TIER_LABEL: Record<ModuleTier, string> = {
   extra: 'Under More',
 }
 
+/** The member-facing label for each role in the "lowest role" picker. */
+const ROLE_LABEL: Record<SpaceRole, string> = {
+  viewer: 'Member',
+  editor: 'Editor',
+  moderator: 'Moderator',
+  admin: 'Admin',
+}
+
 /** One module row, seeded server-side (serializable — no Icons; the client looks each Icon up by id). */
 export interface ModuleManagerRow {
   id: string
@@ -48,6 +57,10 @@ export interface ModuleManagerRow {
   enabled: boolean
   /** A plan-gated feature the plan does not grant yet: the toggle is locked with an upgrade nudge. */
   locked: boolean
+  /** The lowest role that may use this module's function (only meaningful when featureKey is set). */
+  minRole: SpaceRole
+  /** The code-default lowest role, for the "custom" hint + the sparse reset. */
+  defaultMinRole: SpaceRole
   /** Whether this module may be hidden from the menu (false for shell / Danger / Module Manager). */
   hideable: boolean
   /** Whether the owner has currently hidden it. */
@@ -72,6 +85,11 @@ export function ModuleManager({
     return out
   })
   const [hidden, setHidden] = useState<Set<string>>(() => new Set(rows.filter((r) => r.hidden).map((r) => r.id)))
+  const [minRole, setMinRole] = useState<Record<string, SpaceRole>>(() => {
+    const out: Record<string, SpaceRole> = {}
+    for (const r of rows) out[r.id] = r.minRole
+    return out
+  })
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
@@ -126,6 +144,25 @@ export function ModuleManager({
         if (isError(res)) throw new Error(res.error)
       } catch (e) {
         setEnabled((s) => ({ ...s, [id]: prev }))
+        setError(e instanceof Error ? e.message : 'Could not save that change.')
+      } finally {
+        setBusyId(null)
+      }
+    })
+  }
+
+  function chooseRole(id: string, key: SpaceFunctionKey, role: SpaceRole) {
+    const prev = minRole[id]
+    if (prev === role) return
+    setMinRole((s) => ({ ...s, [id]: role }))
+    setError(null)
+    setBusyId(id)
+    startTransition(async () => {
+      try {
+        const res = await setSpaceFeatureMinRole(slug, key, role)
+        if (isError(res)) throw new Error(res.error)
+      } catch (e) {
+        setMinRole((s) => ({ ...s, [id]: prev }))
         setError(e instanceof Error ? e.message : 'Could not save that change.')
       } finally {
         setBusyId(null)
@@ -218,22 +255,40 @@ export function ModuleManager({
                         {isHidden ? 'Hidden' : 'Shown'}
                       </button>
 
-                      {/* Feature on/off (services only; shell modules have no featureKey) */}
+                      {/* Feature on/off + lowest role (services only; shell modules have no featureKey) */}
                       {row.featureKey ? (
                         row.locked ? (
                           <Link
                             href={`/spaces/${slug}/settings/billing`}
                             className="flex h-7 items-center gap-1 rounded-lg bg-surface-elevated px-2 text-2xs font-semibold text-muted hover:bg-surface-elevated/70"
                           >
-                            <Lock className="h-3.5 w-3.5" aria-hidden /> Upgrade
+                            <Lock className="h-3.5 w-3.5" aria-hidden /> Move up a plan
                           </Link>
                         ) : (
-                          <Switch
-                            checked={isOn}
-                            aria-label={`${row.label}: turn ${isOn ? 'off' : 'on'}`}
-                            disabled={readOnly || busyId === id}
-                            onCheckedChange={(on) => toggleFeature(id, row.featureKey as SpaceFunctionKey, on)}
-                          />
+                          <>
+                            {/* Lowest role that may use this module (owner tunes team access here). */}
+                            <select
+                              aria-label={`${row.label}: lowest role`}
+                              value={minRole[id]}
+                              disabled={readOnly || busyId === id || !isOn}
+                              onChange={(e) =>
+                                chooseRole(id, row.featureKey as SpaceFunctionKey, e.target.value as SpaceRole)
+                              }
+                              className="h-7 rounded-lg border border-border bg-surface px-1.5 text-2xs text-text outline-none focus:border-primary disabled:opacity-40"
+                            >
+                              {SPACE_ROLES.map((role) => (
+                                <option key={role} value={role}>
+                                  {ROLE_LABEL[role]}
+                                </option>
+                              ))}
+                            </select>
+                            <Switch
+                              checked={isOn}
+                              aria-label={`${row.label}: turn ${isOn ? 'off' : 'on'}`}
+                              disabled={readOnly || busyId === id}
+                              onCheckedChange={(on) => toggleFeature(id, row.featureKey as SpaceFunctionKey, on)}
+                            />
+                          </>
                         )
                       ) : (
                         <span className="flex h-7 items-center rounded-lg px-2 text-2xs font-medium text-subtle">

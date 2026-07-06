@@ -4,7 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
-import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
+import { spaceFunctionDef, spaceFunctionEnabled, spaceFunctionMinRole } from '@/lib/spaces/functions'
 import { spaceModuleManifest, isModuleHideable } from '@/lib/admin/modules/space-modules'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
 import { FocusTemplate } from '@/components/templates'
@@ -24,7 +24,7 @@ import { ModuleManager, type ModuleManagerRow } from './module-manager'
 
 export const metadata: Metadata = {
   title: 'Menu and features',
-  description: 'Turn features on or off, reorder your menu, and hide what you do not use.',
+  description: 'Turn features on or off, set who can use each one, reorder your menu, and hide what you do not use.',
   robots: { index: false, follow: false },
 }
 
@@ -72,6 +72,10 @@ export default async function SpaceModulesPage({
       enabled: on,
       // A plan-gated feature the plan does not grant is LOCKED (the owner cannot out-grant their plan).
       locked: def?.entitlement != null && !on,
+      // The lowest role that may use this module (owner tunes team access from the same row). Shell
+      // modules with no function fall back to 'viewer' (unused: the row shows no role picker).
+      minRole: def ? (spaceFunctionMinRole(space, def.key) ?? def.defaultMinRole) : 'viewer',
+      defaultMinRole: def?.defaultMinRole ?? 'viewer',
       hideable: isModuleHideable(m.id),
       hidden: hiddenSet.has(m.id),
     }
@@ -81,7 +85,7 @@ export default async function SpaceModulesPage({
     <FocusTemplate
       eyebrow={brandName}
       title="Menu and features"
-      description="Turn the tools this space uses on or off, reorder your menu, and hide what you do not need."
+      description="Turn the tools this space uses on or off, set who on your team can use each one, reorder your menu, and hide what you do not need."
     >
       {staffViewing && <StaffPreviewBanner spaceName={brandName} />}
       <ModuleManager slug={space.slug} rows={rows} readOnly={readOnly} />

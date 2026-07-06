@@ -1,21 +1,23 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Loader2, Check, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
-import {
-  switchSpaceFocus,
-  setModeToggleOverride,
-  resetModeOverrides,
-} from './actions'
+import { switchSpaceFocus, resetModeOverrides } from './actions'
 
 // SPACE MODE settings - the client surface (Space Modes M3, ADR-461/464). Renders the current Mode +
-// Focus, the "what this turns on" preview, a non-destructive Focus switcher, and per-module toggle
-// overrides. Every write calls a server action that re-gates the owner/admin role; this layer is fast
-// inline feedback only. The page (an RSC) resolves + gates and hands this a plain view model.
+// Focus, a read-only "what this preset leads with" preview, a non-destructive Focus switcher, and the
+// lexicon / pipeline the preset seeds. Every write calls a server action that re-gates the owner/admin
+// role; this layer is fast inline feedback only. The page (an RSC) resolves + gates and hands this a plain
+// view model.
+//
+// MENU VISIBILITY lives ONLY in the Module Manager (Menu and features, ADR-552 Phase 4). This surface no
+// longer carries an in-nav / hidden toggle: it is preset-only (focus, lexicon, pipeline), so there is one
+// place to show or hide a module.
 //
 // COPY (CONTENT-VOICE): plain, skeptic-proof, no em dashes. The switch confirm states the
 // non-destructive guarantee in plain words ("your data stays").
@@ -36,8 +38,6 @@ export interface ModuleRow {
   defaultLabel: string
   /** Whether the operator has overridden this module's label. */
   overridden: boolean
-  /** Whether the Mode suggests this module ON by default (or the operator forced it on). */
-  suggestedOn: boolean
 }
 
 export interface FocusChoice {
@@ -103,12 +103,16 @@ export function ModeSettings({
         </p>
       )}
 
-      {/* What this turns on (the preview) */}
+      {/* What this preset leads with (read-only preview). Menu visibility lives in the Module Manager. */}
       <section>
         <SectionHeader title="What this preset leads with" />
         <p className="-mt-2 mb-3 text-sm text-muted">
           A preset never locks anything. Every tool stays available; this is the order your console leads
-          with and the words it uses. You can turn any module off the nav without losing it.
+          with and the words it uses. To show or hide a module in your menu, open{' '}
+          <Link href={`/spaces/${slug}/manage/modules`} className="font-medium text-primary hover:underline">
+            Menu and features
+          </Link>
+          .
         </p>
 
         <div className="space-y-2">
@@ -123,22 +127,6 @@ export function ModeSettings({
                   <span className="ml-2 text-xs text-subtle">renamed from {m.defaultLabel}</span>
                 )}
               </span>
-              <Button
-                type="button"
-                variant={m.suggestedOn ? 'secondary' : 'ghost'}
-                size="sm"
-                disabled={readOnly || pending}
-                onClick={() => run(() => setModeToggleOverride(slug, m.fn, !m.suggestedOn))}
-                aria-pressed={m.suggestedOn}
-              >
-                {m.suggestedOn ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" aria-hidden /> In nav
-                  </>
-                ) : (
-                  'Hidden'
-                )}
-              </Button>
             </div>
           ))}
         </div>

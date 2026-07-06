@@ -183,25 +183,25 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
             {space.type === 'business' && (
               <>
                 <PreviewLink
-                  href={`/spaces/${space.slug}/settings/availability`}
+                  href={`/spaces/${space.slug}/settings/offerings#availability`}
                   icon={CalendarClock}
                   title="Availability and bookings"
                   description="The weekly booking windows and the owner's calendar."
                 />
                 <PreviewLink
-                  href={`/spaces/${space.slug}/settings/memberships`}
+                  href={`/spaces/${space.slug}/settings/offerings#memberships`}
                   icon={BadgeCheck}
                   title="Memberships"
                   description="The membership tiers and who has joined."
                 />
                 <PreviewLink
-                  href={`/spaces/${space.slug}/settings/tickets`}
+                  href={`/spaces/${space.slug}/settings/offerings#tickets`}
                   icon={Ticket}
                   title="Tickets"
                   description="The free or RSVP ticket tiers and who has reserved a spot."
                 />
                 <PreviewLink
-                  href={`/spaces/${space.slug}/settings/checkin`}
+                  href={`/spaces/${space.slug}/settings/offerings#checkin`}
                   icon={DoorOpen}
                   title="Check in"
                   description="The door code and the live roster of who checked in."
@@ -211,7 +211,7 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
             {space.type === 'nonprofit' && (
               <>
                 <PreviewLink
-                  href={`/spaces/${space.slug}/settings/donations`}
+                  href={`/spaces/${space.slug}/settings/offerings#donations`}
                   icon={HeartHandshake}
                   title="Donations"
                   description="The fund, its description, and the suggested amounts members can pick."
@@ -238,7 +238,7 @@ export default async function SpaceBrandEditorPage({ params }: { params: Promise
               description="The codes for this space and the landing pages they open to."
             />
             <PreviewLink
-              href={`/spaces/${space.slug}/settings/crm`}
+              href={`/spaces/${space.slug}/crm`}
               icon={Briefcase}
               title="CRM"
               description="The pipeline, contacts, and private notes the owner keeps."

@@ -107,11 +107,10 @@ async function validContactLink(contactId: string | null | undefined, spaceId: s
   return contact ? contact.id : null
 }
 
-/** Revalidate the two surfaces a Space task shows on (the board + the Focus notes surface). */
+/** Revalidate the surface a Space task shows on (the CRM board). */
 function revalidateSpace(slug: string | null | undefined): void {
   if (!slug) return
   revalidatePath(`/spaces/${slug}/crm`)
-  revalidatePath(`/spaces/${slug}/settings/crm`)
 }
 
 // ── PUBLIC SERVER ACTIONS (all owner-gated + space-scoped) ──────────────────────────────────────

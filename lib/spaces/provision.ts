@@ -11,8 +11,9 @@
 //   4. Insert the `spaces` row (status 'active', plan 'free', entitlements {}, the default DAWN
 //      skin, owner = caller, network_connected true), then seat the caller as an 'admin' member
 //      (addSpaceMember).
-// On slug collision it returns a friendly fail; on success it redirects to the owner settings
-// surface. Returns ActionResult on any path that DOESN'T redirect.
+// On slug collision it returns a friendly fail; on success it redirects the new owner straight to their
+// `/manage` console (ADR-552 Phase 4, no double-hop through /settings). Returns ActionResult on any path
+// that DOESN'T redirect.
 //
 // `spaces` is not in the generated DB types yet, so the insert/uniqueness read reach the table
 // through the untyped admin client (ADR-246), exactly like lib/spaces/membership.ts.
@@ -84,7 +85,7 @@ async function rootEntityId(): Promise<string | null> {
 
 /**
  * Provision a new entity Space owned by the caller, then seat the caller as a Space admin. On
- * success this REDIRECTS to /spaces/<slug>/settings (so it returns nothing on the happy path).
+ * success this REDIRECTS to /spaces/<slug>/manage (so it returns nothing on the happy path).
  * Returns an ActionResult error on any guard failure so the wizard can surface it inline.
  */
 export async function createSpace(input: CreateSpaceInput): Promise<ActionResult> {
@@ -109,6 +110,8 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     return fail('That handle is already taken. Try another.')
   }
 
+  // Brand name is no longer collected at create (ADR-552 Phase 4): it defaults to the name and is
+  // editable later in Basics. A legacy caller may still pass one, so honor it when present.
   const brandName = (input.brandName ?? '').trim() || name
   const visibility = input.visibility === 'private' ? 'private' : 'network'
 
@@ -178,9 +181,10 @@ export async function createSpace(input: CreateSpaceInput): Promise<ActionResult
     await ensureSpaceStages(spaceId, type, modeVariant)
   }
 
-  // Success: hand the owner straight to the settings surface to finish the profile. redirect()
-  // throws, so it must sit OUTSIDE any try/catch (Next docs: redirecting.md).
-  redirect(`/spaces/${slug}/settings`)
+  // Success: hand the owner straight to their /manage console (ADR-552 Phase 4 — no double-hop through
+  // /settings, which now just redirects here anyway). redirect() throws, so it must sit OUTSIDE any
+  // try/catch (Next docs: redirecting.md).
+  redirect(`/spaces/${slug}/manage`)
 }
 
 /**
