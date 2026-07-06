@@ -9306,3 +9306,16 @@ Verified with two `BEGIN…ROLLBACK` dry-runs against prod data before applying:
 - Retires the per-surface bespoke edit buttons and the separate studio destination; the practice pilot proves the pattern, then profile/circle/event/page/space roll on as field schemas with no new editor code.
 - Directly feeds the white-label tracks (T1 console, T4 Brand Studio) since brand editing becomes a scope of the same system.
 - Each rollout step is independently shippable, inline writes re-gate server-side, and RLS enforces ownership (ties to the T0 RLS convergence).
+
+## ADR-451: Operator Console — one scope-switched cockpit for platform and Space operators
+
+**Status:** Accepted (2026-07-06) as the design; P0 foundation in build behind `operatorConsoleEnabled()` (default OFF). Full spec: [OPERATOR-CONSOLE.md](OPERATOR-CONSOLE.md) + [BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md](BUSINESS-ACCOUNTS-PRODUCTION-PLAN.md) Part 1.
+
+**Context.** A recon (2026-07-06) found 60+ distinct management surfaces across five trees — `/admin/*` (47 routes, 9 domains, 80+ links via `app/(main)/admin/sections.ts`), `/spaces/[slug]/settings/*` (13), personal `/settings/*`, `/pages/*`, `/lead/*` — with the same concern (email, QR, CRM, members) configured in two scopes, no operator home per Space, and navigation defined across 7+ files. The root platform is already a Space (`type='root'`), so operating root and operating a tenant Space are the same operator role at different scopes; they were split into two parallel IA trees anyway.
+
+**Decision.** Converge all operator management onto **one console, scope-switched**: seven fixed workspaces (Home · Profile and site · People · Marketing · Offerings and commerce · Community and content · Settings) that render in either scope, gated by three axes that already ship — the staff axis (`web_role` + the `team_members` domain matrix) at root, the `SpaceRole` ladder + per-Space function switch + space type at space scope, and an OFF-safe plan gate (`featureAllowed`, grant-all while billing is OFF). The IA is a single append-only registry (`lib/operator/console.ts`); a pure resolver (`lib/operator/visible.ts`) reproduces the shipped gate math; a derived route map (`lib/operator/route-map.ts`) keeps redirects from drifting from the IA. Later phases only append subtabs; they never re-shape the seven workspaces.
+
+**Consequences.**
+- The console ships behind `operatorConsoleEnabled()` (default OFF), mounted for preview at `/operator/*` (rail registered `'none'` in `lib/layout/page-chrome.ts`); a cutover step relocates it onto `/admin` + `/spaces/[slug]/manage` and redirects the legacy routes. While OFF, every legacy surface renders exactly as today.
+- P3/P4/P5/P6 operator UI (reviews moderation, automation/sequences, at-risk, AI credits, email-domain) mount into this registry as appended subtabs rather than new orphan pages — the console is the single extension point.
+- The existing `ADMIN_GROUPS` / `SPACE_FUNCTIONS` stay as the data the registry transcribes; gating logic is kept pure and unit-tested to compensate for the untyped-cast fragility ([ADR-246](DECISIONS.md)).

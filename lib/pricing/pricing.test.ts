@@ -237,10 +237,12 @@ describe('seeded defaults are sane (mirror the migration)', () => {
     expect(crew.annual_cents!).toBeLessThan(crew.monthly_cents * 12)
   })
 
-  it('take-rate decreases up the ladder (practitioner > business > org)', () => {
+  it('take-rate lives only on Free (5%); every paid plan is 0% (connection-based pricing)', () => {
     const t = PRICING_DEFAULTS.take_rate
-    expect(t.practitioner_bps).toBeGreaterThan(t.business_bps)
-    expect(t.business_bps).toBeGreaterThan(t.organization_bps)
+    expect(t.free_bps).toBe(500)
+    expect(t.practitioner_bps).toBe(0)
+    expect(t.business_bps).toBe(0)
+    expect(t.organization_bps).toBe(0)
   })
 
   it('vera free cap is the spec value (10/day)', () => {
@@ -305,5 +307,29 @@ describe('pricing display (P3 — what the upgrade/plan surfaces render)', () =>
     expect(rows.find((r) => r.key === 'nonprofit')?.annual).toBe('$290')
     // practitioner/business have an annual line
     expect(rows.find((r) => r.key === 'practitioner')?.annual).toBe('$190')
+  })
+})
+
+describe('brand plan (connected custom-domain tier)', () => {
+  const idx = (p: string) => (SPACE_PLANS as readonly string[]).indexOf(p)
+
+  it('is a known plan, ranked above business and below the enterprise / white-label tiers', () => {
+    expect((SPACE_PLANS as readonly string[]).includes('brand')).toBe(true)
+    expect(asSpacePlan('brand')).toBe('brand')
+    expect(idx('brand')).toBeGreaterThan(idx('business')) // clears business-level gates
+    expect(idx('brand')).toBeLessThan(idx('organization')) // below enterprise
+    expect(idx('brand')).toBeLessThan(idx('whitelabel')) // below full white-label
+  })
+
+  it('grants the business toolset plus custom_domain, without branding removal', () => {
+    const keys = planEntitlementKeys('brand')
+    expect(keys).toContain('custom_domain')
+    expect(keys).toContain('email')
+    expect(keys).toContain('automation')
+    expect(keys).not.toContain('whitelabel') // brand stays connected; only white-label decouples
+  })
+
+  it('has a plain-voice label', () => {
+    expect(SPACE_PLAN_LABEL.brand).toBe('Brand')
   })
 })

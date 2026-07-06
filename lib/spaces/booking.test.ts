@@ -505,7 +505,11 @@ describe('createBooking (action)', () => {
   })
 
   it('rejects a time that is not a published slot boundary', async () => {
-    const r = await createBooking('space-1', new Date('2026-06-30T10:15:00Z').toISOString())
+    // Derive an off-boundary time from a real FUTURE open slot (like the sibling tests), so the
+    // past-time guard never fires: a valid 30-min boundary + 15 min is future AND not a boundary.
+    const open = await listOpenSlots('space-1')
+    const offBoundary = new Date(new Date(open[0]!.startsAt).getTime() + 15 * 60000).toISOString()
+    const r = await createBooking('space-1', offBoundary)
     expect('error' in r).toBe(true)
     if ('error' in r) expect(r.error).toMatch(/no longer available/i)
     expect(db.bookings).toHaveLength(0)

@@ -17,7 +17,7 @@ import {
   PERIODS_BY_KEY,
 } from './pricing-keys'
 
-const TAKE_RATE = { practitioner_bps: 800, business_bps: 500, organization_bps: 300 }
+const TAKE_RATE = { free_bps: 500, practitioner_bps: 0, business_bps: 0, organization_bps: 0 }
 
 describe('priceKey', () => {
   it('builds <base>_<period> and the founder variant', () => {
@@ -107,30 +107,34 @@ describe('narrowing helpers (default-deny)', () => {
   })
 })
 
-describe('take-rate by plan', () => {
-  it('reads the per-plan basis points (8/5/3%)', () => {
-    expect(takeRateBpsForPlan('practitioner', TAKE_RATE)).toBe(800)
-    expect(takeRateBpsForPlan('business', TAKE_RATE)).toBe(500)
-    expect(takeRateBpsForPlan('organization', TAKE_RATE)).toBe(300)
+describe('take-rate by plan (connection-based: Free 5%, every paid plan 0%)', () => {
+  it('every PAID plan is 0%', () => {
+    for (const p of ['practitioner', 'business', 'brand', 'nonprofit', 'partner', 'organization', 'whitelabel']) {
+      expect(takeRateBpsForPlan(p, TAKE_RATE)).toBe(0)
+    }
   })
 
-  it('white-label inherits the organization (lowest) rate', () => {
-    expect(takeRateBpsForPlan('whitelabel', TAKE_RATE)).toBe(300)
+  it('the Free plan pays the free rate (5%)', () => {
+    expect(takeRateBpsForPlan('free', TAKE_RATE)).toBe(500)
   })
 
-  it('a free/unknown plan falls back to the entry (practitioner) rate, never 0', () => {
-    expect(takeRateBpsForPlan('free', TAKE_RATE)).toBe(800)
-    expect(takeRateBpsForPlan(null, TAKE_RATE)).toBe(800)
-    expect(takeRateBpsForPlan('nonsense', TAKE_RATE)).toBe(800)
+  it('an unknown / profile-owned ("maker") seller pays the Free rate, never a paid 0', () => {
+    expect(takeRateBpsForPlan(null, TAKE_RATE)).toBe(500)
+    expect(takeRateBpsForPlan('nonsense', TAKE_RATE)).toBe(500)
+    expect(takeRateBpsForPlan('maker', TAKE_RATE)).toBe(500)
+  })
+
+  it('falls back to the 5% default when free_bps is absent from config', () => {
+    expect(takeRateBpsForPlan('free', {})).toBe(500)
   })
 
   it('takeRateCents applies the rate and floors fractional cents', () => {
-    // $100 @ 8% = $8.00
-    expect(takeRateCents(10000, 'practitioner', TAKE_RATE)).toBe(800)
-    // $100 @ 5% = $5.00
-    expect(takeRateCents(10000, 'business', TAKE_RATE)).toBe(500)
-    // 333c @ 8% = 26.64 → floor 26
-    expect(takeRateCents(333, 'practitioner', TAKE_RATE)).toBe(26)
+    // $100 @ 5% (Free) = $5.00
+    expect(takeRateCents(10000, 'free', TAKE_RATE)).toBe(500)
+    // A paid plan takes nothing
+    expect(takeRateCents(10000, 'business', TAKE_RATE)).toBe(0)
+    // 333c @ 5% = 16.65 → floor 16 (Free)
+    expect(takeRateCents(333, 'free', TAKE_RATE)).toBe(16)
   })
 
   it('takeRateCents is 0 for non-positive / invalid gross', () => {

@@ -15,6 +15,11 @@ export const SPACE_PLANS = [
   'free',
   'practitioner',
   'business',
+  // Brand: the connected custom-domain tier (BUSINESS-ACCOUNTS-STRATEGY, pricing ADR). Ranks just
+  // ABOVE business so it clears the business-level gates AND the space_custom_domain gate, while
+  // staying BELOW the full-featured mission/enterprise tiers. Own domain, still network-connected
+  // (spaces.network_connected stays true) — distinct from white-label, which decouples.
+  'brand',
   // Nonprofit + Partner sit ABOVE business in this list ON PURPOSE. This array is the CAPABILITY
   // ladder meetsGate ranks on (gates.ts PLAN_RANK), NOT a price order. Both are "lower-priced or
   // comped but full-featured" (verified mission orgs / hosted programs), so they must out-rank
@@ -33,6 +38,8 @@ export const SPACE_PLAN_LABEL: Record<SpacePlan, string> = {
   free: 'Free',
   practitioner: 'Practitioner',
   business: 'Business',
+  // Brand: own domain, still connected to the network. The self-serve upgrade above Business.
+  brand: 'Brand',
   // The verified-501c3 plan is the plan FOR a Space of type `organization` (a nonprofit), so its
   // label names both: the operator picks the right plan for an Organization space without guessing,
   // and the plan label + the Space type label read as the same thing.
@@ -69,12 +76,15 @@ const PLAN_ENTITLEMENT_KEYS: Record<SpacePlan, readonly string[]> = {
   free: [],
   practitioner: ['crm', 'crm.playbooks'],
   business: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
+  // Brand: the full business toolset PLUS the connected custom-domain capability ('custom_domain'),
+  // still network-connected (no branding removal — that is white-label's 'whitelabel' key).
+  brand: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance', 'custom_domain'],
   // Nonprofit (verified mission orgs) + Partner (comped, hosting a program) get the full business
   // toolset minus white-label branding. Per-feature tunable in /admin/pricing.
   nonprofit: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
   partner: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'crm.playbooks', 'crm.resonance'],
   organization: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
-  whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
+  whitelabel: ['crm', 'email', 'automation', 'team', 'multi_pipeline', 'reporting', 'whitelabel', 'custom_domain', 'crm.playbooks', 'crm.resonance', 'crm.resonance_ai'],
 }
 
 /** The `spaces.entitlements` keys a plan unlocks (default map; code source of truth). PURE —

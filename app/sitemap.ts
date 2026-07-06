@@ -9,6 +9,7 @@ import { listPublicJourneys } from "@/lib/journey-plans";
 import { listActivePartners } from "@/lib/partners/read";
 import { listPublicPractices } from "@/lib/practices";
 import { listNetworkedSpaces } from "@/lib/spaces/discovery";
+import { DIRECTORY_TYPES } from "@/components/spaces/space-type";
 import { createPublicClient } from "@/lib/supabase/public";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAllArticles, getAllCategories } from "@/lib/help/content";
@@ -203,6 +204,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       images: [`${SITE_URL}/spaces/${s.slug}/opengraph-image`],
     }));
 
+    // Programmatic type hubs (/discover/spaces/[type]) — include ONLY types with enough networked
+    // Spaces to clear the page's own index threshold, so we never advertise a noindex hub (matches
+    // HUB_MIN_INDEX in app/discover/spaces/[type]/page.tsx).
+    const spaceHubCounts = new Map<string, number>();
+    for (const s of spaces) spaceHubCounts.set(s.type, (spaceHubCounts.get(s.type) ?? 0) + 1);
+    const spaceHubRoutes: MetadataRoute.Sitemap = DIRECTORY_TYPES.filter(
+      (t) => (spaceHubCounts.get(t.value) ?? 0) >= 3,
+    ).map((t) => ({
+      url: `${SITE_URL}/discover/spaces/${t.value}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
     const partnerRoutes: MetadataRoute.Sitemap = partners.map((p) => ({
       url: `${SITE_URL}/discover/partners/${p.slug}`,
       lastModified: now,
@@ -274,6 +289,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ...partnerRoutes,
       ...practiceRoutes,
       ...spaceRoutes,
+      ...spaceHubRoutes,
       ...placeRoutes,
     ];
   } catch {

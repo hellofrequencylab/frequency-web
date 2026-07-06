@@ -8,7 +8,7 @@
 // founding member's profiles.locked_price_id at checkout.
 
 import type { EntitlementTier } from '@/lib/core/entitlement'
-import { SPACE_PLANS, type SpacePlan } from '@/lib/pricing/plans'
+import { SPACE_PLANS, asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
 
 /** A subscription billing period. */
 export type BillingPeriod = 'monthly' | 'annual'
@@ -19,7 +19,7 @@ export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]
 
 /** The space plans that are SOLD self-serve (free is never a paid key; Partner is comped/operator-
  *  assigned, so it is intentionally NOT here). */
-export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'nonprofit', 'organization', 'whitelabel'] as const
+export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'brand', 'nonprofit', 'organization', 'whitelabel'] as const
 export type SpacePlanKey = (typeof SPACE_PLAN_KEYS)[number]
 
 /** Which billing periods each tier/plan offers (mirrors PRICING_DEFAULTS: organization +
@@ -29,6 +29,7 @@ export const PERIODS_BY_KEY: Record<MemberTierKey | SpacePlanKey, readonly Billi
   supporter: ['monthly', 'annual'],
   practitioner: ['monthly', 'annual'],
   business: ['monthly', 'annual'],
+  brand: ['monthly', 'annual'],
   nonprofit: ['monthly', 'annual'],
   organization: ['monthly'],
   whitelabel: ['monthly'],
@@ -81,28 +82,29 @@ export function asSpacePlanKey(plan: SpacePlan | string | null | undefined): Spa
   return (SPACE_PLAN_KEYS as readonly string[]).includes(plan ?? '') ? (plan as SpacePlanKey) : null
 }
 
-/** The take-rate basis points key in pricing_settings.take_rate for a space plan. PURE.
- *  practitioner/business/organization have explicit bps; whitelabel inherits organization's (the
- *  lowest published rate). Returns the bps from the provided take_rate map, default-safe. */
+/** The Free-plan take-rate basis points used when pricing_settings doesn't specify one (5%). */
+export const DEFAULT_FREE_TAKE_RATE_BPS = 500
+
+/** The take-rate config read from pricing_settings.take_rate. Under connection-based pricing only
+ *  `free_bps` is consulted; the per-paid-plan bps are retained for backward-compatible config but
+ *  are no longer applied (every paid plan is 0%). */
+export type TakeRateConfig = {
+  free_bps?: number
+  practitioner_bps?: number
+  business_bps?: number
+  organization_bps?: number
+}
+
+/** The take-rate basis points for a space plan under CONNECTION-BASED pricing (BUSINESS-ACCOUNTS-
+ *  STRATEGY). PURE. The take-rate lives ONLY on the Free plan; every PAID Space plan is flat SaaS at
+ *  0%. A profile-owned ('maker') or unknown seller has no paid Space plan, so it pays the Free rate.
+ *  While billing is OFF nothing charges regardless (setSpacePlan is a no-op, no space is ever paid). */
 export function takeRateBpsForPlan(
   plan: SpacePlan | string | null | undefined,
-  takeRate: { practitioner_bps: number; business_bps: number; organization_bps: number },
+  takeRate: TakeRateConfig,
 ): number {
-  switch (asSpacePlanKey(plan)) {
-    case 'practitioner':
-      return takeRate.practitioner_bps
-    case 'business':
-      return takeRate.business_bps
-    case 'organization':
-      return takeRate.organization_bps
-    case 'whitelabel':
-      // White-label has no separate published take-rate; use the lowest (organization) rate.
-      return takeRate.organization_bps
-    default:
-      // free / unknown plan: no published rate → fall back to the practitioner rate (the
-      // entry paid rate) so a misconfigured space never charges a 0% (under-collect) fee.
-      return takeRate.practitioner_bps
-  }
+  const isPaidPlan = asSpacePlan(plan) !== 'free'
+  return isPaidPlan ? 0 : takeRate.free_bps ?? DEFAULT_FREE_TAKE_RATE_BPS
 }
 
 /** The application-fee cents on a gross charge for a space plan's take-rate. PURE (no I/O).
@@ -110,7 +112,7 @@ export function takeRateBpsForPlan(
 export function takeRateCents(
   grossCents: number,
   plan: SpacePlan | string | null | undefined,
-  takeRate: { practitioner_bps: number; business_bps: number; organization_bps: number },
+  takeRate: TakeRateConfig,
 ): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   const bps = takeRateBpsForPlan(plan, takeRate)

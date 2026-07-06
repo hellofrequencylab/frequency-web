@@ -37,6 +37,7 @@ const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   free: 50,
   practitioner: 500,
   business: 2000,
+  brand: 2000,
   nonprofit: 2000,
   partner: 2000,
   organization: null,

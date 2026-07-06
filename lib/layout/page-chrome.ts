@@ -102,6 +102,11 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // the community rail beside it. Pass 1 ships the circle console; sibling entity consoles
   // add their own pattern here as they land.
   /^\/circles\/[^/]+\/manage$/, // a circle's owner console
+  // The Operator Console (BUSINESS-ACCOUNTS-PRODUCTION-PLAN P0): one scope-switched cockpit for
+  // the root platform and every tenant Space. Full-width <DashboardTemplate>, so 'none' rail.
+  // Mounted behind operatorConsoleEnabled() at /operator/* for isolated preview; the cutover
+  // step (P0:9) relocates it onto /admin + /spaces/[slug]/manage.
+  /^\/operator(\/.*)?$/,
 ]
 
 // ⚠️ THE GLOBAL COMMUNITY RIGHT RAIL ALWAYS EXISTS ON THE EVENTS DETAIL PAGE. ⚠️

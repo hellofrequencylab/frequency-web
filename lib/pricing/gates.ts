@@ -55,6 +55,11 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   space_team: { axis: 'plan', minEntitlement: 'business', enabled: true },
   space_whitelabel: { axis: 'plan', minEntitlement: 'whitelabel', enabled: true },
   space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  // The connected custom-domain capability (BUSINESS-ACCOUNTS-STRATEGY): a Space serves on its own
+  // domain while STAYING in the network (network_connected=true). Self-serve requires the Brand plan;
+  // the full-featured mission/enterprise tiers (rank >= brand) clear it too. White-label decouples on
+  // top of this via the separate space_whitelabel gate.
+  space_custom_domain: { axis: 'plan', minEntitlement: 'brand', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },

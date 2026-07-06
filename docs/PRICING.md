@@ -68,12 +68,19 @@ value is editable at `/admin/pricing`; nothing charges while `billing_live` is O
 |---|---|---|---|---|---|
 | Crew (member) | $9 | $90 | n/a | personal members | personal tier |
 | Supporter (member) | $24 | $240 | n/a | personal members | personal tier |
-| Practitioner (space) | $19 | $190 | 1 | solo practitioners | take-rate 8% |
+| Practitioner (space) | $19 | $190 | 1 | solo practitioners | flat, 0% take-rate |
 | Partner (space) | comped (free) + revenue share | n/a | 1 | influencers/collaborators hosting a program | operator-assigned "by arrangement"; full business-level features; **not sold via checkout** |
 | Nonprofit 501(c)(3) (space) | $29 | $290 | 3 (planned) | verified mission orgs | full business-level features; sold self-serve once enabled |
-| Business (space) | $49 | $490 | 1 | growing teams | take-rate 5% |
-| Organization (space) | $199 | monthly only | 1 | enterprise | take-rate 3%; **custom, built but not sold self-serve** |
-| White-label (space) | $299 + ≈ $1,500 setup | monthly only | 1 | full branding removal | branding removal; setup is a high-touch lead, not checkout |
+| Business (space) | $49 | $490 | 1 | growing teams | flat, 0% take-rate |
+| Brand (space) | $129 | $1290 | 1 | own domain, still network-connected | flat, 0% take-rate; adds the `custom_domain` capability (Space keeps `network_connected=true`) |
+| Organization (space) | $199 | monthly only | 1 | enterprise | flat, 0% take-rate; **custom, built but not sold self-serve** |
+| White-label (space) | $299 + ≈ $1,500 setup | monthly only | 1 | full branding removal (decoupled) | branding removal + `custom_domain`; setup is a high-touch lead, not checkout |
+
+> **Connection-based take-rate (BUSINESS-ACCOUNTS-STRATEGY, ADR-451 pricing).** The platform take-rate
+> lives **only on the Free plan (5%)**; every **paid** plan is flat SaaS at **0%**, across all space
+> commerce (memberships, storefront, bookings, tickets). This supersedes the earlier per-plan 8/5/3%
+> model. `takeRateBpsForPlan` (lib/billing/pricing-keys.ts) returns `free_bps` for Free/unknown and 0
+> for any paid plan. All OFF-preserving: nothing charges while `billing_live` is OFF.
 
 **Operator seats** are the count of operators who can administer the space. Seats are a **planned
 follow-up** (not built yet): only Nonprofit carries a higher planned seat count (3); per-seat billing
@@ -81,8 +88,8 @@ is deferred (see below). Until seats ship, the column records the intended alloc
 limit.
 
 Other knobs: **Vera free cap** 10 messages/day · **annual discount** ≈ 2 months free · **trial** 14
-days on Space plans, card upfront (members have no trial, the free tier is theirs; editable). Take-rates
-are stored in basis points (800 = 8%). Separately, a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`,
+days on Space plans, card upfront (members have no trial, the free tier is theirs; editable). The
+take-rate is stored in basis points (`free_bps` 500 = 5%; paid plans 0). Separately, a **global AI spend ceiling** (`GLOBAL_DAILY_CAP_USD`,
 `lib/ai/budget.ts`) hard-caps total Anthropic spend per day across every feature as an always-on cost
 safety net (ADR-375).
 

@@ -35,12 +35,15 @@ export interface PricingDefaults {
   plan: {
     practitioner: TierPrice
     business: TierPrice
+    brand: TierPrice
     nonprofit: TierPrice
     organization: TierPrice
     whitelabel: TierPrice
   }
-  /** Take-rate per plan, in basis points (800 = 8%). */
-  take_rate: { practitioner_bps: number; business_bps: number; organization_bps: number }
+  /** Take-rate in basis points (500 = 5%). Connection-based pricing (BUSINESS-ACCOUNTS-STRATEGY):
+   *  only `free_bps` is applied — every PAID plan is flat SaaS at 0%. The per-paid-plan bps remain
+   *  for backward-compatible config but are no longer used by takeRateBpsForPlan. */
+  take_rate: { free_bps: number; practitioner_bps: number; business_bps: number; organization_bps: number }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
   trial: { days: number }
@@ -55,11 +58,14 @@ export const PRICING_DEFAULTS: PricingDefaults = {
   plan: {
     practitioner: { monthly_cents: 1900, annual_cents: 19000 }, // $19 / $190
     business: { monthly_cents: 4900, annual_cents: 49000 }, // $49 / $490
+    brand: { monthly_cents: 12900, annual_cents: 129000 }, // $129 / $1290 (own domain, still connected)
     nonprofit: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290 (verified 501c3)
     organization: { monthly_cents: 19900, annual_cents: null }, // $199/mo (custom; built, not publicly sold)
     whitelabel: { monthly_cents: 29900, annual_cents: null, setup_cents: 150000 }, // ~$1,500 setup + $299/mo
   },
-  take_rate: { practitioner_bps: 800, business_bps: 500, organization_bps: 300 },
+  // Connection-based pricing: 5% on Free, 0% on every paid plan (the per-paid bps stay at 0 so the
+  // config reads honestly; takeRateBpsForPlan applies free_bps to Free and 0 to all paid plans).
+  take_rate: { free_bps: 500, practitioner_bps: 0, business_bps: 0, organization_bps: 0 },
   vera_free_daily_cap: { messages: 10 },
   trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
   annual_discount: { months_free: 2 },
@@ -71,6 +77,7 @@ const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.supporter': PRICING_DEFAULTS.tier.supporter,
   'plan.practitioner': PRICING_DEFAULTS.plan.practitioner,
   'plan.business': PRICING_DEFAULTS.plan.business,
+  'plan.brand': PRICING_DEFAULTS.plan.brand,
   'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
   'plan.organization': PRICING_DEFAULTS.plan.organization,
   'plan.whitelabel': PRICING_DEFAULTS.plan.whitelabel,
@@ -117,6 +124,7 @@ export async function getPricingValues(): Promise<PricingDefaults> {
     plan: {
       practitioner: pick('plan.practitioner', PRICING_DEFAULTS.plan.practitioner),
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
+      brand: pick('plan.brand', PRICING_DEFAULTS.plan.brand),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
       organization: pick('plan.organization', PRICING_DEFAULTS.plan.organization),
       whitelabel: pick('plan.whitelabel', PRICING_DEFAULTS.plan.whitelabel),
@@ -137,6 +145,7 @@ export const PRICING_FLAG_KEYS = [
   'tier_supporter_enabled',
   'plan_practitioner_enabled',
   'plan_business_enabled',
+  'plan_brand_enabled',
   'plan_nonprofit_enabled',
   'plan_organization_enabled',
   'plan_whitelabel_enabled',
@@ -157,6 +166,7 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   tier_supporter_enabled: false,
   plan_practitioner_enabled: false,
   plan_business_enabled: false,
+  plan_brand_enabled: false,
   plan_nonprofit_enabled: false,
   plan_organization_enabled: false,
   plan_whitelabel_enabled: false,
