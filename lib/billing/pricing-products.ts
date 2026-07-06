@@ -41,11 +41,8 @@ const PRODUCT_META_KEY = 'frequency_pricing_key'
 const PRODUCT_LABEL: Record<MemberTierKey | SpacePlanKey, string> = {
   crew: 'Frequency Crew',
   supporter: 'Frequency Supporter',
-  practitioner: 'Frequency Practitioner (Space)',
   business: 'Frequency Business (Space)',
-  nonprofit: 'Frequency Nonprofit (Space)',
-  organization: 'Frequency Organization (Space)',
-  whitelabel: 'Frequency White-label (Space)',
+  nonprofit: 'Frequency Non Profit (Space)',
 }
 
 export interface SyncResult {

@@ -67,70 +67,63 @@ beforeEach(() => {
   spaceRow = { id: 'space-1', entitlements: {} }
 })
 
-describe('setSpacePlan, set-to-target the billing namespace (ADR-458)', () => {
-  it('writes the plan + REPLACES entitlements.billing with the plan core key set', async () => {
-    const res = await setSpacePlan('space-1', 'pro')
-    expect(res.ok).toBe(true)
-    expect(res.plan).toBe('pro')
-    expect(lastUpdate?.plan).toBe('pro')
-    // Pro core = crm + crm.playbooks, written ONLY under the billing namespace.
-    expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true })
-  })
+const FULL_DEPTH = {
+  crm: true,
+  'crm.playbooks': true,
+  email: true,
+  automation: true,
+  multi_pipeline: true,
+  reporting: true,
+  team: true,
+  whitelabel: true,
+}
 
-  it('narrows a retired legacy label to its new tier before writing (whitelabel -> business)', async () => {
-    const res = await setSpacePlan('space-1', 'whitelabel') // retired legacy -> business (full depth)
+describe('setSpacePlan, set-to-target the billing namespace (ADR-552)', () => {
+  it('writes the plan + REPLACES entitlements.billing with the Business depth set', async () => {
+    const res = await setSpacePlan('space-1', 'business')
+    expect(res.ok).toBe(true)
     expect(res.plan).toBe('business')
     expect(lastUpdate?.plan).toBe('business')
-    expect(writtenBilling()).toEqual({
-      crm: true,
-      'crm.playbooks': true,
-      email: true,
-      automation: true,
-      multi_pipeline: true,
-      reporting: true,
-      team: true,
-      whitelabel: true,
-    })
-  })
-
-  it('writes the full Business depth set for the first-class business tier (no AI keys)', async () => {
-    const res = await setSpacePlan('space-1', 'business')
-    expect(res.plan).toBe('business')
-    expect(writtenBilling()).toEqual({
-      crm: true,
-      'crm.playbooks': true,
-      email: true,
-      automation: true,
-      multi_pipeline: true,
-      reporting: true,
-      team: true,
-      whitelabel: true,
-    })
+    // Business depth = the full paid set, written ONLY under the billing namespace (no AI keys).
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
     expect(writtenBilling()['crm.resonance']).toBeUndefined()
     expect(writtenBilling()['crm.resonance_ai']).toBeUndefined()
   })
 
-  it('LEAVES top-level manual grants untouched; only the billing object changes', async () => {
-    // An operator hand-granted `email` at the top level; setSpacePlan must not disturb it.
-    spaceRow = { id: 'space-1', entitlements: { email: true, 'crm.autonomy': 'safe_auto' } }
-    await setSpacePlan('space-1', 'pro')
-    const ents = lastUpdate?.entitlements as Blob
-    expect(ents.email).toBe(true) // manual grant preserved
-    expect(ents['crm.autonomy']).toBe('safe_auto') // operator dial preserved
-    expect(ents[BILLING_NAMESPACE]).toEqual({ crm: true, 'crm.playbooks': true })
+  it('narrows a retired legacy label to its new tier before writing (pro/whitelabel -> business)', async () => {
+    const res = await setSpacePlan('space-1', 'whitelabel') // retired legacy -> business (full depth)
+    expect(res.plan).toBe('business')
+    expect(lastUpdate?.plan).toBe('business')
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
   })
 
-  it('set-to-target: a downgrade REPLACES (not merges) the billing object', async () => {
-    // Start with a Space whose billing namespace carries the all-inclusive set.
+  it('nonprofit is the same full Business depth (organization narrows to nonprofit)', async () => {
+    expect((await setSpacePlan('space-1', 'nonprofit')).plan).toBe('nonprofit')
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect((await setSpacePlan('space-1', 'organization')).plan).toBe('nonprofit')
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
+  })
+
+  it('LEAVES top-level manual grants untouched; only the billing object changes', async () => {
+    // An operator hand-granted `crm.autonomy` at the top level; setSpacePlan must not disturb it.
+    spaceRow = { id: 'space-1', entitlements: { 'crm.autonomy': 'safe_auto' } }
+    await setSpacePlan('space-1', 'business')
+    const ents = lastUpdate?.entitlements as Blob
+    expect(ents['crm.autonomy']).toBe('safe_auto') // operator dial preserved
+    expect(ents[BILLING_NAMESPACE]).toEqual(FULL_DEPTH)
+  })
+
+  it('set-to-target: a plan change REPLACES (not merges) the billing object', async () => {
+    // Start with a Space whose billing namespace carries a stale all-inclusive + AI set.
     spaceRow = {
       id: 'space-1',
       entitlements: { [BILLING_NAMESPACE]: { crm: true, email: true, whitelabel: true, 'crm.resonance_ai': true } },
     }
-    await setSpacePlan('space-1', 'pro')
-    // Downgraded to pro core: the marketing/branding/ai keys are GONE from the billing namespace.
-    expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true })
-    expect(spaceHasEntitlement(spaceRow, 'email')).toBe(false)
-    expect(spaceHasEntitlement(spaceRow, 'whitelabel')).toBe(false)
+    await setSpacePlan('space-1', 'business')
+    // Set-to-target: the AI resonance key is GONE (business base has no AI), replaced by the full depth.
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
+    expect(spaceHasEntitlement(spaceRow, 'crm.resonance_ai')).toBe(false)
+    expect(spaceHasEntitlement(spaceRow, 'email')).toBe(true)
   })
 
   it('free wipes the billing namespace to empty (no paid keys)', async () => {
@@ -141,44 +134,28 @@ describe('setSpacePlan, set-to-target the billing namespace (ADR-458)', () => {
 
   it('is GATED on billingLive(): a no-op while OFF, unless forced', async () => {
     billingIsLive = false
-    const off = await setSpacePlan('space-1', 'pro')
-    expect(off).toEqual({ ok: false, reason: 'billing_off', plan: 'pro' })
+    const off = await setSpacePlan('space-1', 'business')
+    expect(off).toEqual({ ok: false, reason: 'billing_off', plan: 'business' })
     expect(lastUpdate).toBeNull() // nothing written
 
-    const forced = await setSpacePlan('space-1', 'pro', { force: true })
+    const forced = await setSpacePlan('space-1', 'business', { force: true })
     expect(forced.ok).toBe(true)
-    expect(writtenBilling()).toEqual({ crm: true, 'crm.playbooks': true })
+    expect(writtenBilling()).toEqual(FULL_DEPTH)
   })
 
   it('FAIL-SAFE: a missing space returns not_found; a DB error returns error', async () => {
     spaceRow = null
-    expect(await setSpacePlan('nope', 'pro')).toMatchObject({ ok: false, reason: 'not_found' })
+    expect(await setSpacePlan('nope', 'business')).toMatchObject({ ok: false, reason: 'not_found' })
     spaceRow = { id: 'space-1', entitlements: {} }
     updateError = { message: 'boom' }
-    expect(await setSpacePlan('space-1', 'pro')).toMatchObject({ ok: false, reason: 'error' })
+    expect(await setSpacePlan('space-1', 'business')).toMatchObject({ ok: false, reason: 'error' })
   })
 })
 
-describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes only its keys (ADR-472)', () => {
-  it('writes the tier depth set unioned with the active AI add-on keys', async () => {
-    const res = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] })
-    expect(res.ok).toBe(true)
-    expect(res.plan).toBe('pro')
-    const billing = writtenBilling()
-    // Pro core
-    expect(billing.crm).toBe(true)
-    expect(billing['crm.playbooks']).toBe(true)
-    // the AI add-on keys
-    expect(billing['crm.resonance']).toBe(true)
-    expect(billing['crm.resonance_ai']).toBe(true)
-    // marketing/team/branding are NOT in Pro (those are the Business tier, not an add-on)
-    expect(billing.email).toBeUndefined()
-    expect(billing.team).toBeUndefined()
-    expect(billing.whitelabel).toBeUndefined()
-  })
-
+describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes only its keys (ADR-552)', () => {
   it('Business + AI: the full Business depth PLUS the AI resonance keys', async () => {
     const res = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] })
+    expect(res.ok).toBe(true)
     expect(res.plan).toBe('business')
     const billing = writtenBilling()
     expect(billing.email).toBe(true)
@@ -195,17 +172,17 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
       id: 'space-1',
       entitlements: {
         'crm.resonance_ai': true, // manual top-level grant
-        [BILLING_NAMESPACE]: { crm: true, 'crm.playbooks': true, 'crm.resonance': true, 'crm.resonance_ai': true },
+        [BILLING_NAMESPACE]: { ...FULL_DEPTH, 'crm.resonance': true, 'crm.resonance_ai': true },
       },
     }
     // Recompute with AI toggled OFF (no add-ons active).
-    await setSpaceAddons('space-1', { plan: 'pro', addons: [] })
+    await setSpaceAddons('space-1', { plan: 'business', addons: [] })
     const billing = writtenBilling()
     // The AI billing keys are gone from the namespace.
     expect(billing['crm.resonance']).toBeUndefined()
     expect(billing['crm.resonance_ai']).toBeUndefined()
-    // Pro core stays.
-    expect(billing).toEqual({ crm: true, 'crm.playbooks': true })
+    // Business depth stays.
+    expect(billing).toEqual(FULL_DEPTH)
     // The union reader: crm.resonance is GONE (only billing had it), but crm.resonance_ai SURVIVES via
     // the manual top-level grant.
     expect(spaceHasEntitlement(spaceRow, 'crm.resonance')).toBe(false)
@@ -214,10 +191,9 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
 
   it('drops the retired add-on keys (marketing/team/branding) and unknowns (default-deny), dedups AI', async () => {
     // The former add-on keys no longer narrow to an AddonKey, so they are ignored: only AI layers on.
-    await setSpaceAddons('space-1', { plan: 'pro', addons: ['team' as never, 'marketing' as never, 'ai', 'ai', 'bogus' as never] })
+    await setSpaceAddons('space-1', { plan: 'business', addons: ['team' as never, 'marketing' as never, 'ai', 'ai', 'bogus' as never] })
     expect(writtenBilling()).toEqual({
-      crm: true,
-      'crm.playbooks': true,
+      ...FULL_DEPTH,
       'crm.resonance': true,
       'crm.resonance_ai': true,
     })
@@ -225,11 +201,11 @@ describe('setSpaceAddons, the AI add-on layers on a tier; toggle-off removes onl
 
   it('is GATED on billingLive() with the same force escape', async () => {
     billingIsLive = false
-    const off = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] })
+    const off = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] })
     expect(off).toMatchObject({ ok: false, reason: 'billing_off' })
     expect(lastUpdate).toBeNull()
 
-    const forced = await setSpaceAddons('space-1', { plan: 'pro', addons: ['ai'] }, { force: true })
+    const forced = await setSpaceAddons('space-1', { plan: 'business', addons: ['ai'] }, { force: true })
     expect(forced.ok).toBe(true)
     expect(writtenBilling()['crm.resonance']).toBe(true)
   })

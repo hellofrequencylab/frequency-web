@@ -20,13 +20,13 @@ import {
 } from './bundle'
 
 // ── The seeded DEFAULT values (kept in sync with 20260723010000_pricing_foundation.sql) ──
-// Prices in CENTS. annual ≈ 2 months free (the spec). organization + whitelabel are monthly-only
-// for the annual line (null). These are the launch-target values; all editable at /admin/pricing.
+// Prices in CENTS. annual ≈ 2 months free (the spec). Business + Nonprofit both offer monthly + annual
+// (ADR-552). These are the launch-target values; all editable at /admin/pricing.
 
 export interface TierPrice {
   monthly_cents: number
   annual_cents: number | null
-  /** White-label only: one-time setup fee in cents. */
+  /** Optional one-time setup fee in cents (legacy; retained for read-safe resolution of old rows). */
   setup_cents?: number
   /** Optional MONTHLY list anchor in cents (ADR-463): the crossed-out price the founding `monthly_cents`
    *  sits under (e.g. Crew list $12, founding $9). Absent = no anchor (the monthly is shown plainly). */
@@ -36,14 +36,11 @@ export interface TierPrice {
 export interface PricingDefaults {
   tier: { crew: TierPrice; supporter: TierPrice }
   plan: {
-    practitioner: TierPrice
     business: TierPrice
     nonprofit: TierPrice
-    organization: TierPrice
-    whitelabel: TierPrice
   }
-  /** Take-rate per plan, in basis points (800 = 8%). */
-  take_rate: { practitioner_bps: number; business_bps: number; organization_bps: number }
+  /** Take-rate per plan, in basis points (500 = 5%). Business + Nonprofit only (ADR-552). */
+  take_rate: { business_bps: number; nonprofit_bps: number }
   /** Vera free-tier daily message cap. */
   vera_free_daily_cap: { messages: number }
   trial: { days: number }
@@ -56,13 +53,10 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     supporter: { monthly_cents: 2400, annual_cents: 24000 }, // $24 / $240 (retired tier; kept for legacy resolve)
   },
   plan: {
-    practitioner: { monthly_cents: 1900, annual_cents: 19000 }, // $19 / $190
     business: { monthly_cents: 4900, annual_cents: 49000 }, // $49 / $490
     nonprofit: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290 (verified 501c3)
-    organization: { monthly_cents: 19900, annual_cents: null }, // $199/mo (custom; built, not publicly sold)
-    whitelabel: { monthly_cents: 29900, annual_cents: null, setup_cents: 150000 }, // ~$1,500 setup + $299/mo
   },
-  take_rate: { practitioner_bps: 800, business_bps: 500, organization_bps: 300 },
+  take_rate: { business_bps: 500, nonprofit_bps: 300 },
   vera_free_daily_cap: { messages: 10 },
   trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)
   annual_discount: { months_free: 2 },
@@ -75,11 +69,8 @@ export const PRICING_DEFAULTS: PricingDefaults = {
 const SETTING_DEFAULTS: Record<string, unknown> = {
   'tier.crew': PRICING_DEFAULTS.tier.crew,
   'tier.supporter': PRICING_DEFAULTS.tier.supporter,
-  'plan.practitioner': PRICING_DEFAULTS.plan.practitioner,
   'plan.business': PRICING_DEFAULTS.plan.business,
   'plan.nonprofit': PRICING_DEFAULTS.plan.nonprofit,
-  'plan.organization': PRICING_DEFAULTS.plan.organization,
-  'plan.whitelabel': PRICING_DEFAULTS.plan.whitelabel,
   take_rate: PRICING_DEFAULTS.take_rate,
   vera_free_daily_cap: PRICING_DEFAULTS.vera_free_daily_cap,
   trial: PRICING_DEFAULTS.trial,
@@ -121,11 +112,8 @@ export async function getPricingValues(): Promise<PricingDefaults> {
       supporter: pick('tier.supporter', PRICING_DEFAULTS.tier.supporter),
     },
     plan: {
-      practitioner: pick('plan.practitioner', PRICING_DEFAULTS.plan.practitioner),
       business: pick('plan.business', PRICING_DEFAULTS.plan.business),
       nonprofit: pick('plan.nonprofit', PRICING_DEFAULTS.plan.nonprofit),
-      organization: pick('plan.organization', PRICING_DEFAULTS.plan.organization),
-      whitelabel: pick('plan.whitelabel', PRICING_DEFAULTS.plan.whitelabel),
     },
     take_rate: pick('take_rate', PRICING_DEFAULTS.take_rate),
     vera_free_daily_cap: pick('vera_free_daily_cap', PRICING_DEFAULTS.vera_free_daily_cap),
@@ -141,11 +129,8 @@ export const PRICING_FLAG_KEYS = [
   'billing_live',
   'tier_crew_enabled',
   'tier_supporter_enabled',
-  'plan_practitioner_enabled',
   'plan_business_enabled',
   'plan_nonprofit_enabled',
-  'plan_organization_enabled',
-  'plan_whitelabel_enabled',
   'gamification_full_member',
   'gamification_full_crew',
   'gamification_full_supporter',
@@ -161,11 +146,8 @@ const FLAG_DEFAULTS: Record<PricingFlagKey, boolean> = {
   billing_live: false,
   tier_crew_enabled: false,
   tier_supporter_enabled: false,
-  plan_practitioner_enabled: false,
   plan_business_enabled: false,
   plan_nonprofit_enabled: false,
-  plan_organization_enabled: false,
-  plan_whitelabel_enabled: false,
   gamification_full_member: false,
   gamification_full_crew: true,
   gamification_full_supporter: true,

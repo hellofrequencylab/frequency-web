@@ -78,7 +78,7 @@ beforeEach(() => {
 })
 
 describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', () => {
-  it('a Pro + AI loadout set-to-targets pro with the AI add-on (re-tiered ADR-472)', async () => {
+  it('a legacy Pro + AI loadout set-to-targets business with the AI add-on (collapsed ADR-552)', async () => {
     await reconcileSpacePlanSubscription(
       fakeSub({
         status: 'active',
@@ -87,7 +87,7 @@ describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', (
     )
     expect(addonCalls).toHaveLength(1)
     expect(addonCalls[0].spaceId).toBe('space-1')
-    expect(addonCalls[0].plan).toBe('pro')
+    expect(addonCalls[0].plan).toBe('business') // legacy Pro base folds to business
     expect(addonCalls[0].addons.sort()).toEqual(['ai'])
     // The base-plan-only writer is NOT used on the multi-item path.
     expect(planCalls).toHaveLength(0)
@@ -113,7 +113,7 @@ describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', (
     await reconcileSpacePlanSubscription(
       fakeSub({ status: 'trialing', items: [fakeItem('pro_base_month')] }),
     )
-    expect(addonCalls[0].plan).toBe('pro')
+    expect(addonCalls[0].plan).toBe('business')
     expect(persistCalls[0].status).toBe('trialing')
   })
 
@@ -144,7 +144,7 @@ describe('reconcileSpacePlanSubscription, multi-item set-to-target (ADR-460)', (
       fakeSub({ status: 'active', items: [legacyItem], metadata: { plan: 'pro' } }),
     )
     expect(addonCalls).toHaveLength(0)
-    expect(planCalls[0].plan).toBe('pro')
+    expect(planCalls[0].plan).toBe('business') // legacy 'pro' metadata narrows to business
   })
 
   it('no-ops on a missing space_id', async () => {

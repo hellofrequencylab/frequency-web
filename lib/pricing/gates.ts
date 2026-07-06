@@ -5,7 +5,7 @@
 //
 // Two axes of entitlement live here, deliberately separate (the three-flag rule, ADR-362):
 //   * PERSONAL features rank on the membership tier (free < crew < supporter).
-//   * SPACE features rank on the space tier (free < pro < business ~ nonprofit < organization, ADR-472).
+//   * SPACE features rank on the space tier (free < business ~ nonprofit, ADR-552).
 // A feature names which ladder it sits on via `axis`. featureAllowed takes the account's tier
 // and/or plan and answers a single boolean.
 //
@@ -23,9 +23,9 @@ const TIER_RANK: Record<EntitlementTier, number> = Object.fromEntries(
   ENTITLEMENT_TIERS.map((t, i) => [t, i]),
 ) as Record<EntitlementTier, number>
 
-// Space: free < pro < business ~ nonprofit < organization (SPACE_PLANS, four first-class tiers per
-// ADR-472; business/nonprofit are full depth, organization tops). The plan-rank gate is the COARSE
-// paid-floor check; the FINE per-feature gating is the entitlement-key UNION (spaceHasEntitlement,
+// Space: free < business ~ nonprofit (SPACE_PLANS, ADR-552; business/nonprofit are full depth). The
+// plan-rank gate is the COARSE paid-floor check; the FINE per-feature gating is the entitlement-key
+// UNION (spaceHasEntitlement,
 // lib/spaces/entitlements.ts) the tier/add-on resolver writes. The marketing/team/branding depth now
 // rides the Business tier and the AI add-on is metered, so a feature that needs a specific capability
 // gates on its entitlement KEY, not on this coarse ladder.
@@ -52,17 +52,17 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   gamification_full: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // full loop; free = earn-only
   vera_unlimited: { axis: 'tier', minEntitlement: 'crew', enabled: true }, // Vera beyond the free daily cap
 
-  // §5 space plans (reuse spaces.plan). COLLAPSED to the new ladder (ADR-458): the paid floor is
-  // 'pro' for every paid space feature (Pro core + the four add-ons), since add-ons are toggles WITHIN
-  // Pro rather than separate plan ranks. The fine-grained "does this space have email / the AI engine /
-  // branding" decision is the entitlement-KEY union (spaceHasEntitlement), which the add-on resolver
-  // set-to-targets; this plan-rank gate is only the coarse "is this a paid space" floor.
-  space_crm: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // the per-Space CRM (Pro core)
-  space_email: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on key 'email'
-  space_automation: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on
-  space_team: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Team add-on
-  space_whitelabel: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Branding add-on key 'whitelabel'
-  space_multi_pipeline: { axis: 'plan', minEntitlement: 'pro', enabled: true }, // Marketing add-on
+  // §5 space plans (reuse spaces.plan). COLLAPSED to the new ladder (ADR-552): the paid floor is
+  // 'business' for every paid space feature, since free-vs-paid is a usage state within Business rather
+  // than a tier ladder. The fine-grained "does this space have email / the AI engine / branding" decision
+  // is the entitlement-KEY union (spaceHasEntitlement), which the add-on resolver set-to-targets; this
+  // plan-rank gate is only the coarse "is this a paid space" floor.
+  space_crm: { axis: 'plan', minEntitlement: 'business', enabled: true }, // the per-Space CRM
+  space_email: { axis: 'plan', minEntitlement: 'business', enabled: true }, // key 'email'
+  space_automation: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_team: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Team seats
+  space_whitelabel: { axis: 'plan', minEntitlement: 'business', enabled: true }, // Branding key 'whitelabel'
+  space_multi_pipeline: { axis: 'plan', minEntitlement: 'business', enabled: true },
   // Storefront (ADR-39X/Z) — available from the FREE plan (a free Space can sell; the plan
   // only buys the rake down + features). A per-Space toggle decides ON/OFF.
   space_storefront: { axis: 'plan', minEntitlement: 'free', enabled: true },
@@ -72,17 +72,17 @@ export const FEATURE_GATES: Record<string, FeatureGate> = {
   // `space_full_website` ENTITLEMENT key (spaceCanUseFullWebsite, lib/spaces/entitlements.ts), which
   // stays default-deny regardless of billingLive (featureAllowed would short-circuit to granted while
   // billing is off, which would un-gate the upsell — so the enforcement deliberately does NOT ride it).
-  space_full_website: { axis: 'plan', minEntitlement: 'pro', enabled: false },
+  space_full_website: { axis: 'plan', minEntitlement: 'business', enabled: false },
 
   // §5 space AI-depth (Resonance Engine Phase 6 · ADR-387). The paid DEPTH of the engine. The free
   // wedge (Today suggest-only + summaries + read-only scoring) is NEVER a gate, so it has no entry
-  // here. Pro core grants governed playbooks + advanced segments; the AI Engine add-on grants the
-  // resonance surface + the full Resonance Graph. The plan-rank floor is 'pro' for all three; the
+  // here. Business grants governed playbooks + advanced segments; the AI Engine add-on grants the
+  // resonance surface + the full Resonance Graph. The plan-rank floor is 'business' for all three; the
   // resonance keys additionally gate on their entitlement key (the AI Engine add-on). While billing is
   // OFF, featureAllowed short-circuits to true and these never bind (today's behavior).
-  space_crm_playbooks: { axis: 'plan', minEntitlement: 'pro', enabled: true },
-  space_crm_resonance: { axis: 'plan', minEntitlement: 'pro', enabled: true },
-  space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'pro', enabled: true },
+  space_crm_playbooks: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_crm_resonance: { axis: 'plan', minEntitlement: 'business', enabled: true },
+  space_crm_resonance_ai: { axis: 'plan', minEntitlement: 'business', enabled: true },
 }
 
 export type FeatureKey = keyof typeof FEATURE_GATES | (string & {})

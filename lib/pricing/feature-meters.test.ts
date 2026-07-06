@@ -161,21 +161,19 @@ describe('read helpers', () => {
   })
 
   it('currentMeterStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureMeter('space_crm')! // steps: free, pro, business, organization
+    const crm = featureMeter('space_crm')! // steps: free, business
     expect(currentMeterStepIndex(crm, 'free')).toBe(0)
-    expect(currentMeterStepIndex(crm, 'pro')).toBe(1)
-    expect(currentMeterStepIndex(crm, 'business')).toBe(2)
-    expect(currentMeterStepIndex(crm, 'organization')).toBe(3)
-    // Nonprofit (a sibling plan, not a rung) ranks between business and organization → maps to business.
-    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(2)
+    expect(currentMeterStepIndex(crm, 'business')).toBe(1)
+    // Nonprofit ranks above business (the top rung) → maps to the business rung.
+    expect(currentMeterStepIndex(crm, 'nonprofit')).toBe(1)
     // Unknown tier → the free floor.
     expect(currentMeterStepIndex(crm, 'nonsense')).toBe(0)
   })
 
   it('allowanceAt returns the tier allowance, or null for unlimited / non-metered', () => {
     expect(allowanceAt('space_crm', 'free')).toBe(100)
-    expect(allowanceAt('space_crm', 'pro')).toBe(2000)
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
+    expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
     expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
   })
 })

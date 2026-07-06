@@ -112,11 +112,10 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
   })
 
   it('placeholder price maps mirror the code catalog founding rates', () => {
-    // Space: Pro $19, Business $49, Nonprofit $12/seat, Organization from $199; free at $0.
+    // Space: Business $49, Non Profit $12/seat; free at $0 (ADR-552).
     expect(PLACEHOLDER_SPACE_PRICE_CENTS.free).toBe(0)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.pro).toBe(1900)
     expect(PLACEHOLDER_SPACE_PRICE_CENTS.business).toBe(4900)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.organization).toBe(19900)
+    expect(PLACEHOLDER_SPACE_PRICE_CENTS.nonprofit).toBe(1200)
     // Personal: Crew $9; free at $0.
     expect(PLACEHOLDER_MEMBER_PRICE_CENTS.free).toBe(0)
     expect(PLACEHOLDER_MEMBER_PRICE_CENTS.crew).toBe(900)
@@ -132,22 +131,20 @@ describe('read helpers', () => {
   it('isFeatureUnlockedAt: below the min tier is locked, at/above is unlocked', () => {
     const crm = featureTierLadder('space_crm')!
     expect(isFeatureUnlockedAt(crm, 'free')).toBe(false)
-    expect(isFeatureUnlockedAt(crm, 'pro')).toBe(true)
     expect(isFeatureUnlockedAt(crm, 'business')).toBe(true)
-    expect(isFeatureUnlockedAt(crm, 'organization')).toBe(true)
+    // Nonprofit ranks above business, so it clears the business floor.
+    expect(isFeatureUnlockedAt(crm, 'nonprofit')).toBe(true)
     const vera = featureTierLadder('vera_unlimited')!
     expect(isFeatureUnlockedAt(vera, 'free')).toBe(false)
     expect(isFeatureUnlockedAt(vera, 'crew')).toBe(true)
   })
 
   it('currentStepIndex maps a viewer tier to the highest rung at/below it', () => {
-    const crm = featureTierLadder('space_crm')! // steps: free, pro, business, organization
+    const crm = featureTierLadder('space_crm')! // steps: free, business
     expect(currentStepIndex(crm, 'free')).toBe(0)
-    expect(currentStepIndex(crm, 'pro')).toBe(1)
-    expect(currentStepIndex(crm, 'business')).toBe(2)
-    expect(currentStepIndex(crm, 'organization')).toBe(3)
-    // Nonprofit (a sibling plan, not a rung) ranks between business and organization → maps to business.
-    expect(currentStepIndex(crm, 'nonprofit')).toBe(2)
+    expect(currentStepIndex(crm, 'business')).toBe(1)
+    // Nonprofit ranks above business (the top rung) → maps to the business rung.
+    expect(currentStepIndex(crm, 'nonprofit')).toBe(1)
     // Unknown tier → the free floor.
     expect(currentStepIndex(crm, 'nonsense')).toBe(0)
   })

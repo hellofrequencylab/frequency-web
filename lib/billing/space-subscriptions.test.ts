@@ -48,25 +48,25 @@ describe('subscriptionKind', () => {
 })
 
 describe('planForSubscription', () => {
-  it('an active sub sets the metadata tier (narrowed through asSpacePlan · ADR-472)', () => {
-    expect(planForSubscription('pro', 'active')).toBe('pro')
-    expect(planForSubscription('nonprofit', 'trialing')).toBe('nonprofit')
-    // 'business' is a first-class tier now (passes through unchanged).
+  it('an active sub sets the metadata tier (narrowed through asSpacePlan · ADR-552)', () => {
     expect(planForSubscription('business', 'active')).toBe('business')
-    // Retired legacy labels narrow forward: practitioner -> pro; whitelabel -> business.
-    expect(planForSubscription('practitioner', 'trialing')).toBe('pro')
+    expect(planForSubscription('nonprofit', 'trialing')).toBe('nonprofit')
+    // Retired legacy labels narrow forward: pro/practitioner/whitelabel -> business; organization -> nonprofit.
+    expect(planForSubscription('pro', 'active')).toBe('business')
+    expect(planForSubscription('practitioner', 'trialing')).toBe('business')
     expect(planForSubscription('whitelabel', 'active')).toBe('business')
+    expect(planForSubscription('organization', 'active')).toBe('nonprofit')
   })
 
   it('a past-due sub keeps the tier (still entitled until canceled)', () => {
-    expect(planForSubscription('pro', 'past_due')).toBe('pro')
     expect(planForSubscription('business', 'past_due')).toBe('business')
+    expect(planForSubscription('nonprofit', 'past_due')).toBe('nonprofit')
   })
 
   it('a canceled / incomplete sub reverts to free', () => {
-    expect(planForSubscription('pro', 'canceled')).toBe('free')
-    expect(planForSubscription('pro', 'incomplete')).toBe('free')
-    expect(planForSubscription('pro', null)).toBe('free')
+    expect(planForSubscription('business', 'canceled')).toBe('free')
+    expect(planForSubscription('business', 'incomplete')).toBe('free')
+    expect(planForSubscription('business', null)).toBe('free')
   })
 
   it('an unknown plan label narrows to free (default-deny)', () => {

@@ -108,16 +108,16 @@ describe('persona copy is voice-compliant', () => {
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-472: marketing/team/branding folded into tier depth, so the AI Engine is the only metered
-  // add-on. A persona loadout is the Pro base ($19) plus the AI Engine ($20) for the business personas,
-  // or the Pro base alone for the Event space.
-  it('matches the ladder: business personas $39 (Pro + AI Engine), Event $19 (Pro base)', () => {
+  // ADR-552: the single paid base is Business ($49); the AI Engine ($20) is the only metered add-on. A
+  // persona loadout is the Business base plus the AI Engine for the business personas ($69), or the
+  // Business base alone for the Event space ($49).
+  it('matches the ladder: business personas $69 (Business + AI Engine), Event $49 (Business base)', () => {
     const expected: Record<string, string> = {
-      coaches: '$39/mo',
-      'service-businesses': '$39/mo',
-      'product-businesses': '$39/mo',
-      studios: '$39/mo',
-      'event-spaces': '$19/mo',
+      coaches: '$69/mo',
+      'service-businesses': '$69/mo',
+      'product-businesses': '$69/mo',
+      studios: '$69/mo',
+      'event-spaces': '$49/mo',
     }
     const strip = loadoutStrip()
     for (const [slug, label] of Object.entries(expected)) {
@@ -143,24 +143,19 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
 })
 
 describe('pricing table model', () => {
-  it('has the three commercial tiers with Pro featured', () => {
+  it('has the two commercial tiers with Business featured (ADR-552)', () => {
     const tiers = pricingTiers()
-    expect(tiers.map((t) => t.id)).toEqual(['pro', 'nonprofit', 'organization'])
-    expect(tiers.find((t) => t.id === 'pro')!.featured).toBe(true)
+    expect(tiers.map((t) => t.id)).toEqual(['business', 'nonprofit'])
+    expect(tiers.find((t) => t.id === 'business')!.featured).toBe(true)
   })
 
-  it('Pro headline reads $19/mo founding under a $29 list anchor', () => {
-    const pro = pricingTiers().find((t) => t.id === 'pro')!
-    expect(tierHeadline(pro, 'month')).toBe('$19/mo')
-    expect(pro.price.month.listCents).toBe(2900)
+  it('Business headline reads $49/mo (list == founding today)', () => {
+    const biz = pricingTiers().find((t) => t.id === 'business')!
+    expect(tierHeadline(biz, 'month')).toBe('$49/mo')
+    expect(biz.price.month.listCents).toBe(4900)
   })
 
-  it('Organization headline reads "from $199/mo"', () => {
-    const org = pricingTiers().find((t) => t.id === 'organization')!
-    expect(tierHeadline(org, 'month')).toBe('from $199/mo')
-  })
-
-  it('Nonprofit headline reads per seat', () => {
+  it('Non Profit headline reads per seat', () => {
     const np = pricingTiers().find((t) => t.id === 'nonprofit')!
     expect(tierHeadline(np, 'month')).toBe('$12/seat/mo')
   })
@@ -177,9 +172,8 @@ describe('pricing table model', () => {
 
   it('the answer-engine ladder summary has no em dashes and lists every tier + add-on + Crew', () => {
     const lines = pricingLadderSummary()
-    expect(lines.some((l) => l.includes('Pro:'))).toBe(true)
-    expect(lines.some((l) => l.includes('Nonprofit:'))).toBe(true)
-    expect(lines.some((l) => l.includes('Organization:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Business:'))).toBe(true)
+    expect(lines.some((l) => l.includes('Non Profit:'))).toBe(true)
     expect(lines.some((l) => l.includes('Crew:'))).toBe(true)
     for (const l of lines) expect(hasEmDash(l)).toBe(false)
   })

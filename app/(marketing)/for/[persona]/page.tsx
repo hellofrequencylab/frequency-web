@@ -84,10 +84,10 @@ export default async function PersonaPage({
   const path = personaPath(slug)
   const loadout = personaLoadout(persona)
 
-  // The headline figure: the per-seat Nonprofit headline or the computed Pro loadout total.
+  // The headline figure: the per-seat Non Profit headline or the computed Business loadout total.
   const headline = loadout.totalLabel
-  const proTier = pricingTiers().find((t) => t.id === 'pro')!
-  const proAnchor = tierListAnchor(proTier, 'month')
+  const businessTier = pricingTiers().find((t) => t.id === 'business')!
+  const proAnchor = tierListAnchor(businessTier, 'month')
 
   return (
     <>

@@ -17,27 +17,23 @@ export type BillingPeriod = 'monthly' | 'annual'
 export const MEMBER_TIER_KEYS = ['crew', 'supporter'] as const
 export type MemberTierKey = (typeof MEMBER_TIER_KEYS)[number]
 
-/** The space-plan price-catalog keys that are SOLD self-serve. NOTE (ADR-458): this is the STRIPE
- *  CATALOG axis, frozen on the LEGACY plan/add-on key names until Phase B rewrites the catalog into
- *  pro base + the four add-on items + the nonprofit seat. It is deliberately decoupled from the new
- *  SPACE_PLANS (free/pro/nonprofit/organization) so Phase A can collapse the plan model without
- *  churning the Stripe price keys. Partner is comped, so it is intentionally not here. */
-export const SPACE_PLAN_KEYS = ['practitioner', 'business', 'nonprofit', 'organization', 'whitelabel'] as const
+/** The space-plan price-catalog keys that are SOLD self-serve (ADR-552). Collapsed to Business +
+ *  Nonprofit: the two first-class paid tiers. The retired names (practitioner/organization/whitelabel)
+ *  are no longer here; their legacy price keys stay resolvable via RETIRED_CATALOG_KEYS. Partner is
+ *  comped, so it is intentionally not here. */
+export const SPACE_PLAN_KEYS = ['business', 'nonprofit'] as const
 export type SpacePlanKey = (typeof SPACE_PLAN_KEYS)[number]
 
-/** Which billing periods each tier/plan offers (mirrors PRICING_DEFAULTS: organization +
- *  whitelabel are monthly-only). The source of truth for "is there an annual price?". */
+/** Which billing periods each tier/plan offers. Business + Nonprofit both offer monthly + annual. The
+ *  source of truth for "is there an annual price?". */
 export const PERIODS_BY_KEY: Record<MemberTierKey | SpacePlanKey, readonly BillingPeriod[]> = {
   crew: ['monthly', 'annual'],
   supporter: ['monthly', 'annual'],
-  practitioner: ['monthly', 'annual'],
   business: ['monthly', 'annual'],
   nonprofit: ['monthly', 'annual'],
-  organization: ['monthly'],
-  whitelabel: ['monthly'],
 }
 
-/** Does this tier/plan offer the given billing period? (organization/whitelabel are monthly-only.) */
+/** Does this tier/plan offer the given billing period? (Business + Nonprofit offer both.) */
 export function offersPeriod(base: MemberTierKey | SpacePlanKey, period: BillingPeriod): boolean {
   return (PERIODS_BY_KEY[base] ?? []).includes(period)
 }
@@ -85,27 +81,22 @@ export function asSpacePlanKey(plan: SpacePlan | string | null | undefined): Spa
   return (SPACE_PLAN_KEYS as readonly string[]).includes(plan ?? '') ? (plan as SpacePlanKey) : null
 }
 
-/** The take-rate basis points key in pricing_settings.take_rate for a space plan. PURE.
- *  practitioner/business/organization have explicit bps; whitelabel inherits organization's (the
- *  lowest published rate). Returns the bps from the provided take_rate map, default-safe. */
+/** The take-rate basis points key in pricing_settings.take_rate for a space plan. PURE (ADR-552).
+ *  Business and Nonprofit have explicit bps; a free/legacy/unknown plan defaults to the Business rate
+ *  (the paid entry rate) so a misconfigured space never charges a 0% (under-collect) fee. */
 export function takeRateBpsForPlan(
   plan: SpacePlan | string | null | undefined,
-  takeRate: { practitioner_bps: number; business_bps: number; organization_bps: number },
+  takeRate: { business_bps: number; nonprofit_bps: number },
 ): number {
   switch (asSpacePlanKey(plan)) {
-    case 'practitioner':
-      return takeRate.practitioner_bps
+    case 'nonprofit':
+      return takeRate.nonprofit_bps
     case 'business':
       return takeRate.business_bps
-    case 'organization':
-      return takeRate.organization_bps
-    case 'whitelabel':
-      // White-label has no separate published take-rate; use the lowest (organization) rate.
-      return takeRate.organization_bps
     default:
-      // free / unknown plan: no published rate → fall back to the practitioner rate (the
-      // entry paid rate) so a misconfigured space never charges a 0% (under-collect) fee.
-      return takeRate.practitioner_bps
+      // free / legacy / unknown plan: no published rate → fall back to the Business rate so a
+      // misconfigured space never charges a 0% (under-collect) fee.
+      return takeRate.business_bps
   }
 }
 
@@ -114,7 +105,7 @@ export function takeRateBpsForPlan(
 export function takeRateCents(
   grossCents: number,
   plan: SpacePlan | string | null | undefined,
-  takeRate: { practitioner_bps: number; business_bps: number; organization_bps: number },
+  takeRate: { business_bps: number; nonprofit_bps: number },
 ): number {
   if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
   const bps = takeRateBpsForPlan(plan, takeRate)
@@ -168,16 +159,14 @@ export type BillingInterval = 'month' | 'year'
 
 export const BILLING_INTERVALS: readonly BillingInterval[] = ['month', 'year']
 
-/** The catalog item keys (ADR-472): the Pro base, the Business base (full-depth team tier), the sole
- *  metered AI add-on, the nonprofit licensed seat, and the organization plan. Each is one Stripe Product
- *  with list + founding x month + year prices. The former marketing/team/branding add-on items are
- *  RETIRED (their depth folded into the Business tier); see RETIRED_CATALOG_KEYS. */
+/** The catalog item keys (ADR-552): the Business base (full-depth paid tier), the sole metered AI add-on,
+ *  and the nonprofit licensed seat. Each is one Stripe Product with list + founding x month + year prices.
+ *  The former Pro base, Organization plan, and marketing/team/branding add-on items are RETIRED (folded
+ *  into the Business tier); see RETIRED_CATALOG_KEYS. */
 export const CATALOG_ITEM_KEYS = [
-  'pro_base',
   'business_base',
   'addon_ai',
   'nonprofit_seat',
-  'organization',
 ] as const
 
 export type CatalogItemKey = (typeof CATALOG_ITEM_KEYS)[number]
@@ -238,38 +227,26 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
 // depth folds into the Business base, ADR-472); only addon_ai remains as a metered add-on.
 const CATALOG: Record<CatalogItemKey, CatalogItem> = {
-  pro_base: {
-    key: 'pro_base',
-    label: 'Frequency Pro',
-    perSeat: false,
-    ...amountsFromMonthly(2900, 1900), // $29 list / $19 founding
-  },
   business_base: {
     key: 'business_base',
     label: 'Frequency Business',
     perSeat: false,
-    // $49 base, the full-depth team tier (marketing + team roles + branding folded in). No separate
-    // founding anchor published today (founding == list); a future anchor is a one-line edit. Per-seat
-    // Team billing rides this tier's seat machinery (Phase D), not a separate add-on item (ADR-472).
+    // The single paid base, the full-depth tier (CRM, marketing, team roles, and branding folded in). No
+    // separate founding anchor published today (founding == list); a future anchor is a one-line edit.
+    // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item (ADR-552).
     ...amountsFromMonthly(4900, 4900),
   },
   addon_ai: {
     key: 'addon_ai',
     label: 'Frequency AI Engine (metered add-on)',
     perSeat: false,
-    ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier metered add-on (ADR-472)
+    ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier metered add-on (ADR-552)
   },
   nonprofit_seat: {
     key: 'nonprofit_seat',
-    label: 'Frequency Nonprofit (licensed seat)',
+    label: 'Frequency Non Profit (licensed seat)',
     perSeat: true,
     ...amountsFromMonthly(1500, 1200), // $15 list / $12 founding per seat
-  },
-  organization: {
-    key: 'organization',
-    label: 'Frequency Organization',
-    perSeat: false,
-    ...amountsFromMonthly(24900, 19900), // $249 list / $199 founding (floor anchor)
   },
 }
 
@@ -323,32 +300,45 @@ export function addonKeyForCatalogItem(key: CatalogItemKey): 'ai' | null {
   return key === 'addon_ai' ? 'ai' : null
 }
 
-// ── RETIRED legacy catalog keys (kept resolvable for legacy rows · ADR-460; re-tiered ADR-472) ─────
-// Two waves of retirement, both kept RESOLVABLE (never deleted) so a legacy `pricing_stripe_prices` row
-// + a member already locked to one of those price ids still RESOLVE:
-//   1. The pre-ladder per-plan tiers (practitioner / business / whitelabel / supporter) on the legacy
-//      KEY axis (practitioner_monthly, business_annual, whitelabel_monthly, supporter_*).
-//   2. The three Pro ADD-ON catalog items retired by ADR-472 (Marketing / Team / Branding), whose depth
-//      folded into the Business base tier (addon_marketing_*, addon_team_*, addon_branding_* on the
-//      catalog KEY axis, both founding + _list variants).
-// The sync no longer CREATES any of these (they are absent from CATALOG_ITEM_KEYS), but it ARCHIVES
-// (never deletes) the rows, and loadStripePriceMap still returns them so resolveStripePriceId works for
-// a grandfathered row.
+// ── RETIRED legacy catalog keys (kept resolvable for legacy rows · ADR-460/472; collapsed ADR-552) ─
+// Every retired key is kept RESOLVABLE (never deleted) so a legacy `pricing_stripe_prices` row + a member
+// already locked to one of those price ids still RESOLVE:
+//   1. The pre-ladder per-plan tiers (practitioner / organization / whitelabel / supporter) on the legacy
+//      KEY axis (practitioner_monthly, organization_monthly, whitelabel_monthly, supporter_*).
+//   2. The retired CATALOG items whose depth folded into the Business tier (ADR-552): the former Pro base
+//      and Organization plan, plus the ADR-472 Marketing / Team / Branding add-on items
+//      (pro_base_*, organization_*, addon_marketing_*, addon_team_*, addon_branding_* on the catalog KEY
+//      axis, both founding + _list variants).
+// The sync no longer CREATES any of these (they are absent from CATALOG_ITEM_KEYS / SPACE_PLAN_KEYS), but
+// it ARCHIVES (never deletes) the rows, and loadStripePriceMap still returns them so resolveStripePriceId
+// works for a grandfathered row.
 
 /** The retired add-on catalog ITEM keys (ADR-472): Marketing / Team / Branding, folded into the
  *  Business tier depth. Kept resolvable for any legacy subscription row; never synced. */
 export const RETIRED_ADDON_ITEM_KEYS: readonly string[] = ['addon_marketing', 'addon_team', 'addon_branding']
 
+/** The retired CATALOG item keys on the catalog price-key axis (ADR-552): the former Pro base and
+ *  Organization plan (folded into Business), plus the ADR-472 add-on items. Kept resolvable; never synced. */
+const RETIRED_CATALOG_ITEM_KEYS: readonly string[] = ['pro_base', 'organization', ...RETIRED_ADDON_ITEM_KEYS]
+
+/** The retired LEGACY per-plan bases + the periods they offered (ADR-552): practitioner had monthly +
+ *  annual; organization + whitelabel were monthly-only. Kept resolvable on the `<plan>_<period>` axis. */
+const RETIRED_LEGACY_PLAN_PERIODS: Record<string, readonly BillingPeriod[]> = {
+  practitioner: ['monthly', 'annual'],
+  organization: ['monthly'],
+  whitelabel: ['monthly'],
+}
+
 /** The legacy catalog price keys that are RETIRED (no longer synced) but kept resolvable for legacy
  *  rows + locked price ids. PURE. Used by the sync to ARCHIVE (not delete) the rows it no longer
  *  refreshes. */
 export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
-  const retiredBases: readonly SpacePlanKey[] = ['practitioner', 'business', 'whitelabel']
   const keys: string[] = []
-  for (const base of retiredBases) {
-    for (const period of PERIODS_BY_KEY[base]) {
-      keys.push(priceKey(base, period))
-      keys.push(priceKey(base, period, true))
+  // The retired legacy per-plan price keys (`<plan>_<period>` + founder variant).
+  for (const [base, periods] of Object.entries(RETIRED_LEGACY_PLAN_PERIODS)) {
+    for (const period of periods) {
+      keys.push(`${base}_${period}`)
+      keys.push(`${base}_${period}_founder`)
     }
   }
   // Supporter is retired as a sold tier (becomes a PWYW badge), so its catalog keys retire too.
@@ -356,9 +346,9 @@ export const RETIRED_CATALOG_KEYS: readonly string[] = (() => {
     keys.push(priceKey('supporter', period))
     keys.push(priceKey('supporter', period, true))
   }
-  // ADR-472: the retired Marketing/Team/Branding ADD-ON catalog items, both intervals + both the
-  // founding and the _list anchor variant (matching catalogPriceKey's namespace).
-  for (const item of RETIRED_ADDON_ITEM_KEYS) {
+  // The retired CATALOG items (Pro base, Organization, and the Marketing/Team/Branding add-ons), both
+  // intervals + both the founding and the _list anchor variant (matching catalogPriceKey's namespace).
+  for (const item of RETIRED_CATALOG_ITEM_KEYS) {
     for (const interval of BILLING_INTERVALS) {
       keys.push(`${item}_${interval}`)
       keys.push(`${item}_${interval}_list`)

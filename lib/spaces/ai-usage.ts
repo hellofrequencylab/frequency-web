@@ -31,15 +31,12 @@ import { asSpacePlan, type SpacePlan } from '@/lib/pricing/plans'
  *  it only surfaces a tasteful "ready for more room" nudge. The free wedge gets a generous starter
  *  volume so the engine is genuinely useful before any upsell. PURE.
  *
- *  Four-tier ladder (ADR-472): free / pro / business / nonprofit / organization. Pro carries the
- *  generous 2000 volume (so no legacy Space regresses once it narrows to pro); the full-depth tiers
- *  (Business / Nonprofit / Organization) are unlimited. */
+ *  Collapsed ladder (ADR-552): free / business / nonprofit. Free gets a generous 50 starter volume;
+ *  the paid tiers (Business / Non Profit) are unlimited. */
 const PLAN_PLAYBOOK_ACTION_CEILING: Record<SpacePlan, number | null> = {
   free: 50,
-  pro: 2000,
   business: null,
   nonprofit: null,
-  organization: null,
 }
 
 /** The monthly playbook-action ceiling for a plan (the soft volume lever). `null` = unlimited.

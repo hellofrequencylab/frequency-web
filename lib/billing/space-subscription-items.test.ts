@@ -17,12 +17,13 @@ import {
   type ItemKey,
 } from './space-subscription-items'
 
-describe('itemKeyForCatalogKey (catalog -> DB item_key · re-tiered ADR-472)', () => {
-  it('pro_base -> base; business_base -> business; addon_ai -> ai; seat/org map 1:1', () => {
-    expect(itemKeyForCatalogKey('pro_base')).toBe('base')
+describe('itemKeyForCatalogKey (catalog -> DB item_key · collapsed ADR-552)', () => {
+  it('business_base -> business; addon_ai -> ai; nonprofit_seat 1:1; legacy pro_base/organization resolve', () => {
     expect(itemKeyForCatalogKey('business_base')).toBe('business')
     expect(itemKeyForCatalogKey('addon_ai')).toBe('ai')
     expect(itemKeyForCatalogKey('nonprofit_seat')).toBe('nonprofit_seat')
+    // Retired catalog keys stay resolvable for a grandfathered legacy subscription row (ADR-552).
+    expect(itemKeyForCatalogKey('pro_base')).toBe('base')
     expect(itemKeyForCatalogKey('organization')).toBe('organization')
   })
 
@@ -46,15 +47,15 @@ describe('stripItemPortion (price key -> catalog item key)', () => {
   })
 })
 
-describe('planForItemKeys (re-tiered · ADR-472)', () => {
-  it('org > nonprofit > business > base(pro); empty -> free', () => {
-    expect(planForItemKeys(['organization'])).toBe('organization')
-    expect(planForItemKeys(['organization', 'base'])).toBe('organization')
+describe('planForItemKeys (collapsed · ADR-552)', () => {
+  it('nonprofit > business > free; legacy org -> nonprofit, legacy base(pro) -> business', () => {
+    expect(planForItemKeys(['organization'])).toBe('nonprofit') // legacy org folds to nonprofit
+    expect(planForItemKeys(['organization', 'base'])).toBe('nonprofit')
     expect(planForItemKeys(['nonprofit_seat'])).toBe('nonprofit')
     expect(planForItemKeys(['business'])).toBe('business')
-    expect(planForItemKeys(['business', 'base'])).toBe('business') // business out-ranks the pro base item
-    expect(planForItemKeys(['base'])).toBe('pro')
-    expect(planForItemKeys(['base', 'ai'])).toBe('pro')
+    expect(planForItemKeys(['business', 'base'])).toBe('business')
+    expect(planForItemKeys(['base'])).toBe('business') // legacy Pro base folds to business
+    expect(planForItemKeys(['base', 'ai'])).toBe('business')
     expect(planForItemKeys([])).toBe('free')
   })
 })
@@ -106,8 +107,8 @@ function fakeSub(items: Stripe.SubscriptionItem[]): Stripe.Subscription {
   return { items: { data: items } } as unknown as Stripe.Subscription
 }
 
-describe('reconciledItemsFromSubscription (the webhook item read · re-tiered ADR-472)', () => {
-  it('maps a Pro + AI loadout to base + ai items with their locked price ids', () => {
+describe('reconciledItemsFromSubscription (the webhook item read · collapsed ADR-552)', () => {
+  it('maps a legacy Pro + AI loadout to base + ai items with their locked price ids', () => {
     const sub = fakeSub([
       fakeItem({ id: 'si_base', catalogKey: 'pro_base_month', priceId: 'price_pro_founding' }),
       fakeItem({ id: 'si_ai', catalogKey: 'addon_ai_month', priceId: 'price_ai_founding' }),
@@ -124,9 +125,9 @@ describe('reconciledItemsFromSubscription (the webhook item read · re-tiered AD
     const ai = items.find((i) => i.itemKey === 'ai')!
     expect(ai.lockedPriceId).toBe('price_ai_founding')
 
-    // The full mapping the resolver consumes: base -> pro, AI add-on active.
+    // The full mapping the resolver consumes: the legacy base folds to business, AI add-on active.
     const keys = items.map((i) => i.itemKey)
-    expect(planForItemKeys(keys)).toBe('pro')
+    expect(planForItemKeys(keys)).toBe('business')
     expect(addonsForItemKeys(keys)).toEqual(['ai'])
   })
 

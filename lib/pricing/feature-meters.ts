@@ -84,7 +84,7 @@ interface RawMeter {
  *  owner sets for real before go-live (flagged in ADR-519). Dimensions are drawn only from the real
  *  feature set; a feature with no natural quantity is NOT here (see NON_METERED_FEATURES). */
 const RAW_METERS: Record<string, RawMeter> = {
-  // ── Space functions (plan axis: free < pro < business < organization) ────────────────────────────
+  // ── Space functions (plan axis: free < business · ADR-552) ───────────────────────────────────────
   space_crm: {
     axis: 'plan',
     title: 'CRM',
@@ -92,7 +92,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'contacts',
     period: null,
     // @placeholder contact caps — owner sets real numbers before go-live.
-    allowances: { free: 100, pro: 2_000, business: null, organization: null },
+    allowances: { free: 100, business: null },
   },
   space_email: {
     axis: 'plan',
@@ -101,7 +101,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'sends',
     period: 'month',
     // @placeholder monthly send volume — owner sets real numbers before go-live.
-    allowances: { free: 200, pro: 5_000, business: 50_000, organization: null },
+    allowances: { free: 200, business: 50_000 },
   },
   space_automation: {
     axis: 'plan',
@@ -110,7 +110,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'automations',
     period: null,
     // @placeholder active-automation counts — owner sets real numbers before go-live.
-    allowances: { free: 1, pro: 10, business: null, organization: null },
+    allowances: { free: 1, business: null },
   },
   space_team: {
     axis: 'plan',
@@ -119,7 +119,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'seats',
     period: null,
     // @placeholder seat counts — owner sets real numbers before go-live.
-    allowances: { free: 1, pro: 3, business: 25, organization: null },
+    allowances: { free: 1, business: 25 },
   },
   space_multi_pipeline: {
     axis: 'plan',
@@ -128,7 +128,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'pipelines',
     period: null,
     // @placeholder pipeline counts — owner sets real numbers before go-live.
-    allowances: { free: 1, pro: 3, business: null, organization: null },
+    allowances: { free: 1, business: null },
   },
   // ── Space AI depth (plan axis; the Resonance Engine metered usage · ADR-387) ─────────────────────
   space_crm_playbooks: {
@@ -138,7 +138,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'runs',
     period: 'month',
     // @placeholder monthly playbook auto-runs — owner sets real numbers before go-live.
-    allowances: { free: 20, pro: 500, business: 5_000, organization: null },
+    allowances: { free: 20, business: 5_000 },
   },
   space_crm_resonance_ai: {
     axis: 'plan',
@@ -147,7 +147,7 @@ const RAW_METERS: Record<string, RawMeter> = {
     unit: 'matches',
     period: 'month',
     // @placeholder monthly AI resonance matches — owner sets real numbers before go-live.
-    allowances: { free: 10, pro: 200, business: 2_000, organization: null },
+    allowances: { free: 10, business: 2_000 },
   },
   // ── Personal membership (tier axis: free < crew) ─────────────────────────────────────────────────
   vera_unlimited: {
