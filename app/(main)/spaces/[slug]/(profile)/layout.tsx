@@ -306,8 +306,25 @@ export default async function SpaceProfileChromeLayout({
           {typeLabel}
         </span>
       </div>
-      {tagline && (
-        <p className={cn('mt-1 max-w-2xl text-sm', onInk ? 'text-on-ink-muted' : 'text-muted')}>{tagline}</p>
+      {/* The tagline is the "say what you do" line, given a touch more presence (text-base, medium) so it
+          reads as part of the identity, not fine print. When it is empty and you are the owner, a gentle
+          prompt invites you to add one (links to the Basics editor); a visitor sees nothing. */}
+      {tagline ? (
+        <p className={cn('mt-1.5 max-w-2xl text-base font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
+          {tagline}
+        </p>
+      ) : (
+        canSeeAsOwner && (
+          <Link
+            href={`${base}/settings/basics`}
+            className={cn(
+              'mt-1.5 inline-block max-w-2xl text-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
+              onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',
+            )}
+          >
+            Add a tagline. Say what you do.
+          </Link>
+        )
       )}
     </div>
   )

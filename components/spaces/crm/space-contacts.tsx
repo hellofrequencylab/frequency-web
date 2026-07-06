@@ -7,8 +7,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 // PER-SPACE CONTACTS (ENTITY-SPACES-BUILD Phase 2). A self-fetching server component that lists THIS
 // Space's CRM contacts, scoped by space_id. Each row links to the detail/notes surface for that contact
 // (?contact=<id> on the surface named by `linkBase`), so the owner picks a person and sees their detail
-// beside the list. `linkBase` defaults to the Focus notes surface (/settings/crm) for backward
-// compatibility; the CRM board passes its own base so a row opens the on-board contact detail.
+// beside the list. `linkBase` defaults to the canonical CRM board (/crm); the CRM board passes its own
+// base so a row opens the on-board contact detail.
 // Composes kit primitives (SectionHeader, EmptyState). No em/en dashes (CONTENT-VOICE §10).
 
 export async function SpaceContacts({
@@ -20,11 +20,11 @@ export async function SpaceContacts({
   spaceId: string
   slug: string
   selectedContactId: string | null
-  /** The path a contact row links to, with `?contact=<id>` appended. Defaults to the Focus notes
-   *  surface so existing callers are unchanged; the board passes `/spaces/<slug>/crm`. */
+  /** The path a contact row links to, with `?contact=<id>` appended. Defaults to the canonical CRM
+   *  board; the board passes `/spaces/<slug>/crm` too. */
   linkBase?: string
 }) {
-  const base = linkBase ?? `/spaces/${slug}/settings/crm`
+  const base = linkBase ?? `/spaces/${slug}/crm`
   const contacts = await getContacts(spaceId)
 
   if (contacts.length === 0) {

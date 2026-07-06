@@ -112,15 +112,12 @@ describe('railFor — the single source of truth for page chrome', () => {
     // FocusTemplate body — the rail simply sits beside it.
     expect(railFor('/spaces/new')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings')).toBe('global')
-    expect(railFor('/spaces/demo-practitioner/settings/availability')).toBe('global')
-    expect(railFor('/spaces/demo-practitioner/settings/memberships')).toBe('global')
-    // The unified Offerings surface (the deeper Offerings merge) is a centered Focus body that keeps
-    // the global rail beside it, like its sibling settings sub-pages.
+    // The unified Offerings surface (the deeper Offerings merge, now the ONE commerce sub-page after
+    // ADR-552 Phase 4 deleted the per-service redirect stubs) is a centered Focus body that keeps the
+    // global rail beside it, like its sibling settings sub-pages.
     expect(railFor('/spaces/demo-practitioner/settings/offerings')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/members')).toBe('global')
     expect(railFor('/spaces/demo-practitioner/settings/qr')).toBe('global')
-    expect(railFor('/spaces/demo-practitioner/settings/crm')).toBe('global')
-    expect(railFor('/spaces/demo-event-space/settings/checkin')).toBe('global')
     expect(railFor('/spaces/demo-business/settings/email')).toBe('global')
   })
 

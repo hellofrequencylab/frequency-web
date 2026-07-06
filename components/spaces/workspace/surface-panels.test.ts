@@ -12,12 +12,12 @@ describe('SURFACE_PANELS — the inline commerce service panels (P2)', () => {
   // Panel id → the member-facing label (from the module catalog) it must show, and the /settings/* route
   // its "Open full page" link targets.
   const commerce: [string, string, string][] = [
-    ['booking', 'Booking', `/spaces/${slug}/settings/availability`],
-    ['memberships', 'Memberships', `/spaces/${slug}/settings/memberships`],
-    ['donations', 'Donations', `/spaces/${slug}/settings/donations`],
+    ['booking', 'Booking', `/spaces/${slug}/settings/offerings#availability`],
+    ['memberships', 'Memberships', `/spaces/${slug}/settings/offerings#memberships`],
+    ['donations', 'Donations', `/spaces/${slug}/settings/offerings#donations`],
     ['enroll', 'Enrollment', `/spaces/${slug}/settings/enroll`],
-    ['tickets', 'Tickets', `/spaces/${slug}/settings/tickets`],
-    ['checkin', 'Check in', `/spaces/${slug}/settings/checkin`],
+    ['tickets', 'Tickets', `/spaces/${slug}/settings/offerings#tickets`],
+    ['checkin', 'Check in', `/spaces/${slug}/settings/offerings#checkin`],
   ]
 
   it.each(commerce)('%s panel → label "%s", full page %s', (id, label, fullHref) => {

@@ -157,10 +157,9 @@ function db() {
   return createAdminClient()
 }
 
-/** Revalidate the two surfaces a Space's pipeline renders on (the board + the Focus CRM surface). */
+/** Revalidate the surface a Space's pipeline renders on (the CRM board). */
 function revalidateSpace(slug: string): void {
   revalidatePath(`/spaces/${slug}/crm`)
-  revalidatePath(`/spaces/${slug}/settings/crm`)
 }
 
 // ── PUBLIC SERVER ACTIONS (all manage-gated + space-scoped) ───────────────────────────────────────

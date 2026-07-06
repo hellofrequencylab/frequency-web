@@ -43,6 +43,10 @@ export function GoBusinessCta({
             Keep everything you already have, with the caps lifted: multi-page and a custom domain, more
             seats, higher limits, and a lower take-rate. You stay Business and pay as you grow.
           </p>
+          {/* Mission framing (PRICING-LADDER-PLAN §1a, voice-bound): plain, no guilt, no hype. */}
+          <p className="mt-2 text-xs text-subtle">
+            Going Business keeps Frequency independent and funds the small team that builds it.
+          </p>
         </div>
         <div className="min-w-[12rem]">
           {sellable ? (

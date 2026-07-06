@@ -5,13 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { isSpaceFunctionKey, type SpaceFunctionKey } from '@/lib/spaces/functions'
-import {
-  resolveMode,
-  isModeVariant,
-  readModePreferences,
-  type ModePreferences,
-} from '@/lib/spaces/modes'
+import { resolveMode, isModeVariant, type ModePreferences } from '@/lib/spaces/modes'
 import { ensureSpaceStages } from '@/lib/crm/pipeline'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -104,35 +98,6 @@ export async function switchSpaceFocus(slug: string, variant: string): Promise<A
   // space would show. Best-effort: a seed failure never fails the switch.
   await ensureSpaceStages(auth.spaceId, auth.type as Parameters<typeof ensureSpaceStages>[1], variant)
 
-  revalidatePath(`/spaces/${slug}/manage/mode`)
-  revalidatePath(`/spaces/${slug}/manage`)
-  return ok()
-}
-
-/** Override (or clear) a module's nav TOGGLE on the owner's own space. `state` of true/false forces the
- *  module on/off in the nav; null CLEARS the override (back to the Mode default). FRAMING only: this never
- *  changes the capability (still gated by the entitlement engine + role ladder). Owner/admin-gated. */
-export async function setModeToggleOverride(
-  slug: string,
-  fn: string,
-  state: boolean | null,
-): Promise<ActionResult> {
-  if (!isSpaceFunctionKey(fn)) return fail('Unknown module.')
-
-  const auth = await authorizeManager(slug)
-  if (!auth) return fail('You do not have access to manage this space.')
-
-  const prefs = readModePreferences(auth.preferences)
-  const toggles = { ...(prefs.toggles ?? {}) }
-  if (state === null) delete toggles[fn as SpaceFunctionKey]
-  else toggles[fn as SpaceFunctionKey] = state
-  const next: ModePreferences = { ...prefs }
-  if (Object.keys(toggles).length) next.toggles = toggles
-  else delete next.toggles
-
-  if (!(await writeModePreferences(auth.spaceId, auth.preferences, next))) {
-    return fail('Could not save that change. Try again.')
-  }
   revalidatePath(`/spaces/${slug}/manage/mode`)
   revalidatePath(`/spaces/${slug}/manage`)
   return ok()

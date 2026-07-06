@@ -66,9 +66,9 @@ export default async function SpaceModePage({
       }))
     : []
 
-  // The "what this turns on" preview: the effective module order after overrides, each with its
-  // function label (operator override label wins) and whether the Mode suggests it ON by default. Mode
-  // never gates, so this lists framing only (the capability stays gated elsewhere).
+  // The "what this preset leads with" preview: the effective module order after overrides, each with its
+  // function label (operator override label wins). READ-ONLY framing only (Mode never gates; menu
+  // visibility lives in the Module Manager since ADR-552 Phase 4).
   const emphasis = effectiveNavEmphasis(mode, prefs)
   const modules: ModuleRow[] = emphasis.map((fn) => {
     const def = spaceFunctionDef(fn)
@@ -78,8 +78,6 @@ export default async function SpaceModePage({
       label: override ?? def?.label ?? fn,
       defaultLabel: def?.label ?? fn,
       overridden: override !== null,
-      suggestedOn:
-        (prefs.toggles?.[fn] ?? mode.defaultToggles.includes(fn)) === true,
     }
   })
 

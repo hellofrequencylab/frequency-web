@@ -14,9 +14,10 @@ import {
   FormError,
 } from '@/components/spaces/space-form'
 
-// The CREATE-A-SPACE form (client). Leads with "what do you run?" (a Mode + Focus choice), then
-// collects name, slug, brand name, and visibility, and calls the createSpace server action (which seeds
-// the Mode preset and redirects to the new Space's settings on success). The server re-validates
+// The CREATE-A-SPACE form (client). Leads with "what do you run?" (a Mode + Focus choice), then collects
+// just name, handle, and visibility, and calls the createSpace server action (which seeds the Mode preset
+// and drops the owner straight on their /manage console on success). Brand name is NOT collected here: it
+// defaults to the name and is editable later in Basics (ADR-552 Phase 4 slim). The server re-validates
 // everything; this form mirrors the checks for fast, inline feedback only.
 //
 // The "what do you run?" choices come from the parent (the Mode registry, Space Modes M3), so the form
@@ -47,7 +48,6 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [slugTouched, setSlugTouched] = useState(false)
-  const [brandName, setBrandName] = useState('')
   const [visibility, setVisibility] = useState<'network' | 'private'>('network')
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -72,7 +72,6 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
         modeVariant: choice.variant,
         name: name.trim(),
         slug: slug.trim().toLowerCase(),
-        brandName: brandName.trim() || null,
         visibility,
       })
       // createSpace redirects on success, so we only reach here on a returned error.
@@ -149,16 +148,6 @@ export function CreateSpaceForm({ choices }: { choices: SpaceModeChoice[] }) {
           </p>
         )}
       </div>
-
-      <TextField
-        id="brand-name"
-        label="Brand name"
-        hint="Shown in the space header. Leave blank to use the name above."
-        value={brandName}
-        onChange={setBrandName}
-        placeholder={name || 'River Yoga'}
-        maxLength={200}
-      />
 
       <VisibilityField value={visibility} onChange={setVisibility} />
 

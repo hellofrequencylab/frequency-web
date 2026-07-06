@@ -44,15 +44,15 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
   // so no `bounded` flag.
   booking: {
     label: 'Booking',
-    fullHref: (slug) => `/spaces/${slug}/settings/availability`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#availability`,
   },
   memberships: {
     label: 'Memberships',
-    fullHref: (slug) => `/spaces/${slug}/settings/memberships`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#memberships`,
   },
   donations: {
     label: 'Donations',
-    fullHref: (slug) => `/spaces/${slug}/settings/donations`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#donations`,
   },
   enroll: {
     label: 'Enrollment',
@@ -60,11 +60,11 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
   },
   tickets: {
     label: 'Tickets',
-    fullHref: (slug) => `/spaces/${slug}/settings/tickets`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#tickets`,
   },
   checkin: {
     label: 'Check in',
-    fullHref: (slug) => `/spaces/${slug}/settings/checkin`,
+    fullHref: (slug) => `/spaces/${slug}/settings/offerings#checkin`,
   },
   services: {
     label: 'Services',

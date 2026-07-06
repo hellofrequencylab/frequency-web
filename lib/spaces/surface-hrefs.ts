@@ -42,20 +42,22 @@ export function hrefForSurface(id: string, slug: string): string | null {
       // No longer a rail row (the rail split into the seven independent surfaces below — ADR-544b), but
       // kept mapped: the adaptive page still exists and Mode next-best-actions still reference this id.
       return `${base}/settings/offerings`
-    // The seven INDEPENDENT commerce surfaces (modular menu P1b, ADR-544b) — each deep-links to its own
-    // EXISTING /settings/* page (Store is space.services below). Ids + routes mirror the module catalog.
+    // The independent commerce surfaces (modular menu P1b, ADR-544b). The five that had a standalone
+    // /settings/* redirect stub now deep-link straight to the unified Offerings surface anchored to their
+    // section (ADR-552 Phase 4 deleted the stubs); Enrollment keeps its own /settings/enroll page. Store
+    // is space.services below. Ids mirror the module catalog.
     case 'space.booking':
-      return `${base}/settings/availability`
+      return `${base}/settings/offerings#availability`
     case 'space.memberships':
-      return `${base}/settings/memberships`
+      return `${base}/settings/offerings#memberships`
     case 'space.donations':
-      return `${base}/settings/donations`
+      return `${base}/settings/offerings#donations`
     case 'space.enroll':
       return `${base}/settings/enroll`
     case 'space.tickets':
-      return `${base}/settings/tickets`
+      return `${base}/settings/offerings#tickets`
     case 'space.checkin':
-      return `${base}/settings/checkin`
+      return `${base}/settings/offerings#checkin`
     case 'space.people':
       return `${base}/settings/members`
     case 'space.engage.crm':

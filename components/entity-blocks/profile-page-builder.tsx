@@ -904,7 +904,7 @@ const SPACE_BLOCK_ADMIN_PATH: Record<string, string> = {
   contact: 'settings/basics',
   reviews: 'settings/basics',
   offerings: 'settings/offerings',
-  booking: 'settings/availability',
+  booking: 'settings/offerings#availability',
   team: 'settings/members',
 }
 function spaceBlockAdminHref(slug: string, blockId: string): string | null {

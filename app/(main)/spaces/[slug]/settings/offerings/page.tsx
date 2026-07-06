@@ -14,9 +14,11 @@ import { OfferingsBody } from './offerings-body'
 //   event_space  -> Tickets + Check in
 //   (lab / partner / coaching / root have no commerce section -> a tasteful empty state)
 //
-// The old individual routes (/settings/availability, /memberships, /donations, /enroll, /tickets,
-// /checkin) still resolve: each redirects here anchored to its section (#<anchor>), so bookmarks and
-// links never 404. This page owns the ROUTE + AUTH gate ONCE (resolveSpaceManageAccess, notFound), then
+// This IS the commerce home. The old individual routes (/settings/availability, /memberships,
+// /donations, /tickets, /checkin) were deleted in ADR-552 Phase 4; every in-app link now points straight
+// here anchored to its section (#<anchor>). Enrollment keeps its own /settings/enroll page. The section +
+// panel body components (section.tsx / *-body.tsx) still live in those folders and compose here + inline.
+// This page owns the ROUTE + AUTH gate ONCE (resolveSpaceManageAccess, notFound), then
 // wraps the chrome-free <OfferingsBody> in the FocusTemplate. The same body ALSO renders inline in the
 // Space profile as the Offerings `?panel=` workspace (Stage D2); it composes each section BODY (the
 // extracted `*Section` components), which each re-check their OWN per-Space function gate and render the
