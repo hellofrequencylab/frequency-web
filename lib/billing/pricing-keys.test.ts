@@ -13,11 +13,13 @@ import {
   asSpacePlanKey,
   takeRateBpsForPlan,
   takeRateCents,
+  monthlyTakeRateSavingsCents,
   memberCheckoutPriceKey,
   PERIODS_BY_KEY,
 } from './pricing-keys'
 
-const TAKE_RATE = { business_bps: 500, nonprofit_bps: 300 }
+// ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
+const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300 }
 
 describe('priceKey', () => {
   it('builds <base>_<period> and the founder variant', () => {
@@ -94,32 +96,57 @@ describe('narrowing helpers (default-deny)', () => {
   })
 })
 
-describe('take-rate by plan (ADR-552: business + nonprofit)', () => {
-  it('reads the per-plan basis points (5% business / 3% nonprofit)', () => {
-    expect(takeRateBpsForPlan('business', TAKE_RATE)).toBe(500)
-    expect(takeRateBpsForPlan('nonprofit', TAKE_RATE)).toBe(300)
+describe('take-rate by paying-state (ADR-552: free usage 5% / paying Business 3% / Non Profit 3%)', () => {
+  it('a Business pays the lower rate only when it has a live paid subscription (isPaying)', () => {
+    // Free-vs-paid is a usage state WITHIN Business, so the same plan label resolves two rates.
+    expect(takeRateBpsForPlan('business', TAKE_RATE, true)).toBe(300) // paying → 3%
+    expect(takeRateBpsForPlan('business', TAKE_RATE, false)).toBe(500) // free usage → 5%
+    expect(takeRateBpsForPlan('business', TAKE_RATE)).toBe(500) // isPaying defaults false → the free rate
   })
 
-  it('a free/legacy/unknown plan falls back to the Business rate, never 0', () => {
+  it('Non Profit always pays its rate (a verified 501c3 is inherently paid)', () => {
+    expect(takeRateBpsForPlan('nonprofit', TAKE_RATE, true)).toBe(300)
+    expect(takeRateBpsForPlan('nonprofit', TAKE_RATE, false)).toBe(300)
+  })
+
+  it('a free/legacy/unknown plan pays the higher free rate, never 0 (never under-collect)', () => {
     expect(takeRateBpsForPlan('free', TAKE_RATE)).toBe(500)
-    expect(takeRateBpsForPlan('practitioner', TAKE_RATE)).toBe(500) // retired label narrows to business rate
+    expect(takeRateBpsForPlan('practitioner', TAKE_RATE)).toBe(500) // retired label → free rate
     expect(takeRateBpsForPlan(null, TAKE_RATE)).toBe(500)
     expect(takeRateBpsForPlan('nonsense', TAKE_RATE)).toBe(500)
   })
 
-  it('takeRateCents applies the rate and floors fractional cents', () => {
-    // $100 @ 5% = $5.00
-    expect(takeRateCents(10000, 'business', TAKE_RATE)).toBe(500)
-    // $100 @ 3% = $3.00
+  it('takeRateCents applies the rate for the paying-state and floors fractional cents', () => {
+    // $100 free usage @ 5% = $5.00; paying Business @ 3% = $3.00
+    expect(takeRateCents(10000, 'business', TAKE_RATE, false)).toBe(500)
+    expect(takeRateCents(10000, 'business', TAKE_RATE, true)).toBe(300)
+    // $100 @ 3% Non Profit = $3.00
     expect(takeRateCents(10000, 'nonprofit', TAKE_RATE)).toBe(300)
-    // 333c @ 5% = 16.65 → floor 16
-    expect(takeRateCents(333, 'business', TAKE_RATE)).toBe(16)
+    // 333c @ 5% (free usage) = 16.65 → floor 16
+    expect(takeRateCents(333, 'business', TAKE_RATE, false)).toBe(16)
   })
 
   it('takeRateCents is 0 for non-positive / invalid gross', () => {
     expect(takeRateCents(0, 'business', TAKE_RATE)).toBe(0)
     expect(takeRateCents(-100, 'business', TAKE_RATE)).toBe(0)
     expect(takeRateCents(NaN, 'business', TAKE_RATE)).toBe(0)
+  })
+})
+
+describe('the "you\'d have saved $X" nudge (monthlyTakeRateSavingsCents)', () => {
+  it('applies the bps delta (free minus paid) to the trailing volume, floored', () => {
+    // $1,000 processed × (500 - 300) bps = 2% = $20.00
+    expect(monthlyTakeRateSavingsCents(100000, TAKE_RATE)).toBe(2000)
+    // 333c × 2% = 6.66 → floor 6
+    expect(monthlyTakeRateSavingsCents(333, TAKE_RATE)).toBe(6)
+  })
+
+  it('is 0 when the volume or the delta is non-positive (only a real saving shows)', () => {
+    expect(monthlyTakeRateSavingsCents(0, TAKE_RATE)).toBe(0)
+    expect(monthlyTakeRateSavingsCents(-100, TAKE_RATE)).toBe(0)
+    expect(monthlyTakeRateSavingsCents(NaN, TAKE_RATE)).toBe(0)
+    // No delta (free == paid) → no saving to advertise.
+    expect(monthlyTakeRateSavingsCents(100000, { free_bps: 300, business_bps: 300 })).toBe(0)
   })
 })
 

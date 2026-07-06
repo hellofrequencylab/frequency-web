@@ -506,7 +506,10 @@ function PlansSection({ values }: { values: PricingDefaults }) {
         </div>
       </FormSection>
 
-      <FormSection title="Take-rate" description="The platform share of a space's sales, as a percent.">
+      <FormSection
+        title="Take-rate"
+        description="The platform share of a space's sales, as a percent. Free usage pays the higher rate; a paying Business and Non Profit pay the lower one."
+      >
         <TakeRateRow rate={values.take_rate} />
       </FormSection>
 
@@ -623,6 +626,7 @@ function Field({
 }
 
 function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
+  const [f, setF] = useState(String(rate.free_bps / 100))
   const [b, setB] = useState(String(rate.business_bps / 100))
   const [n, setN] = useState(String(rate.nonprofit_bps / 100))
   const [saved, setSaved] = useState(false)
@@ -634,6 +638,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
     setSaved(false)
     start(async () => {
       const res = await saveTakeRate({
+        free_bps: Math.round((Number(f) || 0) * 100),
         business_bps: Math.round((Number(b) || 0) * 100),
         nonprofit_bps: Math.round((Number(n) || 0) * 100),
       })
@@ -648,6 +653,7 @@ function TakeRateRow({ rate }: { rate: PricingDefaults['take_rate'] }) {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
+        <Field label="Free %" value={f} onChange={setF} />
         <Field label="Business %" value={b} onChange={setB} />
         <Field label="Non Profit %" value={n} onChange={setN} />
         <div className="flex items-center gap-2">

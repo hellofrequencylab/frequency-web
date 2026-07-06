@@ -105,6 +105,29 @@ export async function listAllOrders(opts: { status?: OrderStatus; limit?: number
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
 }
 
+/** A Space's trailing processed volume (cents) from paid commerce orders over the last `sinceDays`
+ *  (default 30). The per-space money read the "you'd have saved $X" upgrade nudge uses (ADR-552): the
+ *  savings = the take-rate bps delta applied to this volume. Sums settled orders (paid / fulfilled) by
+ *  paid_at; a pending / failed / refunded order is not processed revenue. Server-only; FAIL-SAFE to 0.
+ *  NOTE: this covers COMMERCE orders (the one per-space money read that exists today); ticket / tip /
+ *  membership-dues channels are not yet aggregated per space, so the figure undercounts those. */
+export async function spaceTrailingProcessedCents(spaceId: string, sinceDays = 30): Promise<number> {
+  if (!spaceId) return 0
+  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
+  const { data } = await db()
+    .from('commerce_orders')
+    .select('amount_cents')
+    .eq('owner_space_id', spaceId)
+    .in('status', ['paid', 'fulfilled'])
+    .gte('paid_at', since)
+  let sum = 0
+  for (const r of (data ?? []) as { amount_cents?: number | null }[]) {
+    const c = Number(r.amount_cents)
+    if (Number.isFinite(c) && c > 0) sum += c
+  }
+  return sum
+}
+
 /** Status counts for the operator orders header (paid / refunded / fulfilled / failed). */
 export async function orderStatusCounts(): Promise<Record<string, number>> {
   const { data } = await db().from('commerce_orders').select('status')

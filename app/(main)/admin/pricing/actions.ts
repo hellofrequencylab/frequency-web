@@ -141,8 +141,10 @@ export async function saveAddonEnabled(addon: string, enabled: boolean): Promise
   }
 }
 
-/** Save the take-rate (basis points per plan · ADR-552: Business + Non Profit). */
+/** Save the take-rate (basis points per paying-state · ADR-552: free usage / paying Business / Non
+ *  Profit). Free-vs-paid is a usage state within Business, so free usage carries its own higher rate. */
 export async function saveTakeRate(rate: {
+  free_bps: number
   business_bps: number
   nonprofit_bps: number
 }): Promise<ActionResult> {
@@ -152,6 +154,7 @@ export async function saveTakeRate(rate: {
     await setPricingSetting(
       'take_rate',
       {
+        free_bps: clamp(rate.free_bps),
         business_bps: clamp(rate.business_bps),
         nonprofit_bps: clamp(rate.nonprofit_bps),
       },

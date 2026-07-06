@@ -171,7 +171,7 @@ describe('read helpers', () => {
   })
 
   it('allowanceAt returns the tier allowance, or null for unlimited / non-metered', () => {
-    expect(allowanceAt('space_crm', 'free')).toBe(100)
+    expect(allowanceAt('space_crm', 'free')).toBe(250) // §2 free CRM allowance (ADR-552 Phase 3)
     expect(allowanceAt('space_crm', 'business')).toBeNull() // unlimited
     expect(allowanceAt('space_crm', 'nonprofit')).toBeNull() // maps to business rung (unlimited)
     expect(allowanceAt('space_whitelabel', 'free')).toBeNull() // not metered
@@ -180,7 +180,7 @@ describe('read helpers', () => {
 
 describe('the enforcement seam — nothing charges / nothing hard-blocks while billing is off', () => {
   it('withinAllowance ALWAYS returns true while billing is off, even far over the allowance', () => {
-    // Free CRM placeholder is 100 contacts; 10x over it must still not be blocked while billing is off.
+    // Free CRM allowance is 250 contacts (§2); 10x over it must still not be blocked while billing is off.
     expect(withinAllowance('space_crm', 'free', 1_000_000, { billingLive: false })).toBe(true)
     // Every metered feature, at its free floor, wildly over allowance → still true (informational only).
     for (const key of FEATURE_METER_KEYS) {
@@ -195,8 +195,8 @@ describe('the enforcement seam — nothing charges / nothing hard-blocks while b
 
   it('with billing LIVE it enforces the seam (usage vs allowance) — the go-live behavior', () => {
     // At/under the free cap passes; over it fails; an unlimited tier always passes.
-    expect(withinAllowance('space_crm', 'free', 100, { billingLive: true })).toBe(true)
-    expect(withinAllowance('space_crm', 'free', 101, { billingLive: true })).toBe(false)
+    expect(withinAllowance('space_crm', 'free', 250, { billingLive: true })).toBe(true)
+    expect(withinAllowance('space_crm', 'free', 251, { billingLive: true })).toBe(false)
     expect(withinAllowance('space_crm', 'business', Number.MAX_SAFE_INTEGER, { billingLive: true })).toBe(true)
   })
 

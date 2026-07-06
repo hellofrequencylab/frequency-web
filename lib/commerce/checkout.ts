@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents } from '@/lib/billing/fees'
+import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import type { CheckoutInput } from './types'
@@ -64,7 +65,13 @@ async function resolveCharge(seller: ProductRow, grossCents: number): Promise<Re
   const status = await getConnectStatus(owner.owner_profile_id)
   if (!status.accountId || !status.ready) return { error: 'This storefront can’t take payment yet.' }
   return {
-    platformFeeCents: await spaceTakeRateCents(grossCents, owner.plan ?? 'free'),
+    // A space store's take-rate keys on paying-state (ADR-552): a free space pays the higher free rate,
+    // a paying Business the lower rate. Resolve isPaying from its live subscription items.
+    platformFeeCents: await spaceTakeRateCents(
+      grossCents,
+      owner.plan ?? 'free',
+      await spaceIsPaying(seller.owner_space_id),
+    ),
     sellerStripeAccountId: status.accountId,
   }
 }
