@@ -28,6 +28,7 @@ import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isJanitor } from '@/lib/core/roles'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { fireSpaceTrigger } from '@/lib/spaces/drip-enroll'
 
 // ── Types ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -448,6 +449,11 @@ export async function joinTier(spaceId: string, tierId: string): Promise<ActionR
       // race into the friendly message rather than a raw DB error.
       return fail('You are already a member here.')
     }
+    // AUTOMATION TRIGGER (ADR-561): a member just joined a tier. Fire the 'member.joined' trigger so any
+    // enabled rule enrolls this member (resolved to their Space contact by profile) into its drip
+    // sequence. FIRE-SAFE + fire-and-forget: fireSpaceTrigger never throws and we do not await it, so a
+    // rule error can never break the join.
+    void fireSpaceTrigger(spaceId, 'member.joined', { profileId })
   } catch {
     return fail('Could not join right now. Try again.')
   }

@@ -17,6 +17,7 @@ import {
   deleteSequenceStep as deleteSequenceStepImpl,
   setSpaceSequenceEnabled as setSpaceSequenceEnabledImpl,
   deleteSpaceSequence as deleteSpaceSequenceImpl,
+  startSequenceForAudience as startSequenceForAudienceImpl,
 } from '@/lib/spaces/automation'
 import { type ActionResult } from '@/lib/action-result'
 
@@ -117,6 +118,19 @@ export async function deleteSpaceSequence(
   id: string,
 ): Promise<ActionResult> {
   const res = await deleteSpaceSequenceImpl(spaceId, id)
+  if (!('error' in res)) revalidateAutomation(slug)
+  return res
+}
+
+/** START a sequence over its saved audience (the operator's manual RUNNER lever): enroll every matching
+ *  contact at step one. Gated on canEditProfile AND the `crm.space.automation` entitlement (see the
+ *  implementation, requireAutomationEditor). */
+export async function startSequenceForAudience(
+  spaceId: string,
+  slug: string,
+  sequenceId: string,
+): Promise<ActionResult<{ enrolled: number }>> {
+  const res = await startSequenceForAudienceImpl(spaceId, sequenceId)
   if (!('error' in res)) revalidateAutomation(slug)
   return res
 }

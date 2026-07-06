@@ -571,3 +571,44 @@ describe('automation: rule + sequence reads/writes bind space_id', () => {
     expectScopedMutation(rec(), 'delete', SPACE_A)
   })
 })
+
+// ── lib/spaces/drip-enroll.ts - the drip RUNNER's enrollment ledger (space_drip_enrollments, ADR-561) ─
+// The runner's enrollment table is service-role only (RLS enabled, NO policies), so the .eq('space_id')
+// filter each read/write applies is the ONLY tenancy gate. enrollContactInSequence re-reads BOTH the
+// sequence AND the contact PINNED to space_id before inserting, so a cross-space sequence/contact id
+// enrolls nothing. Prove those reads (and the enrollment insert) bind space_id, so a Space A caller can
+// never enroll into, or send from, Space B's data.
+describe('drip-enroll: the enrollment reads bind space_id', () => {
+  it('enrollContactInSequence resolves the sequence scoped by space_id (filter recorded)', async () => {
+    // With the default recorder the sequence read returns no row, so enroll returns early — but the
+    // `.eq('space_id', ...)` on that FIRST read is already recorded, which is the tenancy gate under test
+    // (a cross-space sequence id can never resolve because the read is pinned to the caller's Space).
+    const { enrollContactInSequence } = await import('@/lib/spaces/drip-enroll')
+    await enrollContactInSequence(SPACE_A, 'seqA', 'cA')
+    expectSpaceScoped(rec(), SPACE_A)
+  })
+
+  it('LEAK ORACLE: a cross-space sequence id enrolls NOTHING', async () => {
+    // seqB belongs to Space B. A Space A caller passing seqB must resolve nothing (the sequence read is
+    // pinned to space_id=A), so no enrollment is created.
+    h.client = makeTwoSpaceDb({
+      space_drip_sequences: [{ id: 'seqB', space_id: SPACE_B, enabled: true }],
+      contacts: [{ id: 'cA', space_id: SPACE_A, email: 'a@a.com' }],
+      space_drip_steps: [{ id: 'stB', space_id: SPACE_B, sequence_id: 'seqB', step_order: 1, delay_hours: 24, enabled: true }],
+    })
+    const { enrollContactInSequence } = await import('@/lib/spaces/drip-enroll')
+    const res = await enrollContactInSequence(SPACE_A, 'seqB', 'cA')
+    expect(res.enrolled).toBe(false) // Space A never reaches Space B's sequence
+  })
+
+  it('LEAK ORACLE: a same-Space enabled sequence + contact DOES enroll (proves the happy path resolves)', async () => {
+    h.client = makeTwoSpaceDb({
+      space_drip_sequences: [{ id: 'seqA', space_id: SPACE_A, enabled: true }],
+      contacts: [{ id: 'cA', space_id: SPACE_A, email: 'a@a.com' }],
+      space_drip_steps: [{ id: 'stA', space_id: SPACE_A, sequence_id: 'seqA', step_order: 1, delay_hours: 24, enabled: true }],
+    })
+    const { enrollContactInSequence } = await import('@/lib/spaces/drip-enroll')
+    const res = await enrollContactInSequence(SPACE_A, 'seqA', 'cA')
+    expect(res.enrolled).toBe(true)
+  })
+})
