@@ -388,3 +388,46 @@ describe('faqSchema', () => {
     expect(q.acceptedAnswer).toMatchObject({ '@type': 'Answer', text: 'A community platform.' })
   })
 })
+
+describe('spaceSchema enrichment (@id + optional LocalBusiness fields)', () => {
+  const base = { slug: 'acme', type: 'business', name: 'Acme Studio' }
+
+  it('carries a stable @id equal to the url', () => {
+    const r = spaceSchema(base) as Record<string, unknown>
+    expect(r['@id']).toBe(r.url)
+  })
+
+  it('emits sameAs / address / geo / openingHours / priceRange only when provided, dropping empties', () => {
+    const r = spaceSchema({
+      ...base,
+      sameAs: ['https://instagram.com/acme', '', null],
+      address: { addressLocality: 'Austin', addressRegion: 'TX', streetAddress: '' },
+      geo: { latitude: 30.26, longitude: -97.74 },
+      openingHours: ['Mo-Fr 09:00-17:00', ' '],
+      priceRange: '$$',
+    }) as Record<string, unknown>
+    expect(r.sameAs).toEqual(['https://instagram.com/acme'])
+    expect(r.address).toMatchObject({ '@type': 'PostalAddress', addressLocality: 'Austin', addressRegion: 'TX' })
+    expect(r.address).not.toHaveProperty('streetAddress')
+    expect(r.geo).toMatchObject({ '@type': 'GeoCoordinates', latitude: 30.26 })
+    expect(r.openingHours).toEqual(['Mo-Fr 09:00-17:00'])
+    expect(r.priceRange).toBe('$$')
+  })
+
+  it('emits aggregateRating only when reviewCount > 0 (never a zero/null rating)', () => {
+    expect(
+      (spaceSchema({ ...base, aggregateRating: { ratingValue: 4.8, reviewCount: 12 } }) as Record<string, unknown>)
+        .aggregateRating,
+    ).toMatchObject({ '@type': 'AggregateRating', ratingValue: 4.8, reviewCount: 12 })
+    expect(spaceSchema({ ...base, aggregateRating: { ratingValue: 0, reviewCount: 0 } })).not.toHaveProperty(
+      'aggregateRating',
+    )
+  })
+
+  it('stays backward-compatible for the base call and omits an all-empty address', () => {
+    const r = spaceSchema(base) as Record<string, unknown>
+    expect(r).not.toHaveProperty('address')
+    expect(r).not.toHaveProperty('sameAs')
+    expect(spaceSchema({ ...base, address: { streetAddress: '', addressLocality: null } })).not.toHaveProperty('address')
+  })
+})
