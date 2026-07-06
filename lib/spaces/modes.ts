@@ -56,7 +56,9 @@ export interface ModeStage {
 }
 
 /** One dashboard next-best-action a Mode surfaces: a plain-verb label + the console surface it points
- *  at (a SpaceSurface id, e.g. 'space.offerings'). UX only, never a gate. */
+ *  at (a space menu id, e.g. 'space.offerings'). UX only, never a gate. The Mode settings view renders the
+ *  label only (app/(main)/spaces/[slug]/manage/mode/page.tsx drops `surface`), so the id is a stable hint,
+ *  not a live route. */
 export interface ModeAction {
   /** A plain, skeptic-proof call to action (CONTENT-VOICE: a verb, no hype). */
   label: string

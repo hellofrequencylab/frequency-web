@@ -20,7 +20,8 @@ export { hrefForSurface }
 // SPACE_MODULES, resolved by spaceModuleManifest + the authoritative canUse gate) plus the Mode emphasis
 // list; this layer GROUPS the flat manifest into scannable clusters and binds each module to its on-page
 // panel (Stage-D5 `?panel=` behavior, preserved) or its deep-editing route. P1 renders the SPACE menu from
-// the module manifest instead of the legacy SPACE_SURFACES spine, so the SERVICE SPLIT (7 independent
+// the module manifest instead of the legacy space surface spine (retired in P4, ADR-547), so the SERVICE
+// SPLIT (7 independent
 // commerce modules: Booking / Memberships / Donations / Enrollment / Tickets / Check in / Store) and the
 // CRM CONSOLIDATION (one CRM module absorbing Vera autonomy + Pipeline) go live in the console. No feature
 // is rebuilt: every section is a link into a working panel or sub-page.

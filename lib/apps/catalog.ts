@@ -163,8 +163,9 @@ const ELEMENT_APPS: App[] = ELEMENT_SEEDS.map((e): App => ({
 // A Space profile lives OUTSIDE the community Capability spine (SpaceRole + spaceFunctionAccess, not a
 // Capability), so its manageable modules become editor Apps keyed by `{ on:'spaceType' }` + a
 // `spaceFunction` gate — the dormant Space App plumbing the contract already carried ({on:'spaceType'}
-// scope, {system:'spaceFunction'} gate, AppViewer.canUseSpaceFn). P3b RETARGETS this lane from the legacy
-// SPACE_SURFACES onto the P0 module manifest (lib/admin/modules/space-modules.ts SPACE_MODULES): one App
+// scope, {system:'spaceFunction'} gate, AppViewer.canUseSpaceFn). P3b RENDERS this lane from the P0 module
+// manifest (lib/admin/modules/space-modules.ts SPACE_MODULES) — the legacy space surface spine it once
+// mirrored was retired in P4 (ADR-547): one App
 // per INDEPENDENT module, so the rail renders the SAME catalog the /manage console + Module Manager do
 // (service split + one CRM module + the Module Manager entry `space.modules`). The Module Manager's
 // per-space order/hidden overrides ride the AdminScope and apply in `appsForScope` (for-scope.ts), not

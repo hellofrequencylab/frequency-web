@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { SURFACE_PANELS, PANEL_SURFACE_TO_ID, isPanelId } from './surface-panels'
 
 // The inline-panel registry (Stage D1 → modular menu P2, ADR-545). This PURE module is the single source
-// of the panel id → { label, fullHref } map + the rail's SPACE_SURFACES id → panel id translation. P2 adds
+// of the panel id → { label, fullHref } map + the rail's space surface id → panel id translation. P2 adds
 // the six independent commerce service panels (Booking / Memberships / Donations / Enrollment / Tickets /
 // Check in) alongside the D1–D5 panels, so the seven commerce services all open INLINE like Members.
 
