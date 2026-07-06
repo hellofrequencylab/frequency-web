@@ -184,16 +184,16 @@ export default async function SpaceProfileChromeLayout({
   // replacing the bespoke SpaceCustomizeDrawer. It resolves the Space's 9-spine surfaces as browse-first
   // link-rows into the existing /settings/* sub-pages, gated on the viewer's per-Space functions (spaceFns)
   // + the always-on floor. Owner-gated (canSeeAsOwner), so a visitor never sees it and never triggers it.
-  const ownerTools = (onInk = false) =>
+  const ownerTools = (onInk = false, extra = '') =>
     canSeeAsOwner ? (
       <OpenAdminBarButton
         scope={{ kind: 'space', id: space.id }}
         spaceType={space.type}
         spaceFns={spaceFns}
         moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden }}
-        label={manage.staffViewing ? 'Customize (staff)' : 'Customize'}
+        label={manage.staffViewing ? 'Edit Space (staff)' : 'Edit Space'}
         icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
-        className={ownerToolClasses(onInk)}
+        className={cn(ownerToolClasses(onInk), extra)}
       />
     ) : null
 
@@ -242,17 +242,25 @@ export default async function SpaceProfileChromeLayout({
     </div>
   )
 
-  // MOBILE action card (<sm): every action — Follow, the primary CTA, Connect, Customize — collected into
-  // ONE left-aligned white card that sits UNDER the cover, so the phone hero stays a clean identity band
-  // and the buttons get their own breathing room (the operator's ask). Always on-surface styling (never
-  // on-ink), since it is a white card, not a photo overlay. `sm:hidden` — desktop keeps the overlaid row.
+  // MOBILE action card (<sm): the three primary actions — Book, QR (Connect), and Edit Space — on ONE row,
+  // each `flex-1` so they share the width evenly, and `items-stretch` so they are all the SAME height and
+  // fill the card. Follow is NOT here: it sits above the identity on the cover (mobileFollow). Always
+  // on-surface styling (a white card, not a photo overlay). `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
     <div className="mt-4 rounded-xl border border-border bg-surface p-4 sm:hidden">
-      <div className="flex flex-wrap items-center gap-2">
-        {followButton(false)}
-        {primaryCta()}
-        {connectLink(false)}
-        {ownerTools(false)}
+      <div className="flex items-stretch gap-2">
+        <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')}>
+          {ctaLabel}
+        </Link>
+        <Link
+          href="/codes"
+          aria-label={`Connect with ${brandName}`}
+          title="Connect"
+          className={cn(buttonClasses('secondary', 'sm'), 'flex-1 justify-center gap-1.5')}
+        >
+          <QrCode className="h-4 w-4" aria-hidden /> QR
+        </Link>
+        {ownerTools(false, 'flex-1 justify-center')}
       </div>
     </div>
   )
@@ -278,7 +286,9 @@ export default async function SpaceProfileChromeLayout({
         // cover (mobileActionBand), so the phone hero reads as a clean identity band.
         <div className="mb-2 hidden sm:block">{followButton(onInk)}</div>
       )}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Tight vertical rhythm so the type badge sits close to the name and tagline (gap-y-1), keeping the
+          lockup balanced rather than spread out. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <h1
           className={cn(
             'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
@@ -297,7 +307,7 @@ export default async function SpaceProfileChromeLayout({
         </span>
       </div>
       {tagline && (
-        <p className={cn('mt-1.5 max-w-2xl text-sm', onInk ? 'text-on-ink-muted' : 'text-muted')}>{tagline}</p>
+        <p className={cn('mt-1 max-w-2xl text-sm', onInk ? 'text-on-ink-muted' : 'text-muted')}>{tagline}</p>
       )}
     </div>
   )
@@ -315,6 +325,9 @@ export default async function SpaceProfileChromeLayout({
       {coverImage}
       <div className={cn('absolute inset-0 bg-gradient-to-t', heroScrimGradient)} />
       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+        {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
+            Follow lives inside the name lockup, so this is suppressed there. */}
+        {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
           <div className="flex min-w-0 items-end gap-4">
             <div className="shrink-0">
@@ -360,7 +373,12 @@ export default async function SpaceProfileChromeLayout({
         // pushed right on desktop; on mobile the name lockup stays and the actions drop to the white card
         // below (mobileActionBand).
         <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
-          <div className="min-w-0">{nameLockup(false)}</div>
+          <div className="min-w-0">
+            {/* Mobile only: Follow above the identity (matches the Hero size). Desktop shows it inside the
+                lockup instead. */}
+            {viewerProfileId && <div className="mb-2 sm:hidden">{followButton(false)}</div>}
+            {nameLockup(false)}
+          </div>
           <div className="hidden sm:block">{identityActions(false)}</div>
         </div>
       )}
