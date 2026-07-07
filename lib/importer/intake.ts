@@ -10,6 +10,8 @@
 // SOURCES (§3.3), and the status machine (§3.5) the pipeline walks.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { SeedMood } from './moods'
+
 // ── Intake inputs (docs §3.2) ─────────────────────────────────────────────────────
 
 /** Social handles only — we NEVER store credentials (docs §7). A handle drives an
@@ -46,6 +48,9 @@ export interface IntakeInputs {
   pastedContent?: string
   hints?: IntakeHints
   consent?: IntakeConsent
+  /** The seed MOOD (Importer v2) that steers the reframe TONE. Default `warm` when unset; an operator
+   *  can Re-Seed with a different mood from the review board. */
+  mood?: SeedMood
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

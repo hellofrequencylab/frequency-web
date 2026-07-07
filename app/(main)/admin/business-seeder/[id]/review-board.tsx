@@ -18,10 +18,12 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2 } from 'lucide-react'
+import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Palette, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
-import { updateImportField, approveBusinessImport, type FieldAction } from '../actions'
+import { cn } from '@/lib/utils'
+import { updateImportField, approveBusinessImport, reseedBusinessImport, type FieldAction } from '../actions'
+import { SEED_MOODS, type SeedMood } from '@/lib/importer/moods'
 import { SIGNAL_GLYPH, type ReviewField, type ReviewModel, type ReviewSignal } from '../review-model'
 
 const SIGNAL_TONE: Record<ReviewSignal, 'success' | 'warning' | 'danger'> = {
@@ -43,15 +45,20 @@ export function ReviewBoard({
   status,
   isDemo,
   appliedSpaceId,
+  initialMood,
 }: {
   intakeId: string
   initialModel: ReviewModel
   status: 'review' | 'applied'
   isDemo: boolean
   appliedSpaceId: string | null
+  initialMood: SeedMood
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
+  const [mood, setMood] = useState<SeedMood>(initialMood)
+  const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [reseeding, startReseed] = useTransition()
   const [applied, setApplied] = useState<boolean>(status === 'applied')
   const [links, setLinks] = useState<ApplyLinks>(
     appliedSpaceId ? { profileHref: `/spaces/${appliedSpaceId}`, siteHref: `/spaces/${appliedSpaceId}` } : null,
@@ -83,6 +90,27 @@ export function ReviewBoard({
     })
   }
 
+  // Re-Seed in a different MOOD (Importer v2): re-voices the copy in the chosen mood (a cheap reframe,
+  // not a full re-research; the verified facts are untouched and edit-wins protects hand-edited prose).
+  function reseed(next: SeedMood) {
+    setMood(next)
+    setReseedMsg(null)
+    startReseed(async () => {
+      const res = await reseedBusinessImport(intakeId, next)
+      if (!res.ok) {
+        setReseedMsg({ tone: 'err', text: res.error })
+        return
+      }
+      setReseedMsg({
+        tone: 'ok',
+        text: res.revoiced
+          ? `Re-voiced in the ${SEED_MOODS.find((m) => m.key === next)?.label ?? next} mood.`
+          : 'Mood saved. Turn AI on to re-voice the copy.',
+      })
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-6">
       {/* Roll-up legend + approve */}
@@ -106,6 +134,57 @@ export function ReviewBoard({
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Mood + Re-Seed (Importer v2): pick a mood to re-voice the copy. Facts stay put; only the tone
+          changes. Available on a reviewed or applied draft (there is verified copy to re-voice). */}
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-text">
+          <Palette className="h-4 w-4 text-primary-strong" aria-hidden />
+          Mood and re-seed
+        </div>
+        <p className="mt-0.5 text-xs text-muted">
+          Re-voice the copy in a different mood. The verified facts stay exactly as they are; anything you
+          edited by hand is kept. Only the tone and calls to action shift.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {SEED_MOODS.map((m) => {
+            const active = m.key === mood
+            return (
+              <button
+                key={m.key}
+                type="button"
+                onClick={() => reseed(m.key)}
+                disabled={reseeding}
+                title={m.description}
+                aria-pressed={active}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50',
+                  active
+                    ? 'border-primary bg-primary-bg text-primary-strong'
+                    : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text',
+                )}
+              >
+                {reseeding && active ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : active ? (
+                  <Check className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                )}
+                {m.label}
+              </button>
+            )
+          })}
+        </div>
+        {reseedMsg && (
+          <p
+            className={cn('mt-2 text-xs', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
+            role="status"
+          >
+            {reseedMsg.text}
+          </p>
+        )}
       </div>
 
       {s.blocked && !applied && (

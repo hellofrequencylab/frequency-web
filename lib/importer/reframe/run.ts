@@ -20,6 +20,7 @@ import { estimateCostUsd } from '@/lib/ai/budget'
 import { recordAiUsage, featureOverBudget } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import type { BusinessProfile } from '../schema'
+import { moodToneDirective, type SeedMood } from '../moods'
 import { REFRAME_SYSTEM, REFRAME_TOOL, REFRAME_TOOL_NAME, buildGroundingBlock } from './prompt'
 import { checkVoice, voiceReason, type VoiceVerdict } from './voice-check'
 import type { ReframedCopy } from './apply'
@@ -125,11 +126,18 @@ async function callReframe(
 export async function reframe(input: {
   verified: BusinessProfile
   profileId?: string | null
+  /** The seed MOOD (Importer v2): its tone directive is folded into the voice primer so a Re-Seed
+   *  with a different mood re-voices the copy. Absent ⇒ the default (warm) tone. */
+  mood?: SeedMood
 }): Promise<ReframeRunResult | null> {
   if (!aiEnabled()) return null
   if (await featureOverBudget(REFRAME_FEATURE)) return null
 
-  const first = await callReframe(input.verified, input.profileId)
+  // The mood tone note is the base extraSystem on every call, so both the first pass AND the
+  // corrective retry stay on-mood (the corrective appends to it).
+  const moodNote = `\n\n${moodToneDirective(input.mood)}`
+
+  const first = await callReframe(input.verified, input.profileId, moodNote)
   if (!first) return null
 
   let costUsd = first.costUsd
@@ -137,9 +145,9 @@ export async function reframe(input: {
   let verdict = checkVoice(joinReframeCopy(copy))
 
   if (!verdict.ok) {
-    // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6).
+    // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6), keeping the mood tone.
     const corrective = `\n\nA previous attempt failed the voice checklist (${voiceReason(verdict)}). Rewrite it clean: plain sentences, no hype, no jargon, no em dashes, no health claims, at most one exclamation point.`
-    const second = await callReframe(input.verified, input.profileId, corrective)
+    const second = await callReframe(input.verified, input.profileId, moodNote + corrective)
     if (second) {
       costUsd += second.costUsd
       const secondVerdict = checkVoice(joinReframeCopy(second.copy))

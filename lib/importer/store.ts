@@ -145,6 +145,12 @@ export async function markApplied(id: string, targetSpaceId: string): Promise<bo
   return update(id, { target_space_id: targetSpaceId, applied_at: new Date().toISOString() })
 }
 
+/** Persist the intake INPUTS jsonb (the operator/owner front-door fields). Bound to `id`. Used by the
+ *  Re-Seed action to update the seed mood (and, later, uploaded image inputs) before re-running. */
+export async function setInputs(id: string, inputs: IntakeInputs): Promise<boolean> {
+  return update(id, { inputs })
+}
+
 /** A generic bound update (always keyed by the row id + updated_at). */
 async function update(id: string, patch: Record<string, unknown>): Promise<boolean> {
   try {

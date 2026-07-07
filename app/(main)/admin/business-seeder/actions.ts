@@ -27,9 +27,11 @@ import { after } from 'next/server'
 import { requireStaffCap } from '@/lib/staff'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createIntake, getIntake, saveDraft } from '@/lib/importer/store'
+import { createIntake, getIntake, saveDraft, setInputs } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
-import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse } from '@/lib/importer/pipeline'
+import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
+import { reframe, applyReframe } from '@/lib/importer/reframe'
+import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake } from '@/lib/importer/materialize'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
@@ -203,6 +205,8 @@ export interface BusinessImportReview {
   /** ISO timestamps for the progress UI's elapsed-time readout + freshness. */
   createdAtISO: string
   updatedAtISO: string
+  /** The seed MOOD currently on the intake (Importer v2) — drives the Re-Seed mood picker's selection. */
+  mood: SeedMood
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -224,7 +228,48 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     harvestedSources: row.rawSources.length,
     createdAtISO: row.createdAt,
     updatedAtISO: row.updatedAt,
+    mood: normalizeSeedMood(row.inputs.mood),
   }
+}
+
+// ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
+
+export type ReseedResult = { ok: true; revoiced: boolean; mood: SeedMood } | { ok: false; error: string }
+
+/**
+ * Re-Seed the reviewed draft in a different MOOD. A mood changes only the reframe TONE (not the verified
+ * FACTS), so this is a cheap RE-VOICE, not a full re-research: it persists the new mood on the intake,
+ * then reframes the already-verified draft with that mood and folds the fresh copy back. Edit-wins (P5):
+ * a prose field the operator already edited is preserved (editedProsePaths), so a mood re-voice never
+ * clobbers a hand-written line. Only from 'review' / 'applied' (there is a verified draft to re-voice);
+ * fail-safe with a plain reason. The commercial-fact gate is untouched (this only rewrites prose).
+ */
+export async function reseedBusinessImport(intakeId: string, mood: SeedMood): Promise<ReseedResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  const nextMood = normalizeSeedMood(mood)
+
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  if (row.status !== 'review' && row.status !== 'applied') {
+    return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
+  }
+
+  // Persist the chosen mood on the intake inputs (so it sticks + drives future runs).
+  await setInputs(intakeId, { ...row.inputs, mood: nextMood })
+
+  // Re-voice the persisted verified draft in the new mood. If AI is off / over budget, reframe returns
+  // null and we leave the draft unchanged (the mood is still saved for the next full run).
+  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const ledger = (row.ledger as ProvenanceLedger) ?? {}
+  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood })
+  if (!result) return { ok: true, revoiced: false, mood: nextMood }
+
+  const preserve = editedProsePaths(row.draft)
+  const folded = applyReframe(draft, result.copy, ledger, preserve)
+  const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
+  if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
+  return { ok: true, revoiced: true, mood: nextMood }
 }
 
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────
