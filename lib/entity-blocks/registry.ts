@@ -78,22 +78,33 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // lived only in the Puck editor at /spaces/[slug]/edit-page, which is not where operators actually edit).
   // Space-only authored content, rendered by their existing design components
   // (components/page-editor/blocks/design.tsx) through the entity-block id map (space-profile-modules.tsx).
-  { id: 'photoHero', label: 'Photo hero', description: 'A bold opener with a headline and an optional photo.', category: 'content', kinds: ['space'], order: 280 },
+  // `photoHero` is the CONTENT banner (the in-page hero). The STORED id stays `photoHero` for back-compat
+  // (existing pages keep rendering), but the operator-facing name is now "Banner" so it never reads like the
+  // profile "Top Page hero" (the cover). See ADR-571.
+  { id: 'photoHero', label: 'Banner', description: 'A bold in-page banner with a headline and an optional photo.', category: 'content', kinds: ['space'], order: 280 },
   { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space'], order: 282 },
   { id: 'cardGrid', label: 'Card grid', description: 'A heading over a row of cards.', category: 'content', kinds: ['space'], order: 284 },
   { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
   { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
+  // Two focused TEXT design blocks (ADR-571): a big Display heading and a Prose paragraph, each with its own
+  // text-style controls (size / weight / color / shadow) and explanatory demo copy. They give an operator a
+  // deliberate "big title" and "body text" block distinct from the plain member Heading / Text content blocks.
+  { id: 'displayHeading', label: 'Display heading', description: 'A large display title in your chosen style.', category: 'content', kinds: ['space'], order: 290 },
+  { id: 'prose', label: 'Prose', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space'], order: 292 },
 ]
 
-/** The five reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck
+/** The reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck
  *  `PhotoHero`/`EditorialSection`/… component-type names). The palette, the render id-map, the field
- *  schemas, and the per-page cap policy all read this ONE set, so the offer and the render never drift. */
+ *  schemas, and the per-page cap policy all read this ONE set, so the offer and the render never drift.
+ *  `photoHero` renders as the "Banner"; `displayHeading` + `prose` are the two text design blocks (ADR-571). */
 export const DESIGN_ENTITY_BLOCK_IDS: readonly string[] = [
   'photoHero',
   'editorial',
   'cardGrid',
   'zigzag',
   'accentBeat',
+  'displayHeading',
+  'prose',
 ]
 
 /** THE unified block catalog (data sections first, then authored content), in default order. */
@@ -150,12 +161,14 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'callout',
   'gallery',
   'features',
-  // SPACE design blocks (2026): the five reusable design sections, now offered in the rail arranger.
+  // SPACE design blocks (2026 → ADR-571): the reusable design sections, offered in the rail arranger.
   'photoHero',
   'editorial',
   'cardGrid',
   'zigzag',
   'accentBeat',
+  'displayHeading',
+  'prose',
   // Legacy authored content blocks — kept in the union for the MEMBER palette (Heading/Text/Links/Image);
   // the SPACE palette excludes them (KIND_PALETTE_EXCLUSIONS) in favour of Callout + the connected sections.
   'heading',
