@@ -345,19 +345,25 @@ export function mapEvents(profile: BusinessProfile): EventRow[] {
 // ── Layout (EntityLayout jsonb: rows + per-block content bags) ────────────────────────
 
 /** The ordered space block ids the composer will place, driven by what the draft actually has.
- *  A `layoutHint` (ordered block ids) overrides the default composition when present. */
+ *  A `layoutHint` (ordered block ids) overrides the default composition when present.
+ *
+ *  ORDER (Importer v2): business + core info leads. The hero (name/tagline/primary image) opens, then the
+ *  identity (about), then the commercial core (offerings + contact/hours), then a visual gallery, then the
+ *  softer narrative + community sections. So a visitor sees WHAT this is, WHAT it offers, and HOW to reach
+ *  it before the story — and the page always leads with substance, not filler. */
 const DEFAULT_ORDER: readonly string[] = [
-  'photoHero',
-  'about',
-  'story',
-  'offerings',
-  'booking',
+  'photoHero', // name + tagline + PRIMARY image (the hero)
+  'about', //     what this business is
+  'offerings', // what it sells (core)
+  'contact', //   how + when to reach it (core) — near the top, not buried
+  'gallery', //   the uploaded photos (visual proof)
+  'booking', //   book a time (if bookable)
+  'story', //     the longer narrative
   'events',
   'team',
-  'links',
   'reviews',
   'faq',
-  'contact',
+  'links', //     find them online
 ]
 
 /** Whether a block has content to show for this draft UNDER the policy, so the composer only places
@@ -374,6 +380,10 @@ function blockHasContent(id: string, profile: BusinessProfile, policy: Commercia
       return !!(profile.story?.trim()) && prosePublishes(policy, 'story')
     case 'offerings':
       return (profile.offerings ?? []).some((o) => o.title?.trim())
+    case 'gallery':
+      // The uploaded photos beyond the hero (Importer v2). Placed only when there is at least one
+      // ready gallery image, so an image-light seed never shows an empty gallery.
+      return (profile.media?.gallery ?? []).some((u) => isReadyMediaUrl(u))
     case 'booking':
       return (profile.availability ?? []).length > 0
     case 'events':
@@ -462,6 +472,11 @@ export function mapBlockContent(
     .map((l) => ({ label: (l.platform ?? '').trim() || (l.url ?? '').trim(), url: (l.url ?? '').trim() }))
     .filter((l) => l.url)
   if (linkItems.length) content.links = { items: linkItems }
+
+  // Gallery block: the uploaded photos beyond the hero (Importer v2). Ready public URLs only; the block's
+  // content schema is `{ images: string[] }` (block-content.ts). The hero image is NOT repeated here.
+  const galleryImages = (profile.media?.gallery ?? []).filter((u) => isReadyMediaUrl(u)).map((u) => u.trim())
+  if (galleryImages.length) content.gallery = { images: galleryImages }
 
   return content
 }

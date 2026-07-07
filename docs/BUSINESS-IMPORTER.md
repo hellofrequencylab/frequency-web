@@ -161,6 +161,19 @@ at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) res
 and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
 business is re-openable without hunting for the import.
 
+**Seed form — directions + structured content (Importer v2).** The start form takes a **Directions**
+box (a freeform steering modifier, `inputs.directions`) folded into the reframe system note so it steers
+the copy's angle + emphasis — but it can never override the trust rules (no invented facts / health
+claims). It also takes labeled **content boxes** (Overview / Website content / Booking and schedule / What
+makes them different) plus a freeform box; `composePaste` folds them into one labeled paste source the
+extractor parses, so an operator can scrape everything and drop it in. Directions flow through both the
+pipeline reframe and the Re-Seed re-voice.
+
+**Re-seed any Space — admin-only search (Importer v2).** `searchActiveSpaces(query)` (gated to platform
+admins, web_role admin/janitor) lists active non-root Spaces by name/slug; picking one calls
+`adoptSpaceMasterProfile` (idempotent) and opens its master profile in the review board. Surfaced on the
+seeder landing (`/admin/business-seeder`) only for admins.
+
 **Image designer — auto-placement (Importer v2, point 2).** `lib/importer/vision.ts` runs ONE vision
 pass over all staged images (`planSeedImages`): it classifies each (logo / hero / exterior / interior /
 team / product / food / detail), writes alt text in the Frequency voice, and scores each image's fitness

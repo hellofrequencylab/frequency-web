@@ -193,8 +193,9 @@ export async function runResearch(
     let reframeResult: ReframeRunResult | null = null
     const reframeBudget = Math.max(0, cap - budgetSpent)
     if (extractRan && reframeBudget > 0) {
-      // Steer the reframe TONE by the intake's seed MOOD (Importer v2). Absent ⇒ the default warm tone.
-      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy, mood: row.inputs.mood })
+      // Steer the reframe TONE by the intake's seed MOOD + operator DIRECTIONS (Importer v2). Absent ⇒
+      // the default warm tone and no extra steering.
+      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy, mood: row.inputs.mood, directions: row.inputs.directions })
       if (reframeResult) {
         budgetSpent += reframeResult.costUsd
         // Edit-wins (docs §5): never clobber a prose field an operator already edited in review.

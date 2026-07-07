@@ -129,15 +129,24 @@ export async function reframe(input: {
   /** The seed MOOD (Importer v2): its tone directive is folded into the voice primer so a Re-Seed
    *  with a different mood re-voices the copy. Absent ⇒ the default (warm) tone. */
   mood?: SeedMood
+  /** Operator DIRECTIONS (Importer v2): a freeform steering modifier the operator typed on the seed
+   *  form ("lead with the retreat angle", "emphasize the sound bath"). Folded into the system note so it
+   *  steers the copy, but it can never override the trust rules (no invented facts, no health claims). */
+  directions?: string
 }): Promise<ReframeRunResult | null> {
   if (!aiEnabled()) return null
   if (await featureOverBudget(REFRAME_FEATURE)) return null
 
-  // The mood tone note is the base extraSystem on every call, so both the first pass AND the
-  // corrective retry stay on-mood (the corrective appends to it).
+  // The mood tone note + the operator's directions are the base extraSystem on every call, so both the
+  // first pass AND the corrective retry stay on-mood + on-brief (the corrective appends to them).
   const moodNote = `\n\n${moodToneDirective(input.mood)}`
+  const dir = (input.directions ?? '').trim()
+  const directionsNote = dir
+    ? `\n\nThe operator gave these directions; follow them where they fit, but NEVER invent a fact, a price, or a health claim to satisfy them: ${dir.slice(0, 600)}`
+    : ''
+  const baseNote = moodNote + directionsNote
 
-  const first = await callReframe(input.verified, input.profileId, moodNote)
+  const first = await callReframe(input.verified, input.profileId, baseNote)
   if (!first) return null
 
   let costUsd = first.costUsd
@@ -147,7 +156,7 @@ export async function reframe(input: {
   if (!verdict.ok) {
     // Regenerate ONCE with a corrective nudge naming what tripped (docs §4.6), keeping the mood tone.
     const corrective = `\n\nA previous attempt failed the voice checklist (${voiceReason(verdict)}). Rewrite it clean: plain sentences, no hype, no jargon, no em dashes, no health claims, at most one exclamation point.`
-    const second = await callReframe(input.verified, input.profileId, moodNote + corrective)
+    const second = await callReframe(input.verified, input.profileId, baseNote + corrective)
     if (second) {
       costUsd += second.costUsd
       const secondVerdict = checkVoice(joinReframeCopy(second.copy))

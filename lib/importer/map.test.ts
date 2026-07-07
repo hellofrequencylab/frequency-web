@@ -190,6 +190,43 @@ describe('composeBlockOrder', () => {
   })
 })
 
+describe('composeBlockOrder / mapBlockContent — Importer v2 default order + gallery', () => {
+  const withGallery: BusinessProfile = {
+    name: 'Vista Retreat',
+    type: 'business',
+    tagline: 'Rest here',
+    about: 'A retreat property.',
+    story: 'The longer story.',
+    offerings: [{ title: 'Room' }],
+    contact: { phone: '(555) 010-2030', address: '1 Coast Hwy' },
+    media: { heroPath: 'https://cdn.example/hero.jpg', gallery: ['https://cdn.example/g1.jpg', 'https://cdn.example/g2.jpg'] },
+  }
+
+  it('leads with core info (hero → about → offerings) and puts contact before the story', () => {
+    const order = composeBlockOrder(withGallery)
+    expect(order.slice(0, 3)).toEqual(['photoHero', 'about', 'offerings'])
+    expect(order.indexOf('contact')).toBeLessThan(order.indexOf('story'))
+    expect(order).toContain('gallery')
+  })
+
+  it('emits a gallery content bag from ready media.gallery urls (hero not repeated)', () => {
+    const content = mapBlockContent(withGallery)
+    expect(content.gallery).toEqual({ images: ['https://cdn.example/g1.jpg', 'https://cdn.example/g2.jpg'] })
+    // The hero image goes on photoHero, never duplicated into the gallery.
+    expect(content.photoHero?.image).toBe('https://cdn.example/hero.jpg')
+  })
+
+  it('omits the gallery block when there are no ready gallery images', () => {
+    const noGal: BusinessProfile = { ...withGallery, media: { heroPath: 'https://cdn.example/hero.jpg' } }
+    expect(composeBlockOrder(noGal)).not.toContain('gallery')
+    expect(mapBlockContent(noGal).gallery).toBeUndefined()
+  })
+
+  it('a seeded business with real content places at least 3 blocks', () => {
+    expect(composeBlockOrder(withGallery).length).toBeGreaterThanOrEqual(3)
+  })
+})
+
 describe('mapBlockContent', () => {
   it('emits CORE content-bag keys per block (photoHero / about / story / links)', () => {
     const content = mapBlockContent(wellnessStudioFixture)
