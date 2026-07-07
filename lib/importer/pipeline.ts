@@ -1,13 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// SMART BUSINESS IMPORTER — the RESEARCH pipeline orchestrator (P1,
-// docs/BUSINESS-IMPORTER.md §6). Runs one intake through harvest -> extract -> verify and
-// writes the raw sources, the extracted+verified draft, the ledger, the running budget, and
-// the status transitions back to the business_intake row. This is the body of the durable
-// background job (./queue.ts) the process-queue cron drains.
+// SMART BUSINESS IMPORTER — the RESEARCH pipeline orchestrator (P1 + P2,
+// docs/BUSINESS-IMPORTER.md §6). Runs one intake through harvest -> extract -> verify ->
+// reframe and writes the raw sources, the extracted+verified+voiced draft, the ledger, the
+// running budget, and the status transitions back to the business_intake row. This is the
+// body of the durable background job (./queue.ts) the process-queue cron drains.
 //
 // STATUS MACHINE (docs §3.5): intake -> researching (on start) -> review (on success) with
-// failed as the recoverable side-state. Reframe (P2) + Compose (P2) then run over the
-// VERIFIED subset; Apply (P0 materializer) consumes it. This phase stops at 'review'.
+// failed as the recoverable side-state. REFRAME (P2) runs over the VERIFIED subset only (docs
+// §4.4) and tags its output kind:'generated' so the prose gate still governs it; Compose (the
+// map + materializer) and Apply (P0 materializer) consume the result. This phase stops at 'review'.
 //
 // FAIL-SAFE (docs §7): every stage degrades. A harvest that finds nothing, an extract that
 // returns null (AI off / over budget), a verify that cannot reach a model — each lands the
@@ -19,6 +20,8 @@ import type { BusinessProfile, ProvenanceLedger } from './schema'
 import { harvest, type HarvestDeps, type HarvestResult } from './harvest'
 import { extractProfile, type ExtractRunResult } from './extract'
 import { verify, type VerifyResult } from './verify'
+import { reframe, type ReframeRunResult } from './reframe/run'
+import { applyReframe } from './reframe/apply'
 import * as store from './store'
 import type { BusinessIntakeRow } from './intake'
 
@@ -34,6 +37,7 @@ export interface PipelineDeps {
   harvest?: typeof harvest
   extractProfile?: typeof extractProfile
   verify?: typeof verify
+  reframe?: typeof reframe
   harvestDeps?: HarvestDeps
 }
 
@@ -46,6 +50,46 @@ export interface ResearchOutcome {
   budgetSpent: number
   harvest?: HarvestResult['summary']
   verify?: { fieldsVerified: number; blocked: string[]; withheld: boolean }
+  /** Whether reframe ran + whether its copy passed the §10 voice check (else it is flagged amber). */
+  reframe?: { ran: boolean; voiceOk: boolean }
+}
+
+/**
+ * The field paths an operator already edited in review, so a re-reframe leaves them alone (edit-wins,
+ * docs §5). P2 reads this off a `preferences.editedFields`-style marker on the intake draft when a
+ * prior run wrote one; the full persistence of the marker is the P5 seam. Reads defensively: only a
+ * string[] under the draft's `_editedProse` key counts, else nothing is preserved. PURE.
+ *
+ * TODO(P5 — edit-wins): P5 owns writing `_editedProse` from the review board when a human edits a
+ * prose field. Until then this is an empty set on a fresh draft, so reframe writes all four fields.
+ */
+export function editedProsePaths(draft: Record<string, unknown> | undefined): ReadonlySet<string> {
+  const raw = draft?._editedProse
+  if (!Array.isArray(raw)) return new Set()
+  return new Set(raw.filter((v): v is string => typeof v === 'string'))
+}
+
+/** The top-level prose fields the edit-wins carry-forward covers (offering blurbs stay on the
+ *  verified draft already, so only the identity-level prose needs carrying). */
+const EDITABLE_PROSE_FIELDS = ['tagline', 'about', 'story'] as const
+
+/** Carry each PRESERVED prose value from the persisted under-review draft (`prior`) onto the fresh
+ *  verified draft (`onto`), so a re-reframe keeps the operator's edit instead of the freshly verified
+ *  value. Mutates `onto` in place (it is already a run-local object). Only known prose fields are
+ *  carried, and only when the prior value is a non-empty string. */
+function carryEditedProse(
+  onto: BusinessProfile,
+  prior: Record<string, unknown> | undefined,
+  preserve: ReadonlySet<string>,
+): void {
+  if (!prior) return
+  for (const field of EDITABLE_PROSE_FIELDS) {
+    if (!preserve.has(field)) continue
+    const value = prior[field]
+    if (typeof value === 'string' && value.trim()) {
+      ;(onto as unknown as Record<string, string>)[field] = value
+    }
+  }
 }
 
 /**
@@ -62,6 +106,7 @@ export async function runResearch(
   const doHarvest = deps.harvest ?? harvest
   const doExtract = deps.extractProfile ?? extractProfile
   const doVerify = deps.verify ?? verify
+  const doReframe = deps.reframe ?? reframe
 
   const row = await store.getIntake(intakeId)
   if (!row) return { ok: false, status: 'failed', note: 'intake not found', budgetSpent: 0 }
@@ -120,8 +165,28 @@ export async function runResearch(
 
     // The persisted draft is the VERIFIED subset when verify ran, else the raw extract with an
     // untouched ledger (every commercial fact then remains unverified -> withheld at apply).
-    const finalDraft = verifyResult?.verifiedDraft ?? draft
-    const finalLedger = verifyResult?.ledger ?? ledger
+    let finalDraft = verifyResult?.verifiedDraft ?? draft
+    let finalLedger = verifyResult?.ledger ?? ledger
+
+    // ── Stage 5: Reframe (sonnet + voice primer). Grounds ONLY on the VERIFIED subset (finalDraft),
+    // never the raw harvest, so it cannot launder an unverified commercial fact into prose (docs
+    // §4.4). Its output is folded back tagged kind:'generated', keeping it under the prose gate. ──
+    let reframeResult: ReframeRunResult | null = null
+    const reframeBudget = Math.max(0, cap - budgetSpent)
+    if (extractRan && reframeBudget > 0) {
+      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy })
+      if (reframeResult) {
+        budgetSpent += reframeResult.costUsd
+        // Edit-wins (docs §5): never clobber a prose field an operator already edited in review.
+        // Carry each edited prose value from the persisted (under-review) draft onto the fresh
+        // verified draft, then pass its paths as `preserve` so applyReframe leaves them alone.
+        const preserve = editedProsePaths(row.draft)
+        carryEditedProse(finalDraft, row.draft, preserve)
+        const folded = applyReframe(finalDraft, reframeResult.copy, finalLedger, preserve)
+        finalDraft = folded.draft
+        finalLedger = folded.ledger
+      }
+    }
 
     // Fold captured media into the FINAL draft (harvest already uploaded it to site-media). Media
     // is never a commercial fact, so it is not gated by verify; folding here keeps it regardless.
@@ -140,12 +205,17 @@ export async function runResearch(
     await store.setStatus(intakeId, 'review', { error: null })
 
     const withheld = verifyResult ? verifyResult.commercialPolicy === 'withhold' : true
+    const reframedNote = reframeResult
+      ? reframeResult.voice.ok
+        ? '; voiced'
+        : '; voiced (flagged for a voice edit)'
+      : ''
     return {
       ok: true,
       status: 'review',
       note: extractRan
         ? verifyResult
-          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked`
+          ? `researched; ${verifyResult.fieldsVerified} commercial field(s) checked${reframedNote}`
           : 'extracted (verify skipped: budget/AI)'
         : 'degraded to a flagged draft (extract unavailable)',
       budgetSpent,
@@ -153,6 +223,7 @@ export async function runResearch(
       verify: verifyResult
         ? { fieldsVerified: verifyResult.fieldsVerified, blocked: verifyResult.blocked, withheld }
         : undefined,
+      reframe: reframeResult ? { ran: true, voiceOk: reframeResult.voice.ok } : undefined,
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)

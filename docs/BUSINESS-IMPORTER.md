@@ -13,8 +13,10 @@
 harvest, extract, verify, ledger, staging table) ✅ shipped (ADR-574): `lib/importer/{harvest,extract,verify}/`
 + `pipeline.ts` + `store.ts` + `queue.ts`, `lib/ai/web/`, migration
 `supabase/migrations/20261022000000_business_intake.sql` (⚠️ awaiting apply by the coordinator; the draft
-`.txt` is removed). P2+ (reframe/compose, console, wizard) pending. Authority order: running code +
-`supabase/migrations/` > this doc.
+`.txt` is removed). P2 (reframe + the confirmed 3-surface compose) ✅ shipped (ADR-575):
+`lib/importer/reframe/*` + `site-compose.ts`, wired into `pipeline.ts` after verify, and `materialize.ts`
+now writes the Site (`website`) Home doc (`preferences.pageDocs.home`). P3+ (console, wizard) pending.
+Authority order: running code + `supabase/migrations/` > this doc.
 
 This spec follows [`DOCS-PROTOCOL.md`](DOCS-PROTOCOL.md) (technical → git), [`PRESENTATION.md`](PRESENTATION.md)
 (lead with the answer, tables, status legend), [`NAMING.md`](NAMING.md) + [`CONTENT-VOICE.md`](CONTENT-VOICE.md)
@@ -410,7 +412,7 @@ block-editor files owned by the concurrent effort (`components/entity-blocks/*`,
 |---|---|---|---|
 | **P0** | **Materializer core.** `applyIntake(draft)` -> seeded Space + function records + spotlight + accent, from a hand-authored `BusinessProfile`. Apply the real `business_intake` migration. | new `lib/business-import/materialize.ts`; calls `lib/spaces/provision.ts`, `lib/spaces/booking.ts`, `lib/spaces/memberships.ts`, `lib/spaces/membership.ts`, `lib/events/store.ts`, `lib/page-editor/upload-action.ts`; writes `spaces.preferences.profileLayout` (shape from `lib/entity-blocks/layout.ts`); new migration | ❌ zero AI |
 | **P1** ✅ | **Harvest + Extract + Verify + ledger.** Shipped as `lib/importer/{harvest,extract,verify}/` (the P0 code landed under `lib/importer/`, not `lib/business-import/`) + `pipeline.ts`/`store.ts`/`queue.ts`, `lib/ai/web/`; uses `lib/ai/complete.ts`, `lib/queue/outbox.ts`, `lib/queue/handlers.ts` (`business-import-research` kind), `app/api/cron/process-queue`. Migration `20261022000000_business_intake.sql` (awaiting apply). | ✅ sonnet + opus |
-| **P2** | **Reframe + Compose across the surfaces.** | new `lib/business-import/reframe.ts`, `compose.ts`, `spotlight-compose.ts`; uses `lib/ai/voice.ts`, `lib/spaces/accent.ts`, the Spotlight write actions in `app/(main)/settings/profile/spotlight-actions.ts` | ✅ sonnet |
+| **P2** ✅ | **Reframe + the confirmed 3-surface compose.** Shipped (ADR-576) as `lib/importer/reframe/*` (prompt/run/apply/voice-check) + `site-compose.ts`, wired into `pipeline.ts` after verify; `materialize.ts` now writes the Site Home Puck doc (`preferences.pageDocs.home`). Reframe grounds ONLY on the verified subset and tags its output `kind:'generated'` so the prose gate still governs it. Uses `lib/ai/voice.ts` (`withVoice`), `lib/ai/complete.ts`. | ✅ sonnet |
 | **P3** ✅ | **Operator Seeder console** (ADR-575). Landing (start form + status roll-up + intake list) + a per-import review board with field-by-field confidence (✅/⚠️/🔴), one-click provenance, marked AI copy, flagged WITHHELD commercial facts, inline edit/confirm/drop, and Approve -> Apply (unlisted demo default). | `app/(main)/admin/business-seeder/*` (page + `[id]` review board + `review-model.ts`, extends `actions.ts`); ONE row in `STUDIO_LEAVES` (`lib/nav/studio.ts`) — the operator-page nav, NOT `ADMIN_MODULES` (the scope RAIL); janitor + structure:write gated. | uses P1/P2 |
 | **P4** | **Owner Wizard.** Vera-led conversational intake writing the same `business_intake` draft. | `components/templates/wizard-shell.tsx` + `wizard-progress.tsx`; Vera via `app/onboarding/vera-actions.ts : conciergeTurn`; new owner tools in `lib/ai/vera/tools.ts` (proposal-gated) | ✅ Vera |
 | **P5** | **Polish.** Re-run diffing, confidence tuning, source manager, decay. | `demo-decay` cron; the `edited_fields` edit-wins marker; ledger tuning | tuning |

@@ -5,7 +5,9 @@
 // or update an EXISTING one by id), idempotently seed a complete "living business":
 //   • the Space row (type business/nonprofit, unlisted/draft demo posture) + owner seat,
 //   • brand accent + logo/hero (a ready public URL is stored as-is; P1 uploads bytes),
-//   • the entity-blocks LAYOUT (spaces.preferences.profileLayout jsonb) + content bags,
+//   • the entity-blocks LAYOUT (spaces.preferences.profileLayout jsonb) + content bags (the
+//     Space-profile surface) AND the Site (website) Home Puck doc (preferences.pageDocs.home,
+//     the /sites/[slug] surface) — the two layout systems the three business surfaces render from,
 //   • the central profileData (contact / hours / socials / about / offerings / rating),
 //   • the function RECORDS (availability windows, FAQ rows, event rows) via admin inserts
 //     bound to the target space_id,
@@ -34,9 +36,11 @@ import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
 import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { isSafeSlug } from '@/lib/theme/validate'
+import { withPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BusinessProfile, ProvenanceLedger } from './schema'
 import { buildPlan, type MaterializationPlan, type CommercialPolicy } from './map'
+import { composeSiteHomeDoc } from './site-compose'
 
 // ── Target + result ─────────────────────────────────────────────────────────────
 
@@ -82,7 +86,10 @@ export interface MaterializeResult {
   seeded?: {
     createdSpace: boolean
     profileData: boolean
+    /** The Space-profile block-picker grid (preferences.profileLayout). */
     layout: boolean
+    /** The Site (website) Home Puck doc (preferences.pageDocs.home). */
+    siteDoc: boolean
     availabilityWindows: number
     faqs: number
     events: number
@@ -158,7 +165,7 @@ export async function materializeBusiness(
 
   // Every step below binds to `spaceId`. Each is best-effort + idempotent; a single failure
   // does not abort the whole seed (the result reports counts so the caller/test can assert).
-  const profileDataWritten = await writeProfileDataAndLayout(spaceId, plan)
+  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy)
   const availabilityWindows = await seedAvailability(spaceId, plan)
   const faqs = await seedFaqs(spaceId, plan)
   const events = await seedEvents(spaceId, plan, ownerProfileId)
@@ -174,8 +181,9 @@ export async function materializeBusiness(
     slug: plan.identity.slug,
     seeded: {
       createdSpace,
-      profileData: profileDataWritten,
+      profileData: prefsWrite.profileData,
       layout: true,
+      siteDoc: prefsWrite.siteDoc,
       availabilityWindows,
       faqs,
       events,
@@ -306,12 +314,27 @@ async function updateSpaceIdentity(spaceId: string, plan: MaterializationPlan): 
 // ── Step 2: profileData + layout (read-modify-write of spaces.preferences) ──────────────
 
 /**
- * Write the central profileData + the profileLayout jsonb + accent onto spaces.preferences, as a
- * read-modify-write that PRESERVES every other preferences key (mode, moduleMenu, isDemo, …). The
- * layout is sanitized to space blocks (`sanitizeEntityLayout(layout,'space')`) so a bad block id or
- * content bag never persists. Bound to the space id. Returns whether profileData was written.
+ * Write the central profileData + the profileLayout jsonb + accent + the SITE Home doc onto
+ * spaces.preferences, as a read-modify-write that PRESERVES every other preferences key (mode,
+ * moduleMenu, isDemo, …). The layout is sanitized to space blocks (`sanitizeEntityLayout(layout,
+ * 'space')`) so a bad block id or content bag never persists. Bound to the space id. Returns whether
+ * profileData was written.
+ *
+ * THE 3-SURFACE compose (docs §5). One seeded Space paints three surfaces from this one write:
+ *   • Space profile (/spaces/[slug]) renders the block-picker grid -> preferences.profileLayout.
+ *   • Site (/sites/[slug]) renders a Puck doc -> preferences.pageDocs.home, filtered for 'website'.
+ *     composeSiteHomeDoc folds the reframed prose into that doc under the SAME commercial-fact
+ *     `policy`, so a withheld / generated claim is withheld on the Site too. It is written ONLY when
+ *     home has no operator-authored doc yet (edit-wins: never clobber a hand-edited Site page). The
+ *     Site stays UNPUBLISHED (websitePublished unset) until an operator flips it live (§9b).
+ *   • Spotlight is dressed separately (dressSpotlight), so each surface regenerates independently.
  */
-async function writeProfileDataAndLayout(spaceId: string, plan: MaterializationPlan): Promise<boolean> {
+async function writeProfileDataAndLayout(
+  spaceId: string,
+  plan: MaterializationPlan,
+  profile: BusinessProfile,
+  policy: CommercialPolicy,
+): Promise<{ profileData: boolean; siteDoc: boolean }> {
   const space = await getSpaceById(spaceId)
   const currentPrefs =
     space?.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
@@ -323,16 +346,36 @@ async function writeProfileDataAndLayout(spaceId: string, plan: MaterializationP
 
   // profileLayout: sanitize to the space kind, then store (or clear when nothing survives).
   const safeLayout: EntityLayout | null = sanitizeEntityLayout(plan.layout, 'space')
-  const next: Record<string, unknown> = { ...withData }
+  let next: Record<string, unknown> = { ...withData }
   if (safeLayout) next.profileLayout = safeLayout
   // (leave any existing profileLayout in place if sanitize returned null — do not wipe on a no-op)
 
+  // SITE Home doc: seed pageDocs.home only when the operator has not authored one, so a hand-edited
+  // Site page is never overwritten on a re-run (edit-wins). Uses the same commercial-fact policy, so
+  // the Site withholds the same unverified prose the profile does.
+  const hasAuthoredHome = existingHomeDoc(currentPrefs)
+  const siteDoc = !hasAuthoredHome
+  if (siteDoc) {
+    next = withPageDoc(next, HOME_SLUG, composeSiteHomeDoc(profile, policy))
+  }
+
   try {
     await adminFrom('spaces').update({ preferences: next }).eq('id', spaceId)
-    return Object.keys(plan.profileData).length > 0
+    return { profileData: Object.keys(plan.profileData).length > 0, siteDoc }
   } catch {
-    return false
+    return { profileData: false, siteDoc: false }
   }
+}
+
+/** Whether the Space already carries an operator-authored Home Puck doc at preferences.pageDocs.home
+ *  (so the seeder must not overwrite it). A legacy single-doc `preferences.puck` also counts as
+ *  operator content. PURE + total. */
+function existingHomeDoc(prefs: Record<string, unknown>): boolean {
+  const docs = prefs.pageDocs
+  if (docs && typeof docs === 'object' && !Array.isArray(docs) && (docs as Record<string, unknown>)[HOME_SLUG]) {
+    return true
+  }
+  return !!prefs.puck
 }
 
 // ── Step 3: availability windows (delete-then-insert, bound to space_id) ────────────────
