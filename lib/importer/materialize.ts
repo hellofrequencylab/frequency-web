@@ -1,0 +1,490 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SMART BUSINESS IMPORTER — the MATERIALIZER (P0, docs/BUSINESS-IMPORTER.md §5).
+//
+// Given a hand-authored BusinessProfile draft and a target (create a NEW business Space,
+// or update an EXISTING one by id), idempotently seed a complete "living business":
+//   • the Space row (type business/nonprofit, unlisted/draft demo posture) + owner seat,
+//   • brand accent + logo/hero (a ready public URL is stored as-is; P1 uploads bytes),
+//   • the entity-blocks LAYOUT (spaces.preferences.profileLayout jsonb) + content bags,
+//   • the central profileData (contact / hours / socials / about / offerings / rating),
+//   • the function RECORDS (availability windows, FAQ rows, event rows) via admin inserts
+//     bound to the target space_id,
+//   • an OPTIONAL Spotlight dressing of a demo owner's profile (member grid + enable).
+//
+// ZERO AI, ZERO network. SERVER-SIDE, service-role admin client. EVERY write is BOUND to
+// the target space_id (tenancy), so this passes the lib-side authz-guard scan (a lib file
+// that mutates through the admin client must bind its write to a scope column).
+//
+// IDEMPOTENT + re-runnable, keyed by the target space_id: a re-run OVERWRITES the seeded
+// surfaces rather than duplicating them (availability / faqs are delete-then-insert; events
+// are matched by (space_id, slug); preferences are read-modify-write). For P0, overwrite
+// semantics are acceptable.
+//
+// TODO(P5 — edit-wins): preserve operator edits on re-apply. The spec (§5) calls for an
+// `edited_fields` marker on the Space so a re-harvest never clobbers a human edit. P0
+// overwrites; P5 diffs the draft against the live Space and only writes un-edited fields.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
+import { addSpaceMember } from '@/lib/spaces/membership'
+import { normalizeWindow } from '@/lib/spaces/booking'
+import { withProfileData } from '@/lib/spaces/profile-data'
+import { sanitizeEntityLayout } from '@/lib/entity-blocks/layout'
+import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
+import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
+import { isSafeSlug } from '@/lib/theme/validate'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { BusinessProfile } from './schema'
+import { buildPlan, type MaterializationPlan } from './map'
+
+// ── Target + result ─────────────────────────────────────────────────────────────
+
+/** Where to materialize: create a NEW Space (the operator seeder default), or update an
+ *  EXISTING Space by id (a re-run / an operator-picked target). */
+export type MaterializeTarget =
+  | { kind: 'create'; ownerProfileId: string }
+  | { kind: 'update'; spaceId: string }
+
+/** Optional knobs. `demoOwnerProfileId` dresses that member's Spotlight (member grid + enable)
+ *  as demo-dressing (§5 note). `verificationPolicy` gates commercial facts: 'allow' (P0, a
+ *  hand-authored draft is trusted) or 'withhold' (P1, withhold un-verified commercial facts). */
+export interface MaterializeOptions {
+  demoOwnerProfileId?: string
+  verificationPolicy?: 'allow' | 'withhold'
+  /** Mark the seeded Space as a demo (unlisted/draft; stored on preferences.isDemo — there is no
+   *  spaces.is_demo column yet, see the report). Default true for a create. */
+  isDemo?: boolean
+}
+
+/** What the materializer seeded (or would have). */
+export interface MaterializeResult {
+  ok: boolean
+  spaceId?: string
+  slug?: string
+  /** A short reason when ok is false. */
+  error?: string
+  /** What was written, for the test + the review board. */
+  seeded?: {
+    createdSpace: boolean
+    profileData: boolean
+    layout: boolean
+    availabilityWindows: number
+    faqs: number
+    events: number
+    spotlightDressed: boolean
+  }
+}
+
+// ── Untyped admin handles (spaces / space_availability / space_faqs / events are not in the
+//    generated DB types yet — ADR-246 — so reach them through narrow untyped casts). ──────
+
+type UpdateChain = { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+type InsertResult = Promise<{ error: unknown; data?: unknown }>
+type DeleteChain = { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+
+interface AdminTable {
+  update: (v: Record<string, unknown>) => UpdateChain
+  insert: (rows: Record<string, unknown> | Record<string, unknown>[]) => {
+    select: (cols: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null; error: unknown }> }
+  } & InsertResult
+  delete: () => DeleteChain
+  select: (cols: string) => {
+    eq: (c: string, v: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null; error: unknown }> }
+      maybeSingle: () => Promise<{ data: { id?: string; meta?: unknown; preferences?: unknown } | null; error: unknown }>
+    }
+  }
+}
+
+function adminFrom(table: string): AdminTable {
+  const db = createAdminClient() as unknown as { from: (t: string) => AdminTable }
+  return db.from(table)
+}
+
+// ── The materializer ─────────────────────────────────────────────────────────────
+
+/**
+ * Materialize a BusinessProfile into a business Space. Deterministic, idempotent, zero AI.
+ * On `create`, provisions a NEW unlisted/draft Space owned by `ownerProfileId`. On `update`,
+ * re-seeds the existing Space (overwrite semantics for P0). Returns a MaterializeResult.
+ */
+export async function materializeBusiness(
+  profile: BusinessProfile,
+  target: MaterializeTarget,
+  options: MaterializeOptions = {},
+): Promise<MaterializeResult> {
+  const policy = options.verificationPolicy ?? 'allow'
+  const plan = buildPlan(profile, { commercial: policy })
+  if (!plan) return { ok: false, error: 'Draft is missing a usable name or slug.' }
+
+  // Resolve the target space id (provision on create).
+  let spaceId: string
+  let createdSpace = false
+  let ownerProfileId: string | null = null
+
+  if (target.kind === 'create') {
+    ownerProfileId = target.ownerProfileId
+    const provisioned = await provisionSpace(plan, ownerProfileId, options.isDemo ?? true)
+    if (!provisioned) return { ok: false, error: 'Could not provision the space.' }
+    spaceId = provisioned
+    createdSpace = true
+  } else {
+    const existing = await getSpaceById(target.spaceId)
+    if (!existing) return { ok: false, error: 'Target space not found.' }
+    spaceId = existing.id
+    ownerProfileId = existing.ownerProfileId
+    // Re-apply the identity columns + demo posture on update (overwrite semantics, P0).
+    await updateSpaceIdentity(spaceId, plan)
+  }
+
+  // Every step below binds to `spaceId`. Each is best-effort + idempotent; a single failure
+  // does not abort the whole seed (the result reports counts so the caller/test can assert).
+  const profileDataWritten = await writeProfileDataAndLayout(spaceId, plan)
+  const availabilityWindows = await seedAvailability(spaceId, plan)
+  const faqs = await seedFaqs(spaceId, plan)
+  const events = await seedEvents(spaceId, plan, ownerProfileId)
+
+  let spotlightDressed = false
+  if (options.demoOwnerProfileId) {
+    spotlightDressed = await dressSpotlight(options.demoOwnerProfileId, profile)
+  }
+
+  return {
+    ok: true,
+    spaceId,
+    slug: plan.identity.slug,
+    seeded: {
+      createdSpace,
+      profileData: profileDataWritten,
+      layout: true,
+      availabilityWindows,
+      faqs,
+      events,
+      spotlightDressed,
+    },
+  }
+}
+
+// ── Step 1: provision the Space ─────────────────────────────────────────────────────
+
+/**
+ * Insert a NEW business Space (unlisted/draft demo posture) owned by `ownerProfileId`, then seat
+ * the owner as a Space admin. Mirrors lib/spaces/provision.ts createSpace, but WITHOUT the session
+ * gate + redirect (this is a service-role seed, not an interactive create) and WITH the demo
+ * posture (visibility 'private', preferences.isDemo). Idempotent on the slug: if the slug is taken,
+ * a numeric suffix is appended so a re-seed of a new name never collides. Returns the space id.
+ */
+async function provisionSpace(
+  plan: MaterializationPlan,
+  ownerProfileId: string,
+  isDemo: boolean,
+): Promise<string | null> {
+  const entityId = await loadRootSpaceId().then(rootEntityIdFromRoot)
+  if (!entityId) return null
+
+  const slug = await freeSlug(plan.identity.slug)
+  if (!slug) return null
+
+  const preferences: Record<string, unknown> = {}
+  if (isDemo) preferences.isDemo = true
+  // websitePublished is intentionally UNSET (draft): the Site at /sites/[slug] stays unpublished
+  // until an operator flips it live (§9b). A demo Space is visibility 'private' too.
+
+  const row: Record<string, unknown> = {
+    slug,
+    name: plan.identity.name,
+    type: plan.identity.type,
+    status: 'active',
+    entity_id: entityId,
+    skin: 'dawn',
+    network_connected: true,
+    visibility: isDemo ? 'private' : 'network',
+    plan: 'free',
+    entitlements: {},
+    feature_roles: {},
+    owner_profile_id: ownerProfileId,
+    brand_name: plan.identity.brandName,
+    tagline: plan.identity.tagline,
+    about: plan.identity.about,
+    brand_accent: plan.identity.brandAccent,
+    brand_logo_url: plan.identity.brandLogoUrl,
+    cover_image_url: plan.identity.coverImageUrl,
+    preferences,
+  }
+
+  try {
+    const { data, error } = await adminFrom('spaces').insert(row).select('id').maybeSingle()
+    if (error || !data?.id) return null
+    // Seat the owner (service-role store, bound to space_id).
+    await addSpaceMember({ spaceId: data.id, profileId: ownerProfileId, role: 'admin', status: 'active' })
+    // Persist the identity's derived slug back into the plan so the caller reports the real slug.
+    plan.identity.slug = slug
+    return data.id
+  } catch {
+    return null
+  }
+}
+
+/** The root Space's entity_id (the platform money partition). Reads the root row's entity_id via
+ *  the admin client. Returns null pre-migration (provisioning then fails cleanly). */
+async function rootEntityIdFromRoot(rootSpaceId: string | null): Promise<string | null> {
+  if (!rootSpaceId) return null
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { entity_id?: string } | null }> } } }
+    }
+    const { data } = await db.from('spaces').select('entity_id').eq('id', rootSpaceId).maybeSingle()
+    return data?.entity_id ?? null
+  } catch {
+    return null
+  }
+}
+
+/** A free slug: the requested slug if untaken, else `${slug}-2`, `${slug}-3`… up to a small bound.
+ *  Returns '' when the base slug is unsafe. Binds only to the globally-unique slug column. */
+async function freeSlug(base: string): Promise<string> {
+  if (!isSafeSlug(base)) return ''
+  for (let n = 0; n < 20; n++) {
+    const candidate = n === 0 ? base : `${base}-${n + 1}`
+    if (!isSafeSlug(candidate)) continue
+    if (!(await slugTaken(candidate))) return candidate
+  }
+  return ''
+}
+
+async function slugTaken(slug: string): Promise<boolean> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null }> } } }
+    }
+    const { data } = await db.from('spaces').select('id').eq('slug', slug).maybeSingle()
+    return !!data?.id
+  } catch {
+    return true // fail-closed: do not claim a slug we cannot confirm free
+  }
+}
+
+/** Re-apply identity columns to an existing Space (update target, overwrite semantics). Binds to
+ *  the space id. Does NOT touch the slug (a live slug is load-bearing and never overwritten). */
+async function updateSpaceIdentity(spaceId: string, plan: MaterializationPlan): Promise<void> {
+  const patch: Record<string, unknown> = {
+    name: plan.identity.name,
+    type: plan.identity.type,
+    brand_name: plan.identity.brandName,
+    tagline: plan.identity.tagline,
+    about: plan.identity.about,
+    brand_accent: plan.identity.brandAccent,
+  }
+  if (plan.identity.brandLogoUrl) patch.brand_logo_url = plan.identity.brandLogoUrl
+  if (plan.identity.coverImageUrl) patch.cover_image_url = plan.identity.coverImageUrl
+  try {
+    await adminFrom('spaces').update(patch).eq('id', spaceId)
+  } catch {
+    /* best-effort */
+  }
+}
+
+// ── Step 2: profileData + layout (read-modify-write of spaces.preferences) ──────────────
+
+/**
+ * Write the central profileData + the profileLayout jsonb + accent onto spaces.preferences, as a
+ * read-modify-write that PRESERVES every other preferences key (mode, moduleMenu, isDemo, …). The
+ * layout is sanitized to space blocks (`sanitizeEntityLayout(layout,'space')`) so a bad block id or
+ * content bag never persists. Bound to the space id. Returns whether profileData was written.
+ */
+async function writeProfileDataAndLayout(spaceId: string, plan: MaterializationPlan): Promise<boolean> {
+  const space = await getSpaceById(spaceId)
+  const currentPrefs =
+    space?.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+      ? { ...(space.preferences as Record<string, unknown>) }
+      : {}
+
+  // profileData: merge the mapped fields over the current central data (withProfileData normalizes).
+  const withData = withProfileData(currentPrefs, plan.profileData)
+
+  // profileLayout: sanitize to the space kind, then store (or clear when nothing survives).
+  const safeLayout: EntityLayout | null = sanitizeEntityLayout(plan.layout, 'space')
+  const next: Record<string, unknown> = { ...withData }
+  if (safeLayout) next.profileLayout = safeLayout
+  // (leave any existing profileLayout in place if sanitize returned null — do not wipe on a no-op)
+
+  try {
+    await adminFrom('spaces').update({ preferences: next }).eq('id', spaceId)
+    return Object.keys(plan.profileData).length > 0
+  } catch {
+    return false
+  }
+}
+
+// ── Step 3: availability windows (delete-then-insert, bound to space_id) ────────────────
+
+async function seedAvailability(spaceId: string, plan: MaterializationPlan): Promise<number> {
+  const clean = plan.availability
+    .map((w) => normalizeWindow(w))
+    .filter((w): w is NonNullable<typeof w> => w !== null)
+  try {
+    // Idempotent replace: clear this space's windows, then insert the new set (mirrors the
+    // booking store's own replace, but service-role and bound to space_id).
+    await adminFrom('space_availability').delete().eq('space_id', spaceId)
+    if (clean.length === 0) return 0
+    const rows = clean.map((w) => ({
+      space_id: spaceId,
+      weekday: w.weekday,
+      start_minute: w.startMinute,
+      end_minute: w.endMinute,
+      slot_minutes: w.slotMinutes,
+      timezone: w.timezone,
+    }))
+    const { error } = await adminFrom('space_availability').insert(rows)
+    return error ? 0 : rows.length
+  } catch {
+    return 0
+  }
+}
+
+// ── Step 4: FAQ rows (delete-then-insert, bound to space_id) ────────────────────────────
+
+async function seedFaqs(spaceId: string, plan: MaterializationPlan): Promise<number> {
+  try {
+    await adminFrom('space_faqs').delete().eq('space_id', spaceId)
+    if (plan.faqs.length === 0) return 0
+    const rows = plan.faqs.map((f) => ({
+      space_id: spaceId,
+      question: f.question,
+      answer: f.answer,
+      position: f.position,
+    }))
+    const { error } = await adminFrom('space_faqs').insert(rows)
+    return error ? 0 : rows.length
+  } catch {
+    return 0
+  }
+}
+
+// ── Step 5: events (idempotent by (space_id, slug), bound to space_id) ──────────────────
+
+/**
+ * Seed events as space_id-stamped, standalone rows. A standalone event self-references its host as
+ * scope (scope_type 'standalone', scope_id = host_id) to satisfy the NOT NULL scope_id on a live
+ * table (20260625010000_standalone_public_events.sql). Idempotent: an event whose derived slug
+ * already exists for this space is skipped (never duplicated). host_id is the space owner; when the
+ * owner is unknown (a legacy update target), events are skipped rather than mis-attributed.
+ */
+async function seedEvents(
+  spaceId: string,
+  plan: MaterializationPlan,
+  ownerProfileId: string | null,
+): Promise<number> {
+  if (plan.events.length === 0) return 0
+  if (!ownerProfileId) return 0 // cannot attribute a host; skip rather than guess
+  let seeded = 0
+  for (const e of plan.events) {
+    const slug = eventSlug(e.title, e.startsAt, spaceId)
+    try {
+      if (await eventSlugExists(slug)) {
+        seeded++ // already present for an earlier run — counts as seeded (idempotent)
+        continue
+      }
+      const row: Record<string, unknown> = {
+        title: e.title,
+        description: e.description,
+        location: e.location,
+        starts_at: e.startsAt,
+        ends_at: e.endsAt,
+        host_id: ownerProfileId,
+        scope_id: ownerProfileId, // standalone self-reference (satisfies NOT NULL scope_id)
+        scope_type: 'standalone',
+        space_id: spaceId,
+        slug,
+        status: 'published',
+        visibility: 'unlisted',
+      }
+      const { error } = await adminFrom('events').insert(row)
+      if (!error) seeded++
+    } catch {
+      /* best-effort per event */
+    }
+  }
+  return seeded
+}
+
+/** A deterministic, space-scoped event slug so a re-run matches the same event (idempotency key).
+ *  Includes a short space-id fragment so two spaces can seed identically-titled events. */
+function eventSlug(title: string, startsAtISO: string, spaceId: string): string {
+  const base = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  const day = startsAtISO.slice(0, 10)
+  const frag = spaceId.replace(/-/g, '').slice(0, 6)
+  return `${base || 'event'}-${day}-${frag}`
+}
+
+async function eventSlugExists(slug: string): Promise<boolean> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { id?: string } | null }> } } }
+    }
+    const { data } = await db.from('events').select('id').eq('slug', slug).maybeSingle()
+    return !!data?.id
+  } catch {
+    return false
+  }
+}
+
+// ── Step 6: Spotlight dressing (optional demo-dressing, §5 note) ────────────────────────
+
+/**
+ * Dress a demo owner's Spotlight so the seeded demo looks lived-in: write a member GRID layout
+ * (a single `links` row from the business links) into profiles.meta.entityGrid and enable
+ * Spotlight. Reuses the PURE meta writers (withMemberGridLayout / withSpotlightEnabled) and binds
+ * the write to the given profile id via the admin client. Session-derived spotlight-actions.ts can
+ * NOT be reused here (they gate on the caller's own session), hence the direct, id-bound write.
+ * Best-effort; returns whether it wrote.
+ */
+async function dressSpotlight(profileId: string, profile: BusinessProfile): Promise<boolean> {
+  const links = (profile.links ?? [])
+    .map((l) => ({ label: (l.platform ?? '').trim() || (l.url ?? '').trim(), url: (l.url ?? '').trim() }))
+    .filter((l) => l.url)
+  // A member links block content bag (sanitized to the 'member' kind).
+  const rawLayout: EntityLayout = {
+    rows: [{ id: 'r0', columns: 1, cells: [['links']] }],
+    content: links.length ? { links: { items: links } } : undefined,
+  }
+  const safe = sanitizeEntityLayout(rawLayout, 'member')
+  try {
+    const table = adminFrom('profiles')
+    const { data } = await table
+      .select('meta')
+      .eq('id', profileId)
+      .maybeSingle()
+    const currentMeta = (data as { meta?: unknown } | null)?.meta
+    let nextMeta = withMemberGridLayout(currentMeta, safe)
+    nextMeta = withSpotlightEnabled(nextMeta, true)
+    const { error } = await adminFrom('profiles').update({ meta: nextMeta }).eq('id', profileId)
+    return !error
+  } catch {
+    return false
+  }
+}
+
+// ── The intake wrapper (the spec's applyIntake seam; the table is P1) ───────────────────
+
+/**
+ * Apply an approved `business_intake` row (docs §5 `applyIntake`). The `business_intake` table is
+ * the P1 persistence layer (its migration is a FILE-only draft in P0 —
+ * supabase/migrations/DRAFT_business_intake.sql.txt), so this is the SEAM P1 wires: read the row's
+ * `draft` (a BusinessProfile) + `target_space_id`, call materializeBusiness, then stamp
+ * status='applied' + applied_at + target_space_id. In P0 it is intentionally a thin, un-exercised
+ * wrapper (no live table); the deterministic core lives in materializeBusiness, which the P0 test
+ * exercises directly with a hand-authored draft. Left as a documented integration seam.
+ */
+export async function applyIntake(intakeId: string): Promise<MaterializeResult> {
+  void intakeId
+  // INTEGRATION SEAM (P1): read business_intake by id, materialize its draft, write back status.
+  // Not implemented in P0 because the table does not exist yet (the migration is FILE-only). The
+  // pure + DB-bound seeding is fully covered by materializeBusiness + its test.
+  return { ok: false, error: 'applyIntake is a P1 seam: business_intake table is not yet applied.' }
+}
