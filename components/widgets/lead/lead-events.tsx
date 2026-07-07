@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { SectionHeader } from '@/components/ui/section-header'
 import { formatEventDate } from '@/lib/utils'
 import { getEventsAdminData } from '@/app/(main)/admin/events/load-events'
+import { LeadCreatePrompt } from './lead-create-prompt'
 
 // Leadership dashboard layout module (ADR-270): "Upcoming in your circles" — the next gatherings
 // scheduled across the circles this leader hosts/stewards. Self-fetching RSC scoped to the caller
@@ -15,7 +16,20 @@ export async function LeadEvents(): Promise<React.ReactElement | null> {
 
   const eventsData = await getEventsAdminData(me.id)
   const upcoming = eventsData.upcoming
-  if (upcoming.length === 0) return null
+  // Always render (owner directive): no upcoming gathering -> a prompt to schedule one, rather than
+  // the section self-hiding.
+  if (upcoming.length === 0) {
+    return (
+      <LeadCreatePrompt
+        section="Upcoming in your circles"
+        icon={CalendarDays}
+        title="Nothing on the calendar yet"
+        description="Events are how your circles gather in person or online. Schedule one and it shows up here, with RSVPs and reminders handled for you."
+        ctaHref="/events/new"
+        ctaLabel="Create an event"
+      />
+    )
+  }
 
   return (
     <section>

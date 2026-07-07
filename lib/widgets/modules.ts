@@ -207,6 +207,8 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'lead-networks', label: 'Your networks', description: 'The hubs you guide and the nexuses you mentor.' },
   { id: 'lead-events', label: 'Upcoming events', description: 'The gatherings coming up across the circles you lead.' },
   { id: 'lead-journeys', label: 'Your Journeys', description: 'The Journeys you authored and the active runs in your circles.' },
+  { id: 'lead-spaces', label: 'Spaces you run', description: 'The Spaces you own or admin, each opening its management console. Prompts you to create one if you have none.' },
+  { id: 'lead-practices', label: 'Practices you authored', description: 'The Practices you created for the library. Prompts you to build one if you have none.' },
   { id: 'lead-coleaders', label: 'Your co-leaders', description: 'The people who help lead each of your circles, so the load is shared.' },
   { id: 'lead-dispatches', label: 'Messages & dispatches', description: 'The recent announcements and dispatches going out to your circles.' },
   { id: 'lead-recognition', label: 'People to celebrate', description: 'Members in your circles worth thanking or promoting.' },
@@ -261,21 +263,25 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
 // The generic blocks any page can carry — the default everywhere ('*').
 const COMMUNITY_MODULE_IDS = ['community-pulse', 'newest-members', 'popular-channels', 'top-circles'] as const
 
-// The Leadership dashboard (/lead) — a community leader's consolidated home for everything they
-// steward, in default render order. Each block self-fetches scoped to the caller and self-hides
-// when empty (except lead-circles, the anchor, which shows its aspirational empty state). The
-// generic community blocks are intentionally NOT here anymore: /lead is about what YOU lead, not
-// the global community. Editable order/template via the on-page Settings → Layout panel (/lead is
-// in lib/widgets/module-routes.ts).
+// The Leadership hub (/lead) — a community leader's consolidated home for everything they steward, in
+// default render order. lead-stats is the DASHBOARD header (always renders). The CREATOR areas
+// (lead-circles, lead-spaces, lead-journeys, lead-practices, lead-events) ALWAYS render too: if the
+// leader has made nothing of that type they show a meaningful create prompt (LeadCreatePrompt) instead
+// of self-hiding, so the hub reads as a complete dashboard and guides content creation. The remaining
+// blocks (attention, networks, dispatches, recognition, co-leaders) still self-hide when empty. The
+// generic community blocks are intentionally NOT here: /lead is about what YOU lead. Editable
+// order/template via the on-page Settings → Layout panel (/lead is in lib/widgets/module-routes.ts).
 const LEAD_MODULE_IDS = [
   'lead-stats',
   'lead-attention',
   'lead-circles',
-  'lead-coleaders',
-  'lead-networks',
-  'lead-events',
-  'lead-dispatches',
+  'lead-spaces',
   'lead-journeys',
+  'lead-practices',
+  'lead-events',
+  'lead-networks',
+  'lead-coleaders',
+  'lead-dispatches',
   'lead-recognition',
   'lead-tools',
 ] as const

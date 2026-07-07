@@ -109,6 +109,8 @@ import { LeadCircles } from '@/components/widgets/lead/lead-circles'
 import { LeadNetworks } from '@/components/widgets/lead/lead-networks'
 import { LeadEvents } from '@/components/widgets/lead/lead-events'
 import { LeadJourneys } from '@/components/widgets/lead/lead-journeys'
+import { LeadSpaces } from '@/components/widgets/lead/lead-spaces'
+import { LeadPractices } from '@/components/widgets/lead/lead-practices'
 import { LeadCoLeaders } from '@/components/widgets/lead/lead-coleaders'
 import { LeadDispatches } from '@/components/widgets/lead/lead-dispatches'
 import { LeadRecognition } from '@/components/widgets/lead/lead-recognition'
@@ -304,6 +306,8 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'lead-networks': LeadNetworks,
   'lead-events': LeadEvents,
   'lead-journeys': LeadJourneys,
+  'lead-spaces': LeadSpaces,
+  'lead-practices': LeadPractices,
   'lead-coleaders': LeadCoLeaders,
   'lead-dispatches': LeadDispatches,
   'lead-recognition': LeadRecognition,
