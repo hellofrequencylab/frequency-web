@@ -29,7 +29,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createIntake, getIntake, saveDraft } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
-import { runResearch } from '@/lib/importer/pipeline'
+import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse } from '@/lib/importer/pipeline'
 import { applyIntake } from '@/lib/importer/materialize'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
@@ -274,6 +274,15 @@ export async function updateImportField(
     }
   } catch {
     return { ok: false, error: 'That field path could not be updated.' }
+  }
+
+  // Edit-wins bookkeeping (P5, docs §5): record which identity-level PROSE fields the operator has
+  // committed to (edit / confirm) or cleared (drop), on a sparse `draft._editedProse` marker. A later
+  // re-research reads it (pipeline.editedProsePaths) and carries these values forward instead of
+  // overwriting them with fresh AI copy. Only the shared EDITABLE_PROSE_FIELDS set is tracked.
+  if ((EDITABLE_PROSE_FIELDS as readonly string[]).includes(path)) {
+    const bag = draft as unknown as Record<string, unknown>
+    bag._editedProse = nextEditedProse(bag._editedProse, path, action.kind)
   }
 
   const saved = await saveDraft(intakeId, { draft, ledger })

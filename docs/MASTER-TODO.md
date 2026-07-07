@@ -75,9 +75,15 @@ Audit finding: the meaningful perf work is **already shipped** — the meta-scan
   a11y tail (missing `error.tsx`/`not-found.tsx` per route group, dialog focus-trap).
 
 ### Phase 5 — Business Importer P5 polish
-- ⏳ Edit-wins re-apply: write `_editedProse` from the review board so a re-run preserves operator
-  prose edits (closes the live `TODO(P5)` in `lib/importer/pipeline.ts`).
-- ⏳ Confidence-threshold tuning · source-manager UI · demo decay.
+- ✅ **Edit-wins on RE-RESEARCH (reframe prose)**: the review board (`updateImportField`) now stamps
+  `draft._editedProse` via the pure `nextEditedProse` writer (edit/confirm add, drop removes), the
+  write-twin of the already-tested `editedProsePaths` reader. A re-research (`runResearch`) carries the
+  operator's tagline/about/story forward instead of overwriting with fresh AI copy. Closes the live
+  `TODO(P5)` in `pipeline.ts`. 4 new pure tests + a writer→reader round-trip.
+- ⏳ **Edit-wins on RE-APPLY (materializer)** — a DISTINCT, larger item still open (`TODO(P5)` in
+  `materialize.ts`): an `edited_fields` marker on the live Space so a re-apply diffs the draft against
+  the Space and only writes un-edited fields. Needs a Space-side marker + per-field write gating.
+- ⏳ Confidence-threshold tuning · source-manager UI · demo decay (feature work; own phase).
 
 ## Code — decision-gated (deferred by owner, 2026-07-07)
 - ⏳ **Importer P4 — Owner Wizard** (Vera-led conversational intake → same `business_intake` draft →

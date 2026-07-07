@@ -33,7 +33,7 @@ vi.mock('./store', () => ({
   markApplied: vi.fn(async () => true),
 }))
 
-import { runResearch, editedProsePaths } from './pipeline'
+import { runResearch, editedProsePaths, nextEditedProse } from './pipeline'
 import type { HarvestResult } from './harvest'
 import type { VerifyResult } from './verify'
 import type { ExtractRunResult } from './extract'
@@ -288,5 +288,25 @@ describe('editedProsePaths — the edit-wins marker reader', () => {
     expect(editedProsePaths({}).size).toBe(0)
     expect(editedProsePaths({ _editedProse: 'nope' }).size).toBe(0)
     expect(editedProsePaths({ _editedProse: [1, 'about'] })).toEqual(new Set(['about']))
+  })
+})
+
+describe('nextEditedProse — the edit-wins marker writer (review board)', () => {
+  it('an edit or a confirm ADDS the path (operator committed to the value)', () => {
+    expect(nextEditedProse(undefined, 'about', 'edit')).toEqual(['about'])
+    expect(nextEditedProse(['about'], 'tagline', 'confirm')).toEqual(['about', 'tagline'])
+  })
+  it('a drop REMOVES the path (cleared, a re-research may regenerate)', () => {
+    expect(nextEditedProse(['about', 'tagline'], 'about', 'drop')).toEqual(['tagline'])
+    expect(nextEditedProse(['about'], 'about', 'drop')).toEqual([])
+  })
+  it('de-dupes and sanitizes a prior marker', () => {
+    expect(nextEditedProse(['about', 'about'], 'about', 'edit')).toEqual(['about'])
+    expect(nextEditedProse([1, 'about', null], 'story', 'edit')).toEqual(['about', 'story'])
+    expect(nextEditedProse('nope', 'about', 'edit')).toEqual(['about'])
+  })
+  it('round-trips into editedProsePaths (writer feeds the reader)', () => {
+    const marker = nextEditedProse(nextEditedProse(undefined, 'about', 'edit'), 'story', 'confirm')
+    expect(editedProsePaths({ _editedProse: marker })).toEqual(new Set(['about', 'story']))
   })
 })
