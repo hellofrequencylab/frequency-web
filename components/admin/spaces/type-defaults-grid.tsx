@@ -117,7 +117,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       {r.planGated && (
                         <span
                           title="Plan tool. It turns on when a plan grants it; this only sets its lowest role."
-                          className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-[11px] font-semibold text-muted"
+                          className="inline-flex items-center rounded-full bg-surface-elevated px-1.5 py-0.5 text-xs font-semibold text-muted"
                         >
                           Plan
                         </span>
@@ -142,7 +142,7 @@ function TypeBlock({ block }: { block: TypeDefaultBlock }) {
                       checked={cur.enabled}
                       disabled={savingKey === r.key}
                       onChange={(e) => save(r.key, { ...cur, enabled: e.target.checked })}
-                      className="h-4 w-4 cursor-pointer accent-[var(--color-primary,#7a5c3a)] disabled:opacity-50"
+                      className="h-4 w-4 cursor-pointer accent-[var(--color-primary)] disabled:opacity-50"
                     />
                   </td>
                   <td className="px-2 py-3">

@@ -4,12 +4,15 @@ Make the **marketing pages** (`/`, `/the-lab`, `/how-it-works`, `/about`)
 editable visually (content, images, and section order) without touching the
 member app and without sacrificing speed.
 
-> Status: **shipped**, then **reworked into a standardized block library**
-> (ADR-055). **Puck** (open-source, self-hosted), constrained to our DAWN design
-> system. The splash (`/`) and `/about` are **code-locked** out of the editor
-> (ADR-054). `/the-lab`, `/the-community`, `/the-quest`, and `/pricing` are
-> editor-editable, each seeded from a faithful standardized-block template
-> ("editor = live"). §4 + §12 are current; the rest is original spec kept for history.
+> Status: **shipped**, then **reworked into a standardized block library** (ADR-055), then
+> **Puck was retired entirely** (ADR-493): the read path renders via the in-house `BlockRender`
+> and the editor is the in-house builder (`components/page-editor/editor.tsx`). The live editor
+> route is **`/edit/<slug>`** (under `(main)`, ADR-508), reached from the **`/pages`** workspace;
+> the old **`/studio/pages/[slug]/edit`** route in the diagram + §-references below is retired.
+> The splash (`/`) and `/about` are **code-locked** out of the editor (ADR-054). `/the-lab`,
+> `/the-community`, `/the-quest`, and `/pricing` are editor-editable, each seeded from a faithful
+> standardized-block template ("editor = live"). Treat every "Puck" / `/studio/pages` mention below
+> as historical; the block model + draft/publish flow are current.
 
 ---
 

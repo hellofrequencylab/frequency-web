@@ -179,6 +179,36 @@ export function circleListSchema(circles: PublicCircle[], listName: string) {
   }
 }
 
+// ── Circle (Organization) ─────────────────────────────────────────────────────
+// A circle is a small standing LOCAL GROUP, so it maps to schema.org/Organization
+// (the closest valid type — no "meetup group" exists). Only fields the public page
+// already loads are emitted; the member count is NEVER fabricated, and the location
+// stays CITY-LEVEL (addressLocality), same privacy contract as the rest of /discover.
+// Mirrors the inline node the circle detail page used to carry, now a tested helper
+// so it can't drift from the other entity schemas.
+export function circleSchema(c: {
+  id: string
+  name: string
+  about?: string | null
+  city?: string | null
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: c.name,
+    url: abs(`/discover/circles/${c.id}`),
+    ...(c.about ? { description: c.about } : {}),
+    ...(c.city
+      ? {
+          location: {
+            '@type': 'Place',
+            address: { '@type': 'PostalAddress', addressLocality: c.city },
+          },
+        }
+      : {}),
+  }
+}
+
 export function eventListSchema(events: PublicEvent[], listName: string) {
   return {
     '@context': 'https://schema.org',

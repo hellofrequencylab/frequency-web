@@ -1,9 +1,11 @@
+import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Hammer, Plus, Wallet, CheckCircle2 } from 'lucide-react'
+import { Hammer, Plus, Wallet, CheckCircle2, Rocket, PackageX, EyeOff, Trash2 } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { getMyProfileId } from '@/lib/auth'
 import { listMyMakerProducts } from '@/lib/commerce/products'
 import { listOrdersForSeller } from '@/lib/commerce/orders'
@@ -25,6 +27,25 @@ const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft', active: 'Live', sold_out: 'Sold out', archived: 'Archived',
 }
 
+// A compact icon-only submit control (the storefront row-actions read as a tight
+// icon cluster, not a wrap of labelled buttons). The label is the accessible name
+// AND the hover tooltip, so nothing is lost by dropping the visible text.
+function IconSubmit({ label, danger = false, children }: { label: string; danger?: boolean; children: ReactNode }) {
+  return (
+    <button
+      type="submit"
+      aria-label={label}
+      title={label}
+      className={cn(
+        'inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        danger ? 'hover:text-danger' : 'hover:text-text',
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 function ProductRow({ p }: { p: CommerceProduct }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
@@ -36,24 +57,24 @@ function ProductRow({ p }: { p: CommerceProduct }) {
           {usd(p.priceCents, p.currency)} · <span className="uppercase tracking-wide">{STATUS_LABEL[p.status] ?? p.status}</span>
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-1">
         {p.status !== 'active' && (
           <form action={setMyProductStatusAction.bind(null, p.id, 'active')}>
-            <button type="submit" className={buttonClasses('ghost', 'sm')}>Publish</button>
+            <IconSubmit label="Publish"><Rocket className="h-4 w-4" /></IconSubmit>
           </form>
         )}
         {p.status === 'active' && (
           <>
             <form action={setMyProductStatusAction.bind(null, p.id, 'sold_out')}>
-              <button type="submit" className={buttonClasses('ghost', 'sm')}>Mark sold out</button>
+              <IconSubmit label="Mark sold out"><PackageX className="h-4 w-4" /></IconSubmit>
             </form>
             <form action={setMyProductStatusAction.bind(null, p.id, 'draft')}>
-              <button type="submit" className={buttonClasses('ghost', 'sm')}>Unpublish</button>
+              <IconSubmit label="Unpublish"><EyeOff className="h-4 w-4" /></IconSubmit>
             </form>
           </>
         )}
         <form action={deleteMyProductAction.bind(null, p.id)}>
-          <button type="submit" className={buttonClasses('ghost', 'sm')}>Delete</button>
+          <IconSubmit label="Delete" danger><Trash2 className="h-4 w-4" /></IconSubmit>
         </form>
       </div>
     </div>

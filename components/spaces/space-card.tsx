@@ -3,19 +3,35 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { spaceTypeLabel } from './space-type'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 
-// The directory card for one networked entity Space — a THIN composition of the shared EntityCard
-// (ENTITY-SPACES-BUILD §A.2 D2: compose, never author). A Space reads identically to every other
-// browse grid: logo -> anchor, brand name -> title, type -> badge, tagline -> description, member
-// count -> meta. Links to the Space's profile at /spaces/<slug>.
+// The directory card for one networked entity Space — a COVER-LED composition of the shared EntityCard
+// (ENTITY-SPACES-BUILD §A.2 D2: compose, never author). A cover/banner image leads the card (falling
+// back to a calm branded gradient when the operator hasn't set one), the logo anchors beside the brand
+// name, the type is a pill, the tagline is the description, and the active member count is the footer
+// meta. Reads like a modern business-directory card and links to /spaces/<slug>.
 //
-// Tokens only, no hex (D6): the type badge + logo fallback sit on neutral DAWN surfaces. The per-
-// Space brand_accent is deliberately NOT painted here (it is decorative/unwired in Phase 0.5.14 and,
-// per D4, "the accent is a guest, not the host" — the directory canvas stays calm).
+// Tokens only, no hex (D6): the placeholder + badge + logo fallback sit on neutral DAWN surfaces. The
+// per-Space brand_accent is deliberately NOT painted here (D4: "the accent is a guest, not the host" —
+// the directory canvas stays calm). Operator-supplied images (cover + logo) are arbitrary URLs, so they
+// render via a plain <img> (like BrandMark), not next/image.
 
-// The brand anchor: the operator's logo (a plain <img>, like BrandMark — an arbitrary operator URL,
-// not a build-time asset, so it is not run through next/image), or a neutral icon chip fallback.
-// The logo is decorative (alt=""): the card title already carries the Space name, so the anchor is
-// not announced twice.
+// The full-bleed banner: the operator's cover image, or a calm DAWN gradient placeholder so a Space
+// without a cover still reads as a finished card (never a blank grey box). Decorative (alt="").
+function SpaceCover({ coverUrl }: { coverUrl: string | null }) {
+  if (coverUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- operator-supplied cover URL, not a build-time asset (matches BrandMark / logo)
+      <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+    )
+  }
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg">
+      <Building2 className="h-7 w-7 text-primary-strong/40" aria-hidden />
+    </div>
+  )
+}
+
+// The brand anchor: the operator's logo, or a neutral icon chip. Decorative (alt=""): the card title
+// already carries the Space name, so the anchor is not announced twice.
 function SpaceAnchor({ logoUrl }: { logoUrl: string | null }) {
   if (logoUrl) {
     return (
@@ -46,6 +62,8 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
   return (
     <EntityCard
       href={`/spaces/${space.slug}`}
+      cover={<SpaceCover coverUrl={space.coverUrl} />}
+      coverAspect="video"
       anchor={<SpaceAnchor logoUrl={space.logoUrl} />}
       title={space.name}
       badge={

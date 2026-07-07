@@ -7,6 +7,7 @@ import { EntityCard } from '@/components/cards/entity-card'
 import { getLedCircles } from '@/app/(main)/lead/load-led-circles'
 import { getMyPlanSummaries } from '@/lib/journey-plans'
 import { getCohortProgress } from '@/lib/journeys/runs'
+import { LeadCreatePrompt } from './lead-create-prompt'
 
 // Leadership dashboard layout module (ADR-270): "Your Journeys & runs" — the Journeys this leader
 // authored (journey_plans.author_id = me) and the active Runs going on inside the circles they lead
@@ -73,7 +74,20 @@ export async function LeadJourneys(): Promise<React.ReactElement | null> {
     })
   }
 
-  if (authored.length === 0 && activeRuns.length === 0) return null
+  // Always render (owner directive): a leader who has authored no Journey and has no active run sees a
+  // prompt to build their first one, instead of the section vanishing.
+  if (authored.length === 0 && activeRuns.length === 0) {
+    return (
+      <LeadCreatePrompt
+        section="Your Journeys"
+        icon={BookOpen}
+        title="You have not authored a Journey yet"
+        description="A Journey is a guided arc of Practices your circle moves through together over days or weeks. Build one and run it with the people you lead."
+        ctaHref="/journeys/new"
+        ctaLabel="Create a Journey"
+      />
+    )
+  }
 
   return (
     <section className="space-y-6">

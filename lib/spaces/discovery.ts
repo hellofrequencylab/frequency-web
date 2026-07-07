@@ -30,6 +30,8 @@ export interface NetworkedSpace {
   tagline: string | null
   /** Operator-supplied logo URL, or null. Rendered via a plain <img> (an arbitrary URL). */
   logoUrl: string | null
+  /** Operator-supplied cover/banner image URL (spaces.cover_image_url), or null. Leads the card. */
+  coverUrl: string | null
   /** Count of ACTIVE members of this Space (space_members), or null when omitted/unavailable. */
   memberCount: number | null
 }
@@ -63,7 +65,7 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
 // is reached through the untyped client below, so it never hits the typed-row overload. `created_at`
 // backs the "Newest" sort.
-const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, tagline, created_at'
+const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at'
 
 // `spaces.visibility` / `spaces.brand_*` aren't fully in the generated DB types, so reach the table
 // through an untyped `from` accessor (ADR-246) and type the builder loosely here — the same shape
@@ -76,6 +78,7 @@ type SpaceDiscoveryRow = {
   status: string
   brand_name: string | null
   brand_logo_url: string | null
+  cover_image_url: string | null
   tagline: string | null
   created_at: string | null
 }
@@ -209,6 +212,7 @@ export const listNetworkedSpaces = cache(
         type: normalizeSpaceType(r.type),
         tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
         logoUrl: r.brand_logo_url,
+        coverUrl: r.cover_image_url,
         memberCount: counts.get(r.id) ?? null,
       }))
 

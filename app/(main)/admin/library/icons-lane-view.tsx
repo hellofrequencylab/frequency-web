@@ -38,8 +38,8 @@ export function IconsLaneView() {
                     <span
                       className={
                         set.role === 'house'
-                          ? 'rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-on-primary'
-                          : 'rounded-full border border-border px-2 py-0.5 text-[11px] text-muted'
+                          ? 'rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-on-primary'
+                          : 'rounded-full border border-border px-2 py-0.5 text-xs text-muted'
                       }
                     >
                       {set.role === 'house' ? 'House' : 'Coverage'}
@@ -64,7 +64,7 @@ export function IconsLaneView() {
                   <Icon key={s} name={`${set.prefix}:${s}`} className="size-6" />
                 ))}
               </div>
-              <p className="mt-3 text-[11px] text-muted">
+              <p className="mt-3 text-xs text-muted">
                 by{' '}
                 <a href={set.author.url ?? '#'} target="_blank" rel="noreferrer" className="underline">
                   {set.author.name}
@@ -88,7 +88,7 @@ export function IconsLaneView() {
               <Icon name={name} className="size-5 shrink-0 text-primary" />
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-ink">{key}</p>
-                <p className="truncate text-[11px] text-muted">{name}</p>
+                <p className="truncate text-xs text-muted">{name}</p>
               </div>
             </div>
           ))}

@@ -60,8 +60,9 @@ export interface ResearchOutcome {
  * prior run wrote one; the full persistence of the marker is the P5 seam. Reads defensively: only a
  * string[] under the draft's `_editedProse` key counts, else nothing is preserved. PURE.
  *
- * TODO(P5 — edit-wins): P5 owns writing `_editedProse` from the review board when a human edits a
- * prose field. Until then this is an empty set on a fresh draft, so reframe writes all four fields.
+ * The WRITE side lives in the review board: `updateImportField` (app/(main)/admin/business-seeder/
+ * actions.ts) stamps each committed prose path onto `draft._editedProse`, so a re-research carries the
+ * operator's copy forward instead of overwriting it with fresh AI prose. This reader is the consumer.
  */
 export function editedProsePaths(draft: Record<string, unknown> | undefined): ReadonlySet<string> {
   const raw = draft?._editedProse
@@ -69,9 +70,27 @@ export function editedProsePaths(draft: Record<string, unknown> | undefined): Re
   return new Set(raw.filter((v): v is string => typeof v === 'string'))
 }
 
+/** The WRITE twin of `editedProsePaths`: the next `_editedProse` marker after one operator field action
+ *  in the review board. A commit (edit / confirm) ADDS the path (the operator vouched for this value);
+ *  a drop REMOVES it (they cleared it, so a re-research may regenerate). Sanitizes the prior value, is
+ *  order-stable, and de-dupes. PURE — the caller passes only an EDITABLE_PROSE_FIELDS path. */
+export function nextEditedProse(
+  current: unknown,
+  path: string,
+  kind: 'edit' | 'confirm' | 'drop',
+): string[] {
+  const set = new Set(
+    Array.isArray(current) ? current.filter((v): v is string => typeof v === 'string') : [],
+  )
+  if (kind === 'drop') set.delete(path)
+  else set.add(path)
+  return Array.from(set)
+}
+
 /** The top-level prose fields the edit-wins carry-forward covers (offering blurbs stay on the
- *  verified draft already, so only the identity-level prose needs carrying). */
-const EDITABLE_PROSE_FIELDS = ['tagline', 'about', 'story'] as const
+ *  verified draft already, so only the identity-level prose needs carrying). Exported so the review
+ *  board marks the SAME set it will later preserve — one source, no drift. */
+export const EDITABLE_PROSE_FIELDS = ['tagline', 'about', 'story'] as const
 
 /** Carry each PRESERVED prose value from the persisted under-review draft (`prior`) onto the fresh
  *  verified draft (`onto`), so a re-reframe keeps the operator's edit instead of the freshly verified
