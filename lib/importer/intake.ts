@@ -63,6 +63,10 @@ export interface IntakeInputs {
    *  image, retained so the review UI can show each image's role. Kept structural so this file stays
    *  dependency-free (mirrors SeedImagePlanItem in ./vision). */
   imagePlan?: { url: string; category: string; alt: string; heroScore: number }[]
+  /** Whether the HERO is LOCKED (Importer v2): when true, a re-seed freezes the hero headline (tagline)
+   *  AND the hero image, and re-voices / recomposes everything ELSE. An explicit "make primary" still
+   *  overrides it (the operator is choosing the hero on purpose). Persisted so it drives every re-seed. */
+  lockHero?: boolean
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

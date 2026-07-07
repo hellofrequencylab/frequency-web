@@ -35,6 +35,8 @@ import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
 import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
 import { planSeedImages } from '@/lib/importer/vision'
+import { withImageOrder } from '@/lib/importer/media-order'
+import type { BusinessIntakeRow } from '@/lib/importer/intake'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { buildReviewModel, type ReviewModel } from './review-model'
@@ -214,6 +216,8 @@ export interface BusinessImportReview {
   images: string[]
   /** The image designer's per-image roles (Importer v2), keyed by URL, so the panel can chip each image. */
   imagePlan: { url: string; category: string; alt: string }[]
+  /** Whether the hero is locked (Importer v2) — seeds the re-seed panel's lock toggle. */
+  lockHero: boolean
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -242,6 +246,7 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
           .filter((p): p is { url: string; category: string; alt: string; heroScore: number } => !!p && typeof p.url === 'string')
           .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
       : [],
+    lockHero: row.inputs.lockHero ?? true,
   }
 }
 
@@ -322,6 +327,9 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
 
   const saved = await setInputs(intakeId, nextInputs)
   if (!saved) return { ok: false, error: 'Uploaded, but the save failed. Try again.' }
+  // Flow the images onto the draft (hero + gallery) so they paint on the page. New uploads never hijack a
+  // locked hero; a fresh seed's first image becomes the hero.
+  await syncDraftMediaToImages(row, images, !!row.inputs.lockHero)
   return { ok: true, images }
 }
 
@@ -343,6 +351,8 @@ export async function removeSeederImage(intakeId: string, url: string): Promise<
 
   const saved = await setInputs(intakeId, { ...row.inputs, images })
   if (!saved) return { ok: false, error: 'Could not remove the image. Try again.' }
+  // Keep the draft media in step: if the removed image was the (unlocked) hero, the next image leads.
+  await syncDraftMediaToImages(row, images, !!row.inputs.lockHero)
 
   // Best-effort storage cleanup: derive the object path from the public URL and delete it.
   try {
@@ -360,6 +370,73 @@ export async function removeSeederImage(intakeId: string, url: string): Promise<
   return { ok: true, images }
 }
 
+/**
+ * Sync the DRAFT media (hero image + gallery) to an ordered image list so the images actually paint on
+ * the page (the materializer reads draft.media.heroPath for the cover + photoHero, gallery for the rest).
+ * When the Space is live, point its cover at the resolved hero too. `lockHero` freezes the current hero
+ * (a reorder/upload/arrange never moves it); an explicit "make primary" passes lockHero=false to override.
+ * Best-effort; returns the resolved hero URL. Bound to the intake id.
+ */
+async function syncDraftMediaToImages(row: BusinessIntakeRow, order: string[], lockHero: boolean): Promise<string | undefined> {
+  const draft = withImageOrder(row.draft as unknown as BusinessProfile, order, { lockHero })
+  await saveDraft(row.id, { draft, ledger: (row.ledger as ProvenanceLedger) ?? {} })
+  const heroPath = draft.media?.heroPath
+  if (row.targetSpaceId && heroPath) {
+    try {
+      const admin = createAdminClient() as unknown as {
+        from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+      }
+      await admin.from('spaces').update({ cover_image_url: heroPath }).eq('id', row.targetSpaceId)
+    } catch {
+      /* best-effort */
+    }
+  }
+  return heroPath
+}
+
+/**
+ * Make one staged image the PRIMARY (the hero + cover). An EXPLICIT operator choice, so it OVERRIDES a
+ * hero lock (they are picking the hero on purpose). Moves the URL to the front of inputs.images and writes
+ * it as draft.media.heroPath; on a live Space, repoints the cover immediately. Staff-gated + bound to the
+ * intake id.
+ */
+export async function setPrimarySeederImage(intakeId: string, url: string): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  if (!current.includes(url)) return { ok: false, error: 'That image is not staged on this import.' }
+  const images = [url, ...current.filter((u) => u !== url)]
+  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  if (!saved) return { ok: false, error: 'Could not set the primary image. Try again.' }
+  await syncDraftMediaToImages(row, images, false) // explicit choice overrides any hero lock
+  return { ok: true, images }
+}
+
+/**
+ * Reorder the staged images to `order` (a permutation of the current set; unknown URLs dropped, missing
+ * ones appended). Honours the hero lock (a reorder never moves a locked hero). Syncs the draft media so
+ * the new order flows to the page. Staff-gated + bound to the intake id.
+ */
+export async function reorderSeederImages(intakeId: string, order: string[]): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  const set = new Set(current)
+  // Keep only real staged URLs from the requested order, then append any the caller forgot (no loss).
+  const next = order.filter((u) => set.has(u))
+  for (const u of current) if (!next.includes(u)) next.push(u)
+  const saved = await setInputs(intakeId, { ...row.inputs, images: next })
+  if (!saved) return { ok: false, error: 'Could not reorder. Try again.' }
+  await syncDraftMediaToImages(row, next, !!row.inputs.lockHero)
+  return { ok: true, images: next }
+}
+
 // ── Auto-arrange images with the AI designer (Importer v2) ────────────────────────────────
 
 export type ArrangeImagesResult =
@@ -369,9 +446,9 @@ export type ArrangeImagesResult =
 /**
  * Run the vision DESIGNER over the staged images: it classifies each, writes alt text, picks the primary
  * hero, and orders the set best-first. Staff-gated + bound to the intake id. Persists the new order + the
- * per-image plan on the intake, and (when the Space is already live) pushes the chosen hero to its cover.
- * Fail-safe: when the designer is off / over budget, returns a plain reason and leaves the images as they
- * are. The image bytes are never published here; only ordering, alt text, and the cover pointer change.
+ * per-image plan, and syncs the draft media so the images paint on the page. RESPECTS the hero lock: when
+ * the hero is locked, the current hero image is kept (only the gallery is re-ordered); when unlocked, the
+ * designer's hero leads and becomes the cover. Fail-safe: designer off / over budget leaves images as-is.
  */
 export async function autoArrangeSeederImages(intakeId: string): Promise<ArrangeImagesResult> {
   await requireStaffCap('structure', 'write')
@@ -397,46 +474,34 @@ export async function autoArrangeSeederImages(intakeId: string): Promise<Arrange
   const saved = await setInputs(intakeId, nextInputs)
   if (!saved) return { ok: false, error: 'Arranged, but the save failed. Try again.' }
 
-  // Push the chosen hero to the live Space's cover when applied (the operator explicitly asked to
-  // arrange, so this OVERRIDES an existing cover — best-effort, never fails the action).
-  if (row.targetSpaceId && plan.heroUrl) {
-    try {
-      const admin = createAdminClient() as unknown as {
-        from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
-      }
-      await admin.from('spaces').update({ cover_image_url: plan.heroUrl }).eq('id', row.targetSpaceId)
-    } catch {
-      /* best-effort */
-    }
-  }
-
-  return { ok: true, order: plan.order, heroUrl: plan.heroUrl }
+  // Flow the arranged order onto the draft media + the live cover, RESPECTING the hero lock (a locked hero
+  // is not replaced by the designer's pick — only the gallery re-orders).
+  const hero = await syncDraftMediaToImages(row, plan.order, !!row.inputs.lockHero)
+  return { ok: true, order: plan.order, heroUrl: hero ?? plan.heroUrl }
 }
 
 // ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
 
-export type ReseedResult = { ok: true; revoiced: boolean; mood: SeedMood } | { ok: false; error: string }
-
-/** The identity / hero PROSE the "lock primary info & hero" toggle protects on a re-seed: when locked,
- *  re-seed re-voices ONLY the marketing blocks (offering blurbs) and leaves these untouched. */
-const PRIMARY_PROSE_PATHS = ['tagline', 'about', 'story'] as const
+export type ReseedResult =
+  | { ok: true; revoiced: boolean; reapplied: boolean; mood: SeedMood }
+  | { ok: false; error: string }
 
 /**
- * Re-Seed the reviewed draft in a different MOOD. A mood changes only the reframe TONE (not the verified
- * FACTS), so this is a cheap RE-VOICE, not a full re-research: it persists the new mood on the intake,
- * then reframes the already-verified draft with that mood and folds the fresh copy back. Edit-wins (P5):
- * a prose field the operator already edited is preserved (editedProsePaths), so a mood re-voice never
- * clobbers a hand-written line. When `lockPrimary` (the default), the identity/hero prose (tagline,
- * about, story) is ALSO preserved, so re-seed only refreshes the marketing blocks (offering blurbs) and
- * never rewrites primary business info. Only from 'review' / 'applied' (there is a verified draft to
- * re-voice); fail-safe with a plain reason. The commercial-fact gate is untouched (this only rewrites
- * prose). On an APPLIED intake the re-voiced copy is saved to the master profile; the operator pushes it
- * to the live Space with an explicit Re-apply (so a live hand-edit is never silently clobbered).
+ * RE-SEED the whole page in a mood. This regenerates EVERYTHING the master profile drives — the copy, the
+ * block layout, and the images — and re-applies it to the live Space, EXCEPT what is locked:
+ *   • `lockHero` freezes the hero HEADLINE (tagline) and the hero IMAGE (draft.media.heroPath is left as
+ *     it is, so the cover and photoHero image do not move). Everything else (about, story, offering
+ *     blurbs, layout) is re-voiced + recomposed.
+ *   • Edit-wins (P5): any prose field the operator hand-edited is preserved too (editedProsePaths).
+ * Steps: persist mood + lockHero → re-voice the verified draft (best-effort; AI off just skips the
+ * re-voice) → on an APPLIED intake, re-apply via applyIntake so the live page regenerates from the fresh
+ * draft. The commercial-fact gate is untouched (re-voice only rewrites prose). Only from 'review' /
+ * 'applied'; fail-safe with a plain reason.
  */
 export async function reseedBusinessImport(
   intakeId: string,
   mood: SeedMood,
-  lockPrimary = true,
+  lockHero = true,
 ): Promise<ReseedResult> {
   await requireStaffCap('structure', 'write')
   const operatorId = await getMyProfileId()
@@ -448,25 +513,37 @@ export async function reseedBusinessImport(
     return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
   }
 
-  // Persist the chosen mood on the intake inputs (so it sticks + drives future runs).
-  await setInputs(intakeId, { ...row.inputs, mood: nextMood })
+  // Persist the chosen mood + the hero lock so they stick and drive this + every future run.
+  await setInputs(intakeId, { ...row.inputs, mood: nextMood, lockHero })
 
-  // Re-voice the persisted verified draft in the new mood. If AI is off / over budget, reframe returns
-  // null and we leave the draft unchanged (the mood is still saved for the next full run).
+  // Re-voice the verified draft in the new mood. If AI is off / over budget, reframe returns null and the
+  // copy is left as-is (the layout/images still regenerate on re-apply below).
   const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
   const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood })
-  if (!result) return { ok: true, revoiced: false, mood: nextMood }
 
-  // Preserve set: fields the operator hand-edited, plus (when locked) the identity/hero prose. Locking
-  // the primary info is the "turn off re-seeding for main info / hero" control — only marketing blocks
-  // (offering blurbs) are re-voiced.
-  const preserve = new Set(editedProsePaths(row.draft))
-  if (lockPrimary) for (const p of PRIMARY_PROSE_PATHS) preserve.add(p)
-  const folded = applyReframe(draft, result.copy, ledger, preserve)
-  const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
-  if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
-  return { ok: true, revoiced: true, mood: nextMood }
+  let revoiced = false
+  if (result) {
+    // Preserve set: hand-edited prose always, plus the hero HEADLINE (tagline) when the hero is locked.
+    // about / story / offering blurbs are re-voiced. The hero IMAGE is protected separately (media is
+    // not touched by the re-voice).
+    const preserve = new Set(editedProsePaths(row.draft))
+    if (lockHero) preserve.add('tagline')
+    const folded = applyReframe(draft, result.copy, ledger, preserve)
+    const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
+    if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
+    revoiced = true
+  }
+
+  // Re-apply to the live Space so the WHOLE page regenerates from the fresh draft (copy + layout + hero +
+  // gallery), honouring the locks the draft already encodes. Only when the Space exists (applied).
+  let reapplied = false
+  if (row.status === 'applied' && row.targetSpaceId) {
+    const res = await applyIntake(intakeId, { ownerProfileId: operatorId ?? row.createdBy })
+    reapplied = res.ok
+  }
+
+  return { ok: true, revoiced, reapplied, mood: nextMood }
 }
 
 // ── Adopt a hand-made Space into a master profile (Importer v2) ───────────────────────────

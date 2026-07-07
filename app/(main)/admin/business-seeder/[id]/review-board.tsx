@@ -49,6 +49,7 @@ export function ReviewBoard({
   initialMood,
   initialImages,
   initialImagePlan,
+  initialLockHero,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -58,11 +59,12 @@ export function ReviewBoard({
   initialMood: SeedMood
   initialImages: string[]
   initialImagePlan: { url: string; category: string; alt: string }[]
+  initialLockHero: boolean
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
-  const [lockPrimary, setLockPrimary] = useState(true)
+  const [lockHero, setLockHero] = useState(initialLockHero)
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [reseeding, startReseed] = useTransition()
   const [applied, setApplied] = useState<boolean>(status === 'applied')
@@ -96,27 +98,29 @@ export function ReviewBoard({
     })
   }
 
-  // Re-Seed in a different MOOD (Importer v2): re-voices the copy in the chosen mood (a cheap reframe,
-  // not a full re-research; the verified facts are untouched and edit-wins protects hand-edited prose).
-  // `lockPrimary` keeps the identity/hero prose (name, tagline, about, story) untouched, so only the
-  // marketing blocks re-voice — the "turn off re-seeding for main info" control.
+  // Re-Seed (Importer v2): regenerate the whole page in the chosen mood — copy, layout, images — and
+  // re-apply it to the live Space, EXCEPT what is locked. `lockHero` freezes the hero headline + image;
+  // edit-wins protects any hand-edited prose. Verified facts are never touched.
   function reseed(next: SeedMood) {
     setMood(next)
     setReseedMsg(null)
     startReseed(async () => {
-      const res = await reseedBusinessImport(intakeId, next, lockPrimary)
+      const res = await reseedBusinessImport(intakeId, next, lockHero)
       if (!res.ok) {
         setReseedMsg({ tone: 'err', text: res.error })
         return
       }
       const label = SEED_MOODS.find((m) => m.key === next)?.label ?? next
+      const heroNote = lockHero ? ' The hero stayed locked.' : ''
       setReseedMsg({
         tone: 'ok',
         text: res.revoiced
-          ? lockPrimary
-            ? `Re-voiced the marketing blocks in the ${label} mood. Primary info and hero kept as-is.`
-            : `Re-voiced in the ${label} mood.`
-          : 'Mood saved. Turn AI on to re-voice the copy.',
+          ? res.reapplied
+            ? `Re-seeded the page in the ${label} mood and pushed it live.${heroNote}`
+            : `Re-seeded the draft in the ${label} mood.${heroNote}`
+          : res.reapplied
+            ? `Re-applied the page in the ${label} mood.${heroNote} Turn AI on to also re-voice the copy.`
+            : 'Mood saved. Turn AI on to re-voice the copy.',
       })
       router.refresh()
     })
@@ -155,8 +159,9 @@ export function ReviewBoard({
           Mood and re-seed
         </div>
         <p className="mt-0.5 text-xs text-muted">
-          Re-voice the copy in a different mood. The verified facts stay exactly as they are; anything you
-          edited by hand is kept. Only the tone and calls to action shift.
+          Pick a mood to re-seed the whole page: the copy, the layout, and the images regenerate and push
+          to the live Space. Verified facts stay put, and anything you edited by hand is kept. Lock the hero
+          below to freeze the headline and hero image while everything else refreshes.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {SEED_MOODS.map((m) => {
@@ -191,12 +196,12 @@ export function ReviewBoard({
         <label className="mt-3 flex items-center gap-2 text-xs text-muted">
           <input
             type="checkbox"
-            checked={lockPrimary}
-            onChange={(e) => setLockPrimary(e.target.checked)}
+            checked={lockHero}
+            onChange={(e) => setLockHero(e.target.checked)}
             disabled={reseeding}
             className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
           />
-          Keep primary info and hero locked (re-seed only the marketing blocks)
+          Lock the hero (freeze the headline and hero image; re-seed everything else)
         </label>
         {reseedMsg && (
           <p
