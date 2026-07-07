@@ -207,6 +207,9 @@ export interface BusinessImportReview {
   updatedAtISO: string
   /** The seed MOOD currently on the intake (Importer v2) — drives the Re-Seed mood picker's selection. */
   mood: SeedMood
+  /** Operator-uploaded seed images (public `library-media` URLs, first-is-primary), staged on the intake.
+   *  On Apply each is filed into the new Space's Loom (Importer v2). */
+  images: string[]
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -229,7 +232,109 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     createdAtISO: row.createdAt,
     updatedAtISO: row.updatedAt,
     mood: normalizeSeedMood(row.inputs.mood),
+    images: Array.isArray(row.inputs.images) ? row.inputs.images.filter((u): u is string => typeof u === 'string') : [],
   }
+}
+
+// ── Seed images (Importer v2): stage operator-uploaded images on the intake ────────────────
+
+const SEED_IMAGE_BUCKET = 'library-media'
+const SEED_IMAGE_MAX_BYTES = 20 * 1024 * 1024 // 20 MB, matching the Loom uploader ceiling
+const SEED_IMAGE_MAX = 12 // how many images one seed may stage
+
+export type SeederImagesResult = { ok: true; images: string[] } | { ok: false; error: string }
+
+/**
+ * Upload one or more images and STAGE them on the intake (inputs.images, first-is-primary order).
+ * Staff-gated (structure:write, the seeder's authority) and bound to the intake id. The files land in
+ * the `library-media` bucket under an intake-scoped prefix so a seed's staged images are namespaced;
+ * on Apply the materializer FILES each into the new Space's Loom (space-scoped), so an uploaded image
+ * and a claimed Space's own asset resolve identically. Fail-safe: partial batches still stage their
+ * successes; a bad file is skipped with the first reason surfaced. Never throws to the page.
+ */
+export async function uploadSeederImages(intakeId: string, formData: FormData): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
+  if (files.length === 0) return { ok: false, error: 'No images chosen.' }
+
+  const room = SEED_IMAGE_MAX - current.length
+  if (room <= 0) return { ok: false, error: `You can stage up to ${SEED_IMAGE_MAX} images.` }
+
+  const admin = createAdminClient()
+  const added: string[] = []
+  let firstError: string | undefined
+
+  for (const file of files.slice(0, room)) {
+    if (!file.type.startsWith('image/')) {
+      firstError ??= `${file.name || 'A file'} is not an image and was skipped.`
+      continue
+    }
+    if (file.size > SEED_IMAGE_MAX_BYTES) {
+      firstError ??= `${file.name || 'A file'} is over 20 MB and was skipped.`
+      continue
+    }
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+    const path = `intake/${intakeId}/${stamp}.${ext}`
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const { error: upErr } = await admin.storage
+      .from(SEED_IMAGE_BUCKET)
+      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+    if (upErr) {
+      firstError ??= upErr.message
+      continue
+    }
+    added.push(admin.storage.from(SEED_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl)
+  }
+
+  if (files.length > room) firstError ??= `Only ${room} more image${room === 1 ? '' : 's'} fit (max ${SEED_IMAGE_MAX}).`
+  if (added.length === 0) return { ok: false, error: firstError ?? 'No images could be uploaded.' }
+
+  const images = [...current, ...added]
+  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  if (!saved) return { ok: false, error: 'Uploaded, but the save failed. Try again.' }
+  return { ok: true, images }
+}
+
+/**
+ * Drop one staged seed image (by its public URL). Staff-gated + bound to the intake id. Best-effort
+ * removes the stored object too (it lives under the intake prefix), so a dropped image leaves no litter.
+ * Fail-safe: an unknown URL is a no-op that still returns the current list.
+ */
+export async function removeSeederImage(intakeId: string, url: string): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  const images = current.filter((u) => u !== url)
+  if (images.length === current.length) return { ok: true, images } // nothing matched
+
+  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  if (!saved) return { ok: false, error: 'Could not remove the image. Try again.' }
+
+  // Best-effort storage cleanup: derive the object path from the public URL and delete it.
+  try {
+    const marker = `/${SEED_IMAGE_BUCKET}/`
+    const at = url.indexOf(marker)
+    if (at >= 0) {
+      const path = url.slice(at + marker.length)
+      if (path.startsWith(`intake/${intakeId}/`)) {
+        await createAdminClient().storage.from(SEED_IMAGE_BUCKET).remove([path])
+      }
+    }
+  } catch {
+    /* best-effort */
+  }
+  return { ok: true, images }
 }
 
 // ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────

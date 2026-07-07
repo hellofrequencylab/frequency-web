@@ -29,6 +29,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
+import { insertSpaceLibraryImage } from '@/lib/library/store'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
@@ -572,7 +573,68 @@ export async function applyIntake(
   })
   if (!result.ok || !result.spaceId) return result
 
+  // Importer v2: FILE the operator's staged seed images into the new Space's Loom (space-scoped), so
+  // the owner has them the moment they claim / edit the Space. Best-effort: a filing miss never fails
+  // the apply. The first image also seeds the cover when the Space has none yet.
+  const seedImages = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string' && u.length > 0)
+    : []
+  if (seedImages.length > 0) await fileSeedImagesIntoLoom(result.spaceId, seedImages)
+
   await store.markApplied(intakeId, result.spaceId)
   await store.setStatus(intakeId, 'applied', { error: null })
   return result
+}
+
+// ── Seed images → the Space's Loom (Importer v2) ────────────────────────────────────────
+
+/**
+ * File each staged seed image (a public `library-media` URL) into the target Space's OWN Loom
+ * (library_assets, space-scoped) so a claimed Space carries the operator-uploaded photos as its own
+ * assets. Best-effort per image (a miss is skipped, never thrown). When the Space has no cover image
+ * yet, the FIRST image is promoted to the cover so the seeded Space is not blank. Idempotent-ish: the
+ * per-image slug carries the derived storage path, so a re-apply reuses the same Loom title, and the
+ * cover is only set when currently empty.
+ */
+async function fileSeedImagesIntoLoom(spaceId: string, images: string[]): Promise<void> {
+  for (const [i, url] of images.entries()) {
+    const path = storagePathFromPublicUrl(url)
+    const ext = (url.split('.').pop() || 'jpg').split(/[?#]/)[0].toLowerCase()
+    const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg'
+    try {
+      await insertSpaceLibraryImage({
+        spaceId,
+        title: `Seed image ${i + 1}`,
+        slug: `seed-${(path || url).replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(-80) || i}`,
+        storageBucket: 'library-media',
+        storagePath: path ?? url,
+        url,
+        mime,
+        bytes: 0,
+      })
+    } catch {
+      /* best-effort per image */
+    }
+  }
+
+  // Promote the first image to the cover when the Space has none (do not clobber a real cover).
+  try {
+    const space = await getSpaceById(spaceId)
+    if (space && !space.coverImageUrl) {
+      await adminFrom('spaces').update({ cover_image_url: images[0] }).eq('id', spaceId)
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** Derive the object path within the `library-media` bucket from its public URL, or null when the URL
+ *  is not a recognizable public storage URL for that bucket. PURE + total. */
+function storagePathFromPublicUrl(url: string): string | null {
+  const marker = '/library-media/'
+  const at = url.indexOf(marker)
+  if (at < 0) return null
+  const rest = url.slice(at + marker.length)
+  const clean = rest.split(/[?#]/)[0]
+  return clean || null
 }

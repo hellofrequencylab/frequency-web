@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { updateImportField, approveBusinessImport, reseedBusinessImport, type FieldAction } from '../actions'
 import { SEED_MOODS, type SeedMood } from '@/lib/importer/moods'
 import { SIGNAL_GLYPH, type ReviewField, type ReviewModel, type ReviewSignal } from '../review-model'
+import { SeederImages } from './seeder-images'
 
 const SIGNAL_TONE: Record<ReviewSignal, 'success' | 'warning' | 'danger'> = {
   green: 'success',
@@ -46,6 +47,7 @@ export function ReviewBoard({
   isDemo,
   appliedSpaceId,
   initialMood,
+  initialImages,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -53,6 +55,7 @@ export function ReviewBoard({
   isDemo: boolean
   appliedSpaceId: string | null
   initialMood: SeedMood
+  initialImages: string[]
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
@@ -186,6 +189,9 @@ export function ReviewBoard({
           </p>
         )}
       </div>
+
+      {/* Images (Importer v2): stage photos for the Space; filed into its Loom on Apply. */}
+      {!readOnly && <SeederImages intakeId={intakeId} initialImages={initialImages} />}
 
       {s.blocked && !applied && (
         <Banner tone="warning" title="Resolve the contradicted facts first">

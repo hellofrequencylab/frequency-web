@@ -90,6 +90,7 @@ export default async function BusinessImportReviewPage({ params }: { params: Pro
         isDemo={review.isDemo}
         appliedSpaceId={review.status === 'applied' ? review.targetSpaceId : null}
         initialMood={review.mood}
+        initialImages={review.images}
       />
     </AdminTemplate>
   )

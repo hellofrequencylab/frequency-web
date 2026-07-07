@@ -51,6 +51,10 @@ export interface IntakeInputs {
   /** The seed MOOD (Importer v2) that steers the reframe TONE. Default `warm` when unset; an operator
    *  can Re-Seed with a different mood from the review board. */
   mood?: SeedMood
+  /** Operator-uploaded images for the seed (Importer v2), as public `library-media` URLs, first-is-primary
+   *  order. Staged on the intake during review; on Apply each is FILED INTO the new Space's Loom (space
+   *  scoped) so it is available when the owner claims / edits the Space. */
+  images?: string[]
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────
