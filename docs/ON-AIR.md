@@ -81,7 +81,7 @@ practice page button      wake lock · visualizer      ② Streak    N-1 → N, 
 | Piece | Where | Notes |
 |---|---|---|
 | Route | `app/(main)/on-air/` | Focus surface; `'/on-air'` registered `'none'` in `lib/layout/page-chrome.ts` |
-| Session machine | `components/on-air/session.tsx` | setup → live → saving → reveal; wake lock + mobile fullscreen, re-acquired on visibility. The setup **selects** a practice (it does not auto-start); the primary button starts it |
+| Session machine | `components/on-air/session.tsx` | setup → live → saving → reveal; wake lock + mobile fullscreen, re-acquired on visibility. The door **auto-resolves** the practice (no picker, ADR-566); the primary button auto-starts it with the single warm-up countdown |
 | Get Moving engine | `components/on-air/movement-session.tsx` | the interval engine under the same door (`lib/movement.ts`); same crash-resume + partial-resume wiring as Be Still |
 | Crash-safe persistence | `lib/on-air/live-session.ts` (+ tests) | a running sit/run is mirrored to `localStorage` (start/pause/resume + 30s heartbeat); a reload offers a Resume prompt. See "Crash-safe persistence" below |
 | Visualizer | `components/on-air/visualizer.tsx` | RippleRings motif breathing; rAF writes transforms via refs (no React frame-rate renders); reduced-motion → opacity fade |
@@ -96,41 +96,56 @@ practice page button      wake lock · visualizer      ② Streak    N-1 → N, 
 `logPractice()` and nothing else pays. A practice already logged today still records
 a session (airtime). The reveal shows "already counted" honestly, streak intact.
 
-## Entry, selection, and resume (the final flow)
+## Entry, selection, and resume (the final flow, ADR-566)
 
-The setup **selects** a practice; it does not auto-start. Across every entry path
-(Zap menu chooser, a "Continue Practice" button, an auto-selected lone practice, a
-`/on-air?practice` link, a Journey **Practice** button), the timer lands on the
-setup with the practice pre-selected and the mode + minutes seeded, then waits for
-the member to tap the primary button.
+**There is no manual "Select practice" step.** The door **auto-resolves ONE thing to
+run** and the primary button starts it (ADR-566, owner directive 2026-07-06). Across
+every entry path (the header/Zap-menu button, a "Continue Practice" button, a
+`/on-air?practice` link, a Journey **Practice** button), the timer lands on the setup
+with the resolved practice pre-selected and the mode + minutes seeded, then waits for
+the member to tap the primary button. **Start auto-begins** with the single warm-up
+countdown (below).
 
-- **Primary button label.** `Start Practice` normally; **`Continue Practice`** when
-  the selected practice has a resumable partial today (Just Log keeps `Log it`). The
-  setup also surfaces the remaining time on a partial ("N min left. Continue Practice
-  picks up where you stopped."), and Get Moving shows the same as "Continue Practice,
-  N min left." The chooser is re-opened from a **Change** affordance; with one or zero
-  practices nothing renders (auto-selected, ADR-306).
-- **Auto-resume from the SELECTED practice's `partialToday`.** Resume is no longer
-  gated to an explicit resume link. `lib/on-air/session-data.ts` attaches each
-  practice's `partialToday` (`{ bankedSec, targetSec }`), and the engines recompute
-  the resume from whichever practice is selected. So a Zap-menu pick, the Continue
-  Practice button, and an auto-select all resume the same way: the timer runs only
-  the **remaining** time and banks only the rest. Switching to a non-partial practice
-  abandons the in-flight resume. The partial is the completion-economy partial (ADR-353):
+- **What the door resolves to** (`lib/on-air/session-data.ts` `defaultPracticeId`):
+  1. A **specific entry** (a practice page / streak box / Journey step / `?practice`
+     link) pre-selects THAT practice, opening in its routed mode.
+  2. A **generic entry** auto-defaults to the member's **adopted practice due today
+     that isn't done yet**: the first real practice (the current Journey leg when
+     enrolled, else the adopted list) with no completed log today. A partial counts as
+     "still to do" and pre-selects so the timer **resumes** the remaining time.
+  3. Once **every** adopted practice is done for the day (or the member has none), the
+     door defaults to **Free Practice** so they can keep practicing beyond the daily
+     requirement. This is the "adopted → then free" rule.
+- **Primary button label.** `Start Practice` normally; **`Continue Practice`** when the
+  resolved practice has a resumable partial today (Just Log keeps `Log it`). The setup
+  surfaces the remaining time on a partial ("N min left. Continue Practice picks up
+  where you stopped."), and Get Moving shows "Continue Practice, N min left." A "Logs
+  as {title}" read-out always shows which log Start banks. **No chooser / Change
+  affordance** (both removed).
+- **Auto-resume from the resolved practice's `partialToday`.** `lib/on-air/session-data.ts`
+  attaches each practice's `partialToday` (`{ bankedSec, targetSec }`), and the engines
+  recompute the resume from the resolved practice: the timer runs only the **remaining**
+  time and banks only the rest. The partial is the completion-economy partial (ADR-353):
   a started, banked-but-unfinished log today (`completed = false`, banked seconds with a
   larger target ahead). `getPracticeMemberState` (detail surfaces) and `getPartialMapToday`
   (index surfaces) both derive it through one `partialFromLogRow` helper in `lib/practices.ts`.
 - **The "Continue Practice" affordance.** A practice with a partial today reads
   **Continue Practice** wherever a Log/Practice button appears (practice pages, the
-  JourneyBoard, the learn player, the "Your practices" rows, the Zap-menu chooser):
+  JourneyBoard, the learn player, the "Your practices" rows):
   `components/practice/log-practice-button.tsx`, `practice-timer-button.tsx`,
   `practice-row-actions.tsx`, `practice-prompt.tsx`, `components/feed/journey-board.tsx`,
   `components/journey/v2/learn/practice-actions.tsx`. It resumes the remaining time, then
   tops the partial up to complete and pays the rest of the Zaps (ADR-353's "Finish
   Practice" top-up; the member-facing label is now "Continue Practice").
-- **Countdown rule.** Get Moving has **no** pre-roll countdown; Be Still keeps the
-  5-second "Starting in N" pre-roll on its sit modes (P14), with **Start** overriding
-  it to begin now. Just Log is an instant log (no live screen, no countdown).
+- **One countdown (ADR-566).** Every timer (Be Still AND Get Moving) uses the **same
+  single warm-up countdown**, default **5 seconds**, before the session. It is not a
+  separate competing timer: the live timer arms **paused** at zero, the "Warm up N"
+  pre-roll ticks down, then the SAME clock unpauses and runs the session (the **Start /
+  Begin now** button overrides it to begin immediately). During the countdown the full
+  target ("Settling into N min") shows **below** the timer and is **kept** when the run
+  begins. The countdown length is a member setting (3 / 5 / 10s, default 5) under
+  **Sounds & Settings** on the Be Still setup, persisted to `profiles.meta.onAir.warmupSec`
+  and read by every timer via the shared prefs. Just Log is an instant log (no countdown).
 
 ## Crash-safe persistence (recover a dropped sit/run)
 
@@ -322,6 +337,21 @@ on revisit**, by design.
   AudioContext. Tracks are a registry (`AMBIENT_TRACKS`) over `/public/tracks`;
   the choice persists in `profiles.meta.onAir` and is restored on crash-resume.
   Drop an MP3 in + one registry line to add more. See ADR-408.
+
+- ~~P18: no-picker auto-resolve + one countdown (ADR-566)~~ ✅ shipped: the manual
+  **Select practice** step + practice chooser are **removed** from both engines. The
+  door auto-resolves ONE thing to run server-side (`loadOnAirSessionData`): a generic
+  open lands on the member's **adopted practice due today that isn't done yet** (the
+  current Journey leg when enrolled, else the adopted list; a partial pre-selects to
+  resume), and once every adopted practice is done for the day it defaults to **Free
+  Practice**. The primary button (**Start Practice** / **Continue Practice**)
+  **auto-starts** with the **single warm-up countdown** shared by both engines (default
+  5s): the live timer IS the countdown (armed paused → ticks the lead-in → runs the
+  session), and the full target ("Settling into N min") shows below the timer through the
+  countdown and is kept on start. The countdown length is a member setting under
+  **Sounds & Settings** (renamed from "Sound & cues"), persisted to
+  `profiles.meta.onAir.warmupSec` and read by every timer. See "Entry, selection, and
+  resume".
 
 Metrics to watch (gamification admin): timer-start → completion rate, reveal
 swipe-through depth, share of WAM logging via On Air, D7 repeat.

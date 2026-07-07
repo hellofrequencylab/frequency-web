@@ -25,15 +25,18 @@ Open it from the **Mindless button in the header** (it opens fullscreen, taking
 over the screen wherever you are on the site), from the **Practice** button on a
 timer practice in a Journey, from the Zap button (the **Mindless** row), from your
 home screen (the little lotus next to any practice), or from a practice page.
-Mindless opens already set to the practice you picked and its length, and it
-remembers your choices for next time. When you have more than one to choose from,
-hit **Change** to switch. Pick three things:
+Mindless opens already set to the right practice and its length, and it remembers
+your choices for next time. There is nothing to pick: it lands on today's practice
+when you have one to do, and on **Free Practice** once you've done it (or if you
+haven't adopted anything yet), so you can keep going as long as you like. You still
+get a say over how you do it:
 
-- **A practice.** Always there is **Free Practice**, so you can tune out any time
-  even before you adopt anything. Once you join a Journey, the practices for the
-  part you're on show up here too. Pick the one you're doing, or Free Practice.
-- **A mode: Be Still or Get Moving.** Pick a practice and Mindless opens in the
-  mode that fits it. You can switch.
+- **The practice is chosen for you.** If you have a practice due today, Mindless
+  opens on it so a tap starts it, banking the right log with the right length. Once
+  today's practice is done, it opens on **Free Practice** so you can tune out any
+  time you want. A "Logs as" line shows exactly which log you're banking.
+- **A mode: Be Still or Get Moving.** Mindless opens in the mode that fits the
+  practice. You can switch.
   - **Be Still** is for sitting. *Meditate*, *Stillness*, and *Ritual* are quiet
     countdowns that frame the sit a little differently. *Breathe* gives you a
     guided breathing pattern with a visual to follow (see the patterns below).
@@ -51,11 +54,13 @@ hit **Change** to switch. Pick three things:
   you can change it. Two is enough. Five is plenty. Use the stepper for anything
   up to a hundred and twenty.
 
-Then hit **Start Practice**. In Be Still a short **five-second countdown** starts
-you off (tap **Start** to begin right away); Get Moving starts on your cue, no
-countdown. While you're tuned out the screen stays awake and everything else gets
-out of the way. **Pause** if life interrupts (paused time doesn't count), and when
-the timer runs out, hit **Finish** to collect.
+Then hit **Start Practice**. A short **five-second countdown** settles you in first,
+the same for Be Still and Get Moving, with the length you're about to do shown right
+below it (tap **Begin now** to start right away). It's the same timer counting the
+lead-in and then your session. You can set the countdown to three, five, or ten
+seconds under **Sounds & Settings**. While you're tuned out the screen stays awake
+and everything else gets out of the way. **Pause** if life interrupts (paused time
+doesn't count), and when the timer runs out, hit **Finish** to collect.
 
 Stop early and it still counts, as long as you got at least **halfway**: the day
 is logged, your streak holds, and you bank **one Zap** right then. The practice
@@ -87,7 +92,7 @@ voice: Soft, Low, or Bowl. Or turn on **vibration**. Both stay off unless you
 choose them, and your choices are remembered. While you breathe, the number in
 the middle of the rings counts each phase down with you.
 
-Want a soft background instead of silence? Under **Sound & cues**, pick an
+Want a soft background instead of silence? Under **Sounds & Settings**, pick an
 **Ambient** loop: Forest, Ocean, or Drift. Tap one to hear it, and it plays low
 under the whole sit, fading in as you start and out when you finish. Off by
 default, and remembered once you choose.
