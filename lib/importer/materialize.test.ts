@@ -133,7 +133,19 @@ vi.mock('@/lib/spaces/membership', () => ({
   },
 }))
 
-import { materializeBusiness } from './materialize'
+// The business_intake store is mocked so applyIntake reads a controllable row; materializeBusiness
+// still runs FOR REAL against the in-memory admin harness above, so we assert the true DB writes.
+const intakeStore = vi.hoisted(() => ({ row: null as Record<string, unknown> | null, applied: [] as string[] }))
+vi.mock('./store', () => ({
+  getIntake: async () => intakeStore.row,
+  markApplied: async (id: string) => {
+    intakeStore.applied.push(id)
+    return true
+  },
+  setStatus: async () => true,
+}))
+
+import { materializeBusiness, applyIntake } from './materialize'
 import { wellnessStudioFixture } from './fixtures/wellness-studio'
 
 beforeEach(() => {
@@ -142,7 +154,7 @@ beforeEach(() => {
 
 describe('materializeBusiness — create', () => {
   it('provisions a draft/unlisted business Space and seats the owner', async () => {
-    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     expect(res.ok).toBe(true)
     expect(res.seeded?.createdSpace).toBe(true)
 
@@ -164,7 +176,7 @@ describe('materializeBusiness — create', () => {
   })
 
   it('writes profileData (contact/hours/socials/offerings/rating) and a profileLayout', async () => {
-    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
     const prefs = space.preferences as Record<string, unknown>
     const profileData = prefs.profileData as Record<string, unknown>
@@ -183,7 +195,7 @@ describe('materializeBusiness — create', () => {
   })
 
   it('seeds availability windows, faqs, and events bound to the space_id', async () => {
-    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     expect(res.seeded?.availabilityWindows).toBe(2)
     expect(res.seeded?.faqs).toBe(2)
     expect(res.seeded?.events).toBe(1)
@@ -207,8 +219,8 @@ describe('materializeBusiness — create', () => {
   })
 
   it('appends a numeric suffix when the slug is already taken', async () => {
-    const first = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
-    const second = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const first = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
+    const second = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     expect(first.slug).toBe('still-water-wellness')
     expect(second.slug).toBe('still-water-wellness-2')
   })
@@ -216,7 +228,7 @@ describe('materializeBusiness — create', () => {
 
 describe('materializeBusiness — idempotent re-run (update)', () => {
   it('re-applies onto the same Space without duplicating records', async () => {
-    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const created = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     const spaceId = created.spaceId!
 
     const availAfterCreate = H.tables.space_availability.length
@@ -227,7 +239,7 @@ describe('materializeBusiness — idempotent re-run (update)', () => {
     expect(eventsAfterCreate).toBe(1)
 
     // Re-run against the SAME space (update target).
-    const rerun = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId })
+    const rerun = await materializeBusiness(wellnessStudioFixture, { kind: 'update', spaceId }, { verificationPolicy: 'allow' })
     expect(rerun.ok).toBe(true)
     expect(rerun.spaceId).toBe(spaceId)
 
@@ -260,7 +272,114 @@ describe('materializeBusiness — Spotlight demo dressing (optional)', () => {
   })
 
   it('does not dress Spotlight when no demo owner is given', async () => {
-    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' }, { verificationPolicy: 'allow' })
     expect(res.seeded?.spotlightDressed).toBe(false)
+  })
+})
+
+// ── Commercial-fact gate: the materializer as an INDEPENDENT second gate (findings #3, #4) ──
+
+describe('materializeBusiness — fail-closed default + ledger gate', () => {
+  // REGRESSION (finding #4): with NO verificationPolicy and NO ledger, the default is 'withhold',
+  // so a direct call that forgets the flag cannot leak a commercial fact.
+  it('defaults to WITHHOLD when neither policy nor ledger is given', async () => {
+    const res = await materializeBusiness(wellnessStudioFixture, { kind: 'create', ownerProfileId: 'owner-1' })
+    const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
+    const profileData = (space.preferences as Record<string, unknown>).profileData as Record<string, unknown>
+    expect(profileData.phone).toBeUndefined()
+    expect(profileData.address).toBeUndefined()
+    expect(profileData.hours).toBeUndefined()
+    expect(profileData.rating).toBeUndefined()
+    // offering prices (and their priceModel/currency) are withheld too.
+    for (const o of profileData.offerings as Record<string, unknown>[]) {
+      expect(o.price).toBeUndefined()
+      expect(o.priceModel).toBeUndefined()
+      expect(o.currency).toBeUndefined()
+    }
+  })
+
+  // REGRESSION (finding #3): a LEDGER drives a per-field re-derivation, independent of splitVerified.
+  // A verified fact publishes (the verified path is alive); an uncleared fact on the same ledger is
+  // withheld, even though the caller passed no coarse 'withhold' flag.
+  it('publishes only the verified fields from the ledger (verified path revived)', async () => {
+    const ledger = {
+      'contact.phone': [{ kind: 'fact' as const, confidence: 0.9, verifiedBy: 'auto' as const, snippet: '(503) 555-0142' }],
+      // address is inferred (never verified) -> withheld even though the draft carries it
+      'contact.address': [{ kind: 'inferred' as const, confidence: 0.4 }],
+      'offerings[0].price': [{ kind: 'fact' as const, confidence: 0.9, verifiedBy: 'auto' as const, snippet: '22' }],
+    }
+    const res = await materializeBusiness(
+      wellnessStudioFixture,
+      { kind: 'create', ownerProfileId: 'owner-1' },
+      { ledger },
+    )
+    const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
+    const profileData = (space.preferences as Record<string, unknown>).profileData as Record<string, unknown>
+    expect(profileData.phone).toBe('(503) 555-0142') // verified -> published
+    expect(profileData.address).toBeUndefined() //        uncleared -> withheld
+    const offerings = profileData.offerings as Record<string, unknown>[]
+    expect(offerings[0].price).toBe(22) // verified offering price -> published
+    expect(offerings[1].price).toBeUndefined() // no ledger entry -> withheld
+  })
+
+  // The ledger overrides an explicit verificationPolicy (per-field re-derivation is stronger).
+  it('lets the ledger override a coarse verificationPolicy', async () => {
+    const ledger = {
+      'contact.phone': [{ kind: 'fact' as const, confidence: 0.9, verifiedBy: 'auto' as const, snippet: '(503) 555-0142' }],
+    }
+    const res = await materializeBusiness(
+      wellnessStudioFixture,
+      { kind: 'create', ownerProfileId: 'owner-1' },
+      { verificationPolicy: 'allow', ledger },
+    )
+    const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
+    const profileData = (space.preferences as Record<string, unknown>).profileData as Record<string, unknown>
+    expect(profileData.phone).toBe('(503) 555-0142') // verified
+    expect(profileData.address).toBeUndefined() //        not in ledger -> withheld (ledger wins over allow)
+  })
+})
+
+// ── applyIntake: reads the row's LEDGER and materializes with a per-field gate (findings #3/#4) ──
+
+describe('applyIntake — ledger-driven per-field gate end to end', () => {
+  it('publishes a verified fact and withholds an uncleared one from the same intake ledger', async () => {
+    intakeStore.row = {
+      id: 'intake-1',
+      createdBy: 'owner-1',
+      status: 'review',
+      inputs: { consent: { isDemo: true } },
+      draft: {
+        name: 'Ledger Cafe',
+        type: 'business',
+        contact: { address: '9 Verified Way', phone: '555-0000' },
+        offerings: [{ title: 'Latte', price: 5, currency: 'USD', priceModel: 'fixed' }],
+      },
+      ledger: {
+        'contact.address': [{ kind: 'fact', confidence: 0.9, verifiedBy: 'auto', snippet: '9 Verified Way' }],
+        // phone + the offering price are NOT verified -> must be withheld
+        'contact.phone': [{ kind: 'inferred', confidence: 0.4 }],
+        'offerings[0].price': [{ kind: 'generated', confidence: 0.3 }],
+      },
+      targetSpaceId: null,
+    }
+    const res = await applyIntake('intake-1')
+    expect(res.ok).toBe(true)
+    const space = H.tables.spaces.find((s) => s.id === res.spaceId)!
+    const profileData = (space.preferences as Record<string, unknown>).profileData as Record<string, unknown>
+    expect(profileData.address).toBe('9 Verified Way') // verified -> published (verified path alive)
+    expect(profileData.phone).toBeUndefined() //           uncleared -> withheld
+    const offerings = profileData.offerings as Record<string, unknown>[]
+    expect(offerings[0].price).toBeUndefined() //          unverified price -> withheld
+    expect(offerings[0].priceModel).toBeUndefined() //     ...and its priceModel/currency too (#1)
+    expect(offerings[0].currency).toBeUndefined()
+    expect(offerings[0].title).toBe('Latte') // non-commercial survives
+    expect(intakeStore.applied).toContain('intake-1')
+  })
+
+  it('refuses to apply from a mid-research status', async () => {
+    intakeStore.row = { id: 'x', createdBy: 'owner-1', status: 'researching', inputs: {}, draft: { name: 'X' }, ledger: {}, targetSpaceId: null }
+    const res = await applyIntake('x')
+    expect(res.ok).toBe(false)
+    expect(res.error).toMatch(/not ready to apply/i)
   })
 })

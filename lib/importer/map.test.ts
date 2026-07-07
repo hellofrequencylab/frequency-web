@@ -10,7 +10,11 @@ import {
   composeLayout,
   buildPlan,
   isReadyMediaUrl,
+  commercialFieldClears,
+  prosePublishes,
+  type CommercialPolicy,
 } from './map'
+import type { ProvenanceLedger } from './schema'
 import { sanitizeEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import type { BusinessProfile } from './schema'
 import { wellnessStudioFixture } from './fixtures/wellness-studio'
@@ -77,7 +81,7 @@ describe('mapIdentity', () => {
 
 describe('mapProfileData', () => {
   it('maps contact / hours / socials / offerings / rating (allow policy)', () => {
-    const data = mapProfileData(wellnessStudioFixture, { commercial: 'allow' })
+    const data = mapProfileData(wellnessStudioFixture, 'allow')
     expect(data.address).toContain('Elm Street')
     expect(data.phone).toBe('(503) 555-0142')
     expect(data.email).toBe('hello@stillwater.example')
@@ -94,7 +98,7 @@ describe('mapProfileData', () => {
   })
 
   it('WITHHOLDS commercial facts under the gate policy (address/phone/email/hours/rating/price)', () => {
-    const data = mapProfileData(wellnessStudioFixture, { commercial: 'withhold' })
+    const data = mapProfileData(wellnessStudioFixture, 'withhold')
     // Commercial facts are withheld...
     expect(data.address).toBeUndefined()
     expect(data.phone).toBeUndefined()
@@ -107,6 +111,44 @@ describe('mapProfileData', () => {
     expect(data.offerings?.length).toBe(3)
     expect(data.offerings?.every((o) => o.price === undefined)).toBe(true)
     expect(data.offerings?.[0].title).toBe('Drop-in class')
+  })
+
+  // REGRESSION (finding #1): priceModel + currency are commercial claims too ("Free", "From $95"),
+  // so under withhold they must be stripped ALONGSIDE price, not survive it.
+  it('withholds an offering priceModel + currency together with the price', () => {
+    const profile = {
+      name: 'Spa',
+      type: 'business' as const,
+      offerings: [{ title: 'Massage', price: 95, currency: 'USD', priceModel: 'from' as const, durationMinutes: 60 }],
+    }
+    const withheld = mapProfileData(profile, 'withhold').offerings?.[0]
+    expect(withheld?.price).toBeUndefined()
+    expect(withheld?.priceModel).toBeUndefined()
+    expect(withheld?.currency).toBeUndefined()
+    // The non-commercial title + duration survive.
+    expect(withheld?.title).toBe('Massage')
+    expect(withheld?.durationMinutes).toBe(60)
+    // Under allow, all three publish.
+    const allowed = mapProfileData(profile, 'allow').offerings?.[0]
+    expect(allowed).toMatchObject({ price: 95, currency: 'USD', priceModel: 'from' })
+  })
+
+  // REGRESSION (finding #3): the map is an INDEPENDENT per-field ledger gate. A verified fact
+  // publishes; an uncleared fact on the SAME ledger is withheld, even though the flag is not 'withhold'.
+  it('re-derives per field from a ledger: verified publishes, uncleared is withheld', () => {
+    const profile = {
+      name: 'Cafe',
+      type: 'business' as const,
+      contact: { address: '123 Main St', phone: '555-1212' },
+    }
+    const ledger = {
+      'contact.address': [{ kind: 'fact' as const, confidence: 0.9, verifiedBy: 'auto' as const, snippet: '123 Main St' }],
+      // phone entry is inferred (never verified) -> must be withheld
+      'contact.phone': [{ kind: 'inferred' as const, confidence: 0.4 }],
+    }
+    const data = mapProfileData(profile, { mode: 'ledger', ledger })
+    expect(data.address).toBe('123 Main St') // verified -> published (verified path is alive)
+    expect(data.phone).toBeUndefined() //        uncleared -> withheld
   })
 
   it('drops unknown social platforms', () => {
@@ -227,5 +269,93 @@ describe('buildPlan', () => {
     expect(plan!.events).toEqual([]) // all three events are malformed
     expect(plan!.faqs.map((f) => f.question)).toEqual(['Real?'])
     expect(plan!.profileData.offerings?.map((o) => o.title)).toEqual(['Real service'])
+  })
+})
+
+// ── Commercial-fact gate (docs §4.3): the map as an INDEPENDENT second gate ─────────────
+
+describe('commercialFieldClears — the per-field gate', () => {
+  const cleared: ProvenanceLedger = {
+    'contact.address': [{ kind: 'fact', confidence: 0.9, verifiedBy: 'auto', snippet: '123 Main' }],
+  }
+  it('allow clears everything; withhold clears nothing', () => {
+    expect(commercialFieldClears('allow', 'contact.address')).toBe(true)
+    expect(commercialFieldClears('withhold', 'contact.address')).toBe(false)
+  })
+  it('a ledger clears only a verified fact', () => {
+    expect(commercialFieldClears({ mode: 'ledger', ledger: cleared }, 'contact.address')).toBe(true)
+    // An inferred entry never clears.
+    const inferred: ProvenanceLedger = { 'contact.phone': [{ kind: 'inferred', confidence: 0.9 }] }
+    expect(commercialFieldClears({ mode: 'ledger', ledger: inferred }, 'contact.phone')).toBe(false)
+    // A fact WITHOUT verifiedBy never clears.
+    const unverified: ProvenanceLedger = { 'rating': [{ kind: 'fact', confidence: 0.9 }] }
+    expect(commercialFieldClears({ mode: 'ledger', ledger: unverified }, 'rating')).toBe(false)
+    // A field the ledger never mentions is withheld (fail-closed).
+    expect(commercialFieldClears({ mode: 'ledger', ledger: cleared }, 'contact.phone')).toBe(false)
+  })
+})
+
+describe('prosePublishes — generated prose is review-required (finding #2)', () => {
+  it('allow publishes all prose; withhold publishes none', () => {
+    expect(prosePublishes('allow', 'about')).toBe(true)
+    expect(prosePublishes('withhold', 'about')).toBe(false)
+  })
+  it('under a ledger, generated/inferred prose is WITHHELD but a verified fact publishes', () => {
+    const generated: ProvenanceLedger = { about: [{ kind: 'generated', confidence: 0.6 }] }
+    expect(prosePublishes({ mode: 'ledger', ledger: generated }, 'about')).toBe(false)
+    const verified: ProvenanceLedger = { about: [{ kind: 'fact', confidence: 0.9, verifiedBy: 'auto', snippet: 'x' }] }
+    expect(prosePublishes({ mode: 'ledger', ledger: verified }, 'about')).toBe(true)
+  })
+  it('prose with NO ledger entry is hand-supplied and trusted', () => {
+    expect(prosePublishes({ mode: 'ledger', ledger: {} }, 'about')).toBe(true)
+  })
+})
+
+// REGRESSION (finding #2): a generated `about` that hides a commercial claim
+// ("Massages from $95. Call (555) 123-4567.") must NOT auto-publish as trusted prose.
+describe('generated prose with an embedded commercial claim is not auto-published', () => {
+  const profile: BusinessProfile = {
+    name: 'Calm Co',
+    type: 'business',
+    tagline: 'Open 9 to 5. Massages from $95.',
+    about: 'A calm studio. Massages from $95. Call (555) 123-4567.',
+    story: 'We opened in 2015. Rated 4.9 by 200 clients.',
+  }
+  // The verifier marked all three prose fields as generated (no verified citation).
+  const ledger: ProvenanceLedger = {
+    tagline: [{ kind: 'generated', confidence: 0.6 }],
+    about: [{ kind: 'generated', confidence: 0.6 }],
+    story: [{ kind: 'generated', confidence: 0.6 }],
+  }
+  const policy: CommercialPolicy = { mode: 'ledger', ledger }
+
+  it('mapProfileData drops the unverified about prose', () => {
+    expect(mapProfileData(profile, policy).about).toBeUndefined()
+  })
+
+  it('mapIdentity drops the unverified tagline + about from the Space row', () => {
+    const id = mapIdentity(profile, { slug: 'calm-co', accent: null }, policy)
+    expect(id.tagline).toBeNull()
+    expect(id.about).toBeNull()
+  })
+
+  it('mapBlockContent falls the hero back to the name and drops the about/story bodies', () => {
+    const content = mapBlockContent(profile, policy)
+    // hero title falls back to the (safe) name, never the commercial-claim tagline.
+    expect(content.photoHero.title).toBe('Calm Co')
+    expect(content.photoHero.subtitle).toBeUndefined()
+    expect(content.about).toBeUndefined()
+    expect(content.story).toBeUndefined()
+  })
+
+  it('composeBlockOrder does not place the about/story prose blocks', () => {
+    const order = composeBlockOrder(profile, policy)
+    expect(order).not.toContain('about')
+    expect(order).not.toContain('story')
+  })
+
+  it('but under allow (hand-authored trust) the prose publishes', () => {
+    expect(mapProfileData(profile, 'allow').about).toContain('Massages')
+    expect(mapIdentity(profile, { slug: 'x', accent: null }, 'allow').tagline).toContain('Massages')
   })
 })

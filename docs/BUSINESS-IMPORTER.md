@@ -9,9 +9,12 @@
 > **Owner Wizard**. Nothing it invents reaches a live surface without a source or a human confirm.
 
 **Status legend:** ✅ done · ⏳ in progress · ⚠️ needs attention · 🔴 blocker.
-**Status of this doc:** ✅ Spec (planning). No feature code exists yet. The one draft artifact is an
-**unapplied** migration (`supabase/migrations/DRAFT_business_intake.sql.txt`, header marks it DESIGN
-DRAFT). Authority order: running code + `supabase/migrations/` > this doc.
+**Status of this doc:** ✅ Spec. P0 (materializer) ✅ shipped (#1599). P1 (research + verification pipeline:
+harvest, extract, verify, ledger, staging table) ✅ shipped (ADR-574): `lib/importer/{harvest,extract,verify}/`
++ `pipeline.ts` + `store.ts` + `queue.ts`, `lib/ai/web/`, migration
+`supabase/migrations/20261022000000_business_intake.sql` (⚠️ awaiting apply by the coordinator; the draft
+`.txt` is removed). P2+ (reframe/compose, console, wizard) pending. Authority order: running code +
+`supabase/migrations/` > this doc.
 
 This spec follows [`DOCS-PROTOCOL.md`](DOCS-PROTOCOL.md) (technical → git), [`PRESENTATION.md`](PRESENTATION.md)
 (lead with the answer, tables, status legend), [`NAMING.md`](NAMING.md) + [`CONTENT-VOICE.md`](CONTENT-VOICE.md)
@@ -246,14 +249,30 @@ model's blind spot is less likely to pass both.
 - `unsupported` -> stays `generated`/`inferred`, confidence capped low, flagged amber.
 - `contradicted` -> flagged red, held out of Apply until a human resolves it.
 
-### 4.3 The hard commercial-fact gate
+### 4.3 The hard commercial-fact gate (TWO independent gates, both fail-closed)
 These fields are **commercial facts** and may **never** auto-publish:
-`contact.address`, `contact.phone`, `contact.email`, `contact.hours`, every `offerings[].price`,
-`rating`, and any claim or certification in `story`/`about`.
+`contact.address`, `contact.phone`, `contact.email`, `contact.hours`, every `offerings[].price`
+(**and that offering's `priceModel` + `currency`**, since "Free" / "From $95" are claims too), `rating`,
+and any claim or certification embedded in **generated prose** (`about` / `story` / `tagline` /
+offering `blurb`).
 
-At Apply, any commercial field whose ledger entry is not (`kind:'fact'` AND `verifiedBy` set) is either
-**withheld** (left blank on the live surface) or requires an explicit operator confirm in review. Enforced
-in the materializer, not just the UI, so a UI bypass cannot leak an unverified price.
+The invariant "no unverified commercial claim reaches a live surface as trusted" is enforced by **two
+independent gates**, so it never rests on one:
+
+- **Gate A (the verifier).** `splitVerified` strips every commercial field whose ledger entry is not
+  (`kind:'fact'` AND `verifiedBy`) from the verified draft and flags contradicted fields red (blocking
+  Apply). Reframe (§4.4) then sees only the verified subset.
+- **Gate B (the materializer).** At Apply, the materializer RE-DERIVES the decision **per field** from the
+  provenance ledger (via `isCommercialFieldCleared`), independently of Gate A: `mapProfileData` /
+  `mapIdentity` / the layout composer publish a commercial field iff its ledger entry is a verified fact,
+  and **withhold** it (left blank on the live surface) otherwise. A verified fact **does** publish (the
+  verified path is live); an uncleared one does not. Generated prose is **review-required**: under the
+  ledger gate, prose with a `generated`/`inferred` entry is withheld (a commercial claim can hide inside a
+  sentence), publishing only when the entry is a verified fact or absent (hand-supplied).
+
+`materializeBusiness` **defaults to withhold** when given neither a policy nor a ledger, so a direct call
+that forgets the flag cannot leak. A UI bypass cannot leak an unverified price: Gate B runs regardless of
+the UI.
 
 ### 4.4 Reframe reads only verified facts
 The Reframe step (§3, stage 5) is handed the verified subset of the draft, never the raw harvest. It may
@@ -390,7 +409,7 @@ block-editor files owned by the concurrent effort (`components/entity-blocks/*`,
 | Phase | Deliverable | Extends / adds | AI? |
 |---|---|---|---|
 | **P0** | **Materializer core.** `applyIntake(draft)` -> seeded Space + function records + spotlight + accent, from a hand-authored `BusinessProfile`. Apply the real `business_intake` migration. | new `lib/business-import/materialize.ts`; calls `lib/spaces/provision.ts`, `lib/spaces/booking.ts`, `lib/spaces/memberships.ts`, `lib/spaces/membership.ts`, `lib/events/store.ts`, `lib/page-editor/upload-action.ts`; writes `spaces.preferences.profileLayout` (shape from `lib/entity-blocks/layout.ts`); new migration | ❌ zero AI |
-| **P1** | **Harvest + Extract + Verify + ledger.** | new `lib/business-import/harvest.ts`, `extract.ts`, `verify.ts`, `lib/ai/web/`; uses `lib/ai/complete.ts`, `lib/queue/outbox.ts`, `lib/queue/handlers.ts`, `app/api/cron/process-queue` | ✅ sonnet + opus |
+| **P1** ✅ | **Harvest + Extract + Verify + ledger.** Shipped as `lib/importer/{harvest,extract,verify}/` (the P0 code landed under `lib/importer/`, not `lib/business-import/`) + `pipeline.ts`/`store.ts`/`queue.ts`, `lib/ai/web/`; uses `lib/ai/complete.ts`, `lib/queue/outbox.ts`, `lib/queue/handlers.ts` (`business-import-research` kind), `app/api/cron/process-queue`. Migration `20261022000000_business_intake.sql` (awaiting apply). | ✅ sonnet + opus |
 | **P2** | **Reframe + Compose across the surfaces.** | new `lib/business-import/reframe.ts`, `compose.ts`, `spotlight-compose.ts`; uses `lib/ai/voice.ts`, `lib/spaces/accent.ts`, the Spotlight write actions in `app/(main)/settings/profile/spotlight-actions.ts` | ✅ sonnet |
 | **P3** | **Operator Seeder console.** Input step (`WizardShell`) + review/approve board (`EntityManageConsole`), registered per MENU-CONTRACT. | add ONE row to `ADMIN_MODULES` (`lib/admin/modules/registry.ts`, `scopes:['global']`, new capability `admin.businessSeeder`); new route `app/(main)/admin/business-seeder/*` | uses P1/P2 |
 | **P4** | **Owner Wizard.** Vera-led conversational intake writing the same `business_intake` draft. | `components/templates/wizard-shell.tsx` + `wizard-progress.tsx`; Vera via `app/onboarding/vera-actions.ts : conciergeTurn`; new owner tools in `lib/ai/vera/tools.ts` (proposal-gated) | ✅ Vera |
