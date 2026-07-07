@@ -105,10 +105,17 @@ describe('the operator-authored list blocks expose array fields', () => {
     expect(Object.keys(f.arrayFields)).toEqual(['title', 'blurb'])
   })
 
-  it('SpaceTeam has a people array (name + role + avatar)', () => {
+  it('SpaceTeam has a people array (name + role + avatar) as the manual fallback', () => {
     const f = profileComponents.SpaceTeam.fields!.members as unknown as { type: string; arrayFields: Record<string, unknown> }
     expect(f.type).toBe('array')
     expect(Object.keys(f.arrayFields)).toEqual(['name', 'role', 'avatar'])
+  })
+
+  it('SpaceTeam has a network member picker storing an ordered id list', () => {
+    const f = profileComponents.SpaceTeam.fields!.memberPicks as unknown as { type: string }
+    expect(f.type).toBe('custom')
+    const defaults = profileComponents.SpaceTeam.defaultProps as { memberPicks?: { ids?: unknown } }
+    expect(defaults.memberPicks).toEqual({ ids: [] })
   })
 })
 

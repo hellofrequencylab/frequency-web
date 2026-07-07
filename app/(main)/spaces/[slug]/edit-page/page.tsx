@@ -11,6 +11,7 @@ import { resolveSpacePageDoc, readPageDoc, hasPage, HOME_SLUG } from '@/lib/spac
 import { readProfileData } from '@/lib/spaces/profile-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
+import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { SpaceLandingEditor } from '@/components/spaces/space-landing-editor'
 
@@ -80,6 +81,7 @@ export default async function SpaceEditLandingPage({
   // landing exactly (the same metadata.space the public renderer passes).
   if (!canManage && staffViewing) {
     const spaceContent = await getSpaceContentData(space.id)
+    spaceContent.teamPicks = await resolveTeamPicksForDoc(data)
     return (
       <div className="mx-auto max-w-5xl px-6 py-8">
         <StaffPreviewBanner spaceName={brandName} />
@@ -100,6 +102,9 @@ export default async function SpaceEditLandingPage({
     slug: space.slug,
     profile: readProfileData(space.preferences),
   })
+  // WYSIWYG in the editor: resolve any Team-block network picks to live cards so the canvas shows the
+  // linked member tiles, not just the manual fallbacks.
+  spaceContent.teamPicks = await resolveTeamPicksForDoc(data)
 
   return (
     <SpaceLandingEditor
