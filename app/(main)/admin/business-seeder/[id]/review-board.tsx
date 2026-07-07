@@ -48,6 +48,7 @@ export function ReviewBoard({
   appliedSpaceId,
   initialMood,
   initialImages,
+  initialImagePlan,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -56,10 +57,12 @@ export function ReviewBoard({
   appliedSpaceId: string | null
   initialMood: SeedMood
   initialImages: string[]
+  initialImagePlan: { url: string; category: string; alt: string }[]
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
+  const [lockPrimary, setLockPrimary] = useState(true)
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [reseeding, startReseed] = useTransition()
   const [applied, setApplied] = useState<boolean>(status === 'applied')
@@ -95,19 +98,24 @@ export function ReviewBoard({
 
   // Re-Seed in a different MOOD (Importer v2): re-voices the copy in the chosen mood (a cheap reframe,
   // not a full re-research; the verified facts are untouched and edit-wins protects hand-edited prose).
+  // `lockPrimary` keeps the identity/hero prose (name, tagline, about, story) untouched, so only the
+  // marketing blocks re-voice — the "turn off re-seeding for main info" control.
   function reseed(next: SeedMood) {
     setMood(next)
     setReseedMsg(null)
     startReseed(async () => {
-      const res = await reseedBusinessImport(intakeId, next)
+      const res = await reseedBusinessImport(intakeId, next, lockPrimary)
       if (!res.ok) {
         setReseedMsg({ tone: 'err', text: res.error })
         return
       }
+      const label = SEED_MOODS.find((m) => m.key === next)?.label ?? next
       setReseedMsg({
         tone: 'ok',
         text: res.revoiced
-          ? `Re-voiced in the ${SEED_MOODS.find((m) => m.key === next)?.label ?? next} mood.`
+          ? lockPrimary
+            ? `Re-voiced the marketing blocks in the ${label} mood. Primary info and hero kept as-is.`
+            : `Re-voiced in the ${label} mood.`
           : 'Mood saved. Turn AI on to re-voice the copy.',
       })
       router.refresh()
@@ -180,6 +188,16 @@ export function ReviewBoard({
             )
           })}
         </div>
+        <label className="mt-3 flex items-center gap-2 text-xs text-muted">
+          <input
+            type="checkbox"
+            checked={lockPrimary}
+            onChange={(e) => setLockPrimary(e.target.checked)}
+            disabled={reseeding}
+            className="h-3.5 w-3.5 rounded border-border text-primary focus:ring-primary"
+          />
+          Keep primary info and hero locked (re-seed only the marketing blocks)
+        </label>
         {reseedMsg && (
           <p
             className={cn('mt-2 text-xs', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
@@ -190,8 +208,23 @@ export function ReviewBoard({
         )}
       </div>
 
-      {/* Images (Importer v2): stage photos for the Space; filed into its Loom on Apply. */}
-      {!readOnly && <SeederImages intakeId={intakeId} initialImages={initialImages} />}
+      {/* Images (Importer v2): stage photos for the Space. Available before AND after Apply — a
+          post-apply upload files straight into the live Space's Loom. */}
+      <SeederImages intakeId={intakeId} initialImages={initialImages} initialPlan={initialImagePlan} />
+
+      {/* Re-apply the master profile to the live Space (applied only): pushes re-voiced copy / edits. */}
+      {applied && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+          <p className="text-xs text-muted">
+            Changed the mood or the copy above? Re-apply to push it to the live Space. Verified facts and
+            the commercial-fact gate are re-checked; withheld facts stay withheld.
+          </p>
+          <Button variant="secondary" onClick={approve} disabled={applying}>
+            {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {applying ? 'Re-applying…' : 'Re-apply to Space'}
+          </Button>
+        </div>
+      )}
 
       {s.blocked && !applied && (
         <Banner tone="warning" title="Resolve the contradicted facts first">

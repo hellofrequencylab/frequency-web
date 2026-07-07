@@ -32,7 +32,9 @@ import { enqueueResearch } from '@/lib/importer/queue'
 import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
 import { reframe, applyReframe } from '@/lib/importer/reframe'
 import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
-import { applyIntake } from '@/lib/importer/materialize'
+import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
+import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
+import { planSeedImages } from '@/lib/importer/vision'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { buildReviewModel, type ReviewModel } from './review-model'
@@ -210,6 +212,8 @@ export interface BusinessImportReview {
   /** Operator-uploaded seed images (public `library-media` URLs, first-is-primary), staged on the intake.
    *  On Apply each is filed into the new Space's Loom (Importer v2). */
   images: string[]
+  /** The image designer's per-image roles (Importer v2), keyed by URL, so the panel can chip each image. */
+  imagePlan: { url: string; category: string; alt: string }[]
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -233,6 +237,11 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     updatedAtISO: row.updatedAt,
     mood: normalizeSeedMood(row.inputs.mood),
     images: Array.isArray(row.inputs.images) ? row.inputs.images.filter((u): u is string => typeof u === 'string') : [],
+    imagePlan: Array.isArray(row.inputs.imagePlan)
+      ? row.inputs.imagePlan
+          .filter((p): p is { url: string; category: string; alt: string; heroScore: number } => !!p && typeof p.url === 'string')
+          .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
+      : [],
   }
 }
 
@@ -297,7 +306,21 @@ export async function uploadSeederImages(intakeId: string, formData: FormData): 
   if (added.length === 0) return { ok: false, error: firstError ?? 'No images could be uploaded.' }
 
   const images = [...current, ...added]
-  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  const nextInputs: IntakeInputs = { ...row.inputs, images }
+
+  // If the Space already exists (a post-apply upload onto a live/seeded business), file the NEW images
+  // into its Loom right now so they land on the live Space immediately — not only on a future Apply.
+  // Idempotent via imagesFiledToLoom, so a later Apply never double-files them.
+  if (row.targetSpaceId) {
+    const alreadyFiled = Array.isArray(row.inputs.imagesFiledToLoom)
+      ? row.inputs.imagesFiledToLoom.filter((u): u is string => typeof u === 'string')
+      : []
+    const toFile = added.filter((u) => !alreadyFiled.includes(u))
+    const filed = await fileSeedImagesIntoLoom(row.targetSpaceId, toFile, { primaryUrl: images[0] })
+    if (filed.length > 0) nextInputs.imagesFiledToLoom = [...alreadyFiled, ...filed]
+  }
+
+  const saved = await setInputs(intakeId, nextInputs)
   if (!saved) return { ok: false, error: 'Uploaded, but the save failed. Try again.' }
   return { ok: true, images }
 }
@@ -337,19 +360,84 @@ export async function removeSeederImage(intakeId: string, url: string): Promise<
   return { ok: true, images }
 }
 
+// ── Auto-arrange images with the AI designer (Importer v2) ────────────────────────────────
+
+export type ArrangeImagesResult =
+  | { ok: true; order: string[]; heroUrl: string | null }
+  | { ok: false; error: string }
+
+/**
+ * Run the vision DESIGNER over the staged images: it classifies each, writes alt text, picks the primary
+ * hero, and orders the set best-first. Staff-gated + bound to the intake id. Persists the new order + the
+ * per-image plan on the intake, and (when the Space is already live) pushes the chosen hero to its cover.
+ * Fail-safe: when the designer is off / over budget, returns a plain reason and leaves the images as they
+ * are. The image bytes are never published here; only ordering, alt text, and the cover pointer change.
+ */
+export async function autoArrangeSeederImages(intakeId: string): Promise<ArrangeImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const images = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string' && u.length > 0)
+    : []
+  if (images.length === 0) return { ok: false, error: 'Add some images first, then arrange them.' }
+
+  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const name = (draft.name && String(draft.name).trim()) || row.inputs.hints?.name || ''
+  const plan = await planSeedImages(images, name, operatorId)
+  if (!plan) return { ok: false, error: 'The image designer is off or over budget right now. Try again shortly.' }
+
+  const nextInputs: IntakeInputs = {
+    ...row.inputs,
+    images: plan.order,
+    imagePlan: plan.items.map((it) => ({ url: it.url, category: it.category, alt: it.alt, heroScore: it.heroScore })),
+  }
+  const saved = await setInputs(intakeId, nextInputs)
+  if (!saved) return { ok: false, error: 'Arranged, but the save failed. Try again.' }
+
+  // Push the chosen hero to the live Space's cover when applied (the operator explicitly asked to
+  // arrange, so this OVERRIDES an existing cover — best-effort, never fails the action).
+  if (row.targetSpaceId && plan.heroUrl) {
+    try {
+      const admin = createAdminClient() as unknown as {
+        from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+      }
+      await admin.from('spaces').update({ cover_image_url: plan.heroUrl }).eq('id', row.targetSpaceId)
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  return { ok: true, order: plan.order, heroUrl: plan.heroUrl }
+}
+
 // ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
 
 export type ReseedResult = { ok: true; revoiced: boolean; mood: SeedMood } | { ok: false; error: string }
+
+/** The identity / hero PROSE the "lock primary info & hero" toggle protects on a re-seed: when locked,
+ *  re-seed re-voices ONLY the marketing blocks (offering blurbs) and leaves these untouched. */
+const PRIMARY_PROSE_PATHS = ['tagline', 'about', 'story'] as const
 
 /**
  * Re-Seed the reviewed draft in a different MOOD. A mood changes only the reframe TONE (not the verified
  * FACTS), so this is a cheap RE-VOICE, not a full re-research: it persists the new mood on the intake,
  * then reframes the already-verified draft with that mood and folds the fresh copy back. Edit-wins (P5):
  * a prose field the operator already edited is preserved (editedProsePaths), so a mood re-voice never
- * clobbers a hand-written line. Only from 'review' / 'applied' (there is a verified draft to re-voice);
- * fail-safe with a plain reason. The commercial-fact gate is untouched (this only rewrites prose).
+ * clobbers a hand-written line. When `lockPrimary` (the default), the identity/hero prose (tagline,
+ * about, story) is ALSO preserved, so re-seed only refreshes the marketing blocks (offering blurbs) and
+ * never rewrites primary business info. Only from 'review' / 'applied' (there is a verified draft to
+ * re-voice); fail-safe with a plain reason. The commercial-fact gate is untouched (this only rewrites
+ * prose). On an APPLIED intake the re-voiced copy is saved to the master profile; the operator pushes it
+ * to the live Space with an explicit Re-apply (so a live hand-edit is never silently clobbered).
  */
-export async function reseedBusinessImport(intakeId: string, mood: SeedMood): Promise<ReseedResult> {
+export async function reseedBusinessImport(
+  intakeId: string,
+  mood: SeedMood,
+  lockPrimary = true,
+): Promise<ReseedResult> {
   await requireStaffCap('structure', 'write')
   const operatorId = await getMyProfileId()
   const nextMood = normalizeSeedMood(mood)
@@ -370,11 +458,31 @@ export async function reseedBusinessImport(intakeId: string, mood: SeedMood): Pr
   const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood })
   if (!result) return { ok: true, revoiced: false, mood: nextMood }
 
-  const preserve = editedProsePaths(row.draft)
+  // Preserve set: fields the operator hand-edited, plus (when locked) the identity/hero prose. Locking
+  // the primary info is the "turn off re-seeding for main info / hero" control — only marketing blocks
+  // (offering blurbs) are re-voiced.
+  const preserve = new Set(editedProsePaths(row.draft))
+  if (lockPrimary) for (const p of PRIMARY_PROSE_PATHS) preserve.add(p)
   const folded = applyReframe(draft, result.copy, ledger, preserve)
   const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
   if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
   return { ok: true, revoiced: true, mood: nextMood }
+}
+
+// ── Adopt a hand-made Space into a master profile (Importer v2) ───────────────────────────
+
+export type AdoptSpaceResult = { ok: true; intakeId: string; created: boolean } | { ok: false; error: string }
+
+/**
+ * Create (or find) the editable MASTER PROFILE for an existing Space, derived from its own content, so a
+ * business that was never seeded becomes re-seedable. Staff-gated (structure:write). Idempotent: a Space
+ * that already has an intake returns it. Returns the intake id so the caller routes into the review board.
+ */
+export async function adoptSpaceMasterProfile(spaceId: string): Promise<AdoptSpaceResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  if (!operatorId) return { ok: false, error: 'No operator profile.' }
+  return adoptSpaceAsMasterProfile(spaceId, operatorId)
 }
 
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────

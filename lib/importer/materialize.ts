@@ -575,11 +575,24 @@ export async function applyIntake(
 
   // Importer v2: FILE the operator's staged seed images into the new Space's Loom (space-scoped), so
   // the owner has them the moment they claim / edit the Space. Best-effort: a filing miss never fails
-  // the apply. The first image also seeds the cover when the Space has none yet.
+  // the apply. Idempotent: only images not already filed (a re-apply, or a post-apply upload that filed
+  // directly) are filed, tracked on inputs.imagesFiledToLoom. The first image seeds the cover if unset.
   const seedImages = Array.isArray(row.inputs.images)
     ? row.inputs.images.filter((u): u is string => typeof u === 'string' && u.length > 0)
     : []
-  if (seedImages.length > 0) await fileSeedImagesIntoLoom(result.spaceId, seedImages)
+  if (seedImages.length > 0) {
+    const alreadyFiled = Array.isArray(row.inputs.imagesFiledToLoom)
+      ? row.inputs.imagesFiledToLoom.filter((u): u is string => typeof u === 'string')
+      : []
+    const toFile = seedImages.filter((u) => !alreadyFiled.includes(u))
+    const filed = await fileSeedImagesIntoLoom(result.spaceId, toFile, { primaryUrl: seedImages[0] })
+    if (filed.length > 0) {
+      await store.setInputs(intakeId, {
+        ...row.inputs,
+        imagesFiledToLoom: [...alreadyFiled, ...filed],
+      })
+    }
+  }
 
   await store.markApplied(intakeId, result.spaceId)
   await store.setStatus(intakeId, 'applied', { error: null })
@@ -589,20 +602,25 @@ export async function applyIntake(
 // ── Seed images → the Space's Loom (Importer v2) ────────────────────────────────────────
 
 /**
- * File each staged seed image (a public `library-media` URL) into the target Space's OWN Loom
+ * File each given seed image (a public `library-media` URL) into the target Space's OWN Loom
  * (library_assets, space-scoped) so a claimed Space carries the operator-uploaded photos as its own
- * assets. Best-effort per image (a miss is skipped, never thrown). When the Space has no cover image
- * yet, the FIRST image is promoted to the cover so the seeded Space is not blank. Idempotent-ish: the
- * per-image slug carries the derived storage path, so a re-apply reuses the same Loom title, and the
- * cover is only set when currently empty.
+ * assets. Best-effort per image (a miss is skipped, never thrown); RETURNS the URLs that filed, so the
+ * caller can record them and keep filing idempotent across the Apply + post-apply-upload paths. When
+ * `opts.primaryUrl` is set and the Space has no cover yet, that image is promoted to the cover so the
+ * seeded Space is not blank. EXPORTED so the seeder's post-apply upload files onto a live Space too.
  */
-async function fileSeedImagesIntoLoom(spaceId: string, images: string[]): Promise<void> {
+export async function fileSeedImagesIntoLoom(
+  spaceId: string,
+  images: string[],
+  opts: { primaryUrl?: string } = {},
+): Promise<string[]> {
+  const filed: string[] = []
   for (const [i, url] of images.entries()) {
     const path = storagePathFromPublicUrl(url)
     const ext = (url.split('.').pop() || 'jpg').split(/[?#]/)[0].toLowerCase()
     const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg'
     try {
-      await insertSpaceLibraryImage({
+      const id = await insertSpaceLibraryImage({
         spaceId,
         title: `Seed image ${i + 1}`,
         slug: `seed-${(path || url).replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(-80) || i}`,
@@ -612,20 +630,24 @@ async function fileSeedImagesIntoLoom(spaceId: string, images: string[]): Promis
         mime,
         bytes: 0,
       })
+      if (id) filed.push(url)
     } catch {
       /* best-effort per image */
     }
   }
 
-  // Promote the first image to the cover when the Space has none (do not clobber a real cover).
-  try {
-    const space = await getSpaceById(spaceId)
-    if (space && !space.coverImageUrl) {
-      await adminFrom('spaces').update({ cover_image_url: images[0] }).eq('id', spaceId)
+  // Promote the primary image to the cover when the Space has none (do not clobber a real cover).
+  if (opts.primaryUrl) {
+    try {
+      const space = await getSpaceById(spaceId)
+      if (space && !space.coverImageUrl) {
+        await adminFrom('spaces').update({ cover_image_url: opts.primaryUrl }).eq('id', spaceId)
+      }
+    } catch {
+      /* best-effort */
     }
-  } catch {
-    /* best-effort */
   }
+  return filed
 }
 
 /** Derive the object path within the `library-media` bucket from its public URL, or null when the URL

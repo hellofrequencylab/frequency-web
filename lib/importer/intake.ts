@@ -55,6 +55,14 @@ export interface IntakeInputs {
    *  order. Staged on the intake during review; on Apply each is FILED INTO the new Space's Loom (space
    *  scoped) so it is available when the owner claims / edits the Space. */
   images?: string[]
+  /** The subset of `images` already filed into the target Space's Loom (Importer v2). Bookkeeping that
+   *  keeps filing IDEMPOTENT across the two paths that file (Apply, and a post-apply upload onto a live
+   *  Space), so a re-apply or a late upload never double-files an image. */
+  imagesFiledToLoom?: string[]
+  /** The image designer's per-image plan (Importer v2): the role + alt text a vision pass assigned each
+   *  image, retained so the review UI can show each image's role. Kept structural so this file stays
+   *  dependency-free (mirrors SeedImagePlanItem in ./vision). */
+  imagePlan?: { url: string; category: string; alt: string; heroScore: number }[]
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

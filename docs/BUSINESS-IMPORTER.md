@@ -130,9 +130,45 @@ interface IntakeInputs {
 **Seed images (Importer v2).** During review an operator can stage photos on the intake
 (`inputs.images`) via the staff-gated `uploadSeederImages` / `removeSeederImage` actions
 (`app/(main)/admin/business-seeder/actions.ts`). Files land in the `library-media` bucket under an
-`intake/<id>/` prefix. On Apply, `materialize.applyIntake` files each staged image into the NEW Space's
-own Loom (`library_assets`, space-scoped, via `insertSpaceLibraryImage`) so a claimed Space carries the
-uploads as its own assets, and promotes the first image to the cover when the Space has none.
+`intake/<id>/` prefix. `materialize.fileSeedImagesIntoLoom` (exported) files each staged image into a
+Space's own Loom (`library_assets`, space-scoped, via `insertSpaceLibraryImage`) and promotes the first
+image to the cover when the Space has none. It fires in two places, kept idempotent by
+`inputs.imagesFiledToLoom` (the URLs already filed): on Apply for a new seed, and immediately from
+`uploadSeederImages` when the intake is already applied (a post-apply upload onto a live Space). The
+Images panel is available before AND after Apply, so an operator can return to a seeded business and add
+more photos.
+
+**Re-seed on a live business (Importer v2).** `reseedBusinessImport(intakeId, mood, lockPrimary=true)`
+re-voices the copy in a mood. `lockPrimary` (the "keep primary info & hero locked" toggle) preserves
+`tagline` / `about` / `story` so only the marketing blocks (offering blurbs) re-voice, on top of the
+edit-wins preserve set. Re-seed saves to the master profile; on an applied intake the operator pushes it
+to the live Space with an explicit **Re-apply** (reuses `approveBusinessImport` → `applyIntake`), so a
+live hand-edit is never silently clobbered.
+
+**Reverse link — a Space back to its master profile.** The intake IS the durable master profile
+(inputs + sources + verified draft + ledger + mood + images), linked to the Space by `target_space_id`
+at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) resolve that reverse link,
+and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
+business is re-openable without hunting for the import.
+
+**Image designer — auto-placement (Importer v2, point 2).** `lib/importer/vision.ts` runs ONE vision
+pass over all staged images (`planSeedImages`): it classifies each (logo / hero / exterior / interior /
+team / product / food / detail), writes alt text in the Frequency voice, and scores each image's fitness
+to be the primary hero. A PURE, unit-tested step (`rankSeedImages`) then picks the hero (never a logo)
+and orders the set best-first. The `autoArrangeSeederImages` action persists the new order + per-image
+plan on the intake and pushes the chosen hero to the live Space's cover; the review board's Images panel
+has an **Auto-arrange with AI** button and chips each thumbnail with its role. FAIL-SAFE: AI off / over
+budget leaves the uploaded order untouched. The model call is a thin shell; the selection logic is pure.
+
+**Adopt a hand-made Space into a master profile (Importer v2).** A Space created by hand (never seeded)
+has no intake, so it cannot be re-seeded. `lib/importer/adopt.ts` runs the materializer in REVERSE:
+`profileFromSpace` (PURE) reads a live Space's own content (`readProfileData` + the Space row) into a
+`BusinessProfile` draft plus a ledger that marks every present commercial fact human-verified (the owner
+already published it, so it publishes on a re-apply and nothing is withheld); `adoptSpaceAsMasterProfile`
+stores it as an already-`applied` intake bound to the Space (`store.createMasterProfile`), idempotently
+(a Space that already has an intake returns it; the root host is never adoptable). Manage Spaces shows a
+**Master profile** button on any hand-made Space with no profile yet; clicking it derives the profile and
+opens the review board, after which the Space re-seeds exactly like a seeded one.
 
 ### 3.3 `HarvestedSource` (raw sources, one entry per fetch)
 

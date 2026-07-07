@@ -87,6 +87,39 @@ export async function createIntake(input: {
   }
 }
 
+/** Create a master-profile intake ADOPTED from an existing (hand-made) Space: it lands already at
+ *  status 'applied' with `target_space_id` set, because the Space it describes is already live. Bound to
+ *  `createdBy`. Returns the new row id, or null on failure. This is how a business that was never seeded
+ *  gets an editable master profile derived from its own content (Importer v2). */
+export async function createMasterProfile(input: {
+  createdBy: string
+  spaceId: string
+  inputs: IntakeInputs
+  draft: BusinessProfile
+  ledger: ProvenanceLedger
+}): Promise<string | null> {
+  try {
+    const now = new Date().toISOString()
+    const { data, error } = await intakeTable()
+      .insert({
+        created_by: input.createdBy,
+        mode: 'operator',
+        status: 'applied',
+        inputs: input.inputs,
+        draft: input.draft,
+        ledger: input.ledger,
+        target_space_id: input.spaceId,
+        applied_at: now,
+      })
+      .select('id')
+      .maybeSingle()
+    if (error || !data?.id) return null
+    return data.id as string
+  } catch {
+    return null
+  }
+}
+
 /** Read one intake row by id. Bound to the row's own id (the scope). Returns null when absent. */
 export async function getIntake(id: string): Promise<BusinessIntakeRow | null> {
   try {
@@ -95,6 +128,59 @@ export async function getIntake(id: string): Promise<BusinessIntakeRow | null> {
     return mapRow(data)
   } catch {
     return null
+  }
+}
+
+/** Read the intake that seeded a given Space (its master profile), by the `target_space_id` stamped at
+ *  Apply. Most-recent first when several point at the same Space. Bound to the space id. Returns null
+ *  when the Space was never seeded (no intake links to it). This is the ONE-WAY link's reverse: a Space
+ *  back to the master profile that can re-seed it. */
+export async function getIntakeBySpaceId(spaceId: string): Promise<BusinessIntakeRow | null> {
+  try {
+    const { data, error } = await intakeTable()
+      .select('*')
+      .eq('target_space_id', spaceId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+    if (error || !data || data.length === 0) return null
+    return mapRow(data[0])
+  } catch {
+    return null
+  }
+}
+
+/** Batched reverse lookup: map each of `spaceIds` to the id of the intake that seeded it (its master
+ *  profile), for a list view that wants a "re-seed" affordance per row WITHOUT an N+1. A Space with no
+ *  seeding intake is simply absent from the map. Most-recent intake wins when several point at a Space. */
+export async function intakeIdsBySpaceIds(spaceIds: string[]): Promise<Record<string, string>> {
+  const ids = spaceIds.filter((s) => typeof s === 'string' && s.length > 0)
+  if (ids.length === 0) return {}
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          in: (c: string, v: string[]) => {
+            order: (c: string, o: { ascending: boolean }) => Promise<{ data: Record<string, unknown>[] | null; error: unknown }>
+          }
+        }
+      }
+    }
+    const { data, error } = await db
+      .from(TABLE)
+      .select('id, target_space_id, updated_at')
+      .in('target_space_id', ids)
+      .order('updated_at', { ascending: false })
+    if (error || !data) return {}
+    const out: Record<string, string> = {}
+    // Most-recent first (order desc), so the FIRST id seen per space wins; skip if already set.
+    for (const raw of data) {
+      const spaceId = raw.target_space_id as string | null
+      const intakeId = raw.id as string | undefined
+      if (spaceId && intakeId && !out[spaceId]) out[spaceId] = intakeId
+    }
+    return out
+  } catch {
+    return {}
   }
 }
 
