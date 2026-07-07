@@ -87,6 +87,39 @@ export async function createIntake(input: {
   }
 }
 
+/** Create a master-profile intake ADOPTED from an existing (hand-made) Space: it lands already at
+ *  status 'applied' with `target_space_id` set, because the Space it describes is already live. Bound to
+ *  `createdBy`. Returns the new row id, or null on failure. This is how a business that was never seeded
+ *  gets an editable master profile derived from its own content (Importer v2). */
+export async function createMasterProfile(input: {
+  createdBy: string
+  spaceId: string
+  inputs: IntakeInputs
+  draft: BusinessProfile
+  ledger: ProvenanceLedger
+}): Promise<string | null> {
+  try {
+    const now = new Date().toISOString()
+    const { data, error } = await intakeTable()
+      .insert({
+        created_by: input.createdBy,
+        mode: 'operator',
+        status: 'applied',
+        inputs: input.inputs,
+        draft: input.draft,
+        ledger: input.ledger,
+        target_space_id: input.spaceId,
+        applied_at: now,
+      })
+      .select('id')
+      .maybeSingle()
+    if (error || !data?.id) return null
+    return data.id as string
+  } catch {
+    return null
+  }
+}
+
 /** Read one intake row by id. Bound to the row's own id (the scope). Returns null when absent. */
 export async function getIntake(id: string): Promise<BusinessIntakeRow | null> {
   try {

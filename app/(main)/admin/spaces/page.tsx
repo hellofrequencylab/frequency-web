@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
 import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
+import { AdoptMasterProfileButton } from './adopt-master-profile-button'
 import { listSpaces } from '@/lib/spaces/store'
 import { intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { resolveMode } from '@/lib/spaces/modes'
@@ -129,15 +130,19 @@ function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; ma
             <ViewAsSpaceButton spaceId={s.id} spaceName={brandName} />
           </>
         )}
-        {/* Re-seed: a seeded Space links back to its master profile (the intake) so an operator can
-            re-voice the copy, change the mood, or add images without hunting for the import. */}
-        {masterProfileIntakeId && (
-          <Button asChild variant="secondary" size="sm">
-            <Link href={`/admin/business-seeder/${masterProfileIntakeId}`}>
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Re-seed
-            </Link>
-          </Button>
-        )}
+        {/* Master profile: a seeded Space links back to its (the intake) so an operator can re-voice
+            the copy, change the mood, or add images without hunting for the import. A hand-made Space
+            with no profile yet gets a "Master profile" button that derives one from its own content. */}
+        {hasProfile &&
+          (masterProfileIntakeId ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href={`/admin/business-seeder/${masterProfileIntakeId}`}>
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Re-seed
+              </Link>
+            </Button>
+          ) : (
+            <AdoptMasterProfileButton spaceId={s.id} />
+          ))}
       </div>
     </div>
   )

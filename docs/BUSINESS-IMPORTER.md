@@ -151,6 +151,16 @@ at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) res
 and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
 business is re-openable without hunting for the import.
 
+**Adopt a hand-made Space into a master profile (Importer v2).** A Space created by hand (never seeded)
+has no intake, so it cannot be re-seeded. `lib/importer/adopt.ts` runs the materializer in REVERSE:
+`profileFromSpace` (PURE) reads a live Space's own content (`readProfileData` + the Space row) into a
+`BusinessProfile` draft plus a ledger that marks every present commercial fact human-verified (the owner
+already published it, so it publishes on a re-apply and nothing is withheld); `adoptSpaceAsMasterProfile`
+stores it as an already-`applied` intake bound to the Space (`store.createMasterProfile`), idempotently
+(a Space that already has an intake returns it; the root host is never adoptable). Manage Spaces shows a
+**Master profile** button on any hand-made Space with no profile yet; clicking it derives the profile and
+opens the review board, after which the Space re-seeds exactly like a seeded one.
+
 ### 3.3 `HarvestedSource` (raw sources, one entry per fetch)
 
 ```ts

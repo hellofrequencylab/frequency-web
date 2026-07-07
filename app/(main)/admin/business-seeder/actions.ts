@@ -33,6 +33,7 @@ import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths }
 import { reframe, applyReframe } from '@/lib/importer/reframe'
 import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
+import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { buildReviewModel, type ReviewModel } from './review-model'
@@ -405,6 +406,22 @@ export async function reseedBusinessImport(
   const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
   if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
   return { ok: true, revoiced: true, mood: nextMood }
+}
+
+// ── Adopt a hand-made Space into a master profile (Importer v2) ───────────────────────────
+
+export type AdoptSpaceResult = { ok: true; intakeId: string; created: boolean } | { ok: false; error: string }
+
+/**
+ * Create (or find) the editable MASTER PROFILE for an existing Space, derived from its own content, so a
+ * business that was never seeded becomes re-seedable. Staff-gated (structure:write). Idempotent: a Space
+ * that already has an intake returns it. Returns the intake id so the caller routes into the review board.
+ */
+export async function adoptSpaceMasterProfile(spaceId: string): Promise<AdoptSpaceResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  if (!operatorId) return { ok: false, error: 'No operator profile.' }
+  return adoptSpaceAsMasterProfile(spaceId, operatorId)
 }
 
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────
