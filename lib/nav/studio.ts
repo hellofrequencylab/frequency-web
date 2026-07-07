@@ -551,7 +551,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       { leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'appearance' }, { leaf: 'spaces' }, { leaf: 'page-layout' },
       { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' },
-      { leaf: 'demo' }, { leaf: 'audit' },
+      { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'audit' },
     ],
   },
 ] as const
@@ -615,7 +615,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform',
     groups: [
       { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }] },
-      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }] },
+      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }] },
     ],
   },
   {
