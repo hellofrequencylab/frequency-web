@@ -84,7 +84,12 @@ export async function searchNetworkMembers(slug: string, query?: string): Promis
  *  input `ids`. Same public directory scope + gate as the search. FAIL-SAFE to []. */
 export async function resolveNetworkMembers(slug: string, ids: string[]): Promise<MemberPick[]> {
   if (!(await isSpaceEditor(slug))) return []
-  const clean = Array.from(new Set((ids ?? []).map((id) => String(id).trim()).filter(Boolean)))
+  // Type-guard rather than String(): a non-string id (corrupt/crafted payload) must drop, not become
+  // the literal 'null'/'undefined' string that would leak into the `.in('id', …)` query. Mirrors the
+  // safe conversion in resolveMemberCards (content-data.ts).
+  const clean = Array.from(
+    new Set((ids ?? []).map((id) => (typeof id === 'string' ? id.trim() : '')).filter(Boolean)),
+  )
   if (clean.length === 0) return []
 
   const admin = createAdminClient()
