@@ -160,8 +160,9 @@ export function BlockEditPanel({
 
 /** One field editor, dispatched by field type. Content types render an input / repeater; the ADR-569 C6
  *  primitive types render a control-row over the declared enum, so a feature agent gets its control by just
- *  declaring the field. */
-function FieldEditor({
+ *  declaring the field. Exported so the pinned Hero editor (which is NOT a rows-model block, but reuses the
+ *  same declarative FieldDef kit) dispatches every field through the SAME control surface — no bespoke JSX. */
+export function FieldEditor({
   field,
   value,
   uploadImage,

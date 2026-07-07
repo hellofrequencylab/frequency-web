@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { BlockEditPanel } from '@/components/entity-blocks/block-edit-panel'
+import { BlockEditPanel, FieldEditor } from '@/components/entity-blocks/block-edit-panel'
+import { HERO_FIELDS } from '@/lib/spaces/hero-config'
 import {
   AlignControl,
   ButtonOrientationControl,
@@ -153,10 +154,47 @@ function PanelDemo({ id, label }: { id: string; label: string }) {
   )
 }
 
+/** The pinned Top Hero editor's control surface (PR: editable-top-hero), rendered field-by-field through the
+ *  SAME FieldEditor the block panel uses — height + button orientation are the C6 primitives, the rest are
+ *  text / textarea / url inputs. Local state only (no save), so the hero editor can be exercised without auth. */
+function HeroPanelDemo() {
+  const [values, setValues] = useState<Record<string, unknown>>({})
+  const set = (key: string, v: unknown) => {
+    setValues((prev) => {
+      const next = { ...prev }
+      if (v === undefined || v === '') delete next[key]
+      else next[key] = v
+      return next
+    })
+  }
+  return (
+    <div className="space-y-2 rounded-xl border border-primary/40 bg-surface p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-xs font-bold text-text">Top hero (pinned, fixed first section)</h3>
+        <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">hero</code>
+      </div>
+      <div className="space-y-3">
+        {HERO_FIELDS.map((field) => (
+          <FieldEditor key={field.key} field={field} value={values[field.key]} onChange={(v) => set(field.key, v)} />
+        ))}
+      </div>
+      <details className="[&_summary::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-subtle">
+          State
+        </summary>
+        <pre className="mt-1 overflow-x-auto rounded bg-surface-elevated p-2 text-3xs text-muted">
+          {JSON.stringify(values, null, 2)}
+        </pre>
+      </details>
+    </div>
+  )
+}
+
 function PanelsColumn() {
   return (
     <div className="space-y-3">
       <h2 className="text-sm font-bold text-text">Redesigned block panels (C1 / C4 / C5 / C7)</h2>
+      <HeroPanelDemo />
       <PanelDemo id="callout" label="Callout (content + text style + spacing)" />
       <PanelDemo id="heading" label="Heading (text-bearing)" />
       <PanelDemo id="photoHero" label="Banner (height + content-layout primitives)" />
