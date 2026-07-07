@@ -9,7 +9,6 @@
 // so On Air is never a tax on logging.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Check,
@@ -22,7 +21,6 @@ import {
   BookOpen,
   Sparkles,
   Moon,
-  Library,
 } from 'lucide-react'
 import { LotusIcon, BreatheIcon, BoltIcon, BellCueIcon, VibrationIcon, OnAirIcon } from './icons'
 import { completeSession } from '@/app/(main)/on-air/actions'
@@ -81,7 +79,6 @@ import {
   resumeActiveSession,
   clearActiveSession,
 } from '@/lib/on-air/active-session'
-import { FREE_SIT_ID } from '@/lib/on-air/session-data'
 
 // What a saved Mindless run carries beyond the shared record fields: the mode + cue settings the
 // live clock is rebuilt from. startedAt/pausedAt/practiceId/banked are on the record itself.
@@ -308,12 +305,6 @@ export function OnAirSession({
   const resumeRemainingMin = initialResume
     ? clampMinutes(Math.ceil((initialResume.targetSec - initialResume.bankedSec) / 60))
     : 0
-  // A practice's own length seeds the timer; no duration (or Free sit) falls back to the remembered
-  // minutes (an open-length sit the member can still adjust).
-  const durationFor = (id: string): number => {
-    const d = practices.find((p) => p.id === id)?.durationMin
-    return d && d > 0 ? clampMinutes(d) : prefs.minutes
-  }
   // The mode a practice OPENS to, routed by its timer_kind (not by whether it has a length):
   //   none     → Just Log (no countdown)
   //   movement → handed off to the Movement timer (handled in chooseAndStart; here it falls
@@ -372,22 +363,10 @@ export function OnAirSession({
   const [cuesOpen, setCuesOpen] = useState(false)
   // The pattern how-to popup (setup + live): the full instructions for the current pattern.
   const [showInstructions, setShowInstructions] = useState(false)
-  // Whether the member has ANY real adopted practice (anything beyond the synthetic Free Practice
-  // chip). Only then is there something to choose, so only then does a generic open prompt them to
-  // "Select Practice" rather than auto-committing to Free Practice.
-  const hasRealPractices = practices.some((p) => p.id !== FREE_SIT_ID)
-  // Distinguish an AUTO-DEFAULT (a generic open landed on Free Practice) from an EXPLICIT selection
-  // (opened pre-set to a specific practice, the chooser pick, the "Change" re-pick). On a generic
-  // open the engine sits on the Free Practice default, so the primary button reads "Select Practice"
-  // (and opens the chooser) until the member explicitly picks one. Initialized true when the door
-  // opened on a real practice id (Continue Practice, a practice page, a Journey step).
-  const [explicitlySelected, setExplicitlySelected] = useState(
-    !!defaultPracticeId && defaultPracticeId !== FREE_SIT_ID,
-  )
-  // The practice chooser sheet (C.5): with more than one adopted practice the primary
-  // button reads "Select a practice" and opens this; picking one seeds its preset and
-  // begins the sit. With one/zero practices there's nothing to choose, so it never shows.
-  const [showChooser, setShowChooser] = useState(false)
+  // The manual "Select practice" step is GONE (owner directive 2026-07-06). The door already
+  // auto-resolved WHAT to run on the server (loadOnAirSessionData.defaultPracticeId): the adopted
+  // practice due today when there is one and it isn't done, else Free Practice. So there is nothing
+  // to pick here — the primary button always STARTS the resolved practice.
   const router = useRouter()
   const [startedAt, setStartedAt] = useState(0)
   const [remaining, setRemaining] = useState(0)
@@ -447,37 +426,6 @@ export function OnAirSession({
   const activeResumeRemainingMin = activeResume
     ? clampMinutes(Math.ceil((activeResume.targetSec - activeResume.bankedSec) / 60))
     : 0
-  // "Select Practice" state: the member has a real practice to choose AND hasn't explicitly picked
-  // one yet (a generic open auto-defaulted to Free Practice). The primary button then opens the
-  // chooser instead of starting. With only Free Practice (nothing to choose) it never triggers.
-  // Just Log keeps its own "Log it" label/behavior, so it overrides this in the label below.
-  const needsSelect = hasRealPractices && !explicitlySelected
-
-  // Pick a practice + seed its opening mode + length, routed by timer_kind (item #2). A 'none'
-  // practice opens Just Log; a mindless practice (Free sit included) opens its sit mode. Movement
-  // is handed off in chooseAndStart before this runs, so it never lands here.
-  //
-  // When the picked practice has a partial today, this is a RESUME: open the silent timer, seed
-  // the minutes to the REMAINING time, and arm the banked/target refs so finish() reports the
-  // total. So a Zap-menu / chooser pick of a partial resumes the same as the Continue button.
-  function selectPractice(id: string) {
-    setPracticeId(id)
-    const resume = resolveResume(id)
-    if (resume) {
-      const remainingMin = clampMinutes(Math.ceil((resume.targetSec - resume.bankedSec) / 60))
-      setMinutes(remainingMin)
-      setMode('timer')
-      resumeBanked.current = resume.bankedSec
-      resumeTarget.current = resume.targetSec
-      return
-    }
-    setMinutes(durationFor(id))
-    setMode(modeForPractice(id))
-    // Switching to a NON-partial practice abandons any in-flight resume top-up so it can never
-    // apply to the wrong practice (a fresh sit reports only its own seconds).
-    resumeBanked.current = 0
-    resumeTarget.current = 0
-  }
 
   // --- takeover plumbing ----------------------------------------------------
 
@@ -906,43 +854,18 @@ export function OnAirSession({
     void acquireQuiet()
   }
 
-  // Hand a Movement practice off to the Get Moving engine. The sit + the movement engine now share
-  // ONE door (the unified Mindless overlay), so picking a movement practice here just SWITCHES the
-  // door's mode to 'move' (the data is already loaded, so the swap is instant and no second overlay
-  // opens). The standalone /on-air route has no door (onModeChange absent); there a movement pick is
-  // a no-op handled by the chooser only offering sit practices in practice, so we simply close it.
+  // Hand a Movement practice off to the Get Moving engine. The sit + the movement engine share ONE
+  // door (the unified Mindless overlay), so a movement default just SWITCHES the door's mode to
+  // 'move' (the data is already loaded, so the swap is instant and no second overlay opens). The
+  // standalone /on-air route has no door (onModeChange absent); there it is a no-op. In practice the
+  // door routes a movement default to Get Moving before this engine mounts, so this rarely fires.
   function handOffToMovement(id: string) {
     void id
-    setShowChooser(false)
     if (onModeChange) {
       onModeChange('move')
       return
     }
-    // No unified door (the standalone route): nothing to hand off to. Close the chooser and stay.
-  }
-
-  // The chooser pick (C.5) + the THE BUG fix (item #2): route by the practice's timer_kind, not
-  // by whether it has a duration_min.
-  //   movement → close Mindless + hand off to the Movement timer (the only kind that still leaves
-  //              this engine, so it acts on the pick immediately)
-  //   none / mindless → SELECT the practice + close the sheet, then RETURN to the setup. The
-  //              member taps the primary button (now "Start Practice", or "Continue Practice" for a
-  //              partial) to actually begin. The chooser no longer auto-starts (owner UX directive).
-  function chooseAndStart(id: string) {
-    const picked = practices.find((p) => p.id === id)
-    const kind = picked?.timerKind ?? 'mindless'
-    if (kind === 'movement') {
-      handOffToMovement(id)
-      return
-    }
-    // selectPractice seeds the mode + minutes (and the resume, for a partial) so the setup is
-    // ready for the primary button. modeForPractice never returns 'log' for a mindless practice,
-    // so a Free sit lands on the timer; a 'none' practice opens to Just Log.
-    selectPractice(id)
-    // The pick is an explicit selection: from here the primary button STARTS (or continues) it,
-    // never "Select Practice". Stays explicit through any later "Change" re-pick.
-    setExplicitlySelected(true)
-    setShowChooser(false)
+    // No unified door (the standalone route): nothing to hand off to; stay put.
   }
 
   // Begin the sit now: end the pre-roll and unpause from the armed state (shift startedAt by the
@@ -1194,6 +1117,13 @@ export function OnAirSession({
     const os = overtime % 60
     const overLabel = `+${om}:${String(os).padStart(2, '0')}`
     const cue = ended ? liveDepthCue(resumeBanked.current + minutes * 60 + overtime) : null
+    // The full session length the member is settling into (item #5). Shown BELOW the timer while
+    // the warm-up counts down, and KEPT there once the run begins, so the target never disappears
+    // on start. A resume names the full target (banked + remaining); a fresh sit is the set minutes.
+    const targetMin =
+      resumeTarget.current > 0
+        ? Math.max(1, Math.round(resumeTarget.current / 60))
+        : minutes
     return (
       <Overlay flash={flash}>
         {/* The content scrolls if it has to; the controls below DOCK to the bottom and stay
@@ -1259,6 +1189,11 @@ export function OnAirSession({
                 <p className="text-7xl font-semibold tabular-nums text-primary-strong">{preroll}</p>
               </div>
             )}
+            {/* The target the member is about to do (item #5): shown below the timer through the
+                warm-up countdown and KEPT once the run begins (it does not vanish on start). */}
+            <p className="text-sm tabular-nums text-subtle">
+              {preroll !== null ? `Settling into ${targetMin} min` : `${targetMin} min session`}
+            </p>
             {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). The
                 clock is already running; this is optional. */}
             {needRestore && (
@@ -1526,11 +1461,11 @@ export function OnAirSession({
               aria-expanded={cuesOpen}
               className="flex w-full items-center justify-between lg:hidden"
             >
-              <Label>Sound &amp; cues</Label>
+              <Label>Sounds &amp; Settings</Label>
               <ChevronDown className={`h-4 w-4 text-subtle transition-transform ${cuesOpen ? 'rotate-180' : ''}`} aria-hidden />
             </button>
             <div className="hidden lg:block">
-              <Label>Cues</Label>
+              <Label>Sounds &amp; Settings</Label>
             </div>
             <div className={`${cuesOpen ? 'block' : 'hidden'} lg:block`}>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1553,10 +1488,11 @@ export function OnAirSession({
                 title="A small tap at each phase change. Not every phone supports it."
               />
             </div>
-            {/* Warm up: the countdown before the sit begins (item #6). 3 / 5 / 10 seconds. */}
+            {/* Countdown: the single lead-in before the sit begins (item #6). 3 / 5 / 10 seconds,
+                default 5. The SAME timer runs this lead-in and then the session. */}
             <div className="mt-3">
-              <SubLabel>Warm up</SubLabel>
-              <div className="mt-1.5 grid grid-cols-3 gap-2" role="group" aria-label="Warm up length">
+              <SubLabel>Countdown</SubLabel>
+              <div className="mt-1.5 grid grid-cols-3 gap-2" role="group" aria-label="Countdown length">
                 {WARMUP_PRESETS.map((w) => (
                   <button
                     key={w}
@@ -1573,7 +1509,7 @@ export function OnAirSession({
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-2xs text-subtle">A short countdown to settle before the clock starts.</p>
+              <p className="mt-1.5 text-2xs text-subtle">The lead-in before the session starts. The same timer counts this down, then runs your session.</p>
             </div>
             {bell && (
               <div className="mt-3 space-y-3 rounded-xl border border-border px-3.5 py-3">
@@ -1720,25 +1656,15 @@ export function OnAirSession({
       </div>
 
       {/* Practice read-out (which log this banks), on ONE line with an inline "Change" link. Shown
-          only once a practice is explicitly selected (it pairs with the Start/Continue button); in
-          the "Select Practice" state nothing renders here. With more than one practice "Change"
-          re-opens the chooser. */}
-      {practices.length > 1 && practice && explicitlySelected && (
+          it pairs with the Start / Continue button so the member sees exactly which log this
+          banks. No picker: the door already resolved what to run. */}
+      {practice && (
         <div className="mt-5 lg:mt-6">
-          <div className="flex items-center justify-between gap-2">
-            <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
-              <span className="shrink-0 text-subtle">Logs as</span>
-              <span className="truncate font-semibold">{practice.title}</span>
-              {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowChooser(true)}
-              className="shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold uppercase tracking-wider text-primary-strong transition-colors hover:bg-primary-bg/40"
-            >
-              Change
-            </button>
-          </div>
+          <p className="flex min-w-0 items-center gap-1.5 text-sm text-text">
+            <span className="shrink-0 text-subtle">Logs as</span>
+            <span className="truncate font-semibold">{practice.title}</span>
+            {practice.loggedToday && <Check className="h-3.5 w-3.5 shrink-0 text-success" />}
+          </p>
           {/* A partial today resumes: surface the remaining time so "Continue Practice" reads true. */}
           {activeResume && (
             <p className="mt-1 text-2xs text-primary-strong">
@@ -1762,21 +1688,16 @@ export function OnAirSession({
             {practicedToday} members practiced today.
           </p>
         )}
-        {/* The primary action. When the member has a real practice to choose AND hasn't explicitly
-            selected one (a generic open landed on the Free Practice default), the button reads
-            "Select Practice" and OPENS the chooser rather than starting, so they pick one of their
-            adopted practices first. Just Log keeps "Log it" (an instant log) even in that state.
-            Once a practice is explicitly selected (or the member only has Free Practice, nothing to
-            choose), it STARTS the sit: "Continue Practice" when the selected practice has a partial
-            today (it resumes the remaining time), else "Start Practice". Re-pick via "Change" above. */}
+        {/* The primary action AUTO-STARTS the resolved practice (no "Select practice" step). Just
+            Log is an instant log; everything else begins the sit on the resolved practice's mode +
+            minutes — "Continue Practice" when it has a partial today (resumes the remaining time),
+            else "Start Practice". Pressing it arms the single warm-up countdown, then runs. */}
         <button
           type="button"
           onClick={() => {
             if (!practiceId) return
-            // Prompt a pick first on a generic open (Just Log goes straight through to its log).
-            if (needsSelect && mode !== 'log') { setShowChooser(true); return }
-            // A lone Movement practice still hands off to the Movement timer (item #2); every
-            // other kind runs the sit on the member's chosen mode + minutes (resuming if partial).
+            // A movement default (rare — the door routes it to Get Moving first) hands off; every
+            // other kind runs the sit on the resolved mode + minutes (resuming if partial).
             if (practiceKind === 'movement') { handOffToMovement(practiceId); return }
             void start({ practiceId, mode, minutes })
           }}
@@ -1786,11 +1707,9 @@ export function OnAirSession({
           <OnAirIcon className="h-4 w-4" />{' '}
           {mode === 'log'
             ? 'Log it'
-            : needsSelect
-              ? 'Select Practice'
-              : activeResume
-                ? 'Continue Practice'
-                : 'Start Practice'}
+            : activeResume
+              ? 'Continue Practice'
+              : 'Start Practice'}
         </button>
       </div>
       </div>
@@ -1798,106 +1717,6 @@ export function OnAirSession({
       {showInstructions && (
         <InstructionsPopup pattern={pattern} onClose={() => setShowInstructions(false)} />
       )}
-      {showChooser && (
-        <PracticeChooser
-          practices={practices}
-          selectedId={practiceId}
-          onPick={chooseAndStart}
-          onClose={() => setShowChooser(false)}
-          onBrowse={() => { setShowChooser(false); leave() }}
-        />
-      )}
-    </div>
-  )
-}
-
-/** The practice chooser sheet (C.5): the promoted chip row. Picking a practice opens
- *  its timer preset and begins the sit (chooseAndStart). A calm centered overlay above
- *  the setup takeover (z-[60] > z-50), dismissible by the Close button, the scrim, or Esc. */
-function PracticeChooser({
-  practices,
-  selectedId,
-  onPick,
-  onClose,
-  onBrowse,
-}: {
-  practices: OnAirPractice[]
-  selectedId: string
-  onPick: (id: string) => void
-  onClose: () => void
-  /** Tapping "Browse the library" navigates to /practices; this drops the takeover first. */
-  onBrowse: () => void
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Select a practice"
-      className="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-4 sm:items-center sm:px-6"
-    >
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-canvas/80 backdrop-blur-sm"
-      />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface px-5 py-5 shadow-lg">
-        <div className="flex items-center justify-between pb-3">
-          <h2 className="text-base font-semibold text-text">Select a practice</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-full p-1.5 text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {/* Adopted (and current-leg) practices + the Free sit come FIRST (item #6); each routes
-            per its timer_kind on pick. */}
-        <div className="-mx-1 max-h-[60vh] space-y-1.5 overflow-y-auto px-1">
-          {practices.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onPick(p.id)}
-              className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-3 text-left text-sm transition-colors ${
-                p.id === selectedId
-                  ? 'border-primary bg-primary-bg/40 font-semibold text-text'
-                  : 'border-border text-muted hover:bg-surface-elevated'
-              }`}
-            >
-              <span className="min-w-0 flex-1 truncate">{p.title}</span>
-              {/* An unfinished session today shows a "N min left" pill to resume (it is NOT complete,
-                  so it does not get the done check); a finished one keeps the check. */}
-              {p.partialToday ? (
-                <span className="shrink-0 rounded-full bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
-                  {Math.max(1, Math.ceil((p.partialToday.targetSec - p.partialToday.bankedSec) / 60))} min left
-                </span>
-              ) : p.loggedToday ? (
-                <Check className="h-4 w-4 shrink-0 text-success" aria-label="Logged today" />
-              ) : null}
-            </button>
-          ))}
-        </div>
-        {/* A quiet door to the full library for anything not on the member's list yet
-            ("adopted first, browse for more"). Closes the takeover on the way out. */}
-        <Link
-          href="/practices"
-          onClick={onBrowse}
-          className="mt-3 flex items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold text-subtle transition-colors hover:bg-surface-elevated hover:text-text"
-        >
-          <Library className="h-3.5 w-3.5" aria-hidden /> Browse the library
-        </Link>
-      </div>
     </div>
   )
 }

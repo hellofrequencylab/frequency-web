@@ -207,20 +207,23 @@ export async function loadOnAirSessionData(
     warmupSec: stored.warmupSec ?? DEFAULT_PREFS.warmupSec,
   }
 
-  // A SPECIFIC entry pre-selects THAT practice so the setup opens already in its mode: a practice
-  // page, the streak box's button, a Journey step, or a /on-air?practice link (requestedPracticeId).
-  // A GENERIC entry passes no request (the header Mindless/Movement button, the Zap menu), and there
-  // the setup opens NEUTRAL on the Free sit, never a random adopted practice: the member logs
-  // anything from here, or selects a practice and the timer jumps to that practice's mode (owner
-  // directive 2026-06-21). The first-real-practice fallback only applies when there is no Free sit.
+  // What the timer auto-resolves to when it opens. The manual "Select practice" step is GONE
+  // (owner directive 2026-07-06): the door resolves ONE thing to run and Start begins it, no picking.
+  //
+  //  1. A SPECIFIC entry pre-selects THAT practice (a practice page, the streak box, a Journey
+  //     step, or a /on-air?practice link — requestedPracticeId), opening in its routed mode.
+  //  2. A GENERIC entry (the header Mindless/Movement button, the Zap menu) auto-defaults to the
+  //     member's adopted practice DUE TODAY that isn't done yet: the first real (current-leg when
+  //     enrolled, else adopted) practice not completed today. A partial counts as "still to do" and
+  //     pre-selects so the timer resumes the remaining time. This completes today's assigned
+  //     practice with correct duration / type / logging, no picking.
+  //  3. Once every adopted practice is done for the day (or there are none), the door defaults to
+  //     Free Practice so the member can keep practicing beyond their daily requirement.
+  const dueTodayId = practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ?? null
   const defaultPracticeId =
     requestedPracticeId && practices.some((p) => p.id === requestedPracticeId)
       ? requestedPracticeId
-      : sit
-        ? FREE_SIT_ID
-        : practices.find((p) => p.id !== FREE_SIT_ID && !p.loggedToday)?.id ??
-          practices.find((p) => p.id !== FREE_SIT_ID)?.id ??
-          null
+      : dueTodayId ?? (sit ? FREE_SIT_ID : practices.find((p) => p.id !== FREE_SIT_ID)?.id ?? null)
 
   return { practices, defaultPracticeId, prefs, practicedToday }
 }

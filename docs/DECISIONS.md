@@ -11880,3 +11880,48 @@ through the anti-spam-gated seam. New table needs applying (`20261021000000_spac
 New cron entry in `vercel.json`. Contract test locks the enrollment `space_id` binding; unit tests cover
 the enroll primitive, the trigger dispatcher, the idempotent claim + step advancement, and the
 entitlement gate. Gate green: tsc, eslint, vitest (4067), check:menu, check:authz, check:rls.
+
+---
+
+## ADR-566: The practice timer auto-resolves what to run (no picker) + one shared countdown
+
+**Status:** Accepted · corroborated by `lib/on-air/session-data.ts` (`defaultPracticeId`),
+`components/on-air/session.tsx`, `components/on-air/movement-session.tsx`.
+**Context:** The Mindless timer opened on a setup that asked the member to **Select a
+practice** through a chooser sheet (ADR-306 / ADR-360 flow). Two bugs rode that step:
+selecting **Free Practice** from the breathwork timer reverted to a default 1-minute
+meditation (and logged as Free Practice), and the meditation timer's equivalent reverted
+to a default box breath — stale setup state overwrote the pick, so the member had to
+repeat the flow to make it stick. The owner directive (2026-07-06) removed the step
+entirely: the timer should just resolve today's thing to do and start it. There were also
+multiple competing warm-up countdowns across the two engines, and the countdown length was
+not member-controllable.
+**Decision:**
+1. **No manual selection.** The "Select practice" chooser + "Change" affordance are removed
+   from both engines. The door **auto-resolves ONE practice server-side**
+   (`loadOnAirSessionData.defaultPracticeId`): a specific entry pre-selects its practice; a
+   generic entry lands on the member's **adopted practice due today that isn't completed**
+   (the current Journey leg when enrolled via `getCurrentLegPracticeIds`, else the adopted
+   list via `getMemberPractices`; a `partialToday` pre-selects to resume the remaining time);
+   once **every** adopted practice is done for the day (or there are none) it defaults to
+   **Free Practice**. This removes the stale-state revert (bugs 1/2) by removing the picker
+   that carried the stale state, and correct auto-defaulting replaces it.
+2. **Start auto-begins.** The primary button (`Start Practice` / `Continue Practice`, or
+   `Log it` for Just Log) starts the resolved practice immediately with the shared countdown.
+3. **One countdown.** Both engines use the **same single warm-up countdown** (default **5s**):
+   the live timer arms paused at zero, the "Warm up N" pre-roll ticks down on the SAME clock,
+   then it unpauses and runs the session (Start/Begin now overrides). The full target
+   ("Settling into N min") shows **below** the timer through the countdown and is **kept** on
+   start. The length is a member setting (3/5/10s) under **Sounds & Settings** (renamed from
+   "Sound & cues"), persisted to `profiles.meta.onAir.warmupSec` and read by every timer.
+**Alternatives considered.** (1) Fix the chooser's stale-state bug in place — rejected: the
+owner wanted the friction gone, and removal is a smaller, safer surface than patching the
+select→seed→start race. (2) A separate countdown component preceding the run timer — rejected
+by the "one countdown that IS the run timer" requirement; the armed-paused pre-roll reuses the
+existing clock so airtime math and cues need nothing new.
+**Consequences.** The completion economy path is unchanged (`completeSession` still logs by
+the resolved `practiceId`, Free Practice logs the default sit via `logsAs`, and the timed /
+breath / log gates are untouched). `PracticeChooser` and the `explicitlySelected` /
+`needsSelect` / `showChooser` machinery are deleted from both engines. Docs: `docs/ON-AIR.md`
+"Entry, selection, and resume" + roadmap P18. Gate green: tsc, eslint, vitest, check:menu,
+check:authz, check:rls, build.
