@@ -12479,3 +12479,68 @@ row. No migration (the `business_intake` table is live). No AI in P3 (it consume
 reframe fields generically, so new reframe fields simply re-paint). Gate green: tsc, eslint, vitest
 (review-model signals + gate + withheld + summary), check:authz, check:menu, check:rls, check:canon, check:seo,
 build. Reachable at Admin -> Operations -> Business Seeder (janitor+).
+
+---
+
+## ADR-576: Business Importer P2, the reframe stage + the confirmed 3-surface compose
+
+**Status:** Accepted · implements ADR-569 P2 (docs/BUSINESS-IMPORTER.md §5/§6). Builds on P0 (#1599) and
+P1 (ADR-574). Next free number after ADR-574; flag if a concurrent PR also claims 575.
+
+**Context.** P1 lands a research pipeline that produces a VERIFIED draft (only cited + verified facts
+cleared) plus a provenance ledger, and a materializer that seeds a Space and its three business surfaces.
+P2 adds the Reframe stage (Frequency-voice copy from the verified facts) and confirms the reframed +
+verified draft composes cleanly to all three surfaces. The trust boundary is fixed at P1; P2 must not be
+able to launder an unverified fact into published copy.
+
+**Decision.**
+1. **Reframe grounds ONLY on the verified subset (docs §4.4).** The new `lib/importer/reframe/*` (sonnet,
+   forced `save_reframed_copy` tool, `withVoice`) is handed the verifier's verified draft, never the raw
+   harvest. `buildGroundingBlock` prints only safe fields; a commercial fact that verify stripped is
+   absent, and the ones that remain are named by LABEL only ("published prices", "a way to get in touch"),
+   never by figure, so the model knows a fact exists without being handed a value to restate. It rewrites
+   the tagline / about / story / offering blurbs; it never writes contact / rating / price.
+2. **Every generated string is tagged `kind:'generated'` (docs §4.2).** `applyReframe` folds the copy back
+   and stamps each field's ledger path (`tagline`/`about`/`story`/`offerings[i].blurb`) as generated with
+   no source and no `verifiedBy`. So the P1 prose gate (`prosePublishes` in `map.ts`) still governs it: a
+   commercial claim hiding inside generated prose is review-required and does NOT auto-publish. Reframe
+   cannot launder a fact by wording it into a sentence, because its output is tagged generated, not fact.
+3. **Voice guard as a deterministic floor (docs §4.6).** A pure `voice-check.ts` runs the CONTENT-VOICE §10
+   machine checklist (em dashes, §5 vibe-verbs / surface jargon / hype, health claims, shouting) and always
+   sanitizes em dashes out of every stored string. Copy that trips regenerates ONCE with a corrective note,
+   then the cleaner result is kept and flagged amber when still not clean (never silently shipped).
+4. **Pipeline placement: AFTER verify, BEFORE review (docs §6.1).** Reframe runs on `verifyResult.verified
+   Draft`, folds tagged-generated copy, and lands the intake in `review`. Fail-safe: AI off / over budget /
+   a thrown call returns null and the pipeline keeps the verified draft unchanged (no fabricated prose).
+   Idempotent + safe re-run: it reuses the cached harvest, and an `editedProse` marker on the under-review
+   draft is honored (edit-wins carry-forward) so a re-reframe never clobbers an operator edit. The full
+   marker persistence is left to P5 (TODO in code).
+5. **The 3-surface compose confirmed, with the Site gap closed.** The three business surfaces render from
+   ONE seeded Space but through TWO layout systems: the Space profile (`/spaces/[slug]`) reads the
+   block-picker grid at `preferences.profileLayout` (an EntityLayout, `map.ts` composeLayout), while the
+   Site (`/sites/[slug]`) reads a Puck doc at `preferences.pageDocs.home`, filtered for the `website`
+   surface. P1's materializer wrote only `profileLayout`, so the Site fell back to the BARE default page and
+   the reframed prose never reached it. The new pure `site-compose.ts` (`composeSiteHomeDoc`) starts from
+   the universal default page (so live-data blocks self-fill from the central `profileData` the materializer
+   already writes) and folds the reframed prose into the prop-authored `SpaceAbout` body under the SAME
+   prose gate, so a withheld / generated line is withheld on the Site too. The materializer writes
+   `pageDocs.home` from it, only when the operator has not authored a Home doc (edit-wins). The Site stays
+   UNPUBLISHED (`websitePublished` unset) until an operator flips it live (§9b). Spotlight is dressed
+   separately, so each surface regenerates independently.
+
+**Alternatives.** (1) Reframe over the raw harvest for richer copy: rejected, it would hand the model
+unverified claims to launder (the core trust violation). (2) Tag reframed prose as `fact`: rejected, it
+would bypass the prose gate. (3) Bridge `profileLayout` into a Puck doc so one layout drives both surfaces:
+rejected as a larger refactor touching editor-owned code; composing the Site doc from the default page +
+central data is smaller and keeps the surfaces independently regenerable. (4) Gate the generic closing
+`SpaceCallout` copy: rejected, it is a relational invitation with no commercial claim, so it keeps its
+default CTA.
+
+**Consequences.** New `lib/importer/reframe/*` (`prompt`, `run`, `apply`, `voice-check`, barrel) and
+`lib/importer/site-compose.ts`; `pipeline.ts` gains the reframe stage + the edit-wins carry-forward;
+`materialize.ts` additionally writes `pageDocs.home` (the Site surface). Reuses the existing
+`business-import-reframe` budget key (no new env). Tests pin the trust properties: reframe grounds only on
+the verified subset (a stripped fact never appears in the grounding), generated copy is tagged generated,
+the prose gate withholds a commercial claim embedded in generated copy, and no em dash survives. Gate green:
+tsc, eslint, vitest (4461), check:authz, check:menu, check:rls, check:canon, check:seo, build. No migration.
+This PR touches the verified -> published boundary, so it is NOT auto-merged (human review).
