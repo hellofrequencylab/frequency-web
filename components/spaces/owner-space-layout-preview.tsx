@@ -70,10 +70,12 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
 
   // The page is the LIVE RESULT only (ADR-542 revised): no editing chrome here. The owner arranges the page
   // in the sidebar (SpacePageBuilder) and this preview repaints through the shared store.
-  // Breathing room (item 2): a right gutter at lg+ so the arranged page never crowds against the admin rail
-  // sliding in from the right — the content and the rail read as two calm columns, not one cramped edge.
+  // NOTE: no extra right gutter here. The shell already spaces the content from the community/admin rail
+  // (app-shell `lg:gap-10` + the rail column's `lg:ml-3`); an added `pr-*` here DOUBLE-counted it and left a
+  // dead vertical strip between the arranged page and the rail (owner report). The owner preview now fills the
+  // same width the visitor render does, so no content-less margin. `@container/profile` stays (grid queries).
   return (
-    <div className="@container/profile lg:pr-4 xl:pr-8">
+    <div className="@container/profile">
       <LiveProfileGrid
         nodes={nodes}
         initialRows={rows}

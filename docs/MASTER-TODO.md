@@ -47,21 +47,32 @@ actions. Build/lint/test green; no migration drift; no known correctness or secu
   never fabricated) + a test, and wired the page to it.
 
 ### Phase 3 — performance (D3 + tail)
-- ⏳ `messages` / DM / room fetch waterfalls → waves.
-- ⏳ Authed `(main)/layout.tsx` serial-await tail → `Promise.all` + per-section `<Suspense>`.
-- ⏳ `(marketing)` / `discover` / splash `cookies()`+`getUser()` defeats ISR → client-island auth.
-- ⏳ `GameStatsDock` its own `<Suspense>`.
-- 🟡 ~26 `<img>` → `next/image` on LCP surfaces (practices library, space profile, spotlight, market).
-- 🟡 Help search index re-parsed per request + shipped in every RSC payload → cache.
+Audit finding: the meaningful perf work is **already shipped** — the meta-scan's "open" tail was stale.
+- ✅ Authed `(main)/layout.tsx` serial-await tail → one `Promise.all` wave (lines ~239-298) + overlay
+  slots streamed behind `<Suspense>` (Vera/Coach/AutoPopups). Verified in-code.
+- ✅ `messages` inbox → already on `Promise.all` ("~6 serial round-trips" fixed). Verified.
+- ✅ `GameStatsDock` already has its OWN `<Suspense>` (`right-sidebar.tsx` ~237). Verified.
+- ✅ Help search index already React-cached (once per request), streamed in `VeraLauncherSlot`. Verified.
+- ⏳ **Deferred to a dedicated PR (HIGH-risk, out of scope for this sweep):** `(marketing)`/`discover`/
+  splash `cookies()`+`getUser()` → client-island auth to restore ISR. Changes the public-page auth model;
+  the meta-scan flags it for an isolated, test-gated change.
+- 🟡 **Deferred (needs per-surface QA):** `<img>`→`next/image`. The 27 raw `<img>` are almost all in
+  auth-gated editors/admin/upload-preview/map contexts (no LCP benefit); the few LCP candidates
+  (event poster, block renderer) have variable aspect ratios needing visual QA a headless sweep can't do.
 
-### Phase 4 — control-condensing + polish + a11y
-- ⏳ Extend the rail-editor's modern icon-group inspector density (ADR-570 primitives) to the
-  operator/admin surfaces still hand-rolling chunky controls: Theme Studio, walkthrough editors,
-  marketplace manager, admin row-actions.
-- ⏳ a11y tail: missing `error.tsx` / `not-found.tsx` per route group; icon-only buttons need
-  `aria-label`; dialog focus-trap soundness; client mutations without error feedback.
-- 🟡 Page-framework nits: hardcoded hex + `text-[11px]` in admin/marketplace components; hand-rolled
-  headers in Theme Studio / walkthrough editors.
+### Phase 4 — control-condensing + polish + a11y ✅ (first pass)
+- ✅ Condensed the marketplace seller storefront row-actions (Publish / Mark sold out / Unpublish /
+  Delete) from a wrap of labelled ghost buttons into a tight cluster of 32px icon controls, each with an
+  `aria-label` + tooltip + focus ring (`makers/manage/page.tsx`). The modern-icon exemplar.
+- ✅ Page-framework canon: killed `text-[11px]` (→ `text-xs`) and the hardcoded `#7a5c3a` accent-hex
+  fallback (→ token `var(--color-primary)`) across `function-grid`, `type-defaults-grid`, `icons-lane-view`.
+- ✅ **Added the "Import a business" wizard box to `/admin/spaces`** (owner request) — a polished CTA card
+  linking to the P3 seeder console (`/admin/business-seeder`), shown even with zero Spaces.
+- ✅ **Fixed the Space-profile right-margin gap** (owner report): `OwnerSpaceLayoutPreview` carried
+  `lg:pr-4 xl:pr-8` that double-counted the shell's content↔rail gutter, leaving a dead vertical strip.
+  Removed it so the owner preview fills the same width the visitor render does.
+- ⏳ Remaining (future pass): extend the icon-group density to Theme Studio / walkthrough editors;
+  a11y tail (missing `error.tsx`/`not-found.tsx` per route group, dialog focus-trap).
 
 ### Phase 5 — Business Importer P5 polish
 - ⏳ Edit-wins re-apply: write `_editedProse` from the review board so a re-run preserves operator

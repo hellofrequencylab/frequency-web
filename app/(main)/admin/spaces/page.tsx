@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   HeartPulse,
   Users,
+  Sparkles,
+  Wand2,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -233,6 +235,31 @@ export default async function SpacesHealthPage() {
         </Button>
       }
     >
+      {/* Import a business — the entry into the Smart Business Importer (P3 seeder console). Sits at the
+          top so it is reachable even before any Space exists: paste a site or socials, the pipeline
+          researches + verifies, and you review a drafted Space before it goes live (seeds land unlisted). */}
+      <AdminSection>
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-bg text-primary-strong">
+              <Sparkles className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-text">Import a business</h2>
+              <p className="mt-0.5 text-xs text-muted">
+                Paste a website or social links. The importer researches, verifies every commercial fact,
+                and drafts a full Space you review before it goes live. Seeds land unlisted as a demo.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="primary" size="sm" className="shrink-0">
+            <Link href="/admin/business-seeder">
+              <Wand2 className="h-3.5 w-3.5" aria-hidden /> Start an import
+            </Link>
+          </Button>
+        </div>
+      </AdminSection>
+
       {spaces.length === 0 ? (
         <EmptyState
           icon={Building2}
