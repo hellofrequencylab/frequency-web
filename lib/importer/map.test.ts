@@ -212,8 +212,10 @@ describe('composeBlockOrder / mapBlockContent — Importer v2 default order + ga
   it('emits a gallery content bag from ready media.gallery urls (hero not repeated)', () => {
     const content = mapBlockContent(withGallery)
     expect(content.gallery).toEqual({ images: ['https://cdn.example/g1.jpg', 'https://cdn.example/g2.jpg'] })
-    // The hero image goes on photoHero, never duplicated into the gallery.
-    expect(content.photoHero?.image).toBe('https://cdn.example/hero.jpg')
+    // The in-page banner must NOT reuse the cover (media.heroPath); it uses the first GALLERY image so
+    // the same photo never appears twice (cover + banner).
+    expect(content.photoHero?.image).toBe('https://cdn.example/g1.jpg')
+    expect(content.photoHero?.image).not.toBe('https://cdn.example/hero.jpg')
   })
 
   it('omits the gallery block when there are no ready gallery images', () => {
