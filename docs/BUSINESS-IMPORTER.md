@@ -249,14 +249,30 @@ model's blind spot is less likely to pass both.
 - `unsupported` -> stays `generated`/`inferred`, confidence capped low, flagged amber.
 - `contradicted` -> flagged red, held out of Apply until a human resolves it.
 
-### 4.3 The hard commercial-fact gate
+### 4.3 The hard commercial-fact gate (TWO independent gates, both fail-closed)
 These fields are **commercial facts** and may **never** auto-publish:
-`contact.address`, `contact.phone`, `contact.email`, `contact.hours`, every `offerings[].price`,
-`rating`, and any claim or certification in `story`/`about`.
+`contact.address`, `contact.phone`, `contact.email`, `contact.hours`, every `offerings[].price`
+(**and that offering's `priceModel` + `currency`**, since "Free" / "From $95" are claims too), `rating`,
+and any claim or certification embedded in **generated prose** (`about` / `story` / `tagline` /
+offering `blurb`).
 
-At Apply, any commercial field whose ledger entry is not (`kind:'fact'` AND `verifiedBy` set) is either
-**withheld** (left blank on the live surface) or requires an explicit operator confirm in review. Enforced
-in the materializer, not just the UI, so a UI bypass cannot leak an unverified price.
+The invariant "no unverified commercial claim reaches a live surface as trusted" is enforced by **two
+independent gates**, so it never rests on one:
+
+- **Gate A (the verifier).** `splitVerified` strips every commercial field whose ledger entry is not
+  (`kind:'fact'` AND `verifiedBy`) from the verified draft and flags contradicted fields red (blocking
+  Apply). Reframe (§4.4) then sees only the verified subset.
+- **Gate B (the materializer).** At Apply, the materializer RE-DERIVES the decision **per field** from the
+  provenance ledger (via `isCommercialFieldCleared`), independently of Gate A: `mapProfileData` /
+  `mapIdentity` / the layout composer publish a commercial field iff its ledger entry is a verified fact,
+  and **withhold** it (left blank on the live surface) otherwise. A verified fact **does** publish (the
+  verified path is live); an uncleared one does not. Generated prose is **review-required**: under the
+  ledger gate, prose with a `generated`/`inferred` entry is withheld (a commercial claim can hide inside a
+  sentence), publishing only when the entry is a verified fact or absent (hand-supplied).
+
+`materializeBusiness` **defaults to withhold** when given neither a policy nor a ledger, so a direct call
+that forgets the flag cannot leak. A UI bypass cannot leak an unverified price: Gate B runs regardless of
+the UI.
 
 ### 4.4 Reframe reads only verified facts
 The Reframe step (§3, stage 5) is handed the verified subset of the draft, never the raw harvest. It may

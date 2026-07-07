@@ -35,8 +35,8 @@ import { withMemberGridLayout } from '@/lib/entity-blocks/member-grid-meta'
 import { withSpotlightEnabled } from '@/lib/profile/spotlight-flags'
 import { isSafeSlug } from '@/lib/theme/validate'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
-import type { BusinessProfile } from './schema'
-import { buildPlan, type MaterializationPlan } from './map'
+import type { BusinessProfile, ProvenanceLedger } from './schema'
+import { buildPlan, type MaterializationPlan, type CommercialPolicy } from './map'
 
 // ── Target + result ─────────────────────────────────────────────────────────────
 
@@ -46,12 +46,26 @@ export type MaterializeTarget =
   | { kind: 'create'; ownerProfileId: string }
   | { kind: 'update'; spaceId: string }
 
-/** Optional knobs. `demoOwnerProfileId` dresses that member's Spotlight (member grid + enable)
- *  as demo-dressing (§5 note). `verificationPolicy` gates commercial facts: 'allow' (P0, a
- *  hand-authored draft is trusted) or 'withhold' (P1, withhold un-verified commercial facts). */
+/**
+ * Optional knobs. `demoOwnerProfileId` dresses that member's Spotlight (member grid + enable) as
+ * demo-dressing (§5 note).
+ *
+ * The commercial-fact gate (docs §4.3) is an INDEPENDENT second gate the materializer enforces,
+ * distinct from the verifier's splitVerified. Choose ONE of:
+ *   • `verificationPolicy: 'allow'` — trust every commercial fact (P0 hand-authored draft; the caller
+ *     opts IN explicitly). FAIL-CLOSED default: when NEITHER `verificationPolicy` NOR `ledger` is
+ *     given, the policy is 'withhold', so a direct call that forgets the flag cannot leak.
+ *   • `ledger` — the provenance ledger; the map re-derives PER FIELD whether each commercial fact is a
+ *     verified fact (kind:'fact' && verifiedBy) and publishes only those. This is the P1 path: it
+ *     REVIVES the verified path (verified facts publish) while withholding uncleared/generated ones,
+ *     and re-checks independently of splitVerified.
+ * If both are given, `ledger` wins (the per-field re-derivation is stronger than the coarse flag).
+ */
 export interface MaterializeOptions {
   demoOwnerProfileId?: string
   verificationPolicy?: 'allow' | 'withhold'
+  /** The provenance ledger for a per-field commercial-fact gate (P1). Overrides verificationPolicy. */
+  ledger?: ProvenanceLedger
   /** Mark the seeded Space as a demo (unlisted/draft; stored on preferences.isDemo — there is no
    *  spaces.is_demo column yet, see the report). Default true for a create. */
   isDemo?: boolean
@@ -114,8 +128,12 @@ export async function materializeBusiness(
   target: MaterializeTarget,
   options: MaterializeOptions = {},
 ): Promise<MaterializeResult> {
-  const policy = options.verificationPolicy ?? 'allow'
-  const plan = buildPlan(profile, { commercial: policy })
+  // FAIL-CLOSED: the commercial-fact gate. A ledger (P1) drives a per-field re-derivation; else the
+  // coarse flag; else, when the caller gives NEITHER, withhold (a forgotten flag cannot leak, §4.3).
+  const policy: CommercialPolicy = options.ledger
+    ? { mode: 'ledger', ledger: options.ledger }
+    : (options.verificationPolicy ?? 'withhold')
+  const plan = buildPlan(profile, policy)
   if (!plan) return { ok: false, error: 'Draft is missing a usable name or slug.' }
 
   // Resolve the target space id (provision on create).
@@ -475,11 +493,13 @@ async function dressSpotlight(profileId: string, profile: BusinessProfile): Prom
 /**
  * Apply an approved `business_intake` row (docs §5 `applyIntake`). Wired in P1 now that the
  * `business_intake` table exists (migration 20261022000000): read the row's `draft` (the VERIFIED
- * BusinessProfile the research pipeline produced), materialize with the commercial-fact gate
- * ENFORCED ('withhold' — the materializer AND P1's verify split BOTH strip un-cleared commercial
- * facts, so a UI bypass cannot leak an unverified price), then stamp target_space_id + applied_at +
- * status='applied'. Only applies from the 'review' (or 'applied', idempotent re-run) state; never
- * from a mid-research state. Never throws. The deterministic seeding core is materializeBusiness.
+ * BusinessProfile the research pipeline produced) + its `ledger`, and materialize with the ledger as
+ * an INDEPENDENT per-field commercial-fact gate (docs §4.3): the materializer re-derives, per field,
+ * whether each commercial fact is a verified fact (kind:'fact' && verifiedBy) and publishes ONLY
+ * those. So a genuinely verified fact publishes (the verified path is live) while every uncleared or
+ * generated fact is withheld here too, independently of P1's splitVerified. Then stamp
+ * target_space_id + applied_at + status='applied'. Only from 'review' (or 'applied', idempotent
+ * re-run); never mid-research. Never throws. The deterministic core is materializeBusiness.
  */
 export async function applyIntake(
   intakeId: string,
@@ -495,14 +515,15 @@ export async function applyIntake(
   if (!profile?.name) return { ok: false, error: 'Intake draft has no usable business name.' }
 
   // Re-materialize onto the existing Space on a re-run, else provision a new one owned by the
-  // operator/owner. The gate is 'withhold' so unverified commercial facts never reach the surface.
+  // operator/owner. The ledger drives a PER-FIELD gate: verified facts publish, everything else is
+  // withheld here too (independently of the verifier's splitVerified).
   const owner = options.ownerProfileId ?? row.createdBy
   const target: MaterializeTarget = row.targetSpaceId
     ? { kind: 'update', spaceId: row.targetSpaceId }
     : { kind: 'create', ownerProfileId: owner }
 
   const result = await materializeBusiness(profile, target, {
-    verificationPolicy: 'withhold',
+    ledger: (row.ledger as ProvenanceLedger) ?? {},
     isDemo: row.inputs.consent?.isDemo ?? true,
     demoOwnerProfileId: row.inputs.consent?.isDemo ? owner : undefined,
   })

@@ -24,11 +24,53 @@ import { isSafeSlug } from '@/lib/theme/validate'
 import { isValidAccent } from '@/lib/spaces/accent'
 import type { SpaceProfileData, SpaceOffering, SpaceSocialLink } from '@/lib/spaces/profile-data'
 import type { EntityLayout, RowDef } from '@/lib/entity-blocks/layout'
+import { isCommercialFieldCleared } from './schema'
 import type {
   BusinessProfile,
   AvailabilityWindowInput,
   ProfileSocial,
+  ProvenanceLedger,
 } from './schema'
+
+// ── Commercial-fact gate policy (docs §4.3) ──────────────────────────────────────────
+//
+// The map is an INDEPENDENT second gate (docs §4.3): it re-derives, per commercial field, whether
+// that field is cleared to publish, so the invariant does not rest on splitVerified alone. Three
+// forms:
+//   • 'allow'   — trust every commercial fact (P0 hand-authored draft; the caller opts in explicitly).
+//   • 'withhold'— withhold every commercial fact (a coarse, unconditional block).
+//   • { mode:'ledger', ledger } — re-derive PER FIELD from the provenance ledger: a field publishes
+//     iff its ledger entry is (kind:'fact' AND verifiedBy), via the P0 helper isCommercialFieldCleared.
+//     This is the P1 path: verified facts publish, uncleared facts are withheld, on the SAME ledger the
+//     verifier wrote. Absent/empty ledger under this mode => nothing clears (fail-closed).
+export type CommercialPolicy = 'allow' | 'withhold' | { mode: 'ledger'; ledger: ProvenanceLedger }
+
+/** Whether a commercial field at `path` is cleared to publish under `policy`. PURE + total.
+ *  'allow' => always; 'withhold' => never; ledger => the field's ledger entry must be a verified fact. */
+export function commercialFieldClears(policy: CommercialPolicy, path: string): boolean {
+  if (policy === 'allow') return true
+  if (policy === 'withhold') return false
+  return isCommercialFieldCleared(policy.ledger[path])
+}
+
+/**
+ * Whether GENERATED PROSE at `path` (about / story / tagline / offering blurb) may auto-publish as
+ * trusted (docs §4.2 finding: a commercial claim can hide inside generated prose, e.g. an `about`
+ * that says "Massages from $95. Call (555) 123-4567."). Under a ledger policy such prose is
+ * review-required: it publishes ONLY when its ledger entry is a verified fact, OR when it carries NO
+ * ledger entry at all (hand-provided prose the importer never generated). A `generated`/`inferred`
+ * entry is WITHHELD, so unverified AI prose never reaches a live surface as trusted. 'allow' keeps
+ * all prose (P0 hand-authored); 'withhold' drops generated prose. PURE + total.
+ */
+export function prosePublishes(policy: CommercialPolicy, path: string): boolean {
+  if (policy === 'allow') return true
+  if (policy === 'withhold') return false
+  const entries = policy.ledger[path]
+  // No ledger entry => the importer did not generate this prose; a hand-supplied value is trusted.
+  if (!entries || entries.length === 0) return true
+  // There IS an entry: publish only if it is a verified fact; generated/inferred prose is held back.
+  return isCommercialFieldCleared(entries)
+}
 
 // ── Slug ──────────────────────────────────────────────────────────────────────
 
@@ -101,12 +143,15 @@ export function isReadyMediaUrl(path: string | undefined): boolean {
 export function mapIdentity(
   profile: BusinessProfile,
   resolved: { slug: string; accent: string | null },
+  policy: CommercialPolicy = 'allow',
 ): SpaceIdentity {
   const name = (profile.name ?? '').trim()
   const type: 'business' | 'nonprofit' = profile.type === 'nonprofit' ? 'nonprofit' : 'business'
   const brandName = (profile.brandName ?? '').trim() || name
-  const tagline = (profile.tagline ?? '').trim() || null
-  const about = (profile.about ?? '').trim() || null
+  // tagline + about are generated prose that can hide a commercial claim; gate them as
+  // review-required prose so unverified AI copy never lands on the Space row as trusted.
+  const tagline = prosePublishes(policy, 'tagline') ? (profile.tagline ?? '').trim() || null : null
+  const about = prosePublishes(policy, 'about') ? (profile.about ?? '').trim() || null : null
   const logo = profile.media?.logoPath
   const hero = profile.media?.heroPath
   return {
@@ -154,21 +199,31 @@ function mapSocials(socials: ProfileSocial[] | undefined): SpaceSocialLink[] {
 }
 
 /** Map draft offerings to SpaceOffering rows (major-unit prices, enum-validated priceModel). A
- *  row needs a title to survive. Pure. */
-function mapOfferings(profile: BusinessProfile): SpaceOffering[] {
+ *  row needs a title to survive. The `policy` gates the WHOLE commercial-pricing bag per offering
+ *  (price AND its priceModel/currency): "Free" or "From $95" are commercial claims too, so if the
+ *  offering's price ledger entry is not a verified fact, ALL THREE are withheld together (only the
+ *  title + blurb + duration, none of them a price claim, survive). Pure. */
+function mapOfferings(profile: BusinessProfile, policy: CommercialPolicy): SpaceOffering[] {
   const out: SpaceOffering[] = []
-  for (const o of profile.offerings ?? []) {
+  ;(profile.offerings ?? []).forEach((o, i) => {
     const title = (o.title ?? '').trim()
-    if (!title) continue
+    if (!title) return
     const row: SpaceOffering = { title }
     const blurb = (o.blurb ?? '').trim()
     if (blurb) row.blurb = blurb
-    if (typeof o.price === 'number' && Number.isFinite(o.price) && o.price >= 0) row.price = o.price
-    const currency = (o.currency ?? '').trim().toUpperCase()
-    if (/^[A-Z]{3}$/.test(currency)) row.currency = currency
-    if (o.priceModel && ['fixed', 'from', 'free', 'contact'].includes(o.priceModel)) {
-      row.priceModel = o.priceModel
+    // The commercial pricing bag (price + priceModel + currency) is gated as ONE unit, keyed by the
+    // offering's price ledger path. priceModel/currency without a cleared price would still publish
+    // a commercial claim ("Free", "From"), so they ride the same gate.
+    const priceCleared = commercialFieldClears(policy, `offerings[${i}].price`)
+    if (priceCleared) {
+      if (typeof o.price === 'number' && Number.isFinite(o.price) && o.price >= 0) row.price = o.price
+      const currency = (o.currency ?? '').trim().toUpperCase()
+      if (/^[A-Z]{3}$/.test(currency)) row.currency = currency
+      if (o.priceModel && ['fixed', 'from', 'free', 'contact'].includes(o.priceModel)) {
+        row.priceModel = o.priceModel
+      }
     }
+    // durationMinutes is not a commercial fact (not a price/hours/claim), so it is never gated.
     if (
       typeof o.durationMinutes === 'number' &&
       Number.isFinite(o.durationMinutes) &&
@@ -177,7 +232,7 @@ function mapOfferings(profile: BusinessProfile): SpaceOffering[] {
       row.durationMinutes = Math.round(o.durationMinutes)
     }
     out.push(row)
-  }
+  })
   return out
 }
 
@@ -190,37 +245,30 @@ function mapOfferings(profile: BusinessProfile): SpaceOffering[] {
  */
 export function mapProfileData(
   profile: BusinessProfile,
-  policy: { commercial: 'allow' | 'withhold' } = { commercial: 'allow' },
+  policy: CommercialPolicy = 'allow',
 ): SpaceProfileData {
   const out: SpaceProfileData = {}
   const contact = profile.contact
-  const allowCommercial = policy.commercial === 'allow'
 
   if (contact) {
-    if (allowCommercial && contact.address?.trim()) out.address = contact.address.trim()
-    if (allowCommercial && contact.phone?.trim()) out.phone = contact.phone.trim()
-    if (allowCommercial && contact.email?.trim()) out.email = contact.email.trim()
-    if (allowCommercial && contact.hours?.trim()) out.hours = contact.hours.trim()
+    // Each contact commercial fact is re-checked PER FIELD against the policy (independent gate).
+    if (commercialFieldClears(policy, 'contact.address') && contact.address?.trim()) out.address = contact.address.trim()
+    if (commercialFieldClears(policy, 'contact.phone') && contact.phone?.trim()) out.phone = contact.phone.trim()
+    if (commercialFieldClears(policy, 'contact.email') && contact.email?.trim()) out.email = contact.email.trim()
+    if (commercialFieldClears(policy, 'contact.hours') && contact.hours?.trim()) out.hours = contact.hours.trim()
+    // website + socials are not commercial facts (no price/hours/claim), so they publish freely.
     if (contact.website?.trim()) out.website = contact.website.trim()
     const socials = mapSocials(contact.socials)
     if (socials.length) out.socials = socials
   }
 
-  if (profile.about?.trim()) out.about = profile.about.trim()
+  // `about` is generated prose that can hide a commercial claim; gate it as review-required prose.
+  if (profile.about?.trim() && prosePublishes(policy, 'about')) out.about = profile.about.trim()
 
-  const offerings = mapOfferings(profile)
-  if (offerings.length) {
-    // Withhold PRICE (a commercial fact) when gated; keep the offering itself (title/blurb).
-    out.offerings = allowCommercial
-      ? offerings
-      : offerings.map((o) => {
-          const rest = { ...o }
-          delete rest.price
-          return rest
-        })
-  }
+  const offerings = mapOfferings(profile, policy)
+  if (offerings.length) out.offerings = offerings
 
-  if (allowCommercial && profile.rating) {
+  if (commercialFieldClears(policy, 'rating') && profile.rating) {
     const value = (profile.rating.value ?? '').trim()
     const count = (profile.rating.count ?? '').trim()
     if (value) out.rating = value
@@ -312,16 +360,18 @@ const DEFAULT_ORDER: readonly string[] = [
   'contact',
 ]
 
-/** Whether a block has content to show for this draft, so the composer only places blocks that
- *  will render something. Pure. */
-function blockHasContent(id: string, profile: BusinessProfile): boolean {
+/** Whether a block has content to show for this draft UNDER the policy, so the composer only places
+ *  blocks that will render something a viewer is allowed to see. Prose blocks (about/story) are not
+ *  placed when their prose is withheld; the contact block is not placed when no contact fact clears.
+ *  Pure. */
+function blockHasContent(id: string, profile: BusinessProfile, policy: CommercialPolicy): boolean {
   switch (id) {
     case 'photoHero':
       return true // always the opener (headline from name/tagline, optional hero photo)
     case 'about':
-      return !!(profile.about?.trim())
+      return !!(profile.about?.trim()) && prosePublishes(policy, 'about')
     case 'story':
-      return !!(profile.story?.trim())
+      return !!(profile.story?.trim()) && prosePublishes(policy, 'story')
     case 'offerings':
       return (profile.offerings ?? []).some((o) => o.title?.trim())
     case 'booking':
@@ -333,17 +383,25 @@ function blockHasContent(id: string, profile: BusinessProfile): boolean {
     case 'links':
       return (profile.links ?? []).some((l) => l.url?.trim())
     case 'reviews':
-      return !!(profile.rating?.value?.trim()) || (profile.reviews ?? []).some((r) => r.text?.trim())
+      return (
+        (!!profile.rating?.value?.trim() && commercialFieldClears(policy, 'rating')) ||
+        (profile.reviews ?? []).some((r) => r.text?.trim())
+      )
     case 'faq':
       return (profile.faq ?? []).some((f) => f.q?.trim())
-    case 'contact':
+    case 'contact': {
+      const c = profile.contact
+      // website + socials are non-commercial and always render; a commercial contact fact counts
+      // only when it clears the policy (so a withheld-only contact block is not placed empty).
       return !!(
-        profile.contact?.address?.trim() ||
-        profile.contact?.phone?.trim() ||
-        profile.contact?.email?.trim() ||
-        profile.contact?.hours?.trim() ||
-        (profile.contact?.socials ?? []).length
+        c?.website?.trim() ||
+        (c?.socials ?? []).length ||
+        (c?.address?.trim() && commercialFieldClears(policy, 'contact.address')) ||
+        (c?.phone?.trim() && commercialFieldClears(policy, 'contact.phone')) ||
+        (c?.email?.trim() && commercialFieldClears(policy, 'contact.email')) ||
+        (c?.hours?.trim() && commercialFieldClears(policy, 'contact.hours'))
       )
+    }
     default:
       return false
   }
@@ -351,14 +409,14 @@ function blockHasContent(id: string, profile: BusinessProfile): boolean {
 
 /** The ordered block ids to place: the `layoutHint` (filtered to blocks with content) if given,
  *  else the default order filtered to blocks with content. Pure. */
-export function composeBlockOrder(profile: BusinessProfile): string[] {
+export function composeBlockOrder(profile: BusinessProfile, policy: CommercialPolicy = 'allow'): string[] {
   const source = profile.layoutHint && profile.layoutHint.length ? profile.layoutHint : DEFAULT_ORDER
   const seen = new Set<string>()
   const out: string[] = []
   for (const id of source) {
     if (seen.has(id)) continue
     if (!DEFAULT_ORDER.includes(id)) continue // only known space blocks the composer manages
-    if (!blockHasContent(id, profile)) continue
+    if (!blockHasContent(id, profile, policy)) continue
     seen.add(id)
     out.push(id)
   }
@@ -366,27 +424,36 @@ export function composeBlockOrder(profile: BusinessProfile): string[] {
 }
 
 /** Build the per-block content bags (ADR-528) keyed by block id. Emits ONLY the CORE content
- *  keys each block's schema declares (see lib/entity-blocks/block-content.ts). Pure. */
-export function mapBlockContent(profile: BusinessProfile): Record<string, Record<string, unknown>> {
+ *  keys each block's schema declares (see lib/entity-blocks/block-content.ts). The `policy` gates
+ *  the PROSE that renders on the Site (tagline / about / story), since a generated line can hide a
+ *  commercial claim (docs §4.2): unverified prose is withheld here too, so the SAME gate covers the
+ *  profileData row and the rendered layout. The hero title falls back to the (always safe) name. Pure. */
+export function mapBlockContent(
+  profile: BusinessProfile,
+  policy: CommercialPolicy = 'allow',
+): Record<string, Record<string, unknown>> {
   const content: Record<string, Record<string, unknown>> = {}
+  const taglineOk = prosePublishes(policy, 'tagline')
+  const aboutOk = prosePublishes(policy, 'about')
+  const storyOk = prosePublishes(policy, 'story')
 
-  // PhotoHero: the bold opener. Headline from tagline (falls back to name), photo from hero media.
-  const heroTitle = (profile.tagline ?? '').trim() || (profile.name ?? '').trim()
+  // PhotoHero: the bold opener. Headline from tagline when it clears, else the name (never a claim).
+  const heroTitle = (taglineOk && (profile.tagline ?? '').trim()) || (profile.name ?? '').trim()
   const hero: Record<string, unknown> = { title: heroTitle }
   if ((profile.category ?? '').trim()) hero.eyebrow = profile.category!.trim()
-  if ((profile.about ?? '').trim()) hero.subtitle = profile.about!.trim().slice(0, 300)
+  if (aboutOk && (profile.about ?? '').trim()) hero.subtitle = profile.about!.trim().slice(0, 300)
   if (isReadyMediaUrl(profile.media?.heroPath)) hero.image = profile.media!.heroPath!.trim()
   // No auto CTA button (leave the button off so we never emit a dead link).
   hero.buttonOn = false
   content.photoHero = hero
 
   // About block body (the identity prose; the block renders this over profileData.about).
-  if ((profile.about ?? '').trim()) {
+  if (aboutOk && (profile.about ?? '').trim()) {
     content.about = { body: profile.about!.trim() }
   }
 
   // Story block body (the longer narrative).
-  if ((profile.story ?? '').trim()) {
+  if (storyOk && (profile.story ?? '').trim()) {
     content.story = { body: profile.story!.trim() }
   }
 
@@ -405,10 +472,10 @@ export function mapBlockContent(profile: BusinessProfile): Record<string, Record
  * seeding layer runs this through `sanitizeEntityLayout(layout, 'space')` before persist, which
  * drops any block the registry does not support and re-validates the content bags. Pure.
  */
-export function composeLayout(profile: BusinessProfile): EntityLayout {
-  const order = composeBlockOrder(profile)
+export function composeLayout(profile: BusinessProfile, policy: CommercialPolicy = 'allow'): EntityLayout {
+  const order = composeBlockOrder(profile, policy)
   const rows: RowDef[] = order.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] }))
-  const content = mapBlockContent(profile)
+  const content = mapBlockContent(profile, policy)
   // Keep only content bags for blocks actually placed (avoid orphan content for a hidden block).
   const placed = new Set(order)
   const scopedContent: Record<string, Record<string, unknown>> = {}
@@ -433,11 +500,14 @@ export interface MaterializationPlan {
   events: EventRow[]
 }
 
-/** Build the full plan from a draft. `policy.commercial` gates commercial facts (P0: 'allow').
+/** Build the full plan from a draft under a commercial-fact `policy` (docs §4.3). The map is an
+ *  INDEPENDENT second gate: `'allow'` trusts a hand-authored draft (P0); `'withhold'` blocks all
+ *  commercial facts; `{ mode:'ledger', ledger }` re-derives per field from the provenance ledger the
+ *  verifier wrote (P1), so verified facts publish and uncleared/generated ones are withheld here too.
  *  Returns null when the draft has no usable name/slug (the caller then fails cleanly). Pure. */
 export function buildPlan(
   profile: BusinessProfile,
-  policy: { commercial: 'allow' | 'withhold' } = { commercial: 'allow' },
+  policy: CommercialPolicy = 'allow',
 ): MaterializationPlan | null {
   const name = (profile.name ?? '').trim()
   if (!name) return null
@@ -445,9 +515,9 @@ export function buildPlan(
   if (!slug) return null
   const accent = resolveAccent(profile)
   return {
-    identity: mapIdentity(profile, { slug, accent }),
+    identity: mapIdentity(profile, { slug, accent }, policy),
     profileData: mapProfileData(profile, policy),
-    layout: composeLayout(profile),
+    layout: composeLayout(profile, policy),
     availability: mapAvailability(profile),
     faqs: mapFaqs(profile),
     events: mapEvents(profile),

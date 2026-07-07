@@ -55,9 +55,25 @@ describe('groundField — the anti-laundering gate', () => {
     expect(e.kind).toBe('inferred')
   })
 
-  it('accepts a known sourceUrl as grounding even without an exact snippet', () => {
-    const e = groundField({ value: 'Acme Coffee', sourceUrl: 'https://acme.test/contact', kind: 'fact', confidence: 0.8 }, sources)
-    expect(e.kind).toBe('fact')
+  // REGRESSION (finding #5): a matching sourceUrl is NOT sufficient grounding. A known page url does
+  // not prove the specific claim appears on it, so a fact whose snippet is absent must be downgraded
+  // even when the url matches a harvested source.
+  it('does NOT clear a fact on a matching sourceUrl when the snippet is absent from the source', () => {
+    const e = groundField(
+      { value: 'Acme Coffee wins Best Cafe 2025', sourceUrl: 'https://acme.test/contact', kind: 'fact', confidence: 0.9 },
+      sources,
+    )
+    expect(e.kind).toBe('inferred') // url match alone never clears
+    expect(e.confidence).toBeLessThanOrEqual(0.4)
+  })
+
+  it('does NOT clear a fact whose snippet is not in the source even if the snippet field is set', () => {
+    // snippet present but absent from any source, sourceUrl matches -> still downgraded.
+    const e = groundField(
+      { value: 'x', snippet: 'Best Cafe 2025 award', sourceUrl: 'https://acme.test/contact', kind: 'fact', confidence: 0.9 },
+      sources,
+    )
+    expect(e.kind).toBe('inferred')
   })
 
   it('defaults an unlabeled field to generated (never a fact by omission)', () => {

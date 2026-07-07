@@ -81,13 +81,6 @@ export function snippetIsGrounded(snippet: string | undefined, sources: Harveste
   return false
 }
 
-/** Whether a cited sourceUrl matches a harvested source. PURE. */
-export function sourceUrlIsKnown(url: string | undefined, sources: HarvestedSource[]): boolean {
-  const t = (url ?? '').trim()
-  if (!t) return false
-  return sources.some((s) => (s.url ?? '').trim() === t)
-}
-
 function normalizeForMatch(s: string | undefined): string {
   return (s ?? '')
     .toLowerCase()
@@ -109,9 +102,12 @@ export function coerceKind(raw: string | undefined): LedgerKind {
 }
 
 /**
- * Build a ledger entry for one extracted field, applying the GROUNDING GATE (docs §4.1): a field
- * the model labeled 'fact' but whose snippet is NOT found in the harvested sources is downgraded to
- * 'inferred' and its confidence capped. A field with no snippet at all can never be 'fact'. PURE.
+ * Build a ledger entry for one extracted field, applying the GROUNDING GATE (docs §4.1): a field the
+ * model labeled 'fact' stays a fact ONLY when its snippet is actually present in the harvested
+ * sources. A matching sourceUrl is NOT sufficient (a known page url does not prove the specific claim
+ * appears on it), so the snippet-containment check is REQUIRED for 'fact' regardless of the url. A
+ * fact that fails is downgraded to 'inferred' and its confidence capped. This is the anti-laundering
+ * gate: the model cannot promote a guess to a fact by citing a url without the supporting text. PURE.
  */
 export function groundField(field: RawExtractedField, sources: HarvestedSource[]): LedgerEntry {
   let kind = coerceKind(field.kind)
@@ -119,16 +115,8 @@ export function groundField(field: RawExtractedField, sources: HarvestedSource[]
   const snippet = (field.snippet ?? '').trim() || undefined
   const sourceUrl = (field.sourceUrl ?? '').trim() || undefined
 
-  if (kind === 'fact') {
-    const grounded = snippetIsGrounded(snippet, sources) || (!!sourceUrl && sourceUrlIsKnown(sourceUrl, sources))
-    if (!grounded) {
-      // The model claimed a fact it cannot cite. Downgrade + cap. This is the anti-laundering gate.
-      kind = 'inferred'
-      confidence = Math.min(confidence, 0.4)
-    }
-  }
-  // A snippet-less non-generated field cannot be a fact either.
-  if (kind === 'fact' && !snippet && !sourceUrl) {
+  if (kind === 'fact' && !snippetIsGrounded(snippet, sources)) {
+    // The model claimed a fact whose snippet is not in any source (a url match alone never clears).
     kind = 'inferred'
     confidence = Math.min(confidence, 0.4)
   }

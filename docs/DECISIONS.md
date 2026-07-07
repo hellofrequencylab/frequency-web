@@ -12335,12 +12335,20 @@ is built fail-closed: an un-checkable fact must be withheld, never guessed.
    DIFFERENT model tier so one model's blind spot is less likely to pass both. Its verdict
    (supported/unsupported/contradicted) drives a pure reducer: supported + a citation promotes to a
    verified fact; unsupported/contradicted never verifies and caps/floors confidence.
-5. **The gate is enforced in code, not the UI.** `splitVerified` strips every commercial fact that is not
-   (kind:'fact' AND verifiedBy) from the verified draft, sets the materializer policy to 'withhold', and
-   flags contradicted fields red (blocking apply). `applyIntake` materializes with `verificationPolicy:
-   'withhold'`, so the P0 materializer ALSO strips un-cleared commercial facts. A UI bypass cannot leak an
-   unverified price. Verification failing closed (AI off / over budget / a thrown call) leaves a field
-   unverified, so the safe default is always "withhold".
+5. **TWO independent gates, both fail-closed.** Gate A: `splitVerified` strips every commercial fact that
+   is not (kind:'fact' AND verifiedBy) from the verified draft and flags contradicted fields red (blocking
+   apply). Gate B (independent): the materializer RE-DERIVES the decision PER FIELD from the provenance
+   ledger via `isCommercialFieldCleared`. `applyIntake` passes the row's `ledger` as the gate, so
+   `mapProfileData` / `mapIdentity` / the layout composer publish a commercial field iff its ledger entry
+   is a verified fact and withhold it otherwise, without reading Gate A's output. This (a) makes the
+   invariant rest on two independent checks, and (b) REVIVES the verified path (a genuinely verified fact
+   publishes; only uncleared ones are withheld). The whole commercial pricing bag of an offering (price +
+   priceModel + currency, since "Free"/"From $95" are claims too) rides ONE gate. GENERATED PROSE
+   (about/story/tagline/offering blurb) is review-required: under a ledger gate, prose with a
+   generated/inferred entry is withheld (a commercial claim can hide inside it), publishing only when its
+   entry is a verified fact or absent (hand-supplied). `materializeBusiness` DEFAULTS to withhold when the
+   caller gives neither a policy nor a ledger, so a forgotten flag cannot leak. Verification failing closed
+   (AI off / over budget / a thrown call) leaves every field unverified, so the safe default is "withhold".
 
 **Alternatives.** (1) One-pass extraction confidence, no refuter: rejected, a single model's confidence is
 not adversarial and laundered facts pass. (2) Same tier for extract + verify: rejected, defeats the

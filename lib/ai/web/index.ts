@@ -52,9 +52,56 @@ const HEAD_HTML_CHARS = 20_000 // <head> slice kept for og/logo parse
 
 // ── SSRF / scheme guard ────────────────────────────────────────────────────────────
 
-/** Whether a url is a PUBLIC http(s) target safe to fetch. Blocks non-http schemes, localhost,
- *  and the obvious private / link-local / metadata ranges. The crawl seed is operator-supplied,
- *  so this is a guard against a pasted internal url pulling a private page into a demo. PURE. */
+/** Whether an IPv4-literal host is in a private / loopback / link-local / CGNAT / metadata range.
+ *  Parses the four octets from a FULLY-ANCHORED dotted-quad and range-checks numerically (never a
+ *  substring match). Returns false for a non-IPv4 host (the caller applies the other checks). PURE. */
+export function isPrivateIpv4(host: string): boolean {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host)
+  if (!m) return false
+  const oct = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])]
+  if (oct.some((n) => n > 255)) return false // not a valid IPv4 literal; let host rules handle it
+  const [a, b] = oct
+  if (a === 0) return true //                       0.0.0.0/8 ("this network", incl 0.0.0.0)
+  if (a === 10) return true //                      10.0.0.0/8
+  if (a === 127) return true //                     127.0.0.0/8 loopback
+  if (a === 169 && b === 254) return true //        169.254.0.0/16 link-local + cloud metadata
+  if (a === 172 && b >= 16 && b <= 31) return true // 172.16.0.0/12
+  if (a === 192 && b === 168) return true //        192.168.0.0/16
+  if (a === 100 && b >= 64 && b <= 127) return true // 100.64.0.0/10 CGNAT
+  return false
+}
+
+/** Whether an IPv6-literal host (brackets already stripped) is loopback / unique-local / link-local.
+ *  Matches the range prefixes on the FULLY-NORMALIZED lowercase literal, anchored. Also decodes an
+ *  IPv4-mapped address (`::ffff:*`, in either dotted or `new URL()`-normalized hex form) and blocks it
+ *  when the embedded IPv4 is private. PURE. */
+export function isPrivateIpv6(host: string): boolean {
+  if (host === '::1' || host === '::') return true //          loopback / unspecified
+  // fc00::/7 (unique-local) = first hextet fc.. or fd.. ; fe80::/10 (link-local) = fe8/fe9/fea/feb..
+  if (/^f[cd][0-9a-f]{0,2}:/.test(host)) return true //        fc00::/7
+  if (/^fe[89ab][0-9a-f]?:/.test(host)) return true //         fe80::/10
+  // IPv4-mapped: dotted form ::ffff:127.0.0.1
+  const dotted = /^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/.exec(host)
+  if (dotted && isPrivateIpv4(dotted[1])) return true
+  // IPv4-mapped: hex form ::ffff:7f00:1 (how new URL() normalizes ::ffff:127.0.0.1). Decode the two
+  // trailing hextets into a dotted quad and range-check it.
+  const hex = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host)
+  if (hex) {
+    const hi = parseInt(hex[1], 16)
+    const lo = parseInt(hex[2], 16)
+    const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`
+    if (isPrivateIpv4(ipv4)) return true
+  }
+  return false
+}
+
+/**
+ * Whether a url is a PUBLIC http(s) target safe to fetch. The crawl seed is USER-supplied, so this is
+ * the SSRF guard: it parses the REAL host with `new URL()` (never a loose hostname regex that
+ * `example.com.attacker.com` could slip past) and blocks non-http(s) schemes, `localhost`, the
+ * `.internal` / `.local` suffixes, and every private / loopback / link-local / CGNAT / metadata IP
+ * range (IPv4 and IPv6). Any host regex used below is fully anchored with escaped dots. PURE.
+ */
 export function isFetchableUrl(raw: string): boolean {
   let u: URL
   try {
@@ -63,42 +110,55 @@ export function isFetchableUrl(raw: string): boolean {
     return false
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return false
-  // URL keeps IPv6 hosts bracketed ("[::1]"); strip the brackets for the range checks below.
-  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '')
-  if (host === 'localhost' || host === '0.0.0.0' || host.endsWith('.local') || host.endsWith('.internal')) {
-    return false
-  }
-  // IPv4 private / loopback / link-local / metadata ranges.
-  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
-  if (m) {
-    const [a, b] = [Number(m[1]), Number(m[2])]
-    if (a === 10) return false
-    if (a === 127) return false
-    if (a === 0) return false
-    if (a === 169 && b === 254) return false // link-local + AWS metadata 169.254.169.254
-    if (a === 172 && b >= 16 && b <= 31) return false
-    if (a === 192 && b === 168) return false
-  }
-  // IPv6 loopback / unique-local / link-local.
-  if (host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80')) {
-    return false
-  }
+  // `new URL().hostname` is the parsed authority host (IPv6 stays bracketed); lowercase + de-bracket.
+  const host = u.hostname.toLowerCase().replace(/^\[/, '').replace(/\]$/, '')
+  if (!host) return false
+  if (host === 'localhost') return false
+  // Fully-anchored suffix checks (escaped dot) so only a real trailing label matches.
+  if (/\.local$/.test(host) || /\.internal$/.test(host) || /\.localhost$/.test(host)) return false
+  if (isPrivateIpv4(host)) return false
+  if (host.includes(':') && isPrivateIpv6(host)) return false
   return true
 }
 
 // ── HTML -> readable text (dependency-free) ──────────────────────────────────────────
 
-/** Strip scripts/styles/tags from html to plain readable text, collapse whitespace, bound
- *  length. Dependency-free (no jsdom on the hot path). PURE + total. */
+/** Apply a replacement repeatedly until the string stops changing (or a small iteration bound is
+ *  hit). A single regex pass over html can be evaded by nested/overlapping tags (e.g.
+ *  `<scr<script>ipt>` collapses back into `<script>` after one pass), so tag/element removal must
+ *  loop to a fixed point. Bounded to avoid an unbounded loop on pathological input. PURE. */
+function replaceUntilStable(input: string, re: RegExp, replacement: string, maxPasses = 20): string {
+  let out = input
+  for (let i = 0; i < maxPasses; i++) {
+    const next = out.replace(re, replacement)
+    if (next === out) return next
+    out = next
+  }
+  return out
+}
+
+/**
+ * Strip scripts/styles/tags from html to plain readable text, collapse whitespace, bound length.
+ * Dependency-free (no jsdom on the hot path). The tag-bearing removals LOOP to a fixed point so
+ * nested / overlapping tags cannot reassemble into a surviving tag after one pass. The regexes are
+ * ReDoS-safe: each `<[^>]*>`-style body is a negated character class (linear, no nested quantifier
+ * that could backtrack catastrophically). Output feeds the LLM, not a DOM, so the goal is complete
+ * stripping without ReDoS, not HTML-spec-perfect parsing. PURE + total.
+ */
 export function htmlToText(html: string, maxChars = MAX_TEXT_CHARS): string {
-  const withoutScript = html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-  const text = withoutScript
-    .replace(/<(br|\/p|\/div|\/h[1-6]|\/li)>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
+  // Remove whole script/style/noscript elements + comments, looping to a fixed point.
+  let stripped = html
+  stripped = replaceUntilStable(stripped, /<script\b[^>]*>[^<]*(?:<(?!\/script>)[^<]*)*<\/script\s*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<style\b[^>]*>[^<]*(?:<(?!\/style>)[^<]*)*<\/style\s*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<noscript\b[^>]*>[^<]*(?:<(?!\/noscript>)[^<]*)*<\/noscript\s*>/gi, ' ')
+  stripped = replaceUntilStable(stripped, /<!--[^-]*(?:-(?!->)[^-]*)*-->/g, ' ')
+  // Turn a few block-closers into newlines, then remove ALL remaining tags, looping to a fixed point
+  // so `<scr<script>ipt>`-style nesting cannot rebuild a tag.
+  stripped = stripped.replace(/<(br|\/p|\/div|\/h[1-6]|\/li)\s*\/?>/gi, '\n')
+  stripped = replaceUntilStable(stripped, /<[^<>]*>/g, ' ')
+  // Any leftover lone angle brackets (from malformed / truncated markup) are neutralized.
+  stripped = stripped.replace(/[<>]/g, ' ')
+  const text = stripped
     .replace(/&nbsp;/gi, ' ')
     .replace(/&amp;/gi, '&')
     .replace(/&lt;/gi, '<')
@@ -106,7 +166,7 @@ export function htmlToText(html: string, maxChars = MAX_TEXT_CHARS): string {
     .replace(/&#39;|&apos;/gi, "'")
     .replace(/&quot;/gi, '"')
     .replace(/[ \t\f\v]+/g, ' ')
-    .replace(/\n\s*\n\s*\n+/g, '\n\n')
+    .replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n')
     .trim()
   return text.length > maxChars ? text.slice(0, maxChars) : text
 }
