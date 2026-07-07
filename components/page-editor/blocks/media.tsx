@@ -9,6 +9,7 @@ import { ZigZag } from '@/components/marketing/marketing-ui'
 import { Marquee as MarqueeStrip } from '@/components/marketing/marketing-ui'
 import { SiteImage } from '@/components/marketing/site-image'
 import { richParagraphs } from '@/lib/page-editor/richtext'
+import { galleryImagesField } from '@/lib/page-editor/gallery-images-field'
 import {
   focalField,
   aspectField,
@@ -109,11 +110,23 @@ export function MediaTextBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. ImageBlock — single full-width image band (standardizes the old ImageBand)
+// 2. ImageBlock — ONE image OR a GALLERY. A single image renders as the full-width
+// band (standardizes the old ImageBand); a gallery renders as a responsive grid of
+// the ordered images, cropped to the same ratio. Multi-upload feeds the gallery.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Column count → responsive grid classes, so a gallery reflows from one column on
+// phones up to the chosen count on larger screens.
+const IMAGE_GALLERY_COLS: Record<string, string> = {
+  '2': 'sm:grid-cols-2',
+  '3': 'sm:grid-cols-2 lg:grid-cols-3',
+  '4': 'sm:grid-cols-2 lg:grid-cols-4',
+}
+
 export function ImageBlock({
+  mode,
   image,
+  images,
   alt,
   aspect,
   focal,
@@ -121,12 +134,16 @@ export function ImageBlock({
   radius,
   shadow,
   caption,
+  columns,
   tone,
   align,
   pad,
   vis,
 }: {
+  /** 'single' renders the one image band; 'gallery' renders the ordered grid. */
+  mode?: 'single' | 'gallery'
   image: string
+  images?: { src: string }[]
   alt: string
   aspect?: string
   focal?: string
@@ -134,19 +151,53 @@ export function ImageBlock({
   radius?: string
   shadow?: string
   caption?: string
+  /** Gallery column count on large screens (reflows down on smaller ones). */
+  columns?: string
   tone?: string
   align?: string
   pad?: string
   vis?: string
 }) {
   const ar = aspectValue(aspect)
-  // `size` is the image width; `align` justifies it within the band (left/center).
+  const frame = `overflow-hidden border border-border ${radiusClass(radius)} ${shadowClass(shadow)}`
+  const captionEl = caption ? (
+    <p className={`mt-3 text-sm text-center ${isInk(tone) ? 'text-on-ink-muted' : 'text-subtle'}`}>{caption}</p>
+  ) : null
+  // `size` caps the width; `align` justifies it within the band (left / center).
   const justify = align === 'left' ? 'mr-auto' : 'mx-auto'
+
+  // GALLERY: an ordered, responsive grid of the uploaded/picked images. Honest-empty when no images
+  // (render nothing), matching the other authored blocks.
+  if (mode === 'gallery') {
+    const list = (images ?? []).filter((i) => i.src)
+    if (list.length === 0) return null
+    const cols = IMAGE_GALLERY_COLS[columns ?? '3'] ?? IMAGE_GALLERY_COLS['3']
+    return (
+      <div className={`px-6 ${pad ?? 'py-4'} ${toneBg(tone)} ${vis ?? ''}`}>
+        <div className={`${sizeClass(size)} ${justify}`}>
+          <div className={`grid grid-cols-1 ${cols} gap-4`}>
+            {list.map((img, i) => (
+              <div key={`${img.src}-${i}`} className={frame}>
+                <SiteImage
+                  src={img.src}
+                  alt={alt || ''}
+                  aspect={ar ?? '1/1'}
+                  focal={focalClass(focal)}
+                  sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 100vw"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+        {captionEl}
+      </div>
+    )
+  }
+
+  // SINGLE: the one full-width image band (unchanged behaviour).
   return (
     <div className={`px-6 ${pad ?? 'py-4'} ${toneBg(tone)} ${vis ?? ''}`}>
-      <div
-        className={`${sizeClass(size)} ${justify} overflow-hidden border border-border ${radiusClass(radius)} ${shadowClass(shadow)}`}
-      >
+      <div className={`${sizeClass(size)} ${justify} ${frame}`}>
         <SiteImage
           src={image || '/images/site/lab-storefront.jpg'}
           alt={alt || ''}
@@ -155,9 +206,7 @@ export function ImageBlock({
           sizes="(min-width: 1024px) 64rem, 100vw"
         />
       </div>
-      {caption && (
-        <p className={`mt-3 text-sm text-center ${isInk(tone) ? 'text-on-ink-muted' : 'text-subtle'}`}>{caption}</p>
-      )}
+      {captionEl}
     </div>
   )
 }
@@ -351,8 +400,28 @@ export const mediaComponents: Record<string, ComponentConfig> = {
   Image: {
     label: 'Image',
     fields: {
+      // One image or a gallery. The relevant picker shows for each mode.
+      mode: {
+        type: 'radio',
+        label: 'Mode',
+        options: [
+          { label: 'Single image', value: 'single' },
+          { label: 'Gallery', value: 'gallery' },
+        ],
+      },
       image: imgField,
+      // Gallery mode: an ordered, multi-upload image list (same bucket as the single upload).
+      images: galleryImagesField,
       alt: { type: 'text', label: 'Alt text' },
+      columns: {
+        type: 'select',
+        label: 'Gallery columns',
+        options: [
+          { label: '2 columns', value: '2' },
+          { label: '3 columns', value: '3' },
+          { label: '4 columns', value: '4' },
+        ],
+      },
       aspect: aspectField,
       focal: focalField,
       size: { ...sizeField, label: 'Width' },
@@ -365,8 +434,11 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       layout: layoutField,
     },
     defaultProps: {
+      mode: 'single',
       image: '',
+      images: [],
       alt: '',
+      columns: '3',
       aspect: '21/9',
       focal: 'center',
       size: 'xl',
@@ -377,10 +449,13 @@ export const mediaComponents: Record<string, ComponentConfig> = {
       align: 'center',
       layout: layoutDefault,
     },
-    render: ({ image, alt, aspect, focal, size, radius, shadow, caption, tone, align, layout }) => (
+    render: ({ mode, image, images, alt, columns, aspect, focal, size, radius, shadow, caption, tone, align, layout }) => (
       <ImageBlock
+        mode={mode as 'single' | 'gallery'}
         image={image as string}
+        images={(images as { src: string }[]) || []}
         alt={alt as string}
+        columns={columns as string}
         aspect={aspect as string}
         focal={focal as string}
         size={size as string}

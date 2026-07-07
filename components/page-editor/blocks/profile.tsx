@@ -24,6 +24,7 @@ import { getInitials } from '@/lib/utils'
 import { focalClass } from '@/lib/page-editor/image-controls'
 import { CtaButton } from '@/components/page-editor/blocks/kit'
 import { loomImageField, loomSquareImageField } from '@/lib/page-editor/loom-image-field'
+import { memberPickerField } from '@/lib/page-editor/member-picker-field'
 // TYPE-ONLY import: erased at build, so this NEVER drags the server reader (createAdminClient) into
 // the client editor bundle. The Profile blocks read the shared identity + live counts off
 // `puck.metadata.space`, injected by the RSC render paths (components/spaces/space-landing.tsx +
@@ -38,6 +39,7 @@ import type {
   SpacePracticesData,
   SpacePracticeItem,
   SpaceCircleItem,
+  SpaceTeamMember,
 } from '@/lib/spaces/content-data'
 // PURE + client-safe (no server imports): the central profile data type + the central-wins merge.
 import {
@@ -106,6 +108,12 @@ function practicesFrom(puck: PuckArg): SpacePracticesData | undefined {
 function communityFrom(puck: PuckArg): SpaceCircleItem[] | undefined {
   const space = puck?.metadata?.space as { community?: SpaceCircleItem[] } | undefined
   return space?.community
+}
+// The Team block's picked network members, resolved to live cards keyed by profile id. Injected by the
+// render path (space-landing.tsx); undefined in the editor canvas, where the block shows only its stub.
+function teamPicksFrom(puck: PuckArg): Record<string, SpaceTeamMember> | undefined {
+  const space = puck?.metadata?.space as { teamPicks?: Record<string, SpaceTeamMember> } | undefined
+  return space?.teamPicks
 }
 // The CENTRAL business info + story (single source of truth). Blocks read this off metadata and merge
 // it OVER their own inline props (mergeField: central wins), so editing the Business Info form once
@@ -987,54 +995,113 @@ export function SpaceContactBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. SpaceTeam -- the people, as avatar cards. Operator authored (name + role per
-// person); the editor placeholder shows when empty.
+// 6. SpaceTeam -- the people, as avatar cards. Two sources, shown together: real
+// Frequency MEMBERS the operator picked from the network (each card LINKS to that
+// person's profile at `/people/<handle>`), plus any MANUAL entries (name / role /
+// photo) for people who are not on Frequency. The editor placeholder shows when empty.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type TeamMember = { name?: string; role?: string; avatar?: string }
 
+/** A resolved team card: a picked network member (with a profile link) or a manual entry (no link). */
+type TeamCard = {
+  name: string
+  role?: string
+  avatar?: string
+  /** The member's profile path (`/people/<handle>`), or null for a manual, non-member entry. */
+  href: string | null
+}
+
+function TeamAvatar({ card }: { card: TeamCard }) {
+  if (card.avatar) {
+    // eslint-disable-next-line @next/next/no-img-element -- member/operator avatar URL, resolved at render
+    return <img src={card.avatar} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" />
+  }
+  return (
+    <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated text-lg font-bold text-subtle">
+      {getInitials(card.name)}
+    </span>
+  )
+}
+
+function TeamCardTile({ card, ink }: { card: TeamCard; ink?: boolean }) {
+  const body = (
+    <>
+      <TeamAvatar card={card} />
+      <div className={`mt-3 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{card.name}</div>
+      {card.role && <div className={`text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{card.role}</div>}
+    </>
+  )
+  // A picked member links to their profile; a manual entry is a plain card.
+  if (card.href) {
+    return (
+      <InfoCard ink={ink} className="text-center transition-colors hover:border-primary/40">
+        <Link href={card.href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl">
+          {body}
+        </Link>
+      </InfoCard>
+    )
+  }
+  return (
+    <InfoCard ink={ink} className="text-center">
+      {body}
+    </InfoCard>
+  )
+}
+
 export function SpaceTeamBlock({
   eyebrow,
   heading,
-  members,
+  cards,
   ink,
   editing,
 }: {
   eyebrow?: string
   heading?: string
-  members: TeamMember[]
+  cards: TeamCard[]
   ink?: boolean
   /** Editor canvas only: keep an unfilled section visible + draggable there. */
   editing?: boolean
 }) {
-  const shown = members.filter((m) => m.name || m.role)
   // Honest-empty on the LIVE page; the stub keeps the section placeable in the editor.
-  if (shown.length === 0 && !editing) return null
+  if (cards.length === 0 && !editing) return null
   return (
     <div>
       <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
-      {shown.length === 0 ? (
+      {cards.length === 0 ? (
         <EditorStub label="Team" hint="Introduce the people behind this space" />
       ) : (
         <div className="grid gap-6 grid-cols-2 sm:grid-cols-3">
-          {shown.map((m, i) => (
-            <InfoCard key={i} ink={ink} className="text-center">
-              {m.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element -- operator-supplied avatar URL
-                <img src={m.avatar} alt="" className="mx-auto h-16 w-16 rounded-full object-cover" />
-              ) : (
-                <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-surface-elevated text-lg font-bold text-subtle">
-                  {getInitials(m.name || '')}
-                </span>
-              )}
-              {m.name && <div className={`mt-3 text-sm font-bold ${ink ? 'text-on-ink' : 'text-text'}`}>{m.name}</div>}
-              {m.role && <div className={`text-2xs ${ink ? 'text-on-ink-muted' : 'text-subtle'}`}>{m.role}</div>}
-            </InfoCard>
+          {cards.map((card, i) => (
+            <TeamCardTile key={i} card={card} ink={ink} />
           ))}
         </div>
       )}
     </div>
   )
+}
+
+/** Merge the picked network members (resolved to live cards, linked to their profile) with the manual
+ *  entries (name / role / photo fallbacks for non-members). Picked members lead; manual entries follow.
+ *  `teamPicks` is the render-path lookup keyed by profile id; absent in the editor canvas. */
+function buildTeamCards(
+  memberIds: string[],
+  members: TeamMember[],
+  teamPicks?: Record<string, SpaceTeamMember>,
+): TeamCard[] {
+  const picked: TeamCard[] = memberIds
+    .map((id) => teamPicks?.[id])
+    .filter((m): m is SpaceTeamMember => Boolean(m))
+    .map((m) => ({
+      name: m.name,
+      role: m.role || undefined,
+      avatar: m.avatarUrl || undefined,
+      href: m.handle ? `/people/${m.handle}` : null,
+    }))
+  const manual: TeamCard[] = members
+    .filter((m) => m.name || m.role)
+    .map((m) => ({ name: m.name || '', role: m.role || undefined, avatar: m.avatar || undefined, href: null }))
+  return [...picked, ...manual]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2068,23 +2135,34 @@ export const profileComponents: Record<string, ComponentConfig> = {
     fields: {
       eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading' },
+      // Pick real members from the Frequency network; each card links to their profile.
+      memberPicks: memberPickerField,
+      // Manual entries for people who are not on Frequency (name / role / photo fallback).
       members: teamArrayField,
     },
     defaultProps: {
       eyebrow: 'The people',
       heading: 'Meet the team',
+      memberPicks: { ids: [] },
       members: [],
     },
-    render: ({ eyebrow, heading, members, puck }) => (
-      <AnchorSection anchor="team">
-        <SpaceTeamBlock
-          eyebrow={(eyebrow as string) || undefined}
-          heading={(heading as string) || undefined}
-          members={(members as TeamMember[]) ?? []}
-          editing={puck?.isEditing}
-        />
-      </AnchorSection>
-    ),
+    render: ({ eyebrow, heading, memberPicks, members, puck }) => {
+      const ids = ((memberPicks as { ids?: string[] } | undefined)?.ids ?? []).filter(
+        (id): id is string => typeof id === 'string',
+      )
+      const teamPicks = teamPicksFrom(puck)
+      const cards = buildTeamCards(ids, (members as TeamMember[]) ?? [], teamPicks)
+      return (
+        <AnchorSection anchor="team">
+          <SpaceTeamBlock
+            eyebrow={(eyebrow as string) || undefined}
+            heading={(heading as string) || undefined}
+            cards={cards}
+            editing={puck?.isEditing}
+          />
+        </AnchorSection>
+      )
+    },
   },
 
   SpaceCTA: {

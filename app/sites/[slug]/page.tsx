@@ -13,6 +13,7 @@ import { readWebsitePublished } from '@/lib/spaces/website'
 import { filterDocForSurface } from '@/lib/spaces/surface-visibility'
 import { defaultPrimaryCtaLabel, defaultAccentForType } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
+import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceWebsiteShell } from '@/components/spaces/space-website-shell'
@@ -138,6 +139,9 @@ export default async function SpaceWebsiteRoute({
     slug: space.slug,
     profile: readProfileData(space.preferences),
   })
+  // Pre-resolve any Team-block network member picks to live cards, so each card links to
+  // `/people/<handle>` (mirrors SpaceLanding). FAIL-SAFE: undefined when the doc picks no members.
+  spaceContent.teamPicks = await resolveTeamPicksForDoc(doc)
 
   // Paint the Space's brand accent (white-label), mirroring the (profile) layout: its own brand_accent
   // wins, else the per-type default; tokens only, never a hex.

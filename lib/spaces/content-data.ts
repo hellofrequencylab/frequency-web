@@ -191,6 +191,11 @@ export type SpaceContentData = {
   /** The Space's TEAM — active members with an operator role (editor / moderator / admin), for the Team
    *  block. Empty when the operator has added no team (honest-empty; the block renders nothing). */
   team?: SpaceTeamMember[]
+  /** Team-block MEMBER PICKS resolved to live cards, keyed by profile id. The operator picks members
+   *  from the whole network (member-picker-field.tsx); the render path pre-resolves the chosen ids
+   *  found in the page doc so each card links to `/people/<handle>` without a per-block await. Absent in
+   *  the editor canvas (the block falls back to its stored/manual entries). */
+  teamPicks?: Record<string, SpaceTeamMember>
   /** The CENTRAL, single-source profile data (business info + story) every authored block reads off,
    *  so editing it once updates every surface (lib/spaces/profile-data.ts). Undefined in the editor /
    *  a member Spotlight (the blocks fall back to their own inline props). */
@@ -586,6 +591,40 @@ export async function getSpaceTeam(spaceId: string): Promise<SpaceTeamMember[]> 
       })
       .filter((m) => m.profileId.length > 0)
       .sort((a, b) => spaceRoleRank(b.role) - spaceRoleRank(a.role))
+  } catch {
+    return []
+  }
+}
+
+/** Resolve arbitrary picked NETWORK member ids to team-card shape (name / handle / avatar), for the
+ *  Team block's member picker. Unlike getSpaceTeam (the Space's own role-holders), these are members
+ *  the operator CHOSE from the whole network, so there is no space role to show. Only active members
+ *  with a handle resolve (a handle is what the card links to, `/people/<handle>`); order follows the
+ *  input `ids`, so the operator's chosen order is honored. FAIL-SAFE to []. */
+export async function resolveMemberCards(ids: string[]): Promise<SpaceTeamMember[]> {
+  const clean = Array.from(new Set((ids ?? []).map((id) => str(id).trim()).filter(Boolean)))
+  if (clean.length === 0) return []
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('profiles')
+      .select('id, display_name, handle, avatar_url')
+      .in('id', clean)
+      .eq('is_active', true)
+      .not('handle', 'is', null)
+    const byId = new Map<string, SpaceTeamMember>()
+    for (const r of (data ?? []) as Row[]) {
+      const handle = strOrNull(r.handle)
+      if (!handle) continue
+      byId.set(str(r.id), {
+        profileId: str(r.id),
+        role: '',
+        name: str(r.display_name) || `@${handle}`,
+        handle,
+        avatarUrl: strOrNull(r.avatar_url),
+      })
+    }
+    return clean.map((id) => byId.get(id)).filter((m): m is SpaceTeamMember => Boolean(m))
   } catch {
     return []
   }

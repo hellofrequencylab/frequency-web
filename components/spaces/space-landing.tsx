@@ -11,6 +11,7 @@ import { readProfileData } from '@/lib/spaces/profile-data'
 import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
+import { resolveTeamPicksForDoc } from '@/lib/spaces/team-picks'
 
 // The profile LAYOUT now owns the identity header (cover + logo + name + CTA) for every tab, so the
 // landing body must NEVER render a SpaceIdentityHeader block or it would duplicate the layout header.
@@ -93,6 +94,11 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     profile: readProfileData(space.preferences),
     layoutPreset,
   })
+
+  // Pre-resolve any Team-block network member picks to live cards (name / handle / avatar), keyed by id,
+  // so each team card links to `/people/<handle>`. FAIL-SAFE: no picks ⇒ undefined, and the block falls
+  // back to its stored/manual entries.
+  spaceContent.teamPicks = await resolveTeamPicksForDoc(data)
 
   return <BlockRender config={config} data={data} metadata={{ space: spaceContent }} />
 }
