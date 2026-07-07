@@ -151,6 +151,15 @@ at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) res
 and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
 business is re-openable without hunting for the import.
 
+**Image designer — auto-placement (Importer v2, point 2).** `lib/importer/vision.ts` runs ONE vision
+pass over all staged images (`planSeedImages`): it classifies each (logo / hero / exterior / interior /
+team / product / food / detail), writes alt text in the Frequency voice, and scores each image's fitness
+to be the primary hero. A PURE, unit-tested step (`rankSeedImages`) then picks the hero (never a logo)
+and orders the set best-first. The `autoArrangeSeederImages` action persists the new order + per-image
+plan on the intake and pushes the chosen hero to the live Space's cover; the review board's Images panel
+has an **Auto-arrange with AI** button and chips each thumbnail with its role. FAIL-SAFE: AI off / over
+budget leaves the uploaded order untouched. The model call is a thin shell; the selection logic is pure.
+
 **Adopt a hand-made Space into a master profile (Importer v2).** A Space created by hand (never seeded)
 has no intake, so it cannot be re-seeded. `lib/importer/adopt.ts` runs the materializer in REVERSE:
 `profileFromSpace` (PURE) reads a live Space's own content (`readProfileData` + the Space row) into a

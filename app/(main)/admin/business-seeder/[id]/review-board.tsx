@@ -48,6 +48,7 @@ export function ReviewBoard({
   appliedSpaceId,
   initialMood,
   initialImages,
+  initialImagePlan,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -56,6 +57,7 @@ export function ReviewBoard({
   appliedSpaceId: string | null
   initialMood: SeedMood
   initialImages: string[]
+  initialImagePlan: { url: string; category: string; alt: string }[]
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
@@ -208,7 +210,7 @@ export function ReviewBoard({
 
       {/* Images (Importer v2): stage photos for the Space. Available before AND after Apply — a
           post-apply upload files straight into the live Space's Loom. */}
-      <SeederImages intakeId={intakeId} initialImages={initialImages} />
+      <SeederImages intakeId={intakeId} initialImages={initialImages} initialPlan={initialImagePlan} />
 
       {/* Re-apply the master profile to the live Space (applied only): pushes re-voiced copy / edits. */}
       {applied && (

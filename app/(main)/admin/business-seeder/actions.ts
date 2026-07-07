@@ -34,6 +34,7 @@ import { reframe, applyReframe } from '@/lib/importer/reframe'
 import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
 import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
+import { planSeedImages } from '@/lib/importer/vision'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { buildReviewModel, type ReviewModel } from './review-model'
@@ -211,6 +212,8 @@ export interface BusinessImportReview {
   /** Operator-uploaded seed images (public `library-media` URLs, first-is-primary), staged on the intake.
    *  On Apply each is filed into the new Space's Loom (Importer v2). */
   images: string[]
+  /** The image designer's per-image roles (Importer v2), keyed by URL, so the panel can chip each image. */
+  imagePlan: { url: string; category: string; alt: string }[]
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -234,6 +237,11 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     updatedAtISO: row.updatedAt,
     mood: normalizeSeedMood(row.inputs.mood),
     images: Array.isArray(row.inputs.images) ? row.inputs.images.filter((u): u is string => typeof u === 'string') : [],
+    imagePlan: Array.isArray(row.inputs.imagePlan)
+      ? row.inputs.imagePlan
+          .filter((p): p is { url: string; category: string; alt: string; heroScore: number } => !!p && typeof p.url === 'string')
+          .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
+      : [],
   }
 }
 
@@ -350,6 +358,59 @@ export async function removeSeederImage(intakeId: string, url: string): Promise<
     /* best-effort */
   }
   return { ok: true, images }
+}
+
+// ── Auto-arrange images with the AI designer (Importer v2) ────────────────────────────────
+
+export type ArrangeImagesResult =
+  | { ok: true; order: string[]; heroUrl: string | null }
+  | { ok: false; error: string }
+
+/**
+ * Run the vision DESIGNER over the staged images: it classifies each, writes alt text, picks the primary
+ * hero, and orders the set best-first. Staff-gated + bound to the intake id. Persists the new order + the
+ * per-image plan on the intake, and (when the Space is already live) pushes the chosen hero to its cover.
+ * Fail-safe: when the designer is off / over budget, returns a plain reason and leaves the images as they
+ * are. The image bytes are never published here; only ordering, alt text, and the cover pointer change.
+ */
+export async function autoArrangeSeederImages(intakeId: string): Promise<ArrangeImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const images = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string' && u.length > 0)
+    : []
+  if (images.length === 0) return { ok: false, error: 'Add some images first, then arrange them.' }
+
+  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const name = (draft.name && String(draft.name).trim()) || row.inputs.hints?.name || ''
+  const plan = await planSeedImages(images, name, operatorId)
+  if (!plan) return { ok: false, error: 'The image designer is off or over budget right now. Try again shortly.' }
+
+  const nextInputs: IntakeInputs = {
+    ...row.inputs,
+    images: plan.order,
+    imagePlan: plan.items.map((it) => ({ url: it.url, category: it.category, alt: it.alt, heroScore: it.heroScore })),
+  }
+  const saved = await setInputs(intakeId, nextInputs)
+  if (!saved) return { ok: false, error: 'Arranged, but the save failed. Try again.' }
+
+  // Push the chosen hero to the live Space's cover when applied (the operator explicitly asked to
+  // arrange, so this OVERRIDES an existing cover — best-effort, never fails the action).
+  if (row.targetSpaceId && plan.heroUrl) {
+    try {
+      const admin = createAdminClient() as unknown as {
+        from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+      }
+      await admin.from('spaces').update({ cover_image_url: plan.heroUrl }).eq('id', row.targetSpaceId)
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  return { ok: true, order: plan.order, heroUrl: plan.heroUrl }
 }
 
 // ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
