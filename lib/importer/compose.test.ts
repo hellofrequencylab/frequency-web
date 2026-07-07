@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { planToLayout, type ComposedSection } from './compose'
 import type { BusinessProfile } from './schema'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // planToLayout is the PURE core of the AI composer: it turns the model's chosen sections into a safe
 // EntityLayout. The model call is untestable in CI; this locks the block allowlist, the per-block bags,
@@ -9,7 +10,7 @@ import type { BusinessProfile } from './schema'
 const profile: BusinessProfile = { name: 'Vista Retreat', type: 'business', tagline: 'Rest here' }
 const gallery = ['https://cdn.example/g0.jpg', 'https://cdn.example/g1.jpg']
 
-function ids(layout: { rows: { cells: string[][][] }[] } | null): string[] {
+function ids(layout: EntityLayout | null): string[] {
   return (layout?.rows ?? []).flatMap((r) => r.cells.flat())
 }
 
