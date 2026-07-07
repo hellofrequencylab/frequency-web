@@ -27,8 +27,9 @@ const FEATURE = 'seed-compose'
 /** The blocks the composer may place, with best-practice WHEN-TO-USE guidance. The model chooses from
  *  THIS allowlist only (a returned id not here is dropped), so the composition can never invent a block. */
 const COMPOSER_BLOCKS: { id: string; use: string }[] = [
-  { id: 'photoHero', use: 'A bold in-page BANNER: eyebrow + big headline + a short subtitle over a background photo. A strong section opener; use once near the top.' },
-  { id: 'editorial', use: 'A heading over a paragraph or two. Best for the About / what-this-is section.' },
+  // NOTE: no `photoHero` (in-page Banner). The Space's COVER already IS the hero (the primary image +
+  // name + tagline), so a Banner block would be a duplicate hero. Lead with `editorial` instead.
+  { id: 'editorial', use: 'A heading over a paragraph or two. The OPENER — best for the About / what-this-is section.' },
   { id: 'features', use: 'A set of 3 to 4 value props, each an icon + short title + one line. Best for "why choose us" / the differentiators.' },
   { id: 'cardGrid', use: 'A heading over a row of cards. Best for showing the offerings / services as cards.' },
   { id: 'zigzag', use: 'A photo beside a column of text. Great for a story beat with a photo.' },
@@ -47,7 +48,7 @@ const COMPOSER_BLOCKS: { id: string; use: string }[] = [
 
 const COMPOSER_BLOCK_IDS = new Set(COMPOSER_BLOCKS.map((b) => b.id))
 /** The design blocks whose COPY the composer authors (the rest are DATA blocks that render live data). */
-const AUTHORED_BLOCKS = new Set(['photoHero', 'editorial', 'features', 'cardGrid', 'zigzag', 'accentBeat', 'prose'])
+const AUTHORED_BLOCKS = new Set(['editorial', 'features', 'cardGrid', 'zigzag', 'accentBeat', 'prose'])
 
 /** One section the composer returns. The block id is validated against the allowlist; `imageIndex` is an
  *  index into the SELECTABLE photos (the non-cover gallery), resolved to a URL server-side. */

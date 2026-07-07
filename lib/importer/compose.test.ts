@@ -15,17 +15,18 @@ function ids(layout: EntityLayout | null): string[] {
 }
 
 describe('planToLayout builds a safe marketing layout', () => {
-  it('keeps known blocks in order, drops unknown ones', () => {
+  it('keeps known blocks in order, drops unknown ones (and the never-seeded photoHero)', () => {
     const sections: ComposedSection[] = [
-      { block: 'photoHero', title: 'Vista Retreat', imageIndex: 1 },
+      { block: 'zigzag', title: 'Our place', body: 'A calm room.', imageIndex: 1 },
+      { block: 'photoHero', title: 'Vista Retreat', imageIndex: 0 }, // the in-page Banner is never seeded → dropped
       { block: 'nonsense', title: 'x' },
       { block: 'cardGrid', title: 'What we offer', cards: [{ title: 'Room', text: 'A room' }] },
       { block: 'contact' },
     ]
     const layout = planToLayout(sections, profile, gallery)!
-    expect(ids(layout)).toEqual(['photoHero', 'cardGrid', 'contact'])
-    // photoHero uses the image by index (the second gallery photo), never the cover.
-    expect(layout.content?.photoHero).toMatchObject({ title: 'Vista Retreat', image: 'https://cdn.example/g1.jpg' })
+    expect(ids(layout)).toEqual(['zigzag', 'cardGrid', 'contact'])
+    // zigzag resolves its image by index (the second gallery photo).
+    expect(layout.content?.zigzag).toMatchObject({ title: 'Our place', body: 'A calm room.', image: 'https://cdn.example/g1.jpg' })
     expect(layout.content?.cardGrid).toMatchObject({ cards: [{ icon: '', title: 'Room', text: 'A room' }] })
   })
 
