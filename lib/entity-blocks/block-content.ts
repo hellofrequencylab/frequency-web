@@ -16,7 +16,36 @@ import { ENTITY_BLOCKS, entityBlockById, type EntityBlockDef } from './registry'
 
 // ── Style ────────────────────────────────────────────────────────────────────────────────────────────
 
-/** Per-block presentation: an optional card background, a vertical spacing step, and text alignment. */
+/** A vertical MARGIN step (ADR-569 C2/C3): the space above / below a block or row. Token-driven (mapped
+ *  to a spacing utility in the render frame), so it never hardcodes a pixel value. Absent === `md` (the
+ *  sensible content-block default so a fresh page is not cramped — C2). `none` is an explicit "flush". */
+export type MarginStep = 'none' | 'sm' | 'md' | 'lg' | 'xl'
+
+/** A text SIZE step (ADR-569 C1): relative to the block's own type scale, not an absolute pixel. Absent ===
+ *  the block's default size. */
+export type TextSizeStep = 'sm' | 'md' | 'lg' | 'xl'
+/** A font WEIGHT step (C1). Absent === the block's default weight. */
+export type TextWeightStep = 'normal' | 'medium' | 'semibold' | 'bold'
+/** A TOKEN color name (C1): the design tokens + the Space accent, never a raw hex (theming-safe). Absent ===
+ *  the block's default text color. `accent` maps to the Space's primary accent so it re-skins with the theme. */
+export type TextColorToken = 'default' | 'muted' | 'subtle' | 'accent' | 'success' | 'info' | 'danger'
+/** A text SHADOW preset (C1): off (absent), a subtle lift, or a stronger pop. Token-driven. */
+export type TextShadowStep = 'none' | 'soft' | 'strong'
+
+/** The reusable TEXT-STYLE bag (ADR-569 C1): size / weight / align / token-color / shadow, each sparse
+ *  (absent === the block's own default). Attached to text-bearing blocks; drives the shared text-style
+ *  primitives in the editor and the render frame. Every field is a fixed enum, so a tampered blob can only
+ *  ever pick a known token — no raw CSS reaches the page. */
+export interface TextStyle {
+  size?: TextSizeStep
+  weight?: TextWeightStep
+  color?: TextColorToken
+  shadow?: TextShadowStep
+}
+
+/** Per-block presentation: an optional card background, inner padding, alignment, vertical margins, and a
+ *  reusable text-style bag. Every field is sparse — absent means the block's own default — so the stored
+ *  blob stays minimal (ADR-528 → ADR-569). */
 export interface BlockStyle {
   /** The box's white card (border + padded surface). Three states (ADR-542 item 6):
    *  - `true`   — force a card (a block that draws none, e.g. Text, gains one).
@@ -27,10 +56,44 @@ export interface BlockStyle {
   pad?: 'none' | 'sm' | 'md' | 'lg'
   /** Text / content alignment. Absent === 'start'. */
   align?: 'start' | 'center' | 'end'
+  /** Top margin step (ADR-569 C3). Absent === the render default (C2). */
+  mt?: MarginStep
+  /** Bottom margin step (ADR-569 C3). Absent === the render default (C2). */
+  mb?: MarginStep
+  /** Reusable text-style bag (ADR-569 C1): size / weight / token-color / shadow. Absent === all defaults. */
+  text?: TextStyle
 }
 
 const PAD_VALUES: ReadonlySet<string> = new Set(['none', 'sm', 'md', 'lg'])
 const ALIGN_VALUES: ReadonlySet<string> = new Set(['start', 'center', 'end'])
+const MARGIN_VALUES: ReadonlySet<string> = new Set(['none', 'sm', 'md', 'lg', 'xl'])
+const TEXT_SIZE_VALUES: ReadonlySet<string> = new Set(['sm', 'md', 'lg', 'xl'])
+const TEXT_WEIGHT_VALUES: ReadonlySet<string> = new Set(['normal', 'medium', 'semibold', 'bold'])
+const TEXT_COLOR_VALUES: ReadonlySet<string> = new Set([
+  'default',
+  'muted',
+  'subtle',
+  'accent',
+  'success',
+  'info',
+  'danger',
+])
+const TEXT_SHADOW_VALUES: ReadonlySet<string> = new Set(['none', 'soft', 'strong'])
+
+/** Validate a text-style bag to the safe enum subset; drops any field that matches its default so the blob
+ *  stays sparse. Returns undefined when nothing survives. Pure + total. */
+export function sanitizeTextStyle(raw: unknown): TextStyle | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const o = raw as Record<string, unknown>
+  const out: TextStyle = {}
+  if (typeof o.size === 'string' && TEXT_SIZE_VALUES.has(o.size) && o.size !== 'md') out.size = o.size as TextSizeStep
+  if (typeof o.weight === 'string' && TEXT_WEIGHT_VALUES.has(o.weight)) out.weight = o.weight as TextWeightStep
+  if (typeof o.color === 'string' && TEXT_COLOR_VALUES.has(o.color) && o.color !== 'default')
+    out.color = o.color as TextColorToken
+  if (typeof o.shadow === 'string' && TEXT_SHADOW_VALUES.has(o.shadow) && o.shadow !== 'none')
+    out.shadow = o.shadow as TextShadowStep
+  return Object.keys(out).length ? out : undefined
+}
 
 /** Validate a style bag to the safe subset; returns undefined when nothing survives (keep the blob sparse). */
 export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
@@ -43,16 +106,69 @@ export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
   if (typeof o.pad === 'string' && PAD_VALUES.has(o.pad) && o.pad !== 'none') out.pad = o.pad as BlockStyle['pad']
   if (typeof o.align === 'string' && ALIGN_VALUES.has(o.align) && o.align !== 'start')
     out.align = o.align as BlockStyle['align']
+  // Margins (ADR-569): a valid step is kept AS-IS, including an explicit `none` (a deliberate flush that
+  // overrides the C2 render default). Only garbage is dropped.
+  if (typeof o.mt === 'string' && MARGIN_VALUES.has(o.mt)) out.mt = o.mt as MarginStep
+  if (typeof o.mb === 'string' && MARGIN_VALUES.has(o.mb)) out.mb = o.mb as MarginStep
+  const text = sanitizeTextStyle(o.text)
+  if (text) out.text = text
   return Object.keys(out).length ? out : undefined
 }
 
 // ── Field schema (drives the editor + the sanitizer) ──────────────────────────────────────────────────
 
-/** The kinds of field the inline editor can render, and the sanitizer enforces. `toggle` is a boolean
- *  switch (Fix 8: the per-block "show this button" control), persisted only as `false` (its non-default). */
-export type FieldType = 'text' | 'textarea' | 'url' | 'links' | 'images' | 'features' | 'toggle'
+/** The kinds of field the inline editor can render, and the sanitizer enforces. Two families:
+ *
+ *  CONTENT field types — author the block's content bag (validated by sanitizeBlockContent):
+ *    text · textarea · url · links · images · features · toggle (a boolean switch, e.g. "show this button").
+ *
+ *  PRIMITIVE control field types (ADR-569 C6) — a declarative catalog of the reusable INSPECTOR controls a
+ *  feature agent attaches to a block. Each maps a value key onto a fixed enum, rendered by a shared control
+ *  primitive (components/entity-blocks/controls). A feature is added by DECLARING one of these on a block,
+ *  never by writing bespoke panel JSX:
+ *    segmented       — a generic segmented pick over the field's `options`.
+ *    align           — a Left | Center | Right alignment icon-group.
+ *    height          — a 3-way Short | Medium | Tall selector.
+ *    buttonOrientation — a Row | Stacked button-layout selector.
+ *    color           — the token/accent swatch picker (theming-safe; no raw hex).
+ *    shadow          — an on/off + preset shadow control.
+ *    margin          — a compact top/bottom spacing control.
+ *
+ *  A `toggle` (and every primitive) is persisted only when it differs from its default, so the stored bag
+ *  stays sparse. */
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'url'
+  | 'links'
+  | 'images'
+  | 'features'
+  | 'toggle'
+  // ADR-569 C6 primitives (attached to a block by a feature agent; validated against `options` / enum):
+  | 'segmented'
+  | 'align'
+  | 'height'
+  | 'buttonOrientation'
+  | 'color'
+  | 'shadow'
+  | 'margin'
 
-/** One editable field on a block's content bag. */
+/** The value set a `height` field accepts (3-way selector, C6). */
+export const HEIGHT_VALUES = ['short', 'medium', 'tall'] as const
+/** The value set a `buttonOrientation` field accepts (C6). */
+export const BUTTON_ORIENTATION_VALUES = ['row', 'stacked'] as const
+
+/** One option in an enum-style primitive field (`segmented`). `label` is the accessible name; `icon` is an
+ *  optional short token the control may render (voice-neutral). */
+export interface FieldOption {
+  value: string
+  label: string
+}
+
+/** One editable field on a block's content bag, OR a declared primitive control (ADR-569 C6). A feature
+ *  agent adds a control by pushing one of these onto the block's schema — the editor dispatches on `type`
+ *  and the sanitizer validates the stored value against the same declaration, so declaring the field is the
+ *  ONLY step. */
 export interface FieldDef {
   key: string
   label: string
@@ -64,6 +180,36 @@ export interface FieldDef {
   /** Toggle field: the DEFAULT boolean (what "on" means). A `toggle` is persisted only when it differs from
    *  this default, so the stored bag stays sparse. The button toggles default ON. */
   default?: boolean
+  /** A `segmented` field's choices (its allowlist). Ignored for the fixed-enum primitives (align / height /
+   *  buttonOrientation / color / shadow / margin), which carry their own value set. */
+  options?: readonly FieldOption[]
+  /** The DEFAULT value for an enum primitive (segmented / align / height / …). The value is persisted only
+   *  when it differs from this default (sparse blob). Absent === the primitive's own first / neutral value. */
+  defaultValue?: string
+}
+
+/** The fixed value set a primitive `type` accepts, or null when the field is not a fixed-enum primitive
+ *  (a `segmented` field carries its own `options`). Drives both the editor control and the sanitizer, so
+ *  the two can never drift. Pure. */
+export function primitiveValues(field: FieldDef): readonly string[] | null {
+  switch (field.type) {
+    case 'align':
+      return ['start', 'center', 'end']
+    case 'height':
+      return HEIGHT_VALUES
+    case 'buttonOrientation':
+      return BUTTON_ORIENTATION_VALUES
+    case 'color':
+      return ['default', 'muted', 'subtle', 'accent', 'success', 'info', 'danger']
+    case 'shadow':
+      return ['none', 'soft', 'strong']
+    case 'margin':
+      return ['none', 'sm', 'md', 'lg', 'xl']
+    case 'segmented':
+      return field.options?.map((o) => o.value) ?? []
+    default:
+      return null
+  }
 }
 
 /** The CONTENT-block field schemas (the operator authors these). */
@@ -200,6 +346,30 @@ export function fieldsForBlock(id: string): readonly FieldDef[] {
   return DATA_BLOCK_FIELDS[id] ?? DATA_HEADER_FIELDS
 }
 
+/** The block ids that bear operator-authored TEXT (ADR-569 C1) and so expose the shared text-style controls
+ *  (size / weight / align / token-color / shadow). Data blocks' bodies are server-rendered from live data,
+ *  so the text-style bag is offered to CONTENT + DESIGN blocks whose prose the operator writes inline. The
+ *  design blocks already carry rich headings; the plain content blocks (Heading, Text, Quote, Callout) are
+ *  the classic text targets. A block absent here simply never shows the text-style group. */
+const TEXT_BEARING_BLOCK_IDS: ReadonlySet<string> = new Set([
+  'heading',
+  'text',
+  'quote',
+  'callout',
+  'features',
+  'photoHero',
+  'editorial',
+  'cardGrid',
+  'zigzag',
+  'accentBeat',
+])
+
+/** Whether a block bears authored text and so exposes the C1 text-style controls (size / weight / align /
+ *  color / shadow). Drives the editor: the text-style group renders only for a text-bearing block. */
+export function blockBearsText(id: string): boolean {
+  return TEXT_BEARING_BLOCK_IDS.has(id)
+}
+
 /** The owner's authored header OVERRIDE for a DATA block: the `eyebrow` field maps to the block's real
  *  eyebrow, the `title` field to its real heading. Each is undefined when blank, so the block keeps its own
  *  default (the wrapper owns the fallback copy — one source, no drift). Pure; used by the render path so a
@@ -289,6 +459,21 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         if (typeof v === 'boolean' && v !== def) out[field.key] = v
         break
       }
+      case 'segmented':
+      case 'align':
+      case 'height':
+      case 'buttonOrientation':
+      case 'color':
+      case 'shadow':
+      case 'margin': {
+        // An enum primitive (ADR-569 C6): keep the value only when it is one of the field's allowed values
+        // AND differs from the declared default (sparse). The allowlist comes from the field declaration, so
+        // a tampered blob can only ever store a known token — no raw value reaches the render.
+        const allowed = primitiveValues(field)
+        const def = field.defaultValue ?? allowed?.[0]
+        if (typeof v === 'string' && allowed?.includes(v) && v !== def) out[field.key] = v
+        break
+      }
       case 'links': {
         const items = Array.isArray(v)
           ? v.slice(0, MAX_ITEMS).map(sanitizeLink).filter((x): x is { label: string; url: string } => x !== null)
@@ -353,4 +538,110 @@ export function sanitizeStyleMap(raw: unknown): Record<string, BlockStyle> | und
     if (clean) out[id] = clean
   }
   return Object.keys(out).length ? out : undefined
+}
+
+// ── Style → utility-class mapping (ADR-569) ─────────────────────────────────────────────────────────────
+// The ONE place a style token becomes a Tailwind utility. The render frame (BlockStyleFrame) and the editor
+// controls both read these, so the class a swatch previews is always the class the page renders — no drift,
+// no hardcoded hex (every class resolves to a DAWN semantic token / spacing scale). Each map is keyed on a
+// FIXED enum value the sanitizer already guaranteed, so the literal strings are safe to concatenate.
+
+/** The DEFAULT top/bottom margin a block-frame applies when the operator has not set one (ADR-569 C2/C3).
+ *  It is `none` because the base inter-block RHYTHM is owned by the grid stack (entity-grid's `space-y-*`,
+ *  bumped to a comfortable step for C2 so a fresh page is not cramped). Keeping the frame default `none`
+ *  avoids DOUBLE-counting that rhythm; the C3 control then adds explicit extra space above / below a block
+ *  only where the operator asks for it. `mt-0` / `mb-0` are still emitted so an explicit `none` genuinely
+ *  flushes a block against its neighbour, overriding the stack gap. */
+export const DEFAULT_BLOCK_MARGIN: MarginStep = 'none'
+
+/** A margin step → top-margin utility. Absent leaves the stack rhythm untouched (no class); a set step ADDS
+ *  space above (an explicit `none` emits `mt-0` to flush). */
+const MARGIN_TOP_CLASS: Record<MarginStep, string> = {
+  none: 'mt-0',
+  sm: 'mt-4',
+  md: 'mt-8',
+  lg: 'mt-12',
+  xl: 'mt-20',
+}
+const MARGIN_BOTTOM_CLASS: Record<MarginStep, string> = {
+  none: 'mb-0',
+  sm: 'mb-4',
+  md: 'mb-8',
+  lg: 'mb-12',
+  xl: 'mb-20',
+}
+
+/** The top-margin utility for a block: the set step, or '' when absent (leave the stack rhythm alone). */
+export function marginTopClass(step: MarginStep | undefined): string {
+  return step ? MARGIN_TOP_CLASS[step] : ''
+}
+/** The bottom-margin utility for a block: the set step, or '' when absent (leave the stack rhythm alone). */
+export function marginBottomClass(step: MarginStep | undefined): string {
+  return step ? MARGIN_BOTTOM_CLASS[step] : ''
+}
+
+const TEXT_SIZE_CLASS: Record<TextSizeStep, string> = {
+  sm: 'text-sm',
+  md: '',
+  lg: 'text-lg',
+  xl: 'text-xl',
+}
+const TEXT_WEIGHT_CLASS: Record<TextWeightStep, string> = {
+  normal: 'font-normal',
+  medium: 'font-medium',
+  semibold: 'font-semibold',
+  bold: 'font-bold',
+}
+/** Token color → a text-color utility. Every value resolves to a DAWN semantic token (never a raw hex), so
+ *  `accent` re-skins with the Space theme and the whole set stays theming-safe (C1). */
+const TEXT_COLOR_CLASS: Record<TextColorToken, string> = {
+  default: '',
+  muted: 'text-muted',
+  subtle: 'text-subtle',
+  accent: 'text-primary-strong',
+  success: 'text-success',
+  info: 'text-info',
+  danger: 'text-danger',
+}
+/** Shadow preset → a text-shadow utility (defined in globals; see `.text-shadow-soft` / `-strong`). */
+const TEXT_SHADOW_CLASS: Record<TextShadowStep, string> = {
+  none: '',
+  soft: 'text-shadow-soft',
+  strong: 'text-shadow-strong',
+}
+
+/** The utility classes for a text-style bag (ADR-569 C1), or '' when the bag is empty / all-default. Pure;
+ *  the render frame applies the result to a wrapper so the block's text inherits size / weight / color /
+ *  shadow. A tampered value never reaches here (sanitizeTextStyle already gated it to the enum). */
+export function textStyleClass(text: TextStyle | undefined): string {
+  if (!text) return ''
+  return [
+    text.size ? TEXT_SIZE_CLASS[text.size] : '',
+    text.weight ? TEXT_WEIGHT_CLASS[text.weight] : '',
+    text.color ? TEXT_COLOR_CLASS[text.color] : '',
+    text.shadow ? TEXT_SHADOW_CLASS[text.shadow] : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** A single swatch's PREVIEW class for the editor's color control: the background chip that shows a token.
+ *  Reuses the SAME token names as the render map, so the picker chip and the rendered text agree. */
+export function colorSwatchClass(token: TextColorToken): string {
+  switch (token) {
+    case 'default':
+      return 'bg-text'
+    case 'muted':
+      return 'bg-muted'
+    case 'subtle':
+      return 'bg-subtle'
+    case 'accent':
+      return 'bg-primary'
+    case 'success':
+      return 'bg-success'
+    case 'info':
+      return 'bg-info'
+    case 'danger':
+      return 'bg-danger'
+  }
 }

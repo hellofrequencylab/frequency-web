@@ -5,7 +5,7 @@ import { resolveRows } from '@/lib/entity-blocks/layout'
 
 // ADR-516 Phase A render gate. Proves the DATA-DRIVEN EntityGrid renders resolved rows in order, and that
 // the legacy `single` template (the default the vast majority of profiles use) still renders its blocks
-// stacked in one `@container space-y-6` container — byte-identical to the pre-ADR-516 switch output.
+// stacked in one `@container space-y-8` container — byte-identical to the pre-ADR-516 switch output (spacing bumped to space-y-8 for ADR-569 C2).
 // EntityGrid is server-safe (no hooks), so it runs under renderToStaticMarkup in the node test env.
 
 const renderBlock = (id: string) => <div key={id} data-block={id} />
@@ -16,7 +16,7 @@ describe('EntityGrid (data-driven rows)', () => {
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     // One outer stack container, no inner grid wrappers, blocks in order.
     expect(html).toBe(
-      '<div class="@container space-y-6">' +
+      '<div class="@container space-y-8">' +
         '<div data-block="about"></div>' +
         '<div data-block="stats"></div>' +
         '<div data-block="links"></div>' +
@@ -29,7 +29,7 @@ describe('EntityGrid (data-driven rows)', () => {
     // A SPACE keeps a 2-column row (a member is clamped to a single column).
     const rows = resolveRows({ rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']] }] }, 'space')
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
-    expect(html).toContain('grid gap-6 sm:grid-cols-2')
+    expect(html).toContain('grid gap-8 sm:grid-cols-2')
     expect(html).toContain('data-block="about"')
     expect(html).toContain('data-block="stats"')
   })
@@ -40,7 +40,7 @@ describe('EntityGrid (data-driven rows)', () => {
       'space',
     )
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
-    expect(html).toContain('grid gap-6 sm:grid-cols-[2fr_1fr]')
+    expect(html).toContain('grid gap-8 sm:grid-cols-[2fr_1fr]')
   })
 
   it('renders a trail-ratio 2-column row as a 33/66 grid', () => {
@@ -49,7 +49,7 @@ describe('EntityGrid (data-driven rows)', () => {
       'space',
     )
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
-    expect(html).toContain('grid gap-6 sm:grid-cols-[1fr_2fr]')
+    expect(html).toContain('grid gap-8 sm:grid-cols-[1fr_2fr]')
   })
 
   it('renders nothing for an empty (null) cell', () => {
@@ -103,7 +103,7 @@ describe('EntityGrid row header (Fix 5)', () => {
     )
     const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
     expect(html).toContain('Two up')
-    expect(html).toContain('grid gap-6 sm:grid-cols-2')
+    expect(html).toContain('grid gap-8 sm:grid-cols-2')
   })
 })
 

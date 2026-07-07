@@ -7,6 +7,7 @@ import {
   setRowRatio,
   setRowTitle,
   setRowHeaderOn,
+  setRowMargin,
   setBlockContent,
   setBlockStyle,
   placeBlock,
@@ -228,6 +229,29 @@ describe('setRowRatio', () => {
     const lead = setRowRatio(base(), 'r1', 'lead')
     const even = setRowRatio(lead, 'r1', 'even')
     expect(even.rows[1].ratio).toBeUndefined()
+  })
+})
+
+describe('setRowMargin (ADR-569 C3)', () => {
+  it('sets and clears a top / bottom row margin, keeping the shape sparse', () => {
+    const withTop = setRowMargin(base(), 'r0', 'mt', 'lg')
+    expect(withTop.rows[0].mt).toBe('lg')
+    expect(withTop.rows[0].mb).toBeUndefined()
+    const withBottom = setRowMargin(withTop, 'r0', 'mb', 'sm')
+    expect(withBottom.rows[0].mb).toBe('sm')
+    // A neutral `none` clears the step back to the sparse default.
+    const cleared = setRowMargin(withBottom, 'r0', 'mt', 'none')
+    expect(cleared.rows[0].mt).toBeUndefined()
+    expect(cleared.rows[0].mb).toBe('sm')
+  })
+  it('is a no-op for an unknown row id', () => {
+    const out = setRowMargin(base(), 'nope', 'mt', 'lg')
+    expect(out.rows.every((r) => r.mt === undefined)).toBe(true)
+  })
+  it('carries a set margin through a subsequent normalize (a reorder)', () => {
+    const withMargin = setRowMargin(base(), 'r1', 'mb', 'xl')
+    const reordered = moveRow(withMargin, 1, 0)
+    expect(reordered.rows[0].mb).toBe('xl')
   })
 })
 

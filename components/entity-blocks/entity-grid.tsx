@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { rowShowsHeader, type RowDef } from '@/lib/entity-blocks/layout'
+import { marginBottomClass, marginTopClass } from '@/lib/entity-blocks/block-content'
 
 // The presentational interior GRID for the unified entity-block renderers (ADR-508 → ADR-516 Phase A).
 // DATA-DRIVEN: it renders a freeform RowDef[] (the source of truth going forward) instead of switching on
 // a fixed template id. Each row is a band of `columns` EQUAL columns; a 1-column row emits its block
-// DIRECTLY into the shared `@container space-y-6` stack (so the single-column default renders byte-
+// DIRECTLY into the shared `@container space-y-8` stack (so the single-column default renders byte-
 // identically to the pre-ADR-516 `single` template: N 1-col rows === N stacked blocks in one container).
 // A multi-column row is a CSS grid whose cells each carry their OWN `@container` (Tailwind v4) so a block
 // sizes to where it lands and the columns collapse to one on small screens. Presentational + server-safe
@@ -44,6 +45,12 @@ function rowHasBlocks(row: RowDef): boolean {
   return row.cells.some((stack) => stack.length > 0)
 }
 
+/** The per-row MARGIN classes (ADR-569 C3), or '' when the row sets none. A set margin wraps the row so the
+ *  extra space above / below the band renders; the common no-margin row keeps its bare fast path. */
+function rowMarginClass(row: RowDef): string {
+  return [marginTopClass(row.mt), marginBottomClass(row.mb)].filter(Boolean).join(' ')
+}
+
 export function EntityGrid({
   rows,
   renderBlock,
@@ -55,42 +62,46 @@ export function EntityGrid({
   renderBlock: (blockId: string) => ReactNode
 }) {
   return (
-    <div className="@container space-y-6">
+    <div className="@container space-y-8">
       {rows.map((row) => {
         // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
         // AND the row actually holds blocks (never a lone header over an empty row).
         const showHeader = rowShowsHeader(row) && rowHasBlocks(row)
+        // The optional per-row MARGIN (ADR-569 C3). When set (or a header is shown) the row is wrapped in a
+        // <section> so the extra space renders; otherwise the bare fast path is kept byte-identical.
+        const mCls = rowMarginClass(row)
+        const wrap = showHeader || !!mCls
 
         // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid wrapper
         // — so a single-column layout WITHOUT a header renders byte-identically to before (N stacked blocks
-        // in one `space-y-6` container). A header wraps that row in its own <section> so the heading sits
+        // in one `space-y-8` container). A header wraps that row in its own <section> so the heading sits
         // above the stack.
         if (row.columns === 1) {
           const stack = row.cells[0] ?? []
-          if (!showHeader) return stack.map((id) => renderBlock(id))
+          if (!wrap) return stack.map((id) => renderBlock(id))
           return (
-            <section key={row.id} className="space-y-6">
-              <RowHeader title={row.title!} />
+            <section key={row.id} className={`space-y-8 ${mCls}`.trim()}>
+              {showHeader && <RowHeader title={row.title!} />}
               {stack.map((id) => renderBlock(id))}
             </section>
           )
         }
         const grid = (
-          <div className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
+          <div className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
             {row.cells.map((stack, i) => (
-              <div key={`${row.id}-${i}`} className="@container space-y-6">
+              <div key={`${row.id}-${i}`} className="@container space-y-8">
                 {stack.map((id) => renderBlock(id))}
               </div>
             ))}
           </div>
         )
-        // No header: the grid div is the row (byte-identical to before, keyed on the row id). With a header,
-        // wrap the grid in a <section> under the heading.
-        if (!showHeader) {
+        // No header / margin: the grid div is the row (byte-identical to before, keyed on the row id). With
+        // either, wrap the grid in a <section> that carries the heading and / or the margin.
+        if (!wrap) {
           return (
-            <div key={row.id} className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
+            <div key={row.id} className={`grid gap-8 ${columnsClass(row.columns, row.ratio)}`}>
               {row.cells.map((stack, i) => (
-                <div key={`${row.id}-${i}`} className="@container space-y-6">
+                <div key={`${row.id}-${i}`} className="@container space-y-8">
                   {stack.map((id) => renderBlock(id))}
                 </div>
               ))}
@@ -98,8 +109,8 @@ export function EntityGrid({
           )
         }
         return (
-          <section key={row.id}>
-            <RowHeader title={row.title!} />
+          <section key={row.id} className={mCls || undefined}>
+            {showHeader && <RowHeader title={row.title!} />}
             {grid}
           </section>
         )

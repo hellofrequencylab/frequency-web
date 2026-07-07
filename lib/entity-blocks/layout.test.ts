@@ -9,6 +9,7 @@ import {
   starterRows,
   STARTER_LAYOUTS,
   normalizeRowTitle,
+  normalizeRowMargin,
   rowShowsHeader,
   ROW_TITLE_MAX,
   type EntityLayout,
@@ -198,6 +199,26 @@ describe('rows validation (parseEntityLayout)', () => {
     // 'topfriends' is member-only; sanitizing for a SPACE (which keeps the 2-column row) must null it.
     const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 2, slots: ['about', 'topfriends'] }] }, 'space')
     expect(clean?.rows?.[0].cells).toEqual([['about'], []])
+  })
+
+  it('parses per-row margins (ADR-569 C3), dropping garbage + the neutral none', () => {
+    const parsed = parseEntityLayout({
+      rows: [{ id: 'r0', columns: 1, cells: [['about']], mt: 'lg', mb: 'bogus' }],
+    })
+    expect(parsed?.rows?.[0].mt).toBe('lg')
+    expect(parsed?.rows?.[0].mb).toBeUndefined()
+    // survives the server sanitize path too
+    const clean = sanitizeEntityLayout({ rows: [{ id: 'r0', columns: 1, cells: [['about']], mb: 'xl' }] }, 'space')
+    expect(clean?.rows?.[0].mb).toBe('xl')
+  })
+})
+
+describe('normalizeRowMargin (ADR-569 C3)', () => {
+  it('keeps a valid non-neutral step, drops none / garbage / non-strings', () => {
+    expect(normalizeRowMargin('lg')).toBe('lg')
+    expect(normalizeRowMargin('none')).toBeUndefined()
+    expect(normalizeRowMargin('huge')).toBeUndefined()
+    expect(normalizeRowMargin(5)).toBeUndefined()
   })
 })
 

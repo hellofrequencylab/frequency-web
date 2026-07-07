@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react'
-import { safeUrl, type BlockStyle } from '@/lib/entity-blocks/block-content'
+import {
+  marginBottomClass,
+  marginTopClass,
+  safeUrl,
+  textStyleClass,
+  type BlockStyle,
+} from '@/lib/entity-blocks/block-content'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -13,15 +19,15 @@ function s(props: Record<string, unknown>, key: string): string {
   return typeof v === 'string' ? v : ''
 }
 
-/** The per-block STYLE frame: an optional card background, a padding step, and alignment. Collapses to a
- *  passthrough (no wrapper element beyond alignment) when the style is empty, so an unstyled block renders
- *  exactly as before. */
+/** The per-block STYLE frame (ADR-528 → ADR-569): an optional card background, a padding step, alignment, a
+ *  reusable text-style bag (C1: size / weight / color / shadow), and top/bottom margins (C3). Collapses to a
+ *  passthrough when the style is empty, so an unstyled block renders exactly as before (the base inter-block
+ *  rhythm is owned by the grid stack — see entity-grid — so C2's breathing room needs no per-block margin). */
 export function BlockStyleFrame({ style, children }: { style: BlockStyle | undefined; children: ReactNode }) {
   const bgOff = style?.background === false
   const bgOn = style?.background === true
-  if (!style || (style.background === undefined && !style.pad && !style.align)) return <>{children}</>
-  const pad = style.pad === 'lg' ? 'p-8' : style.pad === 'md' ? 'p-5' : style.pad === 'sm' ? 'p-3' : bgOn ? 'p-5' : ''
-  const align = style.align === 'center' ? 'text-center' : style.align === 'end' ? 'text-right' : ''
+  const pad = style?.pad === 'lg' ? 'p-8' : style?.pad === 'md' ? 'p-5' : style?.pad === 'sm' ? 'p-3' : bgOn ? 'p-5' : ''
+  const align = style?.align === 'center' ? 'text-center' : style?.align === 'end' ? 'text-right' : ''
   // `background: true` fills the block with the plain WHITE surface (bg-surface) against the warm page
   // canvas — a clean "white background on", not a second elevated/tinted card layer on top.
   const card = bgOn ? 'rounded-2xl border border-border bg-surface' : ''
@@ -30,7 +36,12 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   // (globals.css, ADR-551) flattens every bg-surface card nested at ANY depth to transparent (no border, no
   // shadow), so the section reads flush on the page canvas regardless of how the block nests.
   const strip = bgOff ? 'entity-bg-strip' : ''
-  const cls = [card, strip, pad, align].filter(Boolean).join(' ')
+  // C1: the text-style bag (size / weight / token-color / shadow) resolves to token-driven utilities the
+  // block's text inherits. C3: an explicit top / bottom margin adds space above / below (absent = no class,
+  // so the stack rhythm stands).
+  const text = textStyleClass(style?.text)
+  const margins = [marginTopClass(style?.mt), marginBottomClass(style?.mb)].filter(Boolean).join(' ')
+  const cls = [margins, card, strip, pad, align, text].filter(Boolean).join(' ')
   return cls ? <div className={cls}>{children}</div> : <>{children}</>
 }
 

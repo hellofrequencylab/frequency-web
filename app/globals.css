@@ -771,6 +771,17 @@
   font-size: 10px;
 }
 
+/* Text-shadow presets (ADR-569 C1) — the two shadow steps the block text-style control offers.
+   Token-driven (the shadow rgba matches the soft in-app shadow set), so operator-authored text
+   gains a gentle lift or a stronger pop WITHOUT any raw per-block CSS. Applied to a wrapper by the
+   render frame; the text inherits it. `none` is the absence of the class (no utility needed). */
+@utility text-shadow-soft {
+  text-shadow: 0 1px 2px rgb(40 30 16 / 0.18);
+}
+@utility text-shadow-strong {
+  text-shadow: 0 1px 1px rgb(20 16 10 / 0.28), 0 2px 6px rgb(20 16 10 / 0.24);
+}
+
 /* Generation-scaled type — opt-in utilities that multiply a base size by the active
    `--type-scale` (set per data-generation). A surface that adopts these grows/shrinks
    its type with the chosen generation WITHOUT touching spacing (density is the separate

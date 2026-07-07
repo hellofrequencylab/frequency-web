@@ -1,6 +1,6 @@
 import { entityBlockById, blocksForKind, type EntityKind } from './registry'
-import { normalizeRowTitle, type RowDef, type RowColumns, type RowRatio } from './layout'
-import type { BlockStyle } from './block-content'
+import { normalizeRowMargin, normalizeRowTitle, type RowDef, type RowColumns, type RowRatio } from './layout'
+import type { BlockStyle, MarginStep } from './block-content'
 
 // PURE ROWS MUTATION HELPERS for the on-page Profile page builder (ADR-516 Phase C → ADR-542). Every
 // function is IMMUTABLE (returns a fresh BuilderLayout, never mutates its input) and TOTAL (a bad index /
@@ -72,11 +72,16 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     const ratio: RowRatio | undefined =
       columns === 2 && (raw.ratio === 'lead' || raw.ratio === 'trail') ? raw.ratio : undefined
     const base = ratio ? { id, columns, cells, ratio } : { id, columns, cells }
-    // Carry the row TITLE + live-header toggle (Fix 5) through every mutation: trim + bound the title, and
-    // keep `headerOn` only as `true` beside a non-blank title (the sparse stored shape).
+    // Carry the row TITLE + live-header toggle (Fix 5) + margins (ADR-569 C3) through every mutation: trim +
+    // bound the title, keep `headerOn` only as `true` beside a non-blank title, and keep only a non-neutral
+    // margin step (the sparse stored shape).
     const title = normalizeRowTitle(raw.title)
     const withTitle: RowDef = title ? { ...base, title } : base
     if (title && raw.headerOn === true) withTitle.headerOn = true
+    const mt = normalizeRowMargin(raw.mt)
+    const mb = normalizeRowMargin(raw.mb)
+    if (mt) withTitle.mt = mt
+    if (mb) withTitle.mb = mb
     rows.push(withTitle)
   }
   const hidden = [...new Set(layout.hidden.filter((id) => entityBlockById(id) !== null))]
@@ -240,6 +245,27 @@ export function setRowHeaderOn(layout: BuilderLayout, rowId: string, on: boolean
     const next: RowDef = { ...row }
     if (on && normalizeRowTitle(row.title)) next.headerOn = true
     else delete next.headerOn
+    return next
+  })
+  return normalize({ ...layout, rows })
+}
+
+/**
+ * Set a row's top or bottom MARGIN (ADR-569 C3). `edge` picks the side; a neutral `none` clears the step so
+ * the stored shape stays sparse (normalize re-drops it too). No-op for an unknown row id. Immutable.
+ */
+export function setRowMargin(
+  layout: BuilderLayout,
+  rowId: string,
+  edge: 'mt' | 'mb',
+  step: MarginStep,
+): BuilderLayout {
+  const clean = normalizeRowMargin(step)
+  const rows = layout.rows.map((row) => {
+    if (row.id !== rowId) return row
+    const next: RowDef = { ...row }
+    if (clean) next[edge] = clean
+    else delete next[edge]
     return next
   })
   return normalize({ ...layout, rows })
