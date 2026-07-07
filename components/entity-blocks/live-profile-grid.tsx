@@ -6,6 +6,7 @@ import type { BlockStyle } from '@/lib/entity-blocks/block-content'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from './entity-grid'
 import { BlockStyleFrame, ContentBlockView, hasContent } from './content-block-view'
+import { DesignBlockView, isDesignBlock } from './design-block-view'
 import { useProfileLayout } from './profile-layout-context'
 
 // THE LIVE PROFILE GRID (ADR-516 Phase C). The live-preview surface the in-rail builder edits. Every
@@ -67,7 +68,11 @@ export function LiveProfileGrid({
   const renderBlock = (id: string): ReactNode => {
     const block = entityBlockById(id)
     let node: ReactNode
-    if (block?.category === 'content') {
+    if (isDesignBlock(id)) {
+      // The five design blocks repaint from the shared store client-side (like the other content blocks), so
+      // an authored edit shows instantly. An empty bag renders the design component's own honest-empty state.
+      node = <DesignBlockView id={id} props={content[id] ?? {}} />
+    } else if (block?.category === 'content') {
       const props = content[id]
       node = hasContent(id, props) ? <ContentBlockView id={id} props={props ?? {}} /> : nodes[id]
     } else {

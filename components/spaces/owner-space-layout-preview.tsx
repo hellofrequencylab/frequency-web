@@ -4,6 +4,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
+import { withEffectiveDataContent } from '@/lib/spaces/effective-block-content'
 import { toProfileContext } from '@/lib/spaces/profile-modules'
 import { parseEntityLayout, resolveRows } from '@/lib/entity-blocks/layout'
 import { renderSpaceBlockNodes } from '@/components/widgets/space-profile/space-profile-modules'
@@ -59,6 +60,14 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
   const rows = resolveRows(saved, 'space')
   const hidden = saved?.hidden ?? []
 
+  // BUG FIX (empty editor fields): seed the shared store with the EFFECTIVE data-block content, not the raw
+  // authored bag. The About / Story editors bind to this bag, so pre-filling each block's eyebrow / title /
+  // body from the same central data the live render falls back to (data.aboutShort / data.profile.about, plus
+  // the block's default header) makes every editor open showing the section's CURRENT content. This changes
+  // only what the FIELDS show: the live DATA-block render reads its server node, and seeding schedules no
+  // save, so nothing is written until the operator actually edits (effective-block-content.ts).
+  const seedContent = withEffectiveDataContent(saved?.content, data)
+
   // The page is the LIVE RESULT only (ADR-542 revised): no editing chrome here. The owner arranges the page
   // in the sidebar (SpacePageBuilder) and this preview repaints through the shared store.
   // Breathing room (item 2): a right gutter at lg+ so the arranged page never crowds against the admin rail
@@ -69,7 +78,7 @@ export async function OwnerSpaceLayoutPreview({ slug }: { slug: string }) {
         nodes={nodes}
         initialRows={rows}
         initialHidden={hidden}
-        initialContent={saved?.content ?? {}}
+        initialContent={seedContent}
         initialStyle={saved?.style ?? {}}
       />
     </div>

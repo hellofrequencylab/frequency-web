@@ -11,6 +11,7 @@ import { blocksForKind, entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
 import { ContentBlockView, BlockStyleFrame, hasContent } from '@/components/entity-blocks/content-block-view'
+import { DesignBlockView, isDesignBlock } from '@/components/entity-blocks/design-block-view'
 
 import { AboutBlock } from './about'
 import { StoryBlock } from './story'
@@ -109,7 +110,11 @@ function renderSpaceBlock(
   const contentProps = layout?.content?.[id]
 
   let inner: React.ReactNode
-  if (block && block.category === 'content') {
+  if (isDesignBlock(id)) {
+    // The five design blocks (2026): rendered from their authored bag by the design-block adapter. A design
+    // block has no live-data fallback, so an empty bag renders the component's own honest-empty state.
+    inner = <DesignBlockView id={id} props={contentProps ?? {}} />
+  } else if (block && block.category === 'content') {
     if (hasContent(id, contentProps)) {
       inner = <ContentBlockView id={id} props={contentProps ?? {}} />
     } else {

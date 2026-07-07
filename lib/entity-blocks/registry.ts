@@ -74,6 +74,26 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space'], order: 250 },
   { id: 'embed', label: 'Embed', description: 'An embedded video or player.', category: 'content', kinds: ['member', 'space'], order: 260 },
   { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space'], order: 270 },
+  // The five reusable DESIGN blocks (2026), now offered in the ON-PAGE rail arranger too (they previously
+  // lived only in the Puck editor at /spaces/[slug]/edit-page, which is not where operators actually edit).
+  // Space-only authored content, rendered by their existing design components
+  // (components/page-editor/blocks/design.tsx) through the entity-block id map (space-profile-modules.tsx).
+  { id: 'photoHero', label: 'Photo hero', description: 'A bold opener with a headline and an optional photo.', category: 'content', kinds: ['space'], order: 280 },
+  { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space'], order: 282 },
+  { id: 'cardGrid', label: 'Card grid', description: 'A heading over a row of cards.', category: 'content', kinds: ['space'], order: 284 },
+  { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
+  { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
+]
+
+/** The five reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck
+ *  `PhotoHero`/`EditorialSection`/… component-type names). The palette, the render id-map, the field
+ *  schemas, and the per-page cap policy all read this ONE set, so the offer and the render never drift. */
+export const DESIGN_ENTITY_BLOCK_IDS: readonly string[] = [
+  'photoHero',
+  'editorial',
+  'cardGrid',
+  'zigzag',
+  'accentBeat',
 ]
 
 /** THE unified block catalog (data sections first, then authored content), in default order. */
@@ -130,6 +150,12 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'callout',
   'gallery',
   'features',
+  // SPACE design blocks (2026): the five reusable design sections, now offered in the rail arranger.
+  'photoHero',
+  'editorial',
+  'cardGrid',
+  'zigzag',
+  'accentBeat',
   // Legacy authored content blocks — kept in the union for the MEMBER palette (Heading/Text/Links/Image);
   // the SPACE palette excludes them (KIND_PALETTE_EXCLUSIONS) in favour of Callout + the connected sections.
   'heading',

@@ -17,6 +17,7 @@
 // Space OWNER (spaces.owner_profile_id) with a member's role lives in lib/spaces/entitlements.ts
 // (getSpaceCapabilities); this file is the membership primitive it reads.
 
+import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 // ── The pure role ladder (testable, no IO) ───────────────────────────────────────────────
@@ -125,8 +126,14 @@ function mapMember(r: MemberRow): SpaceMembership | null {
 
 /** This profile's membership in a Space, or null if they aren't a member. Service-role read
  *  (works regardless of RLS context); FAIL-SAFE (null on any error). Does NOT count the Space
- *  owner — owners have no row; combine via getSpaceCapabilities (lib/spaces/entitlements.ts). */
-export async function getSpaceMembership(
+ *  owner — owners have no row; combine via getSpaceCapabilities (lib/spaces/entitlements.ts).
+ *
+ *  REQUEST-CACHED (React.cache) on (spaceId, profileId): the manage-access resolve reads a viewer's
+ *  membership several times per request — resolveSpaceManageAccess calls getSpaceCapabilities, and the
+ *  rail bundle / getters call getSpaceCapabilities AGAIN for the same viewer — so without the cache one
+ *  rail open fired the same membership query 2x+. The cache collapses them to a single read (perf), and
+ *  is safe because a viewer's membership does not change within a request. */
+export const getSpaceMembership = cache(async function getSpaceMembership(
   spaceId: string,
   profileId: string,
 ): Promise<SpaceMembership | null> {
@@ -141,7 +148,7 @@ export async function getSpaceMembership(
   } catch {
     return null
   }
-}
+})
 
 /** Every membership row of a Space (any status), newest first. Service-role read; FAIL-SAFE
  *  (empty array on any error). Unknown roles/statuses are dropped (fail-closed). */

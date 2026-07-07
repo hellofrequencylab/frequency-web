@@ -87,6 +87,45 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   embed: [{ key: 'url', label: 'Embed URL', type: 'url', placeholder: 'https://' }],
   divider: [],
+  // The five DESIGN blocks (2026), now editable in the rail arranger. The rail's field kit is text / textarea
+  // / url / images / links / features, so each block exposes its CORE authored content through those types;
+  // the richer Puck-only controls (variant, scrim, body mode, per-card repeaters) keep sensible defaults in
+  // the render adapter (space-profile-modules.tsx) until the arranger grows those field types.
+  photoHero: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },
+    { key: 'title', label: 'Headline', type: 'textarea', placeholder: 'The big opener' },
+    { key: 'subtitle', label: 'Subtitle', type: 'textarea', placeholder: 'A line under the headline' },
+    { key: 'image', label: 'Background photo', type: 'url', placeholder: 'https://', upload: true },
+    { key: 'alt', label: 'Photo description', type: 'text', placeholder: 'Describe the photo' },
+    { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Get started' },
+    { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
+  ],
+  editorial: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
+    { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'Section heading' },
+    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Write a paragraph or two' },
+  ],
+  cardGrid: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
+    { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'What you offer' },
+    { key: 'cards', label: 'Cards', type: 'features' },
+    { key: 'browseLabel', label: 'Browse link label', type: 'text', placeholder: 'See everything' },
+    { key: 'browseUrl', label: 'Browse link', type: 'url', placeholder: 'https://' },
+  ],
+  zigzag: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
+    { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'The story beat' },
+    { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Tell this part of the story' },
+    { key: 'image', label: 'Photo', type: 'url', placeholder: 'https://', upload: true },
+    { key: 'alt', label: 'Photo description', type: 'text', placeholder: 'Describe the photo' },
+  ],
+  accentBeat: [
+    { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },
+    { key: 'title', label: 'Headline', type: 'textarea', placeholder: 'The call to action' },
+    { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Say a bit more' },
+    { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Join now' },
+    { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
+  ],
 }
 
 /** The header fields every DATA block carries (ADR-542): an EYEBROW (the small pre-text kicker) and a
@@ -122,7 +161,17 @@ export function isContentBlock(block: EntityBlockDef): boolean {
  *  turning it off strips that card). Every DATA block also self-cards. The plain content blocks (Text,
  *  Heading, Links, Image, Gallery, Quote, Embed, Divider) draw no card, so their toggle defaults off and
  *  turning it ON adds a frame card. */
-const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set(['callout', 'features'])
+const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set([
+  'callout',
+  'features',
+  // The design blocks own their full section frame (photo, cards, accent wash), so the Background toggle
+  // defaults ON and turning it off strips the frame — true to what is on the page.
+  'photoHero',
+  'editorial',
+  'cardGrid',
+  'zigzag',
+  'accentBeat',
+])
 
 /** Whether a block renders its own white card by default (item 6). Drives the Background toggle's default
  *  state + write semantics so the control reads true to what is on the page. */
