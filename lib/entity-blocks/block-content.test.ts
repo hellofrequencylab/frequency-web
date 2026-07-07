@@ -84,7 +84,7 @@ describe('fieldsForBlock', () => {
     expect(fieldsForBlock('heading').map((f) => f.key)).toEqual(['text'])
     expect(fieldsForBlock('links').map((f) => f.type)).toEqual(['links'])
     // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542); a
-    // function-backed block adds a data-source picker (ADR-572 item 5).
+    // function-backed block adds a data-source picker (ADR-573 item 5).
     expect(fieldsForBlock('contact').map((f) => f.key)).toEqual(['eyebrow', 'title'])
     expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items'])
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
@@ -283,9 +283,9 @@ describe('style → class mapping (ADR-569)', () => {
   })
 })
 
-// ── ADR-572 item 5: the function-aware data-source picker ──────────────────────────────────────────────
+// ── ADR-573 item 5: the function-aware data-source picker ──────────────────────────────────────────────
 
-describe('picker field (ADR-572 item 5)', () => {
+describe('picker field (ADR-573 item 5)', () => {
   it('the function-backed data blocks declare a picker field', () => {
     // A representative function-backed block carries a `picker` field keyed on its live items.
     const offeringsFields = fieldsForBlock('offerings')

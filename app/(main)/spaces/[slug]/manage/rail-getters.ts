@@ -49,6 +49,8 @@ import {
 } from '@/lib/entity-blocks/block-data-sources'
 import { PICKER_DATA_BLOCK_IDS } from '@/lib/entity-blocks/block-content'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
+import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
+import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import type { SpaceSettingsValues } from '../settings/settings-form'
@@ -361,17 +363,20 @@ interface SpaceLayoutRailData {
   hidden: string[]
   /** Whether the space has ever saved a layout (else the resolved rows are the default seed → show starters). */
   customized: boolean
-  /** Space blocks locked behind a function this space does not have on, OR (ADR-572 item 6) a function-backed
+  /** Space blocks locked behind a function this space does not have on, OR (ADR-573 item 6) a function-backed
    *  block that has no data yet — held out of the picker + bench until the function exists AND has items. */
   lockedIds: string[]
-  /** The edit-panel PICKER payload per function-backed block (ADR-572 item 5): the Space's live items + the
+  /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Keyed by block id; a block absent here has no picker. Serializable (plain data). */
   pickerData: Record<string, BlockPickerData>
+  /** The pinned Top Hero's current values (operator overrides, else the Space's brand name / tagline), so the
+   *  fixed hero editor opens showing what is on the page. Serializable (plain strings). */
+  hero: HeroEditorValues
 }
 
 /** Assemble the builder seed from the already-resolved space, or null when the viewer cannot manage this
  *  Space (fail-safe → the builder renders nothing). Shared by getSpaceLayoutRailData and getSpaceRailBundle.
- *  A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). ASYNC (ADR-572): it
+ *  A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). ASYNC (ADR-573): it
  *  now reads the Space's function-backed data twice, both bound to space.id and both fail-safe:
  *   • item 6 — existingFunctionBackedBlocks(space.id) → the finer palette gate (a function-backed block is
  *     locked until it EXISTS + has items), composed with the switch gate in partitionSpaceBlocks.
@@ -399,6 +404,22 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     existing,
   })
 
+  // The pinned Top Hero seed: the operator's hero overrides (preferences.hero) atop the Space's canonical
+  // brand name / tagline, plus the existing header-CTA (relocated into the hero editor, item 5) split back to
+  // the editor's flat {label, url}. A blank override falls back to the Space value, so the editor opens showing
+  // exactly what the cover paints.
+  const heroConfig = readHeroConfig(prefs)
+  const cta = heroCtaFromPreference(readHeaderCtaPreference(prefs))
+  const hero: HeroEditorValues = {
+    height: heroConfig.height,
+    buttonOrientation: heroConfig.buttonOrientation,
+    eyebrow: heroConfig.eyebrow,
+    heading: heroConfig.heading ?? space.brandName ?? space.name,
+    tagline: heroConfig.tagline ?? space.tagline ?? undefined,
+    ctaLabel: cta.label || undefined,
+    ctaUrl: cta.url || undefined,
+  }
+
   return {
     slug: space.slug,
     rows: resolveRows(saved, 'space'),
@@ -406,6 +427,7 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
     pickerData,
+    hero,
   }
 }
 
@@ -469,7 +491,7 @@ export async function getSpaceRailBundle(
     getSpaceCapabilities(space, viewerProfileId),
     readProfileExtras(space.id),
     // The layout slice now reads the Space's function-backed data (item 5 picker data + item 6 existing gate),
-    // so it is async; resolve it alongside caps + extras on the rail's hot open path (ADR-572).
+    // so it is async; resolve it alongside caps + extras on the rail's hot open path (ADR-573).
     buildLayoutData(space, canManage),
   ])
 

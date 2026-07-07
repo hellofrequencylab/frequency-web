@@ -19,7 +19,7 @@ export function TeamBlock({
   featuredIds?: string[]
 }) {
   const roster = data.team ?? []
-  // The picker (ADR-572 item 5) features only the chosen members, in order; empty === show all (item 7).
+  // The picker (ADR-573 item 5) features only the chosen members, in order; empty === show all (item 7).
   // The picker keys a member by profileId, matching listTeam in the data registry.
   const picked = resolvePickedIds(featuredIds ?? [], roster.map((m) => m.profileId))
   const byId = new Map(roster.map((m) => [m.profileId, m]))

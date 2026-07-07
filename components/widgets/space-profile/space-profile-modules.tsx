@@ -50,7 +50,7 @@ type BlockComponent = (props: {
   header?: { eyebrow?: string; heading?: string }
   /** About/Story only (ADR-542): the owner's inline-authored body, taking precedence over the data bag. */
   authoredBody?: string
-  /** A function-backed block's picker SELECTION (ADR-572 item 5): the item ids the operator chose to
+  /** A function-backed block's picker SELECTION (ADR-573 item 5): the item ids the operator chose to
    *  feature. EMPTY / absent === show EVERY live item (item 7's default). Each block intersects this with
    *  its live ids (resolvePickedIds), so a stale id is dropped and only real items ever render. */
   featuredIds?: string[]
@@ -128,7 +128,7 @@ function renderSpaceBlock(
   } else if (Object.hasOwn(EXTRA_DATA_BLOCKS, id)) {
     const Block = EXTRA_DATA_BLOCKS[id]
     // The owner's authored eyebrow/title REPLACE the block's real header (ADR-542), default-filled. A
-    // function-backed block also carries its picker selection (ADR-572 item 5); empty === show all (item 7).
+    // function-backed block also carries its picker selection (ADR-573 item 5); empty === show all (item 7).
     inner = (
       <Block space={space} data={data} header={resolveDataHeader(id, contentProps)} featuredIds={pickerSelection(contentProps)} />
     )
@@ -139,7 +139,7 @@ function renderSpaceBlock(
     // About + Story carry the owner's inline-authored body (ADR-542); it takes precedence over the data bag
     // inside the block. Other data blocks ignore the prop. Every data block draws the owner's real header
     // (authored eyebrow/title over the block default) — no separate header stacked above it. A function-backed
-    // block (offerings/events/team/circles) also gets its picker selection (ADR-572 item 5); an empty
+    // block (offerings/events/team/circles) also gets its picker selection (ADR-573 item 5); an empty
     // selection means show every live item (item 7's default).
     const authoredBody =
       (id === 'about' || id === 'story') && typeof contentProps?.body === 'string' ? contentProps.body : undefined

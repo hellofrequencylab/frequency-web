@@ -13,7 +13,7 @@ import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
-import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
+import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -176,24 +176,33 @@ export default async function SpaceProfileChromeLayout({
   // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
-  // The single primary CTA (best practice: one dominant action). By default it routes to the reserved
-  // /book action page (the Space's live transactional surface: booking / join / donate / enroll /
-  // tickets, branched by type) with the per-type default label (profile-config). The OWNER can override
-  // both the label and the action from Identity and Branding: an in-house function pointing at a surface
-  // that exists (contact / offerings anchors, or the /book branches), or a custom URL + label. The stored
-  // override lives in preferences.headerCta; a missing / invalid one falls back to the default here.
-  const headerCta = resolveHeaderCta(
-    readHeaderCtaPreference(space.preferences),
+  // THE EDITABLE TOP HERO (PR: editable-top-hero). The whole cover hero — height, button orientation, the
+  // eyebrow / heading / tagline copy, and the one dominant CTA — resolves through ONE pure helper over the
+  // operator's hero overrides (preferences.hero) + the Space's canonical brand name / tagline + the existing
+  // header-CTA node (preferences.headerCta, reused; item 5). A Space that never opened the hero editor reads
+  // its defaults (medium height, row buttons, brand name + tagline, the per-type default CTA), so nothing
+  // changes for it. The pinned hero editor in the rail arranger writes these same nodes.
+  const hero = resolveHero({
+    config: readHeroConfig(space.preferences),
+    preferences: space.preferences,
     base,
-    defaultPrimaryCtaLabel(space.type),
-  )
-  const ctaHref = headerCta.href
-  const ctaLabel = headerCta.label
+    brandName,
+    tagline,
+    defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
+  })
+  const heroHeading = hero.heading
+  const heroEyebrow = hero.eyebrow
+  const heroTagline = hero.tagline
+  const ctaHref = hero.cta.href
+  const ctaLabel = hero.cta.label
   // A custom (operator-supplied) external URL opens in a new tab with a safe rel; an in-house surface or
   // same-origin path stays in-app (no target/rel).
-  const ctaLinkProps = headerCta.external
+  const ctaLinkProps = hero.cta.external
     ? { target: '_blank' as const, rel: 'noopener noreferrer' }
     : {}
+  // The action cluster's layout: `row` (default) lays the buttons side by side; `stacked` lays them in a
+  // column. Applied to the desktop identity action row (the mobile band stays its own fixed 3-up layout).
+  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-wrap items-center'
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
@@ -259,7 +268,7 @@ export default async function SpaceProfileChromeLayout({
   // of room). `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while
   // the primary CTA stays the same accent. Hidden on mobile — the buttons move to `mobileActionBand`.
   const identityActions = (onInk = false) => (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={cn('flex gap-2', actionOrientationClass)}>
       {primaryCta()}
       {connectLink(onInk)}
       {ownerTools(onInk)}
@@ -295,7 +304,10 @@ export default async function SpaceProfileChromeLayout({
   // navigation instead of blank-until-refresh.
   const coverSrc = space.coverImageUrl || coverPlaceholderFor(space.id)
   const isHero = coverSize === 'hero'
-  const coverH = isHero ? 'h-72 sm:h-[22rem]' : 'h-40 sm:h-52'
+  // The Hero cover height is now operator-selectable (Short / Medium / Tall), off the hero config. The Header
+  // size keeps its compact band (the Header size is retired for Spaces — always Hero, ADR-526 — but the branch
+  // is kept intact + fail-safe).
+  const coverH = isHero ? heroHeightClass(hero.height) : 'h-40 sm:h-52'
   const coverImage = (
     <Image src={coverSrc} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" preload className="object-cover" />
   )
@@ -308,9 +320,9 @@ export default async function SpaceProfileChromeLayout({
   // identity on mobile, while desktop keeps it inline under the name. Renders nothing for a visitor on
   // a Space with no tagline, so wrappers can `empty:hidden` to collapse the reserved space.
   const taglineNode = (onInk = false) =>
-    tagline ? (
+    heroTagline ? (
       <p className={cn('max-w-2xl text-base font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
-        {tagline}
+        {heroTagline}
       </p>
     ) : (
       canSeeAsOwner && (
@@ -333,6 +345,18 @@ export default async function SpaceProfileChromeLayout({
         // cover (mobileActionBand), so the phone hero reads as a clean identity band.
         <div className="mb-2 hidden sm:block">{followButton(onInk)}</div>
       )}
+      {/* The operator's optional EYEBROW: a small pre-text kicker above the name (editable in the pinned hero
+          editor). Absent by default, so the lockup reads exactly as before for a Space with none. */}
+      {heroEyebrow && (
+        <p
+          className={cn(
+            'mb-1 text-2xs font-semibold uppercase tracking-wide',
+            onInk ? 'text-on-ink-muted' : 'text-primary-strong',
+          )}
+        >
+          {heroEyebrow}
+        </p>
+      )}
       {/* Tight vertical rhythm so the type badge sits close to the name and tagline (gap-y-1), keeping the
           lockup balanced rather than spread out. */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -342,7 +366,7 @@ export default async function SpaceProfileChromeLayout({
             onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
           )}
         >
-          {brandName}
+          {heroHeading}
         </h1>
         <span
           className={cn(

@@ -1,13 +1,13 @@
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 import { blocksForKind, type EntityBlockDef } from './registry'
 
-// SPACE BLOCK GATING (ADR-516 Phase D; ADR-572 item 6). A space DATA block can carry a `requiresFunction` —
+// SPACE BLOCK GATING (ADR-516 Phase D; ADR-573 item 6). A space DATA block can carry a `requiresFunction` —
 // the SPACE_FUNCTION that must be enabled for the block to appear (booking → availability, team → members).
 // The in-rail Space page builder must NOT offer a block the space cannot use, mirroring the standalone grid
 // editor's `locked` handling: an arrangeable block is one whose required function is on (or which carries
 // none); a locked block is held out of the picker + the bench until the feature turns on.
 //
-// ADR-572 item 6 ("don't show a function unless it EXISTS") strengthens this. The `requiresFunction` switch
+// ADR-573 item 6 ("don't show a function unless it EXISTS") strengthens this. The `requiresFunction` switch
 // alone only gates booking/team; a function-backed block like Offerings / Events / Team has no data until the
 // operator adds items. So the getter ALSO passes the set of function-backed blocks that currently EXIST for
 // this Space (existingFunctionBackedBlocks: the switch is on AND there is at least one item). A block that is

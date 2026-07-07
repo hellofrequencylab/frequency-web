@@ -24,7 +24,7 @@ export function OfferingsBlock({
   featuredIds?: string[]
 }) {
   const listed = (data.profile?.offerings ?? []).filter(isServiceListed)
-  // The picker (ADR-572 item 5) narrows to the featured offerings, in the operator's chosen order; an empty
+  // The picker (ADR-573 item 5) narrows to the featured offerings, in the operator's chosen order; an empty
   // selection shows every listed offering (item 7). The picker keys an offering by its title, so intersect on
   // title (resolvePickedIds drops any stale id and falls back to all).
   const picked = resolvePickedIds(featuredIds ?? [], listed.map((o) => o.title ?? ''))

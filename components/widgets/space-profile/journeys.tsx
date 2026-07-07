@@ -19,7 +19,7 @@ export function JourneysBlock({
   featuredIds?: string[]
 }) {
   const all = data.practices?.journeys ?? []
-  // The picker (ADR-572 item 5) features only the chosen journeys, in order; empty === show all (item 7).
+  // The picker (ADR-573 item 5) features only the chosen journeys, in order; empty === show all (item 7).
   const picked = resolvePickedIds(featuredIds ?? [], all.map((j) => j.id))
   const byId = new Map(all.map((j) => [j.id, j]))
   const journeys = picked.map((id) => byId.get(id)).filter((j): j is (typeof all)[number] => Boolean(j))

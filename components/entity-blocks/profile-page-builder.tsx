@@ -57,6 +57,7 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { HeroEditPanel, type HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
 // two kinds). An OUTLINE editor, not a mini-canvas: the live profile/space page behind this same-route
@@ -90,7 +91,7 @@ export interface BuilderRailData {
   hidden: string[]
   customized: boolean
   lockedIds?: string[]
-  /** The edit-panel PICKER payload per function-backed block (ADR-572 item 5): the Space's live items + the
+  /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
    *  create link. Absent on the member builder (no function-backed blocks). */
   pickerData?: Record<string, BlockPickerData>
 }
@@ -102,6 +103,7 @@ export function EntityPageBuilder({
   seed,
   editHrefFor,
   uploadImage,
+  heroInitial,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
   pageId: string
@@ -117,6 +119,9 @@ export function EntityPageBuilder({
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
   uploadImage?: UploadImage
+  /** The pinned Top Hero's initial values (SPACE only). When present, a FIXED, non-reorderable hero editor is
+   *  rendered above the rows arranger — always first, editable, but never deletable / draggable like a block. */
+  heroInitial?: HeroEditorValues
 }) {
   const store = useProfileLayout()
   const router = useRouter()
@@ -579,6 +584,11 @@ export function EntityPageBuilder({
         </p>
       )}
 
+      {/* The PINNED Top Hero (SPACE only): a FIXED first section above the rows arranger — always at the top,
+          editable, but not deletable or reorderable like a normal block. It saves through its own action, not
+          the shared layout store. Rendered only when the caller supplied its initial values (the space seed). */}
+      {maxColumns > 1 && heroInitial && <HeroEditPanel slug={pageId} initial={heroInitial} />}
+
       {/* Starters — schematic wireframe thumbnails, shown on a default / empty layout (no lock). */}
       {showStarters && (
         <div className="space-y-2 rounded-2xl border border-border bg-surface-elevated/40 p-3">
@@ -927,9 +937,21 @@ export function ProfilePageBuilder({ pageHandle }: { pageHandle: string }) {
 /** The SPACE page builder — a Space's public-profile layout, mounted in the `space.layout` rail surface on
  *  the Space profile ROOT (ADR-516 Phase D). Adapts the owner-gated space seed getter (matchId = the slug;
  *  function-locked blocks are held out of the picker + bench). */
-export function SpacePageBuilder({ slug, seed }: { slug: string; seed?: BuilderRailData | null }) {
+export function SpacePageBuilder({
+  slug,
+  seed,
+  heroInitial,
+}: {
+  slug: string
+  seed?: BuilderRailData | null
+  /** The pinned Top Hero's initial values, from the same rail seed (getSpaceLayoutRailData). When the builder
+   *  self-fetches (no bundle), it reads the hero off its own getter. */
+  heroInitial?: HeroEditorValues
+}) {
+  const [selfHero, setSelfHero] = useState<HeroEditorValues | undefined>(heroInitial)
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getSpaceLayoutRailData(slug)
+    if (d) setSelfHero(d.hero)
     return d
       ? {
           matchId: d.slug,
@@ -958,6 +980,7 @@ export function SpacePageBuilder({ slug, seed }: { slug: string; seed?: BuilderR
       loadRailData={load}
       seed={seed}
       uploadImage={uploadImage}
+      heroInitial={selfHero}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
       editHrefFor={(blockId) => spaceBlockAdminHref(slug, blockId)}

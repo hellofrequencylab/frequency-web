@@ -37,7 +37,7 @@ describe('partitionSpaceBlocks (requiresFunction locking)', () => {
   })
 })
 
-// ADR-572 item 6: "don't show a function unless it EXISTS". The `functionAware` gate locks a function-backed
+// ADR-573 item 6: "don't show a function unless it EXISTS". The `functionAware` gate locks a function-backed
 // block whose function has NO data yet, even when its switch is on. Offerings/events have no requiresFunction,
 // so the switch gate alone never hid them — this closes that gap.
 describe('partitionSpaceBlocks (item 6 existing-data gate)', () => {

@@ -71,8 +71,13 @@ export function SpacePageModule() {
       </header>
       {/* ADR-542 (revised): the sidebar arranger. Rows + columns + move a section between rows; the page
           shows the live result. It reads the shared space-layout store, so it only shows on the Space
-          profile root; every other Space surface renders just the panel below. */}
-      <SpacePageBuilder slug={data.slug} seed={builderSeed} />
+          profile root; every other Space surface renders just the panel below. The pinned Top Hero editor
+          (fixed first section) seeds off the SAME bundle. */}
+      <SpacePageBuilder
+        slug={data.slug}
+        seed={builderSeed}
+        heroInitial={ctx?.status === 'ready' ? ctx.bundle?.layout?.hero : undefined}
+      />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}

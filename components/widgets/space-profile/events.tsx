@@ -17,7 +17,7 @@ export function EventsBlock({
   featuredIds?: string[]
 }) {
   const all = data.events ?? []
-  // The picker (ADR-572 item 5) features only the chosen events, in order; empty === show all (item 7).
+  // The picker (ADR-573 item 5) features only the chosen events, in order; empty === show all (item 7).
   const picked = resolvePickedIds(featuredIds ?? [], all.map((e) => e.id))
   const byId = new Map(all.map((e) => [e.id, e]))
   const events = picked.map((id) => byId.get(id)).filter((e): e is (typeof all)[number] => Boolean(e))

@@ -17,7 +17,7 @@ export function CirclesBlock({
   featuredIds?: string[]
 }) {
   const all = data.community ?? []
-  // The picker (ADR-572 item 5) features only the chosen circles, in order; empty === show all (item 7).
+  // The picker (ADR-573 item 5) features only the chosen circles, in order; empty === show all (item 7).
   const picked = resolvePickedIds(featuredIds ?? [], all.map((c) => c.id))
   const byId = new Map(all.map((c) => [c.id, c]))
   const circles = picked.map((id) => byId.get(id)).filter((c): c is (typeof all)[number] => Boolean(c))

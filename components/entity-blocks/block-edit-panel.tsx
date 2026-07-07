@@ -95,7 +95,7 @@ export function BlockEditPanel({
   hidden: boolean
   /** For a DATA block: the href of that feature's own manager ("Manage Offerings"), or null. */
   editHref: string | null
-  /** For a function-backed block: the picker payload (ADR-572 item 5) — the Space's live items + create
+  /** For a function-backed block: the picker payload (ADR-573 item 5) — the Space's live items + create
    *  link. Feeds any `picker` field; absent for a block with no data source. */
   pickerData?: BlockPickerData
   /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
@@ -167,8 +167,9 @@ export function BlockEditPanel({
 
 /** One field editor, dispatched by field type. Content types render an input / repeater; the ADR-569 C6
  *  primitive types render a control-row over the declared enum, so a feature agent gets its control by just
- *  declaring the field. */
-function FieldEditor({
+ *  declaring the field. Exported so the pinned Hero editor (which is NOT a rows-model block, but reuses the
+ *  same declarative FieldDef kit) dispatches every field through the SAME control surface — no bespoke JSX. */
+export function FieldEditor({
   field,
   value,
   uploadImage,
@@ -227,7 +228,7 @@ function FieldEditor({
       />
     )
   }
-  // ── ADR-572 item 5: the function-aware DATA-SOURCE picker. Its choices are the Space's live items (from
+  // ── ADR-573 item 5: the function-aware DATA-SOURCE picker. Its choices are the Space's live items (from
   //    the seed's pickerData), not a fixed enum; an empty function shows the create link. Fail-safe: no
   //    pickerData (a non-function-backed block, or a read miss) renders nothing here. ──
   if (field.type === 'picker') {

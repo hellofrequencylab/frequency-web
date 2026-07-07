@@ -321,7 +321,7 @@ export function ShadowControl({ value, onSelect }: { value: ShadowValue; onSelec
   return <Segmented ariaLabel="Shadow" options={SHADOW_OPTIONS} value={value} onSelect={onSelect} />
 }
 
-// ── Data-source picker (ADR-572, item 5) ──────────────────────────────────────────────────────────────────
+// ── Data-source picker (ADR-573, item 5) ──────────────────────────────────────────────────────────────────
 
 /** One choice a data-source picker offers: a stable `id`, the human `label`, and an optional deep link to
  *  that one item's live page (an event / a circle). Mirrors BlockDataItem, kept local so this client control
@@ -332,7 +332,7 @@ export interface PickerItem {
   href?: string
 }
 
-/** One function-backed block's serializable picker payload (ADR-572, item 5): the Space's live items + the
+/** One function-backed block's serializable picker payload (ADR-573, item 5): the Space's live items + the
  *  admin create link the editor shows when the list is empty. This is the CLIENT-safe mirror of the server
  *  `BlockPickerData` (lib/entity-blocks/block-data-sources.ts), declared here so the client builder + edit
  *  panel can type the seed without importing the server-only data registry. */
@@ -342,7 +342,7 @@ export interface BlockPickerData {
   createLabel: string
 }
 
-/** The function-aware DATA-SOURCE picker (ADR-572, item 5). A multi-select checklist of the Space's OWN live
+/** The function-aware DATA-SOURCE picker (ADR-573, item 5). A multi-select checklist of the Space's OWN live
  *  items for a function-backed block (which offerings / events / team the section features). Its options are
  *  the Space's REAL data, resolved server-side and passed in — not a fixed enum. Behaviour:
  *   • The stored value is the SELECTED ids; NOTHING selected means "show every item" (item 7), so the empty
