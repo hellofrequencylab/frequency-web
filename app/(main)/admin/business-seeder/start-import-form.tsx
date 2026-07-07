@@ -8,7 +8,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Rocket } from 'lucide-react'
+import { Loader2, Rocket, Compass } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
 import { startBusinessImport } from './actions'
@@ -30,6 +30,11 @@ export function StartImportForm() {
   const [instagram, setInstagram] = useState('')
   const [facebook, setFacebook] = useState('')
   const [linkedin, setLinkedin] = useState('')
+  const [directions, setDirections] = useState('')
+  const [overview, setOverview] = useState('')
+  const [webContent, setWebContent] = useState('')
+  const [bookingSchedule, setBookingSchedule] = useState('')
+  const [differentiators, setDifferentiators] = useState('')
   const [pastedContent, setPastedContent] = useState('')
   const [runInline, setRunInline] = useState(true)
 
@@ -47,6 +52,11 @@ export function StartImportForm() {
         categoryHint: categoryHint.trim() || undefined,
         type,
         socialHandles: Object.keys(handles).length ? handles : undefined,
+        directions: directions.trim() || undefined,
+        overview: overview.trim() || undefined,
+        webContent: webContent.trim() || undefined,
+        bookingSchedule: bookingSchedule.trim() || undefined,
+        differentiators: differentiators.trim() || undefined,
         pastedContent: pastedContent.trim() || undefined,
         runInline,
       })
@@ -133,11 +143,70 @@ export function StartImportForm() {
         </label>
       </div>
 
+      {/* DIRECTIONS: a steering modifier for the seed. Folded into the AI's brief — never overrides the
+          trust rules (no invented facts / health claims), just steers emphasis + angle. */}
       <label className={`${labelCls} mt-4`}>
-        Pasted content
+        <span className="inline-flex items-center gap-1.5 text-primary-strong">
+          <Compass className="h-3.5 w-3.5" aria-hidden /> Directions (steer the seed)
+        </span>
         <textarea
-          className={`${field} min-h-28 resize-y`}
-          placeholder="Paste the About page, menu, bio, hours, or any reviews you have. This is treated as a source too."
+          className={`${field} min-h-16 resize-y`}
+          placeholder="Tell the seeder how to approach this. e.g. 'Lead with the retreat angle, keep it calm and grounded, emphasize the sound baths.'"
+          value={directions}
+          onChange={(e) => setDirections(e.target.value)}
+        />
+      </label>
+
+      {/* Structured content boxes: labeled so the extractor can identify content. Everything here is a
+          SOURCE (parsed into the draft); paste anything you scraped about the business. */}
+      <p className="mt-5 text-xs font-semibold uppercase tracking-wide text-subtle">Content to parse</p>
+      <p className="mb-2 text-2xs text-muted">
+        Paste anything you have. Labeled boxes help the seeder sort it. All of it is treated as a source.
+      </p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <label className={labelCls}>
+          Overview
+          <textarea
+            className={`${field} min-h-24 resize-y`}
+            placeholder="What is this business, in plain terms? Who is it for, what do they do?"
+            value={overview}
+            onChange={(e) => setOverview(e.target.value)}
+          />
+        </label>
+        <label className={labelCls}>
+          Website content
+          <textarea
+            className={`${field} min-h-24 resize-y`}
+            placeholder="Paste the About / Home / Services page copy, bios, mission."
+            value={webContent}
+            onChange={(e) => setWebContent(e.target.value)}
+          />
+        </label>
+        <label className={labelCls}>
+          Booking and schedule
+          <textarea
+            className={`${field} min-h-24 resize-y`}
+            placeholder="Hours, session lengths, prices, how to book, availability."
+            value={bookingSchedule}
+            onChange={(e) => setBookingSchedule(e.target.value)}
+          />
+        </label>
+        <label className={labelCls}>
+          What makes them different
+          <textarea
+            className={`${field} min-h-24 resize-y`}
+            placeholder="The angle, the specialty, the vibe, the proof — anything that sets them apart."
+            value={differentiators}
+            onChange={(e) => setDifferentiators(e.target.value)}
+          />
+        </label>
+      </div>
+
+      <label className={`${labelCls} mt-4`}>
+        Anything else
+        <textarea
+          className={`${field} min-h-20 resize-y`}
+          placeholder="Reviews, menus, testimonials, or any other raw text you scraped."
           value={pastedContent}
           onChange={(e) => setPastedContent(e.target.value)}
         />

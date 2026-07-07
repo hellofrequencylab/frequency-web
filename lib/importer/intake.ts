@@ -67,6 +67,10 @@ export interface IntakeInputs {
    *  AND the hero image, and re-voices / recomposes everything ELSE. An explicit "make primary" still
    *  overrides it (the operator is choosing the hero on purpose). Persisted so it drives every re-seed. */
   lockHero?: boolean
+  /** Operator DIRECTIONS (Importer v2): a freeform steering modifier the operator typed on the seed form
+   *  ("lead with the retreat angle", "keep it calm and clinical"). Folded into the reframe system note so
+   *  it steers the copy; it can never override the trust rules (no invented facts / health claims). */
+  directions?: string
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

@@ -25,9 +25,10 @@
 
 import { after } from 'next/server'
 import { requireStaffCap } from '@/lib/staff'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { listSpaces } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createIntake, getIntake, saveDraft, setInputs } from '@/lib/importer/store'
+import { createIntake, getIntake, saveDraft, setInputs, intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
 import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
 import { reframe, applyReframe } from '@/lib/importer/reframe'
@@ -52,9 +53,35 @@ export interface StartImportInput {
   cityHint?: string
   type?: 'business' | 'nonprofit'
   socialHandles?: IntakeInputs['socialHandles']
+  /** DIRECTIONS: a freeform steering modifier for the seed (Importer v2). Folded into the reframe. */
+  directions?: string
+  /** Structured content boxes (Importer v2) — labeled sections the operator pastes so the extractor can
+   *  identify content more easily. All are folded (labeled) into the single pasted-content source. */
+  overview?: string
+  webContent?: string
+  bookingSchedule?: string
+  differentiators?: string
   /** Run the research inline (behind after()) for a faster operator turnaround, in addition to
    *  enqueuing it durably. Defaults to enqueue-only. */
   runInline?: boolean
+}
+
+/** Fold the labeled content boxes + the freeform paste into ONE labeled source block the harvest treats
+ *  as a paste. Labeled headers help the extractor separate overview / web copy / schedule / differentiators.
+ *  PURE. Returns '' when every box is empty. */
+function composePaste(input: StartImportInput): string {
+  const parts: string[] = []
+  const add = (label: string, v?: string) => {
+    const t = (v ?? '').trim()
+    if (t) parts.push(`## ${label}\n${t}`)
+  }
+  add('Overview', input.overview)
+  add('Website content', input.webContent)
+  add('Booking and schedule', input.bookingSchedule)
+  add('What makes them different', input.differentiators)
+  const freeform = (input.pastedContent ?? '').trim()
+  if (freeform) parts.push(freeform)
+  return parts.join('\n\n')
 }
 
 export type StartImportResult = { ok: true; intakeId: string } | { ok: false; error: string }
@@ -71,10 +98,11 @@ export async function startBusinessImport(input: StartImportInput): Promise<Star
   if (!operatorId) return { ok: false, error: 'No operator profile.' }
 
   const websiteUrl = (input.websiteUrl ?? '').trim()
-  const pastedContent = (input.pastedContent ?? '').trim()
+  const pastedContent = composePaste(input) // labeled boxes + freeform, folded into one source
   const nameHint = (input.nameHint ?? '').trim()
+  const directions = (input.directions ?? '').trim()
   if (!websiteUrl && !pastedContent && !nameHint) {
-    return { ok: false, error: 'Give at least a website, a paste, or a name to research.' }
+    return { ok: false, error: 'Give at least a website, some content, or a name to research.' }
   }
 
   const inputs: IntakeInputs = {
@@ -82,6 +110,7 @@ export async function startBusinessImport(input: StartImportInput): Promise<Star
   }
   if (websiteUrl) inputs.websiteUrl = websiteUrl
   if (pastedContent) inputs.pastedContent = pastedContent
+  if (directions) inputs.directions = directions
   if (input.socialHandles) inputs.socialHandles = input.socialHandles
   const hints: NonNullable<IntakeInputs['hints']> = {}
   if (nameHint) hints.name = nameHint
@@ -520,7 +549,7 @@ export async function reseedBusinessImport(
   // copy is left as-is (the layout/images still regenerate on re-apply below).
   const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
-  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood })
+  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood, directions: row.inputs.directions })
 
   let revoiced = false
   if (result) {
@@ -560,6 +589,54 @@ export async function adoptSpaceMasterProfile(spaceId: string): Promise<AdoptSpa
   const operatorId = await getMyProfileId()
   if (!operatorId) return { ok: false, error: 'No operator profile.' }
   return adoptSpaceAsMasterProfile(spaceId, operatorId)
+}
+
+// ── Re-seed ANY active Space: admin-only space search (Importer v2) ────────────────────────
+
+/** One active Space an admin can pick to re-seed. */
+export interface SpaceSearchResult {
+  id: string
+  name: string
+  slug: string
+  type: string
+  /** Whether it already has a master profile (was seeded / adopted). Framing only. */
+  seeded: boolean
+}
+
+/**
+ * Search ACTIVE Spaces to re-seed (Importer v2). ADMIN-ONLY: re-seeding any Space (not just ones you
+ * started) is a platform-admin power, so this gates on the staff web_role (admin / janitor), above the
+ * seeder's own structure:write. Returns up to 20 active, non-root Spaces matching `query` (name / brand /
+ * slug), most-recently-updated first. Fail-safe: an empty list for a non-admin or any error.
+ */
+export async function searchActiveSpaces(query: string): Promise<SpaceSearchResult[]> {
+  const caller = await getCallerProfile().catch(() => null)
+  const webRole = caller?.webRole
+  if (webRole !== 'admin' && webRole !== 'janitor') return [] // admin-only
+  try {
+    const q = query.trim().toLowerCase()
+    const spaces = await listSpaces()
+    const active = spaces.filter((s) => s.status === 'active' && s.type !== 'root')
+    const matched = (q
+      ? active.filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            (s.brandName ?? '').toLowerCase().includes(q) ||
+            s.slug.toLowerCase().includes(q),
+        )
+      : active
+    ).slice(0, 20)
+    const seededMap = await intakeIdsBySpaceIds(matched.map((s) => s.id))
+    return matched.map((s) => ({
+      id: s.id,
+      name: s.brandName || s.name,
+      slug: s.slug,
+      type: s.type,
+      seeded: !!seededMap[s.id],
+    }))
+  } catch {
+    return []
+  }
 }
 
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────
