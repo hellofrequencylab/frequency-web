@@ -13,6 +13,7 @@ import { getActiveSpace } from '@/lib/spaces/active-space'
 import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
+import { readHeaderCtaPreference, resolveHeaderCta } from '@/lib/spaces/header-cta'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
@@ -175,11 +176,24 @@ export default async function SpaceProfileChromeLayout({
   // (SpaceProfileTabs → usePathname), so nothing here goes stale across soft navigation.
   const { tabs, adminTabs } = await buildSpaceProfileNav(space)
 
-  // The single primary CTA (best practice: one dominant action) routes to the reserved /book action
-  // page, which renders the Space's live transactional surface (booking / join / donate / enroll /
-  // tickets, branched by type). The label is the per-type default (profile-config), operator-overridable.
-  const ctaHref = `${base}/book`
-  const ctaLabel = defaultPrimaryCtaLabel(space.type)
+  // The single primary CTA (best practice: one dominant action). By default it routes to the reserved
+  // /book action page (the Space's live transactional surface: booking / join / donate / enroll /
+  // tickets, branched by type) with the per-type default label (profile-config). The OWNER can override
+  // both the label and the action from Identity and Branding: an in-house function pointing at a surface
+  // that exists (contact / offerings anchors, or the /book branches), or a custom URL + label. The stored
+  // override lives in preferences.headerCta; a missing / invalid one falls back to the default here.
+  const headerCta = resolveHeaderCta(
+    readHeaderCtaPreference(space.preferences),
+    base,
+    defaultPrimaryCtaLabel(space.type),
+  )
+  const ctaHref = headerCta.href
+  const ctaLabel = headerCta.label
+  // A custom (operator-supplied) external URL opens in a new tab with a safe rel; an in-house surface or
+  // same-origin path stays in-app (no target/rel).
+  const ctaLinkProps = headerCta.external
+    ? { target: '_blank' as const, rel: 'noopener noreferrer' }
+    : {}
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
@@ -224,7 +238,7 @@ export default async function SpaceProfileChromeLayout({
   // the mobile action card render the identical buttons. `onInk` swaps Connect to on-cover styling; the
   // primary CTA keeps its accent everywhere.
   const primaryCta = () => (
-    <Link href={ctaHref} className={primaryCtaClasses}>
+    <Link href={ctaHref} className={primaryCtaClasses} {...ctaLinkProps}>
       {ctaLabel}
     </Link>
   )
@@ -259,7 +273,7 @@ export default async function SpaceProfileChromeLayout({
   const mobileActionBand = (
     <div className="mt-4 rounded-xl border border-border bg-surface p-4 sm:hidden">
       <div className="flex items-stretch gap-2">
-        <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')}>
+        <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')} {...ctaLinkProps}>
           {ctaLabel}
         </Link>
         <Link
