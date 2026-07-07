@@ -55,6 +55,10 @@ export interface IntakeInputs {
    *  order. Staged on the intake during review; on Apply each is FILED INTO the new Space's Loom (space
    *  scoped) so it is available when the owner claims / edits the Space. */
   images?: string[]
+  /** The subset of `images` already filed into the target Space's Loom (Importer v2). Bookkeeping that
+   *  keeps filing IDEMPOTENT across the two paths that file (Apply, and a post-apply upload onto a live
+   *  Space), so a re-apply or a late upload never double-files an image. */
+  imagesFiledToLoom?: string[]
 }
 
 // ── Harvested sources (docs §3.3) ─────────────────────────────────────────────────

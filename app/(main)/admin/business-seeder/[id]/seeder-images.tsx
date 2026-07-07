@@ -59,8 +59,9 @@ export function SeederImages({ intakeId, initialImages }: { intakeId: string; in
         {images.length > 0 && <span className="font-normal text-muted">· {images.length}</span>}
       </div>
       <p className="mt-0.5 text-xs text-muted">
-        Add photos for this Space. The first is the primary image. When you approve, every image is filed
-        into the Space&rsquo;s Loom, so the owner has them the moment they claim it.
+        Add photos for this Space. The first is the primary image. Every image is filed into the
+        Space&rsquo;s Loom, so the owner has them the moment they claim it: on approval for a new seed, or
+        right away once the Space is live.
       </p>
 
       <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">

@@ -11,6 +11,7 @@ import {
   Users,
   Sparkles,
   Wand2,
+  RefreshCw,
 } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
@@ -20,6 +21,7 @@ import { StatusChip, type StatusTone } from '@/components/admin/status'
 import { Button } from '@/components/ui/button'
 import { ViewAsSpaceButton } from '@/components/spaces/view-as-space-button'
 import { listSpaces } from '@/lib/spaces/store'
+import { intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { resolveMode } from '@/lib/spaces/modes'
 import { SPACE_PLAN_LABEL, asSpacePlan } from '@/lib/pricing/plans'
 import {
@@ -55,7 +57,7 @@ function modeTag(s: Space): string {
   return resolveMode(s.type, s.modeVariant)?.modeLabel ?? s.type
 }
 
-function SpaceRow({ entry }: { entry: SpaceWithHealth }) {
+function SpaceRow({ entry, masterProfileIntakeId }: { entry: SpaceWithHealth; masterProfileIntakeId?: string }) {
   const { space: s, signals, health } = entry
   // The root Space serves the app itself; it has no public /spaces/<slug> profile or owner settings.
   const hasProfile = s.type !== 'root'
@@ -127,13 +129,30 @@ function SpaceRow({ entry }: { entry: SpaceWithHealth }) {
             <ViewAsSpaceButton spaceId={s.id} spaceName={brandName} />
           </>
         )}
+        {/* Re-seed: a seeded Space links back to its master profile (the intake) so an operator can
+            re-voice the copy, change the mood, or add images without hunting for the import. */}
+        {masterProfileIntakeId && (
+          <Button asChild variant="secondary" size="sm">
+            <Link href={`/admin/business-seeder/${masterProfileIntakeId}`}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden /> Re-seed
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
 /** One health section: the bucket title + count, then its Spaces. Rendered only when non-empty. */
-function HealthSection({ bucket, entries }: { bucket: HealthBucket; entries: SpaceWithHealth[] }) {
+function HealthSection({
+  bucket,
+  entries,
+  masterProfiles,
+}: {
+  bucket: HealthBucket
+  entries: SpaceWithHealth[]
+  masterProfiles: Record<string, string>
+}) {
   if (entries.length === 0) return null
   return (
     <AdminSection
@@ -146,7 +165,7 @@ function HealthSection({ bucket, entries }: { bucket: HealthBucket; entries: Spa
     >
       <div className="space-y-3">
         {entries.map((entry) => (
-          <SpaceRow key={entry.space.id} entry={entry} />
+          <SpaceRow key={entry.space.id} entry={entry} masterProfileIntakeId={masterProfiles[entry.space.id]} />
         ))}
       </div>
     </AdminSection>
@@ -156,7 +175,10 @@ function HealthSection({ bucket, entries }: { bucket: HealthBucket; entries: Spa
 /** The async body: the batched signal gather + the grouped, by-health list. Streamed behind a
  *  <Suspense> boundary so the header + the empty-state check render immediately. */
 async function SpacesHealthBody({ spaces }: { spaces: Space[] }) {
-  const graded = await gatherSpacesHealth(spaces)
+  const [graded, masterProfiles] = await Promise.all([
+    gatherSpacesHealth(spaces),
+    intakeIdsBySpaceIds(spaces.map((s) => s.id)),
+  ])
 
   // Group by bucket, then render the sections most-urgent first (HEALTH_BUCKETS order).
   const byBucket = new Map<HealthBucket, SpaceWithHealth[]>()
@@ -190,7 +212,7 @@ async function SpacesHealthBody({ spaces }: { spaces: Space[] }) {
         </div>
       </AdminSection>
       {HEALTH_BUCKETS.map((bucket) => (
-        <HealthSection key={bucket} bucket={bucket} entries={byBucket.get(bucket)!} />
+        <HealthSection key={bucket} bucket={bucket} entries={byBucket.get(bucket)!} masterProfiles={masterProfiles} />
       ))}
     </>
   )
