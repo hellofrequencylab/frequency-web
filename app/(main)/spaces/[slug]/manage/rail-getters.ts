@@ -42,6 +42,8 @@ import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
 import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
+import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
+import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import type { SpaceSettingsValues } from '../settings/settings-form'
@@ -356,6 +358,9 @@ interface SpaceLayoutRailData {
   customized: boolean
   /** Space blocks locked behind a function this space does not have on — held out of the picker + bench. */
   lockedIds: string[]
+  /** The pinned Top Hero's current values (operator overrides, else the Space's brand name / tagline), so the
+   *  fixed hero editor opens showing what is on the page. Serializable (plain strings). */
+  hero: HeroEditorValues
 }
 
 /** Assemble the builder seed from the already-resolved space, or null when the viewer cannot manage this
@@ -372,12 +377,29 @@ function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): SpaceLayo
   const saved = parseEntityLayout(rawLayout)
   const { lockedIds } = partitionSpaceBlocks(enabledFunctionKeys(space))
 
+  // The pinned Top Hero seed: the operator's hero overrides (preferences.hero) atop the Space's canonical
+  // brand name / tagline, plus the existing header-CTA (relocated into the hero editor, item 5) split back to
+  // the editor's flat {label, url}. A blank override falls back to the Space value, so the editor opens showing
+  // exactly what the cover paints.
+  const heroConfig = readHeroConfig(prefs)
+  const cta = heroCtaFromPreference(readHeaderCtaPreference(prefs))
+  const hero: HeroEditorValues = {
+    height: heroConfig.height,
+    buttonOrientation: heroConfig.buttonOrientation,
+    eyebrow: heroConfig.eyebrow,
+    heading: heroConfig.heading ?? space.brandName ?? space.name,
+    tagline: heroConfig.tagline ?? space.tagline ?? undefined,
+    ctaLabel: cta.label || undefined,
+    ctaUrl: cta.url || undefined,
+  }
+
   return {
     slug: space.slug,
     rows: resolveRows(saved, 'space'),
     hidden: saved?.hidden ?? [],
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
+    hero,
   }
 }
 
