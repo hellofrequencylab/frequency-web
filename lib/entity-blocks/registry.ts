@@ -90,7 +90,7 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // text-style controls (size / weight / color / shadow) and explanatory demo copy. They give an operator a
   // deliberate "big title" and "body text" block distinct from the plain member Heading / Text content blocks.
   { id: 'displayHeading', label: 'Display heading', description: 'A large display title in your chosen style.', category: 'content', kinds: ['space'], order: 290 },
-  { id: 'prose', label: 'Prose', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space'], order: 292 },
+  { id: 'prose', label: 'Text Block', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space'], order: 292 },
 ]
 
 /** The reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck

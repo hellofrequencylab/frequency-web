@@ -1147,7 +1147,7 @@ export const designComponents: Record<string, ComponentConfig> = {
   },
 
   Prose: {
-    label: 'Prose',
+    label: 'Text Block',
     fields: {
       text: { type: 'textarea', label: 'Paragraph' },
     },

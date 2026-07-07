@@ -452,7 +452,11 @@ export function mapBlockContent(
   const hero: Record<string, unknown> = { title: heroTitle }
   if ((profile.category ?? '').trim()) hero.eyebrow = profile.category!.trim()
   if (aboutOk && (profile.about ?? '').trim()) hero.subtitle = profile.about!.trim().slice(0, 300)
-  if (isReadyMediaUrl(profile.media?.heroPath)) hero.image = profile.media!.heroPath!.trim()
+  // The IN-PAGE banner must NOT reuse the cover image (mapIdentity already sets the cover to media.heroPath,
+  // so painting heroPath here too shows the same photo twice). Use the FIRST GALLERY image instead — a
+  // distinct visual — and fall back to a text-only banner when there is no secondary image.
+  const bannerImage = (profile.media?.gallery ?? []).find((u) => isReadyMediaUrl(u))
+  if (bannerImage) hero.image = bannerImage.trim()
   // No auto CTA button (leave the button off so we never emit a dead link).
   hero.buttonOn = false
   content.photoHero = hero

@@ -161,6 +161,17 @@ at Apply. `store.getIntakeBySpaceId` / `store.intakeIdsBySpaceIds` (batched) res
 and the Manage Spaces console (`/admin/spaces`) shows a **Re-seed** button per seeded row so any seeded
 business is re-openable without hunting for the import.
 
+**AI marketing-page composer (Importer v2).** `lib/importer/compose.ts` (`composeMarketingLayout`) is a
+page designer: ONE model call is given the verified draft, the block palette with when-to-use guidance,
+and the photo count, and it chooses the best blocks for the business + writes the design-block copy
+(Banner / Card grid / Zigzag / Accent beat / Features / Text Block) intermixed with the fitting data
+blocks (Contact / Booking / FAQ …). Safe by construction: the model picks from a FIXED block allowlist and
+references photos by INDEX (never a URL). `planToLayout` (PURE, unit-tested) maps the plan to an
+EntityLayout — each block at most once, drop-empty, resolve images by index, return null when too thin.
+The materializer calls it via `options.aiCompose` and REPLACES the deterministic layout with the result;
+when AI is off / over budget / errors it falls back to the deterministic `composeLayout`. Copy never
+invents a fact or a health claim (the voice primer + the trust rules bind it).
+
 **Seed form — directions + structured content (Importer v2).** The start form takes a **Directions**
 box (a freeform steering modifier, `inputs.directions`) folded into the reframe system note so it steers
 the copy's angle + emphasis — but it can never override the trust rules (no invented facts / health
