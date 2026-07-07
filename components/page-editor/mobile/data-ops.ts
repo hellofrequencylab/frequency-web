@@ -7,6 +7,7 @@
 // nothing Puck-specific beyond the `Data` shape, so they are trivially unit-testable.
 
 import type { Config, Data } from '@/lib/page-editor/types'
+import { blockLimitReason, canAddBlock } from '@/lib/page-editor/block-limits'
 
 type Item = Data['content'][number]
 
@@ -33,15 +34,32 @@ export function makeItemId(type: string): string {
 /** The list of block types the picker offers, grouped by the config's categories
  *  (falling back to a single "More" group for any component not placed in one).
  *  Pure derivation from the config — no React, no Puck runtime. */
+export type PickerItem = {
+  type: string
+  label: string
+  /** True when this block is at its per-page cap and cannot be added again (block-limits.ts). */
+  disabled?: boolean
+  /** A short, member-facing reason it is disabled (shown as the greyed item's tooltip). */
+  reason?: string
+}
 export type PickerGroup = {
   key: string
   title: string
-  items: { type: string; label: string }[]
+  items: PickerItem[]
 }
 
-export function derivePickerGroups(config: Config): PickerGroup[] {
+/** The block types the picker offers, grouped by the config's categories (with a "More" group for any
+ *  uncategorized component). Pass `data` to annotate items that have hit their PER-PAGE cap — those come
+ *  back `disabled` with a `reason`, so the palette can grey them out (design blocks up to 3 per page,
+ *  primary profile blocks once per page; everything else is unlimited). Omit `data` for a plain palette. */
+export function derivePickerGroups(config: Config, data?: Data): PickerGroup[] {
   const components = (config.components ?? {}) as Record<string, ComponentEntry>
   const labelFor = (type: string) => components[type]?.label ?? type
+  const itemFor = (type: string): PickerItem => {
+    if (!data) return { type, label: labelFor(type) }
+    const reason = blockLimitReason(type, data, config)
+    return reason ? { type, label: labelFor(type), disabled: true, reason } : { type, label: labelFor(type) }
+  }
 
   const groups: PickerGroup[] = []
   const placed = new Set<string>()
@@ -57,7 +75,7 @@ export function derivePickerGroups(config: Config): PickerGroup[] {
     groups.push({
       key,
       title: cat.title ?? key,
-      items: types.map((type) => ({ type, label: labelFor(type) })),
+      items: types.map(itemFor),
     })
   }
 
@@ -67,7 +85,7 @@ export function derivePickerGroups(config: Config): PickerGroup[] {
     groups.push({
       key: '__other',
       title: 'More',
-      items: orphaned.map((type) => ({ type, label: labelFor(type) })),
+      items: orphaned.map(itemFor),
     })
   }
 
@@ -90,6 +108,9 @@ export function addBlock(
   config: Config,
   type: string,
 ): { data: Data; id: string } {
+  // Defense in depth: refuse to exceed a block's per-page cap even if a stale palette lets the click
+  // through. Returns the document unchanged with an empty id (the caller no-ops).
+  if (!canAddBlock(type, data, config)) return { data, id: '' }
   const item = makeItem(config, type)
   return {
     data: { ...data, content: [...data.content, item] },
@@ -336,6 +357,9 @@ function reidDeep(item: Item, config: Config): Item {
 /** Duplicate the block with `id` (deep, re-ided) directly after itself in its own
  *  region. Returns the new doc + the new block's id (empty string if not found). */
 export function duplicateBlockDeep(data: Data, config: Config, id: string): { data: Data; id: string } {
+  // A duplicate is one more instance, so it honors the per-page cap too (a capped block can't be cloned).
+  const source = findBlockDeep(data, config, id)
+  if (source && !canAddBlock(source.type, data, config)) return { data, id: '' }
   let newId = ''
   const res = opContainingArray(data.content, config, id, (arr, i) => {
     const copy = reidDeep(arr[i], config)
@@ -356,6 +380,8 @@ export function addBlockToSlot(
   slotKey: string,
   type: string,
 ): { data: Data; id: string } {
+  // Per-page caps count across the WHOLE tree, so a slot insert is guarded the same as a top-level add.
+  if (!canAddBlock(type, data, config)) return { data, id: '' }
   const item = makeItem(config, type)
   const res = opItemById(data.content, config, parentId, (parent) => {
     const cur = slotArray(parent, slotKey)

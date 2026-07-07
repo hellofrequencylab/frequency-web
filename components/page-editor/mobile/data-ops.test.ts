@@ -397,3 +397,81 @@ describe('buildOutline', () => {
     expect(cols.slots[1].children).toEqual([])
   })
 })
+
+// ── Per-page block limits: the palette annotates capped blocks + the add/duplicate ops refuse to
+// exceed a cap (lib/page-editor/block-limits.ts). A "Blocks" category holds a design block (cap 3);
+// a "profile" category holds a primary block (cap 1); "content" is unlimited.
+const limitConfig = {
+  components: {
+    Zigzag: { label: 'Zigzag', defaultProps: {} },
+    SpaceAbout: { label: 'About', defaultProps: {} },
+    Text: { label: 'Text', defaultProps: {} },
+  },
+  categories: {
+    blocks: { title: 'Blocks', components: ['Zigzag'] },
+    profile: { title: 'Profile', components: ['SpaceAbout'] },
+    content: { title: 'Content', components: ['Text'] },
+  },
+} as unknown as Config
+
+const findItem = (groups: ReturnType<typeof derivePickerGroups>, type: string) =>
+  groups.flatMap((g) => g.items).find((it) => it.type === type)
+
+describe('derivePickerGroups with per-page limits', () => {
+  it('leaves every item enabled when no data is passed', () => {
+    const groups = derivePickerGroups(limitConfig)
+    expect(findItem(groups, 'Zigzag')?.disabled).toBeUndefined()
+    expect(findItem(groups, 'SpaceAbout')?.disabled).toBeUndefined()
+  })
+  it('disables a design block once it hits three, with a reason', () => {
+    const data: Data = {
+      root: {},
+      content: [
+        { type: 'Zigzag', props: { id: '1' } },
+        { type: 'Zigzag', props: { id: '2' } },
+        { type: 'Zigzag', props: { id: '3' } },
+      ],
+    }
+    const item = findItem(derivePickerGroups(limitConfig, data), 'Zigzag')
+    expect(item?.disabled).toBe(true)
+    expect(item?.reason).toBeTruthy()
+    // Under the cap it stays enabled.
+    const twoItem = findItem(
+      derivePickerGroups(limitConfig, { root: {}, content: data.content.slice(0, 2) }),
+      'Zigzag',
+    )
+    expect(twoItem?.disabled).toBeUndefined()
+  })
+  it('disables a primary block once it is on the page', () => {
+    const data: Data = { root: {}, content: [{ type: 'SpaceAbout', props: { id: '1' } }] }
+    expect(findItem(derivePickerGroups(limitConfig, data), 'SpaceAbout')?.disabled).toBe(true)
+  })
+})
+
+describe('addBlock / duplicateBlockDeep honor per-page limits', () => {
+  const atCap = (): Data => ({
+    root: {},
+    content: [
+      { type: 'Zigzag', props: { id: '1' } },
+      { type: 'Zigzag', props: { id: '2' } },
+      { type: 'Zigzag', props: { id: '3' } },
+    ],
+  })
+  it('addBlock no-ops when the design block is at its cap', () => {
+    const d = atCap()
+    const { data, id } = addBlock(d, limitConfig, 'Zigzag')
+    expect(id).toBe('')
+    expect(data.content).toHaveLength(3)
+  })
+  it('addBlock still adds an unlimited block', () => {
+    const { data, id } = addBlock(atCap(), limitConfig, 'Text')
+    expect(id).not.toBe('')
+    expect(data.content).toHaveLength(4)
+  })
+  it('duplicateBlockDeep no-ops when it would exceed the cap', () => {
+    const d = atCap()
+    const { data, id } = duplicateBlockDeep(d, limitConfig, '1')
+    expect(id).toBe('')
+    expect(data.content).toHaveLength(3)
+  })
+})

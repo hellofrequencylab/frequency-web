@@ -264,7 +264,8 @@ export function MobileEditor({
     )
   }
 
-  const pickerGroups = derivePickerGroups(config)
+  // Pass the live document so blocks at their per-page cap come back disabled (block-limits.ts).
+  const pickerGroups = derivePickerGroups(config, data)
   const activePanel = sheet?.kind === 'panel' ? panels.find((p) => p.key === sheet.key) ?? null : null
 
   // ── Render: home — live preview + control dock ───────────────────────────────
@@ -461,16 +462,29 @@ export function MobileEditor({
                 {group.title}
               </h3>
               <div className="grid grid-cols-3 gap-2">
-                {group.items.map((b) => (
-                  <button
-                    key={b.type}
-                    type="button"
-                    onClick={() => handleAdd(b.type)}
-                    className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
-                  >
-                    <span className="line-clamp-2">{b.label}</span>
-                  </button>
-                ))}
+                {group.items.map((b) =>
+                  b.disabled ? (
+                    // At its per-page cap: greyed and not tappable, with the reason as the a11y label + tooltip.
+                    <div
+                      key={b.type}
+                      title={b.reason}
+                      aria-disabled="true"
+                      aria-label={b.reason ? `${b.label}. ${b.reason}` : b.label}
+                      className="flex min-h-[64px] cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface-elevated px-2 py-2 text-center text-xs font-medium text-subtle opacity-60"
+                    >
+                      <span className="line-clamp-2">{b.label}</span>
+                    </div>
+                  ) : (
+                    <button
+                      key={b.type}
+                      type="button"
+                      onClick={() => handleAdd(b.type)}
+                      className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-xl border border-border bg-surface px-2 py-2 text-center text-xs font-medium text-text hover:bg-surface-elevated"
+                    >
+                      <span className="line-clamp-2">{b.label}</span>
+                    </button>
+                  ),
+                )}
               </div>
             </div>
           ))}

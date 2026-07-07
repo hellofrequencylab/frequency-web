@@ -157,7 +157,8 @@ export function DesktopEditor({
 
   const outline = useMemo(() => buildOutline(data, config), [data, config])
   const selected = selectedId ? findBlockDeep(data, config, selectedId) : null
-  const pickerGroups = useMemo(() => derivePickerGroups(config), [config])
+  // Pass the live document so the palette greys out any block at its per-page cap (block-limits.ts).
+  const pickerGroups = useMemo(() => derivePickerGroups(config, data), [config, data])
 
   return (
     <EditorDocContext.Provider value={data}>
@@ -504,7 +505,11 @@ function PalettePopover({
   onPick,
   onClose,
 }: {
-  groups: { key: string; title: string; items: { type: string; label: string }[] }[]
+  groups: {
+    key: string
+    title: string
+    items: { type: string; label: string; disabled?: boolean; reason?: string }[]
+  }[]
   onPick: (type: string) => void
   onClose: () => void
 }) {
@@ -534,16 +539,28 @@ function PalettePopover({
             <div key={group.key}>
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">{group.title}</h3>
               <div className="grid grid-cols-2 gap-2">
-                {group.items.map((b) => (
-                  <button
-                    key={b.type}
-                    type="button"
-                    onClick={() => onPick(b.type)}
-                    className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
-                  >
-                    <span className="line-clamp-2">{b.label}</span>
-                  </button>
-                ))}
+                {group.items.map((b) =>
+                  b.disabled ? (
+                    // At its per-page cap: greyed, not clickable, with the reason as a tooltip + a11y label.
+                    <div
+                      key={b.type}
+                      title={b.reason}
+                      aria-disabled="true"
+                      className="flex min-h-[48px] cursor-not-allowed items-center rounded-lg border border-border bg-surface-elevated px-3 py-2 text-left text-sm font-medium text-subtle opacity-60"
+                    >
+                      <span className="line-clamp-2">{b.label}</span>
+                    </div>
+                  ) : (
+                    <button
+                      key={b.type}
+                      type="button"
+                      onClick={() => onPick(b.type)}
+                      className="flex min-h-[48px] items-center rounded-lg border border-border bg-canvas px-3 py-2 text-left text-sm font-medium text-text hover:border-primary hover:bg-surface-elevated"
+                    >
+                      <span className="line-clamp-2">{b.label}</span>
+                    </button>
+                  ),
+                )}
               </div>
             </div>
           ))}
