@@ -31,6 +31,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage } from '@/lib/library/store'
 import { withImageOrder } from './media-order'
+import { composeMarketingLayout } from './compose'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
@@ -75,6 +76,10 @@ export interface MaterializeOptions {
   /** Mark the seeded Space as a demo (unlisted/draft; stored on preferences.isDemo — there is no
    *  spaces.is_demo column yet, see the report). Default true for a create. */
   isDemo?: boolean
+  /** AI PAGE COMPOSER (Importer v2): when set, one model call designs a best-practice marketing layout
+   *  (choosing the blocks that fit the business + writing the design-block copy) and REPLACES the
+   *  deterministic layout. Falls back to the deterministic layout when AI is off / errors. */
+  aiCompose?: { profileId?: string | null; directions?: string }
 }
 
 /** What the materializer seeded (or would have). */
@@ -144,6 +149,17 @@ export async function materializeBusiness(
     : (options.verificationPolicy ?? 'withhold')
   const plan = buildPlan(profile, policy)
   if (!plan) return { ok: false, error: 'Draft is missing a usable name or slug.' }
+
+  // AI PAGE COMPOSER (Importer v2): design a best-practice marketing layout that fits THIS business and
+  // REPLACE the deterministic one. Fail-safe: a null result (AI off / thin / error) keeps plan.layout.
+  if (options.aiCompose) {
+    const composed = await composeMarketingLayout(profile, profile.media?.gallery ?? [], {
+      profileId: options.aiCompose.profileId,
+      directions: options.aiCompose.directions,
+      policy,
+    })
+    if (composed) plan.layout = composed
+  }
 
   // Resolve the target space id (provision on create).
   let spaceId: string
@@ -584,6 +600,9 @@ export async function applyIntake(
   const result = await materializeBusiness(profile, target, {
     ledger: (row.ledger as ProvenanceLedger) ?? {},
     isDemo: row.inputs.consent?.isDemo ?? true,
+    // Let the AI composer design the marketing page from the verified draft (Importer v2). Falls back to
+    // the deterministic layout when AI is off. Steered by the operator's directions.
+    aiCompose: { profileId: owner, directions: row.inputs.directions },
   })
   if (!result.ok || !result.spaceId) return result
 
