@@ -11925,3 +11925,56 @@ breath / log gates are untouched). `PracticeChooser` and the `explicitlySelected
 `needsSelect` / `showChooser` machinery are deleted from both engines. Docs: `docs/ON-AIR.md`
 "Entry, selection, and resume" + roadmap P18. Gate green: tsc, eslint, vitest, check:menu,
 check:authz, check:rls, build.
+
+---
+
+## ADR-565: Rail editor core — pre-populate block editors from effective content, faster rail open, design blocks in the arranger
+
+**Context.** Three defects in the on-page Space rail editor (the entity-blocks arranger + `BlockEditPanel`,
+the surface operators actually use — NOT the Puck editor at `/spaces/[slug]/edit-page`):
+1. **Empty editor fields (the lead bug).** The About / Story block editors showed EMPTY eyebrow / title /
+   body fields on a space whose story is live on the page. The live render
+   (`components/widgets/space-profile/{about,story}.tsx`) shows the authored bag when present but FALLS BACK
+   to the space's central data (About → the `spaces.about` column, `data.aboutShort`; Story → the longer
+   narrative `data.profile.about`) and to the block's default eyebrow / heading. The editor panel binds its
+   fields to the persisted authored bag ALONE (`store.content[id]`), so when the story lives in the central
+   data the bag is empty and the fields render placeholders while the page renders prose.
+2. **Slow rail open** for Identity & Branding / Info & Connect / Page.
+3. **Design blocks missing from the rail.** The five reusable design blocks (PhotoHero, EditorialSection,
+   CardGrid, Zigzag, AccentBeat) were registered only in the Puck config (`lib/page-editor/config`), so
+   `blocksForKind('space')` never offered them in the rail "Add block" palette.
+
+**Decision.**
+- **Pre-populate from EFFECTIVE content (bug 1).** A pure adapter `lib/spaces/effective-block-content.ts`
+  (`withEffectiveDataContent`) folds each DATA block's effective eyebrow / title / body (the SAME central
+  fallbacks the live render uses) into the seed content bag, but only where the operator has not authored an
+  override. `OwnerSpaceLayoutPreview` seeds the shared store with this, so every block editor opens showing
+  the section's CURRENT content. SEED-ONLY: the live DATA-block render reads its server node (not this bag),
+  and seeding schedules no save, so nothing changes on the page or in storage until the operator edits; on
+  the first edit the pre-filled prose is promoted to an explicit override ("the text I saw is the text I
+  keep"). Fail-safe: no data (editor / member Spotlight) ⇒ the persisted bag is returned unchanged.
+- **Faster rail open (bug 2).** `getSpaceMembership` is now `React.cache`-wrapped: the manage-access resolve
+  read a viewer's membership 2x+ per rail open (`resolveSpaceManageAccess` → `getSpaceCapabilities`, then
+  the bundle / getters call `getSpaceCapabilities` again), now collapsed to one DB read. And the bundle +
+  the three fallback getters resolve `getSpaceCapabilities` + `readProfileExtras` in parallel (`Promise.all`)
+  instead of serially. Together: ~2 fewer round-trips on the rail's hot path, no behavior change.
+- **Design blocks in the rail (bug 3), ONE render source.** The five blocks are ADDED to the entity-blocks
+  registry (`lib/entity-blocks/registry`, `DESIGN_ENTITY_BLOCK_IDS`) as space-only content blocks and to
+  `CORE_PROFILE_BLOCK_IDS`, so `profilePaletteForKind('space')` offers them. Field schemas
+  (`lib/entity-blocks/block-content.ts`) expose each block's core authored text / image through the rail's
+  field kit. A thin adapter `components/entity-blocks/design-block-view.tsx` maps the authored bag onto the
+  EXISTING design components (`components/page-editor/blocks/design.tsx`) — the SAME components Puck's
+  `designComponents` renders — so both editors share one set of render components (no forked markup). The
+  Puck registration in `lib/page-editor/config` is UNTOUCHED; the blocks are available in BOTH editors.
+- **UX.** The About / Story panels gained a one-line note that the text is the space's shared story and
+  editing it updates it everywhere (reinforcing the pre-fill + override model).
+
+**Deferral (flagged).** The entity-blocks arranger slot model holds bare block-id strings and dedupes to
+single-instance-per-block, so the design blocks ship SINGLE-INSTANCE in the rail. The Puck `DESIGN_BLOCK_LIMIT`
+of 3x (`lib/page-editor/block-limits.ts`) still applies in the Puck editor. Bringing 3x multi-instance to the
+rail arranger needs a real slot-model change (instance keys, not bare ids) and is deliberately out of scope.
+
+**Consequences.** Every block editor opens showing its real current content; the rail opens measurably
+faster; the five design blocks are available in both editors from one render source. New pure module +
+adapter + a unit test for the effective-content fold. Rail multi-instance (3x) for design blocks is a
+tracked follow-up.

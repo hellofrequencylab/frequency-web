@@ -47,6 +47,10 @@ export function BlockEditPanel({
   const block = entityBlockById(id)
   const isData = block?.category === 'data'
   const fields = fieldsForBlock(id)
+  // About + Story carry the space's shared story text. The editor pre-fills these fields with the current
+  // content (the same words the page shows), so a note tells the operator that editing here updates the
+  // section everywhere it appears — not a second, disconnected copy.
+  const sharesStory = id === 'about' || id === 'story'
 
   const setField = (key: string, value: unknown) => {
     const next = { ...content }
@@ -82,6 +86,13 @@ export function BlockEditPanel({
           onChange={(v) => setField(field.key, v)}
         />
       ))}
+
+      {/* About + Story: the text above is the space's shared story. Editing it here updates it everywhere. */}
+      {sharesStory && (
+        <p className="text-2xs leading-relaxed text-subtle">
+          This is your space&rsquo;s story. Edit it here and it updates everywhere it shows.
+        </p>
+      )}
 
       {/* Background on/off (item 6): a PROMINENT per-box control, not buried in Style. Default reflects
           what is actually on the page — a self-carding box (a data section, a Callout) reads on; a plain

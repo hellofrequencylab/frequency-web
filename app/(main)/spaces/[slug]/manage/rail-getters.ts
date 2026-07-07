@@ -131,8 +131,10 @@ export async function getSpaceBasicsData(slug: string): Promise<SpaceBasicsData 
   )
   if (!canManage && !staffViewing) return null
 
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const extras = await readProfileExtras(space.id)
+  const [caps, extras] = await Promise.all([
+    getSpaceCapabilities(space, viewerProfileId),
+    readProfileExtras(space.id),
+  ])
   return buildBasicsData(space, caps, staffViewing, extras)
 }
 
@@ -199,8 +201,10 @@ export async function getSpaceBrandingData(slug: string): Promise<SpaceBrandingD
   )
   if (!canManage && !staffViewing) return null
 
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const extras = await readProfileExtras(space.id)
+  const [caps, extras] = await Promise.all([
+    getSpaceCapabilities(space, viewerProfileId),
+    readProfileExtras(space.id),
+  ])
   return buildBrandingData(space, caps, staffViewing, extras)
 }
 
@@ -253,8 +257,10 @@ export async function getSpaceSettingsData(slug: string): Promise<SpaceSettingsD
   )
   if (!canManage && !staffViewing) return null
 
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const extras = await readProfileExtras(space.id)
+  const [caps, extras] = await Promise.all([
+    getSpaceCapabilities(space, viewerProfileId),
+    readProfileExtras(space.id),
+  ])
   return buildSettingsData(space, caps, staffViewing, extras)
 }
 
@@ -428,8 +434,13 @@ export async function getSpaceRailBundle(
   )
   if (!canManage && !staffViewing) return null
 
-  const caps = await getSpaceCapabilities(space, viewerProfileId)
-  const extras = await readProfileExtras(space.id)
+  // caps + extras are INDEPENDENT (each needs only space / viewerProfileId), so resolve them in parallel
+  // rather than serially — one round-trip instead of two on the rail's hot open path (ADR-550). caps reads
+  // the viewer's membership, which resolveSpaceManageAccess already read, so React.cache serves it free.
+  const [caps, extras] = await Promise.all([
+    getSpaceCapabilities(space, viewerProfileId),
+    readProfileExtras(space.id),
+  ])
 
   return {
     basics: buildBasicsData(space, caps, staffViewing, extras),

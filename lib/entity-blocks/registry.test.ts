@@ -39,8 +39,17 @@ describe('unified entity-block registry', () => {
 
   it('content blocks are authored (never function-gated) and support at least one kind', () => {
     // The legacy authored blocks are shared by both kinds; the ADR-542 free-form blocks (callout, features)
-    // are SPACE-only. All are authored, so none is gated on a space function.
-    const spaceOnly = new Set(['callout', 'features'])
+    // and the 2026 design blocks (photoHero / editorial / cardGrid / zigzag / accentBeat) are SPACE-only.
+    // All are authored, so none is gated on a space function.
+    const spaceOnly = new Set([
+      'callout',
+      'features',
+      'photoHero',
+      'editorial',
+      'cardGrid',
+      'zigzag',
+      'accentBeat',
+    ])
     for (const b of ENTITY_BLOCKS.filter((x) => x.category === 'content')) {
       expect(b.kinds).toContain('space')
       if (!spaceOnly.has(b.id)) expect(b.kinds).toContain('member')
