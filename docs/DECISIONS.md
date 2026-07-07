@@ -12423,3 +12423,59 @@ P3). New env: `BRAVE_SEARCH_API_KEY` (optional), `BUSINESS_IMPORT_CAP_USD` (opti
 green: tsc, eslint, vitest (verifier gate + reducer + split, extract grounding, harvest fail-safe, web SSRF/
 parse, pipeline orchestration + budget cap + status machine), check:authz, check:menu, check:rls,
 check:canon, check:seo, build. Migration needs applying by the coordinator.
+
+## ADR-575: Business Importer P3, the Operator Seeder Console (paste -> research -> review -> seeded Space)
+
+**Status.** Accepted 2026-07-07. Builds on ADR-569 (spec) + ADR-574 (P1 pipeline) + the P0 materializer.
+
+**Context.** P3 (docs/BUSINESS-IMPORTER.md §8) makes the importer usable: an operator pastes a business's
+URLs + handles + content, watches it move through the status machine (intake -> researching -> review ->
+applied), reviews the extracted + reframed draft FIELD BY FIELD, and approves it into a seeded Space. The
+review board is the emphasized surface: every field must show its confidence (✅/⚠️/🔴 from the ledger), its
+provenance (citation snippet + source link, one click), mark AI-generated copy, and flag WITHHELD commercial
+facts distinctly. Apply must default to an unlisted demo and must never offer a UI path that publishes an
+uncleared commercial fact.
+
+**Decision.**
+- **The console is the top-level operator page `/admin/business-seeder`** (`app/(main)/admin/business-seeder/*`):
+  a landing view (start form + status roll-up + intake list) and a per-import review board at `/[id]`. Server
+  Components gate entry (structure:write, the same capability every action re-checks) and read; a thin client
+  handles the interactions. Composes the kit only (AdminTemplate/AdminSection/StatCard/EntityCard/EmptyState/
+  StatusChip/Button) with semantic tokens (PAGE-FRAMEWORK, PRESENTATION). The `/admin/*` prefix already yields
+  a no-right-rail workspace in `page-chrome.ts`, so no chrome edit is needed.
+- **Menu registration is a `STUDIO_LEAVES` row, NOT an `ADMIN_MODULES` row.** The spec §8 line said "add a
+  row to ADMIN_MODULES (scopes:['global'])", but `ADMIN_MODULES` is the scope-attached page RAIL, and its
+  `global` rows are a signed-in member's PERSONAL account surfaces (Profile/Spotlight/Billing) — the wrong home
+  for a janitor operator PAGE. A top-level `/admin/*` operator destination is a Studio leaf, exactly like Demo
+  Studio / Import / Spaces (`lib/nav/studio.ts`, which derives ADMIN_GROUPS + ADMIN_NAV). This is contract-clean:
+  the MENU-CONTRACT / `check:menu` guard forbids declaring a NEW `*_MODULES` catalog or a retired `*_SURFACES`
+  registry; adding a row to the existing `STUDIO_LEAVES` array is neither, and `check:menu` stays green. One data
+  row, janitor-gated, in the platform/System world beside Demo Studio.
+- **The review board reads the SAME two gates the materializer enforces.** A pure `review-model.ts` walks the
+  draft's known field paths (schema §3.4), resolves each path's strongest ledger entry, and derives a signal:
+  a verified fact (`kind:'fact' && verifiedBy`) at confidence >= 0.5 is GREEN; a contradicted commercial fact
+  (strongest entry not a verified fact, confidence <= 0) is RED and BLOCKS Apply; everything else is AMBER. It
+  reuses `isCommercialFieldCleared` / `COMMERCIAL_FACT_PATHS` and mirrors `prosePublishes` for
+  about/story/tagline/offering-blurb, so the board's "withheld" / "will publish" verdict is exactly what
+  Gate B re-derives at Apply. The board never promises a field Apply would withhold.
+- **Per-field edit / confirm / drop, then approve.** `updateImportField` writes into the draft + ledger through
+  the bound store: EDIT sets the value and records a human-verified fact; CONFIRM promotes a withheld fact to a
+  human-verified fact WITHOUT retyping; DROP clears the value + entry. An operator edit/confirm IS the "human
+  confirm" the gate accepts, so a confirmed commercial fact then clears — but the clearance still runs through
+  the materializer's independent Gate B, so the UI cannot leak. `approveBusinessImport` surfaces any red
+  (contradicted) field first, then calls `applyIntake`, which defaults to an unlisted demo Space
+  (`consent.isDemo=true`) and returns the profile + site links.
+
+**Alternatives.** (1) Register in ADMIN_MODULES per the spec's literal wording: rejected, it is the personal
+rail catalog, not the operator page nav; it would mis-place the tool and mis-gate it (account.manage vs a
+janitor operator gate). (2) A bespoke per-page menu array: rejected, violates the MENU-CONTRACT. (3) A board
+that trusts the draft as-is and gates only at Apply: rejected, the operator must SEE what will be withheld and
+why, so the board re-derives the gate for display honesty. (4) Editing `lib/importer/store.ts` to add a list
+read: avoided to respect P1 ownership; the list read lives in the console's own bound action instead.
+
+**Consequences.** New `app/(main)/admin/business-seeder/{page,start-import-form,intake-list,review-model}.tsx|ts`
++ `[id]/{page,review-board}.tsx` + `review-model.test.ts`, plus the extended `actions.ts` and ONE `STUDIO_LEAVES`
+row. No migration (the `business_intake` table is live). No AI in P3 (it consumes P1's pipeline output + P2's
+reframe fields generically, so new reframe fields simply re-paint). Gate green: tsc, eslint, vitest
+(review-model signals + gate + withheld + summary), check:authz, check:menu, check:rls, check:canon, check:seo,
+build. Reachable at Admin -> Operations -> Business Seeder (janitor+).

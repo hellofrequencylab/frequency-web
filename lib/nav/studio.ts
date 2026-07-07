@@ -374,6 +374,17 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'demo', href: '/admin/demo', label: 'Demo Studio', desc: 'Generate, manage, and purge seeded demo content.', icon: 'Sparkles', min: 'janitor',
     world: 'platform', worldLabel: 'Demo', worldOrder: 10,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
+  // Business Seeder (docs/BUSINESS-IMPORTER.md §8, P3). The operator console that pastes a
+  // business's URLs and returns a reviewed, seeded Space. A janitor operator tool that WRITES
+  // Spaces, so it sits beside Demo Studio in the platform/System world. Its page gates
+  // structure:write (requireStaffCap), and every seeded Space defaults to an unlisted demo.
+  // NOTE: registered here (STUDIO_LEAVES), not in ADMIN_MODULES — a top-level /admin operator
+  // PAGE is a Studio leaf, exactly like Demo Studio; ADMIN_MODULES is the scope-attached page
+  // RAIL (its 'global' rows are personal account surfaces, the wrong home for an operator page).
+  // Contract-clean: STUDIO_LEAVES is not a *_MODULES catalog, so check:menu is satisfied (ADR).
+  { id: 'business-seeder', href: '/admin/business-seeder', label: 'Business Seeder', desc: 'Paste a business’s URLs and get a reviewed, seeded Space.', icon: 'Building2', min: 'janitor',
+    world: 'platform', worldLabel: 'Business Seeder', worldOrder: 11,
+    adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
   { id: 'audit', href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', icon: 'ScrollText', min: 'admin',
     world: 'platform', worldLabel: 'Audit', worldOrder: 11,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Platform' } },
