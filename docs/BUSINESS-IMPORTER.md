@@ -138,12 +138,22 @@ image to the cover when the Space has none. It fires in two places, kept idempot
 Images panel is available before AND after Apply, so an operator can return to a seeded business and add
 more photos.
 
-**Re-seed on a live business (Importer v2).** `reseedBusinessImport(intakeId, mood, lockPrimary=true)`
-re-voices the copy in a mood. `lockPrimary` (the "keep primary info & hero locked" toggle) preserves
-`tagline` / `about` / `story` so only the marketing blocks (offering blurbs) re-voice, on top of the
-edit-wins preserve set. Re-seed saves to the master profile; on an applied intake the operator pushes it
-to the live Space with an explicit **Re-apply** (reuses `approveBusinessImport` → `applyIntake`), so a
-live hand-edit is never silently clobbered.
+**Re-seed on a live business (Importer v2).** `reseedBusinessImport(intakeId, mood, lockHero=true)`
+regenerates the WHOLE page in a mood — copy, block layout, and images — and **re-applies it to the live
+Space** (via `applyIntake`) so the change actually shows. `lockHero` (the "Lock the hero" toggle, persisted
+on `inputs.lockHero`) freezes the hero HEADLINE (`tagline`) AND the hero IMAGE (`draft.media.heroPath` is
+left untouched, so the cover + photoHero image do not move); everything else — `about`, `story`, offering
+blurbs, layout — re-voices and recomposes. Edit-wins (P5) also preserves any hand-edited prose. The
+commercial-fact gate is untouched. (Layout is regenerated on re-seed, so a manual block edit that is not
+locked is refreshed — the lock is the escape hatch.)
+
+**Images flow onto the page (Importer v2).** The staged images (`inputs.images`, ordered) sync onto the
+DRAFT media via `lib/importer/media-order.ts` (`withImageOrder`): the primary becomes `draft.media.heroPath`
+(→ the cover + the photoHero block image), the rest become `draft.media.gallery`. Every image mutation keeps
+them in step — `uploadSeederImages`, `removeSeederImage`, `reorderSeederImages` (manual up/down, honours the
+hero lock), `setPrimarySeederImage` (an explicit choice that OVERRIDES the lock), and `autoArrangeSeederImages`
+(the AI designer, which keeps a locked hero and only re-orders the gallery). On a live Space each also repoints
+the cover at the resolved hero.
 
 **Reverse link — a Space back to its master profile.** The intake IS the durable master profile
 (inputs + sources + verified draft + ledger + mood + images), linked to the Space by `target_space_id`

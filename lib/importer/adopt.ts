@@ -68,6 +68,14 @@ export function profileFromSpace(
     ...(offerings.length ? { offerings } : {}),
   }
 
+  // Carry the Space's existing cover as the hero image (+ logo) so a re-apply keeps painting them.
+  if (space.coverImageUrl || space.brandLogoUrl) {
+    draft.media = {
+      ...(space.coverImageUrl ? { heroPath: space.coverImageUrl } : {}),
+      ...(space.brandLogoUrl ? { logoPath: space.brandLogoUrl } : {}),
+    }
+  }
+
   // Ledger: mark every PRESENT commercial fact human-verified so a re-apply publishes it (the owner
   // already made it live). Identity + prose are left ledger-free (hand-supplied → publishes).
   const ledger: ProvenanceLedger = {}

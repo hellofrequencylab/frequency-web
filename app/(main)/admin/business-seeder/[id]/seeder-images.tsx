@@ -15,9 +15,15 @@
 
 import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
-import { ImageIcon, Loader2, Plus, Sparkles, Star, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, Sparkles, Star, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { uploadSeederImages, removeSeederImage, autoArrangeSeederImages } from '../actions'
+import {
+  uploadSeederImages,
+  removeSeederImage,
+  autoArrangeSeederImages,
+  setPrimarySeederImage,
+  reorderSeederImages,
+} from '../actions'
 
 export function SeederImages({
   intakeId,
@@ -65,6 +71,41 @@ export function SeederImages({
         return
       }
       setImages(res.images)
+      router.refresh()
+    })
+  }
+
+  function makePrimary(url: string) {
+    setError(null)
+    setNote(null)
+    startBusy(async () => {
+      const res = await setPrimarySeederImage(intakeId, url)
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      setImages(res.images)
+      setNote('Set as the primary image and cover.')
+      router.refresh()
+    })
+  }
+
+  function move(url: string, dir: -1 | 1) {
+    setError(null)
+    const i = images.indexOf(url)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= images.length) return
+    const next = [...images]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    setImages(next) // optimistic
+    startBusy(async () => {
+      const res = await reorderSeederImages(intakeId, next)
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      setImages(res.images)
+      router.refresh()
     })
   }
 
@@ -130,6 +171,38 @@ export function SeederImages({
             >
               <X className="h-3.5 w-3.5" />
             </button>
+            {/* Reorder + make-primary controls (appear on hover/focus). */}
+            <div className="absolute inset-x-1.5 bottom-1.5 flex items-center justify-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => move(url, -1)}
+                disabled={busy || i === 0}
+                aria-label="Move earlier"
+                className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80 disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              {i !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => makePrimary(url)}
+                  disabled={busy}
+                  aria-label="Make primary"
+                  className="inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-2xs font-semibold text-white hover:bg-black/80 disabled:opacity-60"
+                >
+                  <Star className="h-3 w-3" /> Primary
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => move(url, 1)}
+                disabled={busy || i === images.length - 1}
+                aria-label="Move later"
+                className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80 disabled:opacity-30"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         ))}
 
