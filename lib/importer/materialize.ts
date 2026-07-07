@@ -30,6 +30,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpaceById, loadRootSpaceId } from '@/lib/spaces/store'
 import { insertSpaceLibraryImage } from '@/lib/library/store'
+import { withImageOrder } from './media-order'
 import { addSpaceMember } from '@/lib/spaces/membership'
 import { normalizeWindow } from '@/lib/spaces/booking'
 import { withProfileData } from '@/lib/spaces/profile-data'
@@ -555,8 +556,18 @@ export async function applyIntake(
   if (row.status !== 'review' && row.status !== 'applied') {
     return { ok: false, error: `Intake is '${row.status}', not ready to apply (expected 'review').` }
   }
-  const profile = row.draft as unknown as BusinessProfile
-  if (!profile?.name) return { ok: false, error: 'Intake draft has no usable business name.' }
+  const rawProfile = row.draft as unknown as BusinessProfile
+  if (!rawProfile?.name) return { ok: false, error: 'Intake draft has no usable business name.' }
+
+  // PRIMARY IMAGE = HERO on seed (Importer v2): fold the operator's staged image order onto the draft's
+  // media so the primary becomes the hero (cover + photoHero image) and the rest become the gallery block,
+  // honouring the hero lock. Robust even if the draft's media was never synced through the review board.
+  const stagedImages = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string' && u.length > 0)
+    : []
+  const profile = stagedImages.length
+    ? withImageOrder(rawProfile, stagedImages, { lockHero: !!row.inputs.lockHero })
+    : rawProfile
 
   // Re-materialize onto the existing Space on a re-run, else provision a new one owned by the
   // operator/owner. The ledger drives a PER-FIELD gate: verified facts publish, everything else is
