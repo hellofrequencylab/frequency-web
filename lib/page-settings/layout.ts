@@ -1,7 +1,8 @@
 // Pure per-route page-LAYOUT resolution (the module-assignment engine, ADR-270/271/272): which
 // interior TEMPLATE a page uses, which modules sit in each of its AREAS (slots), in what order,
 // and who may see each. Stored in page_settings.layout (jsonb) as { template, slots }, where each
-// slot is { order, hidden, roles }. Three layers ride on top:
+// slot is { order, hidden, roles, header?, headerEnabled? } — the optional header (ADR-562) is an
+// owner-toggleable row heading rendered above the row on the public page. Three layers ride on top:
 //   - TEMPLATE + SLOTS (ADR-272) — a module is assigned to one slot of the chosen template; any
 //     unplaced module falls into the template's default (first) slot.
 //   - SCOPE CASCADE (ADR-271) — a config can be saved at the exact route, its section ('/seg/*'),
@@ -16,11 +17,29 @@ import { atLeastRole, type CommunityRole } from '@/lib/core/roles'
 import { type TemplateId, isTemplateId, slotIds, defaultSlotId } from '@/lib/widgets/templates'
 
 /** One area's assignment: the modules placed in it (order), which are hidden, and per-module
- *  role gates. */
+ *  role gates. Plus an OPTIONAL row HEADER (ADR-562) — a heading the operator can turn on to
+ *  render above this row on the public page. `header` is the text; `headerEnabled` gates it.
+ *  Both absent (or `headerEnabled` false / `header` empty) = the current behavior, no header,
+ *  so existing rows render exactly as before. */
 export interface SlotConfig {
   order: string[]
   hidden: string[]
   roles: Record<string, CommunityRole>
+  /** The row heading text, trimmed + bounded. Empty/absent = no header. */
+  header?: string
+  /** When true AND `header` is non-empty, the heading renders above this row on the public page.
+   *  Default (absent/false) leaves the row header-less, unchanged from before. */
+  headerEnabled?: boolean
+}
+
+/** Max length of a row header, so a runaway string never bloats the layout jsonb or the page. */
+export const ROW_HEADER_MAX = 80
+
+/** Trim + bound a row-header string to ROW_HEADER_MAX; empty → undefined (stored as absent). */
+export function normalizeRowHeader(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined
+  const t = v.trim().slice(0, ROW_HEADER_MAX)
+  return t.length > 0 ? t : undefined
 }
 
 export interface LayoutConfig {
@@ -39,6 +58,11 @@ export function isModuleRole(v: unknown): v is ModuleRole {
 }
 
 const emptySlot = (): SlotConfig => ({ order: [], hidden: [], roles: {} })
+
+/** True when a slot carries an active, non-empty row header (the render + hasLayoutConfig gate). */
+export function slotHasHeader(s: SlotConfig): boolean {
+  return s.headerEnabled === true && !!normalizeRowHeader(s.header)
+}
 const emptyLayout = (): LayoutConfig => ({ template: 'single', slots: {} })
 
 const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
@@ -55,8 +79,13 @@ function parseRoles(v: unknown): Record<string, CommunityRole> {
 
 function parseSlot(raw: unknown): SlotConfig {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return emptySlot()
-  const o = raw as { order?: unknown; hidden?: unknown; roles?: unknown }
-  return { order: strArr(o.order), hidden: strArr(o.hidden), roles: parseRoles(o.roles) }
+  const o = raw as { order?: unknown; hidden?: unknown; roles?: unknown; header?: unknown; headerEnabled?: unknown }
+  const slot: SlotConfig = { order: strArr(o.order), hidden: strArr(o.hidden), roles: parseRoles(o.roles) }
+  const header = normalizeRowHeader(o.header)
+  if (header) slot.header = header
+  // Only carry the flag as `true`; a false/absent flag stays absent (the header-less default).
+  if (o.headerEnabled === true) slot.headerEnabled = true
+  return slot
 }
 
 /** Coerce the stored jsonb into a safe LayoutConfig. Accepts the new { template, slots } shape
@@ -134,6 +163,19 @@ export function resolveSlots(
   return out
 }
 
+/** The active row-header TEXT per slot id (ADR-562): only slots whose header is toggled on AND
+ *  non-empty appear. Independent of role/visibility resolution — a header renders whenever the
+ *  operator turned it on, even if the row's modules are individually gated (the header labels the
+ *  ROW, not a module). Keyed by slot id; slots with no active header are absent. */
+export function resolveSlotHeaders(config: LayoutConfig): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [slotId, slot] of Object.entries(config.slots)) {
+    const header = normalizeRowHeader(slot.header)
+    if (slot.headerEnabled === true && header) out[slotId] = header
+  }
+  return out
+}
+
 // ─── Scope cascade (ADR-271) ───────────────────────────────────────────────────
 
 /** A layout SCOPE key — a wildcard default for many routes: the global '*' or a top-level
@@ -172,7 +214,7 @@ export function spaceCacheKey(spaceId: string, route: string): string {
 export function hasLayoutConfig(c: LayoutConfig): boolean {
   if (c.template !== 'single') return true
   return Object.values(c.slots).some(
-    (s) => s.order.length > 0 || s.hidden.length > 0 || Object.keys(s.roles).length > 0,
+    (s) => s.order.length > 0 || s.hidden.length > 0 || Object.keys(s.roles).length > 0 || slotHasHeader(s),
   )
 }
 

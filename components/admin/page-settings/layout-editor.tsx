@@ -4,15 +4,17 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Check, ChevronUp, ChevronDown, Eye, EyeOff } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem } from '@/lib/page-settings/actions'
-import { MODULE_ROLES, type ModuleRole } from '@/lib/page-settings/layout'
+import { getPageLayoutForEditor, savePageLayout, type LayoutEditorItem, type SlotHeaderState } from '@/lib/page-settings/actions'
+import { MODULE_ROLES, ROW_HEADER_MAX, type ModuleRole } from '@/lib/page-settings/layout'
 import { TEMPLATES, templateMeta, slotIds, defaultSlotId, type TemplateId } from '@/lib/widgets/templates'
 
 // The live Layout editor for the on-page "Page" settings panel (ADR-270/271/272). Staff pick the
 // interior TEMPLATE, assign each module to one of its AREAS (slots), set order + visibility + a
 // per-module role gate — at one of three SCOPES: this page (the exact route), this section
 // ('/seg/*'), or all pages ('*'), most-specific wins. Render order = the saved order within each
-// slot; a disabled module is hidden; a gated module shows only to its rung and up.
+// slot; a disabled module is hidden; a gated module shows only to its rung and up. Each slot also
+// carries an optional ROW HEADER (ADR-562): a heading, off by default, that renders above the row
+// on the public page when the operator turns it on.
 
 const ROLE_LABEL: Record<ModuleRole, string> = {
   host: 'Hosts and up',
@@ -94,6 +96,8 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
   const [choice, setChoice] = useState<ScopeChoice>('page')
   const [template, setTemplate] = useState<TemplateId>('single')
   const [items, setItems] = useState<LayoutEditorItem[]>([])
+  // Per-slot row header (ADR-562), keyed by slot id: the heading text + whether it is turned on.
+  const [headers, setHeaders] = useState<Record<string, SlotHeaderState>>({})
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -127,6 +131,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
         if (!live) return
         setTemplate(d.template)
         setItems(d.items)
+        setHeaders(d.headers)
         setLoading(false)
       })
       .catch(() => live && setLoading(false))
@@ -165,6 +170,27 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, slot } : it)))
   }
 
+  // Row-header edits, keyed by slot id. The current text/on-state defaults to empty/off.
+  function slotHeader(slotId: string): SlotHeaderState {
+    return headers[slotId] ?? { text: '', enabled: false }
+  }
+
+  function setHeaderText(slotId: string, text: string) {
+    setSaved(false)
+    setHeaders((prev) => {
+      const cur = prev[slotId] ?? { text: '', enabled: false }
+      return { ...prev, [slotId]: { ...cur, text } }
+    })
+  }
+
+  function toggleHeader(slotId: string) {
+    setSaved(false)
+    setHeaders((prev) => {
+      const cur = prev[slotId] ?? { text: '', enabled: false }
+      return { ...prev, [slotId]: { ...cur, enabled: !cur.enabled } }
+    })
+  }
+
   // Swap a module with its nearest neighbour IN THE SAME SLOT (the flat item order is what each
   // slot's order is derived from on save).
   function move(id: string, dir: -1 | 1) {
@@ -188,6 +214,7 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
       const r = await savePageLayout(scopeKey, {
         template,
         items: items.map(({ id, enabled, role, slot }) => ({ id, enabled, role, slot })),
+        headers,
       }, spaceId)
       if (isError(r)) setError(r.error)
       else {
@@ -270,6 +297,37 @@ export function LayoutEditor({ spaceId }: { spaceId?: string }) {
                   {multiSlot && (
                     <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{s.label}</p>
                   )}
+                  {/* Row header (ADR-562): an optional heading rendered above this row on the public
+                      page. Off by default — a row shows a header only when the operator turns it on. */}
+                  {(() => {
+                    const h = slotHeader(s.id)
+                    return (
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-elevated/50 px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleHeader(s.id)}
+                          disabled={pending}
+                          aria-label={h.enabled ? `Turn off the ${s.label} row header` : `Turn on the ${s.label} row header`}
+                          aria-pressed={h.enabled}
+                          className={`shrink-0 rounded-lg p-1.5 transition-colors disabled:opacity-40 ${
+                            h.enabled ? 'text-primary-strong hover:text-primary-hover' : 'text-subtle hover:text-text'
+                          }`}
+                        >
+                          {h.enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        </button>
+                        <input
+                          type="text"
+                          value={h.text}
+                          maxLength={ROW_HEADER_MAX}
+                          onChange={(e) => setHeaderText(s.id, e.target.value)}
+                          disabled={pending}
+                          placeholder="Row header (optional)"
+                          aria-label={`Row header for ${s.label}`}
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1 text-sm text-text placeholder:text-subtle disabled:opacity-40"
+                        />
+                      </div>
+                    )
+                  })()}
                   {group.length === 0 ? (
                     <p className="text-xs text-muted">Nothing here yet.</p>
                   ) : (

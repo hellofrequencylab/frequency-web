@@ -3,6 +3,10 @@ import {
   parseLayout,
   moduleAssignments,
   resolveSlots,
+  resolveSlotHeaders,
+  normalizeRowHeader,
+  slotHasHeader,
+  ROW_HEADER_MAX,
   isLayoutScopeKey,
   layoutScopeChain,
   hasLayoutConfig,
@@ -34,6 +38,56 @@ describe('parseLayout', () => {
       template: 'single',
       slots: { main: { order: ['a', 'b'], hidden: ['b'], roles: { a: 'mentor' } } },
     })
+  })
+
+  it('parses an active row header (text + on flag) on a slot', () => {
+    expect(
+      parseLayout({ template: 'single', slots: { main: { order: ['a'], hidden: [], roles: {}, header: '  Featured  ', headerEnabled: true } } }),
+    ).toEqual({ template: 'single', slots: { main: { order: ['a'], hidden: [], roles: {}, header: 'Featured', headerEnabled: true } } })
+  })
+
+  it('carries header text without the flag, and drops an empty header / non-true flag', () => {
+    // Text present, flag absent → text kept, flag stays off (absent).
+    expect(parseLayout({ template: 'single', slots: { main: { header: 'Draft label' } } }).slots.main).toEqual({
+      order: [], hidden: [], roles: {}, header: 'Draft label',
+    })
+    // Blank text + a truthy-but-not-true flag → no header, no flag (back to the header-less default).
+    expect(parseLayout({ template: 'single', slots: { main: { header: '   ', headerEnabled: 'yes' } } }).slots.main).toEqual({
+      order: [], hidden: [], roles: {},
+    })
+  })
+})
+
+describe('row headers (ADR-562)', () => {
+  it('normalizeRowHeader trims, bounds to ROW_HEADER_MAX, and empties → undefined', () => {
+    expect(normalizeRowHeader('  Hi  ')).toBe('Hi')
+    expect(normalizeRowHeader('   ')).toBeUndefined()
+    expect(normalizeRowHeader(42)).toBeUndefined()
+    expect(normalizeRowHeader('x'.repeat(200))).toHaveLength(ROW_HEADER_MAX)
+  })
+
+  it('slotHasHeader is true only when enabled AND text is non-empty', () => {
+    expect(slotHasHeader(slot({ header: 'Hi', headerEnabled: true }))).toBe(true)
+    expect(slotHasHeader(slot({ header: 'Hi' }))).toBe(false) // flag off
+    expect(slotHasHeader(slot({ headerEnabled: true }))).toBe(false) // no text
+    expect(slotHasHeader(slot({ header: '  ', headerEnabled: true }))).toBe(false) // blank text
+  })
+
+  it('resolveSlotHeaders returns only the enabled, non-empty headers, keyed by slot id', () => {
+    const cfg: LayoutConfig = {
+      template: 'main-side',
+      slots: {
+        main: slot({ header: 'Featured', headerEnabled: true }),
+        side: slot({ header: 'Draft', headerEnabled: false }), // off → excluded
+      },
+    }
+    expect(resolveSlotHeaders(cfg)).toEqual({ main: 'Featured' })
+  })
+
+  it('a header alone makes a config non-default (hasLayoutConfig)', () => {
+    expect(hasLayoutConfig({ template: 'single', slots: { main: slot({ header: 'Hi', headerEnabled: true }) } })).toBe(true)
+    // A header that is off doesn't count (still the header-less default).
+    expect(hasLayoutConfig({ template: 'single', slots: { main: slot({ header: 'Hi' }) } })).toBe(false)
   })
 })
 
