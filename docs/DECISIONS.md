@@ -11827,3 +11827,56 @@ link; the default is unchanged when they set nothing. Copy passes NAMING + CONTE
 phrases, sentence case, no em dashes). Unit tests cover the normalizer, URL guard, resolver, href map, and
 merge (`lib/spaces/header-cta.test.ts`). Gate green: tsc, eslint, vitest (4057), check:menu, check:authz,
 check:rls, build.
+
+## ADR-564: Space automation RUNNER — enrollment ledger, trigger dispatch, drip fire job (ADR-561 follow-on)
+
+**Context.** ADR-561 shipped the automation SURFACE (rules + drip sequences an owner defines) but no
+RUNNER: nothing enrolled a contact on a trigger or fired a drip step on schedule. The root nurture
+runner (`lib/nurture/runner.ts` + `/api/cron/nurture`) and the R4 campaign send job are the exact
+patterns to mirror, per-Space.
+
+**Decision.**
+- **Enrollment model.** One new Space-scoped, service-role-only table `space_drip_enrollments`
+  (`20261021000000_space_drip_enrollments.sql`): `(space_id, sequence_id, contact_id, email,
+  current_step, next_run_at, status enrolled|sending|done|stopped, last_sent_at, timestamps)`, RLS
+  enabled + NO policies (added to `scripts/rls-deny-all.txt`; the ADR-561 tables were also added there,
+  fixing a `check:rls` miss in the surface PR). Unique `(sequence_id, contact_id)` makes a re-fired
+  trigger a no-op; a partial due-index on `(status, next_run_at) where status in ('enrolled','sending')`
+  keeps the cron hot path small. Enrolling = insert at the sequence's first ENABLED step with
+  `next_run_at = now() + step0.delay_hours` (`enrollContactInSequence`, `lib/spaces/drip-enroll.ts`),
+  re-reading BOTH the sequence AND the contact pinned to `space_id` so a cross-space id enrolls nothing.
+- **Trigger wiring.** `fireSpaceTrigger(spaceId, event, {contactId|profileId})` (`drip-enroll.ts`) reads
+  the Space's ENABLED rules on that trigger and enrolls the contact into a rule's target sequence
+  (`action_config.sequenceId`, an optional forward-compatible field). It is FIRE-SAFE by contract
+  (wrapped in try/catch, never throws) and called fire-and-forget (`void`). Wired at the two clean
+  choke points today: `syncContactToSpaceCrm` (`lib/connections/crm-sync.ts`, `contact.created`, only on
+  a fresh insert) and `joinTier` (`lib/spaces/memberships.ts`, `member.joined`, resolving the member's
+  Space contact by `profile_id`). `contact.tagged` + `deal.stage_changed` are DEFERRED (their mutation
+  sites are owner-scoped `network_contact_tags` / the global `/admin/crm` `moveDeal`, needing a
+  contact→Space resolution); the dispatcher already accepts them, so wiring is additive.
+- **Fire job.** A Vercel Cron route `/api/cron/space-drips` (every 5 min, `CRON_SECRET`-guarded) drives
+  `runDueSpaceDrips()` (`lib/spaces/drip-runner.ts`). Idempotency is the SAME claim as R4: a conditional
+  `status 'enrolled' -> 'sending'` update re-asserting `status='enrolled'`, so exactly one overlapping
+  run sends a given step. The winner sends the current step (the first enabled step at-or-after the
+  cursor, skipping since-disabled steps) through `sendSpaceCampaignSystem` — the ONE Space send path, so
+  every anti-spam gate + consent is inherited — then advances `current_step`/`next_run_at` back to
+  `'enrolled'`, or marks `'done'` at the end. A hard seam refusal marks `'stopped'` (never retried
+  forever); a consent-skipped send (`sent:0`, no error) still advances (the next step re-checks consent).
+- **Gating.** The operator RUNNER lever `startSequenceForAudience` (enroll a sequence's whole standing
+  audience on demand, surfaced as a "Start" control on an enabled sequence) is gated on `canEditProfile`
+  AND the `crm.space.automation` entitlement (`requireAutomationEditor`). The cron itself has no caller
+  session and relies on `CRON_SECRET` + the send seam's own gates.
+
+**Alternatives.** (1) Fire triggers inside `recordEngagementEvent` (the root event backbone) — declined:
+the four Space triggers are CRM mutations (contact/deal/member), not engagement-ledger events, so hooking
+the mutation choke points is more direct and keeps the root path untouched. (2) A one-shot inline email
+for a rule with no target sequence — declined for now: the drip cron is the single send path, so a
+sequence-less rule is a no-op (a future one-shot wraps a single-step ad-hoc sequence). (3) A separate
+advisory-lock for the fire job — the conditional-claim UPDATE already serializes racing runs.
+
+**Consequences.** Space drip sequences now actually run: a `contact.created` / `member.joined` event (or
+the manual Start lever) enrolls the audience, and the cron drips each step on schedule, exactly once,
+through the anti-spam-gated seam. New table needs applying (`20261021000000_space_drip_enrollments.sql`).
+New cron entry in `vercel.json`. Contract test locks the enrollment `space_id` binding; unit tests cover
+the enroll primitive, the trigger dispatcher, the idempotent claim + step advancement, and the
+entitlement gate. Gate green: tsc, eslint, vitest (4067), check:menu, check:authz, check:rls.

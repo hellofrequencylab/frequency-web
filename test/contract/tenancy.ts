@@ -112,6 +112,13 @@ export function makeTwoSpaceDb(tables: Record<string, ScopedRow[]>): {
       order: () => chain,
       limit: () => chain,
       not: () => chain,
+      // upsert/insert/update/delete record nothing in this in-memory oracle (it exists to prove which
+      // ROWS survive the read filters, not to mutate); they return the chain so a `.select().maybeSingle()`
+      // after a write resolves to null (no row), matching a real not-returned write.
+      upsert: () => chain,
+      insert: () => chain,
+      update: () => chain,
+      delete: () => chain,
       neq: (col: string, val: unknown) => {
         preds.push((r) => r[col] !== val)
         return chain

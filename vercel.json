@@ -17,6 +17,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/space-drips",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/embed-help",
       "schedule": "20 3 * * *"
     },

@@ -65,6 +65,7 @@ space_automation_rules
 space_availability
 space_bookings
 space_donation_asks
+space_drip_enrollments
 space_drip_sequences
 space_drip_steps
 space_email_templates
