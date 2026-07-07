@@ -12251,3 +12251,54 @@ the Style disclosure — rejected: it hid the most-used control one tap deep.
 blocks. Gate green: tsc, eslint, vitest (registry + design-block + panel markup + height/display sanitize),
 check:authz, check:menu, check:rls, check:canon, check:seo, build. Dev showcase at `/dev/editor-controls`
 gains the Banner primitives + the two text-block panels.
+
+## ADR-572: The editable Top-Page Hero — a pinned, fixed first section of the rail arranger
+
+**Status:** Accepted · corroborated by `lib/spaces/hero-config.ts` (`HERO_FIELDS`, `readHeroConfig`,
+`sanitizeHeroConfig`, `nextHeroPreferences`, `heroCtaTo/FromPreference`, `resolveHero`, `heroHeightClass`),
+`components/spaces/hero-edit-panel.tsx` (the pinned editor), `app/(main)/spaces/[slug]/manage/layout/actions.ts`
+(`setSpaceHero`), the wiring in `components/entity-blocks/profile-page-builder.tsx` +
+`components/admin/modules/space-page-module.tsx` + `app/(main)/spaces/[slug]/manage/rail-getters.ts`, the live
+render in `app/(main)/spaces/[slug]/(profile)/layout.tsx`, and the dev showcase at `app/dev/editor-controls`.
+
+**Context.** The profile COVER hero (the full-bleed band with the eyebrow / name / tagline / avatar / actions
+at the top of `/spaces/<slug>`) was chrome, not editable content: its height was a fixed constant, its buttons
+a fixed row, and its one dominant CTA was edited in a SEPARATE "Header button" section of the Identity &
+Branding form (ADR-563). The rail arranger (ADR-516/542/570) edits everything BELOW the hero but never the hero
+itself, so the operator edited the hero's CTA in one place and arranged the page in another.
+
+**Decision.**
+- **The hero is a FIXED first section of the arranger.** A pinned `HeroEditPanel` renders ABOVE the rows
+  editor (Space kind only), always at the top, editable but NOT a rows-model block — no drag handle, no remove,
+  no reorder. It is not in the registry (it is not reorderable content), so it never touches
+  `block-content.ts`/`registry.ts`; it declares its OWN field schema (`HERO_FIELDS`) in `lib/spaces/hero-config.ts`.
+- **It reuses the ADR-570 field-type control system.** `HERO_FIELDS` are plain `FieldDef`s, dispatched through
+  the SAME (now exported) `FieldEditor` the block panel uses: the `height` primitive (Short/Medium/Tall) and the
+  `buttonOrientation` primitive (side by side / stacked), plus text/textarea/url inputs for the eyebrow / name /
+  tagline and the CTA (label + link, the always-shows-once-labelled button model). No bespoke control JSX.
+- **Persistence: no migration.** The look + copy overrides live in a new sparse `spaces.preferences.hero`
+  jsonb bag; a blank field falls back to the Space's canonical `brand_name` / `tagline` columns, so a Space that
+  never opens the hero editor renders unchanged. The hero CTA REUSES the existing `preferences.headerCta` node
+  through the unchanged header-cta model (ADR-563) — item 5 relocates the EDITING into the hero, it does not
+  fork the storage. `setSpaceHero` writes both nodes in one owner-gated, server-validated action; the pinned
+  panel saves debounced (~600ms) and reconciles the Server-Component cover render via `router.refresh()`.
+- **One pure resolver.** `resolveHero` (pure, total) folds the config + the Space defaults + the header-cta
+  resolver into ONE result the live layout, a preview, and the tests all read, so the render and the editor
+  never drift. `heroHeightClass` maps the three heights to responsive utilities (token spacing, no hex).
+
+**Alternatives.** (1) Make the hero a real registry block placed in row 0 — rejected: it would be
+reorderable / deletable (the hero must be pinned) and would require the forbidden registry edits. (2) A new
+`hero_config` column — rejected: `preferences` jsonb already carries every sibling profile knob; no migration
+is needed. (3) Keep CTA editing in the branding form and duplicate it in the hero — rejected: two write paths
+for one button drift; reusing `headerCta` keeps a single source.
+
+**Consequences.** Zero migration (all jsonb). The hero is editable for height, button orientation, eyebrow /
+name / tagline, and the CTA in ONE place; the live cover render honors all of them and stays responsive
+(tagline full-width below on mobile) + a11y-correct. Copy passes NAMING + CONTENT-VOICE (no em dashes). Gate
+green: tsc, eslint, vitest (hero-config schema/normalizer/sanitizer/CTA-bridge/resolver + the pinned-panel
+markup), check:authz, check:menu, check:rls, check:canon, check:seo, build. Coupling risk: a concurrent agent
+rewrites the design blocks (`block-content.ts`/`registry.ts`/`block-data-sources.ts`); this PR touches NONE of
+them — it only exports `FieldEditor` from `block-edit-panel.tsx` and adds its own module, so the surfaces are
+disjoint. NOTE: ADR-571 was taken by the concurrent design-blocks PR (#1600) that landed first; this ADR is
+renumbered to 572. That PR's ADR-571 also touches `photoHero`'s own in-block `height` control (a CONTENT
+"Banner"), which is DISTINCT from this profile COVER hero — different surface, different id.
