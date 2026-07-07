@@ -89,12 +89,13 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   // Re-homed orphan (E.1): the contacts list lives in the Network hub as My Contacts (ADR-172) —
   // /connections redirects there. Surfaced here so members reach their connections from the rail.
   { key: 'connections',   href: '/network/contacts', label: 'My Contacts', section: 'Community', defaultAccess: 'member', surface: 'people' },
-  // All Spaces — the member-facing CATALOG of every networked Space (practitioners, businesses,
-  // organizations, coaching academies, event spaces). The primary browse index at /spaces/directory,
-  // with type pills, search, a Following toggle, and a sort control. Sits under My Contacts so a
-  // member's people + the Spaces they can join live together in Community. Distinct from "My Spaces"
-  // (the Admin-section operator hub for Spaces you run) and "Manage Spaces" (the platform board).
-  { key: 'my-spaces',     href: '/spaces/directory', label: 'All Spaces', section: 'Community', defaultAccess: 'member', surface: 'people' },
+  // Business Spaces — the member-facing public DIRECTORY of every networked Space (practitioners,
+  // businesses, organizations, coaching academies, event spaces). The primary browse index at
+  // /spaces/directory, with type pills, search, a Following toggle, and a sort control. Sits under
+  // My Contacts so a member's people + the Spaces they can join live together in Community. Distinct
+  // from the Spaces a leader RUNS (now surfaced in Leadership, /lead) and "Manage Spaces" (the
+  // platform board, /admin/spaces). Key kept `my-spaces` for menu-override / test stability.
+  { key: 'my-spaces',     href: '/spaces/directory', label: 'Business Spaces', section: 'Community', defaultAccess: 'member', surface: 'people' },
 
   // ── The Quest → everyone plays; only the Vault (cash-in) is paid-gated ────────
   { key: 'quest',     href: '/crew',       label: 'My Quest', section: 'The Quest', defaultAccess: 'member', surface: 'quest' },
@@ -127,12 +128,12 @@ const BASE_NAV_AREAS: readonly NavArea[] = [
   { key: 'admin-operations', href: '/admin/operations', label: 'Operations', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'platform',  surface: 'platformManage' },
   { key: 'admin-qr',         href: '/admin/qr',         label: 'QR Studio',  section: 'Admin', defaultAccess: 'admin',   staffDomain: 'qr',        surface: 'platformManage' },
   { key: 'admin-library',    href: '/admin/library',    label: 'Loom Studio', section: 'Admin', defaultAccess: 'janitor', staffDomain: 'marketing', surface: 'platformManage' },
-  // My Spaces — the operator's hub for the Spaces THEY run (/spaces/operating): own or active-admin
-  // Spaces, each opening that Space's /manage console. A DATA gate, not a role gate: shown ONLY to a
-  // viewer who operates at least one Space (requiresOperatedSpaces, resolved once per request via
-  // lib/spaces/operated hasOperatedSpaces). No `surface` so the matrix leaves it 'full' and the data
-  // predicate alone decides visibility; it telescopes with the rest of Admin (hidden, not ghosted).
-  { key: 'operated-spaces',  href: '/spaces/operating', label: 'My Spaces',  section: 'Admin', defaultAccess: 'member', requiresOperatedSpaces: true },
+  // NOTE: the operator "My Spaces" rail entry (→ /spaces/operating) was RETIRED here — the Spaces a
+  // leader owns / admins / is on the team of now surface in Leadership (/lead → the `lead-spaces`
+  // module), so a leader manages their Spaces alongside their circles, events, and Journeys. The
+  // /spaces/operating page stays reachable (the operator-context switcher deep-links to it); it is
+  // just no longer a top-level rail item. The `requiresOperatedSpaces` data-gate plumbing is kept for
+  // any future opt-in. (ADR: Spaces menu + Leadership hub reorg.)
   // Manage Spaces — the PLATFORM-WIDE operator board (the janitor space admin): every Space on the
   // platform with its health bucket + per-Space management (branding, manage console, view-as).
   // Labeled "Manage Spaces" so it reads distinctly from the member "All Spaces" catalog (Community)

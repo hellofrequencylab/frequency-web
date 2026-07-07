@@ -20,7 +20,7 @@ import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
 // discovery read (D5 / PAGE-FRAMEWORK §5).
 
 export const metadata = {
-  title: 'All Spaces',
+  title: 'Business Spaces',
   description:
     'Browse every practitioner, business, organization, coaching academy, and event space in the Frequency network.',
 }
@@ -113,7 +113,7 @@ export default async function SpacesDirectoryPage({
 
   return (
     <IndexTemplate
-      title="All Spaces"
+      title="Business Spaces"
       description="Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect."
       action={
         viewerProfileId ? (

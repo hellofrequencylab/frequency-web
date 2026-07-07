@@ -197,6 +197,12 @@ export interface BusinessImportReview {
   targetSpaceId: string | null
   error: string | null
   model: ReviewModel
+  /** How many raw sources the harvest stage saved (0 until harvest runs) — drives the live progress
+   *  stepper while status is 'researching' (harvest is the one mid-flight checkpoint persisted). */
+  harvestedSources: number
+  /** ISO timestamps for the progress UI's elapsed-time readout + freshness. */
+  createdAtISO: string
+  updatedAtISO: string
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -215,6 +221,9 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     targetSpaceId: row.targetSpaceId,
     error: row.error,
     model: buildReviewModel(draft, ledger),
+    harvestedSources: row.rawSources.length,
+    createdAtISO: row.createdAt,
+    updatedAtISO: row.updatedAt,
   }
 }
 

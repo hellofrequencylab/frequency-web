@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { redirect } from 'next/navigation'
-import { Building2, Loader2 } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { AdminTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getStaffMember } from '@/lib/staff'
@@ -19,6 +19,7 @@ import { staffCan } from '@/lib/core/staff-roles'
 import { getBusinessImportReview } from '../actions'
 import { STATUS_META } from '../intake-list'
 import { ReviewBoard } from './review-board'
+import { ResearchProgress } from './research-progress'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,10 +65,9 @@ export default async function BusinessImportReviewPage({ params }: { params: Pro
             description={review.error ?? 'A stage errored. It is recoverable — re-run the import from the list.'}
           />
         ) : (
-          <EmptyState
-            icon={Loader2}
-            title="Researching this business"
-            description="Harvesting sources, checking every commercial fact against a citation, then reframing the copy. This page will fill in once a reviewed draft is ready. Refresh in a moment."
+          <ResearchProgress
+            createdAtISO={review.createdAtISO}
+            harvested={review.harvestedSources > 0}
           />
         )}
       </AdminTemplate>
