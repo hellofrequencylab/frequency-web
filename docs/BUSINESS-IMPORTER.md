@@ -121,8 +121,18 @@ interface IntakeInputs {
     isDemo: boolean             // true = seeded demo (default unlisted); false = owner's real business
     ownerConfirmed?: boolean    // owner wizard: the owner asserts these are their own details
   }
+  mood?: SeedMood               // Importer v2: reframe TONE (warm|bold|calm|playful); Re-Seed re-voices
+  images?: string[]             // Importer v2: operator-uploaded seed images (public library-media URLs,
+                                //   first-is-primary). Filed into the new Space's Loom on Apply.
 }
 ```
+
+**Seed images (Importer v2).** During review an operator can stage photos on the intake
+(`inputs.images`) via the staff-gated `uploadSeederImages` / `removeSeederImage` actions
+(`app/(main)/admin/business-seeder/actions.ts`). Files land in the `library-media` bucket under an
+`intake/<id>/` prefix. On Apply, `materialize.applyIntake` files each staged image into the NEW Space's
+own Loom (`library_assets`, space-scoped, via `insertSpaceLibraryImage`) so a claimed Space carries the
+uploads as its own assets, and promotes the first image to the cover when the Space has none.
 
 ### 3.3 `HarvestedSource` (raw sources, one entry per fetch)
 

@@ -193,7 +193,8 @@ export async function runResearch(
     let reframeResult: ReframeRunResult | null = null
     const reframeBudget = Math.max(0, cap - budgetSpent)
     if (extractRan && reframeBudget > 0) {
-      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy })
+      // Steer the reframe TONE by the intake's seed MOOD (Importer v2). Absent ⇒ the default warm tone.
+      reframeResult = await doReframe({ verified: finalDraft, profileId: row.createdBy, mood: row.inputs.mood })
       if (reframeResult) {
         budgetSpent += reframeResult.costUsd
         // Edit-wins (docs §5): never clobber a prose field an operator already edited in review.

@@ -27,9 +27,11 @@ import { after } from 'next/server'
 import { requireStaffCap } from '@/lib/staff'
 import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createIntake, getIntake, saveDraft } from '@/lib/importer/store'
+import { createIntake, getIntake, saveDraft, setInputs } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
-import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse } from '@/lib/importer/pipeline'
+import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
+import { reframe, applyReframe } from '@/lib/importer/reframe'
+import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake } from '@/lib/importer/materialize'
 import type { IntakeInputs, IntakeStatus } from '@/lib/importer/intake'
 import type { BusinessProfile, LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
@@ -203,6 +205,11 @@ export interface BusinessImportReview {
   /** ISO timestamps for the progress UI's elapsed-time readout + freshness. */
   createdAtISO: string
   updatedAtISO: string
+  /** The seed MOOD currently on the intake (Importer v2) — drives the Re-Seed mood picker's selection. */
+  mood: SeedMood
+  /** Operator-uploaded seed images (public `library-media` URLs, first-is-primary), staged on the intake.
+   *  On Apply each is filed into the new Space's Loom (Importer v2). */
+  images: string[]
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -224,7 +231,150 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
     harvestedSources: row.rawSources.length,
     createdAtISO: row.createdAt,
     updatedAtISO: row.updatedAt,
+    mood: normalizeSeedMood(row.inputs.mood),
+    images: Array.isArray(row.inputs.images) ? row.inputs.images.filter((u): u is string => typeof u === 'string') : [],
   }
+}
+
+// ── Seed images (Importer v2): stage operator-uploaded images on the intake ────────────────
+
+const SEED_IMAGE_BUCKET = 'library-media'
+const SEED_IMAGE_MAX_BYTES = 20 * 1024 * 1024 // 20 MB, matching the Loom uploader ceiling
+const SEED_IMAGE_MAX = 12 // how many images one seed may stage
+
+export type SeederImagesResult = { ok: true; images: string[] } | { ok: false; error: string }
+
+/**
+ * Upload one or more images and STAGE them on the intake (inputs.images, first-is-primary order).
+ * Staff-gated (structure:write, the seeder's authority) and bound to the intake id. The files land in
+ * the `library-media` bucket under an intake-scoped prefix so a seed's staged images are namespaced;
+ * on Apply the materializer FILES each into the new Space's Loom (space-scoped), so an uploaded image
+ * and a claimed Space's own asset resolve identically. Fail-safe: partial batches still stage their
+ * successes; a bad file is skipped with the first reason surfaced. Never throws to the page.
+ */
+export async function uploadSeederImages(intakeId: string, formData: FormData): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
+  if (files.length === 0) return { ok: false, error: 'No images chosen.' }
+
+  const room = SEED_IMAGE_MAX - current.length
+  if (room <= 0) return { ok: false, error: `You can stage up to ${SEED_IMAGE_MAX} images.` }
+
+  const admin = createAdminClient()
+  const added: string[] = []
+  let firstError: string | undefined
+
+  for (const file of files.slice(0, room)) {
+    if (!file.type.startsWith('image/')) {
+      firstError ??= `${file.name || 'A file'} is not an image and was skipped.`
+      continue
+    }
+    if (file.size > SEED_IMAGE_MAX_BYTES) {
+      firstError ??= `${file.name || 'A file'} is over 20 MB and was skipped.`
+      continue
+    }
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+    const path = `intake/${intakeId}/${stamp}.${ext}`
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const { error: upErr } = await admin.storage
+      .from(SEED_IMAGE_BUCKET)
+      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+    if (upErr) {
+      firstError ??= upErr.message
+      continue
+    }
+    added.push(admin.storage.from(SEED_IMAGE_BUCKET).getPublicUrl(path).data.publicUrl)
+  }
+
+  if (files.length > room) firstError ??= `Only ${room} more image${room === 1 ? '' : 's'} fit (max ${SEED_IMAGE_MAX}).`
+  if (added.length === 0) return { ok: false, error: firstError ?? 'No images could be uploaded.' }
+
+  const images = [...current, ...added]
+  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  if (!saved) return { ok: false, error: 'Uploaded, but the save failed. Try again.' }
+  return { ok: true, images }
+}
+
+/**
+ * Drop one staged seed image (by its public URL). Staff-gated + bound to the intake id. Best-effort
+ * removes the stored object too (it lives under the intake prefix), so a dropped image leaves no litter.
+ * Fail-safe: an unknown URL is a no-op that still returns the current list.
+ */
+export async function removeSeederImage(intakeId: string, url: string): Promise<SeederImagesResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+
+  const current = Array.isArray(row.inputs.images)
+    ? row.inputs.images.filter((u): u is string => typeof u === 'string')
+    : []
+  const images = current.filter((u) => u !== url)
+  if (images.length === current.length) return { ok: true, images } // nothing matched
+
+  const saved = await setInputs(intakeId, { ...row.inputs, images })
+  if (!saved) return { ok: false, error: 'Could not remove the image. Try again.' }
+
+  // Best-effort storage cleanup: derive the object path from the public URL and delete it.
+  try {
+    const marker = `/${SEED_IMAGE_BUCKET}/`
+    const at = url.indexOf(marker)
+    if (at >= 0) {
+      const path = url.slice(at + marker.length)
+      if (path.startsWith(`intake/${intakeId}/`)) {
+        await createAdminClient().storage.from(SEED_IMAGE_BUCKET).remove([path])
+      }
+    }
+  } catch {
+    /* best-effort */
+  }
+  return { ok: true, images }
+}
+
+// ── Re-Seed with a mood (Importer v2) ────────────────────────────────────────────────────
+
+export type ReseedResult = { ok: true; revoiced: boolean; mood: SeedMood } | { ok: false; error: string }
+
+/**
+ * Re-Seed the reviewed draft in a different MOOD. A mood changes only the reframe TONE (not the verified
+ * FACTS), so this is a cheap RE-VOICE, not a full re-research: it persists the new mood on the intake,
+ * then reframes the already-verified draft with that mood and folds the fresh copy back. Edit-wins (P5):
+ * a prose field the operator already edited is preserved (editedProsePaths), so a mood re-voice never
+ * clobbers a hand-written line. Only from 'review' / 'applied' (there is a verified draft to re-voice);
+ * fail-safe with a plain reason. The commercial-fact gate is untouched (this only rewrites prose).
+ */
+export async function reseedBusinessImport(intakeId: string, mood: SeedMood): Promise<ReseedResult> {
+  await requireStaffCap('structure', 'write')
+  const operatorId = await getMyProfileId()
+  const nextMood = normalizeSeedMood(mood)
+
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  if (row.status !== 'review' && row.status !== 'applied') {
+    return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
+  }
+
+  // Persist the chosen mood on the intake inputs (so it sticks + drives future runs).
+  await setInputs(intakeId, { ...row.inputs, mood: nextMood })
+
+  // Re-voice the persisted verified draft in the new mood. If AI is off / over budget, reframe returns
+  // null and we leave the draft unchanged (the mood is still saved for the next full run).
+  const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
+  const ledger = (row.ledger as ProvenanceLedger) ?? {}
+  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood })
+  if (!result) return { ok: true, revoiced: false, mood: nextMood }
+
+  const preserve = editedProsePaths(row.draft)
+  const folded = applyReframe(draft, result.copy, ledger, preserve)
+  const saved = await saveDraft(intakeId, { draft: folded.draft, ledger: folded.ledger })
+  if (!saved) return { ok: false, error: 'Re-voiced, but the save failed. Try again.' }
+  return { ok: true, revoiced: true, mood: nextMood }
 }
 
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────
