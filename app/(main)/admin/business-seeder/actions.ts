@@ -247,6 +247,23 @@ export interface BusinessImportReview {
   imagePlan: { url: string; category: string; alt: string }[]
   /** Whether the hero is locked (Importer v2) — seeds the re-seed panel's lock toggle. */
   lockHero: boolean
+  /** Whether the applied Space is LISTED in the directory (visibility != 'private'). False until applied
+   *  or when the Space is unlisted — drives the "List in directory" toggle on the applied review board. */
+  listed: boolean
+}
+
+/** Whether a Space is listed in the directory (visibility != 'private'). Bound to the space id; fail-safe
+ *  to false. The directory shows only visibility='network' active Spaces (lib/spaces/discovery). */
+async function spaceIsListed(spaceId: string): Promise<boolean> {
+  try {
+    const db = createAdminClient() as unknown as {
+      from: (t: string) => { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { visibility?: string | null } | null }> } } }
+    }
+    const { data } = await db.from('spaces').select('visibility').eq('id', spaceId).maybeSingle()
+    return !!data && data.visibility !== 'private'
+  } catch {
+    return false
+  }
 }
 
 /** Load the field-by-field review model for one intake. Fail-safe: returns null when the
@@ -257,6 +274,7 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
   if (!row) return null
   const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
+  const listed = row.targetSpaceId ? await spaceIsListed(row.targetSpaceId) : false
   return {
     id: row.id,
     status: row.status,
@@ -276,6 +294,7 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
           .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
       : [],
     lockHero: row.inputs.lockHero ?? true,
+    listed,
   }
 }
 
@@ -639,6 +658,36 @@ export async function searchActiveSpaces(query: string): Promise<SpaceSearchResu
   }
 }
 
+// ── List / unlist the applied Space in the directory (Importer v2) ────────────────────────
+
+export type ListedResult = { ok: true; listed: boolean } | { ok: false; error: string }
+
+/**
+ * List or unlist the applied Space in the Business Spaces directory. Staff-gated + bound to the intake's
+ * target space. Listed = visibility 'network' (shows in the directory); unlisted = 'private' (owner /
+ * members only). The easy admin control for "why isn't my seeded Space showing" — a seeded demo lands
+ * private, and this flips it. Fail-safe with a plain reason.
+ */
+export async function setBusinessListed(intakeId: string, listed: boolean): Promise<ListedResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  if (!row.targetSpaceId) return { ok: false, error: 'Approve and seed this import first, then you can list it.' }
+  try {
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+    }
+    const { error } = await admin
+      .from('spaces')
+      .update({ visibility: listed ? 'network' : 'private', updated_at: new Date().toISOString() })
+      .eq('id', row.targetSpaceId)
+    if (error) return { ok: false, error: 'Could not update the listing. Try again.' }
+    return { ok: true, listed }
+  } catch {
+    return { ok: false, error: 'Could not update the listing. Try again.' }
+  }
+}
+
 // ── Per-field edit / confirm / drop ─────────────────────────────────────────────────────
 
 export type FieldAction =
@@ -671,8 +720,10 @@ export async function updateImportField(
   await requireStaffCap('structure', 'write')
   const row = await getIntake(intakeId)
   if (!row) return { ok: false, error: 'Import not found.' }
-  if (row.status !== 'review') {
-    return { ok: false, error: `This import is '${row.status}', not open for edits (expected 'review').` }
+  // Editable in review AND after apply (the master profile stays editable, so an operator can review /
+  // confirm / clear a "needs a look" field on a seeded Space, then Re-apply to push it live).
+  if (row.status !== 'review' && row.status !== 'applied') {
+    return { ok: false, error: `This import is '${row.status}', not open for edits.` }
   }
 
   const draft = structuredClone((row.draft as unknown as BusinessProfile) ?? { name: '', type: 'business' })

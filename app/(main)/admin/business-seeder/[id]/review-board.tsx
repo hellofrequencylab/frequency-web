@@ -22,7 +22,7 @@ import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, Chec
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
-import { updateImportField, approveBusinessImport, reseedBusinessImport, type FieldAction } from '../actions'
+import { updateImportField, approveBusinessImport, reseedBusinessImport, setBusinessListed, type FieldAction } from '../actions'
 import { SEED_MOODS, type SeedMood } from '@/lib/importer/moods'
 import { SIGNAL_GLYPH, type ReviewField, type ReviewModel, type ReviewSignal } from '../review-model'
 import { SeederImages } from './seeder-images'
@@ -50,6 +50,7 @@ export function ReviewBoard({
   initialImages,
   initialImagePlan,
   initialLockHero,
+  initialListed,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -60,11 +61,14 @@ export function ReviewBoard({
   initialImages: string[]
   initialImagePlan: { url: string; category: string; alt: string }[]
   initialLockHero: boolean
+  initialListed: boolean
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
   const [mood, setMood] = useState<SeedMood>(initialMood)
   const [lockHero, setLockHero] = useState(initialLockHero)
+  const [listed, setListed] = useState(initialListed)
+  const [listing, startListing] = useTransition()
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [reseeding, startReseed] = useTransition()
   const [applied, setApplied] = useState<boolean>(status === 'applied')
@@ -76,7 +80,22 @@ export function ReviewBoard({
   const [applying, startApply] = useTransition()
 
   const s = model.summary
-  const readOnly = applied
+  // The master profile stays editable AFTER apply too, so an operator can review / confirm / clear a
+  // "needs a look" field on a seeded Space, then Re-apply to push it live (updateImportField allows applied).
+  const readOnly = false
+
+  function toggleListed(next: boolean) {
+    setListed(next)
+    startListing(async () => {
+      const res = await setBusinessListed(intakeId, next)
+      if (!res.ok) {
+        setListed(!next) // revert on failure
+        setError(res.error)
+        return
+      }
+      router.refresh()
+    })
+  }
 
   function onFieldUpdate(next: ReviewModel) {
     setModel(next)
@@ -248,12 +267,26 @@ export function ReviewBoard({
       {applied && links && (
         <div className="rounded-2xl border border-success/30 bg-success-bg p-4" role="status">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-success">
-            <CheckCircle2 className="h-4 w-4" aria-hidden /> Seeded an unlisted demo Space
+            <CheckCircle2 className="h-4 w-4" aria-hidden /> Seeded {listed ? 'a listed Space' : 'an unlisted Space'}
           </p>
           <p className="mt-1 text-sm text-muted">
-            It is a draft until you flip it live. Any unverified commercial fact was withheld.
+            {listed
+              ? 'It shows in the Business Spaces directory. Any unverified commercial fact stays withheld.'
+              : 'It is not in the directory yet. Flip it to Listed below when you are ready to show it.'}
           </p>
-          <div className="mt-2 flex flex-wrap gap-3 text-sm font-semibold">
+          {/* The easy LISTED toggle: list = show in the Business Spaces directory (visibility network),
+              unlist = owner/members only (private). No more digging in settings. */}
+          <label className="mt-3 flex items-center gap-2 text-sm font-medium text-text">
+            <input
+              type="checkbox"
+              checked={listed}
+              onChange={(e) => toggleListed(e.target.checked)}
+              disabled={listing}
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+            />
+            {listing ? 'Saving…' : 'Listed in the Business Spaces directory'}
+          </label>
+          <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold">
             <a href={links.profileHref} className="inline-flex items-center gap-1 text-info hover:underline" target="_blank" rel="noreferrer">
               Space profile <ExternalLink className="h-3.5 w-3.5" />
             </a>
