@@ -34,6 +34,12 @@ import {
   nextCoverScrimPreferences,
   type CoverScrim,
 } from './preferences'
+import {
+  nextHeaderCtaPreferences,
+  isHeaderCtaFunction,
+  isValidCtaUrl,
+  type HeaderCtaPreference,
+} from '@/lib/spaces/header-cta'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
 // manages their Space's public pages (cover size, brand accent, block order + show/hide, and the
@@ -310,6 +316,49 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   }
 
   revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set (or clear) the Space's HEADER CTA — the one dominant button on the profile hero. The owner picks
+ * either an IN-HOUSE FUNCTION (booking / contact / tickets / donate / join / offerings, each linking to
+ * a surface that already exists) with an optional custom label, or a CUSTOM LINK (their own URL + label).
+ * Passing a null `pref` CLEARS the override, so the header falls back to the per-type default label + the
+ * /book surface. The value is re-validated server-side (a known function key, or a safe http(s)/same-origin
+ * URL + a non-empty label), so only a safe override is ever stored to preferences.headerCta. NON-DESTRUCTIVE:
+ * only the headerCta node is touched. Owner/admin/editor-gated (staff preview fails closed). Returns
+ * ActionResult.
+ */
+export async function setSpaceHeaderCta(
+  slug: string,
+  pref: HeaderCtaPreference | null,
+): Promise<ActionResult> {
+  // Re-validate the override server-side (the action is the authority, not the client form).
+  let clean: HeaderCtaPreference | null = null
+  if (pref && pref.kind === 'function') {
+    if (!isHeaderCtaFunction(pref.function)) return fail('Pick a button action.')
+    const label = typeof pref.label === 'string' ? pref.label.trim() : ''
+    clean = { kind: 'function', function: pref.function, ...(label ? { label } : {}) }
+  } else if (pref && pref.kind === 'custom') {
+    const url = typeof pref.url === 'string' ? pref.url.trim() : ''
+    const label = typeof pref.label === 'string' ? pref.label.trim() : ''
+    if (!label) return fail('Give your button a label.')
+    if (!isValidCtaUrl(url)) return fail('Enter a link that starts with https:// or /.')
+    clean = { kind: 'custom', url, label }
+  } else if (pref !== null) {
+    return fail('Pick a button action.')
+  }
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextHeaderCtaPreferences(auth.preferences, clean)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update your button. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

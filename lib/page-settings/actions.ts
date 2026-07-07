@@ -10,7 +10,7 @@ import { isSafeRoute } from '@/lib/layout/page-chrome'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { normalizeSeoForPane, type SeoFields, type SeoPane } from './seo'
 import { normalizeStatus, type StatusFields } from './status'
-import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, hasLayoutConfig, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
+import { parseLayout, moduleAssignments, isLayoutScopeKey, isModuleRole, hasLayoutConfig, normalizeRowHeader, type LayoutConfig, type ModuleRole, type SlotConfig } from './layout'
 import { defaultLayoutFor } from './default-layouts'
 import { moduleIdsForScope, moduleMeta } from '@/lib/widgets/modules'
 import { isTemplateId, templateMeta, slotIds, defaultSlotId, DEFAULT_TEMPLATE, type TemplateId } from '@/lib/widgets/templates'
@@ -170,11 +170,20 @@ export interface LayoutEditorItem {
   slot: string
 }
 
-/** The editor's full view of a scope's layout: the chosen interior template + every module in
- *  slot/render order. */
+/** A slot's optional ROW HEADER for the editor (ADR-562): the heading text + whether it is
+ *  toggled on. Keyed by slot id in LayoutEditorState.headers. */
+export interface SlotHeaderState {
+  text: string
+  enabled: boolean
+}
+
+/** The editor's full view of a scope's layout: the chosen interior template, every module in
+ *  slot/render order, and each slot's optional row header (keyed by slot id). */
 export interface LayoutEditorState {
   template: TemplateId
   items: LayoutEditorItem[]
+  /** Per-slot row header (text + on/off), keyed by slot id. A slot with no header is absent. */
+  headers: Record<string, SlotHeaderState>
 }
 
 /** The saved layout at a SCOPE KEY for the editor (ADR-270/271/272): the interior template plus
@@ -195,6 +204,13 @@ export async function getPageLayoutForEditor(key: string, spaceId?: string | nul
         ? [{ id: meta.id, label: meta.label, description: meta.description, enabled: a.enabled, role: isModuleRole(a.role) ? a.role : null, slot: a.slot }]
         : []
     }),
+    // Surface each slot's saved row header (text + on/off) so the editor can prefill its fields.
+    headers: Object.fromEntries(
+      Object.entries(config.slots).flatMap(([slotId, slot]) => {
+        const text = normalizeRowHeader(slot.header)
+        return text || slot.headerEnabled ? [[slotId, { text: text ?? '', enabled: slot.headerEnabled === true }] as const] : []
+      }),
+    ),
   })
   if (!ctx || !isLayoutKey(key)) return build({ template: DEFAULT_TEMPLATE, slots: {} })
   // Read THIS space's row at the level's OWN key (a scope key never passes isSafeRoute, so we
@@ -221,7 +237,12 @@ export async function getPageLayoutForEditor(key: string, spaceId?: string | nul
  *  { template, slots } jsonb. */
 export async function savePageLayout(
   key: string,
-  input: { template?: string; items: { id: string; enabled: boolean; role?: string | null; slot?: string }[] },
+  input: {
+    template?: string
+    items: { id: string; enabled: boolean; role?: string | null; slot?: string }[]
+    /** Per-slot row header (ADR-562), keyed by slot id. Each is normalized + bounded on write. */
+    headers?: Record<string, { text?: string; enabled?: boolean } | undefined>
+  },
   spaceId?: string | null,
 ): Promise<ActionResult> {
   const ctx = await gateForSpace(spaceId)
@@ -246,6 +267,9 @@ export async function savePageLayout(
   // Build the per-slot config by iterating the CONSTANT template + module catalog, never the
   // request, so every property KEY (slot id, module id) is a known literal — a crafted `id` or
   // `slot` can't inject an arbitrary property. The request only supplies validated VALUES.
+  // Row headers, keyed by slot id — only the constant template's slots are read (so a crafted
+  // slot key can't inject a property), and each text is normalized + bounded.
+  const headerById = input.headers ?? {}
   const slotConfigs: Record<string, SlotConfig> = {}
   for (const s of templateMeta(template).slots) {
     const order = orderedIds.filter((id) => slotById.get(id) === s.id)
@@ -256,7 +280,15 @@ export async function savePageLayout(
       const role = roleById.get(id)
       if (isModuleRole(role)) roles[id] = role
     }
-    slotConfigs[s.id] = { order, hidden, roles }
+    const slot: SlotConfig = { order, hidden, roles }
+    // Carry a row header only when it has non-empty text; the on/off flag persists as `true`
+    // (a disabled/absent header stays out of the jsonb, so existing rows are unchanged).
+    const header = normalizeRowHeader(headerById[s.id]?.text)
+    if (header) {
+      slot.header = header
+      if (headerById[s.id]?.enabled === true) slot.headerEnabled = true
+    }
+    slotConfigs[s.id] = slot
   }
 
   // The payload carries space_id (not in the generated types yet — cast it, ADR-246) and the

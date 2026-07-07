@@ -37,6 +37,8 @@ import {
   MAX_PROFILE_PAGES,
 } from '@/lib/spaces/profile-pages'
 import { readCoverScrim } from './layout/preferences'
+import { readHeaderCtaPreference, type HeaderCtaPreference } from '@/lib/spaces/header-cta'
+import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
 import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
@@ -149,6 +151,11 @@ interface SpaceBrandingData {
   brandLogoUrl: string | null
   coverScrim: ReturnType<typeof readCoverScrim>
   accent: string
+  /** The owner's saved header-CTA override (preferences.headerCta), or null when unset (the header uses
+   *  the per-type default). Serializable, so it crosses the RSC boundary to the branding form. */
+  headerCta: HeaderCtaPreference | null
+  /** The per-type default CTA label, shown as the placeholder when no override is set. */
+  defaultCtaLabel: string
   readOnly: boolean
 }
 
@@ -170,6 +177,8 @@ function buildBrandingData(
     brandLogoUrl: space.brandLogoUrl ?? null,
     coverScrim: readCoverScrim(space.preferences),
     accent: space.brandAccent ?? '',
+    headerCta: readHeaderCtaPreference(space.preferences),
+    defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
     readOnly: staffViewing || !canUseProfile,
   }
 }

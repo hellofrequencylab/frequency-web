@@ -38,6 +38,8 @@ export function SpaceBrandingModule() {
         brandLogoUrl={data.brandLogoUrl}
         coverScrim={data.coverScrim}
         accent={data.accent}
+        headerCta={data.headerCta}
+        defaultCtaLabel={data.defaultCtaLabel}
         readOnly={data.readOnly}
       />
     </section>
