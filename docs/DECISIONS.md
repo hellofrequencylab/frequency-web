@@ -11740,7 +11740,46 @@ fires the steps. New cron wiring in `vercel.json`. Contract test in
 read/write; unit tests cover the pure validators, permission gating, and the idempotent claim. Gate
 green: tsc, eslint, vitest (4015), check:menu, check:authz.
 
-## ADR-562: Owner-editable Space header CTA (the one dominant hero button)
+---
+
+## ADR-562: Optional per-row headers on module-driven pages
+
+**Status:** Accepted · corroborated by `lib/page-settings/layout.ts` (`SlotConfig.header` /
+`headerEnabled`, `resolveSlotHeaders`), `components/widgets/page-modules.tsx` (renders the header),
+`components/admin/page-settings/layout-editor.tsx` (the per-row field + toggle).
+
+**Context.** The interior page-layout engine (ADR-270/271/272) lays a route's modules into a
+template's AREAS (slots / rows). A row had no way to carry a heading, so operators could not label a
+section of the page (e.g. a "Featured" row over a stack of blocks). We wanted an owner-toggleable
+row header that renders on the public page, defaulting OFF so every existing page is unchanged.
+
+**Decision.** Extend the EXISTING per-slot layout jsonb, no new table. Each slot gains two optional
+fields on `page_settings.layout.slots[slotId]`:
+- `header?: string` — the heading text, trimmed + bounded to `ROW_HEADER_MAX` (80).
+- `headerEnabled?: boolean` — persisted only as `true`; absent/false = the header-less default.
+
+A header renders only when `headerEnabled === true` AND the text is non-empty (`slotHasHeader`),
+and only above a row that has visible content (`resolveSlotHeaders` feeds the renderer, which skips
+empty rows). The public render uses the kit's `SectionHeader` primitive (semantic `<h2>`, token
+classes, no hardcoded hex). The arranger exposes a text field + on/off toggle per row, saved through
+the existing `savePageLayout` action (which iterates the CONSTANT template slots, so a crafted slot
+key can't inject a property — same hardening as the module/role write).
+
+**Alternatives.** (1) A new `page_row_headers` table — declined: the header is a property of a slot
+that already lives in the layout jsonb; a table would fragment one config across two stores and need
+its own RLS + cascade. (2) Storing the header as a pseudo-module — declined: it is row chrome, not a
+block, and would pollute the module set + role gates. (3) Rendering the header even over an empty
+row — declined: a lone heading with no content reads as a bug.
+
+**Consequences.** Zero migration (jsonb-carried); existing pages render identically (default OFF).
+`hasLayoutConfig` now counts an active header, so a page whose ONLY customization is a row header
+still resolves as a saved config (not the coded default). The header is independent of per-module
+role gates — it labels the ROW, so it shows whenever the operator turned it on, even if individual
+blocks in the row are gated. Copy passes NAMING + CONTENT-VOICE (no em dashes). Gate green: tsc +
+eslint clean on the changed files, vitest (row-header suite added to `layout.test.ts`), check:authz,
+check:menu, check:rls.
+
+## ADR-563: Owner-editable Space header CTA (the one dominant hero button)
 
 **Context.** The Space profile hero's single primary CTA was fixed: its label came from the per-type
 default (`defaultPrimaryCtaLabel` in `lib/spaces/profile-config.ts`, e.g. "Become a member") and its href
