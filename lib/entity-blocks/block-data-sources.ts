@@ -94,6 +94,11 @@ export interface BlockDataSource {
    * the ONE admin-route map (surface-hrefs). Never null: falls back to the Space's manage console.
    */
   createHref: (slug: string) => string
+  /**
+   * The empty-state create-link COPY (item 5), e.g. "Create an offering". Voice-canon (no em dashes), a[n]
+   * chosen per source so the link reads naturally. Falls back to a generic "Create the first one".
+   */
+  createLabel: string
 }
 
 // ── Shared helpers (fail-safe Space read + a switch check) ──────────────────────────────────────────
@@ -241,6 +246,8 @@ function source(spec: {
   functionKey: SpaceFunctionKey | null
   moduleId: string
   list: (spaceId: string) => Promise<BlockDataItem[]>
+  /** The empty-state create-link copy (item 5), e.g. "Create an offering". */
+  createLabel: string
   /** When true, `exists` also requires at least one item (default true). */
   requireRows?: boolean
 }): BlockDataSource {
@@ -251,6 +258,7 @@ function source(spec: {
     functionKey: spec.functionKey,
     list,
     createHref: (slug: string) => moduleHref(spec.moduleId, slug),
+    createLabel: spec.createLabel,
     exists: async (spaceId: string) => {
       try {
         const on = await functionSwitchOn(spaceId, spec.functionKey)
@@ -277,45 +285,45 @@ function source(spec: {
 const SOURCES: readonly BlockDataSource[] = [
   // Offerings → the storefront services blob. Always available (no toggleable function); hides when the
   // catalog is empty. Create the first item on the Store editor.
-  source({ block: 'offerings', functionKey: null, moduleId: 'space.services', list: listOfferings }),
+  source({ block: 'offerings', functionKey: null, moduleId: 'space.services', list: listOfferings, createLabel: 'Create an offering' }),
 
   // Booking → the `availability` function. Its data-block already declares requiresFunction:'availability'
   // in the registry; here we gate on the switch AND on published availability (a booking picker lists the
   // bookable service items = the listed offerings, since booking runs against them).
-  source({ block: 'booking', functionKey: 'availability', moduleId: 'space.booking', list: listOfferings }),
+  source({ block: 'booking', functionKey: 'availability', moduleId: 'space.booking', list: listOfferings, createLabel: 'Set up booking' }),
 
   // Events → the Space's upcoming events. No function toggle (events are universal); hides when none.
-  source({ block: 'events', functionKey: null, moduleId: 'space.layout', list: listEvents }),
+  source({ block: 'events', functionKey: null, moduleId: 'space.layout', list: listEvents, createLabel: 'Create an event' }),
 
   // Team → the `members` function (the block already declares requiresFunction:'members'). Lists the
   // Space's role-holding team; create/manage members on the Members surface.
-  source({ block: 'team', functionKey: 'members', moduleId: 'space.people', list: listTeam }),
+  source({ block: 'team', functionKey: 'members', moduleId: 'space.people', list: listTeam, createLabel: 'Add a team member' }),
 
   // Journeys → the Space's hosted journey plans. No function toggle; hides when none.
-  source({ block: 'journeys', functionKey: null, moduleId: 'space.layout', list: listJourneys }),
+  source({ block: 'journeys', functionKey: null, moduleId: 'space.layout', list: listJourneys, createLabel: 'Add a journey' }),
 
   // Practices → the Space's practices + journeys. No function toggle; hides when none.
-  source({ block: 'practices', functionKey: null, moduleId: 'space.layout', list: listPractices }),
+  source({ block: 'practices', functionKey: null, moduleId: 'space.layout', list: listPractices, createLabel: 'Add a practice' }),
 
   // Circles → the Space's active community circles. No function toggle; hides when none.
-  source({ block: 'circles', functionKey: null, moduleId: 'space.layout', list: listCircles }),
+  source({ block: 'circles', functionKey: null, moduleId: 'space.layout', list: listCircles, createLabel: 'Create a circle' }),
 
   // Reviews → the Space's visible reviews. No function toggle; hides when none.
-  source({ block: 'reviews', functionKey: null, moduleId: 'space.layout', list: listReviews }),
+  source({ block: 'reviews', functionKey: null, moduleId: 'space.layout', list: listReviews, createLabel: 'Manage reviews' }),
 
   // FAQ → the operator FAQ rows. No function toggle; hides when none.
-  source({ block: 'faq', functionKey: null, moduleId: 'space.basics', list: listFaqs }),
+  source({ block: 'faq', functionKey: null, moduleId: 'space.basics', list: listFaqs, createLabel: 'Add a question' }),
 
   // Updates → the published brand updates. No function toggle; hides when none.
-  source({ block: 'updates', functionKey: null, moduleId: 'space.layout', list: listUpdates }),
+  source({ block: 'updates', functionKey: null, moduleId: 'space.layout', list: listUpdates, createLabel: 'Post an update' }),
 
   // The commerce services that are NOT their own entity block today but expose their items for a picker
   // (item 5) so a future block / a settings picker can reuse them. Each gates on its function switch AND
   // its rows. Keyed by a synthetic block id matching the SpaceFunctionKey (there is no registry block yet).
-  source({ block: 'memberships', functionKey: 'memberships', moduleId: 'space.memberships', list: listMemberships }),
-  source({ block: 'tickets', functionKey: 'tickets', moduleId: 'space.tickets', list: listTickets }),
-  source({ block: 'donations', functionKey: 'donations', moduleId: 'space.donations', list: listDonations }),
-  source({ block: 'enroll', functionKey: 'enroll', moduleId: 'space.enroll', list: listEnroll }),
+  source({ block: 'memberships', functionKey: 'memberships', moduleId: 'space.memberships', list: listMemberships, createLabel: 'Create a membership' }),
+  source({ block: 'tickets', functionKey: 'tickets', moduleId: 'space.tickets', list: listTickets, createLabel: 'Create a ticket' }),
+  source({ block: 'donations', functionKey: 'donations', moduleId: 'space.donations', list: listDonations, createLabel: 'Set up donations' }),
+  source({ block: 'enroll', functionKey: 'enroll', moduleId: 'space.enroll', list: listEnroll, createLabel: 'Publish a program' }),
 ]
 
 /** Fast lookup by block type. */
@@ -369,6 +377,66 @@ export function blockCreateHref(block: string, slug: string): string | null {
   const src = blockDataSource(block)
   if (!src) return null
   return src.createHref(slug)
+}
+
+/**
+ * The empty-state create-link COPY for a function-backed block (item 5), e.g. "Create an offering", or null
+ * for a non-function-backed block. Pure.
+ */
+export function blockCreateLabel(block: string): string | null {
+  const src = blockDataSource(block)
+  if (!src) return null
+  return src.createLabel
+}
+
+/** One block's serializable picker payload (item 5): the Space's live items + the create link the editor
+ *  shows when the list is empty. Plain data, safe to cross the RSC boundary into the client editor. */
+export interface BlockPickerData {
+  items: BlockDataItem[]
+  createHref: string
+  createLabel: string
+}
+
+/**
+ * Resolve the edit-panel PICKER payload (item 5) for a set of function-backed blocks in ONE pass, bound to
+ * the Space. Returns a map keyed by block id: each block's live items (blockDataList) + its create link, so
+ * the client editor can render the picker (a checklist of the Space's real items) or, when empty, the
+ * "Create ..." link. A non-function-backed / unknown id is skipped. FAIL-SAFE: a reader that throws yields
+ * that block's entry with an empty item list (the editor then shows the create link), never a crash.
+ *
+ * TENANCY: every read is bound to `spaceId` (the underlying readers filter space_id); AUTHORIZATION is the
+ * CALLER's job — call this only AFTER gating the viewer to owner/admin (the rail getter does). Server-only.
+ */
+export async function spaceBlockPickerData(
+  spaceId: string,
+  slug: string,
+  blocks: readonly string[],
+): Promise<Record<string, BlockPickerData>> {
+  const out: Record<string, BlockPickerData> = {}
+  await Promise.all(
+    blocks.map(async (block) => {
+      const src = blockDataSource(block)
+      if (!src) return
+      const items = await src.list(spaceId) // already fail-safe (safeList) → [] on error
+      out[block] = { items, createHref: src.createHref(slug), createLabel: src.createLabel }
+    }),
+  )
+  return out
+}
+
+/**
+ * THE PER-BLOCK PALETTE GATE (item 6). The set of function-backed block ids that EXIST for a Space — the
+ * function's switch is on AND (where the source requires rows) it has at least one item. The palette LOCKS a
+ * function-backed block whose id is NOT in this set, so a Space never sees an Offerings block with no
+ * offerings or a Team block with no team. A block with no data source is not function-backed and is never in
+ * this set (the caller offers those unconditionally). Reads run in parallel; each `exists` is fail-safe, so a
+ * transient miss simply omits that block (it stays locked rather than crashing the palette). Server-only.
+ */
+export async function existingFunctionBackedBlocks(spaceId: string): Promise<Set<string>> {
+  const entries = await Promise.all(
+    SOURCES.map(async (s) => [s.block, await s.exists(spaceId)] as const),
+  )
+  return new Set(entries.filter(([, ok]) => ok).map(([block]) => block))
 }
 
 /**

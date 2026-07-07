@@ -11,6 +11,7 @@ import {
   ControlRow,
   HeightControl,
   MarginControl,
+  PickerControl,
   Segmented,
   ShadowControl,
   Toggle,
@@ -52,6 +53,7 @@ function PrimitivesColumn() {
   const [toggle, setToggle] = useState(true)
   const [mt, setMt] = useState<MarginStep>('none')
   const [mb, setMb] = useState<MarginStep>('md')
+  const [picked, setPicked] = useState<string[]>([])
 
   return (
     <div className="space-y-3">
@@ -108,6 +110,34 @@ function PrimitivesColumn() {
 
       <Demo title="Margin (C3)" value={`mt:${mt} mb:${mb}`} note="Compact top/bottom spacing.">
         <MarginControl top={mt} bottom={mb} onTop={setMt} onBottom={setMb} />
+      </Demo>
+
+      <Demo
+        title="Data-source picker (item 5)"
+        value={picked.length ? picked.join(',') : 'all'}
+        note="Multi-select of a Space's live items; empty means show all."
+      >
+        <PickerControl
+          label="Offerings to feature"
+          items={[
+            { id: 'Sound bath', label: 'Sound bath' },
+            { id: 'Morning flow', label: 'Morning flow' },
+            { id: 'Breathwork', label: 'Breathwork' },
+          ]}
+          selected={picked}
+          onChange={setPicked}
+        />
+      </Demo>
+
+      <Demo title="Picker empty state (item 5)" note="No items yet shows a Create link.">
+        <PickerControl
+          label="Team to feature"
+          items={[]}
+          selected={[]}
+          createHref="#"
+          createLabel="Add a team member"
+          onChange={() => {}}
+        />
       </Demo>
 
       <Demo title="Standalone Toggle + Group">

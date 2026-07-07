@@ -1,13 +1,17 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
   ArrowDownWideNarrow,
+  ArrowUpRight,
   Ban,
+  Check,
   Columns2,
+  Plus,
   Rows2,
   Sparkles,
 } from 'lucide-react'
@@ -315,4 +319,135 @@ const SHADOW_OPTIONS: readonly SegOption<ShadowValue>[] = [
  *  shadow), so it stays theming-safe and never exposes a raw shadow string. */
 export function ShadowControl({ value, onSelect }: { value: ShadowValue; onSelect: (v: ShadowValue) => void }) {
   return <Segmented ariaLabel="Shadow" options={SHADOW_OPTIONS} value={value} onSelect={onSelect} />
+}
+
+// ── Data-source picker (ADR-573, item 5) ──────────────────────────────────────────────────────────────────
+
+/** One choice a data-source picker offers: a stable `id`, the human `label`, and an optional deep link to
+ *  that one item's live page (an event / a circle). Mirrors BlockDataItem, kept local so this client control
+ *  never imports the server-only data registry. */
+export interface PickerItem {
+  id: string
+  label: string
+  href?: string
+}
+
+/** One function-backed block's serializable picker payload (ADR-573, item 5): the Space's live items + the
+ *  admin create link the editor shows when the list is empty. This is the CLIENT-safe mirror of the server
+ *  `BlockPickerData` (lib/entity-blocks/block-data-sources.ts), declared here so the client builder + edit
+ *  panel can type the seed without importing the server-only data registry. */
+export interface BlockPickerData {
+  items: PickerItem[]
+  createHref: string
+  createLabel: string
+}
+
+/** The function-aware DATA-SOURCE picker (ADR-573, item 5). A multi-select checklist of the Space's OWN live
+ *  items for a function-backed block (which offerings / events / team the section features). Its options are
+ *  the Space's REAL data, resolved server-side and passed in — not a fixed enum. Behaviour:
+ *   • The stored value is the SELECTED ids; NOTHING selected means "show every item" (item 7), so the empty
+ *     state reads "Showing all", not a broken picker.
+ *   • When the function has NO items yet, the control shows a single "Create ..." LINK to the admin page
+ *     (createHref) instead of an empty list, so the operator has one clear next step.
+ *  Controlled + stateless; token-driven; a11y (role="group", aria-pressed per row, keyboard-operable
+ *  buttons). Voice canon on every visible label (no em dashes). */
+export function PickerControl({
+  label,
+  items,
+  selected,
+  createHref,
+  createLabel,
+  onChange,
+}: {
+  label: string
+  /** The Space's live items for this block (may be empty). */
+  items: readonly PickerItem[]
+  /** The currently selected item ids (empty === show all). */
+  selected: readonly string[]
+  /** The admin route to create the first item (shown when `items` is empty). */
+  createHref?: string | null
+  /** The "Create ..." link copy (e.g. "Create an offering"). */
+  createLabel?: string
+  /** Called with the next selection; an empty array means "show all". */
+  onChange: (next: string[]) => void
+}) {
+  // Empty function: one honest next step, not a dead list (item 5's create-link empty state).
+  if (items.length === 0) {
+    return (
+      <div className="space-y-1.5">
+        <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+        {createHref ? (
+          <Link
+            href={createHref}
+            className="inline-flex items-center gap-1 rounded-lg border border-dashed border-border px-2.5 py-2 text-xs font-semibold text-primary-strong transition-colors hover:border-primary"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden /> {createLabel ?? 'Create the first one'}
+          </Link>
+        ) : (
+          <p className="text-2xs text-subtle">Nothing to feature here yet.</p>
+        )}
+      </div>
+    )
+  }
+
+  const chosen = new Set(selected)
+  const toggle = (id: string) => {
+    const next = new Set(chosen)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    // Preserve the items' natural order; an all-selected / none-selected result both collapse to [] (show all).
+    const ids = items.map((it) => it.id).filter((x) => next.has(x))
+    onChange(ids.length === items.length ? [] : ids)
+  }
+
+  const showingAll = chosen.size === 0
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</span>
+        <span className="text-3xs text-subtle">{showingAll ? 'Showing all' : `${chosen.size} chosen`}</span>
+      </div>
+      <ul className="space-y-1" role="group" aria-label={label}>
+        {items.map((it) => {
+          const on = chosen.has(it.id)
+          return (
+            <li key={it.id} className="flex items-center gap-1.5">
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(it.id)}
+                className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg border px-2 py-1.5 text-left text-xs font-medium transition-colors ${
+                  on
+                    ? 'border-primary bg-primary-bg text-text'
+                    : 'border-border bg-surface text-muted hover:border-border-strong hover:text-text'
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                    on ? 'border-primary bg-primary text-on-primary' : 'border-border-strong'
+                  }`}
+                >
+                  {on && <Check className="h-3 w-3" aria-hidden />}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{it.label}</span>
+              </button>
+              {it.href && (
+                <Link
+                  href={it.href}
+                  aria-label={`Open ${it.label}`}
+                  className="shrink-0 rounded p-1 text-subtle hover:text-text"
+                >
+                  <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                </Link>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      <p className="text-3xs text-subtle">
+        {showingAll ? 'Every one shows. Tap to feature only some.' : 'Only the ones you tap show. Tap all to clear.'}
+      </p>
+    </div>
+  )
 }

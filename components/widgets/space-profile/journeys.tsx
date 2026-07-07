@@ -1,5 +1,6 @@
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
+import { resolvePickedIds } from '@/lib/entity-blocks/block-content'
 import { SpacePracticesBlock } from '@/components/page-editor/blocks/profile'
 import { ModuleSection } from './section'
 
@@ -10,12 +11,18 @@ import { ModuleSection } from './section'
 export function JourneysBlock({
   data,
   header,
+  featuredIds,
 }: {
   space: SpaceProfileContext
   data: SpaceContentData
   header?: { eyebrow?: string; heading?: string }
+  featuredIds?: string[]
 }) {
-  const journeys = data.practices?.journeys ?? []
+  const all = data.practices?.journeys ?? []
+  // The picker (ADR-573 item 5) features only the chosen journeys, in order; empty === show all (item 7).
+  const picked = resolvePickedIds(featuredIds ?? [], all.map((j) => j.id))
+  const byId = new Map(all.map((j) => [j.id, j]))
+  const journeys = picked.map((id) => byId.get(id)).filter((j): j is (typeof all)[number] => Boolean(j))
   if (journeys.length === 0) return null
   return (
     <ModuleSection anchor="journeys">

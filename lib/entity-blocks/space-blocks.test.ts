@@ -37,6 +37,56 @@ describe('partitionSpaceBlocks (requiresFunction locking)', () => {
   })
 })
 
+// ADR-573 item 6: "don't show a function unless it EXISTS". The `functionAware` gate locks a function-backed
+// block whose function has NO data yet, even when its switch is on. Offerings/events have no requiresFunction,
+// so the switch gate alone never hid them — this closes that gap.
+describe('partitionSpaceBlocks (item 6 existing-data gate)', () => {
+  const everyFunction = new Set<SpaceFunctionKey>(['availability', 'members', 'memberships', 'tickets', 'donations', 'enroll'])
+  const functionBacked = new Set(['offerings', 'booking', 'events', 'team', 'journeys', 'circles', 'reviews', 'faq', 'updates'])
+
+  it('locks a function-backed block that has NO data (offerings with no offerings)', () => {
+    const { lockedIds, arrangeable } = partitionSpaceBlocks(everyFunction, {
+      functionBacked,
+      existing: new Set(['events']), // only events has data
+    })
+    expect(lockedIds).toContain('offerings') // function-backed but empty → locked
+    expect(lockedIds).toContain('team')
+    expect(arrangeable.map((b) => b.id)).toContain('events') // exists → offered
+  })
+
+  it('offers a function-backed block once it has data', () => {
+    const { arrangeable, lockedIds } = partitionSpaceBlocks(everyFunction, {
+      functionBacked,
+      existing: new Set(['offerings']),
+    })
+    expect(arrangeable.map((b) => b.id)).toContain('offerings')
+    expect(lockedIds).not.toContain('offerings')
+  })
+
+  it('never gates a non-function-backed block on data (authored + design blocks always offered)', () => {
+    const { arrangeable } = partitionSpaceBlocks(everyFunction, { functionBacked, existing: new Set() })
+    const ids = arrangeable.map((b) => b.id)
+    // Callout + the design blocks are not function-backed, so an empty `existing` set never locks them.
+    expect(ids).toContain('callout')
+    expect(ids).toContain('photoHero')
+  })
+
+  it('composes with the switch gate: a switch-off block stays locked regardless of data', () => {
+    const { lockedIds } = partitionSpaceBlocks(new Set<SpaceFunctionKey>(), {
+      functionBacked,
+      existing: new Set(['booking']), // even if booking "existed"...
+    })
+    // ...its `availability` switch is off, so it stays locked (switchLocked wins).
+    expect(lockedIds).toContain('booking')
+  })
+
+  it('omitting functionAware preserves the legacy switch-only behaviour', () => {
+    const legacy = partitionSpaceBlocks(new Set<SpaceFunctionKey>(['members']))
+    expect(legacy.arrangeable.map((b) => b.id)).toContain('offerings')
+    expect(legacy.arrangeable.map((b) => b.id)).toContain('team') // members on
+  })
+})
+
 describe('space block picker (arrangeable palette, exclude placed)', () => {
   it('excludes locked and already-placed blocks from the picker', () => {
     const { arrangeable } = partitionSpaceBlocks(new Set<SpaceFunctionKey>())

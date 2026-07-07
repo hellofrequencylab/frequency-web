@@ -26,10 +26,12 @@ import {
   ControlRow,
   HeightControl,
   MarginControl,
+  PickerControl,
   Segmented,
   ShadowControl,
   ToggleRow,
   type AlignValue,
+  type BlockPickerData,
   type ButtonOrientationValue,
   type HeightValue,
   type ShadowValue,
@@ -81,6 +83,7 @@ export function BlockEditPanel({
   style,
   hidden,
   editHref,
+  pickerData,
   uploadImage,
   onContent,
   onStyle,
@@ -92,6 +95,9 @@ export function BlockEditPanel({
   hidden: boolean
   /** For a DATA block: the href of that feature's own manager ("Manage Offerings"), or null. */
   editHref: string | null
+  /** For a function-backed block: the picker payload (ADR-573 item 5) — the Space's live items + create
+   *  link. Feeds any `picker` field; absent for a block with no data source. */
+  pickerData?: BlockPickerData
   /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
   uploadImage?: UploadImage
   onContent: (next: Record<string, unknown>) => void
@@ -128,6 +134,7 @@ export function BlockEditPanel({
           field={field}
           value={content[field.key]}
           uploadImage={uploadImage}
+          pickerData={pickerData}
           onChange={(v) => setField(field.key, v)}
         />
       ))}
@@ -166,11 +173,13 @@ export function FieldEditor({
   field,
   value,
   uploadImage,
+  pickerData,
   onChange,
 }: {
   field: FieldDef
   value: unknown
   uploadImage?: UploadImage
+  pickerData?: BlockPickerData
   onChange: (v: unknown) => void
 }) {
   if (field.type === 'text' || field.type === 'url') {
@@ -216,6 +225,22 @@ export function FieldEditor({
         label={field.label}
         checked={on}
         onChange={(next) => onChange(next === def ? undefined : next)}
+      />
+    )
+  }
+  // ── ADR-573 item 5: the function-aware DATA-SOURCE picker. Its choices are the Space's live items (from
+  //    the seed's pickerData), not a fixed enum; an empty function shows the create link. Fail-safe: no
+  //    pickerData (a non-function-backed block, or a read miss) renders nothing here. ──
+  if (field.type === 'picker') {
+    const selected = Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : []
+    return (
+      <PickerControl
+        label={field.label}
+        items={pickerData?.items ?? []}
+        selected={selected}
+        createHref={pickerData?.createHref}
+        createLabel={pickerData?.createLabel}
+        onChange={(next) => onChange(next.length ? next : undefined)}
       />
     )
   }
