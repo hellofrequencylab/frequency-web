@@ -10,11 +10,14 @@ import {
   blockDrawsOwnCard,
   blockBearsText,
   primitiveValues,
+  pickerSelection,
+  resolvePickedIds,
   marginTopClass,
   marginBottomClass,
   textStyleClass,
   colorSwatchClass,
   safeUrl,
+  PICKER_DATA_BLOCK_IDS,
   type FieldDef,
 } from './block-content'
 
@@ -80,8 +83,10 @@ describe('fieldsForBlock', () => {
   it('gives content blocks their schema and data blocks the eyebrow/title header fields', () => {
     expect(fieldsForBlock('heading').map((f) => f.key)).toEqual(['text'])
     expect(fieldsForBlock('links').map((f) => f.type)).toEqual(['links'])
-    // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542).
-    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title'])
+    // Every data block edits its REAL eyebrow + title (item 3); About/Story add a body (ADR-542); a
+    // function-backed block adds a data-source picker (ADR-573 item 5).
+    expect(fieldsForBlock('contact').map((f) => f.key)).toEqual(['eyebrow', 'title'])
+    expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items'])
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
   })
@@ -110,8 +115,8 @@ describe('sanitizeBlockContent', () => {
   })
   it('keeps only eyebrow/title for a header-only data block', () => {
     expect(
-      sanitizeBlockContent('offerings', { eyebrow: 'Our menu', title: 'Services', intro: 'dropped', price: 9 }),
-    ).toEqual({ eyebrow: 'Our menu', title: 'Services' })
+      sanitizeBlockContent('contact', { eyebrow: 'Reach us', title: 'Contact', intro: 'dropped', price: 9 }),
+    ).toEqual({ eyebrow: 'Reach us', title: 'Contact' })
   })
   it('keeps eyebrow/title/body for About + Story (ADR-542)', () => {
     expect(
@@ -275,5 +280,54 @@ describe('style → class mapping (ADR-569)', () => {
       expect(cls.startsWith('bg-')).toBe(true)
       expect(cls).not.toMatch(/#[0-9a-f]{3,6}/i)
     }
+  })
+})
+
+// ── ADR-573 item 5: the function-aware data-source picker ──────────────────────────────────────────────
+
+describe('picker field (ADR-573 item 5)', () => {
+  it('the function-backed data blocks declare a picker field', () => {
+    // A representative function-backed block carries a `picker` field keyed on its live items.
+    const offeringsFields = fieldsForBlock('offerings')
+    const picker = offeringsFields.find((f) => f.type === 'picker')
+    expect(picker).toBeDefined()
+    expect(picker?.key).toBe('items')
+    expect(picker?.pickerBlock).toBe('offerings')
+  })
+
+  it('PICKER_DATA_BLOCK_IDS lists exactly the blocks with a picker field', () => {
+    expect(PICKER_DATA_BLOCK_IDS).toEqual(expect.arrayContaining(['offerings', 'events', 'team', 'journeys', 'circles']))
+    // A block with no picker (about) is absent.
+    expect(PICKER_DATA_BLOCK_IDS).not.toContain('about')
+  })
+
+  it('sanitizes a picker selection to a bounded, de-duped string[]; drops empty / garbage', () => {
+    const clean = sanitizeBlockContent('offerings', { items: ['a', 'a', ' b ', '', 42, 'c'] })
+    expect(clean?.items).toEqual(['a', 'b', 'c'])
+    // An empty / all-garbage selection is dropped so the block falls back to "show all" (item 7).
+    expect(sanitizeBlockContent('offerings', { items: [] })?.items).toBeUndefined()
+    expect(sanitizeBlockContent('offerings', { items: [1, 2, {}] })?.items).toBeUndefined()
+  })
+
+  it('pickerSelection reads the stored ids, ignoring non-strings', () => {
+    expect(pickerSelection({ items: ['a', 'b'] })).toEqual(['a', 'b'])
+    expect(pickerSelection({ items: ['a', 3, ''] })).toEqual(['a'])
+    expect(pickerSelection(undefined)).toEqual([])
+    expect(pickerSelection({})).toEqual([])
+  })
+})
+
+describe('resolvePickedIds (items 5 + 7)', () => {
+  it('keeps the selected ids that still exist, in the operator order', () => {
+    expect(resolvePickedIds(['b', 'a'], ['a', 'b', 'c'])).toEqual(['b', 'a'])
+  })
+  it('drops a stale / removed id', () => {
+    expect(resolvePickedIds(['a', 'gone'], ['a', 'b'])).toEqual(['a'])
+  })
+  it('falls back to EVERY live id when the selection is empty (item 7 default)', () => {
+    expect(resolvePickedIds([], ['a', 'b'])).toEqual(['a', 'b'])
+  })
+  it('falls back to every live id when the whole selection is stale', () => {
+    expect(resolvePickedIds(['x', 'y'], ['a', 'b'])).toEqual(['a', 'b'])
   })
 })

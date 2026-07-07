@@ -41,6 +41,13 @@ import { readHeaderCtaPreference, type HeaderCtaPreference } from '@/lib/spaces/
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { enabledFunctionKeys } from '@/lib/spaces/profile-modules'
 import { partitionSpaceBlocks } from '@/lib/entity-blocks/space-blocks'
+import {
+  existingFunctionBackedBlocks,
+  spaceBlockPickerData,
+  FUNCTION_BACKED_BLOCK_TYPES,
+  type BlockPickerData,
+} from '@/lib/entity-blocks/block-data-sources'
+import { PICKER_DATA_BLOCK_IDS } from '@/lib/entity-blocks/block-content'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
 import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
@@ -356,17 +363,26 @@ interface SpaceLayoutRailData {
   hidden: string[]
   /** Whether the space has ever saved a layout (else the resolved rows are the default seed → show starters). */
   customized: boolean
-  /** Space blocks locked behind a function this space does not have on — held out of the picker + bench. */
+  /** Space blocks locked behind a function this space does not have on, OR (ADR-573 item 6) a function-backed
+   *  block that has no data yet — held out of the picker + bench until the function exists AND has items. */
   lockedIds: string[]
+  /** The edit-panel PICKER payload per function-backed block (ADR-573 item 5): the Space's live items + the
+   *  create link. Keyed by block id; a block absent here has no picker. Serializable (plain data). */
+  pickerData: Record<string, BlockPickerData>
   /** The pinned Top Hero's current values (operator overrides, else the Space's brand name / tagline), so the
    *  fixed hero editor opens showing what is on the page. Serializable (plain strings). */
   hero: HeroEditorValues
 }
 
 /** Assemble the builder seed from the already-resolved space, or null when the viewer cannot manage this
- *  Space (fail-safe → the builder renders nothing). Pure, shared by getSpaceLayoutRailData and
- *  getSpaceRailBundle. A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). */
-function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): SpaceLayoutRailData | null {
+ *  Space (fail-safe → the builder renders nothing). Shared by getSpaceLayoutRailData and getSpaceRailBundle.
+ *  A staff previewer cannot edit the page, so `canManage` gates it (not staffViewing). ASYNC (ADR-573): it
+ *  now reads the Space's function-backed data twice, both bound to space.id and both fail-safe:
+ *   • item 6 — existingFunctionBackedBlocks(space.id) → the finer palette gate (a function-backed block is
+ *     locked until it EXISTS + has items), composed with the switch gate in partitionSpaceBlocks.
+ *   • item 5 — spaceBlockPickerData(space.id, slug, PICKER_DATA_BLOCK_IDS) → the picker choices + create link
+ *     for each data-source-backed block. */
+async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Promise<SpaceLayoutRailData | null> {
   if (!canManage) return null
 
   const prefs = space.preferences
@@ -375,7 +391,18 @@ function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): SpaceLayo
       ? (prefs as Record<string, unknown>).profileLayout
       : null
   const saved = parseEntityLayout(rawLayout)
-  const { lockedIds } = partitionSpaceBlocks(enabledFunctionKeys(space))
+
+  // item 6 (existing-function gate) + item 5 (picker data) resolve independently — one parallel pass on the
+  // rail's open path. Both are fail-safe (a reader that throws yields an empty set / empty item list), so a
+  // transient miss degrades to "the block stays locked" / "the picker shows the create link", never a crash.
+  const [existing, pickerData] = await Promise.all([
+    existingFunctionBackedBlocks(space.id),
+    spaceBlockPickerData(space.id, space.slug, PICKER_DATA_BLOCK_IDS),
+  ])
+  const { lockedIds } = partitionSpaceBlocks(enabledFunctionKeys(space), {
+    functionBacked: new Set(FUNCTION_BACKED_BLOCK_TYPES),
+    existing,
+  })
 
   // The pinned Top Hero seed: the operator's hero overrides (preferences.hero) atop the Space's canonical
   // brand name / tagline, plus the existing header-CTA (relocated into the hero editor, item 5) split back to
@@ -399,6 +426,7 @@ function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): SpaceLayo
     hidden: saved?.hidden ?? [],
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
+    pickerData,
     hero,
   }
 }
@@ -459,9 +487,12 @@ export async function getSpaceRailBundle(
   // caps + extras are INDEPENDENT (each needs only space / viewerProfileId), so resolve them in parallel
   // rather than serially — one round-trip instead of two on the rail's hot open path (ADR-550). caps reads
   // the viewer's membership, which resolveSpaceManageAccess already read, so React.cache serves it free.
-  const [caps, extras] = await Promise.all([
+  const [caps, extras, layout] = await Promise.all([
     getSpaceCapabilities(space, viewerProfileId),
     readProfileExtras(space.id),
+    // The layout slice now reads the Space's function-backed data (item 5 picker data + item 6 existing gate),
+    // so it is async; resolve it alongside caps + extras on the rail's hot open path (ADR-573).
+    buildLayoutData(space, canManage),
   ])
 
   return {
@@ -469,7 +500,7 @@ export async function getSpaceRailBundle(
     branding: buildBrandingData(space, caps, staffViewing, extras),
     settings: buildSettingsData(space, caps, staffViewing, extras),
     page: buildPageData(space, staffViewing, canManage, pageSlug),
-    layout: buildLayoutData(space, canManage),
+    layout,
   }
 }
 

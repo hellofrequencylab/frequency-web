@@ -53,6 +53,7 @@ export function SpacePageModule() {
             hidden: ctx.bundle.layout.hidden,
             customized: ctx.bundle.layout.customized,
             lockedIds: ctx.bundle.layout.lockedIds,
+            pickerData: ctx.bundle.layout.pickerData,
           }
         : null
       : undefined

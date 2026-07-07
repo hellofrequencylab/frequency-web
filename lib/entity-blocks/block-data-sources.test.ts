@@ -92,11 +92,15 @@ import {
   blockExists,
   blockDataList,
   blockCreateHref,
+  blockCreateLabel,
   blockDataSource,
   isFunctionBackedBlock,
   spaceEnabledFunctions,
+  spaceBlockPickerData,
+  existingFunctionBackedBlocks,
   FUNCTION_BACKED_BLOCK_TYPES,
 } from './block-data-sources'
+import { getSpaceById } from '@/lib/spaces/store'
 
 beforeEach(() => {
   resolvedSpace = { id: 'space-1', slug: 'river-aid', entitlements: {}, preferences: {} }
@@ -328,5 +332,89 @@ describe('blockCreateHref', () => {
     for (const block of FUNCTION_BACKED_BLOCK_TYPES) {
       expect(blockCreateHref(block, 'river-aid')).toBeTruthy()
     }
+  })
+})
+
+// ── createLabel (item 5): the empty-state link copy ────────────────────────────────────────────────────
+
+describe('blockCreateLabel', () => {
+  it('offerings reads naturally ("Create an offering")', () => {
+    expect(blockCreateLabel('offerings')).toBe('Create an offering')
+  })
+
+  it('is null for a non-function-backed block', () => {
+    expect(blockCreateLabel('heading')).toBeNull()
+  })
+
+  it('every function-backed block has a create label (voice canon: no em dashes)', () => {
+    for (const block of FUNCTION_BACKED_BLOCK_TYPES) {
+      const label = blockCreateLabel(block)
+      expect(label).toBeTruthy()
+      expect(label).not.toMatch(/—/)
+    }
+  })
+})
+
+// ── spaceBlockPickerData (item 5): the edit-panel picker payload ───────────────────────────────────────
+
+describe('spaceBlockPickerData', () => {
+  it('bundles live items + create link per requested block', async () => {
+    team = [{ profileId: 'p1', name: 'Ada', handle: 'ada', avatarUrl: null, role: 'admin' }]
+    events = [{ id: 'e1', slug: 'summer', title: 'Summer meetup', startsAt: '2026-08-01T00:00:00Z' }]
+    const data = await spaceBlockPickerData('space-1', 'river-aid', ['team', 'events'])
+    expect(data.team.items).toEqual([{ id: 'p1', label: 'Ada', href: '/people/ada' }])
+    expect(data.team.createHref).toBe('/spaces/river-aid/settings/members')
+    expect(data.team.createLabel).toBe('Add a team member')
+    expect(data.events.items).toEqual([{ id: 'e1', label: 'Summer meetup', href: '/events/summer' }])
+  })
+
+  it('an empty function still returns an entry (items: []) so the editor shows the create link', async () => {
+    const data = await spaceBlockPickerData('space-1', 'river-aid', ['events'])
+    expect(data.events).toBeDefined()
+    expect(data.events.items).toEqual([])
+    expect(data.events.createHref).toBeTruthy()
+  })
+
+  it('skips a non-function-backed block id', async () => {
+    const data = await spaceBlockPickerData('space-1', 'river-aid', ['heading'])
+    expect(data.heading).toBeUndefined()
+  })
+
+  it('binds every read to the passed spaceId (tenancy — no cross-space leak)', async () => {
+    ;(getSpaceById as unknown as { mockClear: () => void }).mockClear()
+    await spaceBlockPickerData('space-XYZ', 'river-aid', ['offerings'])
+    // The offerings list reads the Space row by the SAME id it was called with, never another space's.
+    for (const call of (getSpaceById as unknown as { mock: { calls: unknown[][] } }).mock.calls) {
+      expect(call[0]).toBe('space-XYZ')
+    }
+  })
+
+  it('is fail-safe: a reader throw yields that block an empty item list, never an escape', async () => {
+    eventsThrows = true
+    const data = await spaceBlockPickerData('space-1', 'river-aid', ['events'])
+    expect(data.events.items).toEqual([])
+  })
+})
+
+// ── existingFunctionBackedBlocks (item 6): the per-block palette gate ──────────────────────────────────
+
+describe('existingFunctionBackedBlocks', () => {
+  it('includes a function-backed block only when it exists (switch on + rows)', async () => {
+    team = [{ profileId: 'p1', name: 'Ada', handle: 'ada', avatarUrl: null, role: 'admin' }]
+    events = [{ id: 'e1', slug: 'summer', title: 'Summer meetup', startsAt: '2026-08-01T00:00:00Z' }]
+    const set = await existingFunctionBackedBlocks('space-1')
+    expect(set.has('team')).toBe(true)
+    expect(set.has('events')).toBe(true)
+    // Offerings has no rows here → not in the set (item 6 hides an empty Offerings block).
+    expect(set.has('offerings')).toBe(false)
+    // Circles has no rows → absent.
+    expect(set.has('circles')).toBe(false)
+  })
+
+  it('drops a function-backed block whose switch is OFF even with rows', async () => {
+    resolvedSpace = { id: 'space-1', slug: 'river-aid', entitlements: { members: false }, preferences: {} }
+    team = [{ profileId: 'p1', name: 'Ada', handle: 'ada', avatarUrl: null, role: 'admin' }]
+    const set = await existingFunctionBackedBlocks('space-1')
+    expect(set.has('team')).toBe(false)
   })
 })

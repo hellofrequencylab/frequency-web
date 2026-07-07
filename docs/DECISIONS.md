@@ -12301,11 +12301,72 @@ rewrites the design blocks (`block-content.ts`/`registry.ts`/`block-data-sources
 them — it only exports `FieldEditor` from `block-edit-panel.tsx` and adds its own module, so the surfaces are
 disjoint.
 
-## ADR-573: Business Importer P1, the research + verification pipeline (harvest, extract, verify)
+## ADR-573: Function-aware Space rail blocks — data-source picker field type, existing-function palette gate, real-item prepopulation
+
+**Status:** Accepted · corroborated by `lib/entity-blocks/block-content.ts` (the `picker` FieldType + its
+sanitize branch, the picker FieldDefs on the function-backed data blocks, `PICKER_DATA_BLOCK_IDS`,
+`pickerSelection` / `resolvePickedIds`), `lib/entity-blocks/block-data-sources.ts` (`blockCreateLabel`,
+`spaceBlockPickerData`, `existingFunctionBackedBlocks`), `lib/entity-blocks/space-blocks.ts` (the
+`functionAware` gate on `partitionSpaceBlocks`), `components/entity-blocks/controls/field-controls.tsx`
+(`PickerControl` + `BlockPickerData`), `components/entity-blocks/block-edit-panel.tsx` (the picker field
+branch), `app/(main)/spaces/[slug]/manage/rail-getters.ts` (the async layout seed carrying `pickerData` +
+the item-6 lock), and the five block components (offerings/events/team/journeys/circles) that honour the
+selection.
+
+**Context.** The rail block editor (ADR-516/529/542) offered every space section unconditionally and a data
+block rendered its whole live list with no way to feature a subset. The owner asked for three things: (5) a
+per-block picker of the space's OWN items with a "Create ..." link when the function is empty; (6) don't
+offer a function-backed block unless that function EXISTS (its switch is on AND it has items); (7) a
+function-backed block should pre-populate with the space's REAL items by default. The #1596 data registry
+already exposed `blockDataList` / `blockExists` / `blockCreateHref`; #1598 gave a declarative field-type
+system. This ADR composes those without a new read model or migration.
+
+**Decision.**
+- **Picker field type (item 5).** A new `picker` `FieldType` in the #1598 system. Its choices are NOT a
+  schema enum — they are the space's live items, resolved server-side and handed to the editor at runtime. The
+  stored value is a `string[]` of selected item ids (a narrowing + ordering); empty === show all. Declared on
+  the function-backed data blocks (offerings/events/team/journeys/circles) via a `pickerBlock` ref. The
+  sanitizer bounds + de-dupes the ids; the render intersects them with the block's live id set
+  (`resolvePickedIds`), so a stale / tampered id never renders. `PickerControl` is a token-only, a11y
+  checklist; an empty function shows a single "Create ..." link (`blockCreateHref` + `blockCreateLabel`).
+- **Existing-function palette gate (item 6).** `partitionSpaceBlocks` gains an optional `functionAware`
+  argument: a function-backed block absent from the space's EXISTING set (`existingFunctionBackedBlocks`:
+  switch on + rows) is locked, on top of the legacy `requiresFunction` switch gate. The space layout seed
+  getter (`buildLayoutData`, now async) resolves that set once and feeds it in, so the palette + bench never
+  offer an empty Offerings / Team / Events block.
+- **Real-item prepopulation (item 7).** The five function-backed block components already read live data;
+  each now also takes the picker `featuredIds` and applies `resolvePickedIds`, so an empty selection renders
+  every real item (the default) and a selection features only those, in order. Both the visitor render and the
+  owner preview flow through the same `renderSpaceBlock`, so they agree.
+
+**Tenancy + safety.** Every new read (`spaceBlockPickerData`, `existingFunctionBackedBlocks`) is bound to the
+passed `space_id` (the underlying registry readers filter by it) and is fail-safe: a reader that throws yields
+an empty item list / omits the block, never an escape. Authorization stays the caller's job — the rail getter
+gates to owner/admin before reading, and the pickers are seeded only into a manager's editor. No cross-space
+leak (a unit test asserts every store read uses the caller's space id).
+
+**Back-compat.** No migration (jsonb). The picker stores a sparse `string[]` dropped when empty; an old bag
+without it renders "show all". The `functionAware` arg is optional, so the member builder and any other
+`partitionSpaceBlocks` caller are unchanged. `BlockPickerData` is mirrored client-side in field-controls so no
+client bundle imports the `server-only` data registry.
+
+**Alternatives considered.** (1) Filter the live list inside a shared render wrapper rather than each block —
+rejected: the blocks key their items by different fields (offering title, event id, member profileId), so the
+intersection belongs where the id shape is known. (2) Bake the picker choices into the block schema — rejected:
+the choices are per-space live data, not a fixed enum. (3) Gate the palette purely on the `requiresFunction`
+switch — rejected: offerings/events/reviews carry no switch, so an empty section still showed (item 6's gap).
+
+**Consequences.** The Space rail now hides an empty function's block, offers a picker of the space's real
+items with a create-link empty state, and renders real items by default. Gate green: tsc, eslint, vitest (new
+picker-sanitize + `resolvePickedIds` + `spaceBlockPickerData` tenancy + item-6 partition tests), check:authz,
+check:menu, check:rls, check:canon, check:seo, build. Dev showcase at `/dev/editor-controls` gains the picker
++ its empty state.
+
+## ADR-574: Business Importer P1, the research + verification pipeline (harvest, extract, verify)
 
 **Status:** Accepted · implements ADR-569 P1 (docs/BUSINESS-IMPORTER.md §4/§6/§8). Builds on P0 (#1599,
-`lib/importer/schema.ts` + `map.ts` + `materialize.ts`). (ADR-571 and 572 were claimed concurrently by #1600
-and #1601, so this renumbered to 573 at merge.)
+`lib/importer/schema.ts` + `map.ts` + `materialize.ts`). (ADR-571/572/573 were claimed concurrently by
+#1600/#1601/#1603, so this renumbered to 574 at merge.)
 
 **Context.** P0 shipped the deterministic materializer that turns a hand-authored `BusinessProfile` into a
 seeded Space. P1 produces that profile from the web: harvest sources, extract a draft, and verify every
