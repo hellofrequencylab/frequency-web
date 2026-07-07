@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { X, Maximize2, Minimize2, Crosshair, LocateFixed } from 'lucide-react'
+import { X, Minimize2, Crosshair, LocateFixed } from 'lucide-react'
 import type { MapCircle, StarterMarker } from './circle-map'
 import { getApproxLocationByIP } from '@/lib/geolocation'
 import { projectStarterCircles, type StarterSeed } from '@/lib/circles/starter-projection'
@@ -108,30 +108,6 @@ export function FindNearMeButton({ className }: { className?: string }) {
     >
       <LocateFixed className="h-4 w-4" />
       {loading ? 'Locating…' : 'Find circles near me'}
-    </button>
-  )
-}
-
-// Square, non-interactive preview at the top of the right column. Click to open.
-// Hidden while expanded (the banner above is the map then).
-export function MapPreview() {
-  const ctx = useContext(MapCtx)
-  if (!ctx || (ctx.circles.length === 0 && ctx.starters.length === 0) || ctx.open) return null
-  return (
-    <button
-      type="button"
-      onClick={() => ctx.setOpen(true)}
-      aria-label="Open the circles map"
-      className="group relative block h-full w-full"
-    >
-      <div className="pointer-events-none h-full">
-        <CircleMap circles={ctx.circles} starters={ctx.starters} interactive={false} center={ctx.center} className="h-full min-h-[18rem] w-full overflow-hidden rounded-2xl border border-border" />
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-text/0 transition-colors group-hover:bg-text/10">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/95 px-3 py-1.5 text-xs font-semibold text-text shadow-sm">
-          <Maximize2 className="h-3.5 w-3.5 text-primary-strong" /> Explore the map
-        </span>
-      </div>
     </button>
   )
 }

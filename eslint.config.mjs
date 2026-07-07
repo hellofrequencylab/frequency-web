@@ -34,6 +34,19 @@ const eslintConfig = defineConfig([
             "Don't cast the admin client to untyped SupabaseClient (ADR-246). Use typed createAdminClient() and cast the specific payload/value. Genuinely-untyped cases may eslint-disable with a reason.",
         },
       ],
+      // Formalize the underscore-prefix convention the codebase already uses to mark a
+      // deliberately-unused binding (a required-by-signature arg, a destructure discard, a
+      // caught error we don't inspect). Only RELAXES the rule — a `_`-prefixed name is exempt —
+      // so it can never surface a new warning, and it keeps typed mock signatures + interface
+      // stubs lint-clean without per-line disables.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ]);
