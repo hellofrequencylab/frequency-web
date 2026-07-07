@@ -60,13 +60,13 @@ import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/
 //
 // ONE component, TWO shapes keyed off maxColumnsForKind(kind):
 //   • MEMBER (max 1 column) — a simple single-column BLOCK LIST (ADR-526 P1). No layout editor: no column
-//     control, no rows, no ratio. Each block is a strip with on/off, up/down, and a remove-to-bench control;
-//     an "Add block" picker appends one; a Bench tray holds the rest. The member profile is always a stacked
+//     control, no rows, no ratio. Each block is a strip with on/off, up/down, and a remove-to-Blocks control;
+//     an "Add block" picker appends one; a Blocks tray holds the rest. The member profile is always a stacked
 //     list, so the chrome (header image, identity, Standing card) owns the frame and the list owns content.
 //   • SPACE (max 2 columns) — the freeform ROWS editor (ADR-526 P2): collapsible row strips with a drag
 //     handle, a [1][2] column control, a 50/50 · 66/33 ratio toggle on a 2-column row, a collapse chevron
 //     and a row menu; each column slot is a pill holding a block (its own control cluster) or a "+ Add
-//     block" picker. A Bench tray holds the blocks not shown.
+//     block" picker. A Blocks tray holds the blocks not shown.
 //
 // Reorder is available THREE ways — drag, up/down arrows, and a "Move to" menu — with a real keyboard grab +
 // aria-live pattern (the primary touch / AT path). Guards on the store's `kind` so it never seeds the wrong
@@ -231,7 +231,7 @@ export function EntityPageBuilder({
   }
   function onRemoveRow(rowId: string, index: number) {
     mutate(removeRow(layout, rowId))
-    say(`Row ${index + 1} removed. Its blocks moved to the bench.`)
+    say(`Row ${index + 1} removed. Its blocks moved to Blocks.`)
     setOpenMenu(null)
   }
   function onMoveRow(from: number, to: number) {
@@ -265,7 +265,7 @@ export function EntityPageBuilder({
   }
   function onBench(blockId: string) {
     mutate(benchBlock(layout, blockId))
-    say(`${label(blockId)} moved to the bench.`)
+    say(`${label(blockId)} moved to Blocks.`)
     setOpenMenu(null)
   }
   function onToggleHide(blockId: string) {
@@ -832,8 +832,8 @@ export function EntityPageBuilder({
         })}
       </ol>
 
-      {/* Bench tray */}
-      <Bench
+      {/* Blocks tray (the "not shown" set) */}
+      <BlocksTray
         bench={bench}
         emptySlots={emptySlots}
         openMenu={openMenu}
@@ -1061,7 +1061,7 @@ function BlockPill({
                   {hidden ? 'Show' : 'Hide'}
                 </MenuItem>
                 <MenuItem onClick={onBench}>
-                  <Inbox className="h-3.5 w-3.5" aria-hidden /> Move to bench
+                  <Inbox className="h-3.5 w-3.5" aria-hidden /> Move to Blocks
                 </MenuItem>
                 <MenuItem onClick={onAskDelete} danger>
                   <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
@@ -1075,8 +1075,8 @@ function BlockPill({
   )
 }
 
-// ── The Bench tray ──
-function Bench({
+// ── The Blocks tray (the derived "not shown" set) ──
+function BlocksTray({
   bench,
   emptySlots,
   openMenu,
@@ -1104,7 +1104,7 @@ function Bench({
       >
         <span className="flex items-center gap-1.5 text-xs font-semibold text-text">
           {open ? <ChevronDown className="h-3.5 w-3.5" aria-hidden /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden />}
-          Bench (not shown)
+          Blocks (not shown)
           <span className="rounded-full bg-surface px-1.5 py-0.5 text-3xs font-semibold text-muted">{bench.length}</span>
         </span>
       </button>

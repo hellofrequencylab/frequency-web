@@ -7,7 +7,48 @@
 // Design tokens (DAWN): surface = white, marketing-canvas = cream, slat = warm
 // ink (dark). Never raw colors — selects compile to a fixed Tailwind set.
 
+import type { CSSProperties } from 'react'
 import { ImageField } from './image-field'
+import { SPOTLIGHT_FONTS, type SpotlightFontId } from '@/lib/spotlight/theme'
+
+// ── Header font (per-header display face) ─────────────────────────────────────
+// Every design block's header offers a font choice. The set is the marketing
+// display face (Anton) plus the four in-app editorial faces, reusing the same
+// self-hosted web fonts already loaded on <html> (app/layout.tsx) and mapped in
+// lib/spotlight/theme.ts. The value is a closed allowlist id; the resolver turns
+// it into an inline `fontFamily` style off the validated CSS-variable stack, so
+// no raw font string ever reaches the DOM. `display` (Anton) is the default,
+// matching the marketing headers.
+
+export type HeaderFontId = Extract<SpotlightFontId, 'display' | 'rounded' | 'serif' | 'grotesk' | 'script'>
+
+// The five faces a member may pick per header, in the order the design scope
+// lists them (display first, as the default). Labels name the face so the pick
+// reads like a real font menu, not an abstract token.
+const HEADER_FONT_LABELS: Record<HeaderFontId, string> = {
+  display: 'Display (Anton)',
+  rounded: 'Rounded (Nunito)',
+  serif: 'Serif (Playfair)',
+  grotesk: 'Grotesk (Space Grotesk)',
+  script: 'Script (Caveat)',
+}
+const HEADER_FONT_IDS: HeaderFontId[] = ['display', 'rounded', 'serif', 'grotesk', 'script']
+const FONT_STACK_BY_ID = new Map(SPOTLIGHT_FONTS.map((f) => [f.id, f.stack]))
+
+export const headerFontField = {
+  type: 'select' as const,
+  label: 'Header font',
+  options: HEADER_FONT_IDS.map((id) => ({ label: HEADER_FONT_LABELS[id], value: id })),
+}
+
+export const headerFontDefault: HeaderFontId = 'display'
+
+/** Inline style applying the chosen header face. Falls back to the Anton display
+ *  stack for any unknown value, so a tampered blob still renders a valid face. */
+export function headerFontStyle(value?: string): CSSProperties {
+  const id = (HEADER_FONT_IDS as string[]).includes(value ?? '') ? (value as HeaderFontId) : headerFontDefault
+  return { fontFamily: FONT_STACK_BY_ID.get(id) ?? FONT_STACK_BY_ID.get('display') }
+}
 
 // ── Universal "adjust" fields ────────────────────────────────────────────────
 

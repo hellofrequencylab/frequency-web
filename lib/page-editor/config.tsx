@@ -23,6 +23,8 @@ import { circlesComponents } from '@/components/page-editor/blocks/circles'
 import { linktreeComponents, LINKTREE_CATEGORY_COMPONENTS } from '@/components/page-editor/blocks/linktree'
 import { spacesComponents } from '@/components/page-editor/blocks/spaces'
 import { profileComponents } from '@/components/page-editor/blocks/profile'
+import { designComponents } from '@/components/page-editor/blocks/design'
+import { DESIGN_BLOCK_TYPES } from '@/lib/page-editor/block-limits'
 
 export const config: Config = {
   // ROOT render: on a SPACE page (identified by the injected `metadata.space`) the profile blocks are
@@ -54,9 +56,18 @@ export const config: Config = {
     ...linktreeComponents,
     ...spacesComponents,
     ...profileComponents,
+    ...designComponents,
   },
   // Left-bar grouping: standard page-builder taxonomy.
   categories: {
+    // The five reusable DESIGN BLOCKS (2026): the member-light, bolder story blocks any Space,
+    // Spotlight, or marketing page composes. Each may appear up to three times per page (the primary
+    // profile blocks below are one per page) — enforced in the Blocks palette (lib/page-editor/
+    // block-limits.ts). Order matches the design scope report.
+    blocks: {
+      title: 'Blocks',
+      components: [...DESIGN_BLOCK_TYPES],
+    },
     layout: {
       title: 'Layout',
       components: ['Container', 'Columns', 'Spacer', 'Divider'],
