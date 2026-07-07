@@ -1,10 +1,11 @@
 import { Suspense, type ReactNode } from 'react'
 import type { CommunityRole } from '@/lib/core/roles'
 import { loadLayoutForRoute } from '@/lib/page-settings/store'
-import { resolveSlots } from '@/lib/page-settings/layout'
+import { resolveSlots, resolveSlotHeaders } from '@/lib/page-settings/layout'
 import { getViewerCommunityRole } from '@/lib/page-settings/viewer-role'
 import { moduleIdsForScope } from '@/lib/widgets/modules'
 import { componentFor } from '@/lib/widgets/registry'
+import { SectionHeader } from '@/components/ui/section-header'
 import type { TemplateId } from '@/lib/widgets/templates'
 
 // The renderer for the per-route module-assignment engine (ADR-270/271/272). Resolves the
@@ -32,6 +33,8 @@ export async function PageModules({
   const config = await loadLayoutForRoute(route, spaceId)
   const viewerRole = role ?? (await getViewerCommunityRole())
   const bySlot = resolveSlots(config, moduleIds ?? moduleIdsForScope(route), viewerRole)
+  // Owner-toggled row headers (ADR-562), keyed by slot id — rendered above a row that has content.
+  const headerBySlot = resolveSlotHeaders(config)
 
   const total = Object.values(bySlot).reduce((n, ids) => n + ids.length, 0)
   if (total === 0) return null
@@ -39,15 +42,23 @@ export async function PageModules({
   const slot = (id: string): ReactNode => {
     const ids = bySlot[id]
     if (!ids || ids.length === 0) return null
-    return ids.map((moduleId) => {
-      const Component = componentFor(moduleId)
-      if (!Component) return null
-      return (
-        <Suspense key={moduleId} fallback={null}>
-          <Component />
-        </Suspense>
-      )
-    })
+    // A row header renders only above a row that has visible content, so a header never appears
+    // over an empty row. Semantic heading via the kit's SectionHeader (token classes, no hex).
+    const header = headerBySlot[id]
+    return (
+      <>
+        {header && <SectionHeader key={`${id}-header`} title={header} />}
+        {ids.map((moduleId) => {
+          const Component = componentFor(moduleId)
+          if (!Component) return null
+          return (
+            <Suspense key={moduleId} fallback={null}>
+              <Component />
+            </Suspense>
+          )
+        })}
+      </>
+    )
   }
 
   return <TemplateGrid template={config.template} slot={slot} />
