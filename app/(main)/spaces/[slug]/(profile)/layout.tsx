@@ -233,13 +233,20 @@ export default async function SpaceProfileChromeLayout({
   // The quiet social FOLLOW chip, factored out so it can sit ABOVE the name on desktop (in the lockup) and
   // move into the mobile action card below the cover (where every button lives on a phone). Null for a
   // signed-out visitor. `onInk` paints it for legibility over a Hero cover photo.
+  // A COMPACT Follow chip (owner ask): smaller than a standard sm button so it reads as the quiet social
+  // action sitting above the name, not competing with the primary CTA. tailwind-merge lets the tighter
+  // padding/size win over the base secondary tokens.
   const followButton = (onInk = false) =>
     viewerProfileId ? (
       <FollowSpaceButton
         spaceId={space.id}
         spaceName={brandName}
         initialFollowing={viewerFollows}
-        className={onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')}
+        className={
+          onInk
+            ? cn(onInkSecondaryClasses, 'gap-1 px-2.5 py-1 text-2xs')
+            : buttonClasses('secondary', 'sm', 'gap-1 px-2.5 py-1 text-2xs')
+        }
       />
     ) : null
 
@@ -342,8 +349,9 @@ export default async function SpaceProfileChromeLayout({
     <div className="min-w-0">
       {viewerProfileId && (
         // Desktop only: Follow sits above the name. On mobile it moves to the white action card under the
-        // cover (mobileActionBand), so the phone hero reads as a clean identity band.
-        <div className="mb-2 hidden sm:block">{followButton(onInk)}</div>
+        // cover (mobileActionBand), so the phone hero reads as a clean identity band. Tight `mb-1` so the
+        // Follow -> name -> tagline stack reads as one balanced block against the (bigger) avatar.
+        <div className="mb-1 hidden sm:block">{followButton(onInk)}</div>
       )}
       {/* The operator's optional EYEBROW: a small pre-text kicker above the name (editable in the pinned hero
           editor). Absent by default, so the lockup reads exactly as before for a Space with none. */}
@@ -377,10 +385,12 @@ export default async function SpaceProfileChromeLayout({
           {typeLabel}
         </span>
       </div>
-      {/* The tagline reads as part of the identity, not fine print. On the Hero cover it is hidden here on
-          mobile (taglineHiddenOnMobile) and relocated to its own full-width row below the avatar; on
-          desktop, and at the Header size, it stays inline under the name. */}
-      <div className={cn('mt-1.5 empty:hidden', taglineHiddenOnMobile && 'hidden sm:block')}>
+      {/* The tagline reads as part of the identity, not fine print. On the Hero cover it stays inline
+          under the name only at WIDE widths (lg+); below lg (narrow desktop + mobile) it is relocated to
+          its own full-width row below the buttons (taglineHiddenOnMobile), so the identity block stays a
+          clean Follow -> name that bottom-aligns with the avatar and never crowds the action row. At the
+          Header size (no taglineHiddenOnMobile) it always stays inline under the name. */}
+      <div className={cn('mt-1 empty:hidden', taglineHiddenOnMobile && 'hidden lg:block')}>
         {taglineNode(onInk)}
       </div>
     </div>
@@ -413,10 +423,11 @@ export default async function SpaceProfileChromeLayout({
               action card under the cover, so the phone hero holds only the identity. */}
           <div className="hidden pb-1 sm:block">{identityActions(heroOnInk)}</div>
         </div>
-        {/* Mobile only: the tagline drops to its own full-width row below the avatar + name lockup, so it
-            reads as a full line across the bottom instead of a cramped column beside the profile pic.
-            Desktop keeps it inline under the name (nameLockup), so this is suppressed there. */}
-        <div className="mt-3 empty:hidden sm:hidden">{taglineNode(heroOnInk)}</div>
+        {/* Below lg (mobile + narrow desktop): the tagline drops to its OWN full-width row spanning the
+            bottom, below the identity + the right-side action buttons, so it reads as a full line instead
+            of a cramped column beside the profile pic (owner ask). At lg+ it stays inline under the name
+            (nameLockup), so this is suppressed there. */}
+        <div className="mt-3 empty:hidden lg:hidden">{taglineNode(heroOnInk)}</div>
       </div>
     </div>
   )
@@ -532,13 +543,13 @@ function BrandAnchor({ name, logoUrl }: { name: string; logoUrl: string | null }
       <img
         src={logoUrl}
         alt=""
-        className="h-20 w-20 shrink-0 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md sm:h-24 sm:w-24"
+        className="h-20 w-20 shrink-0 rounded-2xl border-4 border-surface bg-surface object-contain shadow-md lg:h-28 lg:w-28"
       />
     )
   }
   return (
     <span
-      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md sm:h-24 sm:w-24"
+      className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-surface bg-surface-elevated text-2xl font-bold text-subtle shadow-md lg:h-28 lg:w-28 lg:text-3xl"
       aria-hidden
     >
       {getInitials(name)}
