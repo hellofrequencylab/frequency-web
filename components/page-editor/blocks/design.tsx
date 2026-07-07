@@ -79,22 +79,36 @@ function DesignHeading({
 const designHeaderFontField = headerFontField
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 01 · PhotoHero — the FULL-BLEED opener at the top of a page (2026 rebuild).
-// A large photograph fills the full content width and stands tall (near full-viewport height), with the
-// eyebrow / headline / subtitle / actions OVERLAID and centered ON the image. A legibility gradient scrim
-// (the profile cover pattern: an ink gradient bottom-to-top, on-ink text) keeps the copy readable on ANY
-// photo. `variant` image | wash | text-only; no image falls back to a warm accent wash and the copy reads
-// in the theme tokens (no scrim needed). `scrim` picks how heavy the ink veil is over a photo.
+// 01 · Banner (stored id `photoHero`) — the bold IN-PAGE opener (2026 → ADR-571).
+// A large photograph carries the eyebrow / headline / subtitle / actions in one of THREE content layouts:
+//   • overlay — copy OVER the photo, centered, on a legibility scrim (the profile-cover pattern).
+//   • beside  — the photo framed beside a text column (theme tokens, no scrim).
+//   • below   — the photo on top with the copy below it (theme tokens, no scrim).
+// `height` (short | medium | tall) sizes the OVERLAY / wash section; the beside/below layouts size the framed
+// photo instead. `variant` image | wash | text-only; no image falls back to a warm accent wash and the copy
+// reads in theme tokens. `scrim` picks how heavy the ink veil is over an overlay photo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PhotoHeroVariant = 'image' | 'wash' | 'text-only'
 type ScrimStep = 'light' | 'medium'
+/** How the copy sits relative to the photo (ADR-571 task 3). */
+export type BannerDisplay = 'overlay' | 'beside' | 'below'
+/** The section height for the overlay / wash layout (ADR-571 task 2). */
+export type BannerHeight = 'short' | 'medium' | 'tall'
 
 // The ink gradient scrim under the overlaid copy, at two strengths, so an on-ink headline clears the WCAG
 // ≥4.5:1 floor on any cover. Tokens only (ink), never a hardcoded hex — mirrors the profile cover hero.
 const SCRIM_CLASS: Record<ScrimStep, string> = {
   light: 'from-ink/75 via-ink/35 to-ink/20',
   medium: 'from-ink/90 via-ink/55 to-ink/30',
+}
+
+// The three OVERLAY / wash heights, as a token-only min-height pair (mobile floor → sm-and-up). Short reads
+// as a compact banner, tall as a near-full-viewport hero.
+const BANNER_HEIGHT_CLASS: Record<BannerHeight, string> = {
+  short: 'min-h-[40vh] py-16 sm:min-h-[45vh] sm:py-20',
+  medium: 'min-h-[55vh] py-20 sm:min-h-[60vh] sm:py-28',
+  tall: 'min-h-[70vh] py-24 sm:min-h-[80vh] sm:py-32',
 }
 
 export function PhotoHeroBlock({
@@ -110,6 +124,8 @@ export function PhotoHeroBlock({
   actionSecondaryLabel,
   actionSecondaryHref,
   scrim = 'light',
+  height = 'tall',
+  display = 'overlay',
   headerFont,
   layout,
 }: {
@@ -125,15 +141,20 @@ export function PhotoHeroBlock({
   actionSecondaryLabel?: string
   actionSecondaryHref?: string
   scrim?: ScrimStep
+  height?: BannerHeight
+  display?: BannerDisplay
   headerFont?: string
   layout?: LayoutValue
 }) {
-  const onPhoto = variant === 'image' && !!image
+  const hasImage = variant === 'image' && !!image
   // A no-link button still renders (buttons always show once labelled) — the operator wires the link
   // later, so a blank href falls back to '#'. Only an empty label hides a button.
   const hasActions = !!(actionPrimaryLabel || actionSecondaryLabel)
+
+  // The beside / below layouts read in the warm theme tokens (no scrim); only overlay-on-a-photo goes on-ink.
+  const onInk = hasImage && display === 'overlay'
   const actions = hasActions ? (
-    <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+    <div className={`mt-8 flex flex-wrap items-center gap-3 ${display === 'overlay' ? 'justify-center' : ''}`}>
       {actionPrimaryLabel && (
         <CtaButton href={actionPrimaryHref || '#'} label={actionPrimaryLabel} variant="primary" />
       )}
@@ -143,13 +164,12 @@ export function PhotoHeroBlock({
     </div>
   ) : null
 
-  // On a photo the copy reads on-ink over the scrim; on the wash it keeps the warm theme tokens.
-  const headingCls = onPhoto ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : undefined
-  const subtitleCls = onPhoto ? 'text-on-ink-muted' : 'text-muted'
+  const headingCls = onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : undefined
+  const subtitleCls = onInk ? 'text-on-ink-muted' : 'text-muted'
 
-  const inner = (
-    <div className="relative z-10 mx-auto flex min-h-[70vh] max-w-3xl flex-col items-center justify-center px-6 py-24 text-center sm:min-h-[80vh] sm:py-32">
-      {eyebrow && <Eyebrow ink={onPhoto}>{eyebrow}</Eyebrow>}
+  const copy = (centered: boolean) => (
+    <>
+      {eyebrow && <Eyebrow ink={onInk}>{eyebrow}</Eyebrow>}
       <DesignHeading
         title={title}
         accentWord={accentWord}
@@ -158,14 +178,45 @@ export function PhotoHeroBlock({
         as="h1"
         className={headingCls}
       />
-      {subtitle && <p className={`mx-auto mt-5 max-w-xl text-lg ${subtitleCls}`}>{subtitle}</p>}
+      {subtitle && (
+        <p className={`mt-5 max-w-xl text-lg ${centered ? 'mx-auto' : ''} ${subtitleCls}`}>{subtitle}</p>
+      )}
       {actions}
-    </div>
+    </>
   )
 
+  // ── beside / below: a framed photo next to (or above) the copy, theme tokens, no scrim. ──
+  if (display !== 'overlay') {
+    const framedMedia = hasImage ? (
+      <div className="overflow-hidden rounded-2xl border border-border shadow-pop">
+        <SiteImage src={image!} alt={alt ?? ''} aspect="4/3" className="w-full" />
+      </div>
+    ) : (
+      <div className="aspect-[4/3] w-full rounded-2xl border border-border bg-primary-bg" aria-hidden />
+    )
+    if (display === 'beside') {
+      return (
+        <section className={`rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
+          <div className="grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">
+            {framedMedia}
+            <div>{copy(false)}</div>
+          </div>
+        </section>
+      )
+    }
+    // below
+    return (
+      <section className={`rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
+        {framedMedia}
+        <div className="mt-8 text-center">{copy(true)}</div>
+      </section>
+    )
+  }
+
+  // ── overlay (default): copy centered over the photo / wash, sized by `height`. ──
   return (
     <section className={`relative overflow-hidden rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
-      {onPhoto ? (
+      {hasImage ? (
         <>
           {/* Full-bleed photo fills the section (next/image `fill` + object-cover, the profile cover
               pattern); alt is required in the editor. The ink gradient scrim sits over it so the overlaid
@@ -178,7 +229,11 @@ export function PhotoHeroBlock({
         // tokens. text-only reads as a calmer surface opener; both still stand tall as a real hero.
         <div className={`absolute inset-0 ${variant === 'text-only' ? 'bg-surface' : 'bg-primary-bg'}`} aria-hidden />
       )}
-      {inner}
+      <div
+        className={`relative z-10 mx-auto flex max-w-3xl flex-col items-center justify-center px-6 text-center ${BANNER_HEIGHT_CLASS[height]}`}
+      >
+        {copy(true)}
+      </div>
     </section>
   )
 }
@@ -588,14 +643,59 @@ export function AccentBeatBlock({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 06 · DisplayHeading — a large standalone DISPLAY title (ADR-571). The deliberate "big heading" text block:
+// an Anton (or serif / grotesk) display face at a bold clamp scale. Distinct from the plain member Heading
+// content block, which is a small semantic h2. The rail's C1 text-style bag layers size / weight / color /
+// shadow on top through the BlockStyleFrame; this component owns the base display treatment + font choice.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function DisplayHeadingBlock({
+  text,
+  accentWord,
+  font,
+}: {
+  text?: string
+  accentWord?: string
+  /** A validated header-font id (headerFontStyle falls any unknown value back to the Anton display stack). */
+  font?: string
+}) {
+  if (!text) return null
+  return (
+    <h2
+      className="font-display text-[clamp(2rem,6vw,3.75rem)] uppercase leading-[0.95] text-balance text-text"
+      style={headerFontStyle(font)}
+    >
+      {accentWord ? accentize(text, accentWord) : text}
+    </h2>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 07 · Prose — a styled body PARAGRAPH (ADR-571). The deliberate "body text" block: a comfortable reading
+// measure (~62ch) at a relaxed leading, splitting on blank lines into paragraphs. Distinct from the plain
+// member Text block, which is a single muted paragraph. The C1 text-style bag layers size / weight / color /
+// shadow on top through the BlockStyleFrame.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function ProseBlock({ text }: { text?: string }) {
+  if (!text) return null
+  return (
+    <div className="max-w-[62ch] space-y-4 text-lg leading-relaxed text-muted">{richParagraphs(text)}</div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMPONENT CONFIGS — registered in BOTH the shared block library (lib/page-editor/config.tsx) under
 // the "Blocks" category and consumed by the public <Render>. Every block threads the standard
 // blockFields() adjust controls through <Band> (or its own <section>) and offers the per-header font.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const designComponents: Record<string, ComponentConfig> = {
+  // The stored component-type key stays `PhotoHero` (existing pages keep rendering); only the operator-facing
+  // label is now "Banner" so it never reads like the profile "Top Page hero" (ADR-571). Height (task 2) and
+  // Content layout (task 3) join the field set.
   PhotoHero: {
-    label: 'Photo hero',
+    label: 'Banner',
     fields: {
       variant: {
         type: 'select',
@@ -613,6 +713,24 @@ export const designComponents: Record<string, ComponentConfig> = {
       title: { type: 'textarea', label: 'Headline' },
       accentWord: { type: 'text', label: 'Accent word (optional)' },
       subtitle: { type: 'textarea', label: 'Subtitle (optional)' },
+      height: {
+        type: 'radio',
+        label: 'Height',
+        options: [
+          { label: 'Short', value: 'short' },
+          { label: 'Medium', value: 'medium' },
+          { label: 'Tall', value: 'tall' },
+        ],
+      },
+      display: {
+        type: 'select',
+        label: 'Content',
+        options: [
+          { label: 'Over photo', value: 'overlay' },
+          { label: 'Beside photo', value: 'beside' },
+          { label: 'Below photo', value: 'below' },
+        ],
+      },
       scrim: {
         type: 'radio',
         label: 'Scrim',
@@ -638,6 +756,8 @@ export const designComponents: Record<string, ComponentConfig> = {
       title: 'Your headline goes here',
       accentWord: 'headline',
       subtitle: 'Add a line that says what this page is about.',
+      height: 'tall',
+      display: 'overlay',
       scrim: 'light',
       actionPrimaryLabel: 'Button text',
       actionPrimaryHref: '',
@@ -654,6 +774,8 @@ export const designComponents: Record<string, ComponentConfig> = {
       title,
       accentWord,
       subtitle,
+      height,
+      display,
       scrim,
       actionPrimaryLabel,
       actionPrimaryHref,
@@ -670,6 +792,8 @@ export const designComponents: Record<string, ComponentConfig> = {
         title={title as string}
         accentWord={accentWord as string}
         subtitle={subtitle as string}
+        height={height as BannerHeight}
+        display={display as BannerDisplay}
         scrim={scrim as ScrimStep}
         actionPrimaryLabel={actionPrimaryLabel as string}
         actionPrimaryHref={actionPrimaryHref as string}
@@ -990,6 +1114,50 @@ export const designComponents: Record<string, ComponentConfig> = {
           />
         </div>
       </section>
+    ),
+  },
+
+  // The two TEXT design blocks (ADR-571), also offered in the Puck library so both editors carry them.
+  DisplayHeading: {
+    label: 'Display heading',
+    fields: {
+      font: {
+        type: 'select',
+        label: 'Font',
+        options: [
+          { label: 'Display', value: 'display' },
+          { label: 'Serif', value: 'serif' },
+          { label: 'Grotesk', value: 'grotesk' },
+        ],
+      },
+      text: { type: 'textarea', label: 'Heading' },
+      accentWord: { type: 'text', label: 'Accent word (optional)' },
+    },
+    // Demo defaults that EXPLAIN the slot (Fix 7): prompt copy, not real marketing.
+    defaultProps: {
+      font: 'display',
+      text: 'Your big heading',
+      accentWord: 'big',
+    },
+    render: ({ font, text, accentWord }) => (
+      <Band tone="none" width="wide" align="left">
+        <DisplayHeadingBlock text={text as string} accentWord={accentWord as string} font={font as string} />
+      </Band>
+    ),
+  },
+
+  Prose: {
+    label: 'Prose',
+    fields: {
+      text: { type: 'textarea', label: 'Paragraph' },
+    },
+    defaultProps: {
+      text: 'Write a paragraph of body text here. Say what you do, in plain and honest sentences.',
+    },
+    render: ({ text }) => (
+      <Band tone="none" width="wide" align="left">
+        <ProseBlock text={text as string} />
+      </Band>
     ),
   },
 }

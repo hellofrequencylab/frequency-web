@@ -244,12 +244,29 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // / url / images / links / features, so each block exposes its CORE authored content through those types;
   // the richer Puck-only controls (variant, scrim, body mode, per-card repeaters) keep sensible defaults in
   // the render adapter (space-profile-modules.tsx) until the arranger grows those field types.
+  // The Banner (stored id `photoHero`). ADR-571 adds a HEIGHT primitive (Short | Medium | Tall) and a
+  // DISPLAY segmented (how the copy sits relative to the photo: over it, beside it, or below it). Both are
+  // declared FieldDefs — the editor renders the shared primitive control and the sanitizer validates the
+  // stored value against the same declaration, so no bespoke panel JSX is needed (ADR-569 C6). The render
+  // adapter (design-block-view.tsx) reads both and passes them to the PhotoHeroBlock component.
   photoHero: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },
     { key: 'title', label: 'Headline', type: 'textarea', placeholder: 'The big opener' },
     { key: 'subtitle', label: 'Subtitle', type: 'textarea', placeholder: 'A line under the headline' },
     { key: 'image', label: 'Background photo', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Photo description', type: 'text', placeholder: 'Describe the photo' },
+    { key: 'height', label: 'Height', type: 'height', defaultValue: 'medium' },
+    {
+      key: 'display',
+      label: 'Content',
+      type: 'segmented',
+      defaultValue: 'overlay',
+      options: [
+        { value: 'overlay', label: 'Over photo' },
+        { value: 'beside', label: 'Beside photo' },
+        { value: 'below', label: 'Below photo' },
+      ],
+    },
     { key: 'buttonOn', label: 'Show button', type: 'toggle', default: true },
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Get started' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
@@ -281,6 +298,27 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'buttonOn', label: 'Show button', type: 'toggle', default: true },
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Join now' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
+  ],
+  // The two TEXT design blocks (ADR-571). Each carries a single authored string plus its font choice; the
+  // rich size / weight / color / shadow live on the shared C1 text-style bag (blockBearsText → the editor's
+  // Text style group), so the block schema stays a single content field. The `font` segmented lets the
+  // operator pick the display face for the heading and the reading face for prose (both token-safe ids).
+  displayHeading: [
+    { key: 'text', label: 'Heading', type: 'textarea', placeholder: 'A big, bold title' },
+    {
+      key: 'font',
+      label: 'Font',
+      type: 'segmented',
+      defaultValue: 'display',
+      options: [
+        { value: 'display', label: 'Display' },
+        { value: 'serif', label: 'Serif' },
+        { value: 'grotesk', label: 'Grotesk' },
+      ],
+    },
+  ],
+  prose: [
+    { key: 'text', label: 'Paragraph', type: 'textarea', placeholder: 'Write a paragraph of body text' },
   ],
 }
 
@@ -320,8 +358,10 @@ export function isContentBlock(block: EntityBlockDef): boolean {
 const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set([
   'callout',
   'features',
-  // The design blocks own their full section frame (photo, cards, accent wash), so the Background toggle
-  // defaults ON and turning it off strips the frame — true to what is on the page.
+  // The SECTION design blocks own their full section frame (photo, cards, accent wash), so the Background
+  // toggle defaults ON and turning it off strips the frame — true to what is on the page. The two TEXT design
+  // blocks (displayHeading / prose, ADR-571) are flat text and draw NO card, so they are deliberately absent
+  // (their Background toggle defaults off, matching Heading / Text).
   'photoHero',
   'editorial',
   'cardGrid',
@@ -362,6 +402,9 @@ const TEXT_BEARING_BLOCK_IDS: ReadonlySet<string> = new Set([
   'cardGrid',
   'zigzag',
   'accentBeat',
+  // The two text design blocks (ADR-571) are text-first, so they lead with the C1 text-style controls.
+  'displayHeading',
+  'prose',
 ])
 
 /** Whether a block bears authored text and so exposes the C1 text-style controls (size / weight / align /

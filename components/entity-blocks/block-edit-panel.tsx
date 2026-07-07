@@ -620,9 +620,12 @@ function LinksEditor({
   )
 }
 
-/** The per-block STYLE controls: the prominent Background switch (item 6) + padding + alignment, in one
- *  collapsible group. Background defaults to what is on the page (a self-carding box reads on; a plain block
- *  reads off); turning it off strips the white card, on gives a bare block one. */
+/** The per-block STYLE controls (ADR-571 cleanup). ALIGNMENT is promoted to a DIRECT top-level Left | Center |
+ *  Right icon-group (task 6) — it is no longer buried inside the "Style" disclosure, and it never sat in a
+ *  dropdown. The legacy None | S | M | L PADDING selector is removed (task 5): block spacing is owned by the
+ *  C3 Spacing group (top / bottom margin) and the Background switch, so a redundant inner-padding step only
+ *  duplicated that concept. The "Style" disclosure now holds just the Background switch (a self-carding box
+ *  reads on; a plain block reads off — turning it off strips the white card, on gives a bare block one). */
 function StyleControls({
   id,
   style,
@@ -641,31 +644,20 @@ function StyleControls({
     else next.background = bg
     onChange(next)
   }
-  const set = (patch: Partial<BlockStyle>) => {
-    const next: BlockStyle = { ...style, ...patch }
-    if (next.pad === 'none') delete next.pad
+  const setAlign = (v: AlignValue) => {
+    const next: BlockStyle = { ...style, align: v }
     if (next.align === 'start') delete next.align
     onChange(next)
   }
   return (
-    <ControlGroup label="Style">
-      <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
-      <ControlRow label="Padding">
-        <Segmented
-          ariaLabel="Padding"
-          options={[
-            { value: 'none', label: 'None' },
-            { value: 'sm', label: 'S' },
-            { value: 'md', label: 'M' },
-            { value: 'lg', label: 'L' },
-          ]}
-          value={style.pad ?? 'none'}
-          onSelect={(v) => set({ pad: v as BlockStyle['pad'] })}
-        />
-      </ControlRow>
+    <>
+      {/* Alignment reads as a direct icon-group row, not nested in a dropdown (task 6). */}
       <ControlRow label="Align">
-        <AlignControl value={(style.align ?? 'start') as AlignValue} onSelect={(v) => set({ align: v })} />
+        <AlignControl value={(style.align ?? 'start') as AlignValue} onSelect={setAlign} />
       </ControlRow>
-    </ControlGroup>
+      <ControlGroup label="Style">
+        <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
+      </ControlGroup>
+    </>
   )
 }

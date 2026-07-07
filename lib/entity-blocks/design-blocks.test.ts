@@ -6,7 +6,12 @@ import {
   blocksForKind,
   profilePaletteForKind,
 } from './registry'
-import { fieldsForBlock, blockDrawsOwnCard, sanitizeBlockContent } from './block-content'
+import { fieldsForBlock, blockDrawsOwnCard, blockBearsText, sanitizeBlockContent } from './block-content'
+
+// The SECTION design blocks own a full frame (photo / cards / accent wash) so their Background toggle
+// defaults on. The two TEXT design blocks (ADR-571) are flat text (no card), like Heading / Text.
+const SECTION_DESIGN_IDS = ['photoHero', 'editorial', 'cardGrid', 'zigzag', 'accentBeat'] as const
+const TEXT_DESIGN_IDS = ['displayHeading', 'prose'] as const
 
 // The five design blocks (2026) are now offered in the on-page rail arranger (ADR-565). These lock the
 // registry wiring so the blocks stay AVAILABLE in the space palette and their authored fields survive the
@@ -44,10 +49,41 @@ describe('design blocks in the entity-block registry (ADR-565)', () => {
     }
   })
 
-  it('treats each design block as self-carding (Background toggle defaults on)', () => {
-    for (const id of DESIGN_ENTITY_BLOCK_IDS) {
+  it('treats each SECTION design block as self-carding (Background toggle defaults on)', () => {
+    for (const id of SECTION_DESIGN_IDS) {
       expect(blockDrawsOwnCard(id), id).toBe(true)
     }
+  })
+
+  it('treats the two TEXT design blocks as flat (no card) and text-bearing (ADR-571)', () => {
+    for (const id of TEXT_DESIGN_IDS) {
+      expect(blockDrawsOwnCard(id), id).toBe(false)
+      expect(blockBearsText(id), id).toBe(true)
+    }
+  })
+
+  it('gives the Banner a height + content-layout primitive (ADR-571 tasks 2 + 3)', () => {
+    const keys = fieldsForBlock('photoHero').map((f) => f.key)
+    expect(keys).toContain('height')
+    expect(keys).toContain('display')
+    const height = fieldsForBlock('photoHero').find((f) => f.key === 'height')
+    expect(height?.type).toBe('height')
+    const display = fieldsForBlock('photoHero').find((f) => f.key === 'display')
+    expect(display?.type).toBe('segmented')
+    expect(display?.options?.map((o) => o.value)).toEqual(['overlay', 'beside', 'below'])
+  })
+
+  it('sanitizes the Banner height + display to their allowed sets (drops garbage + defaults)', () => {
+    const clean = sanitizeBlockContent('photoHero', {
+      title: 'Hi',
+      height: 'tall',
+      display: 'beside',
+    })
+    expect(clean).toMatchObject({ height: 'tall', display: 'beside' })
+    // default value is dropped (sparse), garbage is dropped
+    const sparse = sanitizeBlockContent('photoHero', { title: 'Hi', height: 'medium', display: 'sideways' })
+    expect(sparse).not.toHaveProperty('height') // matches default `medium`
+    expect(sparse).not.toHaveProperty('display') // not an allowed value
   })
 
   it('sanitizes a design block bag to its schema (keeps known fields, drops unknown)', () => {
