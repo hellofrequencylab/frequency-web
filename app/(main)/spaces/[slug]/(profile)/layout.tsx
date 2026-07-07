@@ -303,7 +303,30 @@ export default async function SpaceProfileChromeLayout({
   // The name + type badge + tagline lockup, with FOLLOW sitting ABOVE the name (a compact chip, the
   // quiet social action that belongs with the identity rather than in the primary action row). `onInk`
   // paints the whole lockup for legibility over a Hero cover photo.
-  const nameLockup = (onInk = false) => (
+  // The tagline "say what you do" line (or, for an owner with none, a gentle prompt to add one).
+  // Extracted from the lockup so the Hero cover can relocate it to its own full-width row below the
+  // identity on mobile, while desktop keeps it inline under the name. Renders nothing for a visitor on
+  // a Space with no tagline, so wrappers can `empty:hidden` to collapse the reserved space.
+  const taglineNode = (onInk = false) =>
+    tagline ? (
+      <p className={cn('max-w-2xl text-base font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
+        {tagline}
+      </p>
+    ) : (
+      canSeeAsOwner && (
+        <Link
+          href={`${base}/settings/basics`}
+          className={cn(
+            'inline-block max-w-2xl text-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
+            onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',
+          )}
+        >
+          Add a tagline. Say what you do.
+        </Link>
+      )
+    )
+
+  const nameLockup = (onInk = false, taglineHiddenOnMobile = false) => (
     <div className="min-w-0">
       {viewerProfileId && (
         // Desktop only: Follow sits above the name. On mobile it moves to the white action card under the
@@ -330,26 +353,12 @@ export default async function SpaceProfileChromeLayout({
           {typeLabel}
         </span>
       </div>
-      {/* The tagline is the "say what you do" line, given a touch more presence (text-base, medium) so it
-          reads as part of the identity, not fine print. When it is empty and you are the owner, a gentle
-          prompt invites you to add one (links to the Basics editor); a visitor sees nothing. */}
-      {tagline ? (
-        <p className={cn('mt-1.5 max-w-2xl text-base font-medium', onInk ? 'text-on-ink' : 'text-muted')}>
-          {tagline}
-        </p>
-      ) : (
-        canSeeAsOwner && (
-          <Link
-            href={`${base}/settings/basics`}
-            className={cn(
-              'mt-1.5 inline-block max-w-2xl text-sm font-medium underline decoration-dashed underline-offset-4 transition-colors',
-              onInk ? 'text-on-ink-muted hover:text-on-ink' : 'text-muted hover:text-text',
-            )}
-          >
-            Add a tagline. Say what you do.
-          </Link>
-        )
-      )}
+      {/* The tagline reads as part of the identity, not fine print. On the Hero cover it is hidden here on
+          mobile (taglineHiddenOnMobile) and relocated to its own full-width row below the avatar; on
+          desktop, and at the Header size, it stays inline under the name. */}
+      <div className={cn('mt-1.5 empty:hidden', taglineHiddenOnMobile && 'hidden sm:block')}>
+        {taglineNode(onInk)}
+      </div>
     </div>
   )
 
@@ -374,12 +383,16 @@ export default async function SpaceProfileChromeLayout({
             <div className="shrink-0">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
-            <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
+            <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
           </div>
           {/* Desktop only: the action row overlays the cover bottom-right. On mobile it moves to the white
               action card under the cover, so the phone hero holds only the identity. */}
           <div className="hidden pb-1 sm:block">{identityActions(heroOnInk)}</div>
         </div>
+        {/* Mobile only: the tagline drops to its own full-width row below the avatar + name lockup, so it
+            reads as a full line across the bottom instead of a cramped column beside the profile pic.
+            Desktop keeps it inline under the name (nameLockup), so this is suppressed there. */}
+        <div className="mt-3 empty:hidden sm:hidden">{taglineNode(heroOnInk)}</div>
       </div>
     </div>
   )
