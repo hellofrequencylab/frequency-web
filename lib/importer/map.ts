@@ -352,7 +352,10 @@ export function mapEvents(profile: BusinessProfile): EventRow[] {
  *  softer narrative + community sections. So a visitor sees WHAT this is, WHAT it offers, and HOW to reach
  *  it before the story — and the page always leads with substance, not filler. */
 const DEFAULT_ORDER: readonly string[] = [
-  'photoHero', // name + tagline + PRIMARY image (the hero)
+  // NOTE: `photoHero` (the in-page Banner) is intentionally NOT auto-placed. The Space's COVER already
+  // shows the hero (the primary image + name + tagline), so a second in-page banner is a duplicate hero
+  // (and, once images are re-ordered, shows the wrong photo). photoHero stays a valid block an operator
+  // can add by hand (it is in MANAGED_BLOCKS), just not seeded.
   'about', //     what this business is
   'offerings', // what it sells (core)
   'contact', //   how + when to reach it (core) — near the top, not buried
@@ -365,6 +368,10 @@ const DEFAULT_ORDER: readonly string[] = [
   'faq',
   'links', //     find them online
 ]
+
+/** The full allowlist of space blocks the composer MANAGES (may place from a layoutHint) — the default
+ *  auto-order above PLUS `photoHero`, which stays placeable by hand but is never auto-seeded. */
+const MANAGED_BLOCKS: ReadonlySet<string> = new Set([...DEFAULT_ORDER, 'photoHero'])
 
 /** Whether a block has content to show for this draft UNDER the policy, so the composer only places
  *  blocks that will render something a viewer is allowed to see. Prose blocks (about/story) are not
@@ -425,7 +432,7 @@ export function composeBlockOrder(profile: BusinessProfile, policy: CommercialPo
   const out: string[] = []
   for (const id of source) {
     if (seen.has(id)) continue
-    if (!DEFAULT_ORDER.includes(id)) continue // only known space blocks the composer manages
+    if (!MANAGED_BLOCKS.has(id)) continue // only known space blocks the composer manages
     if (!blockHasContent(id, profile, policy)) continue
     seen.add(id)
     out.push(id)

@@ -27,8 +27,9 @@ const FEATURE = 'seed-compose'
 /** The blocks the composer may place, with best-practice WHEN-TO-USE guidance. The model chooses from
  *  THIS allowlist only (a returned id not here is dropped), so the composition can never invent a block. */
 const COMPOSER_BLOCKS: { id: string; use: string }[] = [
-  { id: 'photoHero', use: 'A bold in-page BANNER: eyebrow + big headline + a short subtitle over a background photo. A strong section opener; use once near the top.' },
-  { id: 'editorial', use: 'A heading over a paragraph or two. Best for the About / what-this-is section.' },
+  // NOTE: no `photoHero` (in-page Banner). The Space's COVER already IS the hero (the primary image +
+  // name + tagline), so a Banner block would be a duplicate hero. Lead with `editorial` instead.
+  { id: 'editorial', use: 'A heading over a paragraph or two. The OPENER — best for the About / what-this-is section.' },
   { id: 'features', use: 'A set of 3 to 4 value props, each an icon + short title + one line. Best for "why choose us" / the differentiators.' },
   { id: 'cardGrid', use: 'A heading over a row of cards. Best for showing the offerings / services as cards.' },
   { id: 'zigzag', use: 'A photo beside a column of text. Great for a story beat with a photo.' },
@@ -47,7 +48,7 @@ const COMPOSER_BLOCKS: { id: string; use: string }[] = [
 
 const COMPOSER_BLOCK_IDS = new Set(COMPOSER_BLOCKS.map((b) => b.id))
 /** The design blocks whose COPY the composer authors (the rest are DATA blocks that render live data). */
-const AUTHORED_BLOCKS = new Set(['photoHero', 'editorial', 'features', 'cardGrid', 'zigzag', 'accentBeat', 'prose'])
+const AUTHORED_BLOCKS = new Set(['editorial', 'features', 'cardGrid', 'zigzag', 'accentBeat', 'prose'])
 
 /** One section the composer returns. The block id is validated against the allowlist; `imageIndex` is an
  *  index into the SELECTABLE photos (the non-cover gallery), resolved to a URL server-side. */
@@ -241,11 +242,11 @@ const SYSTEM = `You are a top-level web designer building a business's marketing
 You are given the business brief, the available page BLOCKS (with when-to-use notes), and how many PHOTOS are available.
 Design the best-practice page: choose the blocks that fit THIS business, order them top to bottom, and write the copy.
 Rules, follow exactly:
-- Choose from the given blocks only. Use each block AT MOST ONCE. Aim for 6 to 10 sections.
-- Lead with the business + core info (a banner, what it is, what it offers, how to reach it) before the softer story.
-- Write copy ONLY from the brief. NEVER invent a fact, a price, a statistic, or a health/medical claim. Plain sentences, no hype, no jargon, no emoji, no em dashes.
-- For a features/cardGrid, write a short title + one plain line per item. For a banner/zigzag, you may reference a photo by its 0-based index (omit if none fits).
-- Prefer the design blocks (Banner, Card grid, Zigzag, Accent beat, Features, Text Block) to make it feel like a real marketing page, intermixed with the data blocks (Contact, Booking, FAQ) that fit.
+- Choose from the given blocks only. Use each block AT MOST ONCE. Aim for a FULL page: 8 to 11 sections.
+- Lead with core info (what it is, what it offers, how to reach it) before the softer story. The Space cover already shows the hero image + name, so do NOT open with a banner.
+- Make it feel like a real marketing page: unless the brief truly lacks the material, INCLUDE a Features section (3 to 4 value props), a Card grid of the offerings, a Zigzag story beat with a photo, the photo Gallery, an Accent beat call-to-action, and the fitting data blocks (Contact, FAQ, Booking, Business presence). Intermix a Text Block write-up if it adds something new.
+- Write copy ONLY from the brief. NEVER invent a fact, a price, a statistic, or a health/medical claim, and never repeat the same sentence across two blocks. Plain sentences, no hype, no jargon, no emoji, no em dashes.
+- For a features/cardGrid, write a short title + one plain line per item. For a zigzag, reference a photo by its 0-based index (omit if none fits).
 Return the page via the compose_page tool.`
 
 /**

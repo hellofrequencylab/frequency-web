@@ -202,9 +202,11 @@ describe('composeBlockOrder / mapBlockContent — Importer v2 default order + ga
     media: { heroPath: 'https://cdn.example/hero.jpg', gallery: ['https://cdn.example/g1.jpg', 'https://cdn.example/g2.jpg'] },
   }
 
-  it('leads with core info (hero → about → offerings) and puts contact before the story', () => {
+  it('leads with core info (about → offerings) and puts contact before the story; no duplicate hero banner', () => {
     const order = composeBlockOrder(withGallery)
-    expect(order.slice(0, 3)).toEqual(['photoHero', 'about', 'offerings'])
+    expect(order.slice(0, 3)).toEqual(['about', 'offerings', 'contact'])
+    // The in-page Banner is never auto-seeded (the cover is the hero) — no duplicate hero.
+    expect(order).not.toContain('photoHero')
     expect(order.indexOf('contact')).toBeLessThan(order.indexOf('story'))
     expect(order).toContain('gallery')
   })

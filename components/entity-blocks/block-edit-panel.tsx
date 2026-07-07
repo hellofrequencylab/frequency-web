@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
@@ -393,9 +394,10 @@ function MarginGroup({ style, onChange }: { style: BlockStyle; onChange: (next: 
   )
 }
 
-/** The image-list editor (ADR-542): the pasteable "one URL per line" textarea PLUS an Upload control that
- *  appends each uploaded image's URL, so a single "Image gallery" block takes one or many images by upload
- *  or link. Empty lines are dropped; the value is always a clean string[]. */
+/** The image-gallery editor (ADR-542): a visual grid of the gallery's images with DRAG-to-reorder,
+ *  per-image DELETE, and up/down buttons (keyboard + a11y fallback for the drag), plus the Upload control
+ *  and a collapsible "one URL per line" box for adding/editing by link. The first image leads the gallery.
+ *  The value is always a clean string[]. */
 function ImagesEditor({
   label,
   value,
@@ -408,17 +410,82 @@ function ImagesEditor({
   onChange: (v: unknown) => void
 }) {
   const urls: string[] = Array.isArray(value) ? (value as unknown[]).filter((v): v is string => typeof v === 'string') : []
-  const text = urls.join('\n')
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+
+  const move = (i: number, delta: -1 | 1) => {
+    const j = i + delta
+    if (j < 0 || j >= urls.length) return
+    const next = [...urls]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    onChange(next)
+  }
+  const removeAt = (i: number) => onChange(urls.filter((_, k) => k !== i))
+  const drop = (target: number) => {
+    if (dragIndex === null || dragIndex === target) return setDragIndex(null)
+    const next = [...urls]
+    const [moved] = next.splice(dragIndex, 1)
+    next.splice(target, 0, moved)
+    onChange(next)
+    setDragIndex(null)
+  }
+
   return (
     <div className="space-y-1.5">
-      <span className={labelCls}>{label}</span>
-      <textarea
-        rows={3}
-        value={text}
-        placeholder="One image URL per line"
-        onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
-        className={inputCls}
-      />
+      <span className={labelCls}>
+        {label}
+        {urls.length > 0 && <span className="font-normal text-muted"> · {urls.length}</span>}
+      </span>
+
+      {urls.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {urls.map((url, i) => (
+            <div
+              key={`${url}-${i}`}
+              draggable
+              onDragStart={() => setDragIndex(i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => drop(i)}
+              onDragEnd={() => setDragIndex(null)}
+              className={`group relative aspect-square cursor-grab overflow-hidden rounded-lg border ${dragIndex === i ? 'border-primary opacity-60' : 'border-border'}`}
+            >
+              {/* Unoptimized: gallery images come from Supabase Storage, not the configured next/image domains. */}
+              <Image src={url} alt="" width={160} height={160} unoptimized className="pointer-events-none h-full w-full object-cover" />
+              {i === 0 && (
+                <span className="absolute left-1 top-1 rounded bg-black/60 px-1 py-0.5 text-2xs font-semibold text-white">First</span>
+              )}
+              <button
+                type="button"
+                onClick={() => removeAt(i)}
+                aria-label="Remove image"
+                className="absolute right-1 top-1 rounded-full bg-black/60 p-0.5 text-white opacity-0 transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+              <div className="absolute inset-x-1 bottom-1 flex items-center justify-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  aria-label="Move earlier"
+                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === urls.length - 1}
+                  aria-label="Move later"
+                  className="rounded bg-black/60 p-0.5 text-white hover:bg-black/80 disabled:opacity-30"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {uploadImage && (
         <UploadButton
           uploadImage={uploadImage}
@@ -427,6 +494,17 @@ function ImagesEditor({
           onUploaded={(added) => onChange([...urls, ...added])}
         />
       )}
+
+      <details className="text-2xs text-muted">
+        <summary className="cursor-pointer select-none">Add or edit by URL</summary>
+        <textarea
+          rows={3}
+          value={urls.join('\n')}
+          placeholder="One image URL per line"
+          onChange={(e) => onChange(e.target.value.split('\n').map((s) => s.trim()).filter(Boolean))}
+          className={`${inputCls} mt-1`}
+        />
+      </details>
     </div>
   )
 }
