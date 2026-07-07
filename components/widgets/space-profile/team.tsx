@@ -2,6 +2,7 @@ import Image from 'next/image'
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { getInitials } from '@/lib/utils'
+import { resolvePickedIds } from '@/lib/entity-blocks/block-content'
 import { ModuleSection } from './section'
 
 // TEAM — the people who run this space. Reads the team roster off the data bag (getSpaceTeam: active
@@ -10,12 +11,19 @@ import { ModuleSection } from './section'
 export function TeamBlock({
   data,
   header,
+  featuredIds,
 }: {
   space: SpaceProfileContext
   data: SpaceContentData
   header?: { eyebrow?: string; heading?: string }
+  featuredIds?: string[]
 }) {
-  const team = data.team ?? []
+  const roster = data.team ?? []
+  // The picker (ADR-572 item 5) features only the chosen members, in order; empty === show all (item 7).
+  // The picker keys a member by profileId, matching listTeam in the data registry.
+  const picked = resolvePickedIds(featuredIds ?? [], roster.map((m) => m.profileId))
+  const byId = new Map(roster.map((m) => [m.profileId, m]))
+  const team = picked.map((id) => byId.get(id)).filter((m): m is (typeof roster)[number] => Boolean(m))
   if (team.length === 0) return null
   return (
     <ModuleSection anchor="team">

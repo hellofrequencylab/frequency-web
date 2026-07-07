@@ -55,6 +55,7 @@ import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-g
 import { useProfileLayout } from './profile-layout-context'
 import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
+import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
@@ -89,6 +90,9 @@ export interface BuilderRailData {
   hidden: string[]
   customized: boolean
   lockedIds?: string[]
+  /** The edit-panel PICKER payload per function-backed block (ADR-572 item 5): the Space's live items + the
+   *  create link. Absent on the member builder (no function-backed blocks). */
+  pickerData?: Record<string, BlockPickerData>
 }
 
 export function EntityPageBuilder({
@@ -120,6 +124,7 @@ export function EntityPageBuilder({
   const [loading, setLoading] = useState(true)
   const [matchId, setMatchId] = useState<string | null>(null)
   const [lockedIds, setLockedIds] = useState<string[]>([])
+  const [pickerData, setPickerData] = useState<Record<string, BlockPickerData>>({})
   const [customized, setCustomized] = useState(false)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [openMenu, setOpenMenu] = useState<string | null>(null)
@@ -165,6 +170,7 @@ export function EntityPageBuilder({
       if (!active) return
       setMatchId(d?.matchId ?? null)
       setLockedIds(d?.lockedIds ?? [])
+      setPickerData(d?.pickerData ?? {})
       setCustomized(!!d?.customized)
       if (d && store?.kind === kind) store.seed(d.rows, d.hidden)
       setLoading(false)
@@ -505,6 +511,7 @@ export function EntityPageBuilder({
         style={store.style[id] ?? {}}
         hidden={layout.hidden.includes(id)}
         editHref={editHrefFor?.(id) ?? null}
+        pickerData={pickerData[id]}
         uploadImage={uploadImage}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
@@ -924,7 +931,14 @@ export function SpacePageBuilder({ slug, seed }: { slug: string; seed?: BuilderR
   const load = useCallback(async (): Promise<BuilderRailData | null> => {
     const d = await getSpaceLayoutRailData(slug)
     return d
-      ? { matchId: d.slug, rows: d.rows, hidden: d.hidden, customized: d.customized, lockedIds: d.lockedIds }
+      ? {
+          matchId: d.slug,
+          rows: d.rows,
+          hidden: d.hidden,
+          customized: d.customized,
+          lockedIds: d.lockedIds,
+          pickerData: d.pickerData,
+        }
       : null
   }, [slug])
   // The block editor's image fields (Callout image, Image gallery) upload through the SAME owner-gated,

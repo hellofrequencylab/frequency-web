@@ -152,6 +152,14 @@ export type FieldType =
   | 'color'
   | 'shadow'
   | 'margin'
+  // Function-aware DATA-SOURCE picker (ADR-572, item 5): a multi-select of the Space's own live items for a
+  // function-backed block (which offerings / events / team members to feature). Its choices are NOT a fixed
+  // enum baked into the schema — they are the Space's real data, resolved server-side (blockDataList) and
+  // handed to the editor at runtime. The stored value is a `string[]` of the SELECTED item ids (a narrowing
+  // + ordering of the block's items); an EMPTY / absent value means "show every item" (the function's live
+  // default, item 7). A tampered id can only ever be a bounded string here; the render intersects it with
+  // the block's live id set, so no unknown id reaches the page.
+  | 'picker'
 
 /** The value set a `height` field accepts (3-way selector, C6). */
 export const HEIGHT_VALUES = ['short', 'medium', 'tall'] as const
@@ -186,6 +194,10 @@ export interface FieldDef {
   /** The DEFAULT value for an enum primitive (segmented / align / height / …). The value is persisted only
    *  when it differs from this default (sparse blob). Absent === the primitive's own first / neutral value. */
   defaultValue?: string
+  /** A `picker` field's data source (ADR-572, item 5): the block id whose live items feed the picker (its
+   *  own id). The editor resolves the choices with `blockDataList(pickerBlock, spaceId)` and the empty-state
+   *  create link with `blockCreateHref(pickerBlock, slug)`. Ignored for every non-picker field type. */
+  pickerBlock?: string
 }
 
 /** The fixed value set a primitive `type` accepts, or null when the field is not a fixed-enum primitive
@@ -344,7 +356,25 @@ const DATA_BLOCK_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     ...DATA_HEADER_FIELDS,
     { key: 'body', label: 'Story text', type: 'textarea', placeholder: 'The longer story of your space' },
   ],
+  // Function-backed blocks (ADR-572, item 5): the eyebrow / title header PLUS a data-source PICKER of the
+  // Space's own live items, so the operator chooses WHICH offerings / events / team / journeys / circles the
+  // section features. The picker's choices are the Space's real data (resolved server-side at edit time via
+  // blockDataList); an empty pick shows every item (item 7). The `pickerBlock` names the block whose data
+  // source feeds this picker (its own id here). When the Space has none of that function's items, the editor
+  // shows a "Create ..." link instead (blockCreateHref).
+  offerings: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Offerings to feature', type: 'picker', pickerBlock: 'offerings' }],
+  events: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Events to feature', type: 'picker', pickerBlock: 'events' }],
+  team: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Team to feature', type: 'picker', pickerBlock: 'team' }],
+  journeys: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Journeys to feature', type: 'picker', pickerBlock: 'journeys' }],
+  circles: [...DATA_HEADER_FIELDS, { key: 'items', label: 'Circles to feature', type: 'picker', pickerBlock: 'circles' }],
 }
+
+/** The block ids whose data-block schema carries a data-source picker (ADR-572, item 5). The seed getter
+ *  reads each of these blocks' live items + create-href so the editor can render the picker. Derived from
+ *  the schema above so the two never drift. */
+export const PICKER_DATA_BLOCK_IDS: readonly string[] = Object.entries(DATA_BLOCK_FIELDS)
+  .filter(([, fields]) => fields.some((f) => f.type === 'picker'))
+  .map(([id]) => id)
 
 /** A content block is one whose category is `content` in the registry. */
 export function isContentBlock(block: EntityBlockDef): boolean {
@@ -425,6 +455,25 @@ export function resolveDataHeader(
   const eyebrow = typeof props?.eyebrow === 'string' && props.eyebrow.trim() ? props.eyebrow.trim() : undefined
   const heading = typeof props?.title === 'string' && props.title.trim() ? props.title.trim() : undefined
   return { eyebrow, heading }
+}
+
+/** The picker SELECTION for a block's authored bag (ADR-572, item 5): the operator's chosen item ids, as a
+ *  clean `string[]`, or [] when none is stored. Pure; the render intersects these with the block's LIVE ids
+ *  (resolvePickedIds) so a stale / removed item never renders. */
+export function pickerSelection(props: Record<string, unknown> | undefined, key = 'items'): string[] {
+  const v = props?.[key]
+  if (!Array.isArray(v)) return []
+  return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+}
+
+/** Resolve the picker's stored selection against the block's LIVE item ids (ADR-572, items 5 + 7): keep the
+ *  selected ids that still exist, in the operator's chosen ORDER; an empty / all-stale selection falls back
+ *  to EVERY live id (the "show everything" default, item 7). Pure + fail-safe: a tampered / removed id is
+ *  simply dropped, so the render only ever draws real items. */
+export function resolvePickedIds(selected: readonly string[], liveIds: readonly string[]): string[] {
+  const live = new Set(liveIds)
+  const kept = selected.filter((id) => live.has(id))
+  return kept.length ? kept : [...liveIds]
 }
 
 // ── URL safety ────────────────────────────────────────────────────────────────────────────────────────
@@ -515,6 +564,26 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         const allowed = primitiveValues(field)
         const def = field.defaultValue ?? allowed?.[0]
         if (typeof v === 'string' && allowed?.includes(v) && v !== def) out[field.key] = v
+        break
+      }
+      case 'picker': {
+        // A data-source picker (ADR-572, item 5): the SELECTED item ids as a bounded, de-duped string[].
+        // The choices are the Space's live data (resolved at edit time), so the schema cannot pin an
+        // allowlist here — each id is coerced to a bounded string and de-duped, and the RENDER intersects
+        // the stored ids with the block's current live id set (so a stale / tampered id shows nothing).
+        // An empty result is dropped so the block falls back to "show every item" (item 7).
+        if (Array.isArray(v)) {
+          const seen = new Set<string>()
+          const ids: string[] = []
+          for (const raw of v.slice(0, MAX_ITEMS)) {
+            const id = str(raw, MAX_LABEL)
+            if (id && !seen.has(id)) {
+              seen.add(id)
+              ids.push(id)
+            }
+          }
+          if (ids.length) out[field.key] = ids
+        }
         break
       }
       case 'links': {

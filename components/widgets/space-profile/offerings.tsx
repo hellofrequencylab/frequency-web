@@ -1,6 +1,7 @@
 import type { SpaceContentData } from '@/lib/spaces/content-data'
 import type { SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { isServiceListed } from '@/lib/spaces/profile-data'
+import { resolvePickedIds } from '@/lib/entity-blocks/block-content'
 import { SpaceOfferingsBlock } from '@/components/page-editor/blocks/profile'
 import { ModuleSection } from './section'
 
@@ -15,12 +16,20 @@ import { ModuleSection } from './section'
 export function OfferingsBlock({
   data,
   header,
+  featuredIds,
 }: {
   space: SpaceProfileContext
   data: SpaceContentData
   header?: { eyebrow?: string; heading?: string }
+  featuredIds?: string[]
 }) {
-  const items = (data.profile?.offerings ?? []).filter(isServiceListed)
+  const listed = (data.profile?.offerings ?? []).filter(isServiceListed)
+  // The picker (ADR-572 item 5) narrows to the featured offerings, in the operator's chosen order; an empty
+  // selection shows every listed offering (item 7). The picker keys an offering by its title, so intersect on
+  // title (resolvePickedIds drops any stale id and falls back to all).
+  const picked = resolvePickedIds(featuredIds ?? [], listed.map((o) => o.title ?? ''))
+  const byTitle = new Map(listed.map((o) => [o.title ?? '', o]))
+  const items = picked.map((t) => byTitle.get(t)).filter((o): o is (typeof listed)[number] => Boolean(o))
   if (items.length === 0) return null
   return (
     <ModuleSection anchor="offerings">
