@@ -137,15 +137,25 @@ countdown (below).
   `components/journey/v2/learn/practice-actions.tsx`. It resumes the remaining time, then
   tops the partial up to complete and pays the rest of the Zaps (ADR-353's "Finish
   Practice" top-up; the member-facing label is now "Continue Practice").
-- **One countdown (ADR-566).** Every timer (Be Still AND Get Moving) uses the **same
-  single warm-up countdown**, default **5 seconds**, before the session. It is not a
-  separate competing timer: the live timer arms **paused** at zero, the "Warm up N"
-  pre-roll ticks down, then the SAME clock unpauses and runs the session (the **Start /
-  Begin now** button overrides it to begin immediately). During the countdown the full
-  target ("Settling into N min") shows **below** the timer and is **kept** when the run
-  begins. The countdown length is a member setting (3 / 5 / 10s, default 5) under
-  **Sounds & Settings** on the Be Still setup, persisted to `profiles.meta.onAir.warmupSec`
-  and read by every timer via the shared prefs. Just Log is an instant log (no countdown).
+- **One countdown (ADR-566, ADR-567).** Every timer (Be Still AND Get Moving) uses the
+  **same single warm-up countdown**, default **5 seconds**, before the session. It is not a
+  separate competing timer: the live timer arms **paused** at zero, and during the warm-up the
+  pre-roll IS the **only visible countdown** — Be Still shows just the "Warm up N" number
+  (the session clock / breath visualizer are suppressed), and Get Moving shows the warm-up
+  count **inside the ring** (the phase chip / plan clock / "Next" line are suppressed). Then
+  the SAME clock unpauses and runs the session (the **Start / Begin now** button overrides it
+  to begin immediately). During the countdown the full target ("Settling into N min") shows
+  **below** the timer and is **kept** ("N min session") when the run begins. The docked action
+  bar is opaque so nothing overlaps the Begin / Stop & Log button. The countdown length is a
+  member setting (3 / 5 / 10s, default 5) under **Sounds & Settings** on the Be Still setup,
+  persisted to `profiles.meta.onAir.warmupSec` and read by every timer via the shared prefs.
+  Just Log is an instant log (no countdown).
+- **Be Still always offers a Begin (ADR-567).** If the door resolves a **log-only** practice
+  (`timer_kind = 'none'`), the Be Still setup still lets the member start a real sit: picking
+  any timed mode runs the **Free Practice** fallback (`lib/on-air/free-sit.ts`
+  `findFreeSit` / `shouldRunFreeSit`), which logs as the default sit via `logsAs`, **alongside**
+  (not instead of) Just Log. This keeps the two engines even — Get Moving never dead-ends on a
+  log-only default either.
 
 ## Crash-safe persistence (recover a dropped sit/run)
 

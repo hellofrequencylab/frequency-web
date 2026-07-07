@@ -11978,3 +11978,52 @@ rail arranger needs a real slot-model change (instance keys, not bare ids) and i
 faster; the five design blocks are available in both editors from one render source. New pure module +
 adapter + a unit test for the effective-content fold. Rail multi-instance (3x) for design blocks is a
 tracked follow-up.
+
+---
+
+## ADR-567: Practice-timer regression fixes — Be Still always offers a Begin, one visible countdown
+
+**Status:** Accepted · corroborated by `components/on-air/session.tsx`,
+`components/on-air/movement-session.tsx`, `lib/on-air/free-sit.ts`.
+**Context.** ADR-566 removed the practice picker and unified the warm-up countdown. Two
+regressions rode that change:
+1. **Be Still could dead-end on Just Log.** When the door resolved a **log-only** practice
+   (`timer_kind = 'none'`) as today's thing to do, the Be Still setup disabled every timed
+   mode and left only **Just Log** — there was no way to START a stillness sit. Get Moving
+   never had this failure mode, so the two engines were uneven.
+2. **Get Moving showed a DOUBLE countdown.** During the shared warm-up the movement live
+   screen rendered BOTH the separate "Warm up N" number AND the ring (which was already
+   showing the plan's own 3s "Get going" prepare phase, e.g. "0:03") — two simultaneous
+   countdowns, plus crowding ("Settling into 20 min" + "GET GOING" + ring) and a "Next: ..."
+   line that overlapped the docked "Begin now" button on short screens. The Be Still engine
+   had the same structural double (the full session clock, e.g. "20:00", ran under the
+   "Warm up N" number).
+**Decision.**
+1. **Be Still always offers a Begin.** Two pure helpers in `lib/on-air/free-sit.ts`
+   (`findFreeSit`, `shouldRunFreeSit`) drive the setup: the timed modes stay enabled whenever
+   a runnable sit is reachable — the resolved practice OR the **Free Practice** fallback the
+   loader always appends. When the resolved practice is log-only and the member picks a timed
+   mode, Begin runs Free Practice (logging as the default sit via `logsAs`), **alongside** (not
+   instead of) Just Log, which still logs the resolved practice itself. `start()` now resolves
+   the run practice's `logsAs` from the (possibly overridden) id against the list, so the
+   active-session push + `finishWith` map correctly same-tick.
+2. **One visible countdown (both engines).** During the shared warm-up the pre-roll IS the
+   single big countdown: Be Still shows only the "Warm up N" number (the session clock / breath
+   visualizer / depth cue / journal note are suppressed until the run begins); Get Moving shows
+   the warm-up count **inside the ring** with the phase chip / plan clock / "Next:" line
+   suppressed. "Settling into N min" stays below through the countdown and is kept as
+   "N min session" once the run begins — matching ADR-566's "one countdown that IS the run
+   timer." The docked action bar is now opaque (`bg-canvas`) with content bottom-padding, so no
+   line ever overlaps the Begin / Stop & Log button.
+**Alternatives considered.** (1) Remove the plan-level 3s "prepare" lead-in from
+`lib/movement.ts` so the shared warm-up is the only lead-in — rejected: it changes plan
+semantics + `totalSeconds` and would rewrite the movement plan test suite; suppressing the
+plan's phase render during warm-up fixes the double-countdown without touching plan math, and
+the 3s prepare still delivers the in-run 3-2-1 audio into the first work phase. (2) Force the
+door to never resolve a log-only default — rejected: log-only practices are legitimately Just
+Log; the fix is to ADD a Begin path, not to hide the resolved practice.
+**Consequences.** The completion economy path is unchanged (`completeSession` still logs by the
+resolved / `logsAs` practice id). New pure module `lib/on-air/free-sit.ts` + unit tests
+(`lib/on-air/free-sit.test.ts`); no schema or migration change. Docs: `docs/ON-AIR.md`
+"Entry, selection, and resume" (Be Still Begin fallback) + "One countdown" (single visible
+countdown). Gate green: tsc, eslint, vitest, check:authz, check:menu, check:rls, build.

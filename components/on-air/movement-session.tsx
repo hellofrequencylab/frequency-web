@@ -847,57 +847,77 @@ export function MovementSession({
     return (
       <Overlay flash={flash}>
         {/* The clock block centers vertically; the action bar docks at the bottom and
-            stays visible (LAYOUT directive). */}
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))]">
+            stays visible (LAYOUT directive). Bottom padding keeps the last line clear of
+            the docked bar so nothing (e.g. "Next: ...") ever sits under the button. */}
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 pt-[max(3rem,env(safe-area-inset-top))] pb-6">
           <p className="flex animate-pulse items-center gap-2.5 text-sm font-bold uppercase tracking-[0.3em] text-move [animation-duration:3s]">
             <MovementArt className="block h-5" /> Get Moving
           </p>
 
-          {/* Warm up: the single lead-in countdown before the run begins (item #10). */}
-          {warming && (
-            <div className="flex flex-col items-center gap-1" aria-live="polite">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-move">Warm up</p>
-              <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
-            </div>
-          )}
-          {/* The target the member is about to do (item #5): shown below the timer through the
-              warm-up countdown and KEPT once the run begins (it does not vanish on start). */}
-          {targetLabel && (
-            <p className="text-sm tabular-nums text-subtle">
-              {warming ? `Settling into ${targetLabel.replace(' session', '')}` : targetLabel}
-            </p>
-          )}
+          {/* ONE countdown (ADR-566): during the shared warm-up the RING itself shows the
+              pre-roll count, with a "Warm up" label above it — the plan's phase/clock is
+              suppressed so there is never a second competing number. Once the run begins the
+              same ring runs the session (the phase chip + Next line return below). */}
+          {warming ? (
+            <>
+              <p
+                className="text-xs font-bold uppercase tracking-[0.3em] text-move"
+                aria-live="polite"
+              >
+                Warm up
+              </p>
+              {/* The target the member is settling into, shown below the label through warm-up. */}
+              {targetLabel && (
+                <p className="text-sm tabular-nums text-subtle">
+                  Settling into {targetLabel.replace(' session', '')}
+                </p>
+              )}
+              <div className="flex h-56 w-56 items-center justify-center rounded-full ring-4 ring-move/40">
+                <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
+              </div>
+              {/* A fixed-height spacer matches the running screen's phase chip + Next lines so
+                  the ring does not jump when the run begins. */}
+              <div className="h-5" aria-hidden />
+            </>
+          ) : (
+            <>
+              {/* The full session length, kept below the header once the run begins. */}
+              {targetLabel && (
+                <p className="text-sm tabular-nums text-subtle">{targetLabel}</p>
+              )}
 
-          {/* The phase chip — color-coded, with the round counter for Strength. */}
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
-          >
-            {pos.phase.label}
-            {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
-              <span className="ml-2 tabular-nums opacity-80">
-                Round {pos.round} of {plan.rounds}
+              {/* The phase chip — color-coded, with the round counter for Strength. */}
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${tone.bg} ${tone.text}`}
+              >
+                {pos.phase.label}
+                {plan.rounds > 1 && pos.phase.kind !== 'prepare' && (
+                  <span className="ml-2 tabular-nums opacity-80">
+                    Round {pos.round} of {plan.rounds}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
 
-          {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
-              the ring to danger. Play counts up with no ring. */}
-          <div
-            className={`flex h-56 w-56 items-center justify-center rounded-full ring-4 transition-colors ${
-              closing ? 'ring-danger/60' : tone.ring
-            } ${ended ? 'opacity-60' : ''}`}
-          >
-            <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
-              {clockText}
-            </p>
-          </div>
+              {/* The big clock. A timed phase rings its ringed wash; the final 3s flips
+                  the ring to danger. Play counts up with no ring. */}
+              <div
+                className={`flex h-56 w-56 items-center justify-center rounded-full ring-4 transition-colors ${
+                  closing ? 'ring-danger/60' : tone.ring
+                } ${ended ? 'opacity-60' : ''}`}
+              >
+                <p className={`text-7xl font-semibold tabular-nums ${closing ? 'text-danger' : tone.text}`}>
+                  {clockText}
+                </p>
+              </div>
 
-          {/* Next up — the line that lets the member anticipate the change. */}
-          <p className="h-5 text-sm text-subtle">
-            {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
-          </p>
-          {resumeOffset > 0 && (
-            <p className="text-2xs text-subtle">Picking up where you left off.</p>
+              {/* Next up — the line that lets the member anticipate the change. */}
+              <p className="h-5 text-sm text-subtle">
+                {ended ? 'Done' : pos.nextLabel ? `Next: ${pos.nextLabel}` : plan.openEnded ? 'Stop when you are done' : ' '}
+              </p>
+              {resumeOffset > 0 && (
+                <p className="text-2xs text-subtle">Picking up where you left off.</p>
+              )}
+            </>
           )}
           {/* After an automatic resume, a small non-blocking chip to re-arm sound (item #4). */}
           {needRestore && (
@@ -911,8 +931,9 @@ export function MovementSession({
           )}
         </div>
 
-        {/* Docked action bar — always visible, even as the screen scrolls. */}
-        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-gradient-to-t from-canvas via-canvas/90 to-transparent px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6">
+        {/* Docked action bar — always visible, even as the screen scrolls. Opaque canvas so
+            the content above never shows through / overlaps it. */}
+        <div className="sticky bottom-0 -mx-6 flex flex-col items-center gap-3 bg-canvas px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
           <button
             type="button"
             onClick={() => {
