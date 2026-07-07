@@ -40,6 +40,11 @@ import {
   isValidCtaUrl,
   type HeaderCtaPreference,
 } from '@/lib/spaces/header-cta'
+import {
+  sanitizeHeroConfig,
+  nextHeroPreferences,
+  type HeroConfig,
+} from '@/lib/spaces/hero-config'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
 // manages their Space's public pages (cover size, brand accent, block order + show/hide, and the
@@ -356,6 +361,54 @@ export async function setSpaceHeaderCta(
   const next = nextHeaderCtaPreferences(auth.preferences, clean)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not update your button. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Save the editable TOP-PAGE HERO (the profile cover hero). ONE write for the whole hero: the look + copy
+ * overrides (height / button orientation / eyebrow / heading / tagline) go to preferences.hero, and the hero
+ * CTA (item 5, relocated from the header-CTA form) goes to the EXISTING preferences.headerCta node through the
+ * unchanged header-cta model — so the hero editor and any legacy header-CTA data are the same source, never a
+ * fork. Both values are re-validated + sanitized server-side (never trust the wire): the hero bag drops any
+ * out-of-enum / oversized field, and the CTA runs the SAME header-cta validation as setSpaceHeaderCta. Passing
+ * an empty config + a null CTA clears both nodes (back to the defaults). NON-DESTRUCTIVE: only the `hero` and
+ * `headerCta` nodes are touched, every other preferences key preserved. Owner/admin/editor-gated (staff
+ * preview fails closed). Returns ActionResult.
+ */
+export async function setSpaceHero(
+  slug: string,
+  config: HeroConfig,
+  cta: HeaderCtaPreference | null,
+): Promise<ActionResult> {
+  // Re-validate the CTA server-side (the action is the authority, not the client). Mirrors setSpaceHeaderCta.
+  let cleanCta: HeaderCtaPreference | null = null
+  if (cta && cta.kind === 'function') {
+    if (!isHeaderCtaFunction(cta.function)) return fail('Pick a button action.')
+    const label = typeof cta.label === 'string' ? cta.label.trim() : ''
+    cleanCta = { kind: 'function', function: cta.function, ...(label ? { label } : {}) }
+  } else if (cta && cta.kind === 'custom') {
+    const url = typeof cta.url === 'string' ? cta.url.trim() : ''
+    const label = typeof cta.label === 'string' ? cta.label.trim() : ''
+    if (!label) return fail('Give your button a label.')
+    if (!isValidCtaUrl(url)) return fail('Enter a link that starts with https:// or /.')
+    cleanCta = { kind: 'custom', url, label }
+  } else if (cta !== null) {
+    return fail('Pick a button action.')
+  }
+
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  // Sanitize the hero bag to its sparse, safe shape (drop anything not in the field schema / enum allowlist).
+  const cleanHero = sanitizeHeroConfig(config)
+  const withHero = nextHeroPreferences(auth.preferences, cleanHero)
+  const next = nextHeaderCtaPreferences(withHero, cleanCta)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not save your hero. Try again.')
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')

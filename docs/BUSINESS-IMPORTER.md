@@ -10,7 +10,7 @@
 
 **Status legend:** ✅ done · ⏳ in progress · ⚠️ needs attention · 🔴 blocker.
 **Status of this doc:** ✅ Spec. P0 (materializer) ✅ shipped (#1599). P1 (research + verification pipeline:
-harvest, extract, verify, ledger, staging table) ✅ shipped (ADR-572): `lib/importer/{harvest,extract,verify}/`
+harvest, extract, verify, ledger, staging table) ✅ shipped (ADR-573): `lib/importer/{harvest,extract,verify}/`
 + `pipeline.ts` + `store.ts` + `queue.ts`, `lib/ai/web/`, migration
 `supabase/migrations/20261022000000_business_intake.sql` (⚠️ awaiting apply by the coordinator; the draft
 `.txt` is removed). P2+ (reframe/compose, console, wizard) pending. Authority order: running code +
