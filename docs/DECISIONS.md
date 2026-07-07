@@ -12084,3 +12084,56 @@ five design blocks explain themselves on placement and render identically in the
 passes NAMING + CONTENT-VOICE (no em dashes). Gate green: tsc, eslint, vitest (row-title/toggle serialization,
 content-survives-move, button-visible-without-link, empty-collapse, demo-content, hero-structure suites),
 check:authz, check:menu, check:rls, build.
+
+## ADR-569: Smart Business Importer, draft-first with a verification gate
+
+**Status:** Proposed (planning) · spec in [BUSINESS-IMPORTER.md](BUSINESS-IMPORTER.md); no feature code
+yet; the only artifact is an UNAPPLIED draft migration
+(`supabase/migrations/DRAFT_business_intake.sql.txt`). (If a concurrent PR also claims 569, renumber at
+merge.)
+
+**Context.** We want to seed a complete business into Frequency (Space profile + public Site + an optional
+Spotlight demo card) from URLs, social handles, and pasted content, both for an operator seeding demos fast
+(the priority) and, later, for a real owner clarifying their message. The risk is obvious: research pulls
+un-verified third-party facts (prices, hours, addresses, claims), and reframing copy through the brand
+voice could launder a guess into published fact. Naively writing straight into a live Space would also
+dirty real data and fight the block editor a concurrent effort owns.
+
+**Decision.**
+1. **Draft-first staging.** One `business_intake` row holds inputs, harvested `raw_sources`, the extracted
+   `BusinessProfile` draft, and a per-field provenance ledger. It is service-role only, RLS-enabled with no
+   policies (the `space_drip_enrollments` posture), because it can hold un-verified third-party facts.
+   Nothing touches a live Space until an explicit Apply.
+2. **Always-review verification gate.** Commercial facts (price, hours, address, phone, claims,
+   certifications) never auto-publish without a citation or a human confirm. Grounded extraction attaches
+   `sourceUrl + snippet` per field; an adversarial second pass on a DIFFERENT model tier (Extract on
+   sonnet, Verify on opus) tries to refute each claim; the hard gate is enforced in the materializer, not
+   just the UI. Reframe reads only the verified subset, so it cannot invent a fact.
+3. **Reuse, do not rebuild.** Materialize through `lib/spaces/provision.ts : createSpace` and the existing
+   function-record seams; compose the same `EntityLayout` jsonb the block editor reads (never editing
+   `lib/entity-blocks/*`); generate via `lib/ai/complete.ts` + `withVoice()` (tool-use structured output,
+   the `events-ai.ts` pattern); run the research fan-out on the existing durable queue
+   (`lib/queue/outbox.ts` + `process-queue` cron); drive the Owner Wizard with `wizard-shell.tsx` + Vera
+   (`conciergeTurn`); register the operator console as ONE `ADMIN_MODULES` row per the MENU-CONTRACT.
+4. **Two front doors, one engine.** Operator Seeder and Owner Wizard write the same `business_intake` draft
+   and share the same pipeline and materializer; they differ only in who supplies inputs and how review
+   happens. Operator-first build order (P0 materializer, then harvest/verify, then compose, then the
+   console), Owner Wizard after.
+5. **Consent + safety defaults.** Seeded demos default unlisted/draft (`is_demo`, decaying via
+   `demo-decay`) until an operator flips live; the Owner Wizard requires owner consent and uses first-party
+   data. A per-import USD budget cap bounds the research fan-out.
+
+**Alternatives.** (1) Write straight into a live Space, skip staging: rejected: it dirties real data, has
+no rollback, and cannot gate un-verified facts. (2) Trust single-pass extraction confidence: rejected: a
+model's own confidence is not grounding; the adversarial refuter on a second tier is the check. (3) A new
+bespoke job runner for research: rejected: the durable outbox queue already gives atomic claim,
+backoff, and dead-letter. (4) A new menu registry for the console: forbidden by the MENU-CONTRACT; add a
+catalog row.
+
+**Consequences.** One new table (`business_intake`, jsonb-carried, service-role only) when P0 is approved;
+no changes to the block editor or the Space schema. The "website" surface is settled as `/sites/[slug]`
+(single-page, `website`-surface-filtered Space Home, gated by network visibility AND `websitePublished`).
+The importer introduces the codebase's FIRST web fetch/search tool, isolated behind `lib/ai/web/`. Copy
+passes NAMING + CONTENT-VOICE (no em dashes) and auto-runs the §10 skeptic test. No gate run for this
+planning PR beyond markdown well-formedness; P0 lands the migration and a vitest suite
+(materialize-from-draft, idempotent-re-run, edit-wins) green on the full gate.
