@@ -38,6 +38,7 @@ import {
   setRowRatio,
   setRowTitle,
   setRowHeaderOn,
+  setRowMargin,
   placeBlock,
   benchBlock,
   hideBlock,
@@ -47,7 +48,8 @@ import {
   placedIds,
   type BuilderLayout,
 } from '@/lib/entity-blocks/rows-ops'
-import type { BlockStyle } from '@/lib/entity-blocks/block-content'
+import type { BlockStyle, MarginStep } from '@/lib/entity-blocks/block-content'
+import { MarginControl } from './controls/field-controls'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { useProfileLayout } from './profile-layout-context'
@@ -267,6 +269,11 @@ export function EntityPageBuilder({
   function onRowHeaderOn(rowId: string, on: boolean, index: number) {
     mutate(setRowHeaderOn(layout, rowId, on))
     say(on ? `Row ${index + 1} header shown on the live page.` : `Row ${index + 1} header hidden on the live page.`)
+  }
+  // Per-row spacing (ADR-569 C3): extra space above / below the whole row band. Repaints via the live preview
+  // and saves debounced, like every other row edit.
+  function onRowMargin(rowId: string, edge: 'mt' | 'mb', step: MarginStep) {
+    mutate(setRowMargin(layout, rowId, edge, step))
   }
 
   // ── Block actions ──
@@ -794,7 +801,16 @@ export function EntityPageBuilder({
                   {openMenu === `row:${row.id}` && (
                     <Menu>
                       {/* The row layout (Full · 50/50 · Main/Side) is the strip's own picker now; the menu
-                          keeps just the destructive action. */}
+                          carries the per-row SPACING control (ADR-569 C3) + the destructive action. */}
+                      <div className="space-y-1.5 px-2.5 py-2">
+                        <p className="text-3xs font-semibold uppercase tracking-wide text-subtle">Spacing</p>
+                        <MarginControl
+                          top={row.mt ?? 'none'}
+                          bottom={row.mb ?? 'none'}
+                          onTop={(v) => onRowMargin(row.id, 'mt', v)}
+                          onBottom={(v) => onRowMargin(row.id, 'mb', v)}
+                        />
+                      </div>
                       <MenuItem onClick={() => onRemoveRow(row.id, index)} danger>
                         <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete row
                       </MenuItem>

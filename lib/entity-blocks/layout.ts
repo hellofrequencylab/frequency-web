@@ -1,5 +1,5 @@
 import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
-import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle } from './block-content'
+import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
   isTemplateId,
   slotIds,
@@ -71,6 +71,10 @@ export interface RowDef {
   /** Render `title` as a section header on the LIVE page. Persisted only as `true`; absent/false = the
    *  header-less default (the title still shows in the editor as the row's name). */
   headerOn?: boolean
+  /** Per-row top / bottom MARGIN (ADR-569 C3): extra space above / below the whole row band, on top of the
+   *  grid's base rhythm. A valid step or absent (no extra space). Token-driven; no migration (jsonb). */
+  mt?: MarginStep
+  mb?: MarginStep
 }
 
 /** The row title is user-originated; bound it on every read (mirrors ADR-562's ROW_HEADER_MAX). */
@@ -89,16 +93,32 @@ export function rowShowsHeader(row: Pick<RowDef, 'title' | 'headerOn'>): boolean
   return row.headerOn === true && !!normalizeRowTitle(row.title)
 }
 
-/** Attach a trimmed title + headerOn flag to a built RowDef, keeping the stored shape sparse (a blank title
- *  or an off/absent toggle is dropped). Used by every row-building path so title/toggle carry through parse,
- *  sanitize, resolve, and the rows ops uniformly. */
-function withRowMeta(row: RowDef, title: unknown, headerOn: unknown): RowDef {
+/** The valid per-row margin steps (mirrors the block-content MarginStep set). */
+const ROW_MARGIN_VALUES: ReadonlySet<string> = new Set(['none', 'sm', 'md', 'lg', 'xl'])
+
+/** Read + validate a per-row margin step (ADR-569 C3), or undefined when absent / garbage / the neutral
+ *  `none` default (kept sparse). Pure + total. */
+export function normalizeRowMargin(raw: unknown): MarginStep | undefined {
+  if (typeof raw !== 'string' || !ROW_MARGIN_VALUES.has(raw) || raw === 'none') return undefined
+  return raw as MarginStep
+}
+
+/** Attach a trimmed title + headerOn flag + margins to a built RowDef, keeping the stored shape sparse (a
+ *  blank title, an off/absent toggle, or a neutral margin is dropped). Used by every row-building path so
+ *  title/toggle/margins carry through parse, sanitize, resolve, and the rows ops uniformly. */
+function withRowMeta(row: RowDef, title: unknown, headerOn: unknown, mt?: unknown, mb?: unknown): RowDef {
   const t = normalizeRowTitle(title)
   const out: RowDef = { ...row }
   if (t) out.title = t
   else delete out.title
   if (t && headerOn === true) out.headerOn = true
   else delete out.headerOn
+  const top = normalizeRowMargin(mt)
+  const bottom = normalizeRowMargin(mb)
+  if (top) out.mt = top
+  else delete out.mt
+  if (bottom) out.mb = bottom
+  else delete out.mb
   return out
 }
 
@@ -189,6 +209,8 @@ function parseRows(raw: unknown): RowDef[] | null {
       ratio?: unknown
       title?: unknown
       headerOn?: unknown
+      mt?: unknown
+      mb?: unknown
     }
     if (!isRowColumns(o.columns)) continue
     const columns = o.columns
@@ -207,7 +229,7 @@ function parseRows(raw: unknown): RowDef[] | null {
     const id = typeof o.id === 'string' && ROW_ID_RE.test(o.id) ? o.id : `r${out.length}`
     const ratio = normalizeRatio(o.ratio, columns)
     const base = ratio ? { id, columns, cells, ratio } : { id, columns, cells }
-    out.push(withRowMeta(base, o.title, o.headerOn))
+    out.push(withRowMeta(base, o.title, o.headerOn, o.mt, o.mb))
   }
   return out.length ? out : null
 }
@@ -221,7 +243,7 @@ function clampRowColumns(row: RowDef, max: RowColumns): RowDef {
   const ratio = normalizeRatio(row.ratio, columns)
   // Carry the row title + header toggle through the clamp (they are independent of the column count).
   const base = ratio ? { ...row, columns, cells, ratio } : { id: row.id, columns, cells }
-  return withRowMeta(base, row.title, row.headerOn)
+  return withRowMeta(base, row.title, row.headerOn, row.mt, row.mb)
 }
 
 /** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe, and clamp
@@ -250,7 +272,7 @@ function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | 
     const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
     const ratio = normalizeRatio(row.ratio, row.columns)
     const base = ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells }
-    out.push(withRowMeta(base, row.title, row.headerOn))
+    out.push(withRowMeta(base, row.title, row.headerOn, row.mt, row.mb))
   }
   return out.length ? out : undefined
 }
@@ -622,7 +644,7 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
       const ratio = normalizeRatio(row.ratio, row.columns)
       const base = ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells }
       // Carry the row title + live-header toggle into the rendered rows so EntityGrid can draw the header.
-      out.push(withRowMeta(base, row.title, row.headerOn))
+      out.push(withRowMeta(base, row.title, row.headerOn, row.mt, row.mb))
     }
     return out
   }

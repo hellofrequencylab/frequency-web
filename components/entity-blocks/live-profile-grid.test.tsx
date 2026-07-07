@@ -24,7 +24,7 @@ describe('LiveProfileGrid (no-provider fallback)', () => {
     expect(html).toContain('data-block="about"')
     expect(html).toContain('data-block="stats"')
     expect(html).toContain('data-block="links"')
-    expect(html).toContain('grid gap-6 sm:grid-cols-2')
+    expect(html).toContain('grid gap-8 sm:grid-cols-2')
   })
 
   it('drops a hidden cell from the render', () => {

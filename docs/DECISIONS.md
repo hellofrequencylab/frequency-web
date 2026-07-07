@@ -12137,3 +12137,64 @@ The importer introduces the codebase's FIRST web fetch/search tool, isolated beh
 passes NAMING + CONTENT-VOICE (no em dashes) and auto-runs the §10 skeptic test. No gate run for this
 planning PR beyond markdown well-formedness; P0 lands the migration and a vitest suite
 (materialize-from-draft, idempotent-re-run, edit-wins) green on the full gate.
+
+---
+
+## ADR-570: Rail block-editor control-surface redesign + reusable field-type control primitives
+
+**Status:** Accepted · corroborated by `lib/entity-blocks/block-content.ts` (`FieldType` primitive union,
+`primitiveValues`, `BlockStyle.mt/mb/text`, `sanitizeTextStyle`, `marginTopClass`/`marginBottomClass`/
+`textStyleClass`/`colorSwatchClass`, `blockBearsText`), `components/entity-blocks/controls/field-controls.tsx`
+(the primitive set), the redesigned `components/entity-blocks/block-edit-panel.tsx`, `lib/entity-blocks/
+layout.ts` + `rows-ops.ts` (`RowDef.mt/mb`, `normalizeRowMargin`, `setRowMargin`), `components/entity-blocks/
+entity-grid.tsx` + `content-block-view.tsx` (render mapping + C2 rhythm), and the dev showcase at
+`app/dev/editor-controls`.
+
+**Context.** The on-page rail arranger's block edit panel (ADR-528 → ADR-568) was a stack of verbose labelled
+checkboxes and dropdowns — it read like a form, not a modern inspector, and every new control meant bespoke
+panel JSX. Upcoming feature work (an editable top hero, function pickers, new text blocks, card-grid add-card)
+needs a clean, declarative control system so a feature is added by DECLARING a field, not authoring a panel.
+The page also lacked flexible text styling, per-block/row spacing controls, and had a cramped default rhythm.
+
+**Decision.**
+- **A field-type control system (C6).** Extend `FieldType` with a catalog of ENUM PRIMITIVES — `segmented`,
+  `align`, `height`, `buttonOrientation`, `color`, `shadow`, `margin` — each backed by a fixed value set
+  (`primitiveValues`) that drives BOTH the editor control and the sanitizer, so they can never drift. A feature
+  agent attaches a control to a block by pushing a `FieldDef` of that type onto the block's schema; the panel
+  dispatches on `type` and the sanitizer validates the stored value against the same declaration (allowlisted,
+  sparse: a value equal to its declared default is dropped). No bespoke JSX per control.
+- **The reusable primitives** live in `controls/field-controls.tsx`: a minimal `Toggle`/`ToggleRow` switch
+  (role=switch), a generic `Segmented`, an `AlignControl` (Left/Center/Right icon-group), a 3-way
+  `HeightControl`, a `ButtonOrientationControl`, a token/accent `ColorControl` (swatches driven by the design
+  tokens + Space accent — NEVER raw hex, so a pick can't break theming), a preset `ShadowControl`, a compact
+  `MarginControl`, and the `ControlRow`/`ControlGroup` shells. All token-driven, keyboard-operable, icon
+  buttons carry accessible names.
+- **Text style (C1).** A reusable `BlockStyle.text` bag (`size`/`weight`/`color`/`shadow`), offered to
+  text-bearing content + design blocks (`blockBearsText`). `textStyleClass` maps it to token utilities
+  (`text-shadow-soft`/`-strong` added to globals). No raw CSS reaches the page — every field is a fixed enum.
+- **Default rhythm (C2).** The inter-block stack rhythm bumped from `space-y-6`/`gap-6` to `-8` in
+  `entity-grid`, so a fresh page breathes. The per-block frame default margin is `none` to avoid
+  double-counting that rhythm.
+- **Margins (C3).** Per-block `BlockStyle.mt/mb` and per-row `RowDef.mt/mb` (jsonb, threaded through
+  parse/sanitize/normalize/resolve; `setRowMargin` op), a compact segmented `MarginControl` in the block panel
+  (Space above/below) and the row menu. Absent leaves the stack rhythm; a set step adds space; `none` flushes.
+- **Panel redesign (C4/C5/C7).** The panel leads with content, then collapsible Text style · Style · Spacing
+  groups of segmented + icon-button + switch primitives. Every migrated control (background, padding, align,
+  button toggle) keeps its exact behavior in the tighter form. Density: the block's look controls dropped from
+  a flat labelled-checkbox + two labelled dropdowns to three collapsed one-line-per-control groups.
+- **Dev showcase.** `app/dev/editor-controls` renders every primitive with live state + sample redesigned
+  panels, without auth (noindex, non-production only), so the redesign is eyeballable without the auth-gated
+  owner editor.
+
+**Alternatives.** (1) A raw hex/color input — rejected: it breaks theming and the token contract; the swatch
+picker drives off tokens + the accent. (2) Per-block default margins in the frame for C2 — rejected: it
+double-counts the grid's `space-y` rhythm; bumping the stack spacing is the single-source fix. (3) A bespoke
+control per feature — rejected: it is exactly the authoring cost this ADR removes; declaring a field is the
+contract.
+
+**Consequences.** Zero migration (all jsonb). The five design blocks + every content/data block keep working
+in both the rail arranger and Puck; design blocks stay single-instance. Feature agents add hero height,
+button orientation, alignment, color, shadow, and spacing controls by declaring one field. Copy passes NAMING
++ CONTENT-VOICE (no em dashes). Gate green: tsc, eslint, vitest (margin + text-style + primitive sanitize,
+row-margin ops + serialization, redesigned-panel markup, primitive a11y), check:authz, check:menu, check:rls,
+check:canon, check:seo, build.

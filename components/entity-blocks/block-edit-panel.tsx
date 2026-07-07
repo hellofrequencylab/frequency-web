@@ -4,22 +4,76 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
-import { blockDrawsOwnCard, fieldsForBlock, type BlockStyle, type FieldDef } from '@/lib/entity-blocks/block-content'
+import {
+  blockBearsText,
+  blockDrawsOwnCard,
+  fieldsForBlock,
+  primitiveValues,
+  type BlockStyle,
+  type FieldDef,
+  type MarginStep,
+  type TextColorToken,
+  type TextShadowStep,
+  type TextSizeStep,
+  type TextStyle,
+  type TextWeightStep,
+} from '@/lib/entity-blocks/block-content'
+import {
+  AlignControl,
+  ButtonOrientationControl,
+  ColorControl,
+  ControlGroup,
+  ControlRow,
+  HeightControl,
+  MarginControl,
+  Segmented,
+  ShadowControl,
+  ToggleRow,
+  type AlignValue,
+  type ButtonOrientationValue,
+  type HeightValue,
+  type ShadowValue,
+} from './controls/field-controls'
 
 /** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
  *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
 export type UploadImage = (file: File) => Promise<{ url: string } | { error: string }>
 
-// THE INLINE BLOCK EDIT PANEL (ADR-528). Expands under a block in the in-rail builder when the operator
-// clicks it. CONTENT blocks get their authored fields (text / link / image / ...); DATA blocks get an
-// on/off switch + its real eyebrow / title (+ body for About/Story) + a link to that feature's own manager. Every
-// block gets the STYLE controls (card background, spacing, alignment). Controlled: it holds no state, it
-// reads the block's current content/style bag and calls back on every change (the builder applies it to
-// the shared store, which repaints + debounce-saves). Semantic DAWN tokens, no hex, voice canon.
+// THE INLINE BLOCK EDIT PANEL — redesigned control surface (ADR-528 → ADR-569). Expands under a block in the
+// in-rail builder when the operator clicks it. A TIGHT, modern inspector (Framer/Webflow/Notion density): the
+// panel LEADS with the block's content fields, then a compact CONTENT/STYLE control stack of segmented +
+// icon-button + minimal-switch primitives (components/entity-blocks/controls). The look controls live in
+// collapsible groups so the panel stays short.
+//
+// CONTENT blocks get their authored fields (text / link / image / ...); DATA blocks get a minimal on/off
+// switch + their real eyebrow / title (+ body for About/Story) + a link to that feature's own manager. Every
+// text-bearing block gets the C1 TEXT-STYLE group (size / weight / align / token-color / shadow). Every block
+// gets the STYLE controls (background switch, padding, alignment, C3 margins).
+//
+// A feature agent adds a control to a block by DECLARING a field in block-content.ts (the enum primitives:
+// segmented / align / height / buttonOrientation / color / shadow / margin) — the panel dispatches on `type`
+// and needs no bespoke JSX. Controlled: it holds no state, reads the block's current content/style bag and
+// calls back on every change (the builder applies it to the shared store, which repaints + debounce-saves).
+// Semantic DAWN tokens, no hex, voice canon (no em dashes).
 
 const inputCls =
   'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary'
 const labelCls = 'block text-2xs font-semibold uppercase tracking-wide text-subtle'
+
+/** The value keys a `text` control targets on the style.text bag (kept off the content bag so the render
+ *  frame owns them). Everything else on a field schema is a content-bag key. */
+const TEXT_STYLE_SIZE_OPTIONS = [
+  { value: 'sm' as TextSizeStep, label: 'S' },
+  { value: 'md' as TextSizeStep, label: 'M' },
+  { value: 'lg' as TextSizeStep, label: 'L' },
+  { value: 'xl' as TextSizeStep, label: 'XL' },
+]
+const TEXT_STYLE_WEIGHT_OPTIONS = [
+  { value: 'normal' as TextWeightStep, label: 'Light' },
+  { value: 'medium' as TextWeightStep, label: 'Medium' },
+  { value: 'semibold' as TextWeightStep, label: 'Semibold' },
+  { value: 'bold' as TextWeightStep, label: 'Bold' },
+]
 
 export function BlockEditPanel({
   id,
@@ -47,6 +101,7 @@ export function BlockEditPanel({
   const block = entityBlockById(id)
   const isData = block?.category === 'data'
   const fields = fieldsForBlock(id)
+  const bearsText = blockBearsText(id)
   // About + Story carry the space's shared story text. The editor pre-fills these fields with the current
   // content (the same words the page shows), so a note tells the operator that editing here updates the
   // section everywhere it appears — not a second, disconnected copy.
@@ -63,20 +118,10 @@ export function BlockEditPanel({
 
   return (
     <div className="mt-1 space-y-3 rounded-lg border border-border bg-surface-elevated/50 p-3">
-      {/* DATA block: on/off */}
-      {isData && (
-        <label className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-text">Show on page</span>
-          <input
-            type="checkbox"
-            checked={!hidden}
-            onChange={onToggleHide}
-            className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-          />
-        </label>
-      )}
+      {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
+      {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
 
-      {/* Fields */}
+      {/* Fields (content + any declared primitive controls) */}
       {fields.map((field) => (
         <FieldEditor
           key={field.key}
@@ -94,11 +139,6 @@ export function BlockEditPanel({
         </p>
       )}
 
-      {/* Background on/off (item 6): a PROMINENT per-box control, not buried in Style. Default reflects
-          what is actually on the page — a self-carding box (a data section, a Callout) reads on; a plain
-          content block reads off. Turning it off strips the white card; on gives a bare block one. */}
-      <BackgroundToggle id={id} style={style} onChange={onStyle} />
-
       {/* DATA block: deep-edit link to the feature's own manager */}
       {isData && editHref && (
         <Link
@@ -110,13 +150,17 @@ export function BlockEditPanel({
         </Link>
       )}
 
-      {/* Style controls (every block) */}
-      <StyleControls style={style} onChange={onStyle} />
+      {/* ── The control stack (redesigned): Text style (C1) · Style · Spacing (C3), grouped + collapsible. */}
+      {bearsText && <TextStyleGroup style={style} onChange={onStyle} />}
+      <StyleControls id={id} style={style} onChange={onStyle} />
+      <MarginGroup style={style} onChange={onStyle} />
     </div>
   )
 }
 
-/** One field editor, dispatched by field type. */
+/** One field editor, dispatched by field type. Content types render an input / repeater; the ADR-569 C6
+ *  primitive types render a control-row over the declared enum, so a feature agent gets its control by just
+ *  declaring the field. */
 function FieldEditor({
   field,
   value,
@@ -162,21 +206,29 @@ function FieldEditor({
     )
   }
   if (field.type === 'toggle') {
-    // A boolean switch (Fix 8: "show this button"). Defaults to the field default when unset; toggling back
+    // A minimal switch (Fix 8: "show this button"). Defaults to the field default when unset; toggling back
     // to the default passes `undefined` so setField deletes the key, keeping the stored bag sparse.
     const def = field.default ?? false
     const on = typeof value === 'boolean' ? value : def
     return (
-      <label className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-        <span className="text-xs font-semibold text-text">{field.label}</span>
-        <input
-          type="checkbox"
-          checked={on}
-          onChange={(e) => onChange(e.target.checked === def ? undefined : e.target.checked)}
-          className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-        />
-      </label>
+      <ToggleRow
+        label={field.label}
+        checked={on}
+        onChange={(next) => onChange(next === def ? undefined : next)}
+      />
     )
+  }
+  // ── ADR-569 C6 enum primitives: one control-row over the declared value set. ──
+  if (
+    field.type === 'segmented' ||
+    field.type === 'align' ||
+    field.type === 'height' ||
+    field.type === 'buttonOrientation' ||
+    field.type === 'color' ||
+    field.type === 'shadow' ||
+    field.type === 'margin'
+  ) {
+    return <PrimitiveField field={field} value={value} onChange={onChange} />
   }
   if (field.type === 'images') {
     return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
@@ -186,6 +238,133 @@ function FieldEditor({
   }
   // links
   return <LinksEditor label={field.label} value={value} onChange={onChange} />
+}
+
+/** Render a declared enum PRIMITIVE (ADR-569 C6) as a labelled control row. The value is stored on the
+ *  CONTENT bag under the field key; toggling back to the declared default passes `undefined` so the key
+ *  drops (sparse). A feature agent gets any of these by declaring the field type — no bespoke JSX. */
+function PrimitiveField({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  const allowed = primitiveValues(field) ?? []
+  const def = field.defaultValue ?? allowed[0] ?? ''
+  const current = typeof value === 'string' && allowed.includes(value) ? value : def
+  const set = (v: string) => onChange(v === def ? undefined : v)
+
+  if (field.type === 'align') {
+    return (
+      <ControlRow label={field.label}>
+        <AlignControl value={current as AlignValue} onSelect={set} />
+      </ControlRow>
+    )
+  }
+  if (field.type === 'height') {
+    return (
+      <ControlRow label={field.label}>
+        <HeightControl value={current as HeightValue} onSelect={set} />
+      </ControlRow>
+    )
+  }
+  if (field.type === 'buttonOrientation') {
+    return (
+      <ControlRow label={field.label}>
+        <ButtonOrientationControl value={current as ButtonOrientationValue} onSelect={set} />
+      </ControlRow>
+    )
+  }
+  if (field.type === 'color') {
+    return (
+      <ControlRow label={field.label}>
+        <ColorControl value={current as TextColorToken} onSelect={set} />
+      </ControlRow>
+    )
+  }
+  if (field.type === 'shadow') {
+    return (
+      <ControlRow label={field.label}>
+        <ShadowControl value={current as ShadowValue} onSelect={set} />
+      </ControlRow>
+    )
+  }
+  // `segmented` + `margin` both render a generic segmented bar over the declared options.
+  const options =
+    field.type === 'margin'
+      ? (allowed as MarginStep[]).map((v) => ({ value: v, label: v === 'none' ? 'None' : v.toUpperCase() }))
+      : (field.options ?? allowed.map((v) => ({ value: v, label: v })))
+  return (
+    <ControlRow label={field.label}>
+      <Segmented ariaLabel={field.label} options={options} value={current} onSelect={set} />
+    </ControlRow>
+  )
+}
+
+/** The C1 TEXT-STYLE group: size · weight · align · color · shadow, in a collapsible section. Writes to the
+ *  style.text bag (kept off the content bag so the render frame owns the presentation). Each control drops
+ *  its key back to the default to stay sparse. */
+function TextStyleGroup({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
+  const text: TextStyle = style.text ?? {}
+  const setText = (patch: Partial<TextStyle>) => {
+    const nextText: TextStyle = { ...text, ...patch }
+    // Drop any field that matches its default so the stored bag stays minimal.
+    if (nextText.size === 'md') delete nextText.size
+    if (nextText.color === 'default') delete nextText.color
+    if (nextText.shadow === 'none') delete nextText.shadow
+    const next: BlockStyle = { ...style }
+    if (Object.keys(nextText).length) next.text = nextText
+    else delete next.text
+    onChange(next)
+  }
+  return (
+    <ControlGroup label="Text style">
+      <ControlRow label="Size">
+        <Segmented
+          ariaLabel="Text size"
+          options={TEXT_STYLE_SIZE_OPTIONS}
+          value={text.size ?? 'md'}
+          onSelect={(v) => setText({ size: v })}
+        />
+      </ControlRow>
+      <ControlRow label="Weight">
+        <Segmented
+          ariaLabel="Font weight"
+          options={TEXT_STYLE_WEIGHT_OPTIONS}
+          value={text.weight ?? 'normal'}
+          onSelect={(v) => setText({ weight: v === 'normal' ? undefined : v })}
+        />
+      </ControlRow>
+      <ControlRow label="Color">
+        <ColorControl value={text.color ?? 'default'} onSelect={(v) => setText({ color: v })} />
+      </ControlRow>
+      <ControlRow label="Shadow">
+        <ShadowControl value={(text.shadow ?? 'none') as ShadowValue} onSelect={(v) => setText({ shadow: v as TextShadowStep })} />
+      </ControlRow>
+    </ControlGroup>
+  )
+}
+
+/** The C3 SPACING group: a compact top/bottom margin control in a collapsible section. Absent === the C2
+ *  render default (a comfortable md), so leaving it alone keeps the sensible spacing; `none` is a flush. */
+function MarginGroup({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
+  const set = (patch: Partial<Pick<BlockStyle, 'mt' | 'mb'>>) => {
+    const next: BlockStyle = { ...style, ...patch }
+    onChange(next)
+  }
+  return (
+    <ControlGroup label="Spacing">
+      <MarginControl
+        top={style.mt ?? 'md'}
+        bottom={style.mb ?? 'md'}
+        onTop={(v) => set({ mt: v })}
+        onBottom={(v) => set({ mb: v })}
+      />
+    </ControlGroup>
+  )
 }
 
 /** The image-list editor (ADR-542): the pasteable "one URL per line" textarea PLUS an Upload control that
@@ -441,10 +620,10 @@ function LinksEditor({
   )
 }
 
-/** The prominent per-box Background control (item 6). A self-carding box (data section / Callout / Features)
- *  defaults ON and turning it off strips its white card; a plain content block defaults OFF and turning it
- *  on adds one. The toggle reads true to what is on the page, so `background: absent` never looks wrong. */
-function BackgroundToggle({
+/** The per-block STYLE controls: the prominent Background switch (item 6) + padding + alignment, in one
+ *  collapsible group. Background defaults to what is on the page (a self-carding box reads on; a plain block
+ *  reads off); turning it off strips the white card, on gives a bare block one. */
+function StyleControls({
   id,
   style,
   onChange,
@@ -454,98 +633,39 @@ function BackgroundToggle({
   onChange: (next: BlockStyle) => void
 }) {
   const selfCards = blockDrawsOwnCard(id)
-  const checked = selfCards ? style.background !== false : style.background === true
-  const set = (on: boolean) => {
+  const bgChecked = selfCards ? style.background !== false : style.background === true
+  const setBg = (on: boolean) => {
     const next: BlockStyle = { ...style }
-    // Self-carding: on = default (absent), off = explicit false (strip). Plain block: on = explicit true
-    // (add a card), off = default (absent). This keeps the persisted blob minimal (ADR-528).
     const bg = selfCards ? (on ? undefined : false) : on ? true : undefined
     if (bg === undefined) delete next.background
     else next.background = bg
     onChange(next)
   }
-  return (
-    <label className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2">
-      <span className="text-xs font-semibold text-text">Background</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => set(e.target.checked)}
-        className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
-      />
-    </label>
-  )
-}
-
-/** The per-block style controls: spacing step + alignment (Background is its own prominent control above). */
-function StyleControls({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
   const set = (patch: Partial<BlockStyle>) => {
     const next: BlockStyle = { ...style, ...patch }
-    if (next.background === undefined) delete next.background
     if (next.pad === 'none') delete next.pad
     if (next.align === 'start') delete next.align
     onChange(next)
   }
-  // Style is secondary to content, so it collapses behind a "Style" disclosure (closed by default) — the
-  // panel leads with the block's content / quick fields, and the look controls are one tap away.
   return (
-    <details className="border-t border-border pt-2 [&_summary::-webkit-details-marker]:hidden">
-      <summary className="cursor-pointer select-none text-2xs font-semibold uppercase tracking-wide text-subtle">
-        Style
-      </summary>
-      <div className="mt-2 space-y-2">
+    <ControlGroup label="Style">
+      <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
+      <ControlRow label="Padding">
         <Segmented
-          aria="Spacing"
+          ariaLabel="Padding"
           options={[
-            { v: 'none', label: 'None' },
-            { v: 'sm', label: 'S' },
-            { v: 'md', label: 'M' },
-            { v: 'lg', label: 'L' },
+            { value: 'none', label: 'None' },
+            { value: 'sm', label: 'S' },
+            { value: 'md', label: 'M' },
+            { value: 'lg', label: 'L' },
           ]}
           value={style.pad ?? 'none'}
           onSelect={(v) => set({ pad: v as BlockStyle['pad'] })}
         />
-        <Segmented
-          aria="Alignment"
-          options={[
-            { v: 'start', label: 'Left' },
-            { v: 'center', label: 'Center' },
-            { v: 'end', label: 'Right' },
-          ]}
-          value={style.align ?? 'start'}
-          onSelect={(v) => set({ align: v as BlockStyle['align'] })}
-        />
-      </div>
-    </details>
-  )
-}
-
-function Segmented({
-  aria,
-  options,
-  value,
-  onSelect,
-}: {
-  aria: string
-  options: { v: string; label: string }[]
-  value: string
-  onSelect: (v: string) => void
-}) {
-  return (
-    <div className="flex overflow-hidden rounded-md border border-border" role="group" aria-label={aria}>
-      {options.map((o) => (
-        <button
-          key={o.v}
-          type="button"
-          aria-pressed={value === o.v}
-          onClick={() => onSelect(o.v)}
-          className={`flex-1 px-1.5 py-1 text-2xs font-semibold ${
-            value === o.v ? 'bg-primary text-on-primary' : 'bg-surface text-muted hover:bg-surface-elevated'
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+      </ControlRow>
+      <ControlRow label="Align">
+        <AlignControl value={(style.align ?? 'start') as AlignValue} onSelect={(v) => set({ align: v })} />
+      </ControlRow>
+    </ControlGroup>
   )
 }

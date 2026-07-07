@@ -1,0 +1,184 @@
+'use client'
+
+import { useState, type ReactNode } from 'react'
+import { BlockEditPanel } from '@/components/entity-blocks/block-edit-panel'
+import {
+  AlignControl,
+  ButtonOrientationControl,
+  ColorControl,
+  ControlGroup,
+  ControlRow,
+  HeightControl,
+  MarginControl,
+  Segmented,
+  ShadowControl,
+  Toggle,
+  ToggleRow,
+  type AlignValue,
+  type ButtonOrientationValue,
+  type HeightValue,
+  type ShadowValue,
+} from '@/components/entity-blocks/controls/field-controls'
+import type { BlockStyle, MarginStep, TextColorToken } from '@/lib/entity-blocks/block-content'
+
+// The showcase surface (dev-only). A left column of every PRIMITIVE with live state + a JSON readout, and a
+// right column of a real redesigned BlockEditPanel for a few representative blocks, so the whole control
+// surface can be exercised without auth. Token-driven, no hex.
+
+/** A titled demo cell: a heading, the live control(s), and a small value readout. */
+function Demo({ title, note, value, children }: { title: string; note?: string; value?: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-xs font-bold text-text">{title}</h3>
+        {value !== undefined && (
+          <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{value}</code>
+        )}
+      </div>
+      {note && <p className="text-2xs text-subtle">{note}</p>}
+      <div className="max-w-xs">{children}</div>
+    </div>
+  )
+}
+
+function PrimitivesColumn() {
+  const [align, setAlign] = useState<AlignValue>('start')
+  const [height, setHeight] = useState<HeightValue>('medium')
+  const [orient, setOrient] = useState<ButtonOrientationValue>('row')
+  const [color, setColor] = useState<TextColorToken>('accent')
+  const [shadow, setShadow] = useState<ShadowValue>('soft')
+  const [seg, setSeg] = useState('weekly')
+  const [toggle, setToggle] = useState(true)
+  const [mt, setMt] = useState<MarginStep>('none')
+  const [mb, setMb] = useState<MarginStep>('md')
+
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-bold text-text">Control primitives (C6)</h2>
+
+      <Demo title="Toggle" value={String(toggle)} note="Minimal on/off switch (role=switch).">
+        <ToggleRow label="Show button" checked={toggle} onChange={setToggle} />
+      </Demo>
+
+      <Demo title="Alignment" value={align} note="Left | Center | Right icon-group.">
+        <ControlRow label="Align">
+          <AlignControl value={align} onSelect={setAlign} />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Height" value={height} note="3-way Short | Medium | Tall.">
+        <ControlRow label="Height">
+          <HeightControl value={height} onSelect={setHeight} />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Button orientation" value={orient} note="Side by side | Stacked.">
+        <ControlRow label="Buttons">
+          <ButtonOrientationControl value={orient} onSelect={setOrient} />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Color (token / accent)" value={color} note="Token + accent swatches; no raw hex.">
+        <ControlRow label="Color">
+          <ColorControl value={color} onSelect={setColor} />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Shadow" value={shadow} note="Off | Soft | Strong presets.">
+        <ControlRow label="Shadow">
+          <ShadowControl value={shadow} onSelect={setShadow} />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Segmented (generic)" value={seg} note="Declared-options single select.">
+        <ControlRow label="Cadence">
+          <Segmented
+            ariaLabel="Cadence"
+            options={[
+              { value: 'daily', label: 'Daily' },
+              { value: 'weekly', label: 'Weekly' },
+              { value: 'monthly', label: 'Monthly' },
+            ]}
+            value={seg}
+            onSelect={setSeg}
+          />
+        </ControlRow>
+      </Demo>
+
+      <Demo title="Margin (C3)" value={`mt:${mt} mb:${mb}`} note="Compact top/bottom spacing.">
+        <MarginControl top={mt} bottom={mb} onTop={setMt} onBottom={setMb} />
+      </Demo>
+
+      <Demo title="Standalone Toggle + Group">
+        <ControlGroup label="More" defaultOpen>
+          <ControlRow label="Standalone">
+            <Toggle ariaLabel="Standalone" checked={toggle} onChange={setToggle} />
+          </ControlRow>
+        </ControlGroup>
+      </Demo>
+    </div>
+  )
+}
+
+/** A live BlockEditPanel for one block id, holding its own content + style state (mirrors the builder). */
+function PanelDemo({ id, label }: { id: string; label: string }) {
+  const [content, setContent] = useState<Record<string, unknown>>({})
+  const [style, setStyle] = useState<BlockStyle>({})
+  const [hidden, setHidden] = useState(false)
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-xs font-bold text-text">{label}</h3>
+        <code className="rounded bg-surface-elevated px-1.5 py-0.5 text-3xs text-muted">{id}</code>
+      </div>
+      <BlockEditPanel
+        id={id}
+        content={content}
+        style={style}
+        hidden={hidden}
+        editHref={null}
+        onContent={setContent}
+        onStyle={setStyle}
+        onToggleHide={() => setHidden((h) => !h)}
+      />
+      <details className="[&_summary::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer text-2xs font-semibold uppercase tracking-wide text-subtle">
+          State
+        </summary>
+        <pre className="mt-1 overflow-x-auto rounded bg-surface-elevated p-2 text-3xs text-muted">
+          {JSON.stringify({ content, style, hidden }, null, 2)}
+        </pre>
+      </details>
+    </div>
+  )
+}
+
+function PanelsColumn() {
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-bold text-text">Redesigned block panels (C1 / C4 / C5 / C7)</h2>
+      <PanelDemo id="callout" label="Callout (content + text style + spacing)" />
+      <PanelDemo id="heading" label="Heading (text-bearing)" />
+      <PanelDemo id="photoHero" label="PhotoHero (design block)" />
+      <PanelDemo id="offerings" label="Offerings (data block)" />
+    </div>
+  )
+}
+
+export function EditorControlsShowcase() {
+  return (
+    <main className="mx-auto max-w-5xl space-y-6 p-6">
+      <header className="space-y-1">
+        <h1 className="text-lg font-bold text-text">Editor control system</h1>
+        <p className="text-sm text-muted">
+          Dev-only showcase of the reusable block-editor control primitives and the redesigned inspector
+          panel. Every control is token-driven and keyboard-operable. Not linked, noindex, dev-only.
+        </p>
+      </header>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PrimitivesColumn />
+        <PanelsColumn />
+      </div>
+    </main>
+  )
+}
