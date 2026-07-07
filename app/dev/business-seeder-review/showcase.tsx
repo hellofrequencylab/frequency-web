@@ -58,7 +58,7 @@ export function ReviewBoardShowcase() {
           session; the visuals are the same the operator sees.
         </p>
       </div>
-      <ReviewBoard intakeId="dev-fixture" initialModel={model} status="review" isDemo appliedSpaceId={null} />
+      <ReviewBoard intakeId="dev-fixture" initialModel={model} status="review" isDemo appliedSpaceId={null} initialMood="warm" />
     </div>
   )
 }
