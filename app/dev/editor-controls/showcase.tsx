@@ -159,7 +159,9 @@ function PanelsColumn() {
       <h2 className="text-sm font-bold text-text">Redesigned block panels (C1 / C4 / C5 / C7)</h2>
       <PanelDemo id="callout" label="Callout (content + text style + spacing)" />
       <PanelDemo id="heading" label="Heading (text-bearing)" />
-      <PanelDemo id="photoHero" label="PhotoHero (design block)" />
+      <PanelDemo id="photoHero" label="Banner (height + content-layout primitives)" />
+      <PanelDemo id="displayHeading" label="Display heading (text design block)" />
+      <PanelDemo id="prose" label="Prose (text design block)" />
       <PanelDemo id="offerings" label="Offerings (data block)" />
     </div>
   )

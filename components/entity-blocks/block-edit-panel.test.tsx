@@ -72,6 +72,10 @@ describe('BlockEditPanel redesign', () => {
     // the redesign uses switches, not the old labelled checkbox input
     expect(html).toContain('role="switch"')
     expect(html).not.toContain('type="checkbox"')
+    // ADR-571 task 6: alignment is a direct icon-group, not buried in a dropdown.
+    expect(html).toContain('aria-label="Alignment"')
+    // ADR-571 task 5: the legacy None | S | M | L padding selector is gone from the Style group.
+    expect(html).not.toContain('aria-label="Padding"')
   })
 
   it('a DATA block leads with a minimal Show-on-page switch + omits the text-style group', () => {

@@ -65,3 +65,59 @@ describe('DesignBlockView button always shows once labelled (Fix 8)', () => {
     expect(html).not.toContain('Get started')
   })
 })
+
+describe('Banner height + content layout (ADR-571 tasks 2 + 3)', () => {
+  it('the "beside" display renders a two-column grid (photo beside the copy), not an overlay scrim', () => {
+    const html = renderToStaticMarkup(
+      <DesignBlockView
+        id="photoHero"
+        props={{ title: 'Beside', image: 'https://example.com/a.jpg', alt: 'A', display: 'beside' }}
+      />,
+    )
+    expect(html).toContain('md:grid-cols-2')
+    // beside reads in theme tokens, so no on-ink overlay text-shadow treatment
+    expect(html).not.toContain('text-on-ink')
+  })
+
+  it('the "tall" overlay height applies the tall min-height', () => {
+    const html = renderToStaticMarkup(
+      <DesignBlockView
+        id="photoHero"
+        props={{ title: 'Tall', image: 'https://example.com/a.jpg', alt: 'A', display: 'overlay', height: 'tall' }}
+      />,
+    )
+    expect(html).toContain('min-h-[70vh]')
+  })
+
+  it('a bad height / display value falls back to the block defaults (no crash)', () => {
+    const html = renderToStaticMarkup(
+      <DesignBlockView id="photoHero" props={{ title: 'Safe', height: 'huge', display: 'sideways' }} />,
+    )
+    expect(html).toContain('Safe')
+    // default display is overlay → default height medium
+    expect(html).toContain('min-h-[55vh]')
+  })
+})
+
+describe('the two text design blocks (ADR-571 task 7)', () => {
+  it('an empty displayHeading renders its demo prompt', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="displayHeading" props={{}} />)
+    expect(html).toContain('Your big heading')
+  })
+
+  it('an empty prose renders its demo prompt', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="prose" props={{}} />)
+    expect(html).toContain('Write a paragraph of body text here.')
+  })
+
+  it('an authored displayHeading renders the operator title, not the prompt', () => {
+    const html = renderToStaticMarkup(<DesignBlockView id="displayHeading" props={{ text: 'Real title' }} />)
+    expect(html).toContain('Real title')
+    expect(html).not.toContain('Your big heading')
+  })
+
+  it('recognises both new ids as design blocks', () => {
+    expect(isDesignBlock('displayHeading')).toBe(true)
+    expect(isDesignBlock('prose')).toBe(true)
+  })
+})

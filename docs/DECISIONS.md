@@ -12198,3 +12198,56 @@ button orientation, alignment, color, shadow, and spacing controls by declaring 
 + CONTENT-VOICE (no em dashes). Gate green: tsc, eslint, vitest (margin + text-style + primitive sanitize,
 row-margin ops + serialization, redesigned-panel markup, primitive a11y), check:authz, check:menu, check:rls,
 check:canon, check:seo, build.
+
+## ADR-571: Design blocks 2026-b — Banner rename, hero height + content-layout, two text blocks, panel cleanup
+
+**Status:** Accepted · corroborated by `lib/entity-blocks/registry.ts` (the `photoHero` "Banner" label +
+`displayHeading` / `prose` ids in `DESIGN_ENTITY_BLOCK_IDS` + `CORE_PROFILE_BLOCK_IDS`),
+`lib/entity-blocks/block-content.ts` (the `height` + `display` FieldDefs on `photoHero`, the two text-block
+schemas, `TEXT_BEARING_BLOCK_IDS`), `components/page-editor/blocks/design.tsx` (the reworked `PhotoHeroBlock`
+with `BannerHeight`/`BannerDisplay`, the new `DisplayHeadingBlock` / `ProseBlock` + Puck configs),
+`components/entity-blocks/design-block-view.tsx` (the render adapter), and `components/entity-blocks/
+block-edit-panel.tsx` (the promoted alignment row + removed legacy padding).
+
+**Context.** Building on ADR-570's field-type control system, the owner asked for a set of design-block +
+field cleanups: the CONTENT hero read as "Photo hero", too close to the profile "Top Page hero" (the cover);
+the hero had no height or content-layout choice; the block panel still nested alignment inside a "Style"
+disclosure with a legacy None | S | M | L padding selector; and the palette wanted two deliberate text blocks.
+
+**Decision.**
+- **Rename to "Banner".** The CONTENT hero's operator-facing name is now **Banner** (registry label + both
+  Puck labels + description). The STORED ids stay stable for back-compat: the rail block id `photoHero` and the
+  Puck component-type key `PhotoHero` are unchanged, so every existing page keeps rendering — only the display
+  name moved. "Banner" is unclaimed in NAMING.md and reads as an in-page banner, never a profile cover.
+- **Hero height (task 2).** A `height` primitive FieldDef (Short | Medium | Tall) on `photoHero`, driving the
+  overlay/wash section min-height (token-only clamp of min-h + py). Default `medium`.
+- **Hero content layout (task 3).** A `display` segmented FieldDef (Over photo | Beside photo | Below photo).
+  `overlay` keeps the on-ink scrim; `beside` frames the photo in a two-column grid with theme-token copy;
+  `below` stacks the framed photo over centered copy. Default `overlay`.
+- **Two text design blocks (task 7).** `displayHeading` (a big Anton/serif/grotesk display title) and `prose`
+  (a ~62ch body paragraph), each a design block with `withDesignDemo` prompt copy and the C1 text-style bag
+  (size / weight / color / shadow via `blockBearsText`). They are flat (no card) and single-instance in the
+  rail; in Puck they are unlimited (not in `DESIGN_BLOCK_TYPES`).
+- **Panel cleanup (tasks 5 + 6).** Alignment is promoted to a DIRECT top-level Left | Center | Right icon-group
+  in the block edit panel — no longer buried in the "Style" disclosure, and never a dropdown. The legacy
+  None | S | M | L inner-padding selector is removed: block spacing is owned by the C3 Spacing (margin) group +
+  the Background switch, so the padding step only duplicated that concept. `BlockStyle.pad` stays in the type +
+  render frame so any already-stored pad still renders (degrade-safe).
+- **Card grid add-card (task 4).** The `cardGrid` cards field reuses the shared `features` array repeater
+  (add / remove / reorder), per the existing array-field pattern — no bespoke editor.
+
+**Back-compat.** No migration (jsonb). The rename touches labels only; ids are stable. `height` / `display` are
+sanitized against their declared allowed sets and dropped when equal to the default (sparse), so an old bag
+without them renders the defaults. A stored `pad` still renders even though the control was removed. The two
+new ids are additive.
+
+**Alternatives considered.** (1) Change the stored `photoHero` id to `banner` — rejected: it breaks every
+existing page's stored block; a label change is enough. (2) Make the two text blocks plain content blocks
+(content-block-view) — rejected: `withDesignDemo` + the design-block render path already give them demo copy
+and single-instance placement, and they belong with the other authored design sections. (3) Keep alignment in
+the Style disclosure — rejected: it hid the most-used control one tap deep.
+
+**Consequences.** Both editors (rail + Puck) carry the Banner, its height + content layouts, and the two text
+blocks. Gate green: tsc, eslint, vitest (registry + design-block + panel markup + height/display sanitize),
+check:authz, check:menu, check:rls, check:canon, check:seo, build. Dev showcase at `/dev/editor-controls`
+gains the Banner primitives + the two text-block panels.

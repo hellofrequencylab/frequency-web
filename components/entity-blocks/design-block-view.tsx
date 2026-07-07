@@ -7,6 +7,10 @@ import {
   CardGridBlock,
   ZigzagBlock,
   AccentBeatBlock,
+  DisplayHeadingBlock,
+  ProseBlock,
+  type BannerDisplay,
+  type BannerHeight,
 } from '@/components/page-editor/blocks/design'
 
 // THE DESIGN-BLOCK ADAPTER (2026): renders the five reusable design blocks (PhotoHero / EditorialSection /
@@ -64,6 +68,14 @@ const DESIGN_DEMO: Record<string, Record<string, unknown>> = {
     body: 'Add one clear line that invites the reader to take the next step.',
     buttonLabel: 'Button text',
   },
+  // The two TEXT design blocks (ADR-571): a single prompt string each, so a freshly placed block explains
+  // what to type. Kept in lockstep with their Puck defaultProps in design.tsx.
+  displayHeading: {
+    text: 'Your big heading',
+  },
+  prose: {
+    text: 'Write a paragraph of body text here. Say what you do, in plain and honest sentences.',
+  },
 }
 
 /** Whether an authored value is "present" (a non-blank string, or a non-empty array). An absent / empty
@@ -93,6 +105,12 @@ function s(props: Record<string, unknown>, key: string): string | undefined {
   return typeof v === 'string' && v.trim() ? v : undefined
 }
 
+/** Return `v` when it is one of `allowed`, else the `fallback`. Keeps an enum primitive (height / display /
+ *  font) safe even when the adapter is handed a raw, unsanitized bag. */
+function oneOf<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
+  return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback
+}
+
 /** The block's button LABEL, gated by its `buttonOn` toggle (Fix 8). The button ALWAYS renders once it has
  *  a label and is on (default on); the design components fall a no-link button back to '#'. Turning the
  *  toggle off (`buttonOn: false`) returns undefined so the label — and the button — drop. */
@@ -107,6 +125,10 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
   switch (id) {
     case 'photoHero': {
       const image = safeUrl(props.image) || undefined
+      // The height / display primitives (ADR-571). Already sanitized upstream, but this adapter may be
+      // called with a raw bag, so gate each to its allowed set and fall back to the block's own default.
+      const height = oneOf(props.height, ['short', 'medium', 'tall'], 'medium') as BannerHeight
+      const display = oneOf(props.display, ['overlay', 'beside', 'below'], 'overlay') as BannerDisplay
       return (
         <PhotoHeroBlock
           variant={image ? 'image' : 'wash'}
@@ -115,6 +137,8 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
           eyebrow={s(props, 'eyebrow')}
           title={s(props, 'title')}
           subtitle={s(props, 'subtitle')}
+          height={height}
+          display={display}
           actionPrimaryLabel={buttonLabel(props)}
           actionPrimaryHref={safeUrl(props.buttonUrl) || undefined}
         />
@@ -181,6 +205,16 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
           ctaHref={safeUrl(props.buttonUrl) || undefined}
         />
       )
+    case 'displayHeading':
+      return (
+        <DisplayHeadingBlock
+          text={s(props, 'text')}
+          accentWord={s(props, 'accentWord')}
+          font={oneOf(props.font, ['display', 'serif', 'grotesk'], 'display')}
+        />
+      )
+    case 'prose':
+      return <ProseBlock text={s(props, 'text')} />
     default:
       return null
   }
