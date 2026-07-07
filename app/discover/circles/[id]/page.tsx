@@ -6,9 +6,9 @@ import { getPublicCircleById } from '@/lib/discover'
 import { InlineBetaCapture } from '@/components/discover/inline-beta-capture'
 import { RippleRings } from '@/components/marketing/vector-art'
 import { DetailTemplate } from '@/components/templates'
-import { SITE_NAME, SITE_URL } from '@/lib/site'
+import { SITE_NAME } from '@/lib/site'
 import { JsonLd } from '@/components/json-ld'
-import { breadcrumbSchema } from '@/lib/jsonld'
+import { breadcrumbSchema, circleSchema } from '@/lib/jsonld'
 
 export const revalidate = 3600
 
@@ -68,23 +68,9 @@ export default async function CirclePage({
             { name: 'Circles', path: '/discover/circles' },
             { name: circle.name, path: `/discover/circles/${circle.id}` },
           ]),
-          // Minimal entity for the circle: a small local group, mapped to
-          // Organization. Only fields the page already loads, never a fabricated count.
-          {
-            '@context': 'https://schema.org',
-            '@type': 'Organization',
-            name: circle.name,
-            url: `${SITE_URL}/discover/circles/${circle.id}`,
-            ...(circle.about ? { description: circle.about } : {}),
-            ...(circle.city
-              ? {
-                  location: {
-                    '@type': 'Place',
-                    address: { '@type': 'PostalAddress', addressLocality: circle.city },
-                  },
-                }
-              : {}),
-          },
+          // A circle as schema.org/Organization (a small local group) — the tested
+          // helper so it stays consistent with every other /discover entity schema.
+          circleSchema(circle),
         ]}
       />
 

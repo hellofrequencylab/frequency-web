@@ -5,6 +5,7 @@ import {
   organizationSchema,
   websiteSchema,
   circleListSchema,
+  circleSchema,
   eventListSchema,
   faqSchema,
   personSchema,
@@ -299,6 +300,31 @@ describe('circleListSchema', () => {
     expect(result.itemListElement[1].position).toBe(2)
     expect(result.itemListElement[0].url).toBe(`${SITE_URL}/discover/circles/c1`)
     expect(result.itemListElement[0].name).toBe('North')
+  })
+})
+
+// ── circleSchema ──────────────────────────────────────────────────────────────
+
+describe('circleSchema', () => {
+  it('returns an Organization with an absolute url', () => {
+    const result = circleSchema({ id: 'c1', name: 'North Circle' })
+    expect(result['@type']).toBe('Organization')
+    expect(result.name).toBe('North Circle')
+    expect(result.url).toBe(`${SITE_URL}/discover/circles/c1`)
+  })
+
+  it('omits description + location when absent, includes them (city-level) when present', () => {
+    const bare = circleSchema({ id: 'c2', name: 'Bare' })
+    expect('description' in bare).toBe(false)
+    expect('location' in bare).toBe(false)
+
+    const full = circleSchema({ id: 'c3', name: 'Full', about: 'We walk Sundays.', city: 'Austin' })
+    expect(full.description).toBe('We walk Sundays.')
+    // City-level only — never a precise venue.
+    expect(full.location).toEqual({
+      '@type': 'Place',
+      address: { '@type': 'PostalAddress', addressLocality: 'Austin' },
+    })
   })
 })
 

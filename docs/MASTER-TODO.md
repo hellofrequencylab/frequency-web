@@ -37,10 +37,14 @@ actions. Build/lint/test green; no migration drift; no known correctness or secu
 - 🟡 Help-doc naming audit: sweep `content/help/**` for retired member terms.
 - 🟡 Em dashes in operator/admin copy + `lib/demo/engine.ts` demo content.
 
-### Phase 2 — SEO / AIO completion
-- ⏳ Extend JSON-LD to in-app entity detail (circle · journey · space · practice); marketing pages
-  already emit it. Self-canonical + OG audit on the entity pages.
-- ⏳ Confirm `sitemap.ts` / `llms.txt` / `llms-full.txt` include the live entity routes and stay fresh.
+### Phase 2 — SEO / AIO completion ✅
+- ✅ Audit found coverage was already **complete**: every PUBLIC entity surface (`/discover/*` events,
+  circles, journeys, practices, places, topics, partners; `/spotlight/*`; `/sites/*`; the space
+  profile) emits valid JSON-LD + self-canonical + OG. The in-app `(main)` pages are auth-gated (correctly
+  NOT indexed), so schema there would be wrong. `check:seo` green; sitemap/llms.txt/llms-full.txt current.
+- ✅ The one gap was consistency: the circle detail carried an INLINE `Organization` node while every
+  other entity used a helper. Extracted `circleSchema()` into `lib/jsonld.ts` (city-level location,
+  never fabricated) + a test, and wired the page to it.
 
 ### Phase 3 — performance (D3 + tail)
 - ⏳ `messages` / DM / room fetch waterfalls → waves.
