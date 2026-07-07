@@ -161,6 +161,23 @@ function FieldEditor({
       </label>
     )
   }
+  if (field.type === 'toggle') {
+    // A boolean switch (Fix 8: "show this button"). Defaults to the field default when unset; toggling back
+    // to the default passes `undefined` so setField deletes the key, keeping the stored bag sparse.
+    const def = field.default ?? false
+    const on = typeof value === 'boolean' ? value : def
+    return (
+      <label className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+        <span className="text-xs font-semibold text-text">{field.label}</span>
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => onChange(e.target.checked === def ? undefined : e.target.checked)}
+          className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
+        />
+      </label>
+    )
+  }
   if (field.type === 'images') {
     return <ImagesEditor label={field.label} value={value} uploadImage={field.upload ? uploadImage : undefined} onChange={onChange} />
   }

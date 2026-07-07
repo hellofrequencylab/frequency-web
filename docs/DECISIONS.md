@@ -12027,3 +12027,60 @@ resolved / `logsAs` practice id). New pure module `lib/on-air/free-sit.ts` + uni
 (`lib/on-air/free-sit.test.ts`); no schema or migration change. Docs: `docs/ON-AIR.md`
 "Entry, selection, and resume" (Be Still Begin fallback) + "One countdown" (single visible
 countdown). Gate green: tsc, eslint, vitest, check:authz, check:menu, check:rls, build.
+
+---
+
+## ADR-568: Rail arranger row titles, full-bleed PhotoHero, explanatory demo content, always-on toggleable buttons
+
+**Status:** Accepted · corroborated by `lib/entity-blocks/layout.ts` (`RowDef.title`/`headerOn`,
+`normalizeRowTitle`, `rowShowsHeader`), `lib/entity-blocks/rows-ops.ts` (`setRowTitle`/`setRowHeaderOn`,
+content-preserving `placeBlock`/`removeBlock`), `components/entity-blocks/entity-grid.tsx` (the live row
+header), `components/entity-blocks/design-block-view.tsx` (`withDesignDemo`, button-toggle gating), and
+`components/page-editor/blocks/design.tsx` (the rebuilt PhotoHero).
+
+**Context.** Operators edit a Space page with the ON-PAGE RAIL ARRANGER (the entity-blocks system, ADR-516
+Phase D), NOT the Puck editor. Four gaps lived there: (5) rows had no title, so a section could not be
+labelled or carry a live header (ADR-562 added that only to the Puck/`page_settings.layout.slots` engine, a
+different surface); (6) the PhotoHero design block rendered as a washed-out pale band with its copy stacked
+BELOW the image, reading as broken; (7) a freshly placed content/design block showed nothing, so an operator
+could not tell what a block was for; (8) a content-block button rendered only when a link was present, and an
+empty/hidden block reserved a hollow box on the live page instead of collapsing. A silent DATA-LOSS bug also
+lurked: `placeBlock`/`removeBlock` rebuilt the layout as `normalize({ rows, hidden })`, DROPPING the per-block
+`content`/`style` maps, so reordering a block (the up/down arrows, keyboard grab, and move-to-section all
+route through `placeBlock`) ERASED its authored content.
+
+**Decision.**
+- **Row title + live-header toggle (Fix 5).** Extend the freeform `RowDef` jsonb with `title?: string`
+  (trimmed + bounded to `ROW_TITLE_MAX` = 80) and `headerOn?: boolean` (persisted only as `true`, only beside
+  a non-blank title). The title is ALWAYS visible in the arranger as the row's editable name; `headerOn`
+  (default OFF) decides whether it ALSO renders as a section `<h2>` on the live page. `rowShowsHeader` (toggle
+  on AND title non-blank) is the single source both `EntityGrid` and any config check read; a header is
+  suppressed over a row with no blocks (ADR-562's "no lone heading"). Threaded through parse / sanitize /
+  resolve / `normalize` so it survives every mutation and round-trip. No migration (jsonb).
+- **Full-bleed PhotoHero (Fix 6).** Rebuilt as a real hero: a full-cover `next/image` fills a tall section
+  (`min-h-[70vh]`/`80vh`) with the eyebrow / headline / subtitle / actions OVERLAID and centered over an INK
+  gradient scrim, on-ink text — reusing the profile cover-hero pattern (`from-ink/... bg-gradient-to-t`,
+  `text-on-ink`). No image falls back to a warm accent wash with theme-token copy. Shared with Puck; both
+  editors render from the same component.
+- **Explanatory demo content (Fix 7).** `withDesignDemo` merges a per-id PROMPT bag UNDER the authored bag,
+  so every unfilled slot shows instructional placeholder copy ("Your headline goes here", "Button text",
+  "Section label") and the operator's typed value wins the instant it exists. Content-block editor
+  placeholders were made instructional to match. Deliberately generic so it reads as a prompt, not real copy.
+- **Always-on, toggleable buttons + collapse (Fix 8).** A button now renders whenever it has a LABEL (a
+  no-link button falls back to `#`), never hidden for want of a link. A new `toggle` field type adds a
+  per-block `buttonOn` switch (default ON, persisted sparsely as only `false`). A block with nothing visible
+  returns `null`, so its row reserves zero height (the grid emits nothing, no hollow box).
+- **Data-loss fix.** `placeBlock` now spreads `...layout` so `content`/`style` carry through a move;
+  `removeBlock` preserves every OTHER block's bag and drops only the deleted block's entry.
+
+**Alternatives.** (1) A row-headers table — declined (same reasoning as ADR-562: the title is a property of a
+row that already lives in the layout jsonb). (2) Multi-instance design blocks — declined; the owner confirmed
+single-instance. (3) Regenerating a block id on move — rejected: it is exactly what would orphan the content
+bag; the fix keeps the stable id and carries its entry.
+
+**Consequences.** Zero migration (all jsonb-carried). Reordering a block with authored content is now
+lossless (regression tests added: move / bench / nudge preserve content, delete drops only its own). The
+five design blocks explain themselves on placement and render identically in the rail arranger and Puck. Copy
+passes NAMING + CONTENT-VOICE (no em dashes). Gate green: tsc, eslint, vitest (row-title/toggle serialization,
+content-survives-move, button-visible-without-link, empty-collapse, demo-content, hero-structure suites),
+check:authz, check:menu, check:rls, build.

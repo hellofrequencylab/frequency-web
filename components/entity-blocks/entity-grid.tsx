@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { RowDef } from '@/lib/entity-blocks/layout'
+import { rowShowsHeader, type RowDef } from '@/lib/entity-blocks/layout'
 
 // The presentational interior GRID for the unified entity-block renderers (ADR-508 → ADR-516 Phase A).
 // DATA-DRIVEN: it renders a freeform RowDef[] (the source of truth going forward) instead of switching on
@@ -28,6 +28,22 @@ function columnsClass(columns: number, ratio: string | undefined): string {
   return GRID_COLS[columns] ?? ''
 }
 
+/** The LIVE per-row header (Fix 5): the row's title as a semantic section heading, shown only when the
+ *  operator turned the row header on. Kit tokens only (no hex), voice-neutral. Sits above the row content. */
+function RowHeader({ title }: { title: string }) {
+  return (
+    <h2 className="mb-4 font-display text-xl font-bold uppercase tracking-tight text-text sm:text-2xl">
+      {title}
+    </h2>
+  )
+}
+
+/** Whether a row holds at least one placed block id (any column). A header over a row with no blocks reads
+ *  as a bug (ADR-562), so the header is suppressed for an empty row even when toggled on. */
+function rowHasBlocks(row: RowDef): boolean {
+  return row.cells.some((stack) => stack.length > 0)
+}
+
 export function EntityGrid({
   rows,
   renderBlock,
@@ -41,20 +57,51 @@ export function EntityGrid({
   return (
     <div className="@container space-y-6">
       {rows.map((row) => {
-        // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid
-        // wrapper — so a single-column layout renders as N stacked blocks in one `space-y-6` container.
+        // The optional LIVE row header (Fix 5): shown only when the toggle is on, the title is non-blank,
+        // AND the row actually holds blocks (never a lone header over an empty row).
+        const showHeader = rowShowsHeader(row) && rowHasBlocks(row)
+
+        // A 1-column row emits its column's stacked blocks directly into the shared stack — no grid wrapper
+        // — so a single-column layout WITHOUT a header renders byte-identically to before (N stacked blocks
+        // in one `space-y-6` container). A header wraps that row in its own <section> so the heading sits
+        // above the stack.
         if (row.columns === 1) {
           const stack = row.cells[0] ?? []
-          return stack.map((id) => renderBlock(id))
+          if (!showHeader) return stack.map((id) => renderBlock(id))
+          return (
+            <section key={row.id} className="space-y-6">
+              <RowHeader title={row.title!} />
+              {stack.map((id) => renderBlock(id))}
+            </section>
+          )
         }
-        return (
-          <div key={row.id} className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
+        const grid = (
+          <div className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
             {row.cells.map((stack, i) => (
               <div key={`${row.id}-${i}`} className="@container space-y-6">
                 {stack.map((id) => renderBlock(id))}
               </div>
             ))}
           </div>
+        )
+        // No header: the grid div is the row (byte-identical to before, keyed on the row id). With a header,
+        // wrap the grid in a <section> under the heading.
+        if (!showHeader) {
+          return (
+            <div key={row.id} className={`grid gap-6 ${columnsClass(row.columns, row.ratio)}`}>
+              {row.cells.map((stack, i) => (
+                <div key={`${row.id}-${i}`} className="@container space-y-6">
+                  {stack.map((id) => renderBlock(id))}
+                </div>
+              ))}
+            </div>
+          )
+        }
+        return (
+          <section key={row.id}>
+            <RowHeader title={row.title!} />
+            {grid}
+          </section>
         )
       })}
     </div>

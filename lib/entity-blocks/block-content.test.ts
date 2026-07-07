@@ -122,6 +122,17 @@ describe('sanitizeBlockContent', () => {
       }),
     ).toEqual({ title: 'Join us', body: 'Come along', buttonLabel: 'Book', buttonUrl: 'https://x.com/book' })
   })
+  it('button toggle (Fix 8): persists only the non-default `false`, drops the default `true` + non-booleans', () => {
+    // Default is ON, so only an explicit `false` is stored (sparse).
+    expect(sanitizeBlockContent('callout', { buttonLabel: 'Go', buttonOn: false })).toEqual({
+      buttonLabel: 'Go',
+      buttonOn: false,
+    })
+    // `true` equals the default → dropped.
+    expect(sanitizeBlockContent('callout', { buttonLabel: 'Go', buttonOn: true })).toEqual({ buttonLabel: 'Go' })
+    // A non-boolean toggle value is dropped.
+    expect(sanitizeBlockContent('callout', { buttonLabel: 'Go', buttonOn: 'yes' })).toEqual({ buttonLabel: 'Go' })
+  })
   it('sanitizes features (ADR-542): drops items with no title and no text, bounds fields', () => {
     expect(
       sanitizeBlockContent('features', {

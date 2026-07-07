@@ -36,6 +36,8 @@ import {
   moveRow,
   setRowColumns,
   setRowRatio,
+  setRowTitle,
+  setRowHeaderOn,
   placeBlock,
   benchBlock,
   hideBlock,
@@ -254,6 +256,17 @@ export function EntityPageBuilder({
           ? 'Row split into a main and a side column.'
           : 'Row split into two even columns.',
     )
+  }
+
+  // Row TITLE + live-header toggle (Fix 5). The title is the row's NAME in the editor (always visible); the
+  // toggle decides whether that title ALSO renders as a header on the live page. Both go through `mutate`, so
+  // the live preview (LiveProfileGrid reads store.rows) repaints instantly and the change saves debounced.
+  function onRowTitle(rowId: string, title: string) {
+    mutate(setRowTitle(layout, rowId, title))
+  }
+  function onRowHeaderOn(rowId: string, on: boolean, index: number) {
+    mutate(setRowHeaderOn(layout, rowId, on))
+    say(on ? `Row ${index + 1} header shown on the live page.` : `Row ${index + 1} header hidden on the live page.`)
   }
 
   // ── Block actions ──
@@ -718,9 +731,34 @@ export function EntityPageBuilder({
                   onChoose={(choice) => onSetRowLayout(row.id, choice)}
                 />
 
-                <span className="min-w-0 flex-1 truncate px-1 text-2xs text-subtle">
-                  Row {index + 1}
-                </span>
+                {/* Row TITLE (Fix 5): an always-visible editable name so the operator can identify the row.
+                    Placeholder shows the positional "Row N" until they name it. The eye toggle beside it
+                    controls whether this title ALSO renders as a header on the live page (default off). */}
+                <input
+                  type="text"
+                  value={row.title ?? ''}
+                  placeholder={`Row ${index + 1}`}
+                  aria-label={`Title for row ${index + 1}`}
+                  onChange={(e) => onRowTitle(row.id, e.target.value)}
+                  className="min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 py-0.5 text-2xs text-text placeholder:text-subtle hover:border-border focus:border-primary focus:outline-none"
+                />
+                <button
+                  type="button"
+                  aria-label={
+                    row.headerOn
+                      ? `Hide row ${index + 1} header on the live page`
+                      : `Show row ${index + 1} header on the live page`
+                  }
+                  aria-pressed={!!row.headerOn}
+                  title={row.headerOn ? 'Header shows on the live page' : 'Header hidden on the live page'}
+                  disabled={!row.title}
+                  onClick={() => onRowHeaderOn(row.id, !row.headerOn, index)}
+                  className={`shrink-0 rounded p-1 transition-colors disabled:opacity-30 ${
+                    row.headerOn ? 'text-primary-strong' : 'text-subtle hover:text-text'
+                  }`}
+                >
+                  {row.headerOn ? <Eye className="h-3.5 w-3.5" aria-hidden /> : <EyeOff className="h-3.5 w-3.5" aria-hidden />}
+                </button>
 
                 {/* Row up/down */}
                 <button

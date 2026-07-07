@@ -13,6 +13,7 @@
 // proper nouns carry the magic, no em or en dashes. See the design scope report for the full spec.
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
@@ -49,12 +50,15 @@ function DesignHeading({
   headerFont,
   size = 'default',
   as: Tag = 'h2',
+  className,
 }: {
   title?: string
   accentWord?: string
   headerFont?: string
   size?: 'default' | 'lg'
   as?: 'h1' | 'h2' | 'h3'
+  /** Override the default warm-text color (e.g. `text-on-ink` when the heading sits over a photo scrim). */
+  className?: string
 }) {
   if (!title) return null
   // Fluid scale mirrors the kit DisplayHeading so a design block sits in the same type rhythm.
@@ -62,8 +66,10 @@ function DesignHeading({
     size === 'lg'
       ? 'text-[clamp(2rem,7vw,4.5rem)] leading-[0.95]'
       : 'text-[clamp(1.875rem,5.5vw,3rem)]'
+  // The color token defaults to warm text; a caller can swap it (on-ink over a photo) via `className`.
+  const color = className ?? 'text-text'
   return (
-    <Tag className={`font-display uppercase text-balance text-text ${scale}`} style={headerFontStyle(headerFont)}>
+    <Tag className={`font-display uppercase text-balance ${color} ${scale}`} style={headerFontStyle(headerFont)}>
       {accentWord ? accentize(title, accentWord) : title}
     </Tag>
   )
@@ -73,19 +79,22 @@ function DesignHeading({
 const designHeaderFontField = headerFontField
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 01 · PhotoHero — the opener at the top of a page.
-// A full-width photograph under a light cream scrim (canvas ~82%) so the Anton headline + accent CTA
-// read WITHOUT going dark. Centered eyebrow, headline with an accent word, optional subtitle, up to two
-// actions. `variant` image | wash | text-only; no image falls back to an accent wash.
+// 01 · PhotoHero — the FULL-BLEED opener at the top of a page (2026 rebuild).
+// A large photograph fills the full content width and stands tall (near full-viewport height), with the
+// eyebrow / headline / subtitle / actions OVERLAID and centered ON the image. A legibility gradient scrim
+// (the profile cover pattern: an ink gradient bottom-to-top, on-ink text) keeps the copy readable on ANY
+// photo. `variant` image | wash | text-only; no image falls back to a warm accent wash and the copy reads
+// in the theme tokens (no scrim needed). `scrim` picks how heavy the ink veil is over a photo.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PhotoHeroVariant = 'image' | 'wash' | 'text-only'
 type ScrimStep = 'light' | 'medium'
 
+// The ink gradient scrim under the overlaid copy, at two strengths, so an on-ink headline clears the WCAG
+// ≥4.5:1 floor on any cover. Tokens only (ink), never a hardcoded hex — mirrors the profile cover hero.
 const SCRIM_CLASS: Record<ScrimStep, string> = {
-  // Cream veil (the page canvas) at two strengths so legibility holds on any photo; tokenized, never ink.
-  light: 'bg-canvas/80',
-  medium: 'bg-canvas/90',
+  light: 'from-ink/75 via-ink/35 to-ink/20',
+  medium: 'from-ink/90 via-ink/55 to-ink/30',
 }
 
 export function PhotoHeroBlock({
@@ -119,41 +128,55 @@ export function PhotoHeroBlock({
   headerFont?: string
   layout?: LayoutValue
 }) {
-  const showPhoto = variant === 'image' && !!image
-  const actions = (
+  const onPhoto = variant === 'image' && !!image
+  // A no-link button still renders (buttons always show once labelled) — the operator wires the link
+  // later, so a blank href falls back to '#'. Only an empty label hides a button.
+  const hasActions = !!(actionPrimaryLabel || actionSecondaryLabel)
+  const actions = hasActions ? (
     <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-      {actionPrimaryLabel && actionPrimaryHref && (
-        <CtaButton href={actionPrimaryHref} label={actionPrimaryLabel} variant="primary" />
+      {actionPrimaryLabel && (
+        <CtaButton href={actionPrimaryHref || '#'} label={actionPrimaryLabel} variant="primary" />
       )}
-      {actionSecondaryLabel && actionSecondaryHref && (
-        <CtaButton href={actionSecondaryHref} label={actionSecondaryLabel} variant="secondary" />
+      {actionSecondaryLabel && (
+        <CtaButton href={actionSecondaryHref || '#'} label={actionSecondaryLabel} variant="secondary" />
       )}
     </div>
-  )
-  const hasActions =
-    (actionPrimaryLabel && actionPrimaryHref) || (actionSecondaryLabel && actionSecondaryHref)
+  ) : null
+
+  // On a photo the copy reads on-ink over the scrim; on the wash it keeps the warm theme tokens.
+  const headingCls = onPhoto ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : undefined
+  const subtitleCls = onPhoto ? 'text-on-ink-muted' : 'text-muted'
 
   const inner = (
-    <div className="relative z-10 mx-auto max-w-3xl px-6 py-20 text-center sm:py-28">
-      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} size="lg" as="h1" />
-      {subtitle && <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{subtitle}</p>}
-      {hasActions ? actions : null}
+    <div className="relative z-10 mx-auto flex min-h-[70vh] max-w-3xl flex-col items-center justify-center px-6 py-24 text-center sm:min-h-[80vh] sm:py-32">
+      {eyebrow && <Eyebrow ink={onPhoto}>{eyebrow}</Eyebrow>}
+      <DesignHeading
+        title={title}
+        accentWord={accentWord}
+        headerFont={headerFont}
+        size="lg"
+        as="h1"
+        className={headingCls}
+      />
+      {subtitle && <p className={`mx-auto mt-5 max-w-xl text-lg ${subtitleCls}`}>{subtitle}</p>}
+      {actions}
     </div>
   )
 
   return (
     <section className={`relative overflow-hidden rounded-2xl ${padClass(layout) ?? ''} ${visClass(layout)}`}>
-      {showPhoto ? (
+      {onPhoto ? (
         <>
-          {/* Alt text is required in the editor; the photo sits under a CREAM veil, never an ink scrim. */}
-          <SiteImage src={image!} alt={alt ?? ''} aspect="16/9" className="absolute inset-0 h-full w-full" preload />
-          <div className={`absolute inset-0 ${SCRIM_CLASS[scrim]}`} aria-hidden />
+          {/* Full-bleed photo fills the section (next/image `fill` + object-cover, the profile cover
+              pattern); alt is required in the editor. The ink gradient scrim sits over it so the overlaid
+              on-ink copy stays legible on any image. */}
+          <Image src={image!} alt={alt ?? ''} fill sizes="100vw" preload className="object-cover" />
+          <div className={`absolute inset-0 bg-gradient-to-t ${SCRIM_CLASS[scrim]}`} aria-hidden />
         </>
       ) : (
-        // Forgiving: no image (or the wash / text-only variants) falls back to a pale accent wash so the
-        // page still opens loud. text-only reads as a utility opener with no photo.
-        <div className={variant === 'text-only' ? 'bg-surface' : 'bg-primary-bg'} aria-hidden />
+        // No image (or the wash / text-only variants): a warm accent wash fills the section, copy in theme
+        // tokens. text-only reads as a calmer surface opener; both still stand tall as a real hero.
+        <div className={`absolute inset-0 ${variant === 'text-only' ? 'bg-surface' : 'bg-primary-bg'}`} aria-hidden />
       )}
       {inner}
     </section>
@@ -361,10 +384,11 @@ export function CardGridBlock({
           ))}
         </div>
       )}
-      {browseLabel && browseSafe && (
+      {/* Browse link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
+      {browseLabel && (
         <div className="mt-10">
           <Link
-            href={browseSafe}
+            href={browseSafe || '#'}
             className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
           >
             {browseLabel}
@@ -452,9 +476,10 @@ export function ZigzagBlock({
           <div className="space-y-4 text-lg leading-relaxed text-muted">{richParagraphs(lead)}</div>
         )}
       </div>
-      {ctaLabel && ctaSafe && (
+      {/* Link shows once labelled; a missing link falls back to '#' until the operator sets one. */}
+      {ctaLabel && (
         <Link
-          href={ctaSafe}
+          href={ctaSafe || '#'}
           className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary-strong hover:underline"
         >
           {ctaLabel}
@@ -536,9 +561,11 @@ export function AccentBeatBlock({
         <DesignHeading title={title} accentWord={accentWord} headerFont={headerFont} />
       )}
       {body && <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{body}</p>}
-      {mode === 'cta' && ctaLabel && ctaSafe && (
+      {/* Buttons always show once labelled (a no-link button falls back to '#' until the operator sets a
+          link); only a blank label hides the CTA. */}
+      {mode === 'cta' && ctaLabel && (
         <div className="mt-8">
-          <CtaButton href={ctaSafe} label={ctaLabel} variant="primary" />
+          <CtaButton href={ctaSafe || '#'} label={ctaLabel} variant="primary" />
         </div>
       )}
     </div>
@@ -600,18 +627,20 @@ export const designComponents: Record<string, ComponentConfig> = {
       actionSecondaryHref: { type: 'text', label: 'Secondary button link' },
       layout: blockFields().layout,
     },
+    // Demo defaults that EXPLAIN each slot (Fix 7): the copy reads as a prompt, not real marketing, so an
+    // operator sees at a glance what goes where and replaces it. Voice-canon, no em dashes.
     defaultProps: {
       variant: 'image',
       image: '',
       alt: '',
       headerFont: headerFontDefault,
-      eyebrow: 'Come sit with us',
-      title: 'The warm room is real',
-      accentWord: 'warm',
-      subtitle: 'Beach gatherings, circles, and practice, held in person.',
+      eyebrow: 'Section label',
+      title: 'Your headline goes here',
+      accentWord: 'headline',
+      subtitle: 'Add a line that says what this page is about.',
       scrim: 'light',
-      actionPrimaryLabel: 'See what is happening',
-      actionPrimaryHref: '#',
+      actionPrimaryLabel: 'Button text',
+      actionPrimaryHref: '',
       actionSecondaryLabel: '',
       actionSecondaryHref: '',
       layout: blockLayoutDefaults.layout,
@@ -696,21 +725,22 @@ export const designComponents: Record<string, ComponentConfig> = {
       },
       ...blockFields(),
     },
+    // Demo defaults that EXPLAIN each slot (Fix 7): prompt copy, not real marketing.
     defaultProps: {
       headerFont: headerFontDefault,
-      eyebrow: 'Why Frequency',
-      title: 'A promise, not a program',
-      accentWord: 'promise',
+      eyebrow: 'Section label',
+      title: 'Your heading goes here',
+      accentWord: 'heading',
       kicker: '',
       body: 'lead',
       surface: 'open',
-      lead: 'Before we name anything, we settle the nervous system enough that what is true can surface on its own.',
+      lead: 'Tell your story in plain, honest sentences. Replace this with a paragraph or two about what you do.',
       stats: [
-        { value: '1,000+', label: 'Circles held' },
-        { value: '13', label: 'Week seasons' },
-        { value: '54', label: 'Person origin' },
+        { value: '100+', label: 'What you count' },
+        { value: '12', label: 'Another number' },
+        { value: '5', label: 'One more' },
       ],
-      faqs: [{ q: 'A common question?', a: 'A plain, honest answer.' }],
+      faqs: [{ q: 'A question people ask you?', a: 'A plain, honest answer.' }],
       ...blockLayoutDefaults,
     },
     render: ({ headerFont, eyebrow, title, accentWord, kicker, body, surface, lead, stats, faqs, tone, width, align, layout }) => (
@@ -774,17 +804,18 @@ export const designComponents: Record<string, ComponentConfig> = {
       browseHref: { type: 'text', label: 'Browse link URL' },
       ...blockFields(),
     },
+    // Demo defaults that EXPLAIN each slot (Fix 7): each card prompts what to write in it.
     defaultProps: {
       headerFont: headerFontDefault,
-      eyebrow: 'What you get',
-      title: 'Three things every member holds',
-      accentWord: 'holds',
+      eyebrow: 'Section label',
+      title: 'What you offer',
+      accentWord: 'offer',
       role: 'feature',
       columns: 3,
       cards: [
-        { icon: '◎', title: 'A real circle', body: 'People who gather in person, not just a feed.' },
-        { icon: '△', title: 'Guided practice', body: 'Somatic sessions paced to your capacity.' },
-        { icon: '↗', title: 'A next step', body: 'Leave each season with one honest move.' },
+        { icon: '◎', title: 'First thing', body: 'Describe one thing you offer in a sentence or two.' },
+        { icon: '△', title: 'Second thing', body: 'Describe another. Keep it plain and honest.' },
+        { icon: '↗', title: 'Third thing', body: 'One more. Add or remove cards as you need.' },
       ],
       browseLabel: '',
       browseHref: '',
@@ -852,19 +883,20 @@ export const designComponents: Record<string, ComponentConfig> = {
       },
       layout: blockFields().layout,
     },
+    // Demo defaults that EXPLAIN each slot (Fix 7): prompt copy beside a placeholder photo frame.
     defaultProps: {
       image: '',
       alt: '',
       headerFont: headerFontDefault,
-      eyebrow: 'The origin',
-      title: 'Built from a collapse',
-      accentWord: 'collapse',
+      eyebrow: 'Section label',
+      title: 'The story beat',
+      accentWord: 'story',
       body: 'lead',
-      lead: 'Frequency grew out of one person rebuilding a nervous system in public. Every part of it is shaped by what actually helped.',
+      lead: 'Tell this part of the story in plain sentences. Add a photo on the left, or flip it to the right.',
       items: [{ text: 'A first list item.' }],
       quoteBy: '',
-      ctaLabel: 'Read the story',
-      ctaHref: '#',
+      ctaLabel: 'Button text',
+      ctaHref: '',
       mediaSide: 'left',
       background: 'canvas',
       layout: blockLayoutDefaults.layout,
@@ -923,19 +955,20 @@ export const designComponents: Record<string, ComponentConfig> = {
       ctaHref: { type: 'text', label: 'Button link' },
       layout: blockFields().layout,
     },
+    // Demo defaults that EXPLAIN each slot (Fix 7): a prompt call to action, not real marketing.
     defaultProps: {
       background: 'accent-wash',
       mode: 'cta',
       image: '',
       alt: '',
       headerFont: headerFontDefault,
-      eyebrow: 'The close',
-      title: 'You were never meant to heal alone',
-      accentWord: 'alone',
-      body: 'A season starts every 13 weeks. The next room is already warming up.',
+      eyebrow: 'Section label',
+      title: 'Your call to action',
+      accentWord: 'action',
+      body: 'Add one clear line that invites the reader to take the next step.',
       quoteBy: '',
-      ctaLabel: 'Find your circle',
-      ctaHref: '#',
+      ctaLabel: 'Button text',
+      ctaHref: '',
       layout: blockLayoutDefaults.layout,
     },
     render: ({ background, mode, image, alt, headerFont, eyebrow, title, accentWord, body, quoteBy, ctaLabel, ctaHref, layout }) => (

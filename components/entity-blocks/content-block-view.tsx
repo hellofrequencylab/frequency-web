@@ -45,7 +45,13 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const image = safeUrl(props.image)
       const buttonUrl = safeUrl(props.buttonUrl)
       const buttonLabel = s(props, 'buttonLabel')
-      const hasButton = !!(buttonUrl && buttonLabel)
+      // Fix 8: the button ALWAYS renders once it has a label and is toggled on — a no-link button falls
+      // back to '#' until the operator wires it, rather than hiding. `buttonOn` defaults ON when a label is
+      // present; the edit panel's toggle persists `buttonOn: false` to turn it off.
+      const buttonOn = props.buttonOn !== false
+      const hasButton = !!buttonLabel && buttonOn
+      // Collapse: with nothing to show (no title, body, image, or button) the block returns null so its row
+      // reserves NO height (Fix 8) — the grid renders an empty stack as nothing, never a hollow box.
       if (!title && !body && !image && !hasButton) return null
       return (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
@@ -58,7 +64,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
             {body && <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{body}</p>}
             {hasButton && (
               <a
-                href={buttonUrl}
+                href={buttonUrl || '#'}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
               >
                 {buttonLabel}

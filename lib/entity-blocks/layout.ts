@@ -54,12 +54,52 @@ export type RowRatio = 'even' | 'lead' | 'trail'
  *  `cells.length === columns`; each `cells[i]` is the ordered box ids stacked top-to-bottom in column i
  *  (an empty column is `[]`). A block id appears at most once across the WHOLE layout (global dedup). `id`
  *  is a safe generated token (see ROW_ID_RE), never used as an object key. `ratio` only applies when
- *  `columns === 2` (a wider lead column); absent means an even split. */
+ *  `columns === 2` (a wider lead column); absent means an even split.
+ *
+ *  ROW TITLE (Fix 5 / ADR-567): every row can carry an editable `title` — its NAME in the arranger (always
+ *  visible so the operator can identify the row) — and a `headerOn` toggle that decides whether that title
+ *  ALSO renders as a section header on the LIVE page. `headerOn` defaults OFF: a titled row is just labelled
+ *  in the editor until the operator turns its live header on. Both live in the layout jsonb, no migration. */
 export interface RowDef {
   id: string
   columns: RowColumns
   cells: string[][]
   ratio?: RowRatio
+  /** The row's editable title (its name in the arranger; the live header text when `headerOn`). Trimmed +
+   *  bounded to ROW_TITLE_MAX on read. Absent = an untitled row. */
+  title?: string
+  /** Render `title` as a section header on the LIVE page. Persisted only as `true`; absent/false = the
+   *  header-less default (the title still shows in the editor as the row's name). */
+  headerOn?: boolean
+}
+
+/** The row title is user-originated; bound it on every read (mirrors ADR-562's ROW_HEADER_MAX). */
+export const ROW_TITLE_MAX = 80
+
+/** Read + bound a saved row title to a trimmed, capped string, or undefined when blank. Pure + total. */
+export function normalizeRowTitle(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const t = raw.trim().slice(0, ROW_TITLE_MAX)
+  return t.length ? t : undefined
+}
+
+/** Whether a row shows a header on the LIVE page: the toggle is on AND the title is non-blank. The single
+ *  source both the renderer and the "does this layout have config" check read. */
+export function rowShowsHeader(row: Pick<RowDef, 'title' | 'headerOn'>): boolean {
+  return row.headerOn === true && !!normalizeRowTitle(row.title)
+}
+
+/** Attach a trimmed title + headerOn flag to a built RowDef, keeping the stored shape sparse (a blank title
+ *  or an off/absent toggle is dropped). Used by every row-building path so title/toggle carry through parse,
+ *  sanitize, resolve, and the rows ops uniformly. */
+function withRowMeta(row: RowDef, title: unknown, headerOn: unknown): RowDef {
+  const t = normalizeRowTitle(title)
+  const out: RowDef = { ...row }
+  if (t) out.title = t
+  else delete out.title
+  if (t && headerOn === true) out.headerOn = true
+  else delete out.headerOn
+  return out
 }
 
 /** Max boxes stacked in one column (bound on user-originated data). */
@@ -141,7 +181,15 @@ function parseRows(raw: unknown): RowDef[] | null {
   const out: RowDef[] = []
   for (const r of raw.slice(0, MAX_ROWS)) {
     if (!r || typeof r !== 'object' || Array.isArray(r)) continue
-    const o = r as { id?: unknown; columns?: unknown; cells?: unknown; slots?: unknown; ratio?: unknown }
+    const o = r as {
+      id?: unknown
+      columns?: unknown
+      cells?: unknown
+      slots?: unknown
+      ratio?: unknown
+      title?: unknown
+      headerOn?: unknown
+    }
     if (!isRowColumns(o.columns)) continue
     const columns = o.columns
     const raws = rawCells(o)
@@ -158,7 +206,8 @@ function parseRows(raw: unknown): RowDef[] | null {
     }
     const id = typeof o.id === 'string' && ROW_ID_RE.test(o.id) ? o.id : `r${out.length}`
     const ratio = normalizeRatio(o.ratio, columns)
-    out.push(ratio ? { id, columns, cells, ratio } : { id, columns, cells })
+    const base = ratio ? { id, columns, cells, ratio } : { id, columns, cells }
+    out.push(withRowMeta(base, o.title, o.headerOn))
   }
   return out.length ? out : null
 }
@@ -170,7 +219,9 @@ function clampRowColumns(row: RowDef, max: RowColumns): RowDef {
   const cells = row.cells.slice(0, max)
   const columns = max
   const ratio = normalizeRatio(row.ratio, columns)
-  return ratio ? { ...row, columns, cells, ratio } : { id: row.id, columns, cells }
+  // Carry the row title + header toggle through the clamp (they are independent of the column count).
+  const base = ratio ? { ...row, columns, cells, ratio } : { id: row.id, columns, cells }
+  return withRowMeta(base, row.title, row.headerOn)
 }
 
 /** Kind-aware re-validation of already-parsed rows (drop a retired / wrong-kind id, re-dedupe, and clamp
@@ -198,7 +249,8 @@ function sanitizeRows(rows: RowDef[] | undefined, kind: EntityKind): RowDef[] | 
     }
     const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
     const ratio = normalizeRatio(row.ratio, row.columns)
-    out.push(ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells })
+    const base = ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells }
+    out.push(withRowMeta(base, row.title, row.headerOn))
   }
   return out.length ? out : undefined
 }
@@ -568,7 +620,9 @@ export function resolveRows(layout: EntityLayout | null, kind: EntityKind): RowD
       }
       const id = ROW_ID_RE.test(row.id) ? row.id : `r${out.length}`
       const ratio = normalizeRatio(row.ratio, row.columns)
-      out.push(ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells })
+      const base = ratio ? { id, columns: row.columns, cells, ratio } : { id, columns: row.columns, cells }
+      // Carry the row title + live-header toggle into the rendered rows so EntityGrid can draw the header.
+      out.push(withRowMeta(base, row.title, row.headerOn))
     }
     return out
   }
