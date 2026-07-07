@@ -79,7 +79,10 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // Space profiles draw their OWN hairline ABOVE the nav menu and want NO line UNDER it (owner
   // directive), so this shell divider is suppressed there entirely — no rule, no controls. (This
   // returns before the settingsTrigger below, so that trigger never renders on a Space profile.)
-  if (isSpaceProfile) return null
+  // It still owns the GAP between the space menu and the first content block: a rule-less spacer at
+  // DOUBLE the standard divider gap (the shell divider is mb-5 sm:mb-6; this is 2x), so space pages
+  // breathe under the menu without reintroducing a line. Token spacing only, no hardcoded values.
+  if (isSpaceProfile) return <div className="h-10 sm:h-12" aria-hidden />
 
   // When acting AS the page's divider, always at least draw the rule; otherwise (a
   // legacy caller that owns its divider) render nothing when there is nothing to show.

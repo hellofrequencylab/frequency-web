@@ -11778,3 +11778,52 @@ role gates — it labels the ROW, so it shows whenever the operator turned it on
 blocks in the row are gated. Copy passes NAMING + CONTENT-VOICE (no em dashes). Gate green: tsc +
 eslint clean on the changed files, vitest (row-header suite added to `layout.test.ts`), check:authz,
 check:menu, check:rls.
+
+## ADR-563: Owner-editable Space header CTA (the one dominant hero button)
+
+**Context.** The Space profile hero's single primary CTA was fixed: its label came from the per-type
+default (`defaultPrimaryCtaLabel` in `lib/spaces/profile-config.ts`, e.g. "Become a member") and its href
+was hard-wired to the reserved `/book` transactional surface. An operator could not retitle the button or
+point it anywhere else, even though several of their own surfaces already exist (contact, offerings,
+booking).
+
+**Decision.**
+- **A new PURE module `lib/spaces/header-cta.ts`** owns the CTA override: a closed set of IN-HOUSE
+  functions (`book` / `contact` / `tickets` / `donate` / `join` / `offerings`), each resolving to a
+  surface that ALREADY exists — `#contact` and `#offerings` jump to the profile Home section anchors
+  (`SpaceContact` / `SpaceOfferings` blocks render as `<section id="…">`, per `section-anchors.ts`); the
+  rest open the type-branched `/book` surface. A CUSTOM override stores an operator URL + label instead.
+  The module carries a tolerant normalizer (`readHeaderCtaPreference`, drops an unknown function key, a
+  blank label, or an unsafe URL), a strict URL guard (`isValidCtaUrl`: only absolute http(s) or a
+  same-origin `/path`, never `javascript:` or protocol-relative), a total resolver (`resolveHeaderCta`,
+  always a label + href, external flag for a custom off-site link), and a non-destructive merge
+  (`nextHeaderCtaPreferences`, `null` clears the override).
+- **Persistence reuses `spaces.preferences` jsonb** under a new top-level `headerCta` node (alongside
+  `coverScrim` / `moduleMenu`), so NO new column and NO SQL. The write is a new server action
+  `setSpaceHeaderCta` in `app/(main)/spaces/[slug]/manage/layout/actions.ts`, re-gated through the same
+  `authorizeEditor` + `writePreferences` seam as `setSpaceCoverScrim` (so `check:authz` stays green) and
+  re-validating the override server-side.
+- **The control lives in the Identity and Branding module** (`components/spaces/space-branding-form.tsx`),
+  BETWEEN "Cover style" and "Theme accent": a three-way mode picker (Default / Built in / Custom link),
+  the in-house function grid + an optional label input, or a custom URL + label, saved on a "Save button".
+  Data flows through `buildBrandingData` (`rail-getters.ts`) and the `SpaceBrandingModule` wrapper. This
+  is a control INSIDE an existing module's render, not a new menu item, so the MENU-CONTRACT is untouched.
+- **The header renders the resolved CTA** (`app/(main)/spaces/[slug]/(profile)/layout.tsx`): both the
+  desktop action row and the mobile band read `resolveHeaderCta(readHeaderCtaPreference(preferences), …)`,
+  falling back to the per-type default when unset. A custom off-site URL opens in a new tab with safe rel.
+- **Spacing (unrelated polish shipped together).** The gap between the Space admin menu and the first
+  content block is DOUBLED: `PageAdminBar` self-suppressed its divider on Space profiles (owner directive:
+  no rule under the menu), so it now returns a rule-less token spacer (`h-10 sm:h-12`, 2x the standard
+  `mb-5 sm:mb-6` divider gap) instead of `null` — token spacing only, no hardcoded values.
+
+**Alternatives.** (1) A new `spaces.header_cta` column — declined: `preferences` is the existing override
+blob for exactly this class of framing choice, and ADR-246 keeps it untyped. (2) Map "Contact" to
+`startConversation` / a DM — declined: that action requires an accepted friendship, so it is not a valid
+public CTA; the `#contact` section anchor is the in-house, public, no-relationship-required surface. (3) A
+`/spaces/<slug>/offerings` route — it does not exist; the offerings surface is the `#offerings` Home anchor.
+
+**Consequences.** Owners can retitle the hero button and point it at any of their own surfaces or a custom
+link; the default is unchanged when they set nothing. Copy passes NAMING + CONTENT-VOICE (plain verb
+phrases, sentence case, no em dashes). Unit tests cover the normalizer, URL guard, resolver, href map, and
+merge (`lib/spaces/header-cta.test.ts`). Gate green: tsc, eslint, vitest (4057), check:menu, check:authz,
+check:rls, build.
