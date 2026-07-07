@@ -65,3 +65,61 @@ describe('EntityGrid (data-driven rows)', () => {
     expect(html.indexOf('data-block="links"')).toBeLessThan(html.indexOf('data-block="about"'))
   })
 })
+
+// ── Fix 5: per-row LIVE header renders only when the toggle is on + the title is non-blank + the row
+// has blocks (never a lone header). A titled-but-toggled-off row shows NO header on the live page. ──
+describe('EntityGrid row header (Fix 5)', () => {
+  it('renders the row title as an <h2> when the header toggle is on', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 1, cells: [['about']], title: 'Featured', headerOn: true }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).toContain('<h2')
+    expect(html).toContain('Featured')
+    expect(html).toContain('data-block="about"')
+  })
+
+  it('does NOT render a header when the toggle is off (title stays an editor-only name)', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 1, cells: [['about']], title: 'Featured' }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).not.toContain('Featured')
+    expect(html).not.toContain('<h2')
+  })
+
+  it('suppresses the header over a row with no blocks (never a lone heading)', () => {
+    const rows = [{ id: 'r0', columns: 1 as const, cells: [[]], title: 'Featured', headerOn: true }]
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).not.toContain('<h2')
+  })
+
+  it('renders a header above a multi-column row', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 2, cells: [['about'], ['stats']], title: 'Two up', headerOn: true }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderBlock} />)
+    expect(html).toContain('Two up')
+    expect(html).toContain('grid gap-6 sm:grid-cols-2')
+  })
+})
+
+// ── Fix 8: a block that renders null (empty / collapsed) reserves NO height — the grid emits nothing for
+// it, never a hollow box. renderBlock returning null stands in for a collapsed content block. ──
+describe('EntityGrid empty-block collapse (Fix 8)', () => {
+  const renderMaybe = (id: string) => (id === 'about' ? <div key={id} data-block={id} /> : null)
+
+  it('emits nothing for a block that renders null (no reserved box)', () => {
+    const rows = resolveRows(
+      { rows: [{ id: 'r0', columns: 1, cells: [['about', 'stats']] }] },
+      'space',
+    )
+    const html = renderToStaticMarkup(<EntityGrid rows={rows} renderBlock={renderMaybe} />)
+    expect(html).toContain('data-block="about"')
+    // 'stats' rendered null → no element, no empty wrapper of its own.
+    expect(html).not.toContain('data-block="stats"')
+  })
+})

@@ -48,8 +48,9 @@ export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
 
 // ── Field schema (drives the editor + the sanitizer) ──────────────────────────────────────────────────
 
-/** The kinds of field the inline editor can render, and the sanitizer enforces. */
-export type FieldType = 'text' | 'textarea' | 'url' | 'links' | 'images' | 'features'
+/** The kinds of field the inline editor can render, and the sanitizer enforces. `toggle` is a boolean
+ *  switch (Fix 8: the per-block "show this button" control), persisted only as `false` (its non-default). */
+export type FieldType = 'text' | 'textarea' | 'url' | 'links' | 'images' | 'features' | 'toggle'
 
 /** One editable field on a block's content bag. */
 export interface FieldDef {
@@ -60,21 +61,27 @@ export interface FieldDef {
   /** Image field: the inline editor offers an UPLOAD control (ADR-542) beside the URL input, wired to the
    *  surface's gated upload action. Set on the image URL / image-list fields (callout image, gallery). */
   upload?: boolean
+  /** Toggle field: the DEFAULT boolean (what "on" means). A `toggle` is persisted only when it differs from
+   *  this default, so the stored bag stays sparse. The button toggles default ON. */
+  default?: boolean
 }
 
 /** The CONTENT-block field schemas (the operator authors these). */
 const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // The SPACE free-form blocks (ADR-542).
+  // Instructional placeholders (Fix 7): each slot's placeholder EXPLAINS what to write there, in the
+  // Frequency voice, so an operator understands the block at a glance. Real content replaces them on type.
   callout: [
-    { key: 'title', label: 'Title', type: 'text', placeholder: 'A short, bold headline' },
-    { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Say a bit more' },
-    { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Learn more' },
-    { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
+    { key: 'title', label: 'Title', type: 'text', placeholder: 'Your headline goes here' },
+    { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Tell your story in plain, honest sentences' },
+    { key: 'buttonOn', label: 'Show button', type: 'toggle', default: true },
+    { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Button text' },
+    { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https:// (leave blank to set later)' },
     { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
   ],
   features: [{ key: 'items', label: 'Features', type: 'features' }],
-  heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Section heading' }],
-  text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Write a paragraph' }],
+  heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Your heading goes here' }],
+  text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Tell your story in plain, honest sentences' }],
   links: [{ key: 'items', label: 'Links', type: 'links' }],
   image: [
     { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
@@ -82,7 +89,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   gallery: [{ key: 'images', label: 'Images', type: 'images', upload: true }],
   quote: [
-    { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The quote' },
+    { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The words you want to quote' },
     { key: 'by', label: 'Attribution', type: 'text', placeholder: 'Who said it' },
   ],
   embed: [{ key: 'url', label: 'Embed URL', type: 'url', placeholder: 'https://' }],
@@ -97,6 +104,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'subtitle', label: 'Subtitle', type: 'textarea', placeholder: 'A line under the headline' },
     { key: 'image', label: 'Background photo', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Photo description', type: 'text', placeholder: 'Describe the photo' },
+    { key: 'buttonOn', label: 'Show button', type: 'toggle', default: true },
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Get started' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
   ],
@@ -109,6 +117,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the heading' },
     { key: 'title', label: 'Heading', type: 'textarea', placeholder: 'What you offer' },
     { key: 'cards', label: 'Cards', type: 'features' },
+    { key: 'buttonOn', label: 'Show browse link', type: 'toggle', default: true },
     { key: 'browseLabel', label: 'Browse link label', type: 'text', placeholder: 'See everything' },
     { key: 'browseUrl', label: 'Browse link', type: 'url', placeholder: 'https://' },
   ],
@@ -123,6 +132,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },
     { key: 'title', label: 'Headline', type: 'textarea', placeholder: 'The call to action' },
     { key: 'body', label: 'Message', type: 'textarea', placeholder: 'Say a bit more' },
+    { key: 'buttonOn', label: 'Show button', type: 'toggle', default: true },
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Join now' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https://' },
   ],
@@ -269,6 +279,14 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
       case 'url': {
         const u = safeUrl(v)
         if (u) out[field.key] = u
+        break
+      }
+      case 'toggle': {
+        // Persist a boolean toggle ONLY when it differs from the field's default (keeps the blob sparse):
+        // the button toggles default ON, so only an explicit `false` is stored. A non-boolean / matching
+        // value is dropped, so the default stands on read.
+        const def = field.default ?? false
+        if (typeof v === 'boolean' && v !== def) out[field.key] = v
         break
       }
       case 'links': {

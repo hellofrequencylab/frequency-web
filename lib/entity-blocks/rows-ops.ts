@@ -1,5 +1,5 @@
 import { entityBlockById, blocksForKind, type EntityKind } from './registry'
-import type { RowDef, RowColumns, RowRatio } from './layout'
+import { normalizeRowTitle, type RowDef, type RowColumns, type RowRatio } from './layout'
 import type { BlockStyle } from './block-content'
 
 // PURE ROWS MUTATION HELPERS for the on-page Profile page builder (ADR-516 Phase C → ADR-542). Every
@@ -71,7 +71,13 @@ export function normalize(layout: BuilderLayout): BuilderLayout {
     // The ratio only applies to a 2-column row; drop it otherwise, and keep only the sparse lead/trail split.
     const ratio: RowRatio | undefined =
       columns === 2 && (raw.ratio === 'lead' || raw.ratio === 'trail') ? raw.ratio : undefined
-    rows.push(ratio ? { id, columns, cells, ratio } : { id, columns, cells })
+    const base = ratio ? { id, columns, cells, ratio } : { id, columns, cells }
+    // Carry the row TITLE + live-header toggle (Fix 5) through every mutation: trim + bound the title, and
+    // keep `headerOn` only as `true` beside a non-blank title (the sparse stored shape).
+    const title = normalizeRowTitle(raw.title)
+    const withTitle: RowDef = title ? { ...base, title } : base
+    if (title && raw.headerOn === true) withTitle.headerOn = true
+    rows.push(withTitle)
   }
   const hidden = [...new Set(layout.hidden.filter((id) => entityBlockById(id) !== null))]
   // Content + style are keyed by block id and edited directly (not by row ops); carry them through
@@ -203,6 +209,42 @@ export function setRowRatio(layout: BuilderLayout, rowId: string, ratio: RowRati
   return normalize({ ...layout, rows })
 }
 
+/**
+ * Set a row's editable TITLE (Fix 5). Trimmed + bounded on write (normalizeRowTitle); a blank title clears
+ * both the title AND the live-header toggle (an untitled row can't show a header). No-op for an unknown row
+ * id. Immutable.
+ */
+export function setRowTitle(layout: BuilderLayout, rowId: string, title: string): BuilderLayout {
+  const clean = normalizeRowTitle(title)
+  const rows = layout.rows.map((row) => {
+    if (row.id !== rowId) return row
+    const next: RowDef = { ...row }
+    if (clean) next.title = clean
+    else {
+      delete next.title
+      delete next.headerOn // no title → no live header
+    }
+    return next
+  })
+  return normalize({ ...layout, rows })
+}
+
+/**
+ * Toggle whether a row's title renders as a section header on the LIVE page (Fix 5). Persisted only as
+ * `true`, and only beside a non-blank title; turning it off (or a row with no title) drops the flag so the
+ * title stays a pure editor label. No-op for an unknown row id. Immutable.
+ */
+export function setRowHeaderOn(layout: BuilderLayout, rowId: string, on: boolean): BuilderLayout {
+  const rows = layout.rows.map((row) => {
+    if (row.id !== rowId) return row
+    const next: RowDef = { ...row }
+    if (on && normalizeRowTitle(row.title)) next.headerOn = true
+    else delete next.headerOn
+    return next
+  })
+  return normalize({ ...layout, rows })
+}
+
 /** Remove `blockId` from wherever it sits (any column, any depth) — immutable. */
 function clearFromRows(rows: RowDef[], blockId: string): RowDef[] {
   return rows.map((row) => {
@@ -240,7 +282,10 @@ export function placeBlock(
     return { ...row, cells }
   })
   const hidden = layout.hidden.filter((id) => id !== blockId)
-  return normalize({ rows, hidden })
+  // Carry the per-block content + style THROUGH the move (bug fix: a reorder / place must never drop the
+  // block's authored bag). content/style are keyed by block id, independent of slot, so spreading `...layout`
+  // keeps every block's entry — including the one being moved — intact across the placement.
+  return normalize({ ...layout, rows, hidden })
 }
 
 /** Move a placed block to a new column/position. Alias of placeBlock. */
@@ -303,9 +348,15 @@ export function unhideBlock(layout: BuilderLayout, blockId: string): BuilderLayo
   return normalize({ ...layout, hidden: layout.hidden.filter((id) => id !== blockId) })
 }
 
-/** Fully remove a block (the confirm-gated Delete): free its slot AND clear any hidden flag. */
+/** Fully remove a block (the confirm-gated Delete): free its slot, clear any hidden flag, AND drop its
+ *  authored content + style (a permanent delete, so its bag goes with it). Every OTHER block's content +
+ *  style is preserved (spread `...layout`, then delete just this block's entries). */
 export function removeBlock(layout: BuilderLayout, blockId: string): BuilderLayout {
   const rows = clearFromRows(layout.rows, blockId)
   const hidden = layout.hidden.filter((id) => id !== blockId)
-  return normalize({ rows, hidden })
+  const content = layout.content ? { ...layout.content } : undefined
+  if (content) delete content[blockId]
+  const style = layout.style ? { ...layout.style } : undefined
+  if (style) delete style[blockId]
+  return normalize({ ...layout, rows, hidden, content, style })
 }

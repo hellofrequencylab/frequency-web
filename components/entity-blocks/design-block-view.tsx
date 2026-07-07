@@ -25,13 +25,85 @@ export function isDesignBlock(id: string): boolean {
   return DESIGN_SET.has(id)
 }
 
+// EXPLANATORY DEMO CONTENT (Fix 7): a design block placed with an EMPTY authored bag would otherwise render
+// blank in the rail preview and on the live page, so an operator can't tell what it is for. These per-id
+// demo bags fill the empty slots with PROMPT copy ("Your headline goes here", "Button text", ...) so the
+// block reads as a self-explaining template the moment it lands. As soon as the operator types real content
+// into a slot, their value takes over (withDesignDemo only fills slots the bag leaves empty). Voice-canon,
+// no em dashes; the copy is deliberately generic so it reads as a placeholder, not real page copy. Kept in
+// lockstep with the Puck defaultProps in components/page-editor/blocks/design.tsx.
+const DESIGN_DEMO: Record<string, Record<string, unknown>> = {
+  photoHero: {
+    eyebrow: 'Section label',
+    title: 'Your headline goes here',
+    subtitle: 'Add a line that says what this page is about.',
+    buttonLabel: 'Button text',
+  },
+  editorial: {
+    eyebrow: 'Section label',
+    title: 'Your heading goes here',
+    body: 'Tell your story in plain, honest sentences. Replace this with a paragraph or two about what you do.',
+  },
+  cardGrid: {
+    eyebrow: 'Section label',
+    title: 'What you offer',
+    cards: [
+      { icon: '◎', title: 'First thing', text: 'Describe one thing you offer in a sentence or two.' },
+      { icon: '△', title: 'Second thing', text: 'Describe another. Keep it plain and honest.' },
+      { icon: '↗', title: 'Third thing', text: 'One more. Add or remove cards as you need.' },
+    ],
+  },
+  zigzag: {
+    eyebrow: 'Section label',
+    title: 'The story beat',
+    body: 'Tell this part of the story in plain sentences. Add a photo beside it.',
+  },
+  accentBeat: {
+    eyebrow: 'Section label',
+    title: 'Your call to action',
+    body: 'Add one clear line that invites the reader to take the next step.',
+    buttonLabel: 'Button text',
+  },
+}
+
+/** Whether an authored value is "present" (a non-blank string, or a non-empty array). An absent / empty
+ *  value falls back to the demo prompt so the operator sees what the slot is for. */
+function hasValue(v: unknown): boolean {
+  if (typeof v === 'string') return v.trim().length > 0
+  if (Array.isArray(v)) return v.length > 0
+  return v != null
+}
+
+/** Merge the design block's demo prompt UNDER the operator's authored bag: every slot the operator has NOT
+ *  filled shows its demo prompt, every slot they HAVE filled shows their value. Pure; returns a new bag.
+ *  Both render paths draw the result, so a freshly placed block explains itself and a partly-authored one
+ *  keeps prompts only where the operator has not typed yet. */
+export function withDesignDemo(id: string, props: Record<string, unknown>): Record<string, unknown> {
+  const demo = DESIGN_DEMO[id]
+  if (!demo) return props
+  const out: Record<string, unknown> = { ...props }
+  for (const [key, demoVal] of Object.entries(demo)) {
+    if (!hasValue(out[key])) out[key] = demoVal
+  }
+  return out
+}
+
 function s(props: Record<string, unknown>, key: string): string | undefined {
   const v = props[key]
   return typeof v === 'string' && v.trim() ? v : undefined
 }
 
-/** Render ONE design block by id from its authored bag, or null for a non-design id. */
-export function DesignBlockView({ id, props }: { id: string; props: Record<string, unknown> }): ReactNode {
+/** The block's button LABEL, gated by its `buttonOn` toggle (Fix 8). The button ALWAYS renders once it has
+ *  a label and is on (default on); the design components fall a no-link button back to '#'. Turning the
+ *  toggle off (`buttonOn: false`) returns undefined so the label — and the button — drop. */
+function buttonLabel(props: Record<string, unknown>): string | undefined {
+  return props.buttonOn === false ? undefined : s(props, 'buttonLabel')
+}
+
+/** Render ONE design block by id from its authored bag, or null for a non-design id. The bag is first
+ *  merged with the block's demo prompt (Fix 7) so an empty slot shows what it is for. */
+export function DesignBlockView({ id, props: rawProps }: { id: string; props: Record<string, unknown> }): ReactNode {
+  const props = withDesignDemo(id, rawProps)
   switch (id) {
     case 'photoHero': {
       const image = safeUrl(props.image) || undefined
@@ -43,7 +115,7 @@ export function DesignBlockView({ id, props }: { id: string; props: Record<strin
           eyebrow={s(props, 'eyebrow')}
           title={s(props, 'title')}
           subtitle={s(props, 'subtitle')}
-          actionPrimaryLabel={s(props, 'buttonLabel')}
+          actionPrimaryLabel={buttonLabel(props)}
           actionPrimaryHref={safeUrl(props.buttonUrl) || undefined}
         />
       )
@@ -77,7 +149,7 @@ export function DesignBlockView({ id, props }: { id: string; props: Record<strin
           role="feature"
           columns={3}
           cards={items}
-          browseLabel={s(props, 'browseLabel')}
+          browseLabel={props.buttonOn === false ? undefined : s(props, 'browseLabel')}
           browseHref={browseHref}
         />
       )
@@ -105,7 +177,7 @@ export function DesignBlockView({ id, props }: { id: string; props: Record<strin
           eyebrow={s(props, 'eyebrow')}
           title={s(props, 'title')}
           body={s(props, 'body')}
-          ctaLabel={s(props, 'buttonLabel')}
+          ctaLabel={buttonLabel(props)}
           ctaHref={safeUrl(props.buttonUrl) || undefined}
         />
       )

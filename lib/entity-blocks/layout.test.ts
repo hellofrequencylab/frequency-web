@@ -8,6 +8,9 @@ import {
   resolveRows,
   starterRows,
   STARTER_LAYOUTS,
+  normalizeRowTitle,
+  rowShowsHeader,
+  ROW_TITLE_MAX,
   type EntityLayout,
   type RowDef,
 } from './layout'
@@ -457,5 +460,54 @@ describe('layoutSlots', () => {
 
   it('reads a flat order as the single template main slot', () => {
     expect(layoutSlots({ order: ['about', 'stats'] })).toEqual([{ slot: 'main', ids: ['about', 'stats'] }])
+  })
+})
+
+// ── Fix 5: per-row title + live-header toggle carried through parse / sanitize / resolve. ──
+describe('row title + header toggle (Fix 5)', () => {
+  it('normalizeRowTitle trims, bounds, and drops blanks', () => {
+    expect(normalizeRowTitle('  Featured  ')).toBe('Featured')
+    expect(normalizeRowTitle('   ')).toBeUndefined()
+    expect(normalizeRowTitle(42)).toBeUndefined()
+    expect(normalizeRowTitle('x'.repeat(200))?.length).toBe(ROW_TITLE_MAX)
+  })
+
+  it('rowShowsHeader is true only with the toggle on AND a non-blank title', () => {
+    expect(rowShowsHeader({ title: 'Featured', headerOn: true })).toBe(true)
+    expect(rowShowsHeader({ title: 'Featured', headerOn: false })).toBe(false)
+    expect(rowShowsHeader({ title: '', headerOn: true })).toBe(false)
+    expect(rowShowsHeader({ headerOn: true })).toBe(false)
+  })
+
+  it('parseEntityLayout keeps a row title + headerOn (only true, only with a title)', () => {
+    const parsed = parseEntityLayout({
+      rows: [
+        { id: 'r0', columns: 1, cells: [['about']], title: '  Featured  ', headerOn: true },
+        { id: 'r1', columns: 1, cells: [['stats']], title: 'Labelled', headerOn: false },
+        { id: 'r2', columns: 1, cells: [['links']], headerOn: true }, // no title → no header
+      ],
+    })
+    expect(parsed?.rows?.[0]).toMatchObject({ title: 'Featured', headerOn: true })
+    expect(parsed?.rows?.[1].title).toBe('Labelled')
+    expect(parsed?.rows?.[1].headerOn).toBeUndefined()
+    expect(parsed?.rows?.[2].title).toBeUndefined()
+    expect(parsed?.rows?.[2].headerOn).toBeUndefined()
+  })
+
+  it('resolveRows carries the title + header toggle to the render', () => {
+    const layout: EntityLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['about']], title: 'Featured', headerOn: true }],
+    }
+    const rows = resolveRows(layout, 'space')
+    expect(rows[0]).toMatchObject({ title: 'Featured', headerOn: true })
+    expect(rowShowsHeader(rows[0])).toBe(true)
+  })
+
+  it('sanitizeEntityLayout round-trips a row title + toggle', () => {
+    const clean = sanitizeEntityLayout(
+      { rows: [{ id: 'r0', columns: 1, cells: [['about']], title: 'Featured', headerOn: true }] },
+      'space',
+    )
+    expect(clean?.rows?.[0]).toMatchObject({ title: 'Featured', headerOn: true })
   })
 })

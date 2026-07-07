@@ -5,6 +5,8 @@ import {
   moveRow,
   setRowColumns,
   setRowRatio,
+  setRowTitle,
+  setRowHeaderOn,
   setBlockContent,
   setBlockStyle,
   placeBlock,
@@ -354,5 +356,113 @@ describe('deriveBench', () => {
     for (const id of palette) {
       if (!['about', 'stats', 'links', 'topfriends'].includes(id)) expect(bench).toContain(id)
     }
+  })
+})
+
+// ── Fix: a MOVE / reorder must never drop a block's authored content or style (silent data loss). ──
+describe('content survives a move (regression)', () => {
+  // A space-ish layout with an authored bag on `photoHero`, placed in row 0.
+  function withContent(): BuilderLayout {
+    return {
+      rows: [row('r0', 1, ['photoHero']), row('r1', 1, ['about'])],
+      hidden: [],
+      content: { photoHero: { title: 'Kept headline', subtitle: 'Kept subtitle' } },
+      style: { photoHero: { align: 'center' } },
+    }
+  }
+
+  it('placeBlock (move to another row) keeps the moved block content + style intact', () => {
+    const before = withContent()
+    // Move photoHero into row r1 (the reorder the bug report reproduced).
+    const after = placeBlock(before, 'photoHero', 'r1', 0)
+    expect(after.content?.photoHero).toEqual({ title: 'Kept headline', subtitle: 'Kept subtitle' })
+    expect(after.style?.photoHero).toEqual({ align: 'center' })
+    // And it actually moved.
+    expect(after.rows.find((r) => r.id === 'r1')?.cells[0]).toContain('photoHero')
+  })
+
+  it('moveBlock keeps content, and every OTHER block content is preserved too', () => {
+    const before: BuilderLayout = {
+      ...withContent(),
+      content: {
+        photoHero: { title: 'Kept headline' },
+        about: { title: 'About kept' },
+      },
+    }
+    const after = moveBlock(before, 'photoHero', 'r1', 0)
+    expect(after.content?.photoHero).toEqual({ title: 'Kept headline' })
+    expect(after.content?.about).toEqual({ title: 'About kept' })
+  })
+
+  it('nudgeBox within a column keeps content', () => {
+    const before: BuilderLayout = {
+      rows: [{ id: 'r0', columns: 1, cells: [['photoHero', 'about']] }],
+      hidden: [],
+      content: { photoHero: { title: 'Kept' } },
+    }
+    const after = nudgeBox(before, 'about', -1)
+    expect(after.content?.photoHero).toEqual({ title: 'Kept' })
+  })
+
+  it('benching a block keeps its content (config kept for re-placement)', () => {
+    const after = benchBlock(withContent(), 'photoHero')
+    expect(after.content?.photoHero).toEqual({ title: 'Kept headline', subtitle: 'Kept subtitle' })
+  })
+
+  it('removeBlock (permanent delete) drops the deleted block bag but keeps every other', () => {
+    const before: BuilderLayout = {
+      ...withContent(),
+      content: { photoHero: { title: 'Gone' }, about: { title: 'Stays' } },
+    }
+    const after = removeBlock(before, 'photoHero')
+    expect(after.content?.photoHero).toBeUndefined()
+    expect(after.content?.about).toEqual({ title: 'Stays' })
+  })
+})
+
+// ── Fix 5: per-row editable title + live-header toggle serialization. ──
+describe('setRowTitle / setRowHeaderOn', () => {
+  const base2 = (): BuilderLayout => ({ rows: [row('r0', 1, ['about'])], hidden: [] })
+
+  it('sets a trimmed, bounded title on the row', () => {
+    const out = setRowTitle(base2(), 'r0', '  Featured  ')
+    expect(out.rows[0].title).toBe('Featured')
+  })
+
+  it('a blank title clears both title and header toggle', () => {
+    const titled = setRowHeaderOn(setRowTitle(base2(), 'r0', 'Featured'), 'r0', true)
+    expect(titled.rows[0].headerOn).toBe(true)
+    const cleared = setRowTitle(titled, 'r0', '   ')
+    expect(cleared.rows[0].title).toBeUndefined()
+    expect(cleared.rows[0].headerOn).toBeUndefined()
+  })
+
+  it('the header toggle only sticks when the row has a title', () => {
+    const noTitle = setRowHeaderOn(base2(), 'r0', true)
+    expect(noTitle.rows[0].headerOn).toBeUndefined()
+    const titled = setRowHeaderOn(setRowTitle(base2(), 'r0', 'Featured'), 'r0', true)
+    expect(titled.rows[0].headerOn).toBe(true)
+  })
+
+  it('turning the header toggle off drops the flag but keeps the title (editor name stays)', () => {
+    const on = setRowHeaderOn(setRowTitle(base2(), 'r0', 'Featured'), 'r0', true)
+    const off = setRowHeaderOn(on, 'r0', false)
+    expect(off.rows[0].title).toBe('Featured')
+    expect(off.rows[0].headerOn).toBeUndefined()
+  })
+
+  it('title + toggle survive normalize (persisted through a mutation)', () => {
+    const titled = setRowHeaderOn(setRowTitle(base2(), 'r0', 'Featured'), 'r0', true)
+    const normalized = normalize(titled)
+    expect(normalized.rows[0].title).toBe('Featured')
+    expect(normalized.rows[0].headerOn).toBe(true)
+  })
+
+  it('title + toggle survive a block move on the same row-id', () => {
+    let l: BuilderLayout = { rows: [row('r0', 1, ['about']), row('r1', 1, ['photoHero'])], hidden: [] }
+    l = setRowHeaderOn(setRowTitle(l, 'r0', 'Featured'), 'r0', true)
+    const after = placeBlock(l, 'photoHero', 'r0', 0)
+    expect(after.rows.find((r) => r.id === 'r0')?.title).toBe('Featured')
+    expect(after.rows.find((r) => r.id === 'r0')?.headerOn).toBe(true)
   })
 })
