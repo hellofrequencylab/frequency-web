@@ -566,10 +566,13 @@ export async function applyIntake(
     ? { kind: 'update', spaceId: row.targetSpaceId }
     : { kind: 'create', ownerProfileId: owner }
 
+  // NEVER dress a member's Spotlight from a seed. `demoOwnerProfileId` used to be the seeding OPERATOR,
+  // so applying a demo overwrote that operator's OWN profile grid (meta.entityGrid) with the business's
+  // links — a cross-contamination bug (a staff operator seeding a demo had their personal profile clobbered).
+  // The seeded Space stands on its own; it must not reach into any real member's profile. Left undefined.
   const result = await materializeBusiness(profile, target, {
     ledger: (row.ledger as ProvenanceLedger) ?? {},
     isDemo: row.inputs.consent?.isDemo ?? true,
-    demoOwnerProfileId: row.inputs.consent?.isDemo ? owner : undefined,
   })
   if (!result.ok || !result.spaceId) return result
 
