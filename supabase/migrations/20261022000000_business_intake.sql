@@ -1,32 +1,26 @@
 -- ============================================================================
--- DESIGN DRAFT - DO NOT APPLY
+-- BUSINESS INTAKE: the draft-first staging record for the Smart Business Importer
+-- (docs/BUSINESS-IMPORTER.md §3, ADR-569). Promoted from the P0 design draft
+-- (DRAFT_business_intake.sql.txt) into a REAL migration for P1 (the research +
+-- verification pipeline). NOTHING touches a live Space until an operator approves and
+-- Apply materializes the row's draft (docs §5).
 -- ============================================================================
--- This is an UNAPPLIED design sketch for the Smart Business Importer's staging table
--- (docs/BUSINESS-IMPORTER.md §3, ADR-569). The `.txt` suffix keeps it OUT of any
--- migration apply run. It becomes a real migration ONLY when P0 is approved: rename to
--- a timestamped `<ts>_business_intake.sql`, review, then apply via the house process
--- (Supabase SQL Editor, additive + idempotent) and regenerate lib/database.types.ts
--- separately (ADR-246). Nothing here has run against any database.
--- ============================================================================
---
--- BUSINESS INTAKE: the draft-first staging record for one imported business. It holds the
--- inputs, the harvested raw sources, the extracted + reframed BusinessProfile draft, and the
--- per-field provenance/confidence LEDGER, so NOTHING touches a live Space until an operator
--- approves and Apply materializes it (docs/BUSINESS-IMPORTER.md §5).
 --
 -- ONE table, service-role only:
---   business_intake - one row per import (operator seeder OR owner wizard), all content in jsonb.
+--   business_intake - one row per import (operator seeder OR owner wizard), all content
+--   in jsonb: the inputs, the harvested raw sources (the harvest CACHE), the extracted +
+--   reframed BusinessProfile draft, and the per-field provenance/confidence LEDGER.
 --
--- ACCESS MODEL (mirrors space_drip_enrollments / space_automation_rules): SERVICE-ROLE ONLY.
--- RLS is ENABLED with NO client policies, so the ONLY access path is the gated server code
--- (lib/business-import/*, service-role admin client). An intake row can hold UN-VERIFIED
--- third-party facts about a business that has not opted in, so it must never be world- or
--- member-readable. Enabling RLS with no policy denies ALL direct client access; record the
--- deliberate service-role-only posture in scripts/rls-deny-all.txt when this is applied.
+-- ACCESS MODEL (mirrors space_drip_enrollments / space_automation_rules): SERVICE-ROLE
+-- ONLY. RLS is ENABLED with NO client policies, so the ONLY access path is the gated
+-- server code (lib/importer/*, service-role admin client). An intake row can hold
+-- UN-VERIFIED third-party facts about a business that has not opted in, so it must never
+-- be world- or member-readable. Enabling RLS with no policy denies ALL direct client
+-- access; the deliberate service-role-only posture is recorded in scripts/rls-deny-all.txt.
 --
 -- House style (matches space_drip_enrollments.sql): additive + idempotent, applied to
--- production via the Supabase SQL Editor; lib/database.types.ts is regenerated separately and
--- the seam reaches this table with untyped casts until then (ADR-246). SAFE to re-run.
+-- production via the Supabase SQL Editor; lib/database.types.ts is regenerated separately
+-- and the seam reaches this table with untyped casts until then (ADR-246). SAFE to re-run.
 -- No em or en dashes in any copy here.
 
 create table if not exists public.business_intake (
@@ -88,4 +82,4 @@ create index if not exists business_intake_target_space_idx
 alter table public.business_intake enable row level security;
 
 comment on table public.business_intake is
-  'DRAFT (ADR-569, not yet applied): the draft-first staging record for the Smart Business Importer. One row per imported business, holding inputs + harvested raw_sources + the extracted/reframed draft + a per-field provenance ledger, so nothing touches a live Space until Apply. Service-role only, fail-closed: RLS ENABLED with NO policies, the only access path is the gated server code in lib/business-import/* (admin client). Can hold un-verified third-party facts, so never exposed to clients.';
+  'The draft-first staging record for the Smart Business Importer (ADR-569). One row per imported business, holding inputs + harvested raw_sources + the extracted/reframed draft + a per-field provenance ledger, so nothing touches a live Space until Apply. Service-role only, fail-closed: RLS ENABLED with NO policies, the only access path is the gated server code in lib/importer/* (admin client). Can hold un-verified third-party facts, so never exposed to clients.';

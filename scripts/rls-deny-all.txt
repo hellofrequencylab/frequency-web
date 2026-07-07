@@ -16,6 +16,7 @@ ai_help_queries
 ai_usage
 app_instances
 automation_rules
+business_intake
 campaigns
 challenge_qr_codes
 content_ratings

@@ -7,8 +7,13 @@ import { sendRawEmail } from '@/lib/email'
 import { sendRawSms } from '@/lib/comms/sms-send'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import type { SendCategory } from '@/lib/comms/send-gate'
+import { RESEARCH_JOB_KIND, researchHandler } from '@/lib/importer/queue'
 
 export const queueHandlers: Record<string, JobHandler> = {
+  // Smart Business Importer research run (harvest -> extract -> verify), a durable
+  // background job (docs/BUSINESS-IMPORTER.md §6.2). Lands the intake in 'review' with a
+  // verified, ledgered draft; a soft failure is recorded on the row's status.
+  [RESEARCH_JOB_KIND]: researchHandler,
   // Durable web push. payload: { profileId, payload: PushPayload, category: SendCategory }.
   push: async (p) => {
     const profileId = p.profileId as string

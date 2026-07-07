@@ -473,18 +473,42 @@ async function dressSpotlight(profileId: string, profile: BusinessProfile): Prom
 // ── The intake wrapper (the spec's applyIntake seam; the table is P1) ───────────────────
 
 /**
- * Apply an approved `business_intake` row (docs §5 `applyIntake`). The `business_intake` table is
- * the P1 persistence layer (its migration is a FILE-only draft in P0 —
- * supabase/migrations/DRAFT_business_intake.sql.txt), so this is the SEAM P1 wires: read the row's
- * `draft` (a BusinessProfile) + `target_space_id`, call materializeBusiness, then stamp
- * status='applied' + applied_at + target_space_id. In P0 it is intentionally a thin, un-exercised
- * wrapper (no live table); the deterministic core lives in materializeBusiness, which the P0 test
- * exercises directly with a hand-authored draft. Left as a documented integration seam.
+ * Apply an approved `business_intake` row (docs §5 `applyIntake`). Wired in P1 now that the
+ * `business_intake` table exists (migration 20261022000000): read the row's `draft` (the VERIFIED
+ * BusinessProfile the research pipeline produced), materialize with the commercial-fact gate
+ * ENFORCED ('withhold' — the materializer AND P1's verify split BOTH strip un-cleared commercial
+ * facts, so a UI bypass cannot leak an unverified price), then stamp target_space_id + applied_at +
+ * status='applied'. Only applies from the 'review' (or 'applied', idempotent re-run) state; never
+ * from a mid-research state. Never throws. The deterministic seeding core is materializeBusiness.
  */
-export async function applyIntake(intakeId: string): Promise<MaterializeResult> {
-  void intakeId
-  // INTEGRATION SEAM (P1): read business_intake by id, materialize its draft, write back status.
-  // Not implemented in P0 because the table does not exist yet (the migration is FILE-only). The
-  // pure + DB-bound seeding is fully covered by materializeBusiness + its test.
-  return { ok: false, error: 'applyIntake is a P1 seam: business_intake table is not yet applied.' }
+export async function applyIntake(
+  intakeId: string,
+  options: { ownerProfileId?: string } = {},
+): Promise<MaterializeResult> {
+  const store = await import('./store')
+  const row = await store.getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Intake not found.' }
+  if (row.status !== 'review' && row.status !== 'applied') {
+    return { ok: false, error: `Intake is '${row.status}', not ready to apply (expected 'review').` }
+  }
+  const profile = row.draft as unknown as BusinessProfile
+  if (!profile?.name) return { ok: false, error: 'Intake draft has no usable business name.' }
+
+  // Re-materialize onto the existing Space on a re-run, else provision a new one owned by the
+  // operator/owner. The gate is 'withhold' so unverified commercial facts never reach the surface.
+  const owner = options.ownerProfileId ?? row.createdBy
+  const target: MaterializeTarget = row.targetSpaceId
+    ? { kind: 'update', spaceId: row.targetSpaceId }
+    : { kind: 'create', ownerProfileId: owner }
+
+  const result = await materializeBusiness(profile, target, {
+    verificationPolicy: 'withhold',
+    isDemo: row.inputs.consent?.isDemo ?? true,
+    demoOwnerProfileId: row.inputs.consent?.isDemo ? owner : undefined,
+  })
+  if (!result.ok || !result.spaceId) return result
+
+  await store.markApplied(intakeId, result.spaceId)
+  await store.setStatus(intakeId, 'applied', { error: null })
+  return result
 }

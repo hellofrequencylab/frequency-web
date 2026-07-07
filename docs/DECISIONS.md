@@ -12198,3 +12198,57 @@ button orientation, alignment, color, shadow, and spacing controls by declaring 
 + CONTENT-VOICE (no em dashes). Gate green: tsc, eslint, vitest (margin + text-style + primitive sanitize,
 row-margin ops + serialization, redesigned-panel markup, primitive a11y), check:authz, check:menu, check:rls,
 check:canon, check:seo, build.
+
+## ADR-571: Business Importer P1, the research + verification pipeline (harvest, extract, verify)
+
+**Status:** Accepted · implements ADR-569 P1 (docs/BUSINESS-IMPORTER.md §4/§6/§8). Builds on P0 (#1599,
+`lib/importer/schema.ts` + `map.ts` + `materialize.ts`). (If a concurrent PR also claims 571, renumber at
+merge.)
+
+**Context.** P0 shipped the deterministic materializer that turns a hand-authored `BusinessProfile` into a
+seeded Space. P1 produces that profile from the web: harvest sources, extract a draft, and verify every
+commercial fact before it can reach a live surface. The whole product's trust rests on the verifier, so it
+is built fail-closed: an un-checkable fact must be withheld, never guessed.
+
+**Decision.**
+1. **Staging table applied for real.** The P0 draft (`DRAFT_business_intake.sql.txt`) is promoted to a real
+   timestamped migration (`20261022000000_business_intake.sql`), service-role only, RLS-enabled with no
+   policies, recorded in `scripts/rls-deny-all.txt`. The file is NOT applied by this PR; the coordinator
+   applies it via the house process and regenerates `database.types.ts` (the store reaches it via untyped
+   casts, ADR-246, until then).
+2. **A swappable web seam.** The codebase had no web tool; P1 adds one behind a single interface
+   (`lib/ai/web` `fetchUrl` / `searchWeb`), SSRF-guarded (only public http(s); private/metadata ranges
+   blocked), byte/timeout-bounded, and dependency-free (regex html-to-text). Search is provider-pluggable
+   (Brave via `BRAVE_SEARCH_API_KEY`) and degrades to `[]` with no key. Both return, never throw.
+3. **Harvest as a durable background job.** Harvest runs on the EXISTING outbox
+   (`business-import-research` kind in `lib/queue/handlers.ts`, drained by `process-queue`), not a new
+   runner. Fetchers fan out in parallel, each fail-safe; the paste is always preserved. Honest limits:
+   auth/ToS-walled socials (Instagram/Facebook/LinkedIn/TikTok) are NOT scraped; we resolve public oEmbed
+   where one exists, record the social profile url as a link, and lean on paste + search. Count caps
+   (pages/searches/oembed/images) plus a per-import USD cap bound the fan-out.
+4. **Grounded extraction, then an adversarial second pass.** Extract (sonnet, forced
+   `save_business_profile` tool) attaches `sourceUrl + snippet` per field; the pure coercer downgrades any
+   "fact" whose snippet is not actually in the harvested sources (the first grounding gate, cannot launder
+   a guess). Verify (opus, forced `verify_field`, a hostile refuter) runs per commercial field on a
+   DIFFERENT model tier so one model's blind spot is less likely to pass both. Its verdict
+   (supported/unsupported/contradicted) drives a pure reducer: supported + a citation promotes to a
+   verified fact; unsupported/contradicted never verifies and caps/floors confidence.
+5. **The gate is enforced in code, not the UI.** `splitVerified` strips every commercial fact that is not
+   (kind:'fact' AND verifiedBy) from the verified draft, sets the materializer policy to 'withhold', and
+   flags contradicted fields red (blocking apply). `applyIntake` materializes with `verificationPolicy:
+   'withhold'`, so the P0 materializer ALSO strips un-cleared commercial facts. A UI bypass cannot leak an
+   unverified price. Verification failing closed (AI off / over budget / a thrown call) leaves a field
+   unverified, so the safe default is always "withhold".
+
+**Alternatives.** (1) One-pass extraction confidence, no refuter: rejected, a single model's confidence is
+not adversarial and laundered facts pass. (2) Same tier for extract + verify: rejected, defeats the
+blind-spot argument. (3) A new job runner for harvest: rejected, the outbox already has claim/retry/
+dead-letter and double-send safety. (4) Scraping socials: rejected on ToS + auth walls (§7).
+
+**Consequences.** New `lib/importer/{intake,store,pipeline,queue}.ts` + `harvest/`, `extract/`, `verify/`
+and `lib/ai/web/`; three new AI budget keys (`business-import-extract/verify/reframe`); one queue-handler
+row; a minimal operator start action (`app/(main)/admin/business-seeder/actions.ts`, the full console is
+P3). New env: `BRAVE_SEARCH_API_KEY` (optional), `BUSINESS_IMPORT_CAP_USD` (optional, default $1.50). Gate
+green: tsc, eslint, vitest (verifier gate + reducer + split, extract grounding, harvest fail-safe, web SSRF/
+parse, pipeline orchestration + budget cap + status machine), check:authz, check:menu, check:rls,
+check:canon, check:seo, build. Migration needs applying by the coordinator.
