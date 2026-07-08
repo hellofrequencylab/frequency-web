@@ -87,7 +87,10 @@ export function Band({ tone, width, align, layout, defaultPad, children }: BandP
 
 export function Eyebrow({ children, ink }: { children: React.ReactNode; ink?: boolean }) {
   return (
+    // `data-text-role="eyebrow"` marks this element for PER-ELEMENT text styling (ADR-580, item 4): the block
+    // editor's Eyebrow controls target it alone, and the Body controls skip it (it is itself a <p>).
     <p
+      data-text-role="eyebrow"
       className={`text-sm font-bold uppercase tracking-[0.25em] mb-4 ${
         ink ? 'text-primary' : 'text-primary-strong'
       }`}

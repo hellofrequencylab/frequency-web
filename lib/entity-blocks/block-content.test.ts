@@ -9,12 +9,14 @@ import {
   resolveDataHeader,
   blockDrawsOwnCard,
   blockBearsText,
+  blockTextRoles,
   primitiveValues,
   pickerSelection,
   resolvePickedIds,
   marginTopClass,
   marginBottomClass,
   textStyleClass,
+  textByRoleClass,
   colorSwatchClass,
   safeUrl,
   PICKER_DATA_BLOCK_IDS,
@@ -308,6 +310,61 @@ describe('style → class mapping (ADR-569)', () => {
       expect(cls.startsWith('bg-')).toBe(true)
       expect(cls).not.toMatch(/#[0-9a-f]{3,6}/i)
     }
+  })
+})
+
+// ── ADR-580 item 4: per-element text styling (Eyebrow / Heading / Text) ─────────────────────────────────
+describe('blockTextRoles (per-element text roles)', () => {
+  it('design blocks expose eyebrow + heading + body', () => {
+    for (const id of ['photoHero', 'editorial', 'cardGrid', 'zigzag', 'accentBeat']) {
+      expect(blockTextRoles(id)).toEqual(['eyebrow', 'heading', 'body'])
+    }
+  })
+  it('the two multi-element content blocks expose heading + body (no eyebrow)', () => {
+    expect(blockTextRoles('callout')).toEqual(['heading', 'body'])
+    expect(blockTextRoles('features')).toEqual(['heading', 'body'])
+  })
+  it('single-text and data blocks style their text as one whole (no roles)', () => {
+    for (const id of ['heading', 'text', 'quote', 'offerings', 'about', 'nope']) {
+      expect(blockTextRoles(id)).toEqual([])
+    }
+  })
+})
+
+describe('sanitizeBlockStyle textByRole (item 4)', () => {
+  it('keeps a per-role bag, drops empty roles + garbage', () => {
+    expect(
+      sanitizeBlockStyle({
+        textByRole: {
+          heading: { size: 'lg', weight: 'bold' },
+          body: { size: 'md', color: 'default' }, // all-default → dropped
+          bogus: { size: 'xl' }, // not a known role → never written
+        },
+      }),
+    ).toEqual({ textByRole: { heading: { size: 'lg', weight: 'bold' } } })
+  })
+  it('drops the map when no role survives', () => {
+    expect(sanitizeBlockStyle({ textByRole: { heading: {}, body: { size: 'md' } } })).toBeUndefined()
+  })
+})
+
+describe('textByRoleClass (role-scoped utilities, item 4)', () => {
+  it('empty for an absent map', () => {
+    expect(textByRoleClass(undefined)).toBe('')
+    expect(textByRoleClass({})).toBe('')
+  })
+  it('heading targets heading tags; body targets paragraph tags excluding the eyebrow', () => {
+    expect(textByRoleClass({ heading: { size: 'lg', weight: 'bold' } })).toBe(
+      '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-lg [&_:where(h1,h2,h3,h4,h5,h6)]:!font-bold',
+    )
+    expect(textByRoleClass({ body: { color: 'muted' } })).toBe(
+      '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-muted',
+    )
+  })
+  it('eyebrow targets the marked element', () => {
+    expect(textByRoleClass({ eyebrow: { size: 'sm', shadow: 'soft' } })).toBe(
+      '[&_[data-text-role=eyebrow]]:!text-sm [&_[data-text-role=eyebrow]]:text-shadow-soft',
+    )
   })
 })
 

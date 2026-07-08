@@ -8,12 +8,14 @@ import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
   blockDrawsOwnCard,
+  blockTextRoles,
   fieldsForBlock,
   primitiveValues,
   type BlockStyle,
   type FieldDef,
   type MarginStep,
   type TextColorToken,
+  type TextRole,
   type TextShadowStep,
   type TextSizeStep,
   type TextStyle,
@@ -109,6 +111,9 @@ export function BlockEditPanel({
   const isData = block?.category === 'data'
   const fields = fieldsForBlock(id)
   const bearsText = blockBearsText(id)
+  // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
+  // Features) styles each role independently; every other text-bearing block styles its text as one.
+  const textRoles = blockTextRoles(id)
   // About + Story carry the space's shared story text. The editor pre-fills these fields with the current
   // content (the same words the page shows), so a note tells the operator that editing here updates the
   // section everywhere it appears — not a second, disconnected copy.
@@ -158,8 +163,30 @@ export function BlockEditPanel({
         </Link>
       )}
 
-      {/* ── The control stack (redesigned): Text style (C1) · Style · Spacing (C3), grouped + collapsible. */}
-      {bearsText && <TextStyleGroup style={style} onChange={onStyle} />}
+      {/* ── The control stack (redesigned): Text style (C1) · Style · Spacing (C3), grouped + collapsible.
+          A multi-element block (design blocks, Callout, Features) gets ONE text-style group PER element
+          (Eyebrow / Heading / Text); every other text-bearing block styles its text as one whole (item 4). */}
+      {textRoles.length > 0
+        ? textRoles.map((role) => (
+            <TextStyleGroup
+              key={role}
+              label={ROLE_LABEL[role]}
+              value={style.textByRole?.[role] ?? {}}
+              onChange={(next) => onStyle(setRoleText(style, role, next))}
+            />
+          ))
+        : bearsText && (
+            <TextStyleGroup
+              label="Text style"
+              value={style.text ?? {}}
+              onChange={(next) => {
+                const updated: BlockStyle = { ...style }
+                if (next) updated.text = next
+                else delete updated.text
+                onStyle(updated)
+              }}
+            />
+          )}
       <StyleControls id={id} style={style} onChange={onStyle} />
       <MarginGroup style={style} onChange={onStyle} />
     </div>
@@ -331,24 +358,50 @@ function PrimitiveField({
   )
 }
 
-/** The C1 TEXT-STYLE group: size · weight · align · color · shadow, in a collapsible section. Writes to the
- *  style.text bag (kept off the content bag so the render frame owns the presentation). Each control drops
- *  its key back to the default to stay sparse. */
-function TextStyleGroup({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
-  const text: TextStyle = style.text ?? {}
+/** The per-element role label shown on each text-style group (item 4). `body` reads as "Text" — the plain
+ *  reading copy — to match how the operator thinks of it. */
+const ROLE_LABEL: Record<TextRole, string> = {
+  eyebrow: 'Eyebrow',
+  heading: 'Heading',
+  body: 'Text',
+}
+
+/** Write one role's text-style bag into a BlockStyle's `textByRole` map, dropping the role (and the map when
+ *  it empties) so the stored blob stays sparse. Pure; returns a new BlockStyle. */
+function setRoleText(style: BlockStyle, role: TextRole, next: TextStyle | undefined): BlockStyle {
+  const byRole: Partial<Record<TextRole, TextStyle>> = { ...(style.textByRole ?? {}) }
+  if (next) byRole[role] = next
+  else delete byRole[role]
+  const updated: BlockStyle = { ...style }
+  if (Object.keys(byRole).length) updated.textByRole = byRole
+  else delete updated.textByRole
+  return updated
+}
+
+/** The C1 TEXT-STYLE group: size · weight · color · shadow, in a collapsible section. CONTROLLED — it holds
+ *  a single TextStyle bag (a whole-block bag, or one role's bag for per-element styling) and reports the next
+ *  bag (or undefined when it empties) so the caller writes it wherever it belongs. Each control drops its key
+ *  back to the default to stay sparse. */
+function TextStyleGroup({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: TextStyle
+  onChange: (next: TextStyle | undefined) => void
+}) {
+  const text = value
   const setText = (patch: Partial<TextStyle>) => {
     const nextText: TextStyle = { ...text, ...patch }
     // Drop any field that matches its default so the stored bag stays minimal.
     if (nextText.size === 'md') delete nextText.size
     if (nextText.color === 'default') delete nextText.color
     if (nextText.shadow === 'none') delete nextText.shadow
-    const next: BlockStyle = { ...style }
-    if (Object.keys(nextText).length) next.text = nextText
-    else delete next.text
-    onChange(next)
+    onChange(Object.keys(nextText).length ? nextText : undefined)
   }
   return (
-    <ControlGroup label="Text style">
+    <ControlGroup label={label}>
       <ControlRow label="Size">
         <Segmented
           ariaLabel="Text size"

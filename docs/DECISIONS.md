@@ -12693,3 +12693,38 @@ operator should review the new facts (and any newly-withheld commercial claim) b
 new `reresearchWithInfo`; `BusinessImportReview.directions`); `review-board.tsx` (directions textarea +
 collapsible add-info boxes + `initialDirections`); `page.tsx` + the dev showcase thread the prop. No new
 schema (all on `inputs` jsonb) and no new budget key (re-research reuses the import pipeline's own caps).
+
+## ADR-580: Per-element text styling in the block editor (Eyebrow / Heading / Text)
+
+**Status:** Accepted · extends the C1 text-style bag (ADR-569) so a multi-element block styles each text
+element independently. Next free number after ADR-579.
+
+**Context.** The block editor's text-style bag (`BlockStyle.text`) applied ONE size / weight / color / shadow
+to the WHOLE block via a descendant `:where(<tags>)` variant. An operator could not, say, make the Heading big
+and bold while keeping the Body plain — the request was a text editor "unique to each text block: Eyebrow,
+Heading, Text". At the same time the Background toggle was wrong on the open design blocks (editorial /
+cardGrid / zigzag were mis-classified as self-carding, so the toggle no-op'd); that classification moved to
+FILLED-only (photoHero / accentBeat).
+
+**Decision.**
+1. **A role map, not a second bag.** `BlockStyle` gains `textByRole?: Partial<Record<TextRole, TextStyle>>`
+   where `TextRole = 'eyebrow' | 'heading' | 'body'`. `blockTextRoles(id)` returns the roles a block exposes
+   (the five design blocks → eyebrow/heading/body; Callout + Features → heading/body; everything else → [],
+   keeping the single whole-block `text` bag). The editor renders one text-style group per role; a single-text
+   or data block keeps the one group.
+2. **Hybrid DOM targeting, one marker.** The render (`BlockStyleFrame` via `textByRoleClass`) scopes each
+   role's utilities on the same wrapper: `heading` by heading tags, `body` by paragraph tags EXCLUDING the
+   eyebrow (`:not([data-text-role=eyebrow])`), `eyebrow` by a single shared marker (`data-text-role="eyebrow"`
+   on the kit `Eyebrow` atom). This needs no threading through the shared rich-text renderer — only the one
+   atom is marked — and headings/paragraphs are reliably their own tags across every renderer. All classes are
+   FULL LITERALS (Tailwind scans source text), verified to compile including the `:where(...):not(...)` variant.
+
+**Alternatives.** (1) Mark every text element with a `data-text-role` in every renderer: rejected, it threads
+through shared Puck/kit components and `richParagraphs` (broad, risky). (2) Pure tag targeting with no eyebrow
+role: rejected, the eyebrow is itself a `<p>` and would follow the body — the ask named it explicitly. (3) A
+per-element bag on the content blob instead of the style blob: rejected, presentation belongs on `BlockStyle`.
+
+**Consequences.** `lib/entity-blocks/block-content.ts` (`TextRole`, `textByRole`, sanitize, `blockTextRoles`,
+`textByRoleClass`); `content-block-view.tsx` (`BlockStyleFrame` applies it); `block-edit-panel.tsx` (per-role
+groups, controlled `TextStyleGroup`); `kit.tsx` (`Eyebrow` marker). Legacy `text` bags still render (backward
+compatible). The Background-on-open-design-blocks fix lives in `SELF_CARDING_CONTENT_IDS` (now FILLED-only).
