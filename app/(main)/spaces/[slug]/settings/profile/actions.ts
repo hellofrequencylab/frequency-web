@@ -22,7 +22,11 @@ import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { profileBlockById, type ProfileBlockId } from '@/lib/spaces/profile-blocks'
 import { sanitizeEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { sanitizeBlockContent } from '@/lib/entity-blocks/block-content'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
+import { getIntakeBySpaceId } from '@/lib/importer/store'
+import { reseedBlockCopy } from '@/lib/importer/compose'
+import type { BusinessProfile } from '@/lib/importer/schema'
 import { type ActionResult, ok, fail, isError } from '@/lib/action-result'
 
 /** Keep only valid, de-duplicated ProfileBlockIds from an unknown array (defense in depth on the wire). */
@@ -128,4 +132,40 @@ export async function saveSpaceGridLayout(
   if (!space) return { error: 'Space not found.' }
   const res = await saveSpaceProfileLayout(space.id, layout as EntityLayout)
   return isError(res) ? { error: res.error } : {}
+}
+
+/**
+ * Re-seed ONE block's copy from the Space's master profile (task #17). Owner/admin/editor-gated
+ * (resolveSpaceManageAccess.canManage — a staff preview cannot). Grounds a focused model call in the
+ * verified BusinessProfile the Space was seeded from (getIntakeBySpaceId), rewrites only this block's text
+ * fields, and RETURNS the rewritten fields — it writes NOTHING itself, so the in-rail editor merges the
+ * result over the block's content through its normal debounced save (one write path, no drift). The wire
+ * `current` bag is sanitized to the block's schema before it reaches the model. Fail-safe: a Space with no
+ * seeded profile, AI off / over budget, or a non-text block returns a plain reason.
+ */
+export async function reseedSpaceBlockCopy(
+  slug: string,
+  blockId: string,
+  current: Record<string, unknown>,
+): Promise<{ content?: Record<string, string>; error?: string }> {
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  if (!space) return { error: 'Space not found.' }
+
+  const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
+  if (!canManage) return { error: 'You do not have permission to edit this space.' }
+
+  // The master profile the Space was seeded from (its verified BusinessProfile draft). No intake ⇒ a
+  // hand-made Space that has not been adopted into a master profile: nothing to ground a re-seed on.
+  const intake = await getIntakeBySpaceId(space.id)
+  const draft = (intake?.draft as unknown as BusinessProfile | undefined) ?? null
+  if (!draft || !(draft.name ?? '').trim()) {
+    return { error: 'This Space has no seeded profile to draw from. Seed or adopt it first.' }
+  }
+
+  // Never trust the wire: sanitize the current bag to the block's own schema before the model reads it.
+  const safeCurrent = sanitizeBlockContent(blockId, current) ?? {}
+  const copy = await reseedBlockCopy(blockId, draft, safeCurrent, { profileId: caller?.id ?? null })
+  if (!copy) return { error: 'Could not re-seed this block right now. Try again in a moment.' }
+  return { content: copy }
 }

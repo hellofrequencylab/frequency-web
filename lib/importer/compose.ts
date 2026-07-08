@@ -20,6 +20,7 @@ import { withVoice } from '@/lib/ai/voice'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 import { isReadyMediaUrl, type CommercialPolicy } from './map'
 import { normalizeRowTitle, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
+import { fieldsForBlock } from '@/lib/entity-blocks/block-content'
 import type { BusinessProfile } from './schema'
 
 const FEATURE = 'seed-compose'
@@ -373,6 +374,86 @@ export async function composeMarketingLayout(
     const raw = (call?.input as { sections?: unknown })?.sections
     if (!Array.isArray(raw)) return null
     return planToLayout(raw as ComposedSection[], profile, gallery)
+  } catch {
+    return null
+  }
+}
+
+// ── Per-block copy re-seed (ADR-582, task #17) ────────────────────────────────────────────────────────────
+// Regenerate the copy of ONE block on a live Space from its master profile, on the operator's demand. Unlike
+// composeMarketingLayout (which designs the whole page), this rewrites only the given block's TEXT fields and
+// touches nothing else — the operator clicks "Re-seed copy" on a single block. Grounded ONLY in the verified
+// brief (never invents a fact), house voice, no em dashes. Returns a partial content bag keyed by the block's
+// own field keys, or null when there is nothing to do (no text fields, no profile, AI off / over budget).
+
+const BLOCK_COPY_SYSTEM = `You are a copywriter rewriting the copy of ONE section of a business's page.
+You are given the business brief and the section's text fields (each with its current value). Write fresh, better copy for EACH field, grounded ONLY in the brief.
+Rules, follow exactly:
+- Write ONLY from the brief. NEVER invent a fact, a price, a statistic, a name, or a health/medical claim. If the brief does not support a field, keep it close to its current value.
+- Match each field to its role: an eyebrow is a short kicker (2 to 4 words), a heading/title is one plain line, a body/message is one or two short sentences.
+- Plain, honest sentences. No hype, no jargon, no emoji, no em dashes. Do not repeat the same sentence across fields.
+Return the rewritten fields via the block_copy tool. Omit a field to leave it unchanged.`
+
+/** Regenerate ONE block's text copy from the master profile (task #17). Rewrites only the block's `text` /
+ *  `textarea` fields, grounded in the brief; returns a partial content bag (the rewritten field values) to
+ *  merge over the block's current content, or null when there is nothing to regenerate. PURE of any write —
+ *  the caller persists the merge through the normal editor save path. */
+export async function reseedBlockCopy(
+  blockId: string,
+  profile: BusinessProfile,
+  current: Record<string, unknown>,
+  opts: { profileId?: string | null; directions?: string } = {},
+): Promise<Record<string, string> | null> {
+  const textFields = fieldsForBlock(blockId).filter((f) => f.type === 'text' || f.type === 'textarea')
+  if (!textFields.length) return null
+  if (!(profile.name ?? '').trim()) return null
+  if (!(await aiAvailable()) || (await featureOverBudget(FEATURE))) return null
+
+  // A tool schema with one optional string per text field, so the model can only ever write to this block's
+  // real field keys (a tampered key can't reach the content bag).
+  const properties: Record<string, unknown> = {}
+  for (const f of textFields) {
+    properties[f.key] = {
+      type: 'string',
+      description: `${f.label} — ${f.type === 'textarea' ? 'one or two short sentences' : 'a short line'}`,
+    }
+  }
+  const TOOL: Anthropic.Tool = {
+    name: 'block_copy',
+    description: 'Return the rewritten copy for this section, one entry per field. Omit a field to leave it as is.',
+    input_schema: { type: 'object', properties, required: [] },
+  }
+
+  const fieldLines = textFields
+    .map((f) => `- ${f.key} (${f.label}): ${(typeof current[f.key] === 'string' ? (current[f.key] as string) : '').trim() || '(empty)'}`)
+    .join('\n')
+  const directions = (opts.directions ?? '').trim()
+  const userText = [
+    `BUSINESS BRIEF:\n${brief(profile)}`,
+    `\nSECTION: ${blockId}`,
+    `\nFIELDS TO REWRITE:\n${fieldLines}`,
+    directions ? `\nOPERATOR DIRECTIONS (follow where they fit, never invent facts): ${directions.slice(0, 400)}` : '',
+    '\nRewrite the copy now.',
+  ].join('\n')
+
+  try {
+    const res = await completeRaw({
+      system: withVoice(BLOCK_COPY_SYSTEM),
+      messages: [{ role: 'user', content: userText }],
+      maxTokens: 800,
+      tools: [TOOL],
+      toolChoice: { type: 'tool', name: 'block_copy' },
+    })
+    void recordAiUsage({ feature: FEATURE, model: res.model, usage: res.usage, costUsd: res.costUsd, profileId: opts.profileId ?? null })
+
+    const call = res.content.find((b): b is Anthropic.ToolUseBlock => b.type === 'tool_use' && b.name === 'block_copy')
+    const input = (call?.input ?? {}) as Record<string, unknown>
+    const out: Record<string, string> = {}
+    for (const f of textFields) {
+      const v = input[f.key]
+      if (typeof v === 'string' && v.trim()) out[f.key] = stripEmDashes(v.trim())
+    }
+    return Object.keys(out).length ? out : null
   } catch {
     return null
   }

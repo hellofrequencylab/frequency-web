@@ -12755,3 +12755,39 @@ declares content/primitive controls per block; only the two UNIVERSAL style cont
 `IMAGE_ASPECT_FIELD` on image/callout/gallery/zigzag); `block-edit-panel.tsx` (`StyleControls` gates Align +
 Background); `content-block-view.tsx` + `design-block-view.tsx` + `design.tsx` (Shape render). Divider now
 carries only Spacing; the visual blocks (Image/Gallery/Embed) carry Background + Spacing, no Align.
+
+## ADR-582: Per-block copy re-seed in the Space editor (task #17)
+
+**Status:** Accepted · extends the Business Seeder (ADR-575/577) to the live Space block editor. Next free
+number after ADR-581.
+
+**Context.** The operator asked for a small "Re-seed" link on each block in the Space page editor, to
+regenerate ONE block's copy from the master profile without rebuilding the whole page. Re-seed today
+(`reseedBusinessImport`) regenerates the ENTIRE page (copy + layout + images) in one model call — too blunt
+for a single-block refresh, and it moves layout the operator may have hand-tuned.
+
+**Decision.**
+1. **A grounded single-block generator.** `reseedBlockCopy(blockId, profile, current)` (lib/importer/compose.ts)
+   rewrites ONLY the block's `text`/`textarea` fields, grounded in the verified `BusinessProfile` brief, house
+   voice, never inventing a fact. A per-field tool schema means the model can only ever write to that block's
+   real field keys. Reuses the `seed-compose` budget key (now capped, ADR-581-adjacent). Returns a partial
+   content bag, or null when there is nothing to do (no text fields / no profile / AI off / over budget).
+2. **The action reads + generates, it does not write.** `reseedSpaceBlockCopy(slug, blockId, current)`
+   (settings/profile/actions.ts) owner-gates (`resolveSpaceManageAccess.canManage`), grounds off
+   `getIntakeBySpaceId(space.id)` (the master profile the Space was seeded/adopted from), sanitizes the wire
+   `current` to the block schema, calls the generator, and RETURNS the rewritten fields. It writes nothing —
+   the in-rail editor merges the result over the block's content through its EXISTING debounced save, so
+   there is ONE write path and no chance of layout drift.
+3. **One button, injected where a master profile exists.** `BlockEditPanel` shows a "Re-seed copy" button when
+   the surface injects `onReseed` (Space builder) AND the block has text fields. Member profiles never inject
+   it. A Space with no seeded profile returns a plain "seed or adopt it first" message.
+
+**Alternatives.** (1) Server-side write of the whole layout: rejected, it duplicates the save path and risks
+clobbering concurrent edits; returning the copy and letting the store persist is safer. (2) Regenerate the
+block's layout/type too: rejected, the operator asked to refresh the COPY, not re-pick the block. (3) A new
+budget key: rejected, the work is the same class as compose, so it reuses `seed-compose`.
+
+**Consequences.** `lib/importer/compose.ts` (`reseedBlockCopy` + BLOCK_COPY_SYSTEM); `settings/profile/actions.ts`
+(`reseedSpaceBlockCopy`); `block-edit-panel.tsx` (`onReseed` prop + button); `profile-page-builder.tsx`
+(`onReseedBlock` threaded, Space wrapper wires it). Grounded only in the verified brief, so it cannot
+reintroduce the paraphrase drift that motivated the direct-DB Daniel rebuild — and it is opt-in per block.
