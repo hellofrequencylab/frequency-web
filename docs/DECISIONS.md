@@ -12658,3 +12658,38 @@ constructors (basics page + rail-getters); the picker UI. No migration. Two docu
 blocks that hardcode a fixed corner radius do not yet follow the radius token (fonts + type + rhythm always
 do), and finer per-theme flourishes (Accessible base-size / underlines, Editorial italic lead) are deferred.
 No em dashes in any operator copy (CONTENT-VOICE).
+
+## ADR-579: Re-seed with fresh directions + add-more-info to the master profile
+
+**Status:** Accepted · extends the operator re-seed (ADR-575/576/577) so a seeded Space's master profile can
+be enriched after apply. Next free number after ADR-578.
+
+**Context.** The review board could re-voice an applied Space in a mood, but there was no way to (a) give
+fresh DIRECTIONS to steer that re-voice or (b) add NEW SOURCE INFO so genuinely new facts (a new service,
+updated hours) get pulled into the master profile. The start form already captures both (a directions box +
+the Overview / Website / Booking / Differentiators content boxes); the ask was to bring them to re-seed.
+
+**Decision.**
+1. **Directions steer the re-voice (light path).** `reseedBusinessImport` gains an optional `directions`
+   arg; a non-blank value replaces `inputs.directions` (so it sticks) and is threaded into the reframe. The
+   review board prefills a directions textarea from `inputs.directions` and passes it on every mood re-seed;
+   a blank box never clears the stored value (passed as `undefined`, not `''`).
+2. **Add-more-info re-researches (heavy path).** A new `reresearchWithInfo` action folds the operator's new
+   labeled boxes (reusing `composePaste`), APPENDS them to `inputs.pastedContent`, then re-runs the full
+   pipeline so new facts extract. An APPLIED intake is flipped to `review` first (the pipeline refuses to run
+   on `applied`), and `runResearch({ forceRefetch: true })` re-harvests so the appended content is re-read.
+   It runs behind `after()` (with a durable `enqueueResearch` safety net) so the existing research-progress
+   UI shows while it works; the operator reviews the fresh draft, then Re-applies to push it live. Edit-wins
+   (`editedProsePaths`) protects hand-edited prose; the commercial-fact gate is unchanged, so a re-extracted
+   unverified fact is still withheld. A directions-only submission skips the costly re-research.
+
+**Alternatives.** (1) Feed the new info only into the reframe as extra grounding: rejected, the reframe only
+rewrites prose and would never turn new info into a structured fact (offering, hour). (2) Run the pipeline
+synchronously in the action: rejected, harvest + three model stages can exceed a serverless window; `after()`
++ the progress UI is the proven start-flow pattern. (3) Auto-re-apply after re-research: rejected, the
+operator should review the new facts (and any newly-withheld commercial claim) before pushing them live.
+
+**Consequences.** `app/(main)/admin/business-seeder/actions.ts` (`reseedBusinessImport` directions arg;
+new `reresearchWithInfo`; `BusinessImportReview.directions`); `review-board.tsx` (directions textarea +
+collapsible add-info boxes + `initialDirections`); `page.tsx` + the dev showcase thread the prop. No new
+schema (all on `inputs` jsonb) and no new budget key (re-research reuses the import pipeline's own caps).

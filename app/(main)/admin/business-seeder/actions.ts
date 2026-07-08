@@ -28,7 +28,7 @@ import { requireStaffCap } from '@/lib/staff'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { listSpaces } from '@/lib/spaces/store'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createIntake, getIntake, saveDraft, setInputs, intakeIdsBySpaceIds } from '@/lib/importer/store'
+import { createIntake, getIntake, saveDraft, setInputs, setStatus, intakeIdsBySpaceIds } from '@/lib/importer/store'
 import { enqueueResearch } from '@/lib/importer/queue'
 import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths } from '@/lib/importer/pipeline'
 import { reframe, applyReframe } from '@/lib/importer/reframe'
@@ -247,6 +247,8 @@ export interface BusinessImportReview {
   imagePlan: { url: string; category: string; alt: string }[]
   /** Whether the hero is locked (Importer v2) — seeds the re-seed panel's lock toggle. */
   lockHero: boolean
+  /** The operator DIRECTIONS stored on the intake (Importer v2.1) — prefills the re-seed directions box. */
+  directions: string
   /** Whether the applied Space is LISTED in the directory (visibility != 'private'). False until applied
    *  or when the Space is unlisted — drives the "List in directory" toggle on the applied review board. */
   listed: boolean
@@ -294,6 +296,7 @@ export async function getBusinessImportReview(intakeId: string): Promise<Busines
           .map((p) => ({ url: p.url, category: String(p.category ?? 'other'), alt: String(p.alt ?? '') }))
       : [],
     lockHero: row.inputs.lockHero ?? true,
+    directions: row.inputs.directions ?? '',
     listed,
   }
 }
@@ -550,6 +553,7 @@ export async function reseedBusinessImport(
   intakeId: string,
   mood: SeedMood,
   lockHero = true,
+  directions?: string,
 ): Promise<ReseedResult> {
   await requireStaffCap('structure', 'write')
   const operatorId = await getMyProfileId()
@@ -561,14 +565,23 @@ export async function reseedBusinessImport(
     return { ok: false, error: `This import is '${row.status}', not ready to re-seed (finish research first).` }
   }
 
-  // Persist the chosen mood + the hero lock so they stick and drive this + every future run.
-  await setInputs(intakeId, { ...row.inputs, mood: nextMood, lockHero })
+  // Fresh operator DIRECTIONS steer this re-voice (Importer v2.1). When provided they replace the stored
+  // directions (so they stick for every future run); absent, the existing directions carry.
+  const nextDirections = directions !== undefined ? directions.trim() : (row.inputs.directions ?? '')
 
-  // Re-voice the verified draft in the new mood. If AI is off / over budget, reframe returns null and the
-  // copy is left as-is (the layout/images still regenerate on re-apply below).
+  // Persist the chosen mood + the hero lock + directions so they stick and drive this + every future run.
+  await setInputs(intakeId, {
+    ...row.inputs,
+    mood: nextMood,
+    lockHero,
+    ...(nextDirections ? { directions: nextDirections } : {}),
+  })
+
+  // Re-voice the verified draft in the new mood + directions. If AI is off / over budget, reframe returns
+  // null and the copy is left as-is (the layout/images still regenerate on re-apply below).
   const draft = (row.draft as unknown as BusinessProfile) ?? ({ name: '', type: 'business' } as BusinessProfile)
   const ledger = (row.ledger as ProvenanceLedger) ?? {}
-  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood, directions: row.inputs.directions })
+  const result = await reframe({ verified: draft, profileId: operatorId, mood: nextMood, directions: nextDirections || undefined })
 
   let revoiced = false
   if (result) {
@@ -592,6 +605,82 @@ export async function reseedBusinessImport(
   }
 
   return { ok: true, revoiced, reapplied, mood: nextMood }
+}
+
+// ── Add more info to the master profile + re-research (Importer v2.1) ──────────────────────
+
+export type ReresearchResult = { ok: true; researching: boolean } | { ok: false; error: string }
+
+/** The extra source info an operator can add to the master profile at re-seed time (mirrors the start
+ *  form's boxes), plus fresh directions. Every field optional; an empty submission is rejected. */
+export interface AddInfoInput {
+  overview?: string
+  webContent?: string
+  bookingSchedule?: string
+  differentiators?: string
+  pastedContent?: string
+  directions?: string
+}
+
+/**
+ * ADD MORE INFO to an existing master profile and re-research (Importer v2.1). The operator pastes new
+ * source content (the same labeled boxes as the start form) and/or fresh directions on the review board;
+ * this folds the new content, APPENDS it to the intake's stored source, updates the directions, and re-runs
+ * the FULL research pipeline so genuinely new facts (a new service, updated hours) are extracted.
+ *
+ * An APPLIED intake is flipped back to 'review' first (the pipeline refuses to run on 'applied'), and the
+ * research is forced to RE-HARVEST (forceRefetch) so the appended content is re-read. Edit-wins protects any
+ * hand-edited prose (pipeline.editedProsePaths). Runs in the BACKGROUND (after()) with the existing research
+ * progress UI; the operator reviews the fresh draft, then Re-applies to push it to the live Space. When ONLY
+ * directions were given (no new source), it skips the costly re-research and just persists them (they steer
+ * the next mood re-seed). Staff-gated + bound to the intake id. Never throws.
+ */
+export async function reresearchWithInfo(intakeId: string, input: AddInfoInput): Promise<ReresearchResult> {
+  await requireStaffCap('structure', 'write')
+  const row = await getIntake(intakeId)
+  if (!row) return { ok: false, error: 'Import not found.' }
+  if (row.status !== 'review' && row.status !== 'applied') {
+    return { ok: false, error: `This import is '${row.status}', not ready to add info (finish research first).` }
+  }
+
+  // Fold the new labeled boxes + freeform into one block (reuses the start form's composer).
+  const addition = composePaste({
+    overview: input.overview,
+    webContent: input.webContent,
+    bookingSchedule: input.bookingSchedule,
+    differentiators: input.differentiators,
+    pastedContent: input.pastedContent,
+  })
+  const directions = (input.directions ?? '').trim()
+  if (!addition && !directions) return { ok: false, error: 'Add some info or directions first.' }
+
+  // APPEND the new content to the existing source (labeled), so a re-harvest re-reads everything including
+  // the operator's addition.
+  const existingPaste = (row.inputs.pastedContent ?? '').trim()
+  const nextPaste = addition
+    ? [existingPaste, `## Added by operator\n${addition}`].filter(Boolean).join('\n\n')
+    : existingPaste
+
+  const nextInputs: IntakeInputs = {
+    ...row.inputs,
+    ...(nextPaste ? { pastedContent: nextPaste } : {}),
+    ...(directions ? { directions } : {}),
+  }
+  const saved = await setInputs(intakeId, nextInputs)
+  if (!saved) return { ok: false, error: 'Could not save the info. Try again.' }
+
+  // No new SOURCE content (directions only): skip the costly re-research — the directions steer the next
+  // mood re-seed. The caller can then re-seed to apply them.
+  if (!addition) return { ok: true, researching: false }
+
+  // New source added: re-run the pipeline. Flip an applied intake back to review (the pipeline refuses to
+  // run on 'applied'), then re-research forcing a re-harvest so the appended content is picked up. Runs
+  // behind after() so the response returns immediately and the review page shows the research progress; the
+  // durable enqueue is the safety net if the inline run is dropped.
+  await setStatus(intakeId, 'review', { error: null })
+  await enqueueResearch(intakeId)
+  after(() => runResearch(intakeId, { forceRefetch: true }))
+  return { ok: true, researching: true }
 }
 
 // ── Adopt a hand-made Space into a master profile (Importer v2) ───────────────────────────
