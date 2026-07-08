@@ -619,25 +619,54 @@ function UploadButton({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so a
+  // single upload request never overflows the framework boundary (which crashes the route instead of
+  // returning an error). Larger files are skipped with a clear message.
+  const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
+  // Upload a few files at once, not the whole batch, so many photos never open a flood of parallel requests.
+  const CONCURRENCY = 3
 
   async function handle(files: FileList) {
     setBusy(true)
     setError(null)
-    const urls: string[] = []
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        setError('Choose an image file.')
-        continue
-      }
-      const res = await uploadImage(file)
-      if ('error' in res) {
-        setError(res.error)
-        continue
-      }
-      urls.push(res.url)
+    const all = Array.from(files)
+    const oversize = all.filter((f) => f.size > MAX_UPLOAD_BYTES).length
+    const list = all.filter((f) => f.type.startsWith('image/') && f.size <= MAX_UPLOAD_BYTES)
+    if (!list.length) {
+      setError(oversize ? 'Those images are over 9 MB. Use smaller versions.' : 'Choose an image file.')
+      setBusy(false)
+      return
     }
+    setProgress({ done: 0, total: list.length })
+
+    // Upload with a small worker pool: results are stored by ORIGINAL index so the gallery keeps the pick
+    // order even though uploads finish out of order. Each upload is ONE file (well under the body limit).
+    const results: (string | null)[] = new Array(list.length).fill(null)
+    let firstError: string | null = null
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < list.length) {
+        const i = cursor++
+        try {
+          const res = await uploadImage(list[i])
+          if ('error' in res) firstError ??= res.error
+          else results[i] = res.url
+        } catch {
+          firstError ??= 'That upload did not go through. Try again.'
+        }
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker))
+
+    const urls = results.filter((u): u is string => !!u)
     if (urls.length) onUploaded(urls)
+    if (oversize && !firstError) firstError = 'Some images were over 9 MB and skipped. Use smaller versions.'
+    if (firstError) setError(firstError)
+    setProgress(null)
     setBusy(false)
   }
 
@@ -650,7 +679,7 @@ function UploadButton({
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Upload className="h-3.5 w-3.5" aria-hidden />}
-        {busy ? 'Uploading' : label}
+        {busy ? (progress ? `Uploading ${progress.done}/${progress.total}` : 'Uploading') : label}
       </button>
       <input
         ref={inputRef}
