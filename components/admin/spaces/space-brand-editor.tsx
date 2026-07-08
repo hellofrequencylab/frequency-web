@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { isError } from '@/lib/action-result'
 import type { Space } from '@/lib/spaces/types'
+import { SPACE_THEMES, parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { updateSpaceBranding } from '@/app/(main)/admin/spaces/actions'
 
 // The per-Space branding form (docs/SPACES.md, ADR-249/250). A FOCUS surface: pick the
@@ -43,6 +44,7 @@ export function SpaceBrandEditor({
 }) {
   const router = useRouter()
   const [skin, setSkin] = useState(space.skin)
+  const [pageTheme, setPageTheme] = useState<SpaceThemeId>(parseSpaceTheme(space.preferences))
   const [brandName, setBrandName] = useState(space.brandName ?? '')
   const [brandAccent, setBrandAccent] = useState(space.brandAccent ?? '')
   const [brandLogoUrl, setBrandLogoUrl] = useState(space.brandLogoUrl ?? '')
@@ -63,6 +65,7 @@ export function SpaceBrandEditor({
         brandName: brandName.trim() || null,
         brandAccent: brandAccent.trim() || null,
         brandLogoUrl: brandLogoUrl.trim() || null,
+        pageTheme,
       })
       if (isError(result)) {
         setError(result.error)
@@ -105,6 +108,42 @@ export function SpaceBrandEditor({
             <p className="mt-1 text-xs text-subtle">
               The token set applied to this Space. Takes effect through the shell&rsquo;s{' '}
               <code>data-skin</code> resolution.
+            </p>
+          </div>
+
+          {/* Page theme (ADR-578): the typography + shape identity of the public profile. Keeps the palette
+              and brand accent; changes the fonts and shape. */}
+          <div>
+            <span className={labelClass}>Page theme</span>
+            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {SPACE_THEMES.map((t) => {
+                const selected = pageTheme === t.id
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setPageTheme(t.id)}
+                    className={`rounded-xl border p-3 text-left transition-colors ${
+                      selected
+                        ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
+                        : 'border-border bg-surface hover:border-border-strong'
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-text">{t.label}</span>
+                      {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
+                    </span>
+                    <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                      {t.displayFont} · {t.bodyFont}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1 text-xs text-subtle">
+              Fonts and shape for the public profile. Keeps the Space&rsquo;s colors and accent. Bold is the
+              standard look.
             </p>
           </div>
 

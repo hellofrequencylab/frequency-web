@@ -244,6 +244,18 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   image: [
     { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Describe the image' },
+    {
+      key: 'aspect',
+      label: 'Shape',
+      type: 'segmented',
+      defaultValue: 'original',
+      options: [
+        { value: 'original', label: 'Original' },
+        { value: 'horizontal', label: 'Horizontal' },
+        { value: 'vertical', label: 'Vertical' },
+        { value: 'square', label: 'Square' },
+      ],
+    },
   ],
   // The image GALLERY: the photos plus a LAYOUT (three views) and a SPACING step. Both are declared enum
   // primitives, so the editor renders a segmented control and the sanitizer validates the stored value —
@@ -329,6 +341,16 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'body', label: 'Body', type: 'textarea', placeholder: 'Tell this part of the story' },
     { key: 'image', label: 'Photo', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Photo description', type: 'text', placeholder: 'Describe the photo' },
+    {
+      key: 'mediaSide',
+      label: 'Photo side',
+      type: 'segmented',
+      defaultValue: 'left',
+      options: [
+        { value: 'left', label: 'Left' },
+        { value: 'right', label: 'Right' },
+      ],
+    },
   ],
   accentBeat: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },

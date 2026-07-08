@@ -141,8 +141,18 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
     case 'image': {
       const src = safeUrl(props.src)
       if (!src) return null
+      // Aspect shape (sanitized segmented upstream): original keeps the photo's natural ratio; the others
+      // crop to a fixed ratio via object-cover.
+      const aspect =
+        props.aspect === 'horizontal'
+          ? 'aspect-[16/9]'
+          : props.aspect === 'vertical'
+            ? 'aspect-[4/5]'
+            : props.aspect === 'square'
+              ? 'aspect-square'
+              : ''
       // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL; next/image needs configured domains
-      return <img src={src} alt={s(props, 'alt')} className="w-full rounded-2xl object-cover" />
+      return <img src={src} alt={s(props, 'alt')} className={`w-full rounded-2xl object-cover ${aspect}`.trim()} />
     }
     case 'gallery': {
       const images = Array.isArray(props.images)
