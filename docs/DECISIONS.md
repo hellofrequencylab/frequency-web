@@ -12728,3 +12728,30 @@ per-element bag on the content blob instead of the style blob: rejected, present
 `textByRoleClass`); `content-block-view.tsx` (`BlockStyleFrame` applies it); `block-edit-panel.tsx` (per-role
 groups, controlled `TextStyleGroup`); `kit.tsx` (`Eyebrow` marker). Legacy `text` bags still render (backward
 compatible). The Background-on-open-design-blocks fix lives in `SELF_CARDING_CONTENT_IDS` (now FILLED-only).
+
+## ADR-581: Block-editor control audit — gate Align + Background to where they do something
+
+**Status:** Accepted · follows the block-editor polish (ADR-569/571/580). Next free number after ADR-580.
+
+**Context.** The inspector showed the ALIGN icon-group and the BACKGROUND switch on every block. Neither
+does anything on some blocks: alignment sets `text-align` on the wrapper, which is a no-op for a full-width
+visual block with no inline text (Image, Gallery, Divider, Embed); a card Background around the Divider (a
+hairline rule) is meaningless. The ask (item 5) was to remove controls that do not apply and keep the set
+minimal (item 6).
+
+**Decision.** Two capability predicates in `block-content.ts` drive the editor: `blockSupportsAlign(id)`
+(true only when the block bears inline text, mirroring `blockBearsText`) and `blockSupportsBackground(id)`
+(true for every block except `divider`). `StyleControls` renders Align only when supported and Background only
+when supported; a block that supports neither (the Divider) shows no Style controls at all, leaving just the
+Spacing group. Every other control is schema-declared per block, so it only appears where its feature is
+attached — no further trimming was needed. The image SHAPE control was also extended to every placed image
+(Image, Callout, Gallery grid, Zigzag) via a shared `IMAGE_ASPECT_FIELD`.
+
+**Alternatives.** (1) Leave the controls and let them no-op: rejected, a control that does nothing reads as
+broken (the original complaint). (2) A per-block allow-list of every control: rejected, the schema already
+declares content/primitive controls per block; only the two UNIVERSAL style controls needed gating.
+
+**Consequences.** `lib/entity-blocks/block-content.ts` (`blockSupportsAlign`, `blockSupportsBackground`,
+`IMAGE_ASPECT_FIELD` on image/callout/gallery/zigzag); `block-edit-panel.tsx` (`StyleControls` gates Align +
+Background); `content-block-view.tsx` + `design-block-view.tsx` + `design.tsx` (Shape render). Divider now
+carries only Spacing; the visual blocks (Image/Gallery/Embed) carry Background + Spacing, no Align.

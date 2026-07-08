@@ -120,6 +120,43 @@ describe('BlockEditPanel redesign', () => {
     expect(html).not.toContain('Text style')
   })
 
+  it('a purely visual block (Divider) shows only Spacing — no Align, Background, or Text style (item 5)', () => {
+    const html = renderToStaticMarkup(
+      <BlockEditPanel
+        id="divider"
+        content={{}}
+        style={{}}
+        hidden={false}
+        editHref={null}
+        onContent={noop}
+        onStyle={noop}
+        onToggleHide={noop}
+      />,
+    )
+    expect(html).not.toContain('aria-label="Alignment"')
+    expect(html).not.toContain('Background')
+    expect(html).not.toContain('Text style')
+    expect(html).toContain('Spacing')
+  })
+
+  it('an Image block shows Background + Spacing but no Align (nothing to align) (item 5)', () => {
+    const html = renderToStaticMarkup(
+      <BlockEditPanel
+        id="image"
+        content={{}}
+        style={{}}
+        hidden={false}
+        editHref={null}
+        onContent={noop}
+        onStyle={noop}
+        onToggleHide={noop}
+      />,
+    )
+    expect(html).not.toContain('aria-label="Alignment"')
+    expect(html).toContain('Background')
+    expect(html).toContain('Spacing')
+  })
+
   it('onStyle fires with a text-style bag when a color swatch is chosen (wiring smoke test)', () => {
     // Render the ColorControl the panel composes and assert its callback shape, since JSDOM click wiring is
     // exercised elsewhere; here we assert the control calls back with the chosen token.

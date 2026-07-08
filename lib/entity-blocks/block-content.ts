@@ -518,6 +518,23 @@ export function blockBearsText(id: string): boolean {
   return !NO_TEXT_BLOCK_IDS.has(id)
 }
 
+/** Whether a block supports the ALIGNMENT control (item 5 audit). Alignment sets text-align on the block
+ *  wrapper, which only does anything for a block that carries inline TEXT; a full-width visual block (image,
+ *  gallery, divider, embed) has nothing to align, so the editor hides the control there. Same set as
+ *  blockBearsText, expressed as its own name so the editor reads by intent. */
+export function blockSupportsAlign(id: string): boolean {
+  return blockBearsText(id)
+}
+
+/** Whether a block supports the BACKGROUND (card) control (item 5 audit). Every real block can gain / strip a
+ *  card EXCEPT the Divider, which is a hairline rule — a card around it is meaningless, so the editor hides
+ *  the control for it. */
+export function blockSupportsBackground(id: string): boolean {
+  const block = entityBlockById(id)
+  if (!block) return false
+  return id !== 'divider'
+}
+
 /** The PER-ELEMENT text roles a block exposes (ADR-580, item 4). A block listed here has more than one
  *  distinct authored text element, so the editor gives it one text-style bag PER role (Eyebrow / Heading /
  *  Text) and the render targets each element separately (textByRoleClass). Every OTHER text-bearing block
