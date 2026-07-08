@@ -12544,3 +12544,63 @@ the verified subset (a stripped fact never appears in the grounding), generated 
 the prose gate withholds a commercial claim embedded in generated copy, and no em dash survives. Gate green:
 tsc, eslint, vitest (4461), check:authz, check:menu, check:rls, check:canon, check:seo, build. No migration.
 This PR touches the verified -> published boundary, so it is NOT auto-merged (human review).
+
+## ADR-577: Importer v2.1, the AI composer designs NAMED, GROUPED sections (+ working text style, richer gallery)
+
+**Status:** Accepted · refines the AI page composer from ADR-576 P2 (docs/BUSINESS-IMPORTER.md §5). Builds
+on the composer landed in #1612. Next free number after ADR-576.
+
+**Context.** The v2 AI composer (`lib/importer/compose.ts`) emitted a flat stack of 8 to 11 blocks, each
+alone in its own untitled single-column row. Operators read the result as "dumb": no sections, no section
+names, no grouping, and no guarantee the core "About page" boxes (about / story / contact + hours / business
++ socials) were present. Two render bugs compounded it. (1) The per-block C1 text-style bag put its size /
+color utilities on a WRAPPER div, but every block renderer hardcodes its own `text-base` / `text-muted`
+directly on the `<p>` / `<h2>`; an element's own class beats an inherited value, so Size and Color silently
+no-op'd. (2) The text-style controls were gated to a narrow allowlist, hidden on data blocks and most
+content blocks. The image gallery was a fixed 2/3-column grid with no layout or spacing options.
+
+**Decision.**
+1. **The composer returns NAMED, GROUPED sections (not a flat block stack).** The `compose_page` tool now
+   returns 3 to 5 SECTIONS, each `{ title?, columns?, blocks[] }`. `planToLayout` (pure, unit-tested) turns
+   each section into ONE `RowDef`: its `title` becomes the row's live section header (`title` + `headerOn`,
+   ADR-567), and `columns: 2` pairs its blocks side by side (a Space page is at most two columns, ADR-508).
+   The block allowlist, global dedup, drop-empty, image-by-index, and photoHero-never-seeded rules from v2
+   are unchanged. The system prompt directs the model to design + write like a page designer: name the
+   multi-block sections, leave a single self-heading design block's section title blank (so the row header
+   never duplicates the block's own heading), and use 3 to 5 design blocks.
+2. **Contact + Business are GUARANTEED to close the page.** After the model's sections, any missing block
+   from `['contact','business']` is appended as a final "Find us" section. Both render live data (never a
+   design block whose prose they could duplicate), so the top-up is always safe. The THINNESS gate ("< 2
+   real blocks → return null, keep the deterministic layout") reads the MODEL's output BEFORE the top-up, so
+   the guaranteed core is a top-up on a real page, never a crutch that rescues a degenerate one.
+3. **Text style Size / Color / Weight now actually apply (`textStyleClass`, `block-content.ts`).** They
+   target the wrapper's descendant text elements with an `!important` child variant
+   (`[&_:where(h1,...,em)]:!text-lg`), so the operator's choice overrides the block's own hardcoded utility;
+   `:where()` keeps specificity flat and `!` wins. Shadow inherits cleanly, so it stays a plain wrapper
+   class. Each variant is written as a FULL LITERAL string (not interpolated from a shared tag const),
+   because Tailwind's scanner reads source TEXT and cannot evaluate a template `${...}` — an interpolated
+   variant would never be generated. Verified end-to-end against the real Tailwind v4 build.
+4. **The text-style editor is exposed on EVERY text-bearing block.** `blockBearsText` flips from a narrow
+   allowlist to a denylist: true for every real block EXCEPT the purely-visual ones (image / gallery /
+   divider / embed). Data blocks now expose the controls too, and the render frame styles their text.
+5. **The gallery gains three VIEWS + a SPACING step.** The `gallery` content block schema declares two
+   segmented primitives (ADR-569 C6): `view` (grid / masonry / carousel) and `gap` (tight / standard /
+   roomy). `ContentBlockView` renders grid (square crop), masonry (CSS multi-column, natural aspect), and
+   carousel (scroll-snapping strip) at the chosen spacing. Default grid / standard (a sparse blob).
+
+**Alternatives.** (1) Model returns rows directly: rejected, the section-with-blocks shape is easier for the
+model and keeps `planToLayout` the single safety choke. (2) Fix Size/Color by removing the hardcoded text
+utilities from every renderer and relying on inheritance: rejected, a large cross-cutting change that would
+shift every default. (3) `[&_*]` to restyle ALL descendants: rejected, it would resize icons / buttons; the
+`:where(<text-tags>)` scope is deliberate. (4) Guarantee about / story too: rejected, a design `editorial` /
+`zigzag` legitimately carries the about / story narrative, so force-appending the data block could double the
+content; only the never-duplicated contact / business are guaranteed, and the prompt asks for the rest.
+
+**Consequences.** `lib/importer/compose.ts` (section model + prompt + `planToLayout`),
+`lib/entity-blocks/block-content.ts` (`textStyleClass` literals, `blockBearsText` denylist, gallery
+`view` / `gap` fields), `components/entity-blocks/content-block-view.tsx` (three gallery views). No new
+`compose` API surface for callers: `composeMarketingLayout`'s signature is unchanged, so `materialize.ts`
+is untouched. No migration (layout jsonb). Reuses the `seed-compose` budget key. Tests pin the section
+grouping, the guaranteed core close, the too-thin fallback, the text-style override literals, the broadened
+`blockBearsText`, and the gallery view / spacing sanitize. No em dashes in any generated copy or operator
+label (CONTENT-VOICE).

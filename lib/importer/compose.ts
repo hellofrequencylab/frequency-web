@@ -19,7 +19,7 @@ import { aiAvailable, featureOverBudget, recordAiUsage } from '@/lib/ai/usage'
 import { withVoice } from '@/lib/ai/voice'
 import { stripEmDashes } from '@/lib/ai/space-copilot'
 import { isReadyMediaUrl, type CommercialPolicy } from './map'
-import type { EntityLayout, RowDef } from '@/lib/entity-blocks/layout'
+import { normalizeRowTitle, type EntityLayout, type RowColumns, type RowDef } from '@/lib/entity-blocks/layout'
 import type { BusinessProfile } from './schema'
 
 const FEATURE = 'seed-compose'
@@ -50,9 +50,9 @@ const COMPOSER_BLOCK_IDS = new Set(COMPOSER_BLOCKS.map((b) => b.id))
 /** The design blocks whose COPY the composer authors (the rest are DATA blocks that render live data). */
 const AUTHORED_BLOCKS = new Set(['editorial', 'features', 'cardGrid', 'zigzag', 'accentBeat', 'prose'])
 
-/** One section the composer returns. The block id is validated against the allowlist; `imageIndex` is an
- *  index into the SELECTABLE photos (the non-cover gallery), resolved to a URL server-side. */
-export interface ComposedSection {
+/** One BLOCK inside a section. The block id is validated against the allowlist; `imageIndex` is an index
+ *  into the SELECTABLE photos (the non-cover gallery), resolved to a URL server-side. */
+export interface ComposedBlock {
   block: string
   eyebrow?: string
   title?: string
@@ -63,15 +63,34 @@ export interface ComposedSection {
   imageIndex?: number
 }
 
-const MAX_SECTIONS = 14
+/** One SECTION the composer returns (Importer v2.1): a NAMED band of the page that groups related blocks.
+ *  Its `title` becomes the row's live section header (a titled row renders its name as a heading on the
+ *  page); a pure banner / call-to-action section can leave the title blank so no header sits over it.
+ *  `columns` pairs two blocks side by side (a Space page is at most two columns) when there are enough. */
+export interface ComposedSection {
+  title?: string
+  columns?: 1 | 2
+  blocks: ComposedBlock[]
+}
+
+/** Model sections we process (the prompt asks for 3 to 5); the guaranteed-core append may add up to two
+ *  more, so the hard row cap sits a little above the ask. */
+const MAX_MODEL_SECTIONS = 5
+const HARD_ROW_CAP = 7
+const MAX_BLOCKS_PER_SECTION = 4
+/** DATA blocks the seed ALWAYS ends with when the model omits them: how to reach the business + find it
+ *  online. Both render from live data (never a design block that could duplicate them), so appending the
+ *  missing ones can never double up content, and every seeded page carries Contact + Business. */
+const CORE_TRAILING_BLOCKS = ['contact', 'business'] as const
 const clamp = (v: unknown, max: number): string => stripEmDashes(String(v ?? '')).trim().slice(0, max)
 
 /**
- * PURE: turn the composer's ordered sections into an EntityLayout (rows + per-block content bags). Only
- * KNOWN blocks are kept, each block id at most once (the content map is keyed by id), and only when it
- * carries the content it needs to render (a cardGrid needs cards, a zigzag/editorial/prose needs body,
- * an authored block that is empty is dropped). Photos resolve by index into `galleryImages`; the gallery
- * block gets them all. Never throws.
+ * PURE: turn the composer's NAMED sections into an EntityLayout (titled rows + per-block content bags).
+ * Each section becomes one row whose blocks are grouped into it (1 column stacked, or 2 columns paired),
+ * carrying the section title as the row's live header. Only KNOWN blocks survive, each block id at most
+ * once across the WHOLE layout (the content map is keyed by id), and an authored design block is dropped
+ * when it lacks its required copy. Photos resolve by index into `galleryImages`; the gallery block gets
+ * them all. Contact + Business are guaranteed to close the page. Never throws.
  */
 export function planToLayout(
   sections: ComposedSection[],
@@ -85,34 +104,77 @@ export function planToLayout(
   }
   const name = (profile.name ?? '').trim()
 
-  const order: string[] = []
   const content: Record<string, Record<string, unknown>> = {}
   const placed = new Set<string>()
+  const rows: RowDef[] = []
 
-  for (const s of (sections ?? []).slice(0, MAX_SECTIONS)) {
-    const id = typeof s?.block === 'string' ? s.block : ''
-    if (!COMPOSER_BLOCK_IDS.has(id) || placed.has(id)) continue
-
+  // Build one block into the content map (authored) or as a live-data placement, returning its id, or null
+  // when it is unknown / already placed / an empty authored block.
+  const buildBlock = (b: ComposedBlock | undefined): string | null => {
+    const id = typeof b?.block === 'string' ? b.block : ''
+    if (!COMPOSER_BLOCK_IDS.has(id) || placed.has(id)) return null
     if (AUTHORED_BLOCKS.has(id)) {
-      const bag = authoredBag(id, s, { name, imageAt })
-      if (!bag) continue // an authored block with no usable content is skipped
+      const bag = authoredBag(id, b!, { name, imageAt })
+      if (!bag) return null // an authored block with no usable content is skipped
       content[id] = bag
     } else {
       // A DATA block: place it (renders live data); carry an optional eyebrow/title override.
       const header: Record<string, unknown> = {}
-      const eyebrow = clamp(s.eyebrow, 60)
-      const title = clamp(s.title, 80)
+      const eyebrow = clamp(b!.eyebrow, 60)
+      const title = clamp(b!.title, 80)
       if (eyebrow) header.eyebrow = eyebrow
       if (title) header.title = title
       if (Object.keys(header).length) content[id] = header
     }
     placed.add(id)
-    order.push(id)
+    return id
   }
 
-  if (order.length < 2) return null // too thin to be worth overriding the deterministic layout
+  // Push one titled row for a section's surviving block ids: 2 columns pairs them (round-robin) when the
+  // section asked for it and there are at least two; otherwise a single stacked column. A blank title
+  // leaves the row header-less (a pure banner / CTA band).
+  const pushRow = (title: string | undefined, wantColumns: 1 | 2, ids: string[]) => {
+    if (!ids.length || rows.length >= HARD_ROW_CAP) return
+    const columns: RowColumns = wantColumns === 2 && ids.length >= 2 ? 2 : 1
+    const cells: string[][] =
+      columns === 2
+        ? ids.reduce<[string[], string[]]>(
+            (acc, id, i) => (acc[i % 2].push(id), acc),
+            [[], []],
+          )
+        : [ids]
+    const row: RowDef = { id: `r${rows.length}`, columns, cells }
+    const t = normalizeRowTitle(title)
+    if (t) {
+      row.title = t
+      row.headerOn = true
+    }
+    rows.push(row)
+  }
 
-  const rows: RowDef[] = order.map((id, i) => ({ id: `r${i}`, columns: 1, cells: [[id]] }))
+  for (const section of (sections ?? []).slice(0, MAX_MODEL_SECTIONS)) {
+    const ids = (section?.blocks ?? [])
+      .slice(0, MAX_BLOCKS_PER_SECTION)
+      .map(buildBlock)
+      .filter((x): x is string => x !== null)
+    pushRow(section?.title, section?.columns === 2 ? 2 : 1, ids)
+  }
+
+  // The THINNESS gate reads the MODEL's own output (before the guaranteed core top-up): a model that placed
+  // fewer than two real blocks is too thin to override the richer deterministic layout, so bail and let the
+  // caller fall back. The core append below is a top-up on a real page, never a crutch that rescues a
+  // degenerate one.
+  if (placed.size < 2) return null
+
+  // GUARANTEE the core "reach us" data blocks so every seeded page can be contacted + found online, even
+  // when the model forgot them. Safe to append: they render live data, so they never duplicate a design
+  // block's prose. Grouped into a final "Find us" section (paired when both are missing).
+  const missingCore = CORE_TRAILING_BLOCKS.filter((id) => !placed.has(id))
+  if (missingCore.length) {
+    for (const id of missingCore) placed.add(id)
+    pushRow('Find us', missingCore.length === 2 ? 2 : 1, [...missingCore])
+  }
+
   const layout: EntityLayout = { rows }
   if (Object.keys(content).length) layout.content = content
   return layout
@@ -121,7 +183,7 @@ export function planToLayout(
 /** Build the content bag for one AUTHORED design block, or null when it lacks its required copy. PURE. */
 function authoredBag(
   id: string,
-  s: ComposedSection,
+  s: ComposedBlock,
   ctx: { name: string; imageAt: (i: unknown) => string | undefined },
 ): Record<string, unknown> | null {
   const eyebrow = clamp(s.eyebrow, 60)
@@ -187,28 +249,49 @@ function authoredBag(
 
 const TOOL: Anthropic.Tool = {
   name: 'compose_page',
-  description: 'Return the ordered marketing-page sections for this business.',
+  description: 'Return the marketing page as 3 to 5 NAMED sections, each grouping its blocks, top to bottom.',
   input_schema: {
     type: 'object',
     properties: {
       sections: {
         type: 'array',
-        description: 'The page, top to bottom. Use each block at most once. 6 to 10 sections is ideal.',
+        description:
+          'The page as 3 to 5 sections, top to bottom. Each section is a NAMED band that groups related blocks. Use each block at most once across the whole page.',
         items: {
           type: 'object',
           properties: {
-            block: { type: 'string', enum: [...COMPOSER_BLOCK_IDS] },
-            eyebrow: { type: 'string' },
-            title: { type: 'string' },
-            subtitle: { type: 'string' },
-            body: { type: 'string' },
-            cards: {
-              type: 'array',
-              items: { type: 'object', properties: { title: { type: 'string' }, text: { type: 'string' } } },
+            title: {
+              type: 'string',
+              description:
+                'The section heading shown on the page (e.g. "What we offer", "Our story", "Find us"). Leave blank ONLY for a pure banner or call-to-action band that needs no heading.',
             },
-            imageIndex: { type: 'integer', description: 'Which photo (0-based) for a banner/zigzag, or omit.' },
+            columns: {
+              type: 'integer',
+              enum: [1, 2],
+              description: 'Set 2 to pair two blocks side by side in this section (e.g. offerings + booking); else 1.',
+            },
+            blocks: {
+              type: 'array',
+              description: 'The blocks in this section, in order. One block for a simple section, two to group them.',
+              items: {
+                type: 'object',
+                properties: {
+                  block: { type: 'string', enum: [...COMPOSER_BLOCK_IDS] },
+                  eyebrow: { type: 'string' },
+                  title: { type: 'string' },
+                  subtitle: { type: 'string' },
+                  body: { type: 'string' },
+                  cards: {
+                    type: 'array',
+                    items: { type: 'object', properties: { title: { type: 'string' }, text: { type: 'string' } } },
+                  },
+                  imageIndex: { type: 'integer', description: 'Which photo (0-based) for a zigzag, or omit.' },
+                },
+                required: ['block'],
+              },
+            },
           },
-          required: ['block'],
+          required: ['blocks'],
         },
       },
     },
@@ -238,15 +321,17 @@ function brief(profile: BusinessProfile): string {
   return lines.join('\n')
 }
 
-const SYSTEM = `You are a top-level web designer building a business's marketing home page from real, verified content.
+const SYSTEM = `You are a top-level web designer AND copywriter building a business's "About" home page from real, verified content.
 You are given the business brief, the available page BLOCKS (with when-to-use notes), and how many PHOTOS are available.
-Design the best-practice page: choose the blocks that fit THIS business, order them top to bottom, and write the copy.
+Design a best-practice page as a set of clearly NAMED sections, then write the copy. Work like a real designer: group related blocks, name each section, and pick the blocks that fit THIS business.
 Rules, follow exactly:
-- Choose from the given blocks only. Use each block AT MOST ONCE. Aim for a FULL page: 8 to 11 sections.
-- Lead with core info (what it is, what it offers, how to reach it) before the softer story. The Space cover already shows the hero image + name, so do NOT open with a banner.
-- Make it feel like a real marketing page: unless the brief truly lacks the material, INCLUDE a Features section (3 to 4 value props), a Card grid of the offerings, a Zigzag story beat with a photo, the photo Gallery, an Accent beat call-to-action, and the fitting data blocks (Contact, FAQ, Booking, Business presence). Intermix a Text Block write-up if it adds something new.
+- Return 3 to 5 SECTIONS, top to bottom. Name the MULTI-block sections with a short, human title that reads as a heading (e.g. "What we offer", "Come see us"): the title is the ONE heading for that band, so do NOT also repeat it as a block title or eyebrow inside the same section. For a section that is a SINGLE design block which already carries its own heading (editorial, cardGrid, zigzag, accentBeat), leave the section title blank and let the block's own heading lead. Also leave it blank for a pure call-to-action band.
+- GROUP related blocks into one section. Set a section's columns to 2 to pair two blocks side by side (e.g. offerings + booking, or team + contact); use 1 column otherwise. A section may hold one or two blocks.
+- Choose from the given blocks only. Use each block AT MOST ONCE across the whole page.
+- COVER every core thing an About page needs, using the blocks that fit: what the business is and its story (about / story data blocks, or an editorial / zigzag that carries them), what it offers (offerings or a card grid), why choose it (a features section of 3 to 4 value props), the photos (the gallery when there are several), and how to reach it (contact with hours, and the business presence / socials). Add booking for a bookable business and FAQ when there are questions.
+- Use 3 to 5 DESIGN blocks (editorial, features, cardGrid, zigzag, accentBeat, gallery) so the page reads like real marketing, not a stack of data cards. The Space cover already shows the hero image + name, so do NOT open with a banner.
 - Write copy ONLY from the brief. NEVER invent a fact, a price, a statistic, or a health/medical claim, and never repeat the same sentence across two blocks. Plain sentences, no hype, no jargon, no emoji, no em dashes.
-- For a features/cardGrid, write a short title + one plain line per item. For a zigzag, reference a photo by its 0-based index (omit if none fits).
+- For a features / cardGrid, write a short title + one plain line per item. For a zigzag, reference a photo by its 0-based index (omit if none fits).
 Return the page via the compose_page tool.`
 
 /**
