@@ -68,11 +68,21 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // Collapse: with nothing to show (no title, body, image, or button) the block returns null so its row
       // reserves NO height (Fix 8) — the grid renders an empty stack as nothing, never a hollow box.
       if (!title && !body && !image && !hasButton) return null
+      // The Callout image honours the same Shape control as the Image block (item 2). `original` keeps the
+      // classic banner crop (h-48); the others crop to a fixed ratio.
+      const calloutAspect =
+        props.aspect === 'horizontal'
+          ? 'aspect-[16/9]'
+          : props.aspect === 'vertical'
+            ? 'aspect-[4/5]'
+            : props.aspect === 'square'
+              ? 'aspect-square'
+              : 'h-48'
       return (
         <div className="overflow-hidden rounded-2xl border border-border bg-surface">
           {image && (
             // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL
-            <img src={image} alt="" className="h-48 w-full object-cover" />
+            <img src={image} alt="" className={`w-full object-cover ${calloutAspect}`} />
           )}
           <div className="space-y-3 p-6">
             {title && <h3 className="text-xl font-bold text-text">{title}</h3>}
@@ -195,10 +205,17 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         )
       }
 
-      // Grid (default): an even, square-cropped grid.
+      // Grid (default): an even grid, cropped to the chosen Shape (item 2). `original` keeps the uniform
+      // square; the others crop every tile to a fixed ratio so the grid stays even.
+      const gridAspect =
+        props.aspect === 'horizontal'
+          ? 'aspect-[16/9]'
+          : props.aspect === 'vertical'
+            ? 'aspect-[4/5]'
+            : 'aspect-square'
       return (
         <div className={`grid grid-cols-2 sm:grid-cols-3 ${gapClass}`}>
-          {images.map((src, i) => tile(src, i, 'aspect-square w-full rounded-xl object-cover'))}
+          {images.map((src, i) => tile(src, i, `${gridAspect} w-full rounded-xl object-cover`))}
         </div>
       )
     }

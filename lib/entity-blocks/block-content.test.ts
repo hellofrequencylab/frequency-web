@@ -102,6 +102,16 @@ describe('fieldsForBlock', () => {
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
   })
+
+  it('every image-bearing block exposes the Shape control (item 2: all images selectable)', () => {
+    // Image, Callout, Gallery, and Zigzag all carry the shared `aspect` (Shape) field, so the control is on
+    // every placed image, not just the standalone Image block.
+    for (const id of ['image', 'callout', 'gallery', 'zigzag']) {
+      const shape = fieldsForBlock(id).find((f) => f.key === 'aspect')
+      expect(shape, `${id} should expose the Shape control`).toBeTruthy()
+      expect(shape!.options?.map((o) => o.value)).toEqual(['original', 'horizontal', 'vertical', 'square'])
+    }
+  })
 })
 
 describe('sanitizeBlockContent', () => {
