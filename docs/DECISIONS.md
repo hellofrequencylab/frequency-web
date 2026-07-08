@@ -12791,3 +12791,31 @@ budget key: rejected, the work is the same class as compose, so it reuses `seed-
 (`reseedSpaceBlockCopy`); `block-edit-panel.tsx` (`onReseed` prop + button); `profile-page-builder.tsx`
 (`onReseedBlock` threaded, Space wrapper wires it). Grounded only in the verified brief, so it cannot
 reintroduce the paraphrase drift that motivated the direct-DB Daniel rebuild — and it is opt-in per block.
+
+## ADR-583: Mood drives the Space page style (task #21)
+
+**Status:** Accepted · extends the seed MOOD (ADR-moods) and the page themes (ADR-578). Next free number
+after ADR-582.
+
+**Context.** The seed mood (warm / bold / calm / playful) already steered the reframe TONE, but not the page
+DESIGN. The ask (#21) was "mood-aware world-class page composition". Scoped with the operator to the tightest
+high-value version: the mood should pick the PAGE STYLE (one of the five colour-free typography + shape
+themes), reusing the theme system already shipped rather than inventing per-mood layouts.
+
+**Decision.** A pure `moodToSpaceTheme(mood)` (lib/importer/moods.ts) maps each mood to a theme:
+warm → editorial, bold → bold, calm → classic, playful → playful (`accessible` stays an explicit operator
+choice). On apply / re-apply, `materializeBusiness` writes `preferences.theme` from the mood (sparse: the
+default theme clears the key), threaded via a new `MaterializeOptions.mood` set by `applyIntake` from
+`inputs.mood`. Absent mood ⇒ the theme is left untouched, so a re-run with no mood never disturbs an
+operator's chosen style. The operator can always override the result in the Identity & Branding page-style
+chooser (ADR-578); a later re-seed re-applies the mood's theme, consistent with how re-seed re-voices copy.
+
+**Alternatives.** (1) Mood also re-picks blocks / spacing / accent emphasis: deferred — the operator chose
+page-style-only for now; the mood metadata (CtaPosture, AccentEmphasis) is already in the taxonomy for a later
+pass. (2) Only set the theme on first seed, never on re-seed: rejected, re-seed regenerating what the master
+profile drives is the established model, and the chooser is the override.
+
+**Consequences.** `lib/importer/moods.ts` (`moodToSpaceTheme`); `lib/importer/materialize.ts`
+(`MaterializeOptions.mood`, `writeProfileDataAndLayout` writes `preferences.theme`, `applyIntake` passes the
+mood). No new schema (preferences.theme already exists). Colour-free themes, so the standard palette is
+untouched (the operator's original constraint).

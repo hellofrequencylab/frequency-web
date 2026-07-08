@@ -6,7 +6,9 @@ import {
   normalizeSeedMood,
   seedMoodSpec,
   moodToneDirective,
+  moodToSpaceTheme,
 } from './moods'
+import { isSpaceThemeId } from '@/lib/theme/space-themes'
 
 describe('seed moods', () => {
   it('has exactly the four owner-picked moods, each fully specified', () => {
@@ -42,5 +44,15 @@ describe('seed moods', () => {
     const d = moodToneDirective('playful')
     expect(d).toContain('Playful and vibrant')
     expect(d).toContain('vibrant')
+  })
+
+  it('moodToSpaceTheme maps every mood to a real page theme (task #21)', () => {
+    expect(moodToSpaceTheme('warm')).toBe('editorial')
+    expect(moodToSpaceTheme('bold')).toBe('bold')
+    expect(moodToSpaceTheme('calm')).toBe('classic')
+    expect(moodToSpaceTheme('playful')).toBe('playful')
+    // Total + safe: garbage falls back to the default mood's theme, always a real theme id.
+    expect(isSpaceThemeId(moodToSpaceTheme('garbage'))).toBe(true)
+    expect(moodToSpaceTheme('garbage')).toBe(moodToSpaceTheme(DEFAULT_SEED_MOOD))
   })
 })

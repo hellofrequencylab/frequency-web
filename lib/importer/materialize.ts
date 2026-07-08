@@ -43,6 +43,8 @@ import { withPageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BusinessProfile, ProvenanceLedger } from './schema'
 import { buildPlan, type MaterializationPlan, type CommercialPolicy } from './map'
+import { moodToSpaceTheme, normalizeSeedMood, type SeedMood } from './moods'
+import { DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
 import { composeSiteHomeDoc } from './site-compose'
 
 // ── Target + result ─────────────────────────────────────────────────────────────
@@ -80,6 +82,10 @@ export interface MaterializeOptions {
    *  (choosing the blocks that fit the business + writing the design-block copy) and REPLACES the
    *  deterministic layout. Falls back to the deterministic layout when AI is off / errors. */
   aiCompose?: { profileId?: string | null; directions?: string }
+  /** The seed MOOD (task #21): drives the Space PAGE STYLE. Each mood maps to one of the five page themes
+   *  (moodToSpaceTheme), written to preferences.theme so the page's look matches its mood. Absent ⇒ leave the
+   *  theme untouched (a re-run with no mood never disturbs an operator's chosen style). */
+  mood?: SeedMood
 }
 
 /** What the materializer seeded (or would have). */
@@ -183,7 +189,7 @@ export async function materializeBusiness(
 
   // Every step below binds to `spaceId`. Each is best-effort + idempotent; a single failure
   // does not abort the whole seed (the result reports counts so the caller/test can assert).
-  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy)
+  const prefsWrite = await writeProfileDataAndLayout(spaceId, plan, profile, policy, options.mood)
   const availabilityWindows = await seedAvailability(spaceId, plan)
   const faqs = await seedFaqs(spaceId, plan)
   const events = await seedEvents(spaceId, plan, ownerProfileId)
@@ -352,6 +358,7 @@ async function writeProfileDataAndLayout(
   plan: MaterializationPlan,
   profile: BusinessProfile,
   policy: CommercialPolicy,
+  mood?: SeedMood,
 ): Promise<{ profileData: boolean; siteDoc: boolean }> {
   const space = await getSpaceById(spaceId)
   const currentPrefs =
@@ -367,6 +374,15 @@ async function writeProfileDataAndLayout(
   let next: Record<string, unknown> = { ...withData }
   if (safeLayout) next.profileLayout = safeLayout
   // (leave any existing profileLayout in place if sanitize returned null — do not wipe on a no-op)
+
+  // PAGE STYLE from the mood (task #21): map the seed mood to one of the five page themes and write it to
+  // preferences.theme (sparse — the default theme clears the key, mirroring updateSpaceProfile). Only when a
+  // mood is given, so a re-run with no mood never disturbs an operator's chosen style.
+  if (mood) {
+    const theme = moodToSpaceTheme(mood)
+    if (theme !== DEFAULT_SPACE_THEME) next.theme = theme
+    else delete next.theme
+  }
 
   // SITE Home doc: seed pageDocs.home only when the operator has not authored one, so a hand-edited
   // Site page is never overwritten on a re-run (edit-wins). Uses the same commercial-fact policy, so
@@ -603,6 +619,8 @@ export async function applyIntake(
     // Let the AI composer design the marketing page from the verified draft (Importer v2). Falls back to
     // the deterministic layout when AI is off. Steered by the operator's directions.
     aiCompose: { profileId: owner, directions: row.inputs.directions },
+    // The seed mood drives the PAGE STYLE (task #21): map it to one of the five page themes on apply/re-apply.
+    mood: normalizeSeedMood(row.inputs.mood),
   })
   if (!result.ok || !result.spaceId) return result
 
