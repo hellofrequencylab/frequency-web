@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { planToLayout, type ComposedSection } from './compose'
+import { planToLayout, reseedBlockCopy, type ComposedSection } from './compose'
 import type { BusinessProfile } from './schema'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
@@ -141,5 +141,17 @@ describe('planToLayout builds a safe, sectioned marketing layout', () => {
     // override, regardless of the guaranteed core (which only tops up a real page).
     expect(planToLayout([{ blocks: [{ block: 'editorial' }] }], profile, gallery)).toBeNull()
     expect(planToLayout([{ blocks: [{ block: 'contact' }] }], profile, gallery)).toBeNull()
+  })
+})
+
+describe('reseedBlockCopy pre-AI guards (task #17)', () => {
+  // The AI call itself is untestable in CI (like composeMarketingLayout); these lock the deterministic
+  // guards that short-circuit BEFORE any model call, so a block with nothing to rewrite never spends budget.
+  it('returns null for a block with no text fields to rewrite', async () => {
+    expect(await reseedBlockCopy('divider', profile, {})).toBeNull()
+    expect(await reseedBlockCopy('gallery', profile, {})).toBeNull()
+  })
+  it('returns null when the master profile has no name to ground on', async () => {
+    expect(await reseedBlockCopy('editorial', { name: '', type: 'business' } as BusinessProfile, {})).toBeNull()
   })
 })

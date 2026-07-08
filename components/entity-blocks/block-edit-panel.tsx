@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, ChevronUp, Loader2, Plus, Sparkles, Upload, X } from 'lucide-react'
 import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
@@ -90,6 +90,7 @@ export function BlockEditPanel({
   editHref,
   pickerData,
   uploadImage,
+  onReseed,
   onContent,
   onStyle,
   onToggleHide,
@@ -105,6 +106,10 @@ export function BlockEditPanel({
   pickerData?: BlockPickerData
   /** Gated image upload (SPACE only); when present, image fields show an Upload control (ADR-542). */
   uploadImage?: UploadImage
+  /** Per-block copy RE-SEED (task #17, SPACE only): regenerate this block's text from the master profile.
+   *  Given the block's current content, returns the rewritten fields (to merge) or a plain error. Absent
+   *  on surfaces with no master profile (member profiles); the button only shows when present. */
+  onReseed?: (current: Record<string, unknown>) => Promise<{ content?: Record<string, string>; error?: string }>
   onContent: (next: Record<string, unknown>) => void
   onStyle: (next: BlockStyle) => void
   onToggleHide: () => void
@@ -113,6 +118,11 @@ export function BlockEditPanel({
   const isData = block?.category === 'data'
   const fields = fieldsForBlock(id)
   const bearsText = blockBearsText(id)
+  // Per-block copy re-seed (task #17): offered only when the surface injects onReseed (Space with a master
+  // profile) AND the block has text fields to rewrite.
+  const canReseed = !!onReseed && fields.some((f) => f.type === 'text' || f.type === 'textarea')
+  const [reseeding, setReseeding] = useState(false)
+  const [reseedError, setReseedError] = useState<string | null>(null)
   // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
   // Features) styles each role independently; every other text-bearing block styles its text as one.
   const textRoles = blockTextRoles(id)
@@ -130,10 +140,45 @@ export function BlockEditPanel({
     onContent(next)
   }
 
+  // Re-seed this block's copy from the master profile (task #17): call the injected action with the current
+  // content, then MERGE the rewritten fields over it through the normal onContent path (so the edit persists
+  // via the editor's own debounced save — no separate write). Fail-safe: a plain inline message on error.
+  const reseed = async () => {
+    if (!onReseed || reseeding) return
+    setReseeding(true)
+    setReseedError(null)
+    try {
+      const res = await onReseed(content)
+      if (res.error) setReseedError(res.error)
+      else if (res.content && Object.keys(res.content).length) onContent({ ...content, ...res.content })
+    } catch {
+      setReseedError('That did not go through. Try again in a moment.')
+    } finally {
+      setReseeding(false)
+    }
+  }
+
   return (
     <div className="mt-1 space-y-3 rounded-lg border border-border bg-surface-elevated/50 p-3">
       {/* DATA block: a minimal on/off switch (redesigned from the verbose checkbox). */}
       {isData && <ToggleRow label="Show on page" checked={!hidden} onChange={onToggleHide} />}
+
+      {/* Per-block copy re-seed (task #17): regenerate just this block's text from the Space's master
+          profile. Shown only on a Space with a master profile, for a block that has text to rewrite. */}
+      {canReseed && (
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={reseed}
+            disabled={reseeding}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
+          >
+            {reseeding ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Sparkles className="h-3.5 w-3.5 text-primary-strong" aria-hidden />}
+            {reseeding ? 'Re-seeding' : 'Re-seed copy'}
+          </button>
+          {reseedError && <p className="text-2xs text-danger">{reseedError}</p>}
+        </div>
+      )}
 
       {/* Fields (content + any declared primitive controls) */}
       {fields.map((field) => (

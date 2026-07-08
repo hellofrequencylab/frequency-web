@@ -9,6 +9,8 @@
 // Voice canon (docs/CONTENT-VOICE.md): operator-facing copy here stays plain, no em dashes.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { SpaceThemeId } from '@/lib/theme/space-themes'
+
 /** The four seed moods (owner pick, 2026-07-07). */
 export type SeedMood = 'warm' | 'bold' | 'calm' | 'playful'
 
@@ -94,4 +96,24 @@ export function seedMoodSpec(value: unknown): SeedMoodSpec {
 export function moodToneDirective(value: unknown): string {
   const spec = seedMoodSpec(value)
   return `Aim for a ${spec.toneWords.join(', ')} tone (the "${spec.label}" mood).`
+}
+
+/** The PAGE STYLE a mood drives (task #21): each mood maps to one of the five colour-free page themes
+ *  (typography + shape) so the seeded page's LOOK matches its mood, not just its copy tone. The seed applies
+ *  this to preferences.theme; the operator can still override it in the Identity & Branding chooser.
+ *    warm → editorial (quiet, roomy, unhurried) · bold → bold (the punchy house look) ·
+ *    calm → classic (settled, bookish) · playful → playful (rounded, warm).
+ *  'accessible' is intentionally not mapped: it stays an explicit operator choice for readability-first. */
+export function moodToSpaceTheme(value: unknown): SpaceThemeId {
+  switch (normalizeSeedMood(value)) {
+    case 'bold':
+      return 'bold'
+    case 'calm':
+      return 'classic'
+    case 'playful':
+      return 'playful'
+    case 'warm':
+    default:
+      return 'editorial'
+  }
 }

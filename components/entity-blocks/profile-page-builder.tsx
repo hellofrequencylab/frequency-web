@@ -57,6 +57,7 @@ import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
 import { uploadSpaceBlockImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
+import { reseedSpaceBlockCopy } from '@/app/(main)/spaces/[slug]/settings/profile/actions'
 import { HeroEditPanel, type HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 
 // THE IN-RAIL ENTITY PAGE BUILDER (ADR-516 Phase C member; Phase D generalized to Space; ADR-526 split the
@@ -103,6 +104,7 @@ export function EntityPageBuilder({
   seed,
   editHrefFor,
   uploadImage,
+  onReseedBlock,
   heroInitial,
 }: {
   /** The page this builder edits (member handle / space slug); guarded against the seed's matchId. */
@@ -119,6 +121,9 @@ export function EntityPageBuilder({
   editHrefFor?: (blockId: string) => string | null
   /** Gated image upload for the block editor's image fields (SPACE only; ADR-542). */
   uploadImage?: UploadImage
+  /** Per-block copy RE-SEED (task #17, SPACE only): given a block id + its current content, regenerate its
+   *  text from the master profile. Passed straight to each block's edit panel; absent ⇒ no Re-seed button. */
+  onReseedBlock?: (blockId: string, current: Record<string, unknown>) => Promise<{ content?: Record<string, string>; error?: string }>
   /** The pinned Top Hero's initial values (SPACE only). When present, a FIXED, non-reorderable hero editor is
    *  rendered above the rows arranger — always first, editable, but never deletable / draggable like a block. */
   heroInitial?: HeroEditorValues
@@ -518,6 +523,7 @@ export function EntityPageBuilder({
         editHref={editHrefFor?.(id) ?? null}
         pickerData={pickerData[id]}
         uploadImage={uploadImage}
+        onReseed={onReseedBlock ? (current) => onReseedBlock(id, current) : undefined}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
         onToggleHide={() => onToggleHide(id)}
@@ -973,6 +979,12 @@ export function SpacePageBuilder({
     },
     [slug],
   )
+  // Per-block copy re-seed (task #17): the edit panel's "Re-seed copy" button calls this, which regenerates
+  // the block's text from the Space's master profile and returns the rewritten fields for the store to merge.
+  const onReseedBlock = useCallback(
+    (blockId: string, current: Record<string, unknown>) => reseedSpaceBlockCopy(slug, blockId, current),
+    [slug],
+  )
   return (
     <EntityPageBuilder
       pageId={slug}
@@ -980,6 +992,7 @@ export function SpacePageBuilder({
       loadRailData={load}
       seed={seed}
       uploadImage={uploadImage}
+      onReseedBlock={onReseedBlock}
       heroInitial={selfHero}
       // A DATA block's "Manage" link points at that FEATURE's own admin area (ADR-529 item 4) — its content
       // + settings live there. Unmapped data blocks fall back to the Space console; content blocks get none.
