@@ -53,7 +53,7 @@ import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
 import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
-import { parseSpaceTheme } from '@/lib/theme/space-themes'
+import { parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
@@ -169,6 +169,9 @@ interface SpaceBrandingData {
   headerCta: HeaderCtaPreference | null
   /** The per-type default CTA label, shown as the placeholder when no override is set. */
   defaultCtaLabel: string
+  /** The Space PAGE STYLE (ADR-578): the typography + shape identity id (preferences.theme), so the rail's
+   *  Identity & Branding section can render the 5-option style chooser with the current pick selected. */
+  pageTheme: SpaceThemeId
   readOnly: boolean
 }
 
@@ -192,6 +195,7 @@ function buildBrandingData(
     accent: space.brandAccent ?? '',
     headerCta: readHeaderCtaPreference(space.preferences),
     defaultCtaLabel: defaultPrimaryCtaLabel(space.type),
+    pageTheme: parseSpaceTheme(space.preferences),
     readOnly: staffViewing || !canUseProfile,
   }
 }

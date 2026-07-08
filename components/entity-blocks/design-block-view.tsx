@@ -118,6 +118,12 @@ function buttonLabel(props: Record<string, unknown>): string | undefined {
   return props.buttonOn === false ? undefined : s(props, 'buttonLabel')
 }
 
+/** Map the Shape control's value (item 2) to a photo crop RATIO string for SiteImage. `original` (or any
+ *  unset / unknown value) keeps the design block's own default 4/3 crop. */
+function aspectRatio(v: unknown): string {
+  return v === 'horizontal' ? '16/9' : v === 'vertical' ? '4/5' : v === 'square' ? '1/1' : '4/3'
+}
+
 /** Render ONE design block by id from its authored bag, or null for a non-design id. The bag is first
  *  merged with the block's demo prompt (Fix 7) so an empty slot shows what it is for. */
 export function DesignBlockView({ id, props: rawProps }: { id: string; props: Record<string, unknown> }): ReactNode {
@@ -189,6 +195,7 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
           body="lead"
           lead={s(props, 'body')}
           mediaSide={oneOf(props.mediaSide, ['left', 'right'] as const, 'left')}
+          aspect={aspectRatio(props.aspect)}
           background="canvas"
         />
       )

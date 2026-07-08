@@ -9,6 +9,8 @@ import {
   resolveDataHeader,
   blockDrawsOwnCard,
   blockBearsText,
+  blockSupportsAlign,
+  blockSupportsBackground,
   blockTextRoles,
   primitiveValues,
   pickerSelection,
@@ -101,6 +103,16 @@ describe('fieldsForBlock', () => {
     expect(fieldsForBlock('offerings').map((f) => f.key)).toEqual(['eyebrow', 'title', 'items'])
     expect(fieldsForBlock('about').map((f) => f.key)).toEqual(['eyebrow', 'title', 'body'])
     expect(fieldsForBlock('nope')).toEqual([])
+  })
+
+  it('every image-bearing block exposes the Shape control (item 2: all images selectable)', () => {
+    // Image, Callout, Gallery, and Zigzag all carry the shared `aspect` (Shape) field, so the control is on
+    // every placed image, not just the standalone Image block.
+    for (const id of ['image', 'callout', 'gallery', 'zigzag']) {
+      const shape = fieldsForBlock(id).find((f) => f.key === 'aspect')
+      expect(shape, `${id} should expose the Shape control`).toBeTruthy()
+      expect(shape!.options?.map((o) => o.value)).toEqual(['original', 'horizontal', 'vertical', 'square'])
+    }
   })
 })
 
@@ -314,6 +326,24 @@ describe('style → class mapping (ADR-569)', () => {
 })
 
 // ── ADR-580 item 4: per-element text styling (Eyebrow / Heading / Text) ─────────────────────────────────
+describe('control audit: blockSupportsAlign / blockSupportsBackground (item 5)', () => {
+  it('Align shows only on blocks with inline text to align', () => {
+    for (const id of ['heading', 'text', 'callout', 'offerings', 'photoHero']) {
+      expect(blockSupportsAlign(id), id).toBe(true)
+    }
+    for (const id of ['image', 'gallery', 'divider', 'embed']) {
+      expect(blockSupportsAlign(id), id).toBe(false)
+    }
+  })
+  it('Background shows on every block except the Divider (a card around a rule is meaningless)', () => {
+    for (const id of ['heading', 'image', 'gallery', 'embed', 'callout']) {
+      expect(blockSupportsBackground(id), id).toBe(true)
+    }
+    expect(blockSupportsBackground('divider')).toBe(false)
+    expect(blockSupportsBackground('nope')).toBe(false)
+  })
+})
+
 describe('blockTextRoles (per-element text roles)', () => {
   it('design blocks expose eyebrow + heading + body', () => {
     for (const id of ['photoHero', 'editorial', 'cardGrid', 'zigzag', 'accentBeat']) {

@@ -250,6 +250,23 @@ export function primitiveValues(field: FieldDef): readonly string[] | null {
   }
 }
 
+/** The shared image SHAPE control (item 2: "set image aspect ratio Horizontal, Vertical, Square, Original").
+ *  One declaration reused on EVERY block that places a single photo (Image, Callout, Zigzag), so the same
+ *  four-way shape picker appears on all of them and the render maps the choice to a fixed ratio (or the
+ *  photo's natural shape for `original`). Sanitizer + editor dispatch on the `segmented` type. */
+const IMAGE_ASPECT_FIELD: FieldDef = {
+  key: 'aspect',
+  label: 'Shape',
+  type: 'segmented',
+  defaultValue: 'original',
+  options: [
+    { value: 'original', label: 'Original' },
+    { value: 'horizontal', label: 'Horizontal' },
+    { value: 'vertical', label: 'Vertical' },
+    { value: 'square', label: 'Square' },
+  ],
+}
+
 /** The CONTENT-block field schemas (the operator authors these). */
 const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   // The SPACE free-form blocks (ADR-542).
@@ -262,6 +279,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'buttonLabel', label: 'Button label', type: 'text', placeholder: 'Button text' },
     { key: 'buttonUrl', label: 'Button link', type: 'url', placeholder: 'https:// (leave blank to set later)' },
     { key: 'image', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
+    IMAGE_ASPECT_FIELD,
   ],
   features: [{ key: 'items', label: 'Features', type: 'features' }],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Your heading goes here' }],
@@ -270,18 +288,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   image: [
     { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Describe the image' },
-    {
-      key: 'aspect',
-      label: 'Shape',
-      type: 'segmented',
-      defaultValue: 'original',
-      options: [
-        { value: 'original', label: 'Original' },
-        { value: 'horizontal', label: 'Horizontal' },
-        { value: 'vertical', label: 'Vertical' },
-        { value: 'square', label: 'Square' },
-      ],
-    },
+    IMAGE_ASPECT_FIELD,
   ],
   // The image GALLERY: the photos plus a LAYOUT (three views) and a SPACING step. Both are declared enum
   // primitives, so the editor renders a segmented control and the sanitizer validates the stored value —
@@ -310,6 +317,10 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
         { value: 'roomy', label: 'Roomy' },
       ],
     },
+    // The Shape control also drives the GRID view's tile crop (item 2), so gallery photos are selectable too;
+    // `original` keeps the uniform square grid, the others crop every tile to a fixed ratio. Masonry keeps
+    // each photo's natural shape and the carousel is a fixed strip, so Shape only affects the grid.
+    IMAGE_ASPECT_FIELD,
   ],
   quote: [
     { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The words you want to quote' },
@@ -377,6 +388,7 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
         { value: 'right', label: 'Right' },
       ],
     },
+    IMAGE_ASPECT_FIELD,
   ],
   accentBeat: [
     { key: 'eyebrow', label: 'Eyebrow', type: 'text', placeholder: 'Small text above the headline' },
@@ -504,6 +516,23 @@ export function blockBearsText(id: string): boolean {
   const block = entityBlockById(id)
   if (!block) return false
   return !NO_TEXT_BLOCK_IDS.has(id)
+}
+
+/** Whether a block supports the ALIGNMENT control (item 5 audit). Alignment sets text-align on the block
+ *  wrapper, which only does anything for a block that carries inline TEXT; a full-width visual block (image,
+ *  gallery, divider, embed) has nothing to align, so the editor hides the control there. Same set as
+ *  blockBearsText, expressed as its own name so the editor reads by intent. */
+export function blockSupportsAlign(id: string): boolean {
+  return blockBearsText(id)
+}
+
+/** Whether a block supports the BACKGROUND (card) control (item 5 audit). Every real block can gain / strip a
+ *  card EXCEPT the Divider, which is a hairline rule — a card around it is meaningless, so the editor hides
+ *  the control for it. */
+export function blockSupportsBackground(id: string): boolean {
+  const block = entityBlockById(id)
+  if (!block) return false
+  return id !== 'divider'
 }
 
 /** The PER-ELEMENT text roles a block exposes (ADR-580, item 4). A block listed here has more than one

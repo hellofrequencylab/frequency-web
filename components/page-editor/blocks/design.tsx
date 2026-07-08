@@ -479,6 +479,7 @@ export function ZigzagBlock({
   mediaSide = 'left',
   background = 'canvas',
   headerFont,
+  aspect = '4/3',
 }: {
   image?: string
   alt?: string
@@ -494,16 +495,19 @@ export function ZigzagBlock({
   mediaSide?: 'left' | 'right'
   background?: ZigzagBg
   headerFont?: string
+  /** The photo crop ratio (item 2 Shape control), e.g. "4/3" | "16/9" | "4/5" | "1/1". Defaults to the
+   *  classic 4/3 so an unset value looks exactly as before. */
+  aspect?: string
 }) {
   const ctaSafe = safeHref(ctaHref)
   const list = (items ?? []).map((it) => it?.text).filter((t): t is string => !!t)
 
   const media = image ? (
     <div className="overflow-hidden rounded-[1.25rem] border border-border shadow-pop">
-      <SiteImage src={image} alt={alt ?? ''} aspect="4/3" className="w-full" />
+      <SiteImage src={image} alt={alt ?? ''} aspect={aspect} className="w-full" />
     </div>
   ) : (
-    <div className="aspect-[4/3] w-full rounded-[1.25rem] border border-border bg-primary-bg" aria-hidden />
+    <div className="w-full rounded-[1.25rem] border border-border bg-primary-bg" style={{ aspectRatio: aspect }} aria-hidden />
   )
 
   const text = (

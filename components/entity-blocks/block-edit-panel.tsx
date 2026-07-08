@@ -8,6 +8,8 @@ import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
   blockDrawsOwnCard,
+  blockSupportsAlign,
+  blockSupportsBackground,
   blockTextRoles,
   fieldsForBlock,
   primitiveValues,
@@ -806,12 +808,12 @@ function LinksEditor({
   )
 }
 
-/** The per-block STYLE controls (ADR-571 cleanup). ALIGNMENT is promoted to a DIRECT top-level Left | Center |
- *  Right icon-group (task 6) — it is no longer buried inside the "Style" disclosure, and it never sat in a
- *  dropdown. The legacy None | S | M | L PADDING selector is removed (task 5): block spacing is owned by the
- *  C3 Spacing group (top / bottom margin) and the Background switch, so a redundant inner-padding step only
- *  duplicated that concept. The "Style" disclosure now holds just the Background switch (a self-carding box
- *  reads on; a plain block reads off — turning it off strips the white card, on gives a bare block one). */
+/** The per-block STYLE controls (ADR-571 cleanup → ADR-580 audit). ALIGNMENT is a DIRECT top-level Left |
+ *  Center | Right icon-group; the legacy padding selector is gone (spacing is the C3 Spacing group + the
+ *  Background switch). The item-5 audit gates each control to where it does something: Align only shows on a
+ *  block that carries inline TEXT (a full-width image / gallery / divider / embed has nothing to align), and
+ *  Background hides on the Divider (a card around a hairline rule is meaningless). A block that supports
+ *  neither (the Divider) renders no Style controls at all — just the Spacing group below. */
 function StyleControls({
   id,
   style,
@@ -821,6 +823,8 @@ function StyleControls({
   style: BlockStyle
   onChange: (next: BlockStyle) => void
 }) {
+  const showAlign = blockSupportsAlign(id)
+  const showBackground = blockSupportsBackground(id)
   const selfCards = blockDrawsOwnCard(id)
   const bgChecked = selfCards ? style.background !== false : style.background === true
   const setBg = (on: boolean) => {
@@ -837,13 +841,18 @@ function StyleControls({
   }
   return (
     <>
-      {/* Alignment reads as a direct icon-group row, not nested in a dropdown (task 6). */}
-      <ControlRow label="Align">
-        <AlignControl value={(style.align ?? 'start') as AlignValue} onSelect={setAlign} />
-      </ControlRow>
-      <ControlGroup label="Style">
-        <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
-      </ControlGroup>
+      {/* Alignment reads as a direct icon-group row, not nested in a dropdown (task 6). Hidden on blocks
+          with no inline text to align (item 5 audit). */}
+      {showAlign && (
+        <ControlRow label="Align">
+          <AlignControl value={(style.align ?? 'start') as AlignValue} onSelect={setAlign} />
+        </ControlRow>
+      )}
+      {showBackground && (
+        <ControlGroup label="Style">
+          <ToggleRow label="Background" checked={bgChecked} onChange={setBg} />
+        </ControlGroup>
+      )}
     </>
   )
 }
