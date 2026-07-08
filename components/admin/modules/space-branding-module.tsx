@@ -40,6 +40,7 @@ export function SpaceBrandingModule() {
         accent={data.accent}
         headerCta={data.headerCta}
         defaultCtaLabel={data.defaultCtaLabel}
+        pageTheme={data.pageTheme}
         readOnly={data.readOnly}
       />
     </section>

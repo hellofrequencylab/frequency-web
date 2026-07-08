@@ -10,6 +10,7 @@ import { Input, Textarea, Label } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
+import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
 import type { CoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import {
   setSpaceImages,
@@ -49,6 +50,7 @@ export function SpaceBrandingForm({
   accent,
   headerCta = null,
   defaultCtaLabel,
+  pageTheme,
   readOnly = false,
 }: {
   spaceId: string
@@ -61,6 +63,8 @@ export function SpaceBrandingForm({
   accent: string
   headerCta?: HeaderCtaPreference | null
   defaultCtaLabel: string
+  /** The current Space PAGE STYLE (ADR-578) — the selected one of the 5 typography + shape themes. */
+  pageTheme: SpaceThemeId
   readOnly?: boolean
 }) {
   const router = useRouter()
@@ -86,6 +90,16 @@ export function SpaceBrandingForm({
   if (coverScrim !== seenScrim) {
     setSeenScrim(coverScrim)
     setScrim(coverScrim)
+  }
+
+  // PAGE STYLE (ADR-578): the one of five typography + shape themes the page renders in. Optimistic like the
+  // cover scrim — flip the active card now, persist to preferences.theme via updateSpaceProfile, and reflect
+  // an external prop change back in with the render-time adjust-on-prop-change pattern (no effect).
+  const [theme, setTheme] = useState<SpaceThemeId>(pageTheme)
+  const [seenTheme, setSeenTheme] = useState<SpaceThemeId>(pageTheme)
+  if (pageTheme !== seenTheme) {
+    setSeenTheme(pageTheme)
+    setTheme(pageTheme)
   }
 
   // HEADER BUTTON — the one dominant CTA on the profile hero. Three modes: 'default' (the per-type label +
@@ -386,6 +400,43 @@ export function SpaceBrandingForm({
         >
           Save button
         </button>
+      </section>
+
+      {/* PAGE STYLE — the typography + shape identity the whole page renders in. Five presets; the accent
+          colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
+      <section className="space-y-2">
+        <SectionHeader title="Page style" />
+        <p className="text-xs text-muted">
+          The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
+        </p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {SPACE_THEMES.map((t) => {
+            const active = theme === t.id
+            return (
+              <button
+                key={t.id}
+                type="button"
+                disabled={readOnly || pending || active}
+                onClick={() => {
+                  setTheme(t.id) // optimistic: flip the active card now, not after the refresh
+                  run(() => updateSpaceProfile(spaceId, { theme: t.id }))
+                }}
+                aria-pressed={active}
+                title={t.description}
+                className={cn(
+                  'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                  active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+                )}
+              >
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                  {t.label}
+                  {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                </span>
+                <span className="mt-0.5 block text-xs text-muted">{t.description}</span>
+              </button>
+            )
+          })}
+        </div>
       </section>
 
       {/* THEME ACCENT — the brand colour that paints buttons, the active tab, and highlights. */}
