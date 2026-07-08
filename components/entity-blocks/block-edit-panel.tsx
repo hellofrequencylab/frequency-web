@@ -8,12 +8,14 @@ import { entityBlockById } from '@/lib/entity-blocks/registry'
 import {
   blockBearsText,
   blockDrawsOwnCard,
+  blockTextRoles,
   fieldsForBlock,
   primitiveValues,
   type BlockStyle,
   type FieldDef,
   type MarginStep,
   type TextColorToken,
+  type TextRole,
   type TextShadowStep,
   type TextSizeStep,
   type TextStyle,
@@ -109,6 +111,9 @@ export function BlockEditPanel({
   const isData = block?.category === 'data'
   const fields = fieldsForBlock(id)
   const bearsText = blockBearsText(id)
+  // Per-element text roles (item 4): a block with more than one text element (design blocks, Callout,
+  // Features) styles each role independently; every other text-bearing block styles its text as one.
+  const textRoles = blockTextRoles(id)
   // About + Story carry the space's shared story text. The editor pre-fills these fields with the current
   // content (the same words the page shows), so a note tells the operator that editing here updates the
   // section everywhere it appears — not a second, disconnected copy.
@@ -158,8 +163,30 @@ export function BlockEditPanel({
         </Link>
       )}
 
-      {/* ── The control stack (redesigned): Text style (C1) · Style · Spacing (C3), grouped + collapsible. */}
-      {bearsText && <TextStyleGroup style={style} onChange={onStyle} />}
+      {/* ── The control stack (redesigned): Text style (C1) · Style · Spacing (C3), grouped + collapsible.
+          A multi-element block (design blocks, Callout, Features) gets ONE text-style group PER element
+          (Eyebrow / Heading / Text); every other text-bearing block styles its text as one whole (item 4). */}
+      {textRoles.length > 0
+        ? textRoles.map((role) => (
+            <TextStyleGroup
+              key={role}
+              label={ROLE_LABEL[role]}
+              value={style.textByRole?.[role] ?? {}}
+              onChange={(next) => onStyle(setRoleText(style, role, next))}
+            />
+          ))
+        : bearsText && (
+            <TextStyleGroup
+              label="Text style"
+              value={style.text ?? {}}
+              onChange={(next) => {
+                const updated: BlockStyle = { ...style }
+                if (next) updated.text = next
+                else delete updated.text
+                onStyle(updated)
+              }}
+            />
+          )}
       <StyleControls id={id} style={style} onChange={onStyle} />
       <MarginGroup style={style} onChange={onStyle} />
     </div>
@@ -331,24 +358,50 @@ function PrimitiveField({
   )
 }
 
-/** The C1 TEXT-STYLE group: size · weight · align · color · shadow, in a collapsible section. Writes to the
- *  style.text bag (kept off the content bag so the render frame owns the presentation). Each control drops
- *  its key back to the default to stay sparse. */
-function TextStyleGroup({ style, onChange }: { style: BlockStyle; onChange: (next: BlockStyle) => void }) {
-  const text: TextStyle = style.text ?? {}
+/** The per-element role label shown on each text-style group (item 4). `body` reads as "Text" — the plain
+ *  reading copy — to match how the operator thinks of it. */
+const ROLE_LABEL: Record<TextRole, string> = {
+  eyebrow: 'Eyebrow',
+  heading: 'Heading',
+  body: 'Text',
+}
+
+/** Write one role's text-style bag into a BlockStyle's `textByRole` map, dropping the role (and the map when
+ *  it empties) so the stored blob stays sparse. Pure; returns a new BlockStyle. */
+function setRoleText(style: BlockStyle, role: TextRole, next: TextStyle | undefined): BlockStyle {
+  const byRole: Partial<Record<TextRole, TextStyle>> = { ...(style.textByRole ?? {}) }
+  if (next) byRole[role] = next
+  else delete byRole[role]
+  const updated: BlockStyle = { ...style }
+  if (Object.keys(byRole).length) updated.textByRole = byRole
+  else delete updated.textByRole
+  return updated
+}
+
+/** The C1 TEXT-STYLE group: size · weight · color · shadow, in a collapsible section. CONTROLLED — it holds
+ *  a single TextStyle bag (a whole-block bag, or one role's bag for per-element styling) and reports the next
+ *  bag (or undefined when it empties) so the caller writes it wherever it belongs. Each control drops its key
+ *  back to the default to stay sparse. */
+function TextStyleGroup({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: TextStyle
+  onChange: (next: TextStyle | undefined) => void
+}) {
+  const text = value
   const setText = (patch: Partial<TextStyle>) => {
     const nextText: TextStyle = { ...text, ...patch }
     // Drop any field that matches its default so the stored bag stays minimal.
     if (nextText.size === 'md') delete nextText.size
     if (nextText.color === 'default') delete nextText.color
     if (nextText.shadow === 'none') delete nextText.shadow
-    const next: BlockStyle = { ...style }
-    if (Object.keys(nextText).length) next.text = nextText
-    else delete next.text
-    onChange(next)
+    onChange(Object.keys(nextText).length ? nextText : undefined)
   }
   return (
-    <ControlGroup label="Text style">
+    <ControlGroup label={label}>
       <ControlRow label="Size">
         <Segmented
           ariaLabel="Text size"
@@ -619,25 +672,54 @@ function UploadButton({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so a
+  // single upload request never overflows the framework boundary (which crashes the route instead of
+  // returning an error). Larger files are skipped with a clear message.
+  const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
+  // Upload a few files at once, not the whole batch, so many photos never open a flood of parallel requests.
+  const CONCURRENCY = 3
 
   async function handle(files: FileList) {
     setBusy(true)
     setError(null)
-    const urls: string[] = []
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith('image/')) {
-        setError('Choose an image file.')
-        continue
-      }
-      const res = await uploadImage(file)
-      if ('error' in res) {
-        setError(res.error)
-        continue
-      }
-      urls.push(res.url)
+    const all = Array.from(files)
+    const oversize = all.filter((f) => f.size > MAX_UPLOAD_BYTES).length
+    const list = all.filter((f) => f.type.startsWith('image/') && f.size <= MAX_UPLOAD_BYTES)
+    if (!list.length) {
+      setError(oversize ? 'Those images are over 9 MB. Use smaller versions.' : 'Choose an image file.')
+      setBusy(false)
+      return
     }
+    setProgress({ done: 0, total: list.length })
+
+    // Upload with a small worker pool: results are stored by ORIGINAL index so the gallery keeps the pick
+    // order even though uploads finish out of order. Each upload is ONE file (well under the body limit).
+    const results: (string | null)[] = new Array(list.length).fill(null)
+    let firstError: string | null = null
+    let cursor = 0
+    const worker = async () => {
+      while (cursor < list.length) {
+        const i = cursor++
+        try {
+          const res = await uploadImage(list[i])
+          if ('error' in res) firstError ??= res.error
+          else results[i] = res.url
+        } catch {
+          firstError ??= 'That upload did not go through. Try again.'
+        }
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, list.length) }, worker))
+
+    const urls = results.filter((u): u is string => !!u)
     if (urls.length) onUploaded(urls)
+    if (oversize && !firstError) firstError = 'Some images were over 9 MB and skipped. Use smaller versions.'
+    if (firstError) setError(firstError)
+    setProgress(null)
     setBusy(false)
   }
 
@@ -650,7 +732,7 @@ function UploadButton({
         className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Upload className="h-3.5 w-3.5" aria-hidden />}
-        {busy ? 'Uploading' : label}
+        {busy ? (progress ? `Uploading ${progress.done}/${progress.total}` : 'Uploading') : label}
       </button>
       <input
         ref={inputRef}

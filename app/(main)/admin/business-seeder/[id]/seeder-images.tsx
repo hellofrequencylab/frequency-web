@@ -41,6 +41,7 @@ export function SeederImages({
   const [note, setNote] = useState<string | null>(null)
   const [busy, startBusy] = useTransition()
   const [arranging, startArrange] = useTransition()
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   const roleByUrl = new Map(initialPlan.map((p) => [p.url, p.category]))
 
@@ -80,26 +81,47 @@ export function SeederImages({
     if (!files.length) return
     const tooBig = files.filter((f) => f.size > MAX_UPLOAD_BYTES)
     const okFiles = files.filter((f) => f.size <= MAX_UPLOAD_BYTES)
+
+    // Pack files into BATCHES that each stay under the body limit, and send each batch in ONE request (the
+    // action files a whole batch at once). Sequential batches — the action is read-modify-write and files
+    // into the Loom per call, so it must not race — but a handful of multi-photo requests is far faster than
+    // one request per photo. A file is only ever alone in a batch when it alone approaches the limit.
+    const batches: File[][] = []
+    let batch: File[] = []
+    let batchBytes = 0
+    for (const f of okFiles) {
+      if (batch.length && batchBytes + f.size > MAX_UPLOAD_BYTES) {
+        batches.push(batch)
+        batch = []
+        batchBytes = 0
+      }
+      batch.push(f)
+      batchBytes += f.size
+    }
+    if (batch.length) batches.push(batch)
+
     startBusy(async () => {
       let failed = 0
-      // Upload ONE FILE PER REQUEST (sequentially) so a multi-photo batch can never exceed the server-action
-      // body limit. The action appends to the staged list and returns the full next set, so we track the
-      // latest good result.
-      for (const f of okFiles) {
+      let done = 0
+      setProgress({ done: 0, total: okFiles.length })
+      for (const group of batches) {
         const form = new FormData()
-        form.append('files', f)
+        for (const f of group) form.append('files', f)
         try {
           const res = await uploadSeederImages(intakeId, form)
           if (res.ok) setImages(res.images)
           else {
-            failed += 1
+            failed += group.length
             setError(res.error)
           }
         } catch {
-          failed += 1
+          failed += group.length
           setError(THROWN)
         }
+        done += group.length
+        setProgress({ done, total: okFiles.length })
       }
+      setProgress(null)
       if (tooBig.length > 0) {
         setError(
           `${tooBig.length} image${tooBig.length === 1 ? ' was' : 's were'} over 9 MB and skipped. Use a smaller version.`,
@@ -261,7 +283,7 @@ export function SeederImages({
           className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border text-2xs text-muted transition-colors hover:border-border-strong hover:text-text disabled:opacity-60"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Plus className="h-5 w-5" aria-hidden />}
-          {busy ? 'Uploading…' : 'Add'}
+          {busy ? (progress ? `${progress.done}/${progress.total}` : 'Uploading…') : 'Add'}
         </button>
       </div>
 

@@ -100,6 +100,26 @@ describe('BlockEditPanel redesign', () => {
     expect(html).toContain('/spaces/x/settings/offerings')
   })
 
+  it('a multi-element block exposes one text-style group PER element, not one whole-block group (item 4)', () => {
+    const html = renderToStaticMarkup(
+      <BlockEditPanel
+        id="callout"
+        content={{}}
+        style={{}}
+        hidden={false}
+        editHref={null}
+        onContent={noop}
+        onStyle={noop}
+        onToggleHide={noop}
+      />,
+    )
+    // Callout has a heading + body (no eyebrow), so it gets a "Heading" and a "Text" text-style group and
+    // NOT the single whole-block "Text style" group.
+    expect(html).toContain('Heading</summary>')
+    expect(html).toContain('Text</summary>')
+    expect(html).not.toContain('Text style')
+  })
+
   it('onStyle fires with a text-style bag when a color swatch is chosen (wiring smoke test)', () => {
     // Render the ColorControl the panel composes and assert its callback shape, since JSDOM click wiring is
     // exercised elsewhere; here we assert the control calls back with the chosen token.

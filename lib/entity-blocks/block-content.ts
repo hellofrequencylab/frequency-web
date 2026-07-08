@@ -43,6 +43,14 @@ export interface TextStyle {
   shadow?: TextShadowStep
 }
 
+/** The distinct TEXT ELEMENTS a rich block exposes for PER-ELEMENT styling (item 4: "unique to each text
+ *  block — Eyebrow, Heading, Text"). A block with more than one of these (the design blocks, Callout,
+ *  Features) gets one text-style bag PER role; a single-text block (Heading, Text, Quote) keeps the one
+ *  whole-block `text` bag. The render targets each role in the block's DOM: `eyebrow` by a shared marker
+ *  (`data-text-role`), `heading` by heading tags, `body` by paragraph tags — see textByRoleClass. */
+export type TextRole = 'eyebrow' | 'heading' | 'body'
+export const TEXT_ROLES: readonly TextRole[] = ['eyebrow', 'heading', 'body']
+
 /** Per-block presentation: an optional card background, inner padding, alignment, vertical margins, and a
  *  reusable text-style bag. Every field is sparse — absent means the block's own default — so the stored
  *  blob stays minimal (ADR-528 → ADR-569). */
@@ -60,8 +68,15 @@ export interface BlockStyle {
   mt?: MarginStep
   /** Bottom margin step (ADR-569 C3). Absent === the render default (C2). */
   mb?: MarginStep
-  /** Reusable text-style bag (ADR-569 C1): size / weight / token-color / shadow. Absent === all defaults. */
+  /** Reusable text-style bag (ADR-569 C1): size / weight / token-color / shadow. Absent === all defaults.
+   *  Used by SINGLE-text blocks (Heading, Text, Quote) and the live DATA blocks — it styles ALL of the
+   *  block's text at once. Multi-element blocks use `textByRole` instead (item 4). */
   text?: TextStyle
+  /** PER-ELEMENT text-style bags (ADR-580, item 4): one TextStyle per text role the block exposes
+   *  (eyebrow / heading / body), so an operator styles the Heading distinctly from the Body and the
+   *  Eyebrow. Only the multi-element blocks (design blocks, Callout, Features) carry it; each role is
+   *  sparse (absent === the block's own default). */
+  textByRole?: Partial<Record<TextRole, TextStyle>>
 }
 
 const PAD_VALUES: ReadonlySet<string> = new Set(['none', 'sm', 'md', 'lg'])
@@ -112,6 +127,17 @@ export function sanitizeBlockStyle(raw: unknown): BlockStyle | undefined {
   if (typeof o.mb === 'string' && MARGIN_VALUES.has(o.mb)) out.mb = o.mb as MarginStep
   const text = sanitizeTextStyle(o.text)
   if (text) out.text = text
+  // Per-element text bags (item 4): sanitize each known role's bag, drop empties, keep the map only when a
+  // role survives. Iterating the fixed TEXT_ROLES allowlist means a tampered key can never be written.
+  if (o.textByRole && typeof o.textByRole === 'object' && !Array.isArray(o.textByRole)) {
+    const src = o.textByRole as Record<string, unknown>
+    const byRole: Partial<Record<TextRole, TextStyle>> = {}
+    for (const role of TEXT_ROLES) {
+      const bag = sanitizeTextStyle(src[role])
+      if (bag) byRole[role] = bag
+    }
+    if (Object.keys(byRole).length) out.textByRole = byRole
+  }
   return Object.keys(out).length ? out : undefined
 }
 
@@ -437,14 +463,13 @@ export function isContentBlock(block: EntityBlockDef): boolean {
 const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set([
   'callout',
   'features',
-  // The SECTION design blocks own their full section frame (photo, cards, accent wash), so the Background
-  // toggle defaults ON and turning it off strips the frame — true to what is on the page. The two TEXT design
-  // blocks (displayHeading / prose, ADR-571) are flat text and draw NO card, so they are deliberately absent
-  // (their Background toggle defaults off, matching Heading / Text).
+  // The design blocks that draw their OWN filled background (a photo / an accent wash) default the Background
+  // toggle ON, so turning it off strips that frame — true to what is on the page. The OPEN design blocks
+  // (editorial / cardGrid / zigzag) render with no card by default, so they are deliberately ABSENT here: the
+  // Background toggle defaults OFF and turning it ON wraps the block in a white card, so the control has a
+  // real, visible effect on every block (the two flat TEXT design blocks displayHeading / prose match, and so
+  // do Heading / Text).
   'photoHero',
-  'editorial',
-  'cardGrid',
-  'zigzag',
   'accentBeat',
 ])
 
@@ -479,6 +504,31 @@ export function blockBearsText(id: string): boolean {
   const block = entityBlockById(id)
   if (!block) return false
   return !NO_TEXT_BLOCK_IDS.has(id)
+}
+
+/** The PER-ELEMENT text roles a block exposes (ADR-580, item 4). A block listed here has more than one
+ *  distinct authored text element, so the editor gives it one text-style bag PER role (Eyebrow / Heading /
+ *  Text) and the render targets each element separately (textByRoleClass). Every OTHER text-bearing block
+ *  (the single-text content blocks Heading / Text / Quote, and the live DATA blocks whose body is data)
+ *  returns [] and keeps the single whole-block `text` bag. Explicit (not derived) so the role set is exactly
+ *  what each block actually renders — no drift from a field-key heuristic. */
+const BLOCK_TEXT_ROLES: Readonly<Record<string, readonly TextRole[]>> = {
+  // The design blocks carry an eyebrow, a heading, and body copy.
+  photoHero: ['eyebrow', 'heading', 'body'],
+  editorial: ['eyebrow', 'heading', 'body'],
+  cardGrid: ['eyebrow', 'heading', 'body'],
+  zigzag: ['eyebrow', 'heading', 'body'],
+  accentBeat: ['eyebrow', 'heading', 'body'],
+  // The two multi-element content blocks: a heading + body (no eyebrow).
+  callout: ['heading', 'body'],
+  features: ['heading', 'body'],
+}
+
+/** The ordered per-element text roles for a block id, or [] when the block styles its text as one whole
+ *  (a single-text content block or a live data block). Drives the editor (per-role groups vs the single
+ *  Text style group) and the render (textByRoleClass). Pure. */
+export function blockTextRoles(id: string): readonly TextRole[] {
+  return BLOCK_TEXT_ROLES[id] ?? []
 }
 
 /** The owner's authored header OVERRIDE for a DATA block: the `eyebrow` field maps to the block's real
@@ -788,6 +838,117 @@ export function textStyleClass(text: TextStyle | undefined): string {
     text.color ? TEXT_COLOR_CLASS[text.color] : '',
     text.shadow ? TEXT_SHADOW_CLASS[text.shadow] : '',
   ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+// ── Per-element text style → role-scoped utility classes (ADR-580, item 4) ────────────────────────────────
+// One text-style bag per ROLE targets only that element inside the block wrapper, so the Heading can be big
+// and bold while the Body stays plain. The role is selected in the DOM three ways, all as FULL LITERAL class
+// strings (the whole-block note applies: Tailwind scans source TEXT and cannot evaluate an interpolated
+// `${role}`, so every literal is written out and kept in lockstep):
+//   • eyebrow — the shared Eyebrow atom carries `data-text-role="eyebrow"`, matched by an attribute selector.
+//   • heading — every heading tag (h1..h6); headings are reliably h-tags across every renderer.
+//   • body    — paragraph tags (p / li / blockquote / figcaption / dd / dt), EXCLUDING the eyebrow (which is
+//               itself a <p>) so the two never fight. Size / weight / color win with `!important`; shadow
+//               inherits, so it needs no `!`.
+const ROLE_SIZE_CLASS: Record<TextRole, Partial<Record<TextSizeStep, string>>> = {
+  eyebrow: {
+    sm: '[&_[data-text-role=eyebrow]]:!text-sm',
+    lg: '[&_[data-text-role=eyebrow]]:!text-lg',
+    xl: '[&_[data-text-role=eyebrow]]:!text-xl',
+  },
+  heading: {
+    sm: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-sm',
+    lg: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-lg',
+    xl: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-xl',
+  },
+  body: {
+    sm: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-sm',
+    lg: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-lg',
+    xl: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-xl',
+  },
+}
+const ROLE_WEIGHT_CLASS: Record<TextRole, Record<TextWeightStep, string>> = {
+  eyebrow: {
+    normal: '[&_[data-text-role=eyebrow]]:!font-normal',
+    medium: '[&_[data-text-role=eyebrow]]:!font-medium',
+    semibold: '[&_[data-text-role=eyebrow]]:!font-semibold',
+    bold: '[&_[data-text-role=eyebrow]]:!font-bold',
+  },
+  heading: {
+    normal: '[&_:where(h1,h2,h3,h4,h5,h6)]:!font-normal',
+    medium: '[&_:where(h1,h2,h3,h4,h5,h6)]:!font-medium',
+    semibold: '[&_:where(h1,h2,h3,h4,h5,h6)]:!font-semibold',
+    bold: '[&_:where(h1,h2,h3,h4,h5,h6)]:!font-bold',
+  },
+  body: {
+    normal: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!font-normal',
+    medium: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!font-medium',
+    semibold: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!font-semibold',
+    bold: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!font-bold',
+  },
+}
+const ROLE_COLOR_CLASS: Record<TextRole, Partial<Record<TextColorToken, string>>> = {
+  eyebrow: {
+    muted: '[&_[data-text-role=eyebrow]]:!text-muted',
+    subtle: '[&_[data-text-role=eyebrow]]:!text-subtle',
+    accent: '[&_[data-text-role=eyebrow]]:!text-primary-strong',
+    success: '[&_[data-text-role=eyebrow]]:!text-success',
+    info: '[&_[data-text-role=eyebrow]]:!text-info',
+    danger: '[&_[data-text-role=eyebrow]]:!text-danger',
+  },
+  heading: {
+    muted: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-muted',
+    subtle: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-subtle',
+    accent: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-primary-strong',
+    success: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-success',
+    info: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-info',
+    danger: '[&_:where(h1,h2,h3,h4,h5,h6)]:!text-danger',
+  },
+  body: {
+    muted: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-muted',
+    subtle: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-subtle',
+    accent: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-primary-strong',
+    success: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-success',
+    info: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-info',
+    danger: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:!text-danger',
+  },
+}
+const ROLE_SHADOW_CLASS: Record<TextRole, Partial<Record<TextShadowStep, string>>> = {
+  eyebrow: {
+    soft: '[&_[data-text-role=eyebrow]]:text-shadow-soft',
+    strong: '[&_[data-text-role=eyebrow]]:text-shadow-strong',
+  },
+  heading: {
+    soft: '[&_:where(h1,h2,h3,h4,h5,h6)]:text-shadow-soft',
+    strong: '[&_:where(h1,h2,h3,h4,h5,h6)]:text-shadow-strong',
+  },
+  body: {
+    soft: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:text-shadow-soft',
+    strong: '[&_:where(p,li,blockquote,figcaption,dd,dt):not([data-text-role=eyebrow])]:text-shadow-strong',
+  },
+}
+
+/** The role-scoped utility classes for one role's text-style bag, or '' when it is empty / all-default. */
+function roleTextClass(role: TextRole, text: TextStyle | undefined): string {
+  if (!text) return ''
+  return [
+    text.size ? ROLE_SIZE_CLASS[role][text.size] ?? '' : '',
+    text.weight ? ROLE_WEIGHT_CLASS[role][text.weight] : '',
+    text.color ? ROLE_COLOR_CLASS[role][text.color] ?? '' : '',
+    text.shadow ? ROLE_SHADOW_CLASS[role][text.shadow] ?? '' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+}
+
+/** The utility classes for a per-element text map (ADR-580, item 4), or '' when empty. Each role targets
+ *  only its own element inside the block wrapper, so the Heading, Body, and Eyebrow style independently.
+ *  Pure; the render frame (BlockStyleFrame) applies the result to the same wrapper as textStyleClass. */
+export function textByRoleClass(byRole: Partial<Record<TextRole, TextStyle>> | undefined): string {
+  if (!byRole) return ''
+  return TEXT_ROLES.map((role) => roleTextClass(role, byRole[role]))
     .filter(Boolean)
     .join(' ')
 }

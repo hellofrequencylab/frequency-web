@@ -3,6 +3,7 @@ import {
   marginBottomClass,
   marginTopClass,
   safeUrl,
+  textByRoleClass,
   textStyleClass,
   type BlockStyle,
 } from '@/lib/entity-blocks/block-content'
@@ -40,8 +41,11 @@ export function BlockStyleFrame({ style, children }: { style: BlockStyle | undef
   // block's text inherits. C3: an explicit top / bottom margin adds space above / below (absent = no class,
   // so the stack rhythm stands).
   const text = textStyleClass(style?.text)
+  // Per-element text styling (ADR-580, item 4): role-scoped classes target the block's Heading / Body /
+  // Eyebrow independently, on the SAME wrapper as the whole-block text style.
+  const byRole = textByRoleClass(style?.textByRole)
   const margins = [marginTopClass(style?.mt), marginBottomClass(style?.mb)].filter(Boolean).join(' ')
-  const cls = [margins, card, strip, pad, align, text].filter(Boolean).join(' ')
+  const cls = [margins, card, strip, pad, align, text, byRole].filter(Boolean).join(' ')
   return cls ? <div className={cls}>{children}</div> : <>{children}</>
 }
 

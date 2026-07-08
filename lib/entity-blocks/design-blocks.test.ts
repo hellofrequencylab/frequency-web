@@ -8,9 +8,13 @@ import {
 } from './registry'
 import { fieldsForBlock, blockDrawsOwnCard, blockBearsText, sanitizeBlockContent } from './block-content'
 
-// The SECTION design blocks own a full frame (photo / cards / accent wash) so their Background toggle
-// defaults on. The two TEXT design blocks (ADR-571) are flat text (no card), like Heading / Text.
-const SECTION_DESIGN_IDS = ['photoHero', 'editorial', 'cardGrid', 'zigzag', 'accentBeat'] as const
+// The FILLED design blocks draw their own filled background (a photo scrim / an accent wash), so their
+// Background toggle defaults ON (turning it off strips that frame). The OPEN section design blocks
+// (editorial / cardGrid / zigzag) render with no card, so the toggle defaults OFF and turning it on wraps
+// them in a white card — the "Background on all blocks" fix. The two TEXT design blocks (ADR-571) are flat
+// text (no card), like Heading / Text.
+const FILLED_DESIGN_IDS = ['photoHero', 'accentBeat'] as const
+const OPEN_DESIGN_IDS = ['editorial', 'cardGrid', 'zigzag'] as const
 const TEXT_DESIGN_IDS = ['displayHeading', 'prose'] as const
 
 // The five design blocks (2026) are now offered in the on-page rail arranger (ADR-565). These lock the
@@ -49,9 +53,16 @@ describe('design blocks in the entity-block registry (ADR-565)', () => {
     }
   })
 
-  it('treats each SECTION design block as self-carding (Background toggle defaults on)', () => {
-    for (const id of SECTION_DESIGN_IDS) {
+  it('treats each FILLED design block as self-carding (Background toggle defaults on)', () => {
+    for (const id of FILLED_DESIGN_IDS) {
       expect(blockDrawsOwnCard(id), id).toBe(true)
+    }
+  })
+
+  it('treats the OPEN section design blocks as flat so the Background toggle adds a card (defaults off)', () => {
+    for (const id of OPEN_DESIGN_IDS) {
+      expect(blockDrawsOwnCard(id), id).toBe(false)
+      expect(blockBearsText(id), id).toBe(true)
     }
   })
 
