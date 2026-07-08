@@ -14,11 +14,16 @@ import { type AccentVars } from '@/lib/spaces/accent'
 
 export function AccentScope({
   vars,
+  theme,
   className,
   children,
 }: {
   /** The resolved `--color-primary*` override (lib/spaces/accent.ts), or null to inherit the host. */
   vars: AccentVars | null
+  /** The Space page THEME id (ADR-578, lib/theme/space-themes.ts). Emitted as `data-space-theme` so the
+   *  `[data-space-theme="<id>"]` CSS block themes the typography + shape of this profile subtree. Omitted
+   *  (or 'bold', the no-op default) leaves the render unchanged. */
+  theme?: string
   className?: string
   children: ReactNode
 }) {
@@ -26,7 +31,7 @@ export function AccentScope({
   // signature for `--*`, so cast through the documented custom-property style shape.
   const style = (vars ?? undefined) as CSSProperties | undefined
   return (
-    <div className={className} style={style}>
+    <div className={className} style={style} data-space-theme={theme}>
       {children}
     </div>
   )

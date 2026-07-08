@@ -20,7 +20,9 @@ export const SPOTLIGHT_FONTS: { id: SpotlightFontId; label: string; stack: strin
   { id: 'serif', label: 'Elegant serif', stack: 'var(--font-playfair), Georgia, Cambria, "Times New Roman", serif' },
   { id: 'rounded', label: 'Friendly rounded', stack: 'var(--font-nunito), ui-rounded, "SF Pro Rounded", system-ui, sans-serif' },
   { id: 'mono', label: 'Mono', stack: 'var(--font-geist-mono), ui-monospace, "SF Mono", monospace' },
-  { id: 'display', label: 'Bold display', stack: 'var(--font-anton), "Arial Black", Impact, system-ui, sans-serif' },
+  // `--font-display` lets a Space page theme (ADR-578) re-point the default display face; unset elsewhere
+  // it falls back to Anton, so member Spotlight + marketing headers are unchanged.
+  { id: 'display', label: 'Bold display', stack: 'var(--font-display, var(--font-anton)), "Arial Black", Impact, system-ui, sans-serif' },
   { id: 'script', label: 'Handwritten', stack: 'var(--font-caveat), "Bradley Hand", "Comic Sans MS", cursive' },
   { id: 'grotesk', label: 'Modern grotesk', stack: 'var(--font-grotesk), "Helvetica Neue", system-ui, sans-serif' },
 ]

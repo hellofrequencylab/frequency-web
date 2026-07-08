@@ -7,6 +7,7 @@ import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/ent
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { SpaceSettingsForm, type SpaceSettingsValues } from '../settings-form'
 import { ProfileCompletenessCard } from '../profile-completeness-card'
@@ -89,6 +90,7 @@ export default async function SpaceBasicsPage({
     about: extras.about ?? '',
     tagline: extras.tagline ?? '',
     visibility: extras.visibility === 'private' ? 'private' : 'network',
+    theme: parseSpaceTheme(space.preferences),
   }
 
   const brandName = space.brandName ?? space.name

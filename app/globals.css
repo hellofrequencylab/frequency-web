@@ -634,6 +634,68 @@
   --structure-rhythm: 0.85; /* tighter flow — more on screen at once for `bold` */
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   SPACE PAGE THEME axis — data-space-theme (docs/DECISIONS.md ADR-578,
+   lib/theme/space-themes.ts). A per-SPACE identity for its public profile: a display +
+   body FONT pairing plus a SHAPE feel (radius). Set on the profile's AccentScope wrapper
+   (slug-scoped), so it themes ONLY that Space's profile subtree, never the app shell.
+
+   COLOUR-FREE by design: like the generation axis, a theme sets NO `--color-*` tokens —
+   the DAWN palette and the Space's own brand accent (painted by AccentScope) carry through
+   unchanged, so "keep our standard colours, use the brand accent" holds. Each block re-points
+   `--font-display` (read by `.font-display` + the design-block header default) and
+   `--font-body` (applied to the subtree below), and retunes the radius feel tokens the kit
+   consumes (`--radius-card` / `--radius-control`).
+
+   `bold` is the NO-OP default (today's look): its fonts equal the base defaults and it sets no
+   radius, so an existing Space — which resolves to `bold` — renders byte-identically. Every id
+   here has a matching SpaceThemeDef; space-themes.test.ts reads this file and enforces the pairing.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Apply the theme BODY face to the whole themed subtree. For `bold` this is Nunito — the base
+   default — so it is a no-op; the other themes swap the reading face. */
+[data-space-theme] {
+  font-family: var(--font-body, var(--font-nunito)), system-ui, sans-serif;
+}
+
+/* bold — today's look (Anton / Nunito). No radius override: a no-op anchor. */
+[data-space-theme="bold"] {
+  --font-display: var(--font-anton);
+  --font-body: var(--font-nunito);
+}
+
+/* editorial — a light Fraunces serif, square edges. */
+[data-space-theme="editorial"] {
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-nunito);
+  --radius-card: 2px;
+  --radius-control: 2px;
+}
+
+/* classic — Playfair display over a PT Serif body, small radius. */
+[data-space-theme="classic"] {
+  --font-display: var(--font-playfair);
+  --font-body: var(--font-pt-serif);
+  --radius-card: 3px;
+  --radius-control: 3px;
+}
+
+/* playful — a rounded Fredoka display, big corners + pill controls. */
+[data-space-theme="playful"] {
+  --font-display: var(--font-fredoka);
+  --font-body: var(--font-nunito);
+  --radius-card: 20px;
+  --radius-control: 9999px;
+}
+
+/* accessible — a clear Lexend display over the character-disambiguating Atkinson Hyperlegible body. */
+[data-space-theme="accessible"] {
+  --font-display: var(--font-lexend);
+  --font-body: var(--font-atkinson);
+  --radius-card: 8px;
+  --radius-control: 8px;
+}
+
 /* ── Tailwind wiring ────────────────────────────────────────────────────────
    Map tokens into Tailwind v4 utility classes. Components can then say
    `bg-canvas`, `bg-surface`, `text-text`, `text-muted`, `bg-primary`,
@@ -1261,7 +1323,9 @@ h1, h2, h3, h4, h5, h6 {
    Heavy condensed editorial headline face. Pair with `uppercase`. The tight
    line-height + slight tracking is tuned for Anton at large sizes.            */
 .font-display {
-  font-family: var(--font-anton), 'Arial Narrow', system-ui, sans-serif;
+  /* `--font-display` lets a scope (a Space page theme, ADR-578) re-point the display face; unset
+     everywhere else, it falls back to Anton, so marketing + member headings are unchanged. */
+  font-family: var(--font-display, var(--font-anton)), 'Arial Narrow', system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: 0.012em;
   line-height: 1.0;

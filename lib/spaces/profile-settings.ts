@@ -23,6 +23,7 @@ import { getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isValidAccent } from '@/lib/spaces/accent'
+import { isSpaceThemeId, DEFAULT_SPACE_THEME, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** The editable profile fields. Every field is optional on the wire; an empty string clears the
@@ -36,6 +37,9 @@ export interface UpdateSpaceProfileInput {
   about?: string | null
   tagline?: string | null
   visibility?: 'network' | 'private'
+  /** The Space PAGE THEME (ADR-578): a typography + shape identity id, stored on preferences.theme (jsonb,
+   *  no migration). A known id is kept; the default ('bold') or an unknown value clears the key. */
+  theme?: SpaceThemeId | string | null
 }
 
 // `spaces` isn't in the generated DB types yet (ADR-246) — reach it through an untyped accessor.
@@ -129,6 +133,20 @@ export async function updateSpaceProfile(
 
   if (input.visibility !== undefined) {
     patch.visibility = input.visibility === 'private' ? 'private' : 'network'
+  }
+
+  // The Space page THEME (ADR-578) lives on preferences.theme (jsonb, no column). Read-modify-write so every
+  // other preferences key (profileLayout, moduleMenu, isDemo, ...) is preserved; a known non-default id is
+  // stored, the default ('bold') or an unknown value clears the key (kept sparse).
+  if (input.theme !== undefined) {
+    const prefs =
+      space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
+        ? { ...(space.preferences as Record<string, unknown>) }
+        : {}
+    const theme = (input.theme ?? '').trim()
+    if (theme && isSpaceThemeId(theme) && theme !== DEFAULT_SPACE_THEME) prefs.theme = theme
+    else delete prefs.theme
+    patch.preferences = prefs
   }
 
   // Nothing to change is a no-op success (the form posted no edits).

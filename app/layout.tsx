@@ -1,5 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono, Anton, Playfair_Display, Caveat, Space_Grotesk } from "next/font/google";
+import {
+  Nunito,
+  Geist_Mono,
+  Anton,
+  Playfair_Display,
+  Caveat,
+  Space_Grotesk,
+  Fraunces,
+  PT_Serif,
+  Fredoka,
+  Lexend,
+  Atkinson_Hyperlegible,
+} from "next/font/google";
 import "./globals.css";
 import { SITE_URL, SITE_NAME, SITE_TAGLINE, SITE_DESCRIPTION, FOUNDING_PLACE } from "@/lib/site";
 import { JsonLd } from "@/components/json-ld";
@@ -37,6 +49,16 @@ const anton = Anton({
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap" });
 const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 const spaceGrotesk = Space_Grotesk({ variable: "--font-grotesk", subsets: ["latin"], display: "swap" });
+
+// Space-page THEME fonts (ADR-578, lib/theme/space-themes.ts). Each Space profile theme pairs a display +
+// body face; these load the ones not already on <html>. next/font self-hosts them and only downloads the
+// bytes when a glyph actually renders (font-display: swap), so a Space that never uses the theme pays no
+// cost. Variable fonts where possible; PT Serif + Atkinson need explicit weights.
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap" });
+const ptSerif = PT_Serif({ variable: "--font-pt-serif", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
+const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap" });
+const lexend = Lexend({ variable: "--font-lexend", subsets: ["latin"], display: "swap" });
+const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"], display: "swap" });
 
 // The first-paint theme-color values, kept in one place so the viewport metadata and the pre-paint
 // themeScript below cannot drift. They mirror --color-canvas (light) and --color-ink (dark) in
@@ -130,7 +152,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${nunito.variable} ${geistMono.variable} ${anton.variable} ${playfair.variable} ${caveat.variable} ${spaceGrotesk.variable} ${fraunces.variable} ${ptSerif.variable} ${fredoka.variable} ${lexend.variable} ${atkinson.variable} h-full antialiased`}
     >
       <head>
         {/* Theme script must run synchronously before any paint */}

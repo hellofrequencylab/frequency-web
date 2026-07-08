@@ -12604,3 +12604,57 @@ is untouched. No migration (layout jsonb). Reuses the `seed-compose` budget key.
 grouping, the guaranteed core close, the too-thin fallback, the text-style override literals, the broadened
 `blockBearsText`, and the gallery view / spacing sanitize. No em dashes in any generated copy or operator
 label (CONTENT-VOICE).
+
+## ADR-578: Space page themes, a colour-free typography + shape axis (data-space-theme)
+
+**Status:** Accepted · adds a per-Space profile theme. Builds on the four-axis token cascade (ADR-249/250
+skins, generations) and the AccentScope wrapper (ENTITY-SPACES-BUILD §A). Next free number after ADR-577.
+
+**Context.** Operators wanted to pick a distinct look for a Space's public profile without hand-editing
+anything. A brainstormed mock proposed five themes, each with its own palette (signal-red, burgundy, candy).
+That conflicts with the brand: the requirement is to KEEP the standard DAWN colours + the Space's own brand
+accent, and vary only the identity that fonts + shape carry. The codebase already models exactly this: the
+`[data-generation]` feel axis retunes type-scale / radius / density and deliberately sets NO `--color-*`
+(so it reads correctly in light + dark), and `brand_accent` already paints `--color-primary*` onto the
+profile subtree via a single scoped `AccentScope` wrapper.
+
+**Decision.**
+1. **A theme is a colour-free FONT + SHAPE axis, not a palette.** Five themes (`bold` / `editorial` /
+   `classic` / `playful` / `accessible`), declared in `lib/theme/space-themes.ts` (the typed mirror of the
+   CSS, like `skins.ts`). Each is a `[data-space-theme="<id>"]` block in `app/globals.css` that sets
+   `--font-display`, `--font-body`, and the radius feel tokens (`--radius-card` / `--radius-control`) — and
+   NO `--color-*`, so the DAWN palette and the brand accent carry through unchanged. A guardrail test
+   (`space-themes.test.ts`) reads globals.css and enforces every registry id has its block.
+2. **`bold` is the NO-OP default (today's look).** Its fonts equal the base defaults and it sets no radius,
+   so an existing Space — which resolves to `bold` — renders byte-identically. `parseSpaceTheme` reads
+   `preferences.theme` fail-safe, defaulting to `bold`.
+3. **Fonts follow the theme via a variable indirection.** `.font-display` and the design-block header
+   default (the `display` stack in `lib/spotlight/theme.ts`) now read `var(--font-display, var(--font-anton))`
+   — unset everywhere else they fall back to Anton (marketing + member headings unchanged), and inside a
+   themed Space subtree they pick up the theme's display face. The body face is applied by
+   `[data-space-theme] { font-family: var(--font-body) }`. Four new Google faces (Fraunces, PT Serif,
+   Fredoka, Lexend, Atkinson Hyperlegible) load via `next/font` on `<html>`; next/font only downloads a
+   face's bytes when a glyph renders it, so a Space that never uses a theme pays nothing.
+4. **Applied on the EXISTING slug-scoped wrapper.** `AccentScope` (the one node that already carries the
+   brand accent, in `(profile)/layout.tsx`) gains a `data-space-theme` attribute. This is slug-scoped, so a
+   theme never leaks to the app shell (whose `data-skin` is the HOST space's, not the viewed slug's).
+5. **Persisted migration-free + picked in Identity and Branding.** The chosen id lives on
+   `preferences.theme` (jsonb, same pattern as `profileLayout` / `moduleMenu`), written by the owner-gated
+   `updateSpaceProfile` (read-modify-write, preserving every other key). The picker is added to the existing
+   `/settings/basics` form (the `space.branding` module already deep-links there), so no MENU-CONTRACT
+   catalog change is needed.
+
+**Alternatives.** (1) Give each theme its own palette (per the mock): rejected, it breaks the "keep our
+colours + accent" requirement and would need a `.dark` variant per theme to stay legible. (2) Reuse the
+`[data-generation]` axis: rejected, generation is an app-shell / age-band concept set on the host shell, not
+slug-scoped; a dedicated `[data-space-theme]` keeps the Space profile axis independent. (3) A new `spaces`
+column for the theme: rejected, `preferences.theme` is migration-free and matches the existing jsonb keys.
+
+**Consequences.** New `lib/theme/space-themes.ts` (+ test); `app/globals.css` (`.font-display` indirection +
+five `[data-space-theme]` blocks); `app/layout.tsx` (four font loads); `lib/spotlight/theme.ts` (display
+stack indirection); `components/spaces/accent-scope.tsx` (the attribute); `(profile)/layout.tsx` (resolve +
+pass); `lib/spaces/profile-settings.ts` (`theme` → preferences); the owner form + its two `SpaceSettingsValues`
+constructors (basics page + rail-getters); the picker UI. No migration. Two documented v1 limits: content
+blocks that hardcode a fixed corner radius do not yet follow the radius token (fonts + type + rhythm always
+do), and finer per-theme flourishes (Accessible base-size / underlines, Editorial italic lead) are deferred.
+No em dashes in any operator copy (CONTENT-VOICE).
