@@ -54,13 +54,23 @@ describe('sanitizeBlockStyle', () => {
 })
 
 describe('blockDrawsOwnCard', () => {
-  it('is true for data sections + self-carding content, false for plain content', () => {
+  it('is true for data sections + blocks with their own filled background', () => {
     expect(blockDrawsOwnCard('about')).toBe(true)
     expect(blockDrawsOwnCard('offerings')).toBe(true)
     expect(blockDrawsOwnCard('callout')).toBe(true)
     expect(blockDrawsOwnCard('features')).toBe(true)
+    // A design block with its own filled background (photo / accent wash) self-cards.
+    expect(blockDrawsOwnCard('photoHero')).toBe(true)
+    expect(blockDrawsOwnCard('accentBeat')).toBe(true)
+  })
+  it('is false for plain content AND the OPEN design blocks, so the Background toggle adds a real card', () => {
     expect(blockDrawsOwnCard('text')).toBe(false)
     expect(blockDrawsOwnCard('gallery')).toBe(false)
+    // Open design blocks render with no card by default: the toggle defaults off and turning it on wraps
+    // them in a white card (Background now has a visible effect on these too).
+    expect(blockDrawsOwnCard('editorial')).toBe(false)
+    expect(blockDrawsOwnCard('cardGrid')).toBe(false)
+    expect(blockDrawsOwnCard('zigzag')).toBe(false)
     expect(blockDrawsOwnCard('nope')).toBe(false)
   })
 })

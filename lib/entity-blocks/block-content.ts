@@ -437,14 +437,13 @@ export function isContentBlock(block: EntityBlockDef): boolean {
 const SELF_CARDING_CONTENT_IDS: ReadonlySet<string> = new Set([
   'callout',
   'features',
-  // The SECTION design blocks own their full section frame (photo, cards, accent wash), so the Background
-  // toggle defaults ON and turning it off strips the frame — true to what is on the page. The two TEXT design
-  // blocks (displayHeading / prose, ADR-571) are flat text and draw NO card, so they are deliberately absent
-  // (their Background toggle defaults off, matching Heading / Text).
+  // The design blocks that draw their OWN filled background (a photo / an accent wash) default the Background
+  // toggle ON, so turning it off strips that frame — true to what is on the page. The OPEN design blocks
+  // (editorial / cardGrid / zigzag) render with no card by default, so they are deliberately ABSENT here: the
+  // Background toggle defaults OFF and turning it ON wraps the block in a white card, so the control has a
+  // real, visible effect on every block (the two flat TEXT design blocks displayHeading / prose match, and so
+  // do Heading / Text).
   'photoHero',
-  'editorial',
-  'cardGrid',
-  'zigzag',
   'accentBeat',
 ])
 
