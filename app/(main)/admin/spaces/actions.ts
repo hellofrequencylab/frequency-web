@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/guard'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import { listThemes } from '@/lib/theme/server/admin-themes'
+import { isSpaceThemeId, DEFAULT_SPACE_THEME } from '@/lib/theme/space-themes'
 
 // Server actions for the per-Space branding surface (docs/SPACES.md, ADR-249/250). Janitor-
 // gated, mirroring the rest of the Spaces tenancy admin. The per-Space THEME is the existing
@@ -57,6 +58,9 @@ export interface SpaceBrandingInput {
   brandName: string | null
   brandAccent: string | null
   brandLogoUrl: string | null
+  /** The Space PAGE THEME (ADR-578): a typography + shape identity id, stored on preferences.theme. A known
+   *  non-default id is kept; the default ('bold') or an unknown value clears the key. Omit to leave it. */
+  pageTheme?: string | null
 }
 
 /**
@@ -98,15 +102,33 @@ export async function updateSpaceBranding(
     brandLogoUrl = logoRaw.slice(0, 1000)
   }
 
-  const { error } = await createAdminClient()
-    .from('spaces')
-    .update({
-      skin,
-      brand_name: brandName,
-      brand_accent: brandAccent,
-      brand_logo_url: brandLogoUrl,
-    })
-    .eq('id', id)
+  const patch: Record<string, unknown> = {
+    skin,
+    brand_name: brandName,
+    brand_accent: brandAccent,
+    brand_logo_url: brandLogoUrl,
+  }
+
+  // The Space PAGE THEME (ADR-578) lives on preferences.theme (jsonb). Read-modify-write so every other
+  // preferences key is preserved; a known non-default id is stored, the default clears the key (sparse).
+  if (input.pageTheme !== undefined) {
+    const { data } = await createAdminClient().from('spaces').select('preferences').eq('id', id).maybeSingle()
+    const prefs =
+      data?.preferences && typeof data.preferences === 'object' && !Array.isArray(data.preferences)
+        ? { ...(data.preferences as Record<string, unknown>) }
+        : {}
+    const theme = (input.pageTheme ?? '').trim()
+    if (theme && isSpaceThemeId(theme) && theme !== DEFAULT_SPACE_THEME) prefs.theme = theme
+    else delete prefs.theme
+    patch.preferences = prefs
+  }
+
+  // `preferences` widens the patch beyond the generated column types (ADR-246), so write through an untyped
+  // admin handle — the same pattern lib/spaces/profile-settings.ts uses.
+  const db = createAdminClient() as unknown as {
+    from: (t: string) => { update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> } }
+  }
+  const { error } = await db.from('spaces').update(patch).eq('id', id)
 
   if (error) return fail('Could not save the Space branding.')
 

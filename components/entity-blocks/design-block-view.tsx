@@ -188,7 +188,7 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
           title={s(props, 'title')}
           body="lead"
           lead={s(props, 'body')}
-          mediaSide="left"
+          mediaSide={oneOf(props.mediaSide, ['left', 'right'] as const, 'left')}
           background="canvas"
         />
       )
