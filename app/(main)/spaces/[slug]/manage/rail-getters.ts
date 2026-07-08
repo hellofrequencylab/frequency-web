@@ -53,6 +53,7 @@ import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
 import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
+import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import type { SpaceSettingsValues } from '../settings/settings-form'
 
 // ── Basics (space.basics) ──────────────────────────────────────────────────────────────────────────
@@ -113,6 +114,7 @@ function buildBasicsData(
     about: extras.about ?? '',
     tagline: extras.tagline ?? '',
     visibility: extras.visibility === 'private' ? 'private' : 'network',
+    theme: parseSpaceTheme(space.preferences),
   }
   return {
     spaceId: space.id,

@@ -245,7 +245,34 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'src', label: 'Image', type: 'url', placeholder: 'https://', upload: true },
     { key: 'alt', label: 'Alt text', type: 'text', placeholder: 'Describe the image' },
   ],
-  gallery: [{ key: 'images', label: 'Images', type: 'images', upload: true }],
+  // The image GALLERY: the photos plus a LAYOUT (three views) and a SPACING step. Both are declared enum
+  // primitives, so the editor renders a segmented control and the sanitizer validates the stored value —
+  // no bespoke JSX (ADR-569 C6). The render (content-block-view) reads both.
+  gallery: [
+    { key: 'images', label: 'Images', type: 'images', upload: true },
+    {
+      key: 'view',
+      label: 'Layout',
+      type: 'segmented',
+      defaultValue: 'grid',
+      options: [
+        { value: 'grid', label: 'Grid' },
+        { value: 'masonry', label: 'Masonry' },
+        { value: 'carousel', label: 'Carousel' },
+      ],
+    },
+    {
+      key: 'gap',
+      label: 'Spacing',
+      type: 'segmented',
+      defaultValue: 'standard',
+      options: [
+        { value: 'tight', label: 'Tight' },
+        { value: 'standard', label: 'Standard' },
+        { value: 'roomy', label: 'Roomy' },
+      ],
+    },
+  ],
   quote: [
     { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The words you want to quote' },
     { key: 'by', label: 'Attribution', type: 'text', placeholder: 'Who said it' },
@@ -416,31 +443,20 @@ export function fieldsForBlock(id: string): readonly FieldDef[] {
   return DATA_BLOCK_FIELDS[id] ?? DATA_HEADER_FIELDS
 }
 
-/** The block ids that bear operator-authored TEXT (ADR-569 C1) and so expose the shared text-style controls
- *  (size / weight / align / token-color / shadow). Data blocks' bodies are server-rendered from live data,
- *  so the text-style bag is offered to CONTENT + DESIGN blocks whose prose the operator writes inline. The
- *  design blocks already carry rich headings; the plain content blocks (Heading, Text, Quote, Callout) are
- *  the classic text targets. A block absent here simply never shows the text-style group. */
-const TEXT_BEARING_BLOCK_IDS: ReadonlySet<string> = new Set([
-  'heading',
-  'text',
-  'quote',
-  'callout',
-  'features',
-  'photoHero',
-  'editorial',
-  'cardGrid',
-  'zigzag',
-  'accentBeat',
-  // The two text design blocks (ADR-571) are text-first, so they lead with the C1 text-style controls.
-  'displayHeading',
-  'prose',
-])
+/** The block ids that render NO stylable text, so the C1 text-style controls are hidden for them: a raw
+ *  image, an image gallery, a horizontal rule, and an external embed. EVERY other block — the plain content
+ *  blocks (Heading, Text, Quote, Callout, Features), the design blocks, AND the live DATA blocks (About,
+ *  Story, Offerings, Contact, ...) — bears text worth styling, and the render frame now applies the text
+ *  style to the block's descendant text, so the controls take effect there too. */
+const NO_TEXT_BLOCK_IDS: ReadonlySet<string> = new Set(['image', 'gallery', 'divider', 'embed'])
 
-/** Whether a block bears authored text and so exposes the C1 text-style controls (size / weight / align /
- *  color / shadow). Drives the editor: the text-style group renders only for a text-bearing block. */
+/** Whether a block bears text and so exposes the C1 text-style controls (size / weight / align / color /
+ *  shadow). True for every real block EXCEPT the purely-visual ones (image / gallery / divider / embed), so
+ *  an operator can style the text on any content, design, or data block (Fix: "settings for any text"). */
 export function blockBearsText(id: string): boolean {
-  return TEXT_BEARING_BLOCK_IDS.has(id)
+  const block = entityBlockById(id)
+  if (!block) return false
+  return !NO_TEXT_BLOCK_IDS.has(id)
 }
 
 /** The owner's authored header OVERRIDE for a DATA block: the `eyebrow` field maps to the block's real
@@ -692,30 +708,45 @@ export function marginBottomClass(step: MarginStep | undefined): string {
   return step ? MARGIN_BOTTOM_CLASS[step] : ''
 }
 
+// The text-style bag is applied on a WRAPPER around the block. A block's own renderers hardcode their text
+// utilities (e.g. `text-base text-muted`) directly on the <p>/<h2>, and an element's own class beats an
+// inherited value — so a bare `text-lg` on the wrapper would silently no-op (the Size / Color bug). To make
+// Size and Color actually take effect, size + color + weight target the wrapper's descendant TEXT elements
+// with an `!important` child variant (`[&_:where(<tags>)]:!<util>`), so the operator's chosen value
+// overrides the block's hardcoded one. The `:where()` keeps specificity flat; `!` is what wins. Shadow
+// inherits cleanly (children never set it), so it stays a plain wrapper class.
+//
+// IMPORTANT (build): each value is written as a FULL, LITERAL class string — NOT interpolated from a shared
+// tag const — because Tailwind's scanner reads source TEXT and cannot evaluate a template `${...}`, so an
+// interpolated variant would never be generated in the CSS. The tag list (kept identical across every
+// literal) is: h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em. Scoped to text tags,
+// so icons / buttons / media are untouched.
 const TEXT_SIZE_CLASS: Record<TextSizeStep, string> = {
-  sm: 'text-sm',
+  sm: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-sm',
   md: '',
-  lg: 'text-lg',
-  xl: 'text-xl',
+  lg: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-lg',
+  xl: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-xl',
 }
 const TEXT_WEIGHT_CLASS: Record<TextWeightStep, string> = {
-  normal: 'font-normal',
-  medium: 'font-medium',
-  semibold: 'font-semibold',
-  bold: 'font-bold',
+  normal: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!font-normal',
+  medium: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!font-medium',
+  semibold: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!font-semibold',
+  bold: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!font-bold',
 }
 /** Token color → a text-color utility. Every value resolves to a DAWN semantic token (never a raw hex), so
- *  `accent` re-skins with the Space theme and the whole set stays theming-safe (C1). */
+ *  `accent` re-skins with the Space theme and the whole set stays theming-safe (C1). Applied to descendant
+ *  text elements with `!important` so it overrides a block's own hardcoded color. Full literals (see note). */
 const TEXT_COLOR_CLASS: Record<TextColorToken, string> = {
   default: '',
-  muted: 'text-muted',
-  subtle: 'text-subtle',
-  accent: 'text-primary-strong',
-  success: 'text-success',
-  info: 'text-info',
-  danger: 'text-danger',
+  muted: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-muted',
+  subtle: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-subtle',
+  accent: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-primary-strong',
+  success: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-success',
+  info: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-info',
+  danger: '[&_:where(h1,h2,h3,h4,h5,h6,p,span,li,blockquote,figcaption,dt,dd,a,strong,em)]:!text-danger',
 }
-/** Shadow preset → a text-shadow utility (defined in globals; see `.text-shadow-soft` / `-strong`). */
+/** Shadow preset → a text-shadow utility (defined in globals; see `.text-shadow-soft` / `-strong`). Text
+ *  shadow inherits cleanly (children never set their own), so this stays a plain wrapper class. */
 const TEXT_SHADOW_CLASS: Record<TextShadowStep, string> = {
   none: '',
   soft: 'text-shadow-soft',
@@ -723,8 +754,10 @@ const TEXT_SHADOW_CLASS: Record<TextShadowStep, string> = {
 }
 
 /** The utility classes for a text-style bag (ADR-569 C1), or '' when the bag is empty / all-default. Pure;
- *  the render frame applies the result to a wrapper so the block's text inherits size / weight / color /
- *  shadow. A tampered value never reaches here (sanitizeTextStyle already gated it to the enum). */
+ *  the render frame applies the result to a wrapper. Size / weight / color target the wrapper's descendant
+ *  text elements with an `!important` variant so the operator's choice overrides the block's own hardcoded
+ *  utilities (otherwise Size / Color silently no-op); shadow inherits. A tampered value never reaches here
+ *  (sanitizeTextStyle already gated it to the enum). */
 export function textStyleClass(text: TextStyle | undefined): string {
   if (!text) return ''
   return [

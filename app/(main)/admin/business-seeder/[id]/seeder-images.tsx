@@ -44,33 +44,69 @@ export function SeederImages({
 
   const roleByUrl = new Map(initialPlan.map((p) => [p.url, p.category]))
 
+  // A generic upload error a THROWN action produces (a rejected server-action call — e.g. the framework
+  // rejecting an over-limit request body, or a transient network error). Without this, the rejection would
+  // escape the transition and escalate to the route error boundary (the "this view didn't load" crash) —
+  // so EVERY action call below is wrapped so a failure only ever shows an inline message.
+  const THROWN = 'That did not go through. Try again in a moment.'
+
   function arrange() {
     setError(null)
     setNote(null)
     startArrange(async () => {
-      const res = await autoArrangeSeederImages(intakeId)
-      if (!res.ok) {
-        setError(res.error)
-        return
+      try {
+        const res = await autoArrangeSeederImages(intakeId)
+        if (!res.ok) {
+          setError(res.error)
+          return
+        }
+        setImages(res.order)
+        setNote(res.heroUrl ? 'Arranged. The hero leads and became the cover.' : 'Arranged.')
+        router.refresh()
+      } catch {
+        setError(THROWN)
       }
-      setImages(res.order)
-      setNote(res.heroUrl ? 'Arranged. The hero leads and became the cover.' : 'Arranged.')
-      router.refresh()
     })
   }
 
+  // A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so
+  // a single request never overflows the framework boundary (which would crash the route rather than return
+  // an error). Larger images are skipped with a clear message instead.
+  const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
+
   function addFiles(files: File[]) {
     setError(null)
+    setNote(null)
     if (!files.length) return
-    const form = new FormData()
-    for (const f of files) form.append('files', f)
+    const tooBig = files.filter((f) => f.size > MAX_UPLOAD_BYTES)
+    const okFiles = files.filter((f) => f.size <= MAX_UPLOAD_BYTES)
     startBusy(async () => {
-      const res = await uploadSeederImages(intakeId, form)
-      if (!res.ok) {
-        setError(res.error)
-        return
+      let failed = 0
+      // Upload ONE FILE PER REQUEST (sequentially) so a multi-photo batch can never exceed the server-action
+      // body limit. The action appends to the staged list and returns the full next set, so we track the
+      // latest good result.
+      for (const f of okFiles) {
+        const form = new FormData()
+        form.append('files', f)
+        try {
+          const res = await uploadSeederImages(intakeId, form)
+          if (res.ok) setImages(res.images)
+          else {
+            failed += 1
+            setError(res.error)
+          }
+        } catch {
+          failed += 1
+          setError(THROWN)
+        }
       }
-      setImages(res.images)
+      if (tooBig.length > 0) {
+        setError(
+          `${tooBig.length} image${tooBig.length === 1 ? ' was' : 's were'} over 9 MB and skipped. Use a smaller version.`,
+        )
+      } else if (failed === 0) {
+        setNote(`Added ${okFiles.length} image${okFiles.length === 1 ? '' : 's'}.`)
+      }
       router.refresh()
     })
   }
@@ -79,14 +115,18 @@ export function SeederImages({
     setError(null)
     setNote(null)
     startBusy(async () => {
-      const res = await setPrimarySeederImage(intakeId, url)
-      if (!res.ok) {
-        setError(res.error)
-        return
+      try {
+        const res = await setPrimarySeederImage(intakeId, url)
+        if (!res.ok) {
+          setError(res.error)
+          return
+        }
+        setImages(res.images)
+        setNote('Set as the primary image and cover.')
+        router.refresh()
+      } catch {
+        setError(THROWN)
       }
-      setImages(res.images)
-      setNote('Set as the primary image and cover.')
-      router.refresh()
     })
   }
 
@@ -99,25 +139,33 @@ export function SeederImages({
     ;[next[i], next[j]] = [next[j], next[i]]
     setImages(next) // optimistic
     startBusy(async () => {
-      const res = await reorderSeederImages(intakeId, next)
-      if (!res.ok) {
-        setError(res.error)
-        return
+      try {
+        const res = await reorderSeederImages(intakeId, next)
+        if (!res.ok) {
+          setError(res.error)
+          return
+        }
+        setImages(res.images)
+        router.refresh()
+      } catch {
+        setError(THROWN)
       }
-      setImages(res.images)
-      router.refresh()
     })
   }
 
   function remove(url: string) {
     setError(null)
     startBusy(async () => {
-      const res = await removeSeederImage(intakeId, url)
-      if (!res.ok) {
-        setError(res.error)
-        return
+      try {
+        const res = await removeSeederImage(intakeId, url)
+        if (!res.ok) {
+          setError(res.error)
+          return
+        }
+        setImages(res.images)
+      } catch {
+        setError(THROWN)
       }
-      setImages(res.images)
     })
   }
 

@@ -78,7 +78,7 @@ describe('BlockEditPanel redesign', () => {
     expect(html).not.toContain('aria-label="Padding"')
   })
 
-  it('a DATA block leads with a minimal Show-on-page switch + omits the text-style group', () => {
+  it('a DATA block leads with a minimal Show-on-page switch and exposes the text-style group', () => {
     const html = renderToStaticMarkup(
       <BlockEditPanel
         id="offerings"
@@ -93,8 +93,9 @@ describe('BlockEditPanel redesign', () => {
     )
     expect(html).toContain('Show on page')
     expect(html).toContain('role="switch"')
-    // offerings is not text-bearing, so no text-style group
-    expect(html).not.toContain('Text style')
+    // ADR-577: every text-bearing block, including a DATA block, now exposes the text-style group (the
+    // render frame styles the block's text), so the group IS present here.
+    expect(html).toContain('Text style')
     // the deep-edit manage link is present
     expect(html).toContain('/spaces/x/settings/offerings')
   })

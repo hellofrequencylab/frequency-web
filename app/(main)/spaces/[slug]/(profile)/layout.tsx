@@ -15,6 +15,7 @@ import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
 import { resolveAccentVars } from '@/lib/spaces/accent'
+import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
@@ -127,6 +128,10 @@ export default async function SpaceProfileChromeLayout({
   // The brand accent override (§1 KEYSTONE): the Space's own validated `brand_accent` token wins, else
   // the per-type default (profile-config, re-homed off the retired blueprint). Only tokens, never a hex.
   const accentVars = resolveAccentVars(space.brandAccent, defaultAccentForType(space.type))
+
+  // The Space PAGE THEME (ADR-578): the owner's typography + shape identity, read fail-safe off
+  // preferences (defaults to 'bold' = today's look). Rides the same AccentScope wrapper as the accent.
+  const spaceTheme = parseSpaceTheme(space.preferences)
 
   // The hero's remaining inputs are independent, so resolve them in ONE round-trip (site-audit PERF-4).
   // `visibility` gates the JSON-LD (a private Space is noindex; fail-safe private). `presence` (which
@@ -503,7 +508,7 @@ export default async function SpaceProfileChromeLayout({
   )
 
   return (
-    <AccentScope vars={accentVars}>
+    <AccentScope vars={accentVars} theme={spaceTheme}>
       {/* Per-type structured data for the PUBLIC profile plus a Breadcrumb back to the directory.
           Network spaces only, never on a private one. */}
       {isNetwork && (

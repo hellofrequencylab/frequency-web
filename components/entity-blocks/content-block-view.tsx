@@ -149,12 +149,42 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         ? (props.images as unknown[]).map(safeUrl).filter((u) => u.length > 0)
         : []
       if (!images.length) return null
+      // Three views + a spacing step (Fix: gallery layout options). `view` and `gap` are sanitized enum
+      // primitives upstream; default to the classic grid at standard spacing.
+      const view = props.view === 'masonry' || props.view === 'carousel' ? props.view : 'grid'
+      const gap = props.gap === 'tight' || props.gap === 'roomy' ? props.gap : 'standard'
+      const gapClass = gap === 'tight' ? 'gap-1.5' : gap === 'roomy' ? 'gap-6' : 'gap-3'
+      // ONE image sink for every view: the src is already safeUrl-sanitized above, and funnelling all three
+      // layouts through this single element keeps the operator-URL sink count to one (grid / masonry /
+      // carousel only vary the per-tile className + the wrapper).
+      const tile = (src: string, i: number, className: string) => (
+        // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL (safeUrl-checked)
+        <img key={`${src}-${i}`} src={src} alt="" className={className} />
+      )
+
+      if (view === 'carousel') {
+        // A horizontal, scroll-snapping strip: each photo keeps its shape and the row scrolls (CSS only).
+        return (
+          <div className={`flex snap-x snap-mandatory overflow-x-auto pb-2 ${gapClass}`}>
+            {images.map((src, i) => tile(src, i, 'aspect-[4/3] w-64 shrink-0 snap-start rounded-xl object-cover sm:w-80'))}
+          </div>
+        )
+      }
+
+      if (view === 'masonry') {
+        // A columned masonry: photos keep their natural aspect and tile without gaps (CSS multi-column).
+        const vGap = gap === 'tight' ? 'mb-1.5' : gap === 'roomy' ? 'mb-6' : 'mb-3'
+        return (
+          <div className={`columns-2 sm:columns-3 ${gapClass}`}>
+            {images.map((src, i) => tile(src, i, `w-full break-inside-avoid rounded-xl object-cover ${vGap}`))}
+          </div>
+        )
+      }
+
+      // Grid (default): an even, square-cropped grid.
       return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {images.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element -- operator-supplied arbitrary URL
-            <img key={`${src}-${i}`} src={src} alt="" className="aspect-square w-full rounded-xl object-cover" />
-          ))}
+        <div className={`grid grid-cols-2 sm:grid-cols-3 ${gapClass}`}>
+          {images.map((src, i) => tile(src, i, 'aspect-square w-full rounded-xl object-cover'))}
         </div>
       )
     }

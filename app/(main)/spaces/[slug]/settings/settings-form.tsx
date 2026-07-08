@@ -15,6 +15,7 @@ import {
   FormError,
 } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
+import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
 import { setSpaceImages, uploadSpaceImage } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { draftSpaceBioAction, suggestTaglineAction } from '@/app/(main)/spaces/copilot-actions'
 
@@ -39,6 +40,8 @@ export interface SpaceSettingsValues {
   about: string
   tagline: string
   visibility: 'network' | 'private'
+  /** The Space page THEME (ADR-578) — its typography + shape identity. */
+  theme: SpaceThemeId
 }
 
 export function SpaceSettingsForm({
@@ -62,6 +65,7 @@ export function SpaceSettingsForm({
   const [about, setAbout] = useState(initial.about)
   const [tagline, setTagline] = useState(initial.tagline)
   const [visibility, setVisibility] = useState<'network' | 'private'>(initial.visibility)
+  const [theme, setTheme] = useState<SpaceThemeId>(initial.theme)
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -116,6 +120,7 @@ export function SpaceSettingsForm({
         about: about.trim() || null,
         tagline: tagline.trim() || null,
         visibility,
+        theme,
       })
       if (isError(result)) {
         setError(result.error)
@@ -252,6 +257,44 @@ export function SpaceSettingsForm({
         <section className="space-y-3">
           <SectionHeader title="Brand" />
           <AccentPicker value={brandAccent} onChange={setBrandAccent} disabled={readOnly} />
+        </section>
+
+        {/* PAGE THEME — the typography + shape identity of the public profile (ADR-578). Keeps your colors
+            and accent; changes the fonts, corners, and rhythm. */}
+        <section className="space-y-3">
+          <SectionHeader title="Page theme" />
+          <p className="text-xs text-muted">
+            The look of your public page. Each theme keeps your colors and accent, and changes the fonts and
+            shape. Bold is the standard look.
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {SPACE_THEMES.map((t) => {
+              const selected = theme === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={readOnly}
+                  aria-pressed={selected}
+                  onClick={() => setTheme(t.id)}
+                  className={`rounded-xl border p-3 text-left transition-colors disabled:opacity-60 ${
+                    selected
+                      ? 'border-primary bg-primary-bg/50 ring-1 ring-primary'
+                      : 'border-border bg-surface hover:border-border-strong'
+                  }`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-text">{t.label}</span>
+                    {selected && <Check className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />}
+                  </span>
+                  <span className="mt-0.5 block text-2xs font-medium uppercase tracking-wide text-subtle">
+                    {t.displayFont} · {t.bodyFont}
+                  </span>
+                  <span className="mt-1 block text-xs leading-snug text-muted">{t.description}</span>
+                </button>
+              )
+            })}
+          </div>
         </section>
 
         {/* VISIBILITY — who can find this space. */}

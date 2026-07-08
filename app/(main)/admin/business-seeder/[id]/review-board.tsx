@@ -18,11 +18,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Palette, RefreshCw } from 'lucide-react'
+import { Loader2, Check, X, Pencil, ExternalLink, Sparkles, ShieldQuestion, CheckCircle2, Palette, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
-import { updateImportField, approveBusinessImport, reseedBusinessImport, setBusinessListed, type FieldAction } from '../actions'
+import { updateImportField, approveBusinessImport, reseedBusinessImport, reresearchWithInfo, setBusinessListed, type FieldAction } from '../actions'
 import { SEED_MOODS, type SeedMood } from '@/lib/importer/moods'
 import { SIGNAL_GLYPH, type ReviewField, type ReviewModel, type ReviewSignal } from '../review-model'
 import { SeederImages } from './seeder-images'
@@ -51,6 +51,7 @@ export function ReviewBoard({
   initialImagePlan,
   initialLockHero,
   initialListed,
+  initialDirections,
 }: {
   intakeId: string
   initialModel: ReviewModel
@@ -62,6 +63,8 @@ export function ReviewBoard({
   initialImagePlan: { url: string; category: string; alt: string }[]
   initialLockHero: boolean
   initialListed: boolean
+  /** The operator DIRECTIONS currently stored on the intake (Importer v2.1) — prefills the re-seed box. */
+  initialDirections: string
 }) {
   const router = useRouter()
   const [model, setModel] = useState<ReviewModel>(initialModel)
@@ -71,6 +74,14 @@ export function ReviewBoard({
   const [listing, startListing] = useTransition()
   const [reseedMsg, setReseedMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
   const [reseeding, startReseed] = useTransition()
+  const [directions, setDirections] = useState(initialDirections)
+  // "Add more info" boxes (Importer v2.1): extra source content folded into the master profile at re-seed.
+  const [showAddInfo, setShowAddInfo] = useState(false)
+  const [info, setInfo] = useState({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', pastedContent: '' })
+  const [infoMsg, setInfoMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [addingInfo, startAddInfo] = useTransition()
+  const setInfoField = (key: keyof typeof info, value: string) => setInfo((prev) => ({ ...prev, [key]: value }))
+  const hasInfo = Object.values(info).some((v) => v.trim().length > 0)
   const [applied, setApplied] = useState<boolean>(status === 'applied')
   const [links, setLinks] = useState<ApplyLinks>(
     appliedSpaceId ? { profileHref: `/spaces/${appliedSpaceId}`, siteHref: `/spaces/${appliedSpaceId}` } : null,
@@ -124,7 +135,8 @@ export function ReviewBoard({
     setMood(next)
     setReseedMsg(null)
     startReseed(async () => {
-      const res = await reseedBusinessImport(intakeId, next, lockHero)
+      // Pass the operator's directions only when non-blank, so an empty box never CLEARS stored directions.
+      const res = await reseedBusinessImport(intakeId, next, lockHero, directions.trim() || undefined)
       if (!res.ok) {
         setReseedMsg({ tone: 'err', text: res.error })
         return
@@ -140,6 +152,28 @@ export function ReviewBoard({
           : res.reapplied
             ? `Re-applied the page in the ${label} mood.${heroNote} Turn AI on to also re-voice the copy.`
             : 'Mood saved. Turn AI on to re-voice the copy.',
+      })
+      router.refresh()
+    })
+  }
+
+  // Add more info to the master profile + re-research (Importer v2.1). Folds the new boxes, appends them to
+  // the source, and (when new source is added) re-runs research so new facts extract. Directions here also
+  // stick for the re-voice.
+  function addInfo() {
+    setInfoMsg(null)
+    startAddInfo(async () => {
+      const res = await reresearchWithInfo(intakeId, { ...info, directions: directions.trim() || undefined })
+      if (!res.ok) {
+        setInfoMsg({ tone: 'err', text: res.error })
+        return
+      }
+      setInfo({ overview: '', webContent: '', bookingSchedule: '', differentiators: '', pastedContent: '' })
+      setInfoMsg({
+        tone: 'ok',
+        text: res.researching
+          ? 'Added. Re-reading the sources now. When it lands back in review, check the new facts and Re-apply to push it live.'
+          : 'Directions saved. Pick a mood to re-seed with them.',
       })
       router.refresh()
     })
@@ -222,6 +256,25 @@ export function ReviewBoard({
           />
           Lock the hero (freeze the headline and hero image; re-seed everything else)
         </label>
+
+        {/* Directions (Importer v2.1): a freeform steer folded into the re-voice. Persists on re-seed, so it
+            keeps driving future runs. Blank leaves any stored directions untouched. */}
+        <div className="mt-3">
+          <label htmlFor="reseed-directions" className="block text-2xs font-semibold uppercase tracking-wide text-subtle">
+            Directions for the re-seed
+          </label>
+          <textarea
+            id="reseed-directions"
+            rows={2}
+            value={directions}
+            onChange={(e) => setDirections(e.target.value)}
+            disabled={reseeding}
+            placeholder="e.g. Lead with the retreat space, keep it calm and grounded, mention the sky deck."
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+          />
+          <p className="mt-1 text-2xs text-subtle">Steers the wording and tone. Pick a mood above to re-seed with these directions.</p>
+        </div>
+
         {reseedMsg && (
           <p
             className={cn('mt-2 text-xs', reseedMsg.tone === 'ok' ? 'text-success' : 'text-danger')}
@@ -230,6 +283,59 @@ export function ReviewBoard({
             {reseedMsg.text}
           </p>
         )}
+
+        {/* Add more info (Importer v2.1): paste extra source content into the master profile, then re-read the
+            sources so genuinely new facts (a new service, updated hours) get pulled in. Your hand edits are
+            kept; the fresh draft lands back in review for you to check, then Re-apply to push it live. */}
+        <div className="mt-3 border-t border-border pt-3">
+          <button
+            type="button"
+            onClick={() => setShowAddInfo((v) => !v)}
+            aria-expanded={showAddInfo}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-strong hover:underline"
+          >
+            <Plus className={cn('h-3.5 w-3.5 transition-transform', showAddInfo && 'rotate-45')} aria-hidden />
+            Add more info to the master profile
+          </button>
+          {showAddInfo && (
+            <div className="mt-2 space-y-2">
+              <p className="text-2xs text-muted">
+                Paste anything new about the business. Re-reading the sources pulls new facts into the master
+                profile. It can take a minute; the page will show the progress.
+              </p>
+              {(
+                [
+                  { key: 'overview', label: 'Overview', ph: 'What the business is, in a few plain sentences.' },
+                  { key: 'webContent', label: 'Website content', ph: 'Paste copy from their site or elsewhere.' },
+                  { key: 'bookingSchedule', label: 'Booking and schedule', ph: 'Hours, how to book, session lengths.' },
+                  { key: 'differentiators', label: 'What makes them different', ph: 'What sets them apart.' },
+                  { key: 'pastedContent', label: 'Anything else', ph: 'Any other notes or details.' },
+                ] as const
+              ).map((box) => (
+                <label key={box.key} className="block">
+                  <span className="block text-2xs font-semibold uppercase tracking-wide text-subtle">{box.label}</span>
+                  <textarea
+                    rows={2}
+                    value={info[box.key]}
+                    onChange={(e) => setInfoField(box.key, e.target.value)}
+                    disabled={addingInfo}
+                    placeholder={box.ph}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-text placeholder:text-subtle outline-none focus:border-primary"
+                  />
+                </label>
+              ))}
+              <Button size="sm" variant="secondary" onClick={addInfo} disabled={addingInfo || (!hasInfo && !directions.trim())}>
+                {addingInfo ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {addingInfo ? 'Adding…' : 'Add info and re-research'}
+              </Button>
+              {infoMsg && (
+                <p className={cn('text-xs', infoMsg.tone === 'ok' ? 'text-success' : 'text-danger')} role="status">
+                  {infoMsg.text}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Images (Importer v2): stage photos for the Space. Available before AND after Apply — a
