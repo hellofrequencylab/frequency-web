@@ -1,11 +1,20 @@
 # Pricing & entitlements
 
-> ⚠️ **Superseded by the value-ladder overhaul (ADR-458).** The 7-plan model below is being collapsed
-> to **four** space plans (`free` / `pro` / `nonprofit` / `organization`) and **two** member tiers
-> (`free` / `crew`), with Pro as a strong core plus four toggle add-ons. The full target model + phased
-> build is [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md). This page is updated per phase as the
-> overhaul lands; the per-plan tables further down describe the LEGACY model until the collapse
-> migrations apply. **Everything still ships behind `billing_live` OFF.**
+> ## ⚠️ Current model: FLAT pricing (ADR-590). Everything below is historical.
+>
+> The live model is **flat, never per seat**: **Business $49/mo**, **Non Profit $29/mo flat** (everything in
+> Business, donations built in, verified 501(c)(3)), the **Resonance Engine** add-on **+$20/mo** (optional on
+> any paid plan), and a **flat 3% plus card processing** on every channel. Annual is two months free. **Crew**
+> ($9/mo personal) is unchanged. Presented as five persona doors (coaches-and-healers · studios · event-hosts ·
+> community-builders · nonprofits). Source of truth: `lib/billing/pricing-keys.ts` + `pricing_settings` +
+> [ADR-590](DECISIONS.md); the flat-model summary + phase log is [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md).
+> **Ships behind `billing_live` OFF.** The 7-plan / per-seat / four-add-on material below is **historical** —
+> the entitlement partition, Stripe catalog, webhook, and grandfather plumbing it describes still apply; the
+> plan shape + prices do not.
+>
+> ⚠️ **Earlier note (ADR-458, itself now superseded by ADR-590).** The 7-plan model below was collapsed
+> toward space plans + two member tiers with toggle add-ons; the full history is
+> [PRICING-LADDER-PLAN.md](PRICING-LADDER-PLAN.md). **Everything still ships behind `billing_live` OFF.**
 >
 > ## Phase A keystone (shipped OFF · ADR-458)
 >

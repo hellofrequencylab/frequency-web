@@ -1,11 +1,32 @@
-# Pricing & Value Ladder — implementation plan (Crew · Pro · Nonprofit · Organization)
+# Pricing & Value Ladder — implementation plan
 
-> **The answer, first.** The owner-approved value ladder (Notion: "Pricing & Value Ladder, Draft for
-> Review", 2026-06-30) is **~80% a repackaging of the entitlement engine already shipped**
+> ## ⚠️ Superseded by the FLAT model (ADR-590). Read this first.
+>
+> The current live pricing model is **flat, never per seat** ([ADR-590](DECISIONS.md)):
+>
+> | Plan | Price | Who / what |
+> |---|---|---|
+> | **Business** | **$49/mo** | Full depth: branded site + custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, full CRM, marketing automation, team roles, analytics. |
+> | **Non Profit** | **$29/mo flat** | Everything in Business, donations built in, for verified 501(c)(3)s. Never per seat. |
+> | **Resonance Engine** (add-on) | **+$20/mo** | Turns community signals into live matches + next-best actions. Optional on any paid plan. |
+>
+> - **Fee:** a flat **3% plus card processing**, on every channel (space sales, donations, tips, tickets, store). No per-seat charges, ever.
+> - **Annual:** two months free on all plans. **Crew** ($9/mo personal tier) + the Founders round are unchanged and out of scope.
+> - **Five persona doors** (marketing framing over the same system): coaches-and-healers ($69) · studios ($49) · event-hosts ($49) · community-builders ($69) · nonprofits ($29).
+> - **Everything still ships behind `billing_live` OFF**; go-live = "Sync catalog to Stripe" at `/admin/pricing`, then flip the flag.
+> - **Source of truth:** the code catalog (`lib/billing/pricing-keys.ts`) + `pricing_settings`, and [ADR-590](DECISIONS.md).
+>
+> The per-seat, four-add-on, and multi-tier (Pro/Organization) material BELOW is **historical** — kept for the
+> entitlement-partition + Stripe + grandfather plumbing (which survives unchanged), not the plan shape or prices.
+
+---
+
+> **History (pre-ADR-590).** The owner-approved value ladder (Notion: "Pricing & Value Ladder, Draft for
+> Review", 2026-06-30) was **~80% a repackaging of the entitlement engine already shipped**
 > ([PRICING.md](PRICING.md), ADR-362/363/364/370/373), not a rebuild. This doc is the git source of
 > truth for the technical model + the phased build; the Notion page stays the strategy view and links
-> back here (per [DOCS-PROTOCOL.md](DOCS-PROTOCOL.md)). **Everything ships behind `billing_live` OFF;
-> the flip is one switch at the end.** Decision: ADR-458.
+> back here (per [DOCS-PROTOCOL.md](DOCS-PROTOCOL.md)). Decision: ADR-458 (per-seat + four tiers,
+> superseded by ADR-590).
 
 ## 1. The target model
 

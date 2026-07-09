@@ -52,55 +52,55 @@ export interface Persona {
 // resolves so a renamed Mode never leaves a dead persona page.
 export const PERSONAS: Persona[] = [
   {
-    slug: 'coaches',
+    slug: 'coaches-and-healers',
     type: 'business',
     variant: 'packages',
-    audience: 'Coaches',
+    audience: 'Coaches and healers',
     focus: 'Sell multi-session packages, fill your calendar, and keep a client CRM in one place.',
     highlights: [
       'Sell packages and programs, with scheduling built in.',
       'A client CRM that follows each person from first call to renewal.',
-      'The AI Engine add-on reads your CRM and suggests who to follow up with.',
-      'Marketing automation and team roles come with the Business tier.',
-    ],
-  },
-  {
-    slug: 'service-businesses',
-    type: 'business',
-    variant: 'service',
-    audience: 'Service businesses',
-    focus: 'Take bookings, send quotes, and bring repeat clients back.',
-    highlights: [
-      'Bookings and availability so people pick a time without the back-and-forth.',
-      'A quotes-to-booked pipeline in the CRM.',
-      'Marketing automation and team roles come with the Business tier.',
-      'QR Studio to put your booking link on a card, a window, or a flyer.',
-    ],
-  },
-  {
-    slug: 'product-businesses',
-    type: 'business',
-    variant: 'product',
-    audience: 'Product businesses',
-    focus: 'List a catalog, run a storefront, and sell on your own domain.',
-    highlights: [
-      'A catalog and storefront for one-time and subscription products.',
-      'A cart-to-repeat pipeline in the CRM.',
-      'Your own domain, with the Frequency badge removed, on the Business tier.',
-      'Marketing automation and team roles come with the Business tier.',
+      'The Resonance Engine reads your community and suggests who to reach out to next.',
+      'Marketing automation, team roles, and your own domain come with Business.',
     ],
   },
   {
     slug: 'studios',
     type: 'business',
-    variant: 'service',
-    audience: 'Studios and gyms',
+    variant: 'membership',
+    audience: 'Studios',
     focus: 'Run recurring classes, sell memberships, and check people in at the door.',
     highlights: [
       'Memberships and class packs with recurring billing.',
       'Check-in at the door, with a QR code on the wall.',
       'A member CRM that flags who is lapsing.',
-      'Marketing automation and team roles come with the Business tier.',
+      'Marketing automation, team roles, and your own domain come with Business.',
+    ],
+  },
+  {
+    slug: 'event-hosts',
+    type: 'business',
+    variant: 'ticketed',
+    audience: 'Event hosts',
+    focus: 'Sell tickets, check attendees in, and fill the room.',
+    highlights: [
+      'Tickets and passes, sold from your Space.',
+      'Check-in at the door with a QR code.',
+      'Dispatch to message everyone who has a ticket.',
+      'Everything is in Business at $49 a month, no add-ons required.',
+    ],
+  },
+  {
+    slug: 'community-builders',
+    type: 'business',
+    variant: 'cohort',
+    audience: 'Community builders',
+    focus: 'Run circles and memberships, and connect the right people to each other.',
+    highlights: [
+      'Circles, cohorts, and memberships in one place.',
+      'A member CRM that keeps track of who is who.',
+      'The Resonance Engine turns your community signals into live matches between the right people.',
+      'Marketing automation, team roles, and your own domain come with Business.',
     ],
   },
   {
@@ -108,25 +108,12 @@ export const PERSONAS: Persona[] = [
     type: 'nonprofit',
     variant: 'donations',
     audience: 'Nonprofits',
-    focus: 'Raise money, grow your supporters, and run your programs, on the full-depth tier.',
+    focus: 'Raise money, grow your supporters, and run your programs, with donations built in.',
     highlights: [
       'Donations and recurring giving, with a supporter CRM.',
       'Programs and enrollment when you run them.',
-      'Full Business depth: marketing automation, full CRM, team roles, and your own domain.',
-      'A 3% take-rate on what you raise, for verified 501(c)(3) organizations.',
-    ],
-  },
-  {
-    slug: 'event-spaces',
-    type: 'business',
-    variant: 'ticketed',
-    audience: 'Event spaces',
-    focus: 'Sell tickets, check attendees in, and fill the room, on the Pro base.',
-    highlights: [
-      'Tickets and passes, sold from your Space.',
-      'Check-in at the door with a QR code.',
-      'Dispatch to message everyone who has a ticket.',
-      'Everything you need is in the Pro base, no add-ons required.',
+      'Everything in Business, with donations built in.',
+      'A 3% take-rate on what you raise, flat and never per seat, for verified 501(c)(3) organizations.',
     ],
   },
 ]
@@ -191,33 +178,34 @@ export function personaCopy(persona: Persona): PersonaCopy {
   )
 
   const addonNames = loadout.addons.map(addonLabel)
+  const isNonprofit = persona.slug === 'nonprofits'
   const addonPhrase =
     addonNames.length === 0
-      ? 'the Pro base, no add-ons required'
-      : `Pro plus the ${addonNames.join(' and ')} add-on`
+      ? 'Business, no add-ons required'
+      : `Business plus the ${addonNames.join(' and ')} add-on`
 
   const h1 = `Frequency for ${persona.audience}`
   const metaTitle = `Frequency for ${persona.audience}: ${persona.focus}`
-  const description = `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} The recommended loadout runs ${total} at the founding price.`
+  const description = `Frequency for ${persona.audience.toLowerCase()}: ${persona.focus} It runs ${total}, one honest price, never per seat.`
   const ogTitle = `Frequency for ${persona.audience}`
-  const lede = `${persona.focus} Every Frequency Space runs on a tier that fits, from the Pro base up. Marketing automation, team roles, and a custom domain come with the Business tier, and the AI Engine add-on is metered, available on any paid tier.`
+  const lede = `${persona.focus} One honest price, and your people are always yours to export. Business is $49 a month with the full depth, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month when you want live matches. Yearly is two months free.`
 
-  const loadoutLine = persona.slug === 'nonprofits'
-    ? `Nonprofits run on the Nonprofit tier at ${total}, per licensed seat. It carries the full Business depth, marketing automation, full CRM, team roles, and your own domain, with a 3% take-rate on what you raise.`
-    : `The recommended loadout for ${persona.audience.toLowerCase()} is ${addonPhrase}, which runs ${total} at the founding price. Yearly is two months free.`
+  const loadoutLine = isNonprofit
+    ? `Nonprofits run on the Nonprofit plan at ${total}, flat and never per seat. It carries everything in Business with donations built in, and a 3% take-rate on what you raise, for verified 501(c)(3) organizations.`
+    : `The setup for ${persona.audience.toLowerCase()} is ${addonPhrase}, which runs ${total}. Yearly is two months free, and there are no per-seat fees.`
 
   const faq = [
     {
       q: `How much does Frequency cost for ${persona.audience.toLowerCase()}?`,
-      a: `${loadoutLine} The list price sits above the founding price as an anchor, and the founding price is what you pay today. You can start on the Pro base and turn add-ons on or off as your business changes.`,
+      a: `${loadoutLine} Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month, optional on any paid plan. Our fee is a flat 3% plus card processing, shown in full, with no per-seat fees ever.`,
     },
     {
       q: `What is included for ${persona.audience.toLowerCase()}?`,
-      a: `${persona.highlights.join(' ')} The Pro core also includes a branded Space site, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the CRM, and analytics.`,
+      a: `${persona.highlights.join(' ')} Every plan includes a branded Space site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics.`,
     },
     {
       q: `Can I change my plan later?`,
-      a: `Yes. You can move up a tier as you grow, from the Pro base to Business for the full depth, and toggle the AI Engine add-on on or off. The add-on has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free and locks your founding price for the year.`,
+      a: `Yes. Turn the Resonance Engine on or off anytime; it has a 14-day trial and prorates, so you only pay for what you have on. Yearly billing is two months free. Your people are yours: export any time, we earn your stay.`,
     },
     {
       q: `Where does the money go?`,

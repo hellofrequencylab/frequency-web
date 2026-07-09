@@ -12946,3 +12946,52 @@ new post, images on posts, pinned posts (realtime deferred to the backlog).
 image), `content-data.ts` (rail readers reused, `media_urls`/`is_pinned`/`pinned` in the feed), `follows.ts`
 (`listSpaceFollowerIds`), `notification-bell.tsx` (space link + icon), `community/page.tsx` (two-column),
 `space-community-feed.tsx` (photo field, pin controls), new `space-community-rail.tsx`. No migration.
+
+## ADR-590: Flat pricing model (Business $49 / Nonprofit $29 flat / Resonance +$20 / flat 3%, never per seat)
+
+**Status:** Accepted · the pricing overhaul. Numbered 590 (588-589 reserved) to stay consistent with the
+code, tests, commits, and PR #1624 that already cite it. Supersedes the per-seat + add-on-ladder aspects of
+ADR-458/460/465/472/475 and the tiered take-rate of ADR-373/375. Ships dark behind `billing_live=OFF`.
+
+**Context.** The catalog carried a per-seat Nonprofit ($15 list / $12 founding per seat, 3-seat floor), a
+stale four-add-on ladder, and a 10% flat platform fee on tips/tickets/store. The owner directive is a flat
+model: one honest price, never per seat, one optional add-on, and a single 3% fee, presented as five persona
+doors. Billing is env-gated OFF with an effectively empty ledger, so this is the safe moment to restructure.
+
+**Decision.**
+1. **Flat plans.** Business **$49/mo** (full depth). Non Profit **$29/mo FLAT** (everything in Business, with
+   donations built in, for verified 501(c)(3)s; the old per-seat `nonprofit_seat` becomes a flat item with
+   `perSeat:false`). The **Resonance Engine** add-on **+$20/mo**, optional on any paid plan. Annual = two
+   months free on all. NEVER per seat.
+2. **Resonance Engine is a RELABEL, not a key rename.** The internal keys stay (`addon_ai`, entitlement key
+   `ai`, DB item_key `ai`, `nonprofit_seat`) because they are non-user-facing identifiers; renaming them buys
+   only grandfather/webhook churn. Only labels + amounts + the `perSeat` flag change. The `crm.resonance` /
+   `crm.resonance_ai` entitlement gates already unlock matching, so no gate rewiring.
+3. **Flat 3% everywhere.** `platformFeePct` default 10 -> 3, so tips, tickets, and the store honor "our 3%
+   plus card processing, no surprise fees ever." The space take-rate was already 3% Business / 3% Non Profit
+   (free usage stays the higher 5%, the self-funding nudge). One source of truth: the code catalog +
+   `pricing_settings`; the placeholder price map mirrors it.
+4. **Five persona doors.** coaches-and-healers (Business + Resonance, $69) · studios (Business, $49) ·
+   event-hosts (Business, $49) · community-builders (Business + Resonance, $69) · nonprofits (Nonprofit, $29).
+   Each pins to a registered Mode; the retired slugs (coaches, event-spaces, service-businesses,
+   product-businesses) redirect. All marketing copy (pricing page, door pages, llms.txt, FAQ + JSON-LD) is
+   rewritten for the flat model, with the three promises (one honest price / your people are yours / bring
+   your community in).
+
+**Alternatives.** (a) Renaming the internal keys to `addon_resonance`/`nonprofit_base` end-to-end — rejected:
+a DB CHECK migration + retired-key plumbing + webhook-mapping churn for zero user benefit. (b) Lowering the
+free take-rate to 3% too — rejected: the 5% free rate is the deliberate incentive to subscribe; the 3%
+promise is the paid-plan headline.
+
+**Consequences.** `lib/billing/pricing-keys.ts` (CATALOG: nonprofit flat $29 perSeat:false, Resonance label),
+`lib/billing/fees.ts` (platformFeePct 3), `lib/pricing/feature-tiers.ts` (placeholder nonprofit 2900),
+`lib/pricing/pricing-page.ts` (Non Profit flat, PRICING_ADDONS label, five PERSONA_LOADOUTS, ladder summary),
+`lib/marketing/personas.ts` (five-door registry + flat copy generator), `app/(marketing)/pricing/page.tsx`
+(full copy + three promises), `app/(marketing)/for/[persona]/page.tsx`, `app/llms.txt/route.ts`,
+`next.config.ts` (slug redirects). Tests updated across billing/pricing/marketing. No migration.
+
+**Deferred.** The now-inert per-seat machinery removal (loadout `* qty`, `catalog.seat` floor,
+`spaces.seat_quantity`, `lib/spaces/seats.ts` billing — no item is `perSeat`, so it is dead but harmless); the
+secondary-doc figure sweep (~20 docs) + `PRICING-LADDER-PLAN.md` / `PRICING.md` rewrite; the Notion training
+page; and the Stripe go-live (operator clicks "Sync catalog to Stripe" at `/admin/pricing`, then flips
+`billing_live` — no live Stripe products are created in code).

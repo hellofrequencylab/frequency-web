@@ -3,15 +3,16 @@
 // destination charge; the rest transfers to the recipient's connected account.
 // Server-only config, but pure functions (no I/O) so they're trivially testable.
 
-/** The platform fee percentage (0–100), from env, defaulting to 10%. A blank/unset
- *  env is "not configured" → 10 (note `Number('')` is 0, so guard it explicitly);
- *  an explicit '0' is a deliberate 0% fee. */
+/** The platform fee percentage (0–100), from env, defaulting to 3% (ADR-590: "our 3% plus card
+ *  processing, no surprise fees ever" — the flat 3% applies to every Connect channel: tips, tickets,
+ *  store). A blank/unset env is "not configured" → 3 (note `Number('')` is 0, so guard it explicitly);
+ *  an explicit '0' is a deliberate 0% fee; the env var can still override for a promo. */
 export function platformFeePct(): number {
   const env = process.env.STRIPE_PLATFORM_FEE_PCT
-  if (!env || !env.trim()) return 10
+  if (!env || !env.trim()) return 3
   const raw = Number(env)
   if (Number.isFinite(raw) && raw >= 0 && raw <= 100) return raw
-  return 10
+  return 3
 }
 
 /** The application fee (in cents) the platform keeps on a gross charge.

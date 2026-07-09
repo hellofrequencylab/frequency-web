@@ -153,7 +153,7 @@ export default async function PersonaPage({
           {loadout.addons.length > 0 && (
             <ul className="mt-5 space-y-2">
               <li className="flex items-center gap-2 text-sm text-text">
-                <Check className="h-4 w-4 shrink-0 text-success" aria-hidden /> Pro base
+                <Check className="h-4 w-4 shrink-0 text-success" aria-hidden /> Business
               </li>
               {loadout.addons.map((a) => (
                 <li key={a} className="flex items-center gap-2 text-sm text-text">
@@ -189,9 +189,9 @@ export default async function PersonaPage({
           ))}
         </ul>
         <Body>
-          Every Pro Space can use every module. The loadout above is the front door for{' '}
-          {persona.audience.toLowerCase()}, not a limit: you can turn any add-on on or off as your
-          business changes.
+          Every Frequency Space can use every module. The setup above is the front door for{' '}
+          {persona.audience.toLowerCase()}, not a limit: you can turn the Resonance Engine on or off as
+          your work changes, and your people are always yours to export.
         </Body>
       </Section>
 
@@ -203,7 +203,7 @@ export default async function PersonaPage({
 
       <BetaCTA
         heading="Run your Space on Frequency."
-        body="Start on the Pro base and turn on the add-ons you need. Founding price locked for as long as you stay subscribed."
+        body="One honest price, never per seat. Turn the Resonance Engine on when you want live matches, and your people are always yours to export."
       />
     </>
   )

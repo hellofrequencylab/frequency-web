@@ -88,7 +88,7 @@ export interface PricingTier {
  *  beside them. The price comes from the catalog (so a config change is one number). ADR-472: the AI
  *  Engine is now the SOLE metered add-on; Marketing, Team, and Branding folded into Business tier depth. */
 export const PRICING_ADDONS: readonly { key: AddonKey; glyph: string; label: string; turnsOn: string }[] = [
-  { key: 'ai', glyph: '🧠', label: 'AI Engine', turnsOn: 'Resonance goes from read-only to a working graph that suggests matches.' },
+  { key: 'ai', glyph: '🧠', label: 'Resonance Engine', turnsOn: "Turns your community's signals into live matches and next-best actions." },
 ]
 
 /** The catalog item key for a metered add-on (ai -> addon_ai). PURE. */
@@ -131,16 +131,16 @@ export function pricingTiers(): PricingTier[] {
     {
       id: 'nonprofit',
       name: 'Non Profit',
-      priceKind: 'perSeat',
+      priceKind: 'flat',
       price: { month: cat.nonprofit_seat.month, year: cat.nonprofit_seat.year },
       featured: false,
       forWho: 'Verified 501(c)(3) organizations.',
-      billing: 'Per licensed seat. Three-seat minimum.',
+      billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'The full Business depth: marketing automation, full CRM, team roles, and your own domain. Discounted, with donation and volunteer framing.',
+        'Everything in Business, with donations built in. The full CRM, marketing automation, team roles, and your own domain. Flat, never per seat.',
       addons: tierAddons,
       takeRate: '3% on what you raise',
-      cta: { label: 'Talk to us', href: '/about' },
+      cta: { label: 'Start a Space', href: '/spaces' },
     },
   ]
 }
@@ -204,18 +204,17 @@ export interface PersonaLoadout {
   perSeat?: boolean
 }
 
-/** The persona loadouts, in the plan §4a / §4b order. ADR-472: marketing automation, team roles, and a
- *  custom domain are now TIER depth (Business and up), not add-ons, so a loadout's only metered add-on is
- *  the AI Engine. Coaches and the business personas turn it on (Pro base + AI Engine = $39/mo); the
- *  Nonprofit and Event personas run on the base. The monthly totals come from the catalog, never
- *  hardcoded, so a catalog change reflows every figure. */
+/** The FIVE persona doors (ADR-590): one system, presented by who they are. Each resolves to Business,
+ *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
+ *  Engine on (Business + Resonance = $69/mo); studios and event hosts run on Business ($49/mo); nonprofits
+ *  run the flat Nonprofit plan ($29/mo). The monthly totals come from the catalog, never hardcoded, so a
+ *  catalog change reflows every figure. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
-  { slug: 'coaches', label: 'Coach', addons: ['ai'], note: 'Packages, scheduling, and a client CRM.' },
-  { slug: 'service-businesses', label: 'Service business', addons: ['ai'], note: 'Bookings, quotes, and repeat clients.' },
-  { slug: 'product-businesses', label: 'Product business', addons: ['ai'], note: 'A catalog, a storefront, and your own domain.' },
-  { slug: 'studios', label: 'Studio', addons: ['ai'], note: 'Classes, memberships, and check-in.' },
-  { slug: 'nonprofits', label: 'Nonprofit', addons: [], note: 'Programs, donations, and supporters.', perSeat: true },
-  { slug: 'event-spaces', label: 'Event space', addons: [], note: 'Tickets, check-in, and dispatch.' },
+  { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
+  { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },
+  { slug: 'event-hosts', label: 'Event hosts', addons: [], note: 'Tickets, check-in, and a message to everyone who has one.' },
+  { slug: 'community-builders', label: 'Community builders', addons: ['ai'], note: 'Circles, memberships, and matches between the right people.' },
+  { slug: 'nonprofits', label: 'Nonprofits', addons: [], note: 'Donations, supporters, and programs.', perSeat: true },
 ]
 
 /** The /for/<slug> path for a persona. Canonical everywhere. PURE. */
@@ -228,8 +227,11 @@ export function personaPath(slug: string): string {
  *  drifts between them. */
 export function stripTotalLabel(p: PersonaLoadout): string {
   if (p.perSeat) {
-    const seat = pricingCatalog().nonprofit_seat
-    return `${formatLoadoutCents(seat.month.foundingCents)}/seat/mo`
+    // The Nonprofit door: priced from the flat Non Profit plan ($29/mo, ADR-590), not a Business loadout.
+    // The `perSeat` field name is legacy (per-seat billing is retired); it now flags "the flat nonprofit
+    // sibling." Renders a FLAT figure, never per seat.
+    const np = pricingCatalog().nonprofit_seat
+    return `${formatLoadoutCents(np.month.foundingCents)}/mo`
   }
   const total = computeLoadoutTotal(pricingCatalog(), p.addons, 'month', 1)
   return `${formatLoadoutCents(total.foundingCents)}/mo`
@@ -286,7 +288,7 @@ export function pricingLadderSummary(): string[] {
     lines.push(`- ${t.name}: ${price}. For ${t.forWho.toLowerCase()} ${t.takeRate} take-rate.`)
   }
   for (const a of PRICING_ADDONS) {
-    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, metered, available on any paid tier.`)
+    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)
   }
   lines.push(`- ${CREW_NOTE.name}: ${CREW_NOTE.foundingLabel}/mo, the personal tier (list ${CREW_NOTE.listLabel}).`)
   return lines

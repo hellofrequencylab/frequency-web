@@ -242,13 +242,13 @@ function amountsFromMonthly(listMonthlyCents: number, foundingMonthlyCents: numb
   }
 }
 
-// The CLEAN catalog (ADR-460). Monthly LIST + FOUNDING amounts from the owner-approved ladder
-// (PRICING-LADDER-PLAN §1/§1b: Pro $29 list / $19 founding; Business $49 base, full depth; AI Engine
-// add-on +$20 metered; Nonprofit $15/$12 per licensed seat; Organization $249 list / $199 founding).
-// Yearly derives as two months free. An item carries the same list + founding when no separate anchor
-// was published (founding == list reads flat today; the field still exists so a future anchor is a
+// The CLEAN catalog (ADR-460; FLAT re-pricing ADR-590). Monthly amounts from the owner-approved flat
+// model: Business $49/mo (full depth); the Resonance Engine add-on +$20/mo (optional on any paid plan);
+// Non Profit $29/mo FLAT (everything in Business, for verified 501(c)(3)s, donations built in). NEVER per
+// seat. Yearly derives as two months free. An item carries the same list + founding when no separate
+// anchor is published (founding == list reads flat today; the field still exists so a future anchor is a
 // one-line edit, never a schema change). The marketing/team/branding add-on items are RETIRED (their
-// depth folds into the Business base, ADR-472); only addon_ai remains as a metered add-on.
+// depth folds into the Business base, ADR-472); only addon_ai (the Resonance Engine) remains as an add-on.
 const CATALOG: Record<CatalogItemKey, CatalogItem> = {
   business_base: {
     key: 'business_base',
@@ -261,15 +261,21 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
   },
   addon_ai: {
     key: 'addon_ai',
-    label: 'Frequency AI Engine (metered add-on)',
+    // The Resonance Engine: turns the community's signals into live matches + next-best actions. The
+    // internal key stays `addon_ai` (an identifier; renaming it buys only grandfather/webhook churn) —
+    // only the label is user-facing (ADR-590).
+    label: 'Frequency Resonance Engine (add-on)',
     perSeat: false,
-    ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier metered add-on (ADR-552)
+    ...amountsFromMonthly(2000, 2000), // +$20, the sole cross-tier optional add-on (ADR-552/590)
   },
   nonprofit_seat: {
+    // FLAT nonprofit (ADR-590): $29/mo, never per seat. The internal key stays `nonprofit_seat` (a legacy
+    // identifier; the DB item_key + retired-key plumbing key off it) but the plan is NOT per-seat anymore
+    // — perSeat:false makes the seat machinery inert for it. Verified 501(c)(3), donations built in.
     key: 'nonprofit_seat',
-    label: 'Frequency Non Profit (licensed seat)',
-    perSeat: true,
-    ...amountsFromMonthly(1500, 1200), // $15 list / $12 founding per seat
+    label: 'Frequency Non Profit',
+    perSeat: false,
+    ...amountsFromMonthly(2900, 2900), // $29/mo flat (ADR-590), everything in Business, discounted for 501c3s
   },
 }
 
