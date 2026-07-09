@@ -257,14 +257,14 @@ export function FieldEditor({
   pickerData?: BlockPickerData
   onChange: (v: unknown) => void
 }) {
-  if (field.type === 'text' || field.type === 'url') {
+  if (field.type === 'text' || field.type === 'url' || field.type === 'embedUrl') {
     const str = typeof value === 'string' ? value : ''
     const canUpload = field.upload && !!uploadImage
     return (
       <label className="block space-y-1">
         <span className={labelCls}>{field.label}</span>
         <input
-          type={field.type === 'url' ? 'url' : 'text'}
+          type={field.type === 'text' ? 'text' : 'url'}
           value={str}
           placeholder={field.placeholder}
           onChange={(e) => onChange(e.target.value)}

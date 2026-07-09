@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ExternalLink } from 'lucide-react'
 import {
   marginBottomClass,
   marginTopClass,
@@ -7,6 +8,13 @@ import {
   textStyleClass,
   type BlockStyle,
 } from '@/lib/entity-blocks/block-content'
+import {
+  parseEmbedUrl,
+  validateEmbedRef,
+  buildEmbedSrc,
+  embedHeight,
+  parseLinkCard,
+} from '@/lib/spotlight/embeds'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -231,21 +239,44 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       )
     }
     case 'embed': {
-      const url = safeUrl(props.url)
-      if (!url) return null
-      return (
-        <div className="aspect-video w-full overflow-hidden rounded-2xl border border-border">
-          <iframe
-            src={url}
-            title="Embedded content"
-            className="h-full w-full"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-            referrerPolicy="no-referrer"
-            allowFullScreen
-          />
-        </div>
-      )
+      // NEVER trust the stored URL as an iframe src (ADR-437). Re-derive a validated (provider, ref) —
+      // from the pasted share URL, or a legacy { provider, ref } bag (Spotlight round-trip) — and
+      // RECONSTRUCT the known-safe embed src. A supported-but-unembeddable host (Insight Timer) renders a
+      // link-out card instead of a frame. Anything unrecognized renders nothing.
+      const embed = parseEmbedUrl(props.url) ?? validateEmbedRef(props.provider, props.ref)
+      if (embed) {
+        const src = buildEmbedSrc(embed.provider, embed.ref)
+        return (
+          <div className="w-full overflow-hidden rounded-2xl border border-border">
+            <iframe
+              src={src}
+              title="Embedded media"
+              className="w-full"
+              height={embedHeight(embed.provider, embed.ref)}
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+              allow="autoplay; encrypted-media; clipboard-write; picture-in-picture; fullscreen"
+            />
+          </div>
+        )
+      }
+      const card = typeof props.url === 'string' ? parseLinkCard(props.url) : null
+      if (card) {
+        return (
+          <a
+            href={card.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+          >
+            <span>Listen on {card.label}</span>
+            <ExternalLink className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
+          </a>
+        )
+      }
+      return null
     }
     case 'divider':
       return <hr className="border-border" />

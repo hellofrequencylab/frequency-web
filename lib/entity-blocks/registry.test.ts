@@ -73,12 +73,12 @@ describe('unified entity-block registry', () => {
     const space = profilePaletteForKind('space').map((b) => b.id)
     // Core kept (SPACE, ADR-542): the 9 connected data sections + the 4 free-form blocks (Callout, Gallery,
     // Journeys, Features). `business` (Find us online) covers links.
-    for (const id of ['about', 'story', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'callout', 'gallery', 'journeys', 'features']) {
+    for (const id of ['about', 'story', 'offerings', 'booking', 'events', 'team', 'reviews', 'contact', 'business', 'callout', 'gallery', 'journeys', 'features', 'embed']) {
       expect(space).toContain(id)
     }
     // Excluded from the SPACE palette (ADR-542): the legacy authored blocks (heading/text/links/image →
     // covered by Callout + the connected sections) and the never-wired data blocks.
-    for (const id of ['highlights', 'stats', 'practices', 'circles', 'faq', 'updates', 'quote', 'embed', 'divider', 'links', 'heading', 'text', 'image']) {
+    for (const id of ['highlights', 'stats', 'practices', 'circles', 'faq', 'updates', 'quote', 'divider', 'links', 'heading', 'text', 'image']) {
       expect(space).not.toContain(id)
     }
     // The member palette keeps topfriends + the authored links list + the content essentials; `business` is
