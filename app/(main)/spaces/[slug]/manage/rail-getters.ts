@@ -50,7 +50,7 @@ import {
 import { PICKER_DATA_BLOCK_IDS } from '@/lib/entity-blocks/block-content'
 import { parseEntityLayout, resolveRows, type RowDef } from '@/lib/entity-blocks/layout'
 import { readHeroConfig, heroCtaFromPreference } from '@/lib/spaces/hero-config'
-import type { HeroEditorValues } from '@/components/spaces/hero-edit-panel'
+import type { HeroEditorValues } from '@/lib/spaces/hero-config'
 import { readProfileData, isServiceListed, type SpaceProfileData } from '@/lib/spaces/profile-data'
 import { readWebsitePublished } from '@/lib/spaces/website'
 import { parseSpaceTheme, type SpaceThemeId } from '@/lib/theme/space-themes'

@@ -412,18 +412,19 @@ export default async function SpaceProfileChromeLayout({
         {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
             Follow lives inside the name lockup, so this is suppressed there. */}
         {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
-        <div className="flex items-end justify-between gap-x-6 gap-y-4">
-          <div className="flex min-w-0 items-end gap-4">
-            <div className="shrink-0">
-              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
-            </div>
-            <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
+        {/* Item 7: the identity (avatar + title) takes the FULL width of the cover, so a long name reads on
+            one or two lines instead of being crushed into a narrow column beside the buttons. The desktop
+            action row drops BELOW it on its own full-width line, still a single horizontal row (never a
+            stacked column). */}
+        <div className="flex min-w-0 items-end gap-4">
+          <div className="shrink-0">
+            <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
           </div>
-          {/* Desktop only: the action row overlays the cover bottom-right. It never wraps to a second row —
-              shrink-0 keeps it intact and the name lockup (min-w-0) yields instead. On mobile it moves to
-              the white action card under the cover, so the phone hero holds only the identity. */}
-          <div className="hidden shrink-0 pb-1 sm:block">{identityActions(heroOnInk)}</div>
+          <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
         </div>
+        {/* Desktop only: the actions on their own row under the identity. On mobile they move to the white
+            action card under the cover, so the phone hero holds only the identity. */}
+        <div className="mt-4 hidden sm:block">{identityActions(heroOnInk)}</div>
         {/* Below lg (mobile + narrow desktop): the tagline drops to its OWN full-width row spanning the
             bottom, below the identity + the right-side action buttons, so it reads as a full line instead
             of a cramped column beside the profile pic (owner ask). At lg+ it stays inline under the name

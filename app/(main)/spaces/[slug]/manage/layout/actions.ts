@@ -43,7 +43,10 @@ import {
 import {
   sanitizeHeroConfig,
   nextHeroPreferences,
+  readHeroConfig,
   type HeroConfig,
+  type HeroHeight,
+  type HeroButtonOrientation,
 } from '@/lib/spaces/hero-config'
 
 // SPACE PAGE / LAYOUT actions (the operator-composed multi-page profile). An owner / admin / editor
@@ -409,6 +412,36 @@ export async function setSpaceHero(
   const next = nextHeaderCtaPreferences(withHero, cleanCta)
   if (!(await writePreferences(auth.spaceId, next))) {
     return fail('Could not save your hero. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set JUST the hero LOOK (height + button orientation), merged into the existing hero node. Unlike
+ * setSpaceHero, this NEVER touches the header CTA — the CTA is owned by the separate "Header button"
+ * control (setSpaceHeaderCta), so the two can be edited independently in the Identity & Branding section
+ * without clobbering each other. Owner/editor-gated; sanitized to the sparse hero shape.
+ */
+export async function setSpaceHeroLook(
+  slug: string,
+  look: { height?: HeroHeight; buttonOrientation?: HeroButtonOrientation },
+): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const current = readHeroConfig(auth.preferences)
+  const merged: HeroConfig = {
+    ...current,
+    ...(look.height !== undefined ? { height: look.height } : {}),
+    ...(look.buttonOrientation !== undefined ? { buttonOrientation: look.buttonOrientation } : {}),
+  }
+  const cleanHero = sanitizeHeroConfig(merged)
+  const next = nextHeroPreferences(auth.preferences, cleanHero)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not save. Try again.')
   }
 
   revalidatePath(`/spaces/${slug}`, 'layout')
