@@ -231,9 +231,15 @@ export function MovementSession({
     return null
   }
   const initialResume = resolveResume(initialId)
+  // The launched practice's CREATOR-authored preset (ADR-592, P2): its stored movement_config
+  // seeds the setup tuning below, so a timed movement practice opens ready to run exactly as the
+  // author set it (Tabata 20/10 x8, a 30 min walk, a Yin flow), not the generic defaults. The
+  // member can still adjust before starting. A resume still overrides the LENGTH to the remaining
+  // time; the preset supplies everything else.
+  const initialCfg = practices.find((p) => p.id === initialId)?.movementConfig ?? null
 
   const [practiceId, setPracticeId] = useState(initialId)
-  const [mode, setMode] = useState<MovementMode>(defaultMode ?? 'walk')
+  const [mode, setMode] = useState<MovementMode>(defaultMode ?? initialCfg?.mode ?? 'walk')
   // The manual "Select practice" step is GONE (owner directive 2026-07-06). The door already
   // auto-resolved WHAT to run on the server (loadOnAirSessionData.defaultPracticeId): the adopted
   // practice due today when there is one and it isn't done, else Free Practice. So there is nothing
@@ -242,23 +248,23 @@ export function MovementSession({
   // total matches and the live screen runs exactly the remaining time. A fresh sit uses the preset.
   const resumeMin = initialResume ? Math.max(1, Math.round(initialResume.targetSec / 60)) : 0
   // Walk
-  const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : 20)
-  const [walkIntervalMin, setWalkIntervalMin] = useState(0)
+  const [walkMinutes, setWalkMinutes] = useState(defaultMode === 'walk' && resumeMin ? resumeMin : (initialCfg?.walkMinutes ?? 20))
+  const [walkIntervalMin, setWalkIntervalMin] = useState(initialCfg?.walkIntervalMin ?? 0)
   // Run
-  const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : 20)
-  const [runIntervalMin, setRunIntervalMin] = useState(0)
+  const [runMinutes, setRunMinutes] = useState(defaultMode === 'run' && resumeMin ? resumeMin : (initialCfg?.runMinutes ?? 20))
+  const [runIntervalMin, setRunIntervalMin] = useState(initialCfg?.runIntervalMin ?? 0)
   // Yoga
-  const [yogaKind, setYogaKind] = useState<YogaPresetKind>('vinyasa')
+  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(initialCfg?.yogaKind ?? 'vinyasa')
   // Stretch
   const [stretchMinutes, setStretchMinutes] = useState(
-    defaultMode === 'stretch' && resumeMin ? resumeMin : 10,
+    defaultMode === 'stretch' && resumeMin ? resumeMin : (initialCfg?.stretchMinutes ?? 10),
   )
-  const [stretchIntervalMin, setStretchIntervalMin] = useState(0)
-  // Strength (a preset, plus tunable steppers that override it)
-  const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>('tabata')
-  const [workSec, setWorkSec] = useState(20)
-  const [restSec, setRestSec] = useState(10)
-  const [rounds, setRounds] = useState(8)
+  const [stretchIntervalMin, setStretchIntervalMin] = useState(initialCfg?.stretchIntervalMin ?? 0)
+  // Strength (a preset, plus tunable steppers that override it). Seeds from the author's config.
+  const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>(initialCfg?.strengthKind ?? initialCfg?.workoutKind ?? 'tabata')
+  const [workSec, setWorkSec] = useState(initialCfg?.workSec ?? 20)
+  const [restSec, setRestSec] = useState(initialCfg?.restSec ?? 10)
+  const [rounds, setRounds] = useState(initialCfg?.rounds ?? 8)
 
   const practice = practices.find((p) => p.id === practiceId)
 

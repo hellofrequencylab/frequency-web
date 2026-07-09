@@ -18,7 +18,13 @@ import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
-import { MOVEMENT_MODES, type MovementConfig, type MovementMode } from '@/lib/movement'
+import {
+  MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
+  WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
+  WALK_INTERVAL_PRESETS, RUN_INTERVAL_PRESETS, STRETCH_INTERVAL_PRESETS,
+  clampSeconds, clampRounds,
+  type MovementConfig, type MovementMode, type StrengthPresetKind, type YogaPresetKind,
+} from '@/lib/movement'
 
 // Practice on the Studio shell — entity #2 (ADR-143). Composes the kit (autosave,
 // fields, footer) against the existing practice actions; mirrors the old
@@ -107,6 +113,21 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [timerKind, setTimerKind] = useState<TimerKind>(props.timerKind ?? 'mindless')
   // The Movement mode picked when timerKind = 'movement'. Seeds from the saved config.
   const [movementMode, setMovementMode] = useState<MovementMode>(props.movementConfig?.mode ?? 'walk')
+  // Full per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). Seeded
+  // from the saved movement_config; each mode reads only its own fields, mirroring the member
+  // setup in movement-session.tsx. Defaults match lib/movement's builders.
+  const mc = props.movementConfig
+  const [walkMinutes, setWalkMinutes] = useState<number>(mc?.walkMinutes ?? 20)
+  const [walkIntervalMin, setWalkIntervalMin] = useState<number>(mc?.walkIntervalMin ?? 0)
+  const [runMinutes, setRunMinutes] = useState<number>(mc?.runMinutes ?? 20)
+  const [runIntervalMin, setRunIntervalMin] = useState<number>(mc?.runIntervalMin ?? 0)
+  const [stretchMinutes, setStretchMinutes] = useState<number>(mc?.stretchMinutes ?? 10)
+  const [stretchIntervalMin, setStretchIntervalMin] = useState<number>(mc?.stretchIntervalMin ?? 0)
+  const [yogaKind, setYogaKind] = useState<YogaPresetKind>(mc?.yogaKind ?? 'gentle')
+  const [strengthKind, setStrengthKind] = useState<StrengthPresetKind>(mc?.strengthKind ?? mc?.workoutKind ?? 'tabata')
+  const [workSec, setWorkSec] = useState<number>(mc?.workSec ?? 20)
+  const [restSec, setRestSec] = useState<number>(mc?.restSec ?? 10)
+  const [rounds, setRounds] = useState<number>(mc?.rounds ?? 8)
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
@@ -180,6 +201,51 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
     const labels = tagsInput.split(',').map((t) => t.trim()).filter(Boolean)
     void run(() => setPracticeTagsAction(props.id, labels))
   }
+
+  // Compose the full movement_config for a mode from the current tuning state (each mode
+  // reads only its own fields, mirroring movement-session.tsx). `overrides` carry a control's
+  // brand-new value so the save uses it before React state settles; `mode` lets a mode-switch
+  // compose the new mode's config directly. The server re-sanitizes on save (sanitizeMovementConfig).
+  const composeMovementConfig = (
+    overrides: Partial<MovementConfig> = {},
+    mode: MovementMode = movementMode,
+  ): MovementConfig => {
+    const base: MovementConfig =
+      mode === 'walk' ? { mode, walkMinutes, walkIntervalMin }
+      : mode === 'run' ? { mode, runMinutes, runIntervalMin }
+      : mode === 'yoga' ? { mode, yogaKind }
+      : mode === 'stretch' ? { mode, stretchMinutes, stretchIntervalMin }
+      : mode === 'play' ? { mode }
+      : { mode: 'strength', strengthKind, workSec, restSec, rounds }
+    return { ...base, ...overrides }
+  }
+  const saveMovement = (overrides: Partial<MovementConfig> = {}, mode: MovementMode = movementMode) => {
+    queueSave({ timer_kind: 'movement', movement_config: composeMovementConfig(overrides, mode) })
+  }
+  // Picking a Strength shape seeds its default work/rest/rounds (the member can still tune each).
+  const pickStrength = (kind: StrengthPresetKind) => {
+    const p = STRENGTH_PRESETS.find((x) => x.kind === kind) ?? STRENGTH_PRESETS[0]
+    setStrengthKind(kind); setWorkSec(p.workSec); setRestSec(p.restSec); setRounds(p.rounds)
+    saveMovement({ strengthKind: kind, workSec: p.workSec, restSec: p.restSec, rounds: p.rounds })
+  }
+  // A single-length mode (Walk / Run / Stretch): its minutes + optional interval-cue state,
+  // presets, and save-on-change setters, resolved for the active mode. Null for other modes.
+  const durationTuner: {
+    minutes: number
+    setMinutes: (v: number) => void
+    minutePresets: readonly number[]
+    interval: number
+    setInterval: (v: number) => void
+    intervalPresets: readonly { value: number; label: string }[]
+    intervalHint: string
+  } | null =
+    movementMode === 'walk'
+      ? { minutes: walkMinutes, setMinutes: (v: number) => { setWalkMinutes(v); saveMovement({ walkMinutes: v }) }, minutePresets: WALK_DURATION_PRESETS, interval: walkIntervalMin, setInterval: (v: number) => { setWalkIntervalMin(v); saveMovement({ walkIntervalMin: v }) }, intervalPresets: WALK_INTERVAL_PRESETS, intervalHint: 'A gentle chime as you go, if you want one.' }
+      : movementMode === 'run'
+      ? { minutes: runMinutes, setMinutes: (v: number) => { setRunMinutes(v); saveMovement({ runMinutes: v }) }, minutePresets: RUN_DURATION_PRESETS, interval: runIntervalMin, setInterval: (v: number) => { setRunIntervalMin(v); saveMovement({ runIntervalMin: v }) }, intervalPresets: RUN_INTERVAL_PRESETS, intervalHint: 'Split cues on the minute, if you want them.' }
+      : movementMode === 'stretch'
+      ? { minutes: stretchMinutes, setMinutes: (v: number) => { setStretchMinutes(v); saveMovement({ stretchMinutes: v }) }, minutePresets: STRETCH_DURATION_PRESETS, interval: stretchIntervalMin, setInterval: (v: number) => { setStretchIntervalMin(v); saveMovement({ stretchIntervalMin: v }) }, intervalPresets: STRETCH_INTERVAL_PRESETS, intervalHint: 'A soft cue to switch sides, if you want one.' }
+      : null
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
@@ -360,6 +426,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             placeholder="e.g. 10"
             className={FIELD}
           />
+          <p className="mt-1 text-2xs text-subtle">
+            Seeds the timer. On a timed practice the member earns the tier they reach:{' '}
+            {TIER_FLOOR_MIN.standard} min = Standard, {TIER_FLOOR_MIN.heavy} min = Heavy.
+          </p>
         </StudioField>
         <StudioField label="Category">
           <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
@@ -443,8 +513,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                   // Switching to Movement seeds its config from the current mode; anything else
                   // clears it (the server also nulls movement_config off a non-movement kind).
                   if (k.value === 'movement') {
-                    const cfg: MovementConfig = { mode: movementMode }
-                    queueSave({ timer_kind: 'movement', movement_config: cfg })
+                    saveMovement()
                   } else {
                     queueSave({ timer_kind: k.value, movement_config: null })
                   }
@@ -476,8 +545,7 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                     title={m.blurb}
                     onClick={() => {
                       setMovementMode(m.mode)
-                      const cfg: MovementConfig = { mode: m.mode }
-                      queueSave({ timer_kind: 'movement', movement_config: cfg })
+                      saveMovement({}, m.mode)
                     }}
                     className={`flex min-h-11 items-center justify-center rounded-lg border px-2 py-2 text-sm font-medium transition-colors ${
                       active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
@@ -488,7 +556,85 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 )
               })}
             </div>
-            <p className="mt-1 text-xs text-subtle">The member can still pick a different mode and preset when they start.</p>
+
+            {/* Per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). The
+                member can still adjust it at start; this is the preset it ships with. */}
+            <div className="mt-3 space-y-3">
+              {durationTuner && (
+                <>
+                  <div>
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Length</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {durationTuner.minutePresets.map((min) => (
+                        <MoveChip key={min} active={durationTuner.minutes === min} onClick={() => durationTuner.setMinutes(min)}>
+                          {min} min
+                        </MoveChip>
+                      ))}
+                      <MoveStepper
+                        label="min"
+                        value={durationTuner.minutes}
+                        onLess={() => durationTuner.setMinutes(Math.max(1, durationTuner.minutes - 5))}
+                        onMore={() => durationTuner.setMinutes(Math.min(600, durationTuner.minutes + 5))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Interval cue</p>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {durationTuner.intervalPresets.map((iv) => (
+                        <MoveChip key={iv.value} active={durationTuner.interval === iv.value} onClick={() => durationTuner.setInterval(iv.value)}>
+                          {iv.label}
+                        </MoveChip>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-2xs text-subtle">{durationTuner.intervalHint}</p>
+                  </div>
+                </>
+              )}
+
+              {movementMode === 'yoga' && (
+                <div>
+                  <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Flow</p>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {YOGA_PRESETS.map((y) => (
+                      <MoveChip key={y.kind} active={yogaKind === y.kind} title={y.blurb} onClick={() => { setYogaKind(y.kind); saveMovement({ yogaKind: y.kind }) }}>
+                        {y.label}
+                      </MoveChip>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-2xs text-subtle">{YOGA_PRESETS.find((y) => y.kind === yogaKind)?.blurb}</p>
+                </div>
+              )}
+
+              {movementMode === 'strength' && (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Shape</p>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {STRENGTH_PRESETS.map((w) => (
+                        <MoveChip key={w.kind} active={strengthKind === w.kind} title={w.blurb} onClick={() => pickStrength(w.kind)}>
+                          {w.label}
+                        </MoveChip>
+                      ))}
+                    </div>
+                    <p className="mt-1 text-2xs text-subtle">{STRENGTH_PRESETS.find((w) => w.kind === strengthKind)?.blurb}</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <MoveStepper label="Work" value={`${workSec}s`} onLess={() => { const v = clampSeconds(workSec - 5); setWorkSec(v); saveMovement({ workSec: v }) }} onMore={() => { const v = clampSeconds(workSec + 5); setWorkSec(v); saveMovement({ workSec: v }) }} />
+                    <MoveStepper label="Rest" value={restSec === 0 ? 'none' : `${restSec}s`} onLess={() => { const v = Math.max(0, restSec - 5); setRestSec(v); saveMovement({ restSec: v }) }} onMore={() => { const v = Math.min(600, restSec + 5); setRestSec(v); saveMovement({ restSec: v }) }} />
+                    <MoveStepper label="Rounds" value={String(rounds)} onLess={() => { const v = clampRounds(rounds - 1); setRounds(v); saveMovement({ rounds: v }) }} onMore={() => { const v = clampRounds(rounds + 1); setRounds(v); saveMovement({ rounds: v }) }} />
+                  </div>
+                </div>
+              )}
+
+              {movementMode === 'play' && (
+                <p className="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-subtle">
+                  An open count-up. The member starts, moves, and stops when they are done. Nothing to preset.
+                </p>
+              )}
+
+              <p className="text-xs text-subtle">This is the preset it ships with. The member can still adjust it when they start.</p>
+            </div>
           </div>
         )}
 
@@ -583,5 +729,37 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         onConfirm={remove}
       />
     </StudioWindow>
+  )
+}
+
+// A small selectable pill for the movement-tuning controls (preset shapes, lengths, cues).
+function MoveChip({ active, onClick, title, children }: { active: boolean; onClick: () => void; title?: string; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      title={title}
+      onClick={onClick}
+      className={`min-h-9 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+        active ? 'border-primary/50 bg-primary-bg text-primary-strong' : 'border-border bg-surface text-muted hover:bg-surface-elevated'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+// A compact −/value/+ stepper for a single numeric setting (Work, Rest, Rounds, length).
+function MoveStepper({ label, value, onLess, onMore }: { label: string; value: string | number; onLess: () => void; onMore: () => void }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface px-2 py-1.5 text-center">
+      <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">{label}</p>
+      <div className="mt-0.5 flex items-center justify-between gap-1">
+        <button type="button" aria-label={`Less ${label}`} onClick={onLess} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">−</button>
+        <span className="min-w-8 text-sm font-semibold tabular-nums text-text">{value}</span>
+        <button type="button" aria-label={`More ${label}`} onClick={onMore} className="h-6 w-6 rounded-md border border-border text-muted transition-colors hover:bg-surface-elevated">+</button>
+      </div>
+    </div>
   )
 }

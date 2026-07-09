@@ -11,8 +11,7 @@
 // + `secondsTarget` (from a partial log today) to resume in place: the label reads
 // "Continue Practice" and the timer opens where the member left off.
 
-import { Play } from 'lucide-react'
-import { LotusIcon } from '@/components/on-air/icons'
+import { Timer } from 'lucide-react'
 import { useMindless } from '@/components/on-air/mindless'
 import { useMovement } from '@/components/on-air/movement'
 import type { TimerKind } from '@/lib/practices'
@@ -66,14 +65,16 @@ export function PracticeTimerButton({
     }
   }
 
-  const Icon = isMovement ? Play : LotusIcon
+  // A timed practice always leads with the timer icon + "Start Practice" (a resume reads
+  // "Continue Practice"), so the affordance reads as timed at a glance — distinct from the
+  // check-off a logged practice shows (LogPracticeButton).
   return (
     <button
       type="button"
       onClick={onClick}
       className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Practice'}
+      <Timer className="h-3.5 w-3.5 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Start Practice'}
     </button>
   )
 }

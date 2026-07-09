@@ -335,6 +335,60 @@ export function buildPlan(config: MovementConfig): MovementPlan {
   }
 }
 
+// --- authoring: normalize a stored/authored config --------------------------
+
+const MOVEMENT_MODE_SET: MovementMode[] = ['walk', 'run', 'yoga', 'strength', 'stretch', 'play']
+const STRENGTH_KIND_SET: StrengthPresetKind[] = ['tabata', 'emom', 'amrap', 'circuit']
+const YOGA_KIND_SET: YogaPresetKind[] = ['yin', 'vinyasa', 'gentle']
+
+/** Clamp a minutes field to a sane 1..600 band; falls back to `dflt` for a bad value. */
+function clampMinutes(v: unknown, dflt: number): number {
+  if (!Number.isFinite(v as number)) return dflt
+  return Math.min(600, Math.max(1, Math.round(v as number)))
+}
+
+/** Clamp an optional interval-reminder (minutes between cues) to 0..60, or undefined. */
+function clampIntervalMin(v: unknown): number | undefined {
+  if (!Number.isFinite(v as number)) return undefined
+  return Math.min(60, Math.max(0, Math.round(v as number)))
+}
+
+/** Normalize + clamp an authored/stored movement_config down to ONLY the fields its mode
+ *  uses, so a creator preset persists exactly what buildPlan will read and no runaway or
+ *  cross-mode values slip into the JSON. Legacy `'workout'` maps to `'strength'`. Pure. */
+export function sanitizeMovementConfig(input: unknown): MovementConfig {
+  const raw = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>
+  const rawMode = raw.mode === 'workout' ? 'strength' : raw.mode
+  const mode: MovementMode = MOVEMENT_MODE_SET.includes(rawMode as MovementMode)
+    ? (rawMode as MovementMode)
+    : 'walk'
+  switch (mode) {
+    case 'walk':
+      return { mode, walkMinutes: clampMinutes(raw.walkMinutes, 20), walkIntervalMin: clampIntervalMin(raw.walkIntervalMin) }
+    case 'run':
+      return { mode, runMinutes: clampMinutes(raw.runMinutes, 20), runIntervalMin: clampIntervalMin(raw.runIntervalMin) }
+    case 'yoga':
+      return { mode, yogaKind: YOGA_KIND_SET.includes(raw.yogaKind as YogaPresetKind) ? (raw.yogaKind as YogaPresetKind) : 'gentle' }
+    case 'stretch':
+      return { mode, stretchMinutes: clampMinutes(raw.stretchMinutes, 10), stretchIntervalMin: clampIntervalMin(raw.stretchIntervalMin) }
+    case 'play':
+      return { mode }
+    case 'strength': {
+      const base = strengthPresetByKind((raw.strengthKind ?? raw.workoutKind) as string)
+      const kind: StrengthPresetKind = STRENGTH_KIND_SET.includes(base.kind) ? base.kind : 'tabata'
+      return {
+        mode,
+        strengthKind: kind,
+        workSec: clampSeconds((raw.workSec as number) ?? base.workSec),
+        restSec: Math.max(0, Math.min(600, Math.round((raw.restSec as number) ?? base.restSec))),
+        rounds: clampRounds((raw.rounds as number) ?? base.rounds),
+      }
+    }
+    default:
+      return { mode: 'walk', walkMinutes: 20 }
+  }
+}
+
 // --- the runtime read -------------------------------------------------------
 
 /** Where `elapsedSec` lands in a plan. PURE — the live component calls this every

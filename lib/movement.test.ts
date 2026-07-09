@@ -14,6 +14,7 @@ import {
   yogaPresetByKind,
   clampRounds,
   clampSeconds,
+  sanitizeMovementConfig,
 } from './movement'
 
 describe('modes + presets', () => {
@@ -212,5 +213,40 @@ describe('phaseAt', () => {
     expect(phaseAt(walk, 100).phase.kind).toBe('work')
     expect(phaseAt(walk, 100).remaining).toBe(10 * 60 - (100 - 3))
     expect(phaseAt(walk, 10 * 60 + 3 + 1).done).toBe(true)
+  })
+})
+
+describe('sanitizeMovementConfig (creator preset normalization, ADR-592)', () => {
+  it('keeps a full Strength preset and drops cross-mode fields', () => {
+    const out = sanitizeMovementConfig({ mode: 'strength', strengthKind: 'circuit', workSec: 45, restSec: 15, rounds: 6, walkMinutes: 999 })
+    expect(out).toEqual({ mode: 'strength', strengthKind: 'circuit', workSec: 45, restSec: 15, rounds: 6 })
+  })
+
+  it('maps the legacy "workout" mode + workoutKind to strength', () => {
+    const out = sanitizeMovementConfig({ mode: 'workout', workoutKind: 'emom' })
+    expect(out.mode).toBe('strength')
+    expect(out.strengthKind).toBe('emom')
+  })
+
+  it('clamps runaway Strength values into their bands', () => {
+    const out = sanitizeMovementConfig({ mode: 'strength', strengthKind: 'tabata', workSec: 999999, restSec: -50, rounds: 9999 })
+    expect(out.workSec).toBe(clampSeconds(999999))
+    expect(out.restSec).toBe(0)
+    expect(out.rounds).toBe(clampRounds(9999))
+  })
+
+  it('keeps a Walk length + interval and clamps them', () => {
+    expect(sanitizeMovementConfig({ mode: 'walk', walkMinutes: 30, walkIntervalMin: 10 })).toEqual({ mode: 'walk', walkMinutes: 30, walkIntervalMin: 10 })
+    expect(sanitizeMovementConfig({ mode: 'walk', walkMinutes: 99999 }).walkMinutes).toBe(600)
+  })
+
+  it('falls back to a Walk default for a bad/empty config', () => {
+    expect(sanitizeMovementConfig(null)).toEqual({ mode: 'walk', walkMinutes: 20, walkIntervalMin: undefined })
+    expect(sanitizeMovementConfig({ mode: 'nonsense' }).mode).toBe('walk')
+  })
+
+  it('coerces an unknown Yoga kind to gentle', () => {
+    expect(sanitizeMovementConfig({ mode: 'yoga', yogaKind: 'bogus' }).yogaKind).toBe('gentle')
+    expect(sanitizeMovementConfig({ mode: 'yoga', yogaKind: 'yin' }).yogaKind).toBe('yin')
   })
 })
