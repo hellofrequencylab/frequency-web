@@ -418,6 +418,28 @@ export async function getSpaceReviews(spaceId: string): Promise<SpaceReviewsData
   }
 }
 
+/** The signed-in viewer's OWN review of a Space (rating + body), or null when they have none. Lets the
+ *  Reviews tab prefill the form so a member edits their existing review instead of adding a duplicate.
+ *  Fail-safe to null. */
+export async function getMySpaceReview(
+  spaceId: string,
+  viewerId: string | null,
+): Promise<{ rating: number; body: string } | null> {
+  if (!viewerId) return null
+  try {
+    const { data } = await anyDb()
+      .from('space_reviews')
+      .select('rating, body')
+      .eq('space_id', spaceId)
+      .eq('author_profile_id', viewerId)
+      .maybeSingle()
+    if (!data) return null
+    return { rating: Number((data as Row).rating) || 0, body: str((data as Row).body) }
+  } catch {
+    return null
+  }
+}
+
 /** The operator FAQ for a Space, ordered by position. Fail-safe to []. */
 export async function getSpaceFaqs(spaceId: string): Promise<SpaceFaqItem[]> {
   try {
