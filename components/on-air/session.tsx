@@ -241,6 +241,7 @@ export function OnAirSession({
   secondsTarget,
   autoStart = false,
   resumeRecord,
+  warmupMessageOverride,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -264,6 +265,9 @@ export function OnAirSession({
    *  When present and no localStorage record exists, the engine resumes it as RUNNING on mount
    *  (cross-device), never as a prompt. */
   resumeRecord?: LiveSessionRecord | null
+  /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
+   *  pre-roll shows THIS instead of the launched practice's own warm-up message. */
+  warmupMessageOverride?: string | null
   /** Overlay mode (the global Mindless launcher): when set, leaving the session
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
@@ -1174,9 +1178,10 @@ export function OnAirSession({
                   Warm up
                 </p>
                 <p className="text-8xl font-semibold tabular-nums text-primary-strong">{preroll}</p>
-                {/* The creator's warm-up message (ADR-592), shown as the timer counts in. */}
-                {practice?.warmupMessage && (
-                  <p className="mt-3 max-w-sm text-balance text-base font-medium text-text/80">{practice.warmupMessage}</p>
+                {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
+                    practice's own creator-authored message; shown as the timer counts in. */}
+                {(warmupMessageOverride ?? practice?.warmupMessage) && (
+                  <p className="mt-3 max-w-sm text-balance text-base font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
                 )}
               </>
             ) : (

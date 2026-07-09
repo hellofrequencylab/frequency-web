@@ -79,6 +79,9 @@ export interface MindlessOpenOpts {
    *  countdown immediately, auto-configured to the practice's type + duration. The manual "open the
    *  timer from the On Air page" entry points leave this off so they still show setup. */
   autoStart?: boolean
+  /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
+   *  pre-roll shows THIS instead of the practice's own warm-up message. */
+  warmupMessage?: string
 }
 
 interface MindlessApi {
@@ -118,6 +121,8 @@ type OverlayState =
       forceMode?: TimerMode
       /** A practice-select launch auto-starts the countdown (skips setup). */
       autoStart?: boolean
+      /** A per-step warm-up message override (P5), carried to the session's pre-roll. */
+      warmupMessage?: string
     }
   | {
       phase: 'ready'
@@ -129,6 +134,8 @@ type OverlayState =
       resume?: ResumeInfo
       /** A practice-select launch auto-starts the countdown (skips setup). */
       autoStart?: boolean
+      /** A per-step warm-up message override (P5), passed to the session's pre-roll. */
+      warmupMessage?: string
     }
   | { phase: 'error' }
 
@@ -198,6 +205,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       resume,
       forceMode,
       autoStart: forceMode ? false : opts?.autoStart,
+      // A crash-recovery open (forceMode) carries no override; a normal open passes it through.
+      warmupMessage: forceMode ? undefined : opts?.warmupMessage,
     })
   }, [])
 
@@ -221,6 +230,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const requestedResume = state.resume
     const forceMode = state.forceMode
     const requestedAutoStart = state.autoStart
+    const requestedWarmup = state.warmupMessage
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -237,6 +247,7 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         movementMode: forcedMovementMode,
         resume: requestedResume,
         autoStart: requestedAutoStart,
+        warmupMessage: requestedWarmup,
       })
     })()
     return () => {
@@ -355,6 +366,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             autoStart={state.autoStart}
             // The member's warm-up length pref, shared with the sit (item #10).
             warmupSec={state.data.prefs.warmupSec}
+            // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
+            warmupMessageOverride={state.warmupMessage}
             // Cross-device resume (ADR-521): the server active run, if it is a movement run.
             resumeRecord={serverResume?.kind === 'movement' ? serverResume : null}
             onExit={close}
@@ -373,6 +386,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             secondsTarget={state.resume?.secondsTarget}
             // A practice-select launch skips setup and begins the countdown immediately.
             autoStart={state.autoStart}
+            // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
+            warmupMessageOverride={state.warmupMessage}
             // Cross-device resume (ADR-521): the server active run, if it is a sit.
             resumeRecord={serverResume?.kind === 'mindless' ? serverResume : null}
             onExit={close}

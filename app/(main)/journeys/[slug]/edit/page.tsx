@@ -50,6 +50,11 @@ export default async function EditJourneyPage({ params }: { params: Promise<{ sl
       extraCredit,
       bonusZaps,
       anchor: settings?.anchor === true,
+      // Pass the raw anchor + P5 warm-up override through so the editor can seed each field.
+      settings: {
+        anchor: settings?.anchor === true,
+        warmup_message: typeof settings?.warmup_message === 'string' ? settings.warmup_message : undefined,
+      },
     }
   })
 

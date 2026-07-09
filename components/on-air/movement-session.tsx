@@ -166,6 +166,7 @@ export function MovementSession({
   practicedToday = 0,
   autoStart = false,
   warmupSec: warmupSecProp,
+  warmupMessageOverride,
   resumeRecord,
   onExit,
   mode: doorMode,
@@ -190,6 +191,9 @@ export function MovementSession({
   practicedToday?: number
   /** The member's warm-up length pref (seconds), shared with the sit (item #10). Default 5. */
   warmupSec?: number
+  /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
+   *  pre-roll shows THIS instead of the launched practice's own warm-up message. */
+  warmupMessageOverride?: string | null
   /** The server-authoritative active session (ADR-521): when present and no localStorage record
    *  exists, the run resumes as RUNNING on mount (cross-device), never a prompt. */
   resumeRecord?: LiveSessionRecord | null
@@ -883,9 +887,10 @@ export function MovementSession({
               <div className="flex h-56 w-56 items-center justify-center rounded-full ring-4 ring-move/40">
                 <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
               </div>
-              {/* The creator's warm-up message (ADR-592), shown as the timer counts in. */}
-              {practice?.warmupMessage ? (
-                <p className="mt-1 max-w-sm text-balance text-base font-medium text-text/80">{practice.warmupMessage}</p>
+              {/* The warm-up message (ADR-592): a Journey step's override (P5) wins over the
+                  practice's own message; shown as the timer counts in. */}
+              {(warmupMessageOverride ?? practice?.warmupMessage) ? (
+                <p className="mt-1 max-w-sm text-balance text-base font-medium text-text/80">{warmupMessageOverride ?? practice?.warmupMessage}</p>
               ) : (
                 // A fixed-height spacer matches the running screen's phase chip + Next lines so
                 // the ring does not jump when the run begins.

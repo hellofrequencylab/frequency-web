@@ -22,8 +22,10 @@ import {
   populateWeekAction,
   setBlockPracticeAction,
   setLeafAnchorAction,
+  setLeafWarmupMessageAction,
 } from '@/app/(main)/journeys/[slug]/edit/actions'
 import { isError, type ActionResult } from '@/lib/action-result'
+import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import type { CheckConfig } from '@/lib/journeys/store'
 import { PillarChip } from './pillar-chip'
 
@@ -51,8 +53,9 @@ export interface EditorBlock {
    *  Optional + read defensively so a loaded block that doesn't surface it yet just reads false. */
   anchor?: boolean
   /** The raw block settings, when the loader passes them through. Lets the Anchor flag be read
-   *  defensively via `settings.anchor` even when `anchor` isn't mapped explicitly. */
-  settings?: { anchor?: boolean } | null
+   *  defensively via `settings.anchor` (and the P5 warm-up override via `settings.warmup_message`)
+   *  even when they aren't mapped explicitly. */
+  settings?: { anchor?: boolean; warmup_message?: string } | null
 }
 
 /** Whether a block is the daily Anchor (Master Template). Reads the mapped `anchor` first, then
@@ -130,16 +133,19 @@ function SlotCoaching({
   slug,
   itemId,
   initialPrompt,
+  initialWarmup,
   pillarName,
   disabled,
 }: {
   slug: string
   itemId: string
   initialPrompt: string | null
+  initialWarmup: string | null
   pillarName: string | null
   disabled: boolean
 }) {
   const [value, setValue] = useState(initialPrompt ?? '')
+  const [warmup, setWarmup] = useState(initialWarmup ?? '')
   const [busy, startBusy] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const draft = () => {
@@ -177,6 +183,19 @@ function SlotCoaching({
         rows={2}
         placeholder="What Vera nudges them with when they reach this practice. Draft it with Vera or write your own."
         className="mt-1.5 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
+      />
+      {/* Per-step warm-up override (ADR-592, P5): shown in the timer pre-roll for this step, over
+          the practice's own warm-up message. Blank = the practice's message (or a silent pre-roll). */}
+      <label className="mt-2 block text-2xs font-semibold uppercase tracking-wide text-subtle">Warm-up message for this step</label>
+      <textarea
+        value={warmup}
+        disabled={disabled}
+        onChange={(e) => setWarmup(e.target.value)}
+        onBlur={() => setLeafWarmupMessageAction(slug, itemId, warmup)}
+        rows={2}
+        maxLength={WARMUP_MESSAGE_MAX}
+        placeholder="Shown as the timer counts in, just for this Journey step. Leave blank to use the practice's own."
+        className="mt-1 w-full resize-y rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:border-primary focus:outline-none"
       />
       {error && <p className="mt-1 text-2xs text-danger">{error}</p>}
     </div>
@@ -557,6 +576,7 @@ export function JourneyEditor({
                   slug={slug}
                   itemId={l.id}
                   initialPrompt={l.coachingPrompt}
+                  initialWarmup={l.settings?.warmup_message ?? null}
                   pillarName={l.domainId ? pillarNameById.get(l.domainId) ?? null : null}
                   disabled={pending}
                 />

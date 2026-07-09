@@ -32,6 +32,8 @@ interface MovementApi {
     secondsTarget?: number
     /** A practice-select launch auto-starts the movement timer (skips setup). */
     autoStart?: boolean
+    /** A per-step warm-up message override (ADR-592, P5), forwarded to the pre-roll. */
+    warmupMessage?: string
   }) => void
   close: () => void
 }
@@ -50,6 +52,7 @@ export function useMovement(): MovementApi {
         resumeFromSec: opts?.resumeFromSec,
         secondsTarget: opts?.secondsTarget,
         autoStart: opts?.autoStart,
+        warmupMessage: opts?.warmupMessage,
       }),
     [mindless],
   )
