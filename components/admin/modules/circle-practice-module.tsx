@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Sparkles } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { SetCirclePractice } from '@/components/practice/set-circle-practice'
 import {
   getCirclePracticeAssignData,
@@ -48,26 +46,13 @@ export function CirclePracticeModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('circle.practice')
-  const Icon = mod?.Icon ?? Sparkles
-
   return (
-    <div className="@container space-y-6">
-      <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? "This week's practice"}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
-        <SetCirclePractice
+    <div className="@container">
+      <SetCirclePractice
           circleId={data.circleId}
           library={data.library}
-          current={data.activePracticeId ?? undefined}
-        />
-      </section>
+        current={data.activePracticeId ?? undefined}
+      />
     </div>
   )
 }

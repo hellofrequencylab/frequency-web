@@ -44,15 +44,10 @@ export function CircleQuestModule() {
   }
   if (!data) return null // not permitted / not found → no chrome
 
-  // No card chrome — sits flush on the panel's white surface.
+  // No card chrome — sits flush on the panel's white surface. The rail supplies the title ("Circle Quest").
   return (
     <section className="space-y-5">
-      <header className="space-y-1">
-        <h3 className="text-sm font-bold text-text">Circle Quest</h3>
-        <p className="text-sm text-muted">
-          The journeys and practices your group has taken on.
-        </p>
-      </header>
+      <p className="text-sm text-muted">The journeys and practices your group has taken on.</p>
 
       <QuestList label="Journeys" items={data.adoptedJourneys} empty="No journeys adopted yet" />
       <QuestList label="Practices" items={data.adoptedPractices} empty="No practices adopted yet" />

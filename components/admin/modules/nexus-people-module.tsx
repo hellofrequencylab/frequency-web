@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Users } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { getNexusPeopleData, type NexusPeopleData } from '@/app/(main)/nexuses/admin-actions'
 
 // In-place "People" module (ADMIN-RAIL.md Phase 7, the 'people' spine cell for nexuses). Renders in
@@ -42,20 +40,9 @@ export function NexusPeopleModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('nexus.people')
-  const Icon = mod?.Icon ?? Users
-
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'People'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         {/* Counts — the nexus at a glance. */}
         <div className="grid grid-cols-3 gap-2">
           {[

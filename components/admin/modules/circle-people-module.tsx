@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Users } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { HostInviteButton } from '@/components/circles/host-invite-button'
 import { HostInviteEmail } from '@/components/circles/host-invite-email'
 import { getCirclePeopleData, type CirclePeopleData } from '@/app/(main)/circles/admin-actions'
@@ -50,22 +48,12 @@ export function CirclePeopleModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('circle.people')
-  const Icon = mod?.Icon ?? Users
   const cap = data.memberCap
   const fillPct = cap && cap > 0 ? Math.min(100, Math.round((data.memberCount / cap) * 100)) : null
 
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'People'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         {/* Counts — the roster at a glance. */}
         <div className="grid grid-cols-3 gap-2">
           {[

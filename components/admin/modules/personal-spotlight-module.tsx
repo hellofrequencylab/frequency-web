@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Loader2, Sparkles } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
+import { Sparkles } from 'lucide-react'
+import { Toggle } from '@/components/admin/toggle'
 import { getProfileRailData } from '@/app/(main)/settings/rail-getters'
 import { setMySpotlightEnabled, setSpotlightPublished } from '@/app/(main)/settings/profile/actions'
 
 // Personal "You" module (ADR-515 Phase 2): a CONDENSED Spotlight section for the admin rail. The big
 // Spotlight block (theme, classic builder) stays on /settings/profile; here the rail carries only the
-// essentials — turn it on, jump to the block editor, and publish/unpublish. A THIN wrapper: it self-fetches
-// the read-gated getProfileRailData (which already carries the spotlight flags + the handle) and reuses the
-// EXISTING setMySpotlightEnabled / setSpotlightPublished actions (each re-checks auth + ownership server-
-// side). Fail-safe: getProfileRailData returns null when signed out, and a member who cannot enable
-// Spotlight (canEnableSpotlight === false) sees nothing, so the section never nudges a member who lacks it.
+// essentials — a microtoggle to turn it on, a publish microtoggle, and a jump to the block editor. A THIN
+// wrapper: it self-fetches read-gated getProfileRailData and reuses the EXISTING setMySpotlightEnabled /
+// setSpotlightPublished actions (each re-checks auth + ownership server-side). The rail supplies the title.
+// Fail-safe: getProfileRailData returns null when signed out; a member who cannot enable Spotlight sees
+// nothing, so the section never nudges a member who lacks it.
 
 type Data = NonNullable<Awaited<ReturnType<typeof getProfileRailData>>>
 
@@ -22,6 +22,7 @@ export function PersonalSpotlightModule() {
   const [loading, setLoading] = useState(true)
   const [enabled, setEnabled] = useState(false)
   const [published, setPublished] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,31 +42,35 @@ export function PersonalSpotlightModule() {
     }
   }, [])
 
-  const mod = moduleById('account.spotlight')
-  const Icon = mod?.Icon ?? Sparkles
-
   async function toggleEnable(next: boolean) {
     setPending(true)
+    setSaveState('saving')
     setError('')
     try {
       await setMySpotlightEnabled(next)
       setEnabled(next)
       if (!next) setPublished(false) // disabling also unpublishes (the server does the same)
+      setSaveState('saved')
+      setTimeout(() => setSaveState('idle'), 1500)
     } catch (err) {
+      setSaveState('idle')
       setError(err instanceof Error ? err.message : 'Could not update your Spotlight.')
     } finally {
       setPending(false)
     }
   }
 
-  async function togglePublish() {
-    const next = !published
+  async function togglePublish(next: boolean) {
     setPending(true)
+    setSaveState('saving')
     setError('')
     try {
       await setSpotlightPublished(next)
       setPublished(next)
+      setSaveState('saved')
+      setTimeout(() => setSaveState('idle'), 1500)
     } catch (err) {
+      setSaveState('idle')
       setError(err instanceof Error ? err.message : 'Could not update your Spotlight.')
     } finally {
       setPending(false)
@@ -82,63 +87,44 @@ export function PersonalSpotlightModule() {
 
   return (
     <section className="min-w-0 space-y-3">
-      <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-          <Icon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          {mod?.label ?? 'Spotlight'}
-        </h3>
-      </header>
-
-      {!enabled ? (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
-          <p className="text-sm text-muted">
-            A shareable page that is all yours. Nothing goes public until you publish it.
-          </p>
-          <button
-            type="button"
-            onClick={() => toggleEnable(true)}
+      <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="min-w-0 text-sm text-text">Show your Spotlight page</span>
+          <Toggle
+            checked={enabled}
+            onChange={toggleEnable}
+            ariaLabel="Show your Spotlight page"
+            saveState={enabled === data.initial.spotlightEnabled ? 'idle' : saveState}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50 motion-reduce:transition-none"
-          >
-            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            Turn on your Spotlight
-          </button>
+          />
         </div>
-      ) : (
-        <div className="space-y-3 rounded-2xl border border-border bg-surface-elevated/40 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span
-              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                published ? 'bg-success-bg text-success' : 'bg-surface-elevated text-muted'
-              }`}
-            >
-              {published ? 'Published' : 'Draft'}
-            </span>
-            <button
-              type="button"
-              onClick={togglePublish}
-              disabled={pending}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 motion-reduce:transition-none ${
-                published
-                  ? 'border border-border-strong text-text hover:bg-surface-elevated'
-                  : 'bg-primary text-on-primary hover:bg-primary-hover'
-              }`}
-            >
-              {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              {published ? 'Unpublish' : 'Publish'}
-            </button>
-          </div>
 
-          {handle && (
-            <Link
-              href={`/people/${handle}`}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
-            </Link>
-          )}
-        </div>
-      )}
+        {enabled && (
+          <>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+              <span className="min-w-0 text-sm text-text">
+                Published <span className="text-subtle">{published ? '' : '(draft only)'}</span>
+              </span>
+              <Toggle
+                checked={published}
+                onChange={togglePublish}
+                ariaLabel="Publish your Spotlight page"
+                saveState={saveState}
+                disabled={pending}
+              />
+            </div>
+
+            {handle && (
+              <Link
+                href={`/people/${handle}`}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover motion-reduce:transition-none"
+              >
+                <Sparkles className="h-3.5 w-3.5" aria-hidden /> Build your page
+              </Link>
+            )}
+          </>
+        )}
+      </div>
 
       {error && <p className="text-xs text-danger">{error}</p>}
     </section>

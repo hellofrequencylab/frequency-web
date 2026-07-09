@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { BarChart3 } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { getNexusInsightsData, type NexusInsightsData } from '@/app/(main)/nexuses/admin-actions'
 
 // In-place "Insights" module (ADMIN-RAIL.md Phase 7, the 'insights' spine cell for nexuses). Renders
@@ -41,8 +39,6 @@ export function NexusInsightsModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('nexus.insights')
-  const Icon = mod?.Icon ?? BarChart3
   const fillPct = data.memberCap > 0 ? Math.min(100, Math.round((data.totalMembers / data.memberCap) * 100)) : null
 
   const stats = [
@@ -55,14 +51,6 @@ export function NexusInsightsModule() {
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'Insights'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         <div className="grid grid-cols-2 gap-2 @sm:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
