@@ -213,7 +213,10 @@ export default async function SpaceProfileChromeLayout({
     : {}
   // The action cluster's layout: `row` (default) lays the buttons side by side; `stacked` lays them in a
   // column. Applied to the desktop identity action row (the mobile band stays its own fixed 3-up layout).
-  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-wrap items-center'
+  // The row NEVER wraps its buttons onto a second line (flex-nowrap): when a long name crowds the row, the
+  // name column (min-w-0) gives way and wraps instead, so the buttons stay one clean row (owner ask). An
+  // operator who wants them vertical picks `stacked`.
+  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-nowrap items-center'
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
@@ -238,7 +241,9 @@ export default async function SpaceProfileChromeLayout({
         label={manage.staffViewing ? 'Edit Space (staff)' : 'Edit Space'}
         icon={<SlidersHorizontal className={iconOnly ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />}
         iconOnly={iconOnly}
-        className={cn(iconOnly ? ghostIconClasses : ownerToolClasses(onInk), extra)}
+        // Desktop (non-icon) tool matches the primary CTA height (h-9) and never shrinks, so the three
+        // hero buttons read as one even row. The mobile icon-only variant keeps its own square target.
+        className={cn(iconOnly ? ghostIconClasses : cn(ownerToolClasses(onInk), 'h-9 shrink-0'), extra)}
       />
     ) : null
 
@@ -265,18 +270,23 @@ export default async function SpaceProfileChromeLayout({
   // The dominant primary CTA + the Connect (QR) affordance, factored out so both the desktop action row and
   // the mobile action card render the identical buttons. `onInk` swaps Connect to on-cover styling; the
   // primary CTA keeps its accent everywhere.
+  // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit Space line up as one even
+  // row (the mobile band renders its own separate buttons, untouched).
   const primaryCta = () => (
-    <Link href={ctaHref} className={primaryCtaClasses} {...ctaLinkProps}>
+    <Link href={ctaHref} className={cn(primaryCtaClasses, 'h-9 shrink-0')} {...ctaLinkProps}>
       {ctaLabel}
     </Link>
   )
+  // The Connect affordance shows the "QR" label IN FRONT of the QR glyph (owner ask), so it reads as a
+  // labelled button, not a bare icon.
   const connectLink = (onInk = false) => (
     <Link
       href="/codes"
       aria-label={`Connect with ${brandName}`}
       title="Connect"
-      className={onInk ? cn(onInkSecondaryClasses, 'px-2.5') : buttonClasses('secondary', 'sm', 'px-2.5')}
+      className={cn(onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm'), 'h-9 shrink-0 gap-1.5')}
     >
+      QR
       <QrCode className="h-4 w-4" aria-hidden />
     </Link>
   )
@@ -417,16 +427,17 @@ export default async function SpaceProfileChromeLayout({
         {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
             Follow lives inside the name lockup, so this is suppressed there. */}
         {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="flex items-end justify-between gap-x-6 gap-y-4">
           <div className="flex min-w-0 items-end gap-4">
             <div className="shrink-0">
               <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
             </div>
             <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
           </div>
-          {/* Desktop only: the action row overlays the cover bottom-right. On mobile it moves to the white
-              action card under the cover, so the phone hero holds only the identity. */}
-          <div className="hidden pb-1 sm:block">{identityActions(heroOnInk)}</div>
+          {/* Desktop only: the action row overlays the cover bottom-right. It never wraps to a second row —
+              shrink-0 keeps it intact and the name lockup (min-w-0) yields instead. On mobile it moves to
+              the white action card under the cover, so the phone hero holds only the identity. */}
+          <div className="hidden shrink-0 pb-1 sm:block">{identityActions(heroOnInk)}</div>
         </div>
         {/* Below lg (mobile + narrow desktop): the tagline drops to its OWN full-width row spanning the
             bottom, below the identity + the right-side action buttons, so it reads as a full line instead
@@ -466,14 +477,14 @@ export default async function SpaceProfileChromeLayout({
         // name lockup + actions, cleared BELOW the hanging chip with top padding. Name on the left, actions
         // pushed right on desktop; on mobile the name lockup stays and the actions drop to the white card
         // below (mobileActionBand).
-        <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
+        <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:items-end sm:justify-between sm:gap-x-6 sm:pt-16">
           <div className="min-w-0">
             {/* Mobile only: Follow above the identity (matches the Hero size). Desktop shows it inside the
                 lockup instead. */}
             {viewerProfileId && <div className="mb-2 sm:hidden">{followButton(false)}</div>}
             {nameLockup(false)}
           </div>
-          <div className="hidden sm:block">{identityActions(false)}</div>
+          <div className="hidden shrink-0 sm:block">{identityActions(false)}</div>
         </div>
       )}
       {/* Mobile-only white action card under the cover (both Hero and Header sizes). */}
