@@ -12819,3 +12819,40 @@ profile drives is the established model, and the chooser is the override.
 (`MaterializeOptions.mood`, `writeProfileDataAndLayout` writes `preferences.theme`, `applyIntake` passes the
 mood). No new schema (preferences.theme already exists). Colour-free themes, so the standard palette is
 untouched (the operator's original constraint).
+
+## ADR-584: Business Community feed (Phase 1) — the Community tab
+
+**Status:** Accepted · first phase of the business Feed page. Builds on the Space Updates backend
+(ADR-476/472 + the 2026-07-01 member-interaction migration). Next free number after ADR-583.
+
+**Context.** A business Space should have a Facebook/Yelp-style feed (the "Community" tab) where the
+business posts and members react + comment, with the existing entity-blocks profile as the "About" home.
+The interaction BACKEND already existed and is LIVE in prod (verified): `space_updates` (brand posts
+anchored to a `public.posts` row of `post_type='space_update'`), the `is_space_update_post` RLS carve-out
+letting members react/comment through `post_reactions` / `posts.parent_id`, and the server actions
+`createSpaceUpdate` / `reactToSpaceUpdate` / `commentOnSpaceUpdate`. Phase 1 wires the UI + adds the tab.
+
+**Decision (Phase 1 scope).**
+1. **Public read, followers-only interaction.** Everyone sees the Community tab, every post, comment, and
+   reaction (a public business page). Only FOLLOWERS may react + comment; an OPERATOR (owner/admin/editor)
+   may always interact on their own wall (so the business can reply). Enforced in
+   `reactToSpaceUpdate` / `commentOnSpaceUpdate` via a new `canInteractWithSpace(spaceId, profileId)` =
+   `isFollowing OR operator`; the anchor's `scope_id` gives the space id. The DB RLS stays member-level; the
+   action layer narrows it to followers.
+2. **One batched feed read.** `getSpaceCommunityFeed(spaceId, viewerId)` reuses `getSpaceUpdates` then
+   batch-loads reaction aggregates (+ the viewer's own reactions) and comment threads over every anchor in
+   two `IN` queries (no N+1). Fail-safe to empty interaction.
+3. **The tab + page.** `buildSpaceProfileNav` adds a "Community" tab (always present, public); the route
+   `(profile)/community/page.tsx` renders `SpaceCommunityFeed` — the operator composer (createSpaceUpdate),
+   post cards with the curated reaction bar + comment thread + a follower-gated comment box, and a
+   "Follow to join the conversation" / "Sign in" prompt for non-followers. Reuses `lib/feed/reactions.ts`
+   + `FollowSpaceButton`.
+
+**Deferred (Phase 2+):** member-authored top-level wall posts + the business on/off toggle; a Reviews tab
+(the `space_reviews` backend is already built); follow → notification fan-out on a new post; pinned posts /
+polls / offers; realtime live updates.
+
+**Consequences.** `lib/spaces/content-actions.ts` (followers gate), `lib/spaces/content-data.ts`
+(`getSpaceCommunityFeed`), `lib/spaces/profile-nav.ts` (tab), `app/(main)/spaces/[slug]/(profile)/community/page.tsx`,
+`components/spaces/community/space-community-feed.tsx`. No migration (schema already live). The About home is
+untouched.

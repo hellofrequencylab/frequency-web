@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
-import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { getVisibleSpaceBySlug, getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { isFollowing } from '@/lib/spaces/follows'
 import { isReactionKey } from '@/lib/feed/reactions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
@@ -310,24 +311,36 @@ export async function hideSpaceReview(slug: string, id: string): Promise<ActionR
 // createReply, which carry the Crew+ + circle-scope + gamification rules the owner said must not
 // apply here. The community feed's own gate is untouched.
 
-/** Walk a post up to its root to confirm it belongs to a space_update thread. Returns the resolved
- *  { rootId, isSpaceUpdate } or null when the post is missing. Bounded walk (Update threads are 2
- *  levels; capped at 10 defensively). Mirrors the DB helper is_space_update_post so the app gate and
- *  the RLS gate agree. */
-async function isSpaceUpdateThread(postId: string): Promise<boolean> {
+/** Walk a post up to its ROOT anchor to confirm it belongs to a space_update thread, and return that
+ *  Space's id (the anchor's scope_id) so interaction can be gated on it. Returns null when the post is
+ *  missing or does not root at a space_update anchor. Bounded walk (Update threads are 2 levels; capped
+ *  at 10 defensively). Mirrors the DB helper is_space_update_post so the app gate and the RLS gate agree. */
+async function spaceUpdateThreadSpaceId(postId: string): Promise<string | null> {
   let current: string | null = postId
   for (let i = 0; i < 10 && current; i++) {
     const { data } = await db()
       .from('posts')
-      .select('id, parent_id, post_type')
+      .select('id, parent_id, post_type, scope_id')
       .eq('id', current)
       .maybeSingle()
-    const row = data as { id: string; parent_id: string | null; post_type: string } | null
-    if (!row) return false
-    if (row.post_type === 'space_update') return true
+    const row = data as { id: string; parent_id: string | null; post_type: string; scope_id: string | null } | null
+    if (!row) return null
+    if (row.post_type === 'space_update') return row.scope_id ?? null
     current = row.parent_id
   }
-  return false
+  return null
+}
+
+/** Whether a signed-in member may REACT or COMMENT on this Space's Community feed (owner decision +
+ *  2026-07 followers-only rule): a FOLLOWER of the Space, OR an OPERATOR of it (owner / admin / editor,
+ *  so the business can always reply on its own wall without following itself). A non-following visitor
+ *  is refused at the action layer (the DB RLS is member-level; this narrows it to followers). */
+async function canInteractWithSpace(spaceId: string, profileId: string): Promise<boolean> {
+  if (await isFollowing(spaceId, profileId)) return true
+  const space = await getSpaceById(spaceId)
+  if (!space) return false
+  const caps = await getSpaceCapabilities(space, profileId)
+  return caps.canEditProfile
 }
 
 /**
@@ -345,7 +358,9 @@ export async function reactToSpaceUpdate(
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to react.')
   if (!isReactionKey(reactionType)) return fail('That reaction is not available.')
-  if (!(await isSpaceUpdateThread(postId))) return fail('That update is not available.')
+  const spaceId = await spaceUpdateThreadSpaceId(postId)
+  if (!spaceId) return fail('That update is not available.')
+  if (!(await canInteractWithSpace(spaceId, profileId))) return fail('Follow this space to join the conversation.')
 
   if (activate) {
     // Idempotent add: upsert on the (post, profile, reaction) unique key so a double-tap is a no-op.
@@ -385,7 +400,9 @@ export async function commentOnSpaceUpdate(
 
   const trimmed = body.trim().slice(0, 5000)
   if (!trimmed) return fail('Write something first.')
-  if (!(await isSpaceUpdateThread(parentPostId))) return fail('That update is not available.')
+  const spaceId = await spaceUpdateThreadSpaceId(parentPostId)
+  if (!spaceId) return fail('That update is not available.')
+  if (!(await canInteractWithSpace(spaceId, profileId))) return fail('Follow this space to join the conversation.')
 
   // Inherit scope + visibility from the parent so the reply sits in the same thread.
   const { data: parent } = await db()

@@ -13,12 +13,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Mock seams ────────────────────────────────────────────────────────────────────────────────────
 let currentProfileId: string | null = 'me'
+// The followers-only gate (2026-07): a signed-in member may react/comment only when they FOLLOW the
+// Space (or are an operator). These stubs drive the follow + operator state per test.
+let currentFollowing = true
+let currentCanEdit = false
 vi.mock('@/lib/auth', () => ({
   getMyProfileId: async () => currentProfileId,
   getCallerProfile: async () => (currentProfileId ? { id: currentProfileId } : null),
 }))
-vi.mock('@/lib/spaces/store', () => ({ getVisibleSpaceBySlug: async () => null }))
-vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: false }) }))
+vi.mock('@/lib/spaces/store', () => ({
+  getVisibleSpaceBySlug: async () => null,
+  getSpaceById: async () => ({ id: 'space-1', slug: 'willow', ownerProfileId: 'owner' }),
+}))
+vi.mock('@/lib/spaces/entitlements', () => ({ getSpaceCapabilities: async () => ({ canEditProfile: currentCanEdit }) }))
+vi.mock('@/lib/spaces/follows', () => ({ isFollowing: async () => currentFollowing }))
 vi.mock('next/cache', () => ({ revalidatePath: () => {} }))
 
 // A tiny stub of the admin client the actions reach through db(). We model just the two shapes the
@@ -72,6 +80,8 @@ import { isError } from '@/lib/action-result'
 
 beforeEach(() => {
   currentProfileId = 'me'
+  currentFollowing = true
+  currentCanEdit = false
   posts = {
     // A space_update anchor and a comment nested under it (post_type 'feed', parent = the anchor).
     anchor: { id: 'anchor', parent_id: null, post_type: 'space_update', scope_id: 'space-1', visibility: 'public' },
@@ -118,6 +128,20 @@ describe('reactToSpaceUpdate (any signed-in member; space_update thread only)', 
     const r = await reactToSpaceUpdate('anchor', 'not-an-emoji', true)
     expect(isError(r)).toBe(true)
   })
+
+  it('refuses a signed-in member who does NOT follow the space (followers-only)', async () => {
+    currentFollowing = false
+    const r = await reactToSpaceUpdate('anchor', '❤️', true)
+    expect(isError(r)).toBe(true)
+    expect(calls.some((c) => c.table === 'post_reactions')).toBe(false)
+  })
+
+  it('lets an OPERATOR react without following (they can act on their own wall)', async () => {
+    currentFollowing = false
+    currentCanEdit = true
+    const r = await reactToSpaceUpdate('anchor', '❤️', true)
+    expect(isError(r)).toBe(false)
+  })
 })
 
 describe('commentOnSpaceUpdate (any signed-in member; space_update thread only)', () => {
@@ -144,6 +168,13 @@ describe('commentOnSpaceUpdate (any signed-in member; space_update thread only)'
 
   it('refuses a comment on a NORMAL feed post (thread guard, not a space_update)', async () => {
     const r = await commentOnSpaceUpdate('willow', 'normal', 'Trying to sneak in')
+    expect(isError(r)).toBe(true)
+    expect(calls.some((c) => c.op === 'insert' && c.table === 'posts')).toBe(false)
+  })
+
+  it('refuses a signed-in member who does NOT follow the space (followers-only)', async () => {
+    currentFollowing = false
+    const r = await commentOnSpaceUpdate('willow', 'anchor', 'Let me in')
     expect(isError(r)).toBe(true)
     expect(calls.some((c) => c.op === 'insert' && c.table === 'posts')).toBe(false)
   })

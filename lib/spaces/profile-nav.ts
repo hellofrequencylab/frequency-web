@@ -46,6 +46,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
     ...sections.map((s) => ({ href: `${base}#${s.anchor}`, label: s.label })),
+    // The Community feed (Facebook/Yelp-style): the business posts, members react + comment. Public to
+    // everyone; the page itself gates who can interact. Always present so a business can start posting.
+    { href: `${base}/community`, label: 'Community' },
     ...pages
       .filter((p) => p.slug !== HOME_SLUG)
       .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
