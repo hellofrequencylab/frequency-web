@@ -209,6 +209,9 @@ export default function PricingPage() {
                 <h3 className="font-display uppercase text-text text-2xl">{row.label}</h3>
                 <span className="font-display text-2xl text-primary-strong">{row.totalLabel}</span>
               </div>
+              {row.breakdownLabel && (
+                <p className="mt-1 text-right text-xs font-semibold text-subtle">{row.breakdownLabel}</p>
+              )}
               <p className="mt-2 text-sm leading-relaxed text-muted">{row.note}</p>
               <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-primary-strong">
                 See the details
