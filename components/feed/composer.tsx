@@ -260,7 +260,7 @@ export function Composer({
       let imageUrl: string | null = null
       if (imageFile) {
         imageUrl = onUploadImage ? await onUploadImage(imageFile) : await uploadImage()
-        if (imageFile && !imageUrl) {
+        if (!imageUrl) {
           // The default uploadImage sets its own imageError; a custom uploader is silent, so name it.
           if (onUploadImage) setImageError('Could not upload that image. Try again.')
           return // upload failed, abort
