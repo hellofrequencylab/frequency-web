@@ -131,16 +131,16 @@ export function pricingTiers(): PricingTier[] {
     {
       id: 'nonprofit',
       name: 'Non Profit',
-      priceKind: 'perSeat',
+      priceKind: 'flat',
       price: { month: cat.nonprofit_seat.month, year: cat.nonprofit_seat.year },
       featured: false,
       forWho: 'Verified 501(c)(3) organizations.',
-      billing: 'Per licensed seat. Three-seat minimum.',
+      billing: 'Monthly or yearly. Yearly is two months free.',
       coreIncluded:
-        'The full Business depth: marketing automation, full CRM, team roles, and your own domain. Discounted, with donation and volunteer framing.',
+        'Everything in Business, with donations built in. The full CRM, marketing automation, team roles, and your own domain. Flat, never per seat.',
       addons: tierAddons,
       takeRate: '3% on what you raise',
-      cta: { label: 'Talk to us', href: '/about' },
+      cta: { label: 'Start a Space', href: '/spaces' },
     },
   ]
 }
@@ -228,8 +228,11 @@ export function personaPath(slug: string): string {
  *  drifts between them. */
 export function stripTotalLabel(p: PersonaLoadout): string {
   if (p.perSeat) {
-    const seat = pricingCatalog().nonprofit_seat
-    return `${formatLoadoutCents(seat.month.foundingCents)}/seat/mo`
+    // The Nonprofit door: priced from the flat Non Profit plan ($29/mo, ADR-590), not a Business loadout.
+    // The `perSeat` field name is legacy (per-seat billing is retired); it now flags "the flat nonprofit
+    // sibling." Renders a FLAT figure, never per seat.
+    const np = pricingCatalog().nonprofit_seat
+    return `${formatLoadoutCents(np.month.foundingCents)}/mo`
   }
   const total = computeLoadoutTotal(pricingCatalog(), p.addons, 'month', 1)
   return `${formatLoadoutCents(total.foundingCents)}/mo`

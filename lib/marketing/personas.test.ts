@@ -127,10 +127,9 @@ describe('loadout-strip math (computed from the catalog, never hardcoded)', () =
     }
   })
 
-  it('renders the Nonprofit row as a per-seat figure', () => {
+  it('renders the Nonprofit row as a flat $29/mo figure (ADR-590, never per seat)', () => {
     const np = loadoutStrip().find((r) => r.id === 'nonprofits')!
-    expect(np.perSeat).toBe(true)
-    expect(np.totalLabel).toBe('$12/seat/mo')
+    expect(np.totalLabel).toBe('$29/mo')
   })
 
   it('persona loadout total equals the strip total for the same slug', () => {
@@ -155,9 +154,9 @@ describe('pricing table model', () => {
     expect(biz.price.month.listCents).toBe(4900)
   })
 
-  it('Non Profit headline reads per seat', () => {
+  it('Non Profit headline reads $29/mo flat (ADR-590)', () => {
     const np = pricingTiers().find((t) => t.id === 'nonprofit')!
-    expect(tierHeadline(np, 'month')).toBe('$12/seat/mo')
+    expect(tierHeadline(np, 'month')).toBe('$29/mo')
   })
 
   it('the AI Engine add-on price matches the ladder (the only metered add-on, ADR-472)', () => {

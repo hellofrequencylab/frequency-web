@@ -112,10 +112,10 @@ describe('placeholder pricing — nothing charges (the go-live switch)', () => {
   })
 
   it('placeholder price maps mirror the code catalog founding rates', () => {
-    // Space: Business $49, Non Profit $12/seat; free at $0 (ADR-552).
+    // Space: Business $49, Non Profit $29 flat; free at $0 (ADR-590).
     expect(PLACEHOLDER_SPACE_PRICE_CENTS.free).toBe(0)
     expect(PLACEHOLDER_SPACE_PRICE_CENTS.business).toBe(4900)
-    expect(PLACEHOLDER_SPACE_PRICE_CENTS.nonprofit).toBe(1200)
+    expect(PLACEHOLDER_SPACE_PRICE_CENTS.nonprofit).toBe(2900)
     // Personal: Crew $9; free at $0.
     expect(PLACEHOLDER_MEMBER_PRICE_CENTS.free).toBe(0)
     expect(PLACEHOLDER_MEMBER_PRICE_CENTS.crew).toBe(900)

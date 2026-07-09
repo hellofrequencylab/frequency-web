@@ -9,9 +9,9 @@ afterEach(() => {
 })
 
 describe('platformFeePct', () => {
-  it('defaults to 10 when unset', () => {
+  it('defaults to 3 when unset (ADR-590: flat 3% everywhere)', () => {
     delete process.env.STRIPE_PLATFORM_FEE_PCT
-    expect(platformFeePct()).toBe(10)
+    expect(platformFeePct()).toBe(3)
   })
 
   it('reads a valid env override', () => {
@@ -19,10 +19,10 @@ describe('platformFeePct', () => {
     expect(platformFeePct()).toBe(15)
   })
 
-  it('falls back to 10 on garbage / out-of-range values', () => {
+  it('falls back to 3 on garbage / out-of-range values', () => {
     for (const bad of ['abc', '-5', '150', '']) {
       process.env.STRIPE_PLATFORM_FEE_PCT = bad
-      expect(platformFeePct()).toBe(10)
+      expect(platformFeePct()).toBe(3)
     }
   })
 

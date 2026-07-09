@@ -37,12 +37,12 @@ import type { GateAxis } from './gates'
 export const PLACEHOLDER_PRICING = true
 
 /** @placeholder Monthly price point per Space plan, in cents. Mirrors the code catalog founding rates
- *  (lib/billing/pricing-keys.ts CATALOG): Business $49, Non Profit $12/seat; free at $0. THE ONE place to
- *  swap real Space prices when billing goes live. Preview only; never charged. */
+ *  (lib/billing/pricing-keys.ts CATALOG): Business $49, Non Profit $29 flat (ADR-590); free at $0. THE ONE
+ *  place to swap real Space prices when billing goes live. Preview only; never charged. */
 export const PLACEHOLDER_SPACE_PRICE_CENTS: Record<SpacePlan, number> = {
   free: 0,
   business: 4900,
-  nonprofit: 1200,
+  nonprofit: 2900,
 }
 
 /** @placeholder Monthly price point per personal membership tier, in cents. Mirrors the code defaults

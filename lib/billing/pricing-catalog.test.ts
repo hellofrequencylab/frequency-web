@@ -67,16 +67,17 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
     }
   })
 
-  it('Nonprofit seat: $15 list / $12 founding per seat, marked perSeat', () => {
+  it('Nonprofit: $29/mo FLAT, never per seat (ADR-590)', () => {
     const np = catalogItem('nonprofit_seat')
-    expect(np.month.listCents).toBe(1500)
-    expect(np.month.foundingCents).toBe(1200)
-    expect(np.perSeat).toBe(true)
+    expect(np.month.listCents).toBe(2900)
+    expect(np.month.foundingCents).toBe(2900)
+    expect(np.perSeat).toBe(false)
   })
 
-  it('the AI add-on is metered (not per-seat); the Business base is not per-seat', () => {
+  it('no catalog item is per-seat (flat pricing, ADR-590)', () => {
     expect(catalogItem('addon_ai').perSeat).toBe(false)
     expect(catalogItem('business_base').perSeat).toBe(false)
+    expect(catalogItem('nonprofit_seat').perSeat).toBe(false)
   })
 })
 
