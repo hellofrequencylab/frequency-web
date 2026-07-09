@@ -56,6 +56,18 @@ export function heroHeightClass(height: HeroHeight): string {
 
 export type HeroButtonOrientation = 'row' | 'stacked'
 
+/** The flat working bag the rail seeds the hero from (height + orientation are the only fields the editor
+ *  still exposes, item 5; the copy/CTA fields remain for back-compat render + the bundle seed). */
+export interface HeroEditorValues {
+  height?: string
+  buttonOrientation?: string
+  eyebrow?: string
+  heading?: string
+  tagline?: string
+  ctaLabel?: string
+  ctaUrl?: string
+}
+
 // ── The hero-config field schema (drives the editor + the sanitizer) ──────────────────────────────────────
 // One declaration the rail arranger's field kit renders and the sanitizer validates, exactly like a block's
 // `fieldsForBlock`. The CTA sub-fields are declared here too so the whole hero (look + copy + button) edits in

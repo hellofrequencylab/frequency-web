@@ -13126,3 +13126,33 @@ provider (`space-rail-data.tsx`) to the core entities so a circle/event/hub/nexu
 deep-links to `/admin/dispatches` via `StaffEditButton` rather than opening the rail (a dispatch is not yet an
 `adminScopeFor` scope); every other editable entity page already mounts the rail trigger. (c) True 0ms preview
 (the `EntityLayoutContext` store pattern) for marquee fields, beyond the `router.refresh()` sub-second refresh.
+
+## ADR-594: Space rail follow-ups — hero look moves to Branding, header controls autosave + collapse, one Page title
+
+**Status:** Accepted + shipped (owner review of the live Space rail, 2026-07-09). Follow-up to ADR-593 (which
+covered the CORE-entity rails; the Space rail is a separate, more complex surface untouched there).
+
+**Context.** Live review of the Space profile rail (`/spaces/<slug>`) surfaced weak spots the core-entity pass
+did not reach: a Save button sat in the middle of the "Header button" section; the header-shade + header-button
+controls were always-expanded; the "Page" title was doubled (rail section header + module `<h3>` + the builder's
+"Your page"); the pinned "Top Hero" editor in the page builder duplicated inputs already edited elsewhere (name /
+tagline / CTA); and the on-page cover title was crushed into a narrow column beside the action buttons.
+
+**Decision.**
+1. **Header button autosaves** (item 1). Removed the "Save button"; the CTA commits on each pick (mode /
+   function) and on blur of the label/URL fields via `setSpaceHeaderCta`, guarding an incomplete custom link.
+2. **Header shade + Header button collapse** (item 2). Both are now `<details>` dropdowns in Identity & Branding,
+   so the section leads with the most-used controls.
+3. **One Page title** (item 3). `space-page-module` no longer renders its own `<h3>Page</h3>` + description; the
+   rail section header ("Page") is the single title and the builder keeps its "Your page" heading.
+4. **Top Hero editor retired from the page builder** (items 4 + 6). `HeroEditPanel` (and its test) are deleted;
+   its only non-duplicate controls — **Height** and **Buttons** — moved into Identity & Branding (item 5) as
+   segmented controls that autosave through a NEW `setSpaceHeroLook` action (which never touches the header CTA,
+   so hero look + CTA are edited independently). The eyebrow/name/tagline/CTA hero fields were duplicates of the
+   Name/Tagline + Header button controls, so they are gone from the editor; existing overrides still render.
+5. **Cover title full width** (item 7). The Hero cover identity (avatar + title) now spans the full cover width
+   with the desktop action row on its OWN line below it (still a single horizontal row, never a stacked column),
+   so a long brand name reads on one or two lines instead of a crushed 3-line column.
+
+`HeroEditorValues` moved from the deleted panel into `lib/spaces/hero-config.ts`. No migration (hero look still
+lives in `spaces.preferences.hero`). Gate: `tsc && lint && test` (4560) + `pnpm check:menu`, all green.

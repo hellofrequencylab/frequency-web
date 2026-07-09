@@ -1,7 +1,6 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { LayoutGrid } from 'lucide-react'
 import { getSpacePageData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
@@ -60,24 +59,11 @@ export function SpacePageModule() {
 
   return (
     <section className="min-w-0 space-y-4">
-      <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-          <LayoutGrid className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          Page
-        </h3>
-        <p className="text-sm text-muted">
-          Arrange the sections of your page into rows and columns here. The page beside you updates as you go.
-        </p>
-      </header>
-      {/* ADR-542 (revised): the sidebar arranger. Rows + columns + move a section between rows; the page
-          shows the live result. It reads the shared space-layout store, so it only shows on the Space
-          profile root; every other Space surface renders just the panel below. The pinned Top Hero editor
-          (fixed first section) seeds off the SAME bundle. */}
-      <SpacePageBuilder
-        slug={data.slug}
-        seed={builderSeed}
-        heroInitial={ctx?.status === 'ready' ? ctx.bundle?.layout?.hero : undefined}
-      />
+      {/* No module header here: the rail section header ("Page") is the single title (the doubled "Page /
+          Page" is removed). The builder below carries its own "Your page" heading + save cue. ADR-542
+          (revised): the sidebar arranger — rows + columns + move a section between rows; the page shows the
+          live result. It reads the shared space-layout store, so it only shows on the Space profile root. */}
+      <SpacePageBuilder slug={data.slug} seed={builderSeed} />
       <SpacePagePanel
         slug={data.slug}
         pages={data.pages}
