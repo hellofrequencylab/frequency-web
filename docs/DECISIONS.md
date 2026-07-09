@@ -13036,3 +13036,50 @@ locked (Resonance Engine, Email + Automations, Bookings, Contacts, QR Studio, Pr
 
 **Deferred (phased, see docs/OPERATOR-FUNNELS.md):** P1 template + SVGs, P2 signup bridge, P3 the other four
 configs, P4 measurement + SEO wiring, P5 referral personalization + A/B + Proof content.
+
+## ADR-592: Practice ⇄ Timer rework — creator-authored timing, split launch affordance
+
+**Status:** Accepted (owner decisions 2026-07-09) · Phase 0 shipped · corroborated by
+`supabase/migrations/20261024000000_practice_warmup.sql`, `lib/practices.ts` (`warmup_message` /
+`warmup_sec`), and `docs/PRACTICE-TIMER-REWORK.md` (the phased build plan).
+
+**Context.** The one member-facing timer (**Mindless** / internal **On Air**, modes Be Still /
+Get Moving) is already practice-linked via `practices.timer_kind`, but the authoring side has
+gaps: a creator cannot set a warm-up message, and the "workout" (Get Moving · Strength: Tabata /
+EMOM / AMRAP / Circuit) preset is only tuned by the *member* at start time — the builder stores
+only `movement_config.mode`. The launch affordance also does not distinguish a timed practice
+from a logged one (both read "Practice"). Research confirmed there is **no separate `workouts`
+entity**: a "workout" is a Practice with `timer_kind='movement'` + `movement_config.mode='strength'`,
+and `MovementConfig` already carries the full preset (`strengthKind`/`workSec`/`restSec`/`rounds`),
+read by `buildPlan()`. "Workout" is a *retired* member-facing word (ADR-360).
+
+**Decision.**
+1. **Creator-authored warm-up** (owner: *extend the pre-roll*). Add `practices.warmup_message` +
+   `warmup_sec` (both nullable/additive). The message renders inside the existing 3/5/10s pre-roll
+   countdown (one warm-up moment, not a separate intro card); the member's personal `warmupSec`
+   applies when the creator sets none. This is the **only** migration the rework needs.
+2. **Full-custom workout authoring** (owner: *full custom*). Lift the member Strength/movement
+   setup (preset chips + Work/Rest/Rounds steppers, every Get Moving mode) into the builder,
+   persisting the complete `movement_config` so the timer opens preset and ready. **No migration**
+   (the fields + `buildPlan()` reader exist).
+3. **Split launch affordance.** Timed (`timer_kind <> 'none'`) → **Start Practice** + timer icon
+   (keep "Continue Practice" on resume); logged (`'none'`) → a **check-off** ("Log it").
+4. **Three integrations in scope** (owner: all three): timer preview on cards (derived, no schema),
+   Journey/Run choreography (per-step override on `journey_plan_items.settings` jsonb, no migration),
+   and sequenced practices (chain timed practices into one continuous run; queue in the existing
+   `practice_timer_sessions.setup` jsonb — compose Practices, do not model exercises/sets).
+5. **Economy invariant holds.** Each timed run (and each leg of a sequence) logs its own practice
+   through the unchanged `completeSession` → `logPractice` path; the achieved-tier depth model
+   (ADR-442/443) still owns "how long earns what." One Zap per leg; no full-sequence bonus.
+
+**Alternatives.** A separate warm-up intro card (rejected: owner chose to extend the pre-roll). A
+new `workouts`/`exercises` relational schema (rejected: a workout is a movement Practice; sequencing
+composes Practices). Preset-only creator control (rejected: owner chose full custom).
+
+**Consequences.** One migration (`warmup_message` + `warmup_sec`); everything else reuses
+`movement_config` + `journey_plan_items.settings` + `practice_timer_sessions.setup`. `session.tsx`
+and `movement-session.tsx` both need the warm-up render + (later) sequencing, since they duplicate
+the clock/pre-roll logic. Regenerate `lib/database.types.ts` after apply (untyped handle until then,
+ADR-246). **Naming:** member copy stays Mindless / Be Still / Get Moving / Strength / Start Practice;
+the warm-up *noun* is an OPEN QUESTION pending a NAMING.md entry (keep the plain "Warm up" pre-roll
+label until then). Phased build (P0–P6) tracked in `docs/PRACTICE-TIMER-REWORK.md`.

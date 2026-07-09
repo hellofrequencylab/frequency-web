@@ -82,6 +82,12 @@ export interface Practice {
   /** When true, the author has pinned a fixed session length the member cannot adjust;
    *  false (default) = the member may adjust the length. The length itself is duration_min. */
   duration_locked: boolean
+  /** Creator-authored message shown during the timer pre-roll (the warm-up), for a timed
+   *  practice. NULL/empty = a silent pre-roll (the pre-rework behavior). See ADR-592. */
+  warmup_message: string | null
+  /** Creator's recommended warm-up (pre-roll) length in seconds. NULL = use the member's
+   *  personal pre-roll length (profiles.meta.onAir.warmupSec, default 5). See ADR-592. */
+  warmup_sec: number | null
   /** The explicit per-log Zap VALUE. When set, it OVERRIDES weight_class (the Quest library
    *  values practices by cadence: Daily 10 / 3x-week 15 / Weekly 25). Null → weight-class default. */
   reward_zaps: number | null
@@ -130,17 +136,21 @@ export type PracticeSort = 'trending' | 'top' | 'new' | 'az'
 
 const PRACTICE_COLS =
   'id, title, description, created_by, is_public, is_template, created_at, ' +
-  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
+  'category, icon, summary, header_image, body, cadence, duration_min, uses_timer, timer_kind, movement_config, mindless_mode, duration_locked, warmup_message, warmup_sec, reward_zaps, reward_note, weight_class, domain_id, focus_details, subcategory_id, status, slug'
 
 // The same columns MINUS the table-only ones, for reads against the `practices_ranked`
 // VIEW. The view predates `slug` and does not expose it (selecting it errors and returns
 // zero rows, which silently emptied the library + 404'd the detail page); it also does NOT
-// expose `timer_kind` / `movement_config` / `mindless_mode` / `duration_locked` (the timer
-// columns the library never needs — the editor + timer routing read those from the table via
-// getPractice). The library + detail navigate by id, so dropping all of them here is safe.
+// expose `timer_kind` / `movement_config` / `mindless_mode` / `duration_locked` /
+// `warmup_message` / `warmup_sec` (the timer columns the library never needs — the editor +
+// timer routing read those from the table via getPractice). The library + detail navigate by
+// id, so dropping all of them here is safe.
 const RANKED_COLS = PRACTICE_COLS
   .replace(/,\s*slug$/, '')
-  .replace(/,\s*timer_kind,\s*movement_config,\s*mindless_mode,\s*duration_locked/, '')
+  .replace(
+    /,\s*timer_kind,\s*movement_config,\s*mindless_mode,\s*duration_locked,\s*warmup_message,\s*warmup_sec/,
+    '',
+  )
 
 /**
  * The authoring DEFAULT timer + Mindless mode for a Pillar (mind | body | spirit |
