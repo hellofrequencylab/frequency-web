@@ -4,9 +4,8 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { setActiveSpace } from '@/lib/spaces/active-space'
-import { toProfileContext, enabledFunctionKeys } from '@/lib/spaces/profile-modules'
-import { blocksForKind } from '@/lib/entity-blocks/registry'
-import { parseEntityLayout, mergeEntityLayout } from '@/lib/entity-blocks/layout'
+import { toProfileContext } from '@/lib/spaces/profile-modules'
+import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 import { SpaceProfileModules } from '@/components/widgets/space-profile/space-profile-modules'
 import { OwnerSpaceLayoutPreview } from '@/components/spaces/owner-space-layout-preview'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
@@ -32,25 +31,25 @@ async function SpaceProfileBody({ slug, panel }: { slug: string; panel?: string 
   // Re-stamp the active Space so any dynamic block reads THIS tenant's rows (mirrors the preview path).
   setActiveSpace(space)
 
-  // The EFFECTIVE GRID (the VISITOR render path): the operator's saved grid merged over the fresh default.
-  // The valid-id universe (the append order AND the allowlist mergeEntityLayout drops unknown placements
-  // against) MUST match the in-rail Space builder's palette exactly (partitionSpaceBlocks), or a block the
-  // operator placed there would silently vanish on the live page — so build the defaultIds identically:
-  // every space block minus the feature-locked ones (a DATA block whose required function is off). The
-  // owner sees the live OwnerSpaceLayoutPreview instead (below). The saved node lives at
-  // preferences.profileLayout (shared with the S3 list editor — parseEntityLayout reads the grid shape
-  // AND the flat back-compat `order`). FAIL-SAFE: a malformed / absent node parses to null so the fresh
-  // default stands, identical to what the editor shows.
-  const enabled = enabledFunctionKeys(space)
-  const paletteIds = blocksForKind('space')
-    .filter((b) => b.requiresFunction == null || enabled.has(b.requiresFunction))
-    .map((b) => b.id)
+  // The EFFECTIVE GRID (the VISITOR / public render path). The saved node lives at preferences.profileLayout
+  // (shared with the rail Space builder — parseEntityLayout reads the freeform ROWS shape AND the legacy
+  // slots / flat `order`). Hand the parsed layout straight to the renderer so the public page resolves it
+  // the SAME way the owner preview does (both call resolveRows over exactly this node): rows render the
+  // operator's arrangement; a legacy layout maps through its template; an absent one falls to the kind's
+  // starter — byte-for-byte the signed-in view, minus the nav + rail.
+  //
+  // This REPLACES the old mergeEntityLayout path, which understood only the legacy slots/order shape: it
+  // ignored `rows` and APPENDED the entire block palette to the default slot, so on a modern rows-native
+  // Space the public page dumped every default data block (the legacy About/Story/Offerings/Team stack)
+  // PLUS every unplaced design block (its demo placeholder copy) — none of which the owner ever sees.
+  // FAIL-SAFE: a malformed / absent node parses to null; `?? {}` keeps the grid truthy so the renderer
+  // resolves the starter layout instead of dropping to its flat single-column fallback.
   const prefs = space.preferences
   const rawLayout =
     prefs && typeof prefs === 'object' && !Array.isArray(prefs)
       ? (prefs as Record<string, unknown>).profileLayout
       : null
-  const grid = mergeEntityLayout(paletteIds, parseEntityLayout(rawLayout), 'space')
+  const grid = parseEntityLayout(rawLayout) ?? {}
 
   // OWNER live preview (ADR-516 Phase D): the person who can manage this Space edits its page from the rail
   // (the in-rail SpacePageBuilder), and this body is the WYSIWYG surface — OwnerSpaceLayoutPreview renders
