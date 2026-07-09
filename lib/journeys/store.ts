@@ -36,6 +36,15 @@ function coachingFrom(blockType: string, settings: Record<string, unknown> | nul
   return typeof cp === 'string' && cp.trim() ? cp : null
 }
 
+/** A per-step warm-up message override (ADR-592, P5), from `settings.warmup_message`. When set on
+ *  a practice block, it replaces the practice's own warm-up message in the timer pre-roll for THIS
+ *  Journey step, so a Host can choreograph the intro per week. Null for non-practice blocks / unset. */
+function warmupFrom(blockType: string, settings: Record<string, unknown> | null | undefined): string | null {
+  if (blockType !== 'practice') return null
+  const wm = settings?.warmup_message
+  return typeof wm === 'string' && wm.trim() ? wm.trim() : null
+}
+
 export interface LessonContent {
   id: string
   type: LeafType
@@ -50,6 +59,9 @@ export interface LessonContent {
   check: CheckConfig | null
   /** Vera's per-slot coaching line (practice blocks), from settings.coaching_prompt, else null. */
   coachingPrompt: string | null
+  /** A per-step warm-up message override (ADR-592, P5), from settings.warmup_message, else null.
+   *  Overrides the practice's own warm-up message in the timer pre-roll for this Journey step. */
+  warmupMessage: string | null
   /** Extra-credit block (ADR-300 Part 2): a bonus task that pays Zaps, not a Pillar practice. */
   extraCredit: boolean
   /** Bonus Zaps paid on completing an extra-credit block. */
@@ -101,6 +113,7 @@ export async function getJourneyPlayerView(slug: string, profileId: string): Pro
       required: i.required ?? true,
       check: bt === 'check' ? parseCheck(settings) : null,
       coachingPrompt: coachingFrom(bt, settings),
+      warmupMessage: warmupFrom(bt, settings),
       extraCredit,
       bonusZaps: extraCredit && settings && typeof settings.bonus_zaps === 'number' ? settings.bonus_zaps : 0,
     }

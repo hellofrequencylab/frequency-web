@@ -25,6 +25,7 @@ import {
   type ComposedRow,
 } from '@/lib/journeys/compose'
 import { getGlobalCapabilities } from '@/lib/core/load-capabilities'
+import { WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import { toPortable, type PortableJourney } from '@/lib/journeys/portable'
 
 type BlockUpdate = Database['public']['Tables']['journey_plan_items']['Update']
@@ -601,6 +602,37 @@ export async function setLeafAnchorAction(
   if (error) return fail('Could not save the anchor.')
 
   if (plan.slug) done(plan.slug)
+  return ok()
+}
+
+/** Set (or clear) a practice block's per-step WARM-UP MESSAGE override (ADR-592, P5): shown in the
+ *  timer pre-roll for THIS Journey step instead of the practice's own creator-authored message.
+ *  Stored on `settings.warmup_message`, MERGED so the anchor + coaching prompt on the same block
+ *  survive (never a blind whole-object write). An empty message clears it. */
+export async function setLeafWarmupMessageAction(slug: string, itemId: string, message: string): Promise<ActionResult> {
+  const a = await authorPlan(slug)
+  if (!a) return fail('Only the author can edit this journey.')
+  const admin = db()
+  const { data: row } = await admin
+    .from('journey_plan_items')
+    .select('settings, block_type')
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+    .maybeSingle()
+  const r = row as { settings: Record<string, unknown> | null; block_type: string | null } | null
+  if (!r) return fail('That step is no longer here.')
+  if (r.block_type !== 'practice') return fail('Only a practice step can carry a warm-up message.')
+  const next = { ...(r.settings ?? {}) }
+  const clean = message.trim().slice(0, WARMUP_MESSAGE_MAX)
+  if (clean) next.warmup_message = clean
+  else delete next.warmup_message
+  const { error } = await admin
+    .from('journey_plan_items')
+    .update({ settings: next as unknown as BlockUpdate['settings'] })
+    .eq('id', itemId)
+    .eq('plan_id', a.planId)
+  if (error) return fail('Could not save the warm-up message.')
+  done(slug)
   return ok()
 }
 

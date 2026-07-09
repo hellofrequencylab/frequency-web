@@ -487,6 +487,7 @@ export function LearnPlayer({
                     pillar={selectedPillar}
                     logged={selectedPracticeLogged}
                     partialToday={partialByPractice[selectedPracticeId] ?? null}
+                    warmupMessage={lesson.warmupMessage}
                     onLogged={(pid) => setLocallyLogged((s) => new Set(s).add(pid))}
                   />
                 </div>

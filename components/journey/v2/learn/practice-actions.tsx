@@ -41,6 +41,9 @@ export function PracticeActions({
   onLogged,
   /** Compact variant for tight rows (the syllabus); default is the roomy lesson-pane button. */
   compact = false,
+  /** A per-step warm-up message override (ADR-592, P5): when set, the timer's pre-roll shows this
+   *  instead of the practice's own warm-up message, so a Journey step can choreograph the intro. */
+  warmupMessage,
 }: {
   practiceId: string
   usesTimer: boolean
@@ -50,6 +53,7 @@ export function PracticeActions({
   partialToday?: PartialToday | null
   onLogged?: (practiceId: string) => void
   compact?: boolean
+  warmupMessage?: string | null
 }) {
   const router = useRouter()
   const mindless = useMindless()
@@ -62,9 +66,11 @@ export function PracticeActions({
     const resume = isResume && partialToday
       ? { resumeFromSec: partialToday.bankedSec, secondsTarget: partialToday.targetSec }
       : {}
+    // A per-step warm-up override (P5) rides along so the pre-roll shows the Journey's intro.
+    const warmup = warmupMessage?.trim() ? { warmupMessage: warmupMessage.trim() } : {}
     // autoStart: selecting a practice opens the timer and begins the countdown immediately.
-    if (movementMode) movement.open({ practiceId, mode: movementMode, autoStart: true, ...resume })
-    else mindless.open({ practiceId, autoStart: true, ...resume })
+    if (movementMode) movement.open({ practiceId, mode: movementMode, autoStart: true, ...resume, ...warmup })
+    else mindless.open({ practiceId, autoStart: true, ...resume, ...warmup })
   }
   const [pending, start] = useTransition()
   const [done, setDone] = useState<{ logged: boolean; zaps: number } | null>(null)

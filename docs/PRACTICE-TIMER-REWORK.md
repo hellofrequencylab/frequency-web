@@ -60,7 +60,7 @@ touch **both**. This is why the engine rework (P6) is fenced off last.
 | **P2** | Full workout authoring | Preset chips + Work/Rest/Rounds steppers (all modes) in the builder → full `movement_config`, seeded into the launched session. + time-ladder polish + server sanitize. | none | 🟡 | ✅ |
 | **P3** | Creator warm-up + message | Builder warm-up block; render inside the pre-roll (both engines). | uses P0 | 🟡 | ✅ |
 | **P4** | Timer preview on cards | Shape string from `movement_config` + `buildPlan()` on card + detail. | none | 🟢 | 📋 |
-| **P5** | Journey / Run choreography | Per-step warm-up + timer override at `journey_plan_items.settings`. | none | 🟡 | 📋 |
+| **P5** | Journey / Run choreography | Per-step **warm-up message** override at `journey_plan_items.settings` (merge-safe). Timer-shape override deferred. | none | 🟡 | ✅ |
 | **P6** | Sequenced practices | Chain timed practices into one continuous run, auto-advance; each leg logs its own practice. | reuse `practice_timer_sessions.setup` | 🔴 | 📋 |
 
 ### Phase P0 — Foundation · *this phase*
