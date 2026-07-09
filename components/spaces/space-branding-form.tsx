@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, ChevronDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -18,6 +18,7 @@ import {
   setSpaceCoverScrim,
   setSpaceAccent,
   setSpaceHeaderCta,
+  setSpaceHeroLook,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import {
   HEADER_CTA_FUNCTIONS,
@@ -26,6 +27,20 @@ import {
   type HeaderCtaFunction,
   type HeaderCtaPreference,
 } from '@/lib/spaces/header-cta'
+import type { HeroHeight, HeroButtonOrientation } from '@/lib/spaces/hero-config'
+
+// The hero LOOK controls that moved into Identity & Branding (item 5): Short/Medium/Tall height + the
+// button orientation. Compact segmented buttons, matching Cover style / Page style. Each saves the moment
+// it is picked (no Save button).
+const HERO_HEIGHTS: { value: HeroHeight; label: string }[] = [
+  { value: 'short', label: 'Short' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'tall', label: 'Tall' },
+]
+const HERO_BUTTONS: { value: HeroButtonOrientation; label: string }[] = [
+  { value: 'row', label: 'In a row' },
+  { value: 'stacked', label: 'Stacked' },
+]
 
 // THE IDENTITY & BRANDING FORM (Space rail Section 1 — the standardized rail, ADR-535). The ONE place an
 // operator sets everything that shows in the header HERO: brand name, tagline, header (cover) image, logo /
@@ -51,6 +66,8 @@ export function SpaceBrandingForm({
   headerCta = null,
   defaultCtaLabel,
   pageTheme,
+  heroHeight = 'medium',
+  heroButtonOrientation = 'row',
   readOnly = false,
 }: {
   spaceId: string
@@ -65,6 +82,9 @@ export function SpaceBrandingForm({
   defaultCtaLabel: string
   /** The current Space PAGE STYLE (ADR-578) — the selected one of the 5 typography + shape themes. */
   pageTheme: SpaceThemeId
+  /** The hero cover height + button orientation (item 5, edited here now, not in the page builder). */
+  heroHeight?: HeroHeight
+  heroButtonOrientation?: HeroButtonOrientation
   readOnly?: boolean
 }) {
   const router = useRouter()
@@ -102,6 +122,21 @@ export function SpaceBrandingForm({
     setTheme(pageTheme)
   }
 
+  // HERO LOOK (item 5) — height + button orientation, moved here from the page builder. Optimistic, each
+  // saves the moment it is picked via setSpaceHeroLook (which never touches the header CTA).
+  const [hHeight, setHHeight] = useState<HeroHeight>(heroHeight)
+  const [seenHHeight, setSeenHHeight] = useState<HeroHeight>(heroHeight)
+  if (heroHeight !== seenHHeight) {
+    setSeenHHeight(heroHeight)
+    setHHeight(heroHeight)
+  }
+  const [hButtons, setHButtons] = useState<HeroButtonOrientation>(heroButtonOrientation)
+  const [seenHButtons, setSeenHButtons] = useState<HeroButtonOrientation>(heroButtonOrientation)
+  if (heroButtonOrientation !== seenHButtons) {
+    setSeenHButtons(heroButtonOrientation)
+    setHButtons(heroButtonOrientation)
+  }
+
   // HEADER BUTTON — the one dominant CTA on the profile hero. Three modes: 'default' (the per-type label +
   // the /book surface), 'function' (an in-house surface with an optional custom label), or 'custom' (the
   // owner's own URL + label). Local state so the picker is instant; it saves on the Save button (multiple
@@ -133,8 +168,15 @@ export function SpaceBrandingForm({
   const ctaCustomInvalid =
     ctaMode === 'custom' && (!ctaCustomLabel.trim() || !isValidCtaUrl(ctaUrl.trim()))
 
-  function saveHeaderCta() {
-    run(() => setSpaceHeaderCta(slug, ctaPreference()))
+  // Item 1: the header button AUTOSAVES like every other control — no Save button. Pass an explicit
+  // preference when a pick changes state (avoids the stale-closure trap of reading just-set state); a
+  // blur on the label/url fields saves the current state (an incomplete custom link is skipped).
+  function saveCtaPref(pref: HeaderCtaPreference | null) {
+    run(() => setSpaceHeaderCta(slug, pref))
+  }
+  function saveCurrentCta() {
+    if (ctaMode === 'custom' && ctaCustomInvalid) return
+    saveCtaPref(ctaPreference())
   }
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>) {
@@ -231,176 +273,255 @@ export function SpaceBrandingForm({
         </div>
       </section>
 
-      {/* COVER STYLE — how the name + buttons sit on the Hero cover. Compact buttons. */}
-      <section className="space-y-2">
-        <SectionHeader title="Cover style" />
-        <div className="grid grid-cols-2 gap-2">
-          {COVER_SCRIMS.map((c) => {
-            const active = scrim === c.value
-            return (
-              <button
-                key={c.value}
-                type="button"
-                disabled={readOnly || pending || active}
-                onClick={() => {
-                  setScrim(c.value) // optimistic: flip the active state now, not after the refresh
-                  run(() => setSpaceCoverScrim(slug, c.value))
-                }}
-                aria-pressed={active}
-                title={c.tagline}
-                className={cn(
-                  'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
-                  {c.label}
-                  {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-        <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
-      </section>
-
-      {/* HEADER BUTTON — the one dominant action on your hero. Pick a built-in action, add your own link,
-          or keep the default. Saved with its own Save button (it has more than one field). */}
+      {/* HERO — the cover height + how its buttons sit (item 5, moved here from the page builder). Each
+          picks-and-saves on its own; the header CTA is a separate control below. */}
       <section className="space-y-3">
-        <SectionHeader title="Header button" />
-        <p className="text-xs text-muted">
-          The main button on your page. Keep the default, point it at one of your pages, or add your own
-          link.
-        </p>
-
-        {/* Mode picker: Default / Built in / Custom link. */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { value: 'default' as const, label: 'Default' },
-            { value: 'function' as const, label: 'Built in' },
-            { value: 'custom' as const, label: 'Custom link' },
-          ].map((m) => {
-            const active = ctaMode === m.value
-            return (
-              <button
-                key={m.value}
-                type="button"
-                disabled={readOnly || pending}
-                onClick={() => setCtaMode(m.value)}
-                aria-pressed={active}
-                className={cn(
-                  'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                  active
-                    ? 'border-primary bg-primary-bg text-text'
-                    : 'border-border bg-surface text-muted hover:border-border-strong',
-                )}
-              >
-                <span className="flex items-center justify-center gap-1.5">
-                  {m.label}
-                  {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                </span>
-              </button>
-            )
-          })}
+        <SectionHeader title="Hero" />
+        <div className="space-y-2">
+          <Label className="block font-semibold">Height</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {HERO_HEIGHTS.map((h) => {
+              const active = hHeight === h.value
+              return (
+                <button
+                  key={h.value}
+                  type="button"
+                  disabled={readOnly || pending || active}
+                  onClick={() => {
+                    setHHeight(h.value)
+                    run(() => setSpaceHeroLook(slug, { height: h.value }))
+                  }}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    {h.label}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
-
-        {ctaMode === 'default' && (
-          <p className="text-xs text-subtle">
-            Shows &ldquo;{defaultCtaLabel}&rdquo; and opens your booking page.
-          </p>
-        )}
-
-        {ctaMode === 'function' && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              {HEADER_CTA_FUNCTIONS.map((f) => {
-                const active = ctaFunction === f.key
-                return (
-                  <button
-                    key={f.key}
-                    type="button"
-                    disabled={readOnly || pending || active}
-                    onClick={() => setCtaFunction(f.key)}
-                    aria-pressed={active}
-                    title={f.hint}
-                    className={cn(
-                      'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
-                      active
-                        ? 'border-primary bg-primary-bg'
-                        : 'border-border bg-surface hover:border-border-strong',
-                    )}
-                  >
-                    <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
-                      {f.label}
-                      {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                    </span>
-                    <span className="mt-0.5 block text-xs text-muted">{f.hint}</span>
-                  </button>
-                )
-              })}
-            </div>
-            <div>
-              <Label htmlFor="cta-fn-label" className="mb-1 block font-semibold">
-                Button text
-              </Label>
-              <Input
-                id="cta-fn-label"
-                value={ctaFunctionLabel}
-                maxLength={40}
-                disabled={readOnly}
-                placeholder={headerCtaFunctionLabel(ctaFunction)}
-                onChange={(e) => setCtaFunctionLabel(e.target.value)}
-              />
-              <p className="mt-1 text-xs text-subtle">Leave blank to use the default text.</p>
-            </div>
+        <div className="space-y-2">
+          <Label className="block font-semibold">Buttons</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {HERO_BUTTONS.map((b) => {
+              const active = hButtons === b.value
+              return (
+                <button
+                  key={b.value}
+                  type="button"
+                  disabled={readOnly || pending || active}
+                  onClick={() => {
+                    setHButtons(b.value)
+                    run(() => setSpaceHeroLook(slug, { buttonOrientation: b.value }))
+                  }}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    {b.label}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                  </span>
+                </button>
+              )
+            })}
           </div>
-        )}
-
-        {ctaMode === 'custom' && (
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="cta-custom-label" className="mb-1 block font-semibold">
-                Button text
-              </Label>
-              <Input
-                id="cta-custom-label"
-                value={ctaCustomLabel}
-                maxLength={40}
-                disabled={readOnly}
-                placeholder="Visit our shop"
-                onChange={(e) => setCtaCustomLabel(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cta-custom-url" className="mb-1 block font-semibold">
-                Link
-              </Label>
-              <Input
-                id="cta-custom-url"
-                type="url"
-                inputMode="url"
-                value={ctaUrl}
-                maxLength={2000}
-                disabled={readOnly}
-                placeholder="https://example.com"
-                onChange={(e) => setCtaUrl(e.target.value)}
-              />
-              <p className="mt-1 text-xs text-subtle">Start with https:// for another site, or / for a page here.</p>
-            </div>
-          </div>
-        )}
-
-        <button
-          type="button"
-          disabled={readOnly || pending || ctaCustomInvalid}
-          onClick={saveHeaderCta}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-lg border border-primary bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60',
-          )}
-        >
-          Save button
-        </button>
+        </div>
       </section>
+
+      {/* HEADER SHADE — the cover-scrim treatment, tucked in a dropdown (item 2). Autosaves on pick. */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+          Header shade
+          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+        </summary>
+        <div className="space-y-2 pt-3">
+          <div className="grid grid-cols-2 gap-2">
+            {COVER_SCRIMS.map((c) => {
+              const active = scrim === c.value
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  disabled={readOnly || pending || active}
+                  onClick={() => {
+                    setScrim(c.value) // optimistic: flip the active state now, not after the refresh
+                    run(() => setSpaceCoverScrim(slug, c.value))
+                  }}
+                  aria-pressed={active}
+                  title={c.tagline}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active ? 'border-primary bg-primary-bg' : 'border-border bg-surface hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                    {c.label}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
+        </div>
+      </details>
+
+      {/* HEADER BUTTON — the one dominant action on your hero, tucked in a dropdown (item 2). Autosaves on
+          each pick / blur (item 1): no Save button. A custom link only saves once its label + URL are valid. */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+          Header button
+          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+        </summary>
+        <div className="space-y-3 pt-3">
+          <p className="text-xs text-muted">
+            The main button on your page. Keep the default, point it at one of your pages, or add your own
+            link.
+          </p>
+
+          {/* Mode picker: Default / Built in / Custom link. */}
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { value: 'default' as const, label: 'Default' },
+              { value: 'function' as const, label: 'Built in' },
+              { value: 'custom' as const, label: 'Custom link' },
+            ].map((m) => {
+              const active = ctaMode === m.value
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  disabled={readOnly || pending}
+                  onClick={() => {
+                    setCtaMode(m.value)
+                    // Autosave the switch: Default clears the override; Built in saves the current function;
+                    // Custom waits for a valid label + URL (saved on blur), so it does not clear the button.
+                    if (m.value === 'default') saveCtaPref(null)
+                    else if (m.value === 'function') {
+                      const label = ctaFunctionLabel.trim()
+                      saveCtaPref({ kind: 'function', function: ctaFunction, ...(label ? { label } : {}) })
+                    }
+                  }}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                    active
+                      ? 'border-primary bg-primary-bg text-text'
+                      : 'border-border bg-surface text-muted hover:border-border-strong',
+                  )}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    {m.label}
+                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {ctaMode === 'default' && (
+            <p className="text-xs text-subtle">
+              Shows &ldquo;{defaultCtaLabel}&rdquo; and opens your booking page.
+            </p>
+          )}
+
+          {ctaMode === 'function' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {HEADER_CTA_FUNCTIONS.map((f) => {
+                  const active = ctaFunction === f.key
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      disabled={readOnly || pending || active}
+                      onClick={() => {
+                        setCtaFunction(f.key)
+                        const label = ctaFunctionLabel.trim()
+                        saveCtaPref({ kind: 'function', function: f.key, ...(label ? { label } : {}) })
+                      }}
+                      aria-pressed={active}
+                      title={f.hint}
+                      className={cn(
+                        'rounded-lg border px-3 py-2 text-left transition-colors disabled:cursor-default motion-reduce:transition-none',
+                        active
+                          ? 'border-primary bg-primary-bg'
+                          : 'border-border bg-surface hover:border-border-strong',
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5 text-sm font-semibold text-text">
+                        {f.label}
+                        {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted">{f.hint}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div>
+                <Label htmlFor="cta-fn-label" className="mb-1 block font-semibold">
+                  Button text
+                </Label>
+                <Input
+                  id="cta-fn-label"
+                  value={ctaFunctionLabel}
+                  maxLength={40}
+                  disabled={readOnly}
+                  placeholder={headerCtaFunctionLabel(ctaFunction)}
+                  onChange={(e) => setCtaFunctionLabel(e.target.value)}
+                  onBlur={saveCurrentCta}
+                />
+                <p className="mt-1 text-xs text-subtle">Leave blank to use the default text.</p>
+              </div>
+            </div>
+          )}
+
+          {ctaMode === 'custom' && (
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="cta-custom-label" className="mb-1 block font-semibold">
+                  Button text
+                </Label>
+                <Input
+                  id="cta-custom-label"
+                  value={ctaCustomLabel}
+                  maxLength={40}
+                  disabled={readOnly}
+                  placeholder="Visit our shop"
+                  onChange={(e) => setCtaCustomLabel(e.target.value)}
+                  onBlur={saveCurrentCta}
+                />
+              </div>
+              <div>
+                <Label htmlFor="cta-custom-url" className="mb-1 block font-semibold">
+                  Link
+                </Label>
+                <Input
+                  id="cta-custom-url"
+                  type="url"
+                  inputMode="url"
+                  value={ctaUrl}
+                  maxLength={2000}
+                  disabled={readOnly}
+                  placeholder="https://example.com"
+                  onChange={(e) => setCtaUrl(e.target.value)}
+                  onBlur={saveCurrentCta}
+                />
+                <p className="mt-1 text-xs text-subtle">Start with https:// for another site, or / for a page here.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </details>
 
       {/* PAGE STYLE — the typography + shape identity the whole page renders in. Five presets; the accent
           colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
