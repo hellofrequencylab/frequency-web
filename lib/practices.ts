@@ -19,7 +19,7 @@ import { ROLE_HIERARCHY } from '@/lib/core/roles'
 import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
-import type { MovementConfig } from '@/lib/movement'
+import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
  *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
@@ -1401,7 +1401,9 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
     if (kind !== 'movement') update.movement_config = null
   }
   if (patch.movement_config !== undefined)
-    update.movement_config = patch.movement_config ?? null
+    update.movement_config = patch.movement_config
+      ? sanitizeMovementConfig(patch.movement_config)
+      : null
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
