@@ -115,6 +115,11 @@ export default async function SpacesDirectoryPage({
     <IndexTemplate
       title="Business Spaces"
       description="Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect."
+      // The directory opens on a HERO band (the Space-profile hero grammar): the site photo with
+      // the title, subtitle, and Create action overlaid on the ink scrim. Swap the image by
+      // replacing public/images/site/business-directory-hero.jpg — no code change.
+      heroImage="/images/site/business-directory-hero.jpg"
+      heroOverlay
       action={
         viewerProfileId ? (
           <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
