@@ -254,10 +254,12 @@ const CATALOG: Record<CatalogItemKey, CatalogItem> = {
     key: 'business_base',
     label: 'Frequency Business',
     perSeat: false,
+    // FOUNDING anchor (ADR-591): $49 charged under a $79 list. The strike renders on every pricing surface
+    // (the funnel doors, /pricing, the persona table) from this one source, so it never drifts.
     // The single paid base, the full-depth tier (CRM, marketing, team roles, and branding folded in). No
     // separate founding anchor published today (founding == list); a future anchor is a one-line edit.
     // Per-seat Team billing rides this tier's seat machinery, not a separate add-on item (ADR-552).
-    ...amountsFromMonthly(4900, 4900),
+    ...amountsFromMonthly(7900, 4900), // $79 list / $49 founding (ADR-591)
   },
   addon_ai: {
     key: 'addon_ai',

@@ -36,9 +36,9 @@ import {
 describe('resolveCatalogItem (override over the code default)', () => {
   it('falls back to the code catalog amounts when there is no override', () => {
     const biz = resolveCatalogItem('business_base', undefined)
-    expect(biz.month.listCents).toBe(4900) // $49 list (== founding today)
+    expect(biz.month.listCents).toBe(7900) // $79 founding anchor (ADR-591)
     expect(biz.month.foundingCents).toBe(4900) // $49 founding
-    expect(biz.year.listCents).toBe(49000) // two months free
+    expect(biz.year.listCents).toBe(79000) // two months free off the list
     expect(biz.year.foundingCents).toBe(49000)
     expect(biz.perSeat).toBe(false)
   })
@@ -64,7 +64,7 @@ describe('resolveCatalogItem (override over the code default)', () => {
   it('is fail-safe per field: a partial / garbage override keeps the code default for the rest', () => {
     const biz = resolveCatalogItem('business_base', { monthlyFoundingCents: 1500, monthlyListCents: 'oops' })
     expect(biz.month.foundingCents).toBe(1500)
-    expect(biz.month.listCents).toBe(4900) // garbage -> code default
+    expect(biz.month.listCents).toBe(7900) // garbage -> code default (the $79 anchor)
   })
 })
 
@@ -151,11 +151,11 @@ describe('addonCatalogKey + normalizeAddons (re-tiered · ADR-472)', () => {
 })
 
 describe('computeLoadoutTotal (collapsed · ADR-552)', () => {
-  it('Business base alone, monthly = $49 founding (list == founding today)', () => {
+  it('Business base alone, monthly = $49 founding under a $79 list anchor (ADR-591)', () => {
     const t = computeLoadoutTotal(ITEMS, [], 'month')
     expect(t.foundingCents).toBe(4900)
-    expect(t.listCents).toBe(4900)
-    expect(t.savingsCents).toBe(0)
+    expect(t.listCents).toBe(7900)
+    expect(t.savingsCents).toBe(3000) // $79 list - $49 founding
     expect(t.lines).toHaveLength(1)
     expect(t.lines[0].isBase).toBe(true)
     expect(t.lines[0].key).toBe('business_base')

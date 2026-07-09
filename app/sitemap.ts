@@ -17,8 +17,7 @@ import { getCityCategoryHubs } from "@/app/discover/events/_data";
 import { listDiscoverCities } from "@/app/discover/places/_data";
 import { listDensityCities } from "@/app/discover/cities/_data";
 import { COMPARISONS, comparisonPath } from "@/lib/marketing/comparisons";
-import { personaSlugs } from "@/lib/marketing/personas";
-import { personaPath } from "@/lib/pricing/pricing-page";
+import { funnelSlugs } from "@/lib/marketing/funnel-config";
 
 // Organizer profiles (/discover/events/organizer/[handle]) — one URL per host with
 // at least one upcoming public/unlisted event. Reads the redaction-safe RPC, which
@@ -120,13 +119,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The entity Spaces directory (the networked profile network) + the indexable pricing page.
     { url: `${SITE_URL}/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${SITE_URL}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    // Per-Mode persona / package landing pages (Phase F2, Modes M5). A static registry
-    // (lib/marketing/personas), so the per-page URLs are safe to advertise here directly.
-    ...personaSlugs().map((slug) => ({
-      url: `${SITE_URL}${personaPath(slug)}`,
+    // Operator funnel doors, /for/<niche> (ADR-591). A static registry (lib/marketing/funnel-config), so
+    // the per-page URLs are safe to advertise here directly.
+    ...funnelSlugs().map((slug) => ({
+      url: `${SITE_URL}/for/${slug}`,
       lastModified: now,
       changeFrequency: "monthly" as const,
-      priority: 0.6,
+      priority: 0.7,
     })),
     // SEO/AIO pillar pages (problem-aware entries: loneliness, adult friendship,
     // building community, life after the feed, always-wired stress, new-city
