@@ -13083,3 +13083,46 @@ the clock/pre-roll logic. Regenerate `lib/database.types.ts` after apply (untype
 ADR-246). **Naming:** member copy stays Mindless / Be Still / Get Moving / Strength / Start Practice;
 the warm-up *noun* is an OPEN QUESTION pending a NAMING.md entry (keep the plain "Warm up" pre-roll
 label until then). Phased build (P0–P6) tracked in `docs/PRACTICE-TIMER-REWORK.md`.
+
+## ADR-593: Admin rail save-model unification — autosave + live reflection + one title per module
+
+**Status:** Accepted + shipped (owner ask 2026-07-09). Extends the ADMIN-RAIL.md standard; enforced-menu
+contract (ADR-553) unchanged. Corroborated by `components/admin/rail/{use-rail-autosave.ts,rail-autosave-form.tsx}`
+and the converted `components/admin/modules/*-module.tsx`.
+
+**Context.** The admin rail for editing had drifted into three inconsistencies. (1) **Save model:** some
+editors had a Save button (circle/event/hub/nexus/channel/practice settings, place & time), some auto-saved
+(journey, space branding, the layout builders), and some MIXED both in one panel (event settings: a Save
+button beside auto-saving gallery/poster/cover and a separate permalink button). (2) **No live reflection:**
+form editors called `revalidatePath` server-side but the page behind the slide-over did not repaint until a
+manual navigation, so edits did not "appear on the page in real time." (3) **Duplicate titles:** the rail
+draws a section header from `SPINE_META` AND each module drew its own `<h3>`/`AdminModuleCard` title for the
+same thing — "Place & Time / Place & Time", "People / People", "Insights / Insights", "Danger / Danger zone".
+
+**Decision.**
+1. **One save engine.** `useRailAutosave(action)` (`components/admin/rail/use-rail-autosave.ts`) wraps the
+   entity's EXISTING full-form mutation (no server change). Text fields commit on blur (debounced 600ms),
+   selects/toggles/radios commit instantly; a flush-on-unmount never drops the last keystroke. On success it
+   calls `router.refresh()`, so the RSC page behind the rail re-renders with the new data — the "live
+   reflection" directive. `RailAutosaveForm` is the drop-in form wrapper; one shared `RailSaveRow` cue
+   ("Changes save automatically" → "Saving…" → "Saved") replaces every Save button. Programmatic changes (a
+   dragged map pin, a venue autocomplete that fills several fields) call `saveNow` from a small context, since
+   React setState fires no native form event.
+2. **Every core-entity editor autosaves.** Converted circle/event/hub/nexus/channel/practice settings,
+   circle + event Place & Time, event Engage, and circle Page text. **Exceptions (kept explicit):** permalink
+   keeps its own action (a rename REDIRECTS the page — not a silent field save); destructive actions keep
+   their arm-then-confirm; images self-save through their own bound actions as before.
+3. **One title per module area.** The rail section header is now the ONLY title. The per-module `<h3>` /
+   `AdminModuleCard` heading was stripped from every module. `AdminSection.nodes` carries a per-node label so
+   a MULTI-module section (Basics = settings + page text; You = profile/spotlight/layout/look) shows a compact
+   sub-label and stays distinct, while a single-module section reads as just its section header.
+4. **Microtoggles.** Personal Spotlight enable + publish are `Toggle` switches; channel Active commits the
+   moment it flips. (Enum settings — status, visibility — stay instant-committing selects; a toggle is only
+   used where the choice is genuinely on/off.)
+
+**Deferred (documented follow-ups, not in this pass).** (a) **Speed:** generalize the ADR-550 one-bundle
+provider (`space-rail-data.tsx`) to the core entities so a circle/event/hub/nexus/practice rail resolves its
+~6 modules from ONE server fetch instead of one self-fetch per module. (b) **Coverage:** broadcast/[id] still
+deep-links to `/admin/dispatches` via `StaffEditButton` rather than opening the rail (a dispatch is not yet an
+`adminScopeFor` scope); every other editable entity page already mounts the rail trigger. (c) True 0ms preview
+(the `EntityLayoutContext` store pattern) for marquee fields, beyond the `router.refresh()` sub-second refresh.
