@@ -14,6 +14,7 @@ import { trackSpaceProfileViewOnce } from '@/lib/spaces/analytics'
 import { buildSpaceProfileNav } from '@/lib/spaces/profile-nav'
 import { defaultAccentForType, defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { readHeroConfig, resolveHero, heroHeightClass } from '@/lib/spaces/hero-config'
+import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
@@ -55,25 +56,9 @@ import { getSpaceReviews } from '@/lib/spaces/content-data'
 // The Space itself is resolved + stamped once by the parent [slug]/layout.tsx; we read it back from the
 // request-scoped active-space context (getActiveSpace), falling back to a re-resolve defensively.
 
-// A small curated set of calm, warm, neutral SITE stock photos used as the cover PLACEHOLDER when a
-// Space has not uploaded its own cover, so the header always reads as an intentional identity band
-// rather than a flat gradient. Hosted build-time assets under public/images/site. A real cover wins.
-const COVER_PLACEHOLDERS = [
-  '/images/site/outdoor-group.jpg',
-  '/images/site/sunset.jpg',
-  '/images/site/lab-lounge.jpg',
-  '/images/site/nature-viewing-sunset.jpg',
-  '/images/site/community-dinner.jpg',
-  '/images/site/meditation-circle-outdoor.jpg',
-] as const
-
-// Deterministically pick ONE placeholder for a Space, keyed off its id, so the same Space always shows
-// the same photo and different Spaces vary (no Math.random, stable across renders).
-function coverPlaceholderFor(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) hash = (hash + id.charCodeAt(i)) % COVER_PLACEHOLDERS.length
-  return COVER_PLACEHOLDERS[hash]
-}
+// The cover PLACEHOLDER (a Space with no uploaded cover) is the SHARED deterministic pick from
+// lib/spaces/cover-placeholder — the OG share card (opengraph-image.tsx) draws from the same source,
+// so a shared link previews the SAME photo this hero shows.
 
 // The action-row button GEOMETRY, sized to the compact `sm` scale so the identity row stays trim next
 // to the avatar (the buttons were shrunk down a notch from `md`). On a photo (Hero overlay) a bordered
