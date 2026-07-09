@@ -96,6 +96,8 @@ export function Composer({
   bottomSlot,
   forceAnnouncement,
   compactTools = true,
+  onSubmit,
+  onUploadImage,
 }: {
   scopeId: string
   visibility?: 'public' | 'region' | 'cluster' | 'group'
@@ -116,6 +118,13 @@ export function Composer({
   /** Tuck the formatting cluster behind a small "Format" toggle below the
    *  divider (default everywhere — writing stays front and center). */
   compactTools?: boolean
+  /** Override the write path (the Space Community feed reuses THIS box but posts through its own gated
+   *  space actions instead of createPost). Given the composed `body` + any uploaded `imageUrl`; return
+   *  `{ error }` to surface a failure and keep the draft. When omitted, the default createPost path runs. */
+  onSubmit?: (data: { body: string; imageUrl: string | null }) => Promise<{ error?: string } | void>
+  /** Override image upload (e.g. the Space's follower-gated community-image action). Returns the public
+   *  URL, or null on failure. When omitted, the default upload to the `posts` bucket runs. */
+  onUploadImage?: (file: File) => Promise<string | null>
 }) {
   const [body, setBody] = useState('')
   // Capture remounts the composer per feature (key=mode), so the Dispatch feature's
@@ -250,22 +259,36 @@ export function Composer({
     startTransition(async () => {
       let imageUrl: string | null = null
       if (imageFile) {
-        imageUrl = await uploadImage()
-        if (imageFile && !imageUrl) return // upload failed, abort
+        imageUrl = onUploadImage ? await onUploadImage(imageFile) : await uploadImage()
+        if (!imageUrl) {
+          // The default uploadImage sets its own imageError; a custom uploader is silent, so name it.
+          if (onUploadImage) setImageError('Could not upload that image. Try again.')
+          return // upload failed, abort
+        }
       }
 
-      const fd = new FormData()
-      fd.set('body', trimmed)
-      fd.set('scopeId', scopeId)
-      fd.set('visibility', visibility)
-      fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : 'feed')
-      if (imageUrl) fd.set('imageUrl', imageUrl)
+      // The Space Community feed reuses this box but posts through its own gated actions (onSubmit); the
+      // default feed path builds the createPost FormData. Both keep the draft intact on failure.
+      if (onSubmit) {
+        const res = await onSubmit({ body: trimmed, imageUrl })
+        if (res && 'error' in res && res.error) {
+          setPostError(res.error)
+          return
+        }
+      } else {
+        const fd = new FormData()
+        fd.set('body', trimmed)
+        fd.set('scopeId', scopeId)
+        fd.set('visibility', visibility)
+        fd.set('post_type', isAnnouncement ? 'announcement' : kind === 'note' ? 'note' : 'feed')
+        if (imageUrl) fd.set('imageUrl', imageUrl)
 
-      // Keep the composed text (and image) if the write failed, so nothing is lost.
-      const res = await createPost(fd)
-      if (res && isError(res)) {
-        setPostError(res.error)
-        return
+        // Keep the composed text (and image) if the write failed, so nothing is lost.
+        const res = await createPost(fd)
+        if (res && isError(res)) {
+          setPostError(res.error)
+          return
+        }
       }
 
       setBody('')

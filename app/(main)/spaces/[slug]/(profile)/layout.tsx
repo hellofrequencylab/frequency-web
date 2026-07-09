@@ -102,6 +102,12 @@ function ownerToolClasses(onInk: boolean): string {
   return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')
 }
 
+// A borderless, background-free ICON button for the compact mobile action band: just the glyph, no chip
+// or white card behind it, so QR + Edit Space take minimal width and the primary CTA gets the room (owner
+// ask). Square 40px tap target, muted glyph that fills in on press. Tokens only.
+const ghostIconClasses =
+  'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-text'
+
 export default async function SpaceProfileChromeLayout({
   children,
   params,
@@ -222,7 +228,7 @@ export default async function SpaceProfileChromeLayout({
   // replacing the bespoke SpaceCustomizeDrawer. It resolves the Space's 9-spine surfaces as browse-first
   // link-rows into the existing /settings/* sub-pages, gated on the viewer's per-Space functions (spaceFns)
   // + the always-on floor. Owner-gated (canSeeAsOwner), so a visitor never sees it and never triggers it.
-  const ownerTools = (onInk = false, extra = '') =>
+  const ownerTools = (onInk = false, extra = '', iconOnly = false) =>
     canSeeAsOwner ? (
       <OpenAdminBarButton
         scope={{ kind: 'space', id: space.id }}
@@ -230,8 +236,9 @@ export default async function SpaceProfileChromeLayout({
         spaceFns={spaceFns}
         moduleMenu={{ order: moduleMenu.order, hidden: moduleMenu.hidden }}
         label={manage.staffViewing ? 'Edit Space (staff)' : 'Edit Space'}
-        icon={<SlidersHorizontal className="h-4 w-4" aria-hidden />}
-        className={cn(ownerToolClasses(onInk), extra)}
+        icon={<SlidersHorizontal className={iconOnly ? 'h-5 w-5' : 'h-4 w-4'} aria-hidden />}
+        iconOnly={iconOnly}
+        className={cn(iconOnly ? ghostIconClasses : ownerToolClasses(onInk), extra)}
       />
     ) : null
 
@@ -287,26 +294,19 @@ export default async function SpaceProfileChromeLayout({
     </div>
   )
 
-  // MOBILE action card (<sm): the three primary actions — Book, QR (Connect), and Edit Space — on ONE row,
-  // each `flex-1` so they share the width evenly, and `items-stretch` so they are all the SAME height and
-  // fill the card. Follow is NOT here: it sits above the identity on the cover (mobileFollow). Always
-  // on-surface styling (a white card, not a photo overlay). `sm:hidden` — desktop keeps the overlaid row.
+  // MOBILE action band (<sm): the dominant primary CTA (Book / Join) fills the row, with QR (Connect) and
+  // Edit Space as compact ICON-ONLY buttons beside it — no white chip or card behind them, so the actions
+  // read as a clean toolbar and the primary CTA gets the width (owner ask). Follow is NOT here: it sits
+  // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
-    <div className="mt-4 rounded-xl border border-border bg-surface p-4 sm:hidden">
-      <div className="flex items-stretch gap-2">
-        <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')} {...ctaLinkProps}>
-          {ctaLabel}
-        </Link>
-        <Link
-          href="/codes"
-          aria-label={`Connect with ${brandName}`}
-          title="Connect"
-          className={cn(buttonClasses('secondary', 'sm'), 'flex-1 justify-center gap-1.5')}
-        >
-          <QrCode className="h-4 w-4" aria-hidden /> QR
-        </Link>
-        {ownerTools(false, 'flex-1 justify-center')}
-      </div>
+    <div className="mt-4 flex items-center gap-2 sm:hidden">
+      <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')} {...ctaLinkProps}>
+        {ctaLabel}
+      </Link>
+      <Link href="/codes" aria-label={`Connect with ${brandName}`} title="QR code" className={ghostIconClasses}>
+        <QrCode className="h-5 w-5" aria-hidden />
+      </Link>
+      {ownerTools(false, '', true)}
     </div>
   )
 
