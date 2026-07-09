@@ -389,6 +389,30 @@ export function sanitizeMovementConfig(input: unknown): MovementConfig {
   }
 }
 
+// --- display: a one-line preview of how a practice runs ---------------------
+
+/** A short, voice-compliant summary of how a practice runs, for the card + detail page
+ *  (ADR-592, P4): `Log it` for a non-timed practice, else the mode + shape (e.g.
+ *  "Get Moving · Tabata, 8 rounds · ~4 min", "Get Moving · 30 min walk", "Be Still · 10 min").
+ *  Pure. `timerKind` is typed loosely (string) to avoid a cycle with lib/practices. */
+export function timerPreview(input: {
+  timerKind: string | null | undefined
+  movementConfig?: MovementConfig | null
+  durationMin?: number | null
+}): string {
+  const kind = input.timerKind ?? 'none'
+  if (kind === 'none') return 'Log it'
+  if (kind === 'movement') {
+    const plan = buildPlan(input.movementConfig ?? { mode: 'walk' })
+    const total = totalSeconds(plan)
+    const mins = total != null ? ` · ~${Math.max(1, Math.round(total / 60))} min` : ''
+    return `Get Moving · ${plan.label}${mins}`
+  }
+  // Mindless (Be Still): the length seeds the sit; open when unset.
+  const mins = input.durationMin && input.durationMin > 0 ? ` · ${input.durationMin} min` : ''
+  return `Be Still${mins}`
+}
+
 // --- the runtime read -------------------------------------------------------
 
 /** Where `elapsedSec` lands in a plan. PURE — the live component calls this every

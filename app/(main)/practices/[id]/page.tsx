@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
-import { Zap, Wand2, Pencil } from 'lucide-react'
+import { Zap, Wand2, Pencil, Timer } from 'lucide-react'
 import { getMyProfileId } from '@/lib/auth'
 import { getPracticeCapabilities } from '@/lib/core/load-capabilities'
 import { getRankedPractice, getPracticeMemberState, getPracticeCreator } from '@/lib/practices'
@@ -13,6 +13,7 @@ import { LogPracticeButton } from '@/components/practice/log-practice-button'
 import { PracticeTimerButton } from '@/components/practice/practice-timer-button'
 import { AdoptPracticeButton } from '@/components/practice/adopt-practice-button'
 import { PillarBadge } from '@/components/practice/pillar-badge'
+import { timerPreview } from '@/lib/movement'
 import { ClaimPractice } from '@/components/practice/claim-practice'
 import { ProposeToLibraryButton } from '@/components/library/propose-to-library'
 import { PracticeAuthor } from '@/components/practice/practice-author'
@@ -126,6 +127,11 @@ export default async function PracticeDetailPage({ params }: Params) {
       badges={
         <>
           {pillarName && <PillarBadge name={pillarName} />}
+          {/* How it runs, at a glance (ADR-592, P4): the timer mode + shape, or "Log it". */}
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs font-medium text-muted">
+            {practice.uses_timer && <Timer className="h-3 w-3" aria-hidden />}
+            {timerPreview({ timerKind: practice.timer_kind, movementConfig: practice.movement_config, durationMin: practice.duration_min })}
+          </span>
           {practice.subcategory && (
             <span className="rounded-full bg-primary-bg px-2 py-0.5 text-xs font-medium text-primary-strong">
               {practice.subcategory.name}
