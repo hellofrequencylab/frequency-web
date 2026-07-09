@@ -23,6 +23,7 @@ export function OpenAdminBarButton({
   moduleMenu,
   label,
   icon,
+  iconOnly,
   className,
 }: {
   /** The scope to point the bar at (`id` = the entity's DB id). */
@@ -41,16 +42,20 @@ export function OpenAdminBarButton({
   /** A pre-rendered icon element (e.g. `<Settings className="h-4 w-4" />`); crosses the RSC boundary
    *  as markup, so a Server Component page can pass it without a client-boundary trap. */
   icon?: React.ReactNode
+  /** Render ONLY the icon (the compact mobile action band): the `label` becomes the accessible name
+   *  (aria-label + sr-only text) instead of visible text, so the control stays reachable + labeled. */
+  iconOnly?: boolean
   className?: string
 }) {
   return (
     <button
       type="button"
       onClick={() => openAdminBar({ scope, caps, spaceType, spaceFns, moduleMenu })}
+      aria-label={iconOnly ? label : undefined}
       className={className ?? DEFAULT_CLASS}
     >
       {icon}
-      {label}
+      {iconOnly ? <span className="sr-only">{label}</span> : label}
     </button>
   )
 }
