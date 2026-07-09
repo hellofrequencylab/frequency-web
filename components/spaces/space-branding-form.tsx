@@ -273,10 +273,14 @@ export function SpaceBrandingForm({
         </div>
       </section>
 
-      {/* HERO — the cover height + how its buttons sit (item 5, moved here from the page builder). Each
-          picks-and-saves on its own; the header CTA is a separate control below. */}
-      <section className="space-y-3">
-        <SectionHeader title="Hero" />
+      {/* HEADER — every header/hero style folded into ONE dropdown (item 1): height, buttons, shade, and
+          the header button. Each control autosaves on pick / blur (no Save button). */}
+      <details className="group">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+          Header
+          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+        </summary>
+        <div className="space-y-5 pt-3">
         <div className="space-y-2">
           <Label className="block font-semibold">Height</Label>
           <div className="grid grid-cols-3 gap-2">
@@ -335,15 +339,10 @@ export function SpaceBrandingForm({
             })}
           </div>
         </div>
-      </section>
 
-      {/* HEADER SHADE — the cover-scrim treatment, tucked in a dropdown (item 2). Autosaves on pick. */}
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
-          Header shade
-          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-        </summary>
-        <div className="space-y-2 pt-3">
+        {/* Shade — the cover-scrim treatment over the header photo. */}
+        <div className="space-y-2">
+          <Label className="block font-semibold">Shade</Label>
           <div className="grid grid-cols-2 gap-2">
             {COVER_SCRIMS.map((c) => {
               const active = scrim === c.value
@@ -373,16 +372,11 @@ export function SpaceBrandingForm({
           </div>
           <p className="text-xs text-muted">{COVER_SCRIMS.find((c) => c.value === scrim)?.tagline}</p>
         </div>
-      </details>
 
-      {/* HEADER BUTTON — the one dominant action on your hero, tucked in a dropdown (item 2). Autosaves on
-          each pick / blur (item 1): no Save button. A custom link only saves once its label + URL are valid. */}
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
-          Header button
-          <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-        </summary>
-        <div className="space-y-3 pt-3">
+        {/* Header button — the one dominant action on your hero. Autosaves on each pick / blur; a custom
+            link only saves once its label + URL are valid. */}
+        <div className="space-y-3">
+          <Label className="block font-semibold">Header button</Label>
           <p className="text-xs text-muted">
             The main button on your page. Keep the default, point it at one of your pages, or add your own
             link.
@@ -520,6 +514,7 @@ export function SpaceBrandingForm({
               </div>
             </div>
           )}
+        </div>
         </div>
       </details>
 

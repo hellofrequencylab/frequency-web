@@ -13156,3 +13156,33 @@ tagline / CTA); and the on-page cover title was crushed into a narrow column bes
 
 `HeroEditorValues` moved from the deleted panel into `lib/spaces/hero-config.ts`. No migration (hero look still
 lives in `spaces.preferences.hero`). Gate: `tsc && lint && test` (4560) + `pnpm check:menu`, all green.
+
+## ADR-595: Space rail refinements — one Header dropdown, autosave, auto rating, Automation→CRM
+
+**Status:** Accepted + shipped (owner review of the live Space rail, 2026-07-09). Follow-up to ADR-593/594.
+
+**Decision (8 owner-directed changes to the `/spaces/<slug>` admin rail).**
+1. **One Header dropdown** — the Identity & Branding "Hero" height/buttons, "Header shade", and "Header
+   button" controls fold into a single collapsible **Header** disclosure (was three separate blocks).
+2. **Info & Connect autosaves** — the About/Story/contact/links form commits on field blur (and after a Vera
+   draft); the Save button is gone (`space-business-info-form.tsx`).
+3. **More social/service links** — added **Insight Timer** and **Spotify** to the profile links list. Synced
+   across the three places a platform must be declared: `SOCIAL_PLATFORMS` (editor), `KNOWN_PLATFORMS`
+   (server allow-list, else the URL is dropped on read), and `BUSINESS_PLATFORM_META` + the Puck options
+   (render label/icon).
+4. **Removed "Arrange your page"** button from the Page panel (the page builder is reached from the profile).
+5. **"Publish website" shows Coming soon** — the button reveals a notice instead of calling
+   `setWebsitePublished` (standalone sites are not live yet).
+6. **Removed the manual rating box** — a Space's rating is **auto-generated from its Reviews**:
+   `space-landing.tsx` overrides the central `profile.rating`/`ratingCount` with the live `getSpaceReviews`
+   aggregate (cleared when there are no reviews), so the identity block reflects real reviews. The Settings
+   form keeps only Visibility, which autosaves.
+7. **Bottom "More" menu** — removed the **"Menu and features"** (`space.modules`) rail entry (the
+   `/manage/modules` page still exists for direct access), and moved **Automation** (`space.automation`) out
+   of Reach and into the **CRM / Audience** section (`slot: 'people'`, `family: 'audience'`, `tier: 'primary'`,
+   ordered right after CRM). Updated `UNHIDEABLE_MODULE_IDS` + the drift-guard tests accordingly.
+8. **Danger zone last** — kept `space.danger` at `priority: 99`, so it sorts last in the extra band after
+   the other changes drain items above it.
+
+Locked-contract note (ADR-553): all menu edits stay in `SPACE_MODULES`; `pnpm check:menu` + the drift-guard
+tests pass. Gate: `tsc && lint && test` (4563), all green.
