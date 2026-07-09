@@ -88,7 +88,7 @@ export interface PricingTier {
  *  beside them. The price comes from the catalog (so a config change is one number). ADR-472: the AI
  *  Engine is now the SOLE metered add-on; Marketing, Team, and Branding folded into Business tier depth. */
 export const PRICING_ADDONS: readonly { key: AddonKey; glyph: string; label: string; turnsOn: string }[] = [
-  { key: 'ai', glyph: '🧠', label: 'AI Engine', turnsOn: 'Resonance goes from read-only to a working graph that suggests matches.' },
+  { key: 'ai', glyph: '🧠', label: 'Resonance Engine', turnsOn: "Turns your community's signals into live matches and next-best actions." },
 ]
 
 /** The catalog item key for a metered add-on (ai -> addon_ai). PURE. */
@@ -204,18 +204,17 @@ export interface PersonaLoadout {
   perSeat?: boolean
 }
 
-/** The persona loadouts, in the plan §4a / §4b order. ADR-472: marketing automation, team roles, and a
- *  custom domain are now TIER depth (Business and up), not add-ons, so a loadout's only metered add-on is
- *  the AI Engine. Coaches and the business personas turn it on (Pro base + AI Engine = $39/mo); the
- *  Nonprofit and Event personas run on the base. The monthly totals come from the catalog, never
- *  hardcoded, so a catalog change reflows every figure. */
+/** The FIVE persona doors (ADR-590): one system, presented by who they are. Each resolves to Business,
+ *  Business + Resonance, or the Nonprofit plan. Coaches/healers and community builders turn the Resonance
+ *  Engine on (Business + Resonance = $69/mo); studios and event hosts run on Business ($49/mo); nonprofits
+ *  run the flat Nonprofit plan ($29/mo). The monthly totals come from the catalog, never hardcoded, so a
+ *  catalog change reflows every figure. */
 export const PERSONA_LOADOUTS: readonly PersonaLoadout[] = [
-  { slug: 'coaches', label: 'Coach', addons: ['ai'], note: 'Packages, scheduling, and a client CRM.' },
-  { slug: 'service-businesses', label: 'Service business', addons: ['ai'], note: 'Bookings, quotes, and repeat clients.' },
-  { slug: 'product-businesses', label: 'Product business', addons: ['ai'], note: 'A catalog, a storefront, and your own domain.' },
-  { slug: 'studios', label: 'Studio', addons: ['ai'], note: 'Classes, memberships, and check-in.' },
-  { slug: 'nonprofits', label: 'Nonprofit', addons: [], note: 'Programs, donations, and supporters.', perSeat: true },
-  { slug: 'event-spaces', label: 'Event space', addons: [], note: 'Tickets, check-in, and dispatch.' },
+  { slug: 'coaches-and-healers', label: 'Coaches and healers', addons: ['ai'], note: 'Packages, scheduling, and a client CRM that suggests who to follow up with.' },
+  { slug: 'studios', label: 'Studios', addons: [], note: 'Classes, memberships, and check-in at the door.' },
+  { slug: 'event-hosts', label: 'Event hosts', addons: [], note: 'Tickets, check-in, and a message to everyone who has one.' },
+  { slug: 'community-builders', label: 'Community builders', addons: ['ai'], note: 'Circles, memberships, and matches between the right people.' },
+  { slug: 'nonprofits', label: 'Nonprofits', addons: [], note: 'Donations, supporters, and programs.', perSeat: true },
 ]
 
 /** The /for/<slug> path for a persona. Canonical everywhere. PURE. */

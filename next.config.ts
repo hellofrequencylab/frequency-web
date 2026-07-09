@@ -105,6 +105,12 @@ const nextConfig: NextConfig = {
       // the year-round game is "The Quest"). Redirect old help links + bookmarks.
       { source: '/help/the-game', destination: '/help/the-quest', permanent: false },
       { source: '/help/the-game/:path*', destination: '/help/the-quest/:path*', permanent: false },
+      // The pricing "five doors" rename (ADR-590): the old persona pages collapsed to five doors.
+      // Redirect the retired slugs so bookmarks + inbound links keep landing somewhere real.
+      { source: '/for/coaches', destination: '/for/coaches-and-healers', permanent: false },
+      { source: '/for/event-spaces', destination: '/for/event-hosts', permanent: false },
+      { source: '/for/service-businesses', destination: '/pricing', permanent: false },
+      { source: '/for/product-businesses', destination: '/pricing', permanent: false },
     ]
   },
   images: {

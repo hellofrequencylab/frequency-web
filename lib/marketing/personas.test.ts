@@ -38,14 +38,14 @@ describe('persona registry', () => {
     expect(slugs.length).toBe(PERSONAS.length)
   })
 
-  it('covers the six plan personas', () => {
+  it('covers the five persona doors (ADR-590)', () => {
     expect(personaSlugs().sort()).toEqual(
-      ['coaches', 'event-spaces', 'nonprofits', 'product-businesses', 'service-businesses', 'studios'].sort(),
+      ['coaches-and-healers', 'community-builders', 'event-hosts', 'nonprofits', 'studios'].sort(),
     )
   })
 
   it('getPersona resolves a known slug and rejects an unknown one', () => {
-    expect(getPersona('coaches')?.audience).toBe('Coaches')
+    expect(getPersona('coaches-and-healers')?.audience).toBe('Coaches and healers')
     expect(getPersona('not-a-persona')).toBeUndefined()
   })
 
@@ -102,22 +102,20 @@ describe('persona copy is voice-compliant', () => {
     }
   })
 
-  it('addonLabel maps the AI add-on to its display label', () => {
-    expect(addonLabel('ai')).toBe('AI Engine')
+  it('addonLabel maps the add-on to its display label (Resonance Engine)', () => {
+    expect(addonLabel('ai')).toBe('Resonance Engine')
   })
 })
 
 describe('loadout-strip math (computed from the catalog, never hardcoded)', () => {
-  // ADR-552: the single paid base is Business ($49); the AI Engine ($20) is the only metered add-on. A
-  // persona loadout is the Business base plus the AI Engine for the business personas ($69), or the
-  // Business base alone for the Event space ($49).
-  it('matches the ladder: business personas $69 (Business + AI Engine), Event $49 (Business base)', () => {
+  // ADR-590: the paid base is Business ($49); the Resonance Engine ($20) is the only add-on. Coaches/healers
+  // and community builders turn it on ($69); studios and event hosts run on Business alone ($49).
+  it('matches the doors: +Resonance personas $69, Business-only personas $49', () => {
     const expected: Record<string, string> = {
-      coaches: '$69/mo',
-      'service-businesses': '$69/mo',
-      'product-businesses': '$69/mo',
-      studios: '$69/mo',
-      'event-spaces': '$49/mo',
+      'coaches-and-healers': '$69/mo',
+      'community-builders': '$69/mo',
+      studios: '$49/mo',
+      'event-hosts': '$49/mo',
     }
     const strip = loadoutStrip()
     for (const [slug, label] of Object.entries(expected)) {
