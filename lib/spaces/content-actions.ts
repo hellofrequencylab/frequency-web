@@ -53,6 +53,117 @@ async function authorizeEditor(slug: string): Promise<{ spaceId: string; profile
 function revalidateLanding(slug: string) {
   revalidatePath(`/spaces/${slug}`)
   revalidatePath(`/spaces/${slug}/edit-page`)
+  revalidatePath(`/spaces/${slug}/community`)
+}
+
+// ── Member posts on the Community feed (Phase 2b) ─────────────────────────────────────────────────
+// A FOLLOWER (not just the operator) may post to the Community feed when the business allows it. Unlike
+// a brand Update (a space_updates row + anchor), a member post is a plain top-level public.posts row of
+// post_type = 'space_update' scoped to the Space, so it (a) reuses the SAME member react/comment plumbing
+// (is_space_update_post keys off the type), (b) is read by the Community feed's union, and (c) stays OUT of
+// the Home brand-updates block (which reads space_updates). Writes go through the admin client, so the gate
+// is enforced HERE (signed-in + follower/operator + the business toggle on).
+
+/** Whether the Space currently accepts member Community posts. Default ON; the operator turns it off via
+ *  setCommunityMemberPosts, stored on preferences.communityMemberPosts. */
+function spaceAllowsMemberPosts(preferences: unknown): boolean {
+  if (!preferences || typeof preferences !== 'object' || Array.isArray(preferences)) return true
+  return (preferences as Record<string, unknown>).communityMemberPosts !== false
+}
+
+/** Post to a Space's Community feed as a FOLLOWER (or operator). Gated: signed-in, the business allows
+ *  member posts, and the caller follows the Space (an operator always may). Inserts a top-level
+ *  post_type='space_update' post authored by the caller. Returns the new post id (its own interaction
+ *  anchor). */
+export async function createMemberPost(
+  slug: string,
+  body: string,
+  imageUrl?: string | null,
+): Promise<ActionResult<{ id: string }>> {
+  void imageUrl // member image uploads land in a later pass; text posts now.
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to post.')
+
+  const space = await getVisibleSpaceBySlug(slug, profileId)
+  if (!space) return fail('That space is not available.')
+  if (!spaceAllowsMemberPosts(space.preferences)) return fail('This space is not taking member posts right now.')
+
+  const caps = await getSpaceCapabilities(space, profileId)
+  const isOperator = caps.canEditProfile
+  if (!isOperator && !(await isFollowing(space.id, profileId))) {
+    return fail('Follow this space to post in its community.')
+  }
+
+  const trimmed = body.trim().slice(0, 20000)
+  if (!trimmed) return fail('Write something first.')
+
+  const { data, error } = await db()
+    .from('posts')
+    .insert({
+      author_id: profileId,
+      body: trimmed,
+      scope_id: space.id,
+      visibility: 'public',
+      post_type: 'space_update',
+    })
+    .select('id')
+    .single()
+  if (error || !data) return fail('Could not post that. Try again.')
+
+  revalidateLanding(slug)
+  return ok({ id: (data as { id: string }).id })
+}
+
+/** Turn member Community posting ON or OFF for a Space (operator control). Owner/admin/editor-gated.
+ *  Stored on preferences.communityMemberPosts (default ON; only an explicit `false` is written). */
+export async function setCommunityMemberPosts(slug: string, allow: boolean): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const admin = createAdminClient() as unknown as {
+    from: (t: string) => {
+      select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: { preferences?: unknown } | null }> } }
+      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> }
+    }
+  }
+  const { data } = await admin.from('spaces').select('preferences').eq('id', auth.spaceId).maybeSingle()
+  const prefs =
+    data?.preferences && typeof data.preferences === 'object' && !Array.isArray(data.preferences)
+      ? { ...(data.preferences as Record<string, unknown>) }
+      : {}
+  if (allow) delete prefs.communityMemberPosts
+  else prefs.communityMemberPosts = false
+
+  const { error } = await admin.from('spaces').update({ preferences: prefs }).eq('id', auth.spaceId)
+  if (error) return fail('Could not update that setting. Try again.')
+
+  revalidateLanding(slug)
+  return ok()
+}
+
+/** Remove a member Community post (soft-hide, so it drops from the feed). Allowed for the post's AUTHOR
+ *  (removing their own) OR an OPERATOR of the Space (moderation). Scoped to a space_update post on this
+ *  Space, so it can never hide an unrelated post. */
+export async function removeCommunityPost(slug: string, postId: string): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in first.')
+
+  const { data } = await db().from('posts').select('id, author_id, scope_id, post_type').eq('id', postId).maybeSingle()
+  const post = data as { id: string; author_id: string | null; scope_id: string | null; post_type: string } | null
+  if (!post || post.post_type !== 'space_update') return fail('That post is not available.')
+
+  const space = await getVisibleSpaceBySlug(slug, profileId)
+  if (!space || space.id !== post.scope_id) return fail('That post is not available.')
+
+  const isAuthor = post.author_id === profileId
+  const isOperator = (await getSpaceCapabilities(space, profileId)).canEditProfile
+  if (!isAuthor && !isOperator) return fail('You cannot remove that post.')
+
+  const { error } = await db().from('posts').update({ hidden_at: new Date().toISOString(), hidden_by: profileId }).eq('id', postId)
+  if (error) return fail('Could not remove that post. Try again.')
+
+  revalidateLanding(slug)
+  return ok()
 }
 
 // ── Brand Updates (operator-gated) ─────────────────────────────────────────────────────────────
