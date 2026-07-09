@@ -46,6 +46,7 @@ import {
   getSpaceSectionPresence,
   getSpacePractices,
   getSpaceCommunity,
+  getSpaceCommunityFeed,
 } from './content-data'
 
 beforeEach(() => {
@@ -215,5 +216,24 @@ describe('getSpaceCommunity', () => {
   it('fails safe to [] when the reader throws', async () => {
     listCirclesForSpace.mockRejectedValue(new Error('boom'))
     expect(await getSpaceCommunity('space-1')).toEqual([])
+  })
+})
+
+describe('getSpaceCommunityFeed', () => {
+  it('returns a post per update with empty interaction when an update has no anchor', async () => {
+    currentAdmin = makeAdmin({
+      data: [{ id: 'u1', title: 'Hi', body: 'B', image_url: null, published_at: '2026-01-01', post_id: null }],
+    })
+    const feed = await getSpaceCommunityFeed('space-1', 'viewer-1')
+    expect(feed.posts).toHaveLength(1)
+    expect(feed.posts[0].anchorId).toBeNull()
+    expect(feed.posts[0].reactions).toEqual({ counts: {}, mine: [] })
+    expect(feed.posts[0].comments).toEqual([])
+  })
+
+  it('fails safe to no posts when the updates read throws', async () => {
+    currentAdmin = makeAdmin({ data: [] }, { throws: true })
+    const feed = await getSpaceCommunityFeed('space-1', null)
+    expect(feed.posts).toEqual([])
   })
 })

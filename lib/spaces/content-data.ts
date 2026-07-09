@@ -276,8 +276,113 @@ export async function getSpaceUpdates(spaceId: string): Promise<SpaceUpdateItem[
   }
 }
 
+// ── Community feed (task: business Community tab) ─────────────────────────────────────────────────
+// The Community tab renders each PUBLISHED Update with its live reaction state + comment thread, read
+// off the SAME anchor-post plumbing the interaction actions write (post_reactions + posts.parent_id).
+// Two BATCHED queries over every anchor (reactions IN, comments IN), so the feed is never N+1.
+
+export type SpaceUpdateComment = {
+  id: string
+  body: string
+  createdAt: string
+  author: { name: string; avatarUrl: string | null } | null
+}
+
+/** The live reaction state of one Update's anchor: a count per emoji, plus the emojis the VIEWER has
+ *  used (so the client can render their toggled state without a second read). */
+export type SpaceUpdateReactions = {
+  counts: Record<string, number>
+  mine: string[]
+}
+
+export type SpaceCommunityPost = {
+  update: SpaceUpdateItem
+  /** The interaction anchor post id, or null when the Update has no anchor yet (no interaction). */
+  anchorId: string | null
+  reactions: SpaceUpdateReactions
+  comments: SpaceUpdateComment[]
+}
+
+export type SpaceCommunityFeed = { posts: SpaceCommunityPost[] }
+
+const COMMENTS_CAP = 300
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function anyDb(): { from: (t: string) => any } {
+  return createAdminClient() as unknown as { from: (t: string) => any }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
+/** The Community feed for a Space: every PUBLISHED Update with its reaction counts (+ the viewer's own
+ *  reactions) and its comment thread, resolved through the anchor post. FAIL-SAFE throughout: any miss
+ *  yields empty interaction, so the feed always renders. Two batched queries, no N+1. */
+export async function getSpaceCommunityFeed(
+  spaceId: string,
+  viewerId: string | null,
+): Promise<SpaceCommunityFeed> {
+  const updates = await getSpaceUpdates(spaceId)
+  const emptyPost = (u: SpaceUpdateItem): SpaceCommunityPost => ({
+    update: u,
+    anchorId: u.postId,
+    reactions: { counts: {}, mine: [] },
+    comments: [],
+  })
+  const anchorIds = updates.map((u) => u.postId).filter((id): id is string => !!id)
+  if (anchorIds.length === 0) return { posts: updates.map(emptyPost) }
+
+  const reactionsByAnchor = new Map<string, SpaceUpdateReactions>()
+  const commentsByAnchor = new Map<string, SpaceUpdateComment[]>()
+  try {
+    const [{ data: reactionRows }, { data: commentRows }] = await Promise.all([
+      anyDb().from('post_reactions').select('post_id, profile_id, reaction_type').in('post_id', anchorIds),
+      anyDb()
+        .from('posts')
+        .select('id, parent_id, body, created_at, author:profiles!author_id ( display_name, avatar_url )')
+        .in('parent_id', anchorIds)
+        .is('hidden_at', null)
+        .order('created_at', { ascending: true })
+        .limit(COMMENTS_CAP),
+    ])
+    for (const r of (reactionRows ?? []) as Row[]) {
+      const anchor = str(r.post_id)
+      const type = str(r.reaction_type)
+      if (!anchor || !type) continue
+      const bucket = reactionsByAnchor.get(anchor) ?? { counts: {}, mine: [] }
+      bucket.counts[type] = (bucket.counts[type] ?? 0) + 1
+      if (viewerId && str(r.profile_id) === viewerId) bucket.mine.push(type)
+      reactionsByAnchor.set(anchor, bucket)
+    }
+    for (const c of (commentRows ?? []) as ReviewRow[]) {
+      const parent = str(c.parent_id)
+      if (!parent) continue
+      const list = commentsByAnchor.get(parent) ?? []
+      list.push({
+        id: str(c.id),
+        body: str(c.body),
+        createdAt: str(c.created_at),
+        author: c.author
+          ? { name: str(c.author.display_name) || 'Member', avatarUrl: strOrNull(c.author.avatar_url) }
+          : null,
+      })
+      commentsByAnchor.set(parent, list)
+    }
+  } catch {
+    // Fall through: every Update still renders, just without interaction state.
+  }
+
+  return {
+    posts: updates.map((u) => ({
+      update: u,
+      anchorId: u.postId,
+      reactions: (u.postId && reactionsByAnchor.get(u.postId)) || { counts: {}, mine: [] },
+      comments: (u.postId && commentsByAnchor.get(u.postId)) || [],
+    })),
+  }
+}
+
 type ReviewRow = Row & {
   author?: { display_name?: unknown; avatar_url?: unknown } | null
+  parent_id?: unknown
 }
 
 /** The VISIBLE reviews for a Space: the average, the count, and the latest few (newest first).
