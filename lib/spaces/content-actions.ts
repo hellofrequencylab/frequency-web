@@ -5,8 +5,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getCallerProfile, getMyProfileId } from '@/lib/auth'
 import { getVisibleSpaceBySlug, getSpaceById } from '@/lib/spaces/store'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
-import { isFollowing } from '@/lib/spaces/follows'
+import { isFollowing, listSpaceFollowerIds } from '@/lib/spaces/follows'
 import { isReactionKey } from '@/lib/feed/reactions'
+import { safeUrl } from '@/lib/entity-blocks/block-content'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // SPACE CONTENT write actions (Puck content blocks, Phase 2, ADR-476/472). The operator authors
@@ -71,6 +72,29 @@ function spaceAllowsMemberPosts(preferences: unknown): boolean {
   return (preferences as Record<string, unknown>).communityMemberPosts !== false
 }
 
+/** Notify a Space's FOLLOWERS that the business posted a new Update (Phase 3). One batched insert into
+ *  notifications (type 'space_update', linking to the Community tab). Best-effort + bounded; a failure never
+ *  blocks the post. The actor (the poster) is excluded. */
+async function fanOutNewSpacePost(spaceId: string, slug: string, actorId: string): Promise<void> {
+  try {
+    const space = await getSpaceById(spaceId)
+    const brand = space?.brandName ?? space?.name ?? 'A space you follow'
+    const followerIds = (await listSpaceFollowerIds(spaceId)).filter((id) => id !== actorId).slice(0, 5000)
+    if (followerIds.length === 0) return
+    const rows = followerIds.map((id) => ({
+      recipient_id: id,
+      actor_id: actorId,
+      type: 'space_update',
+      reference_type: 'space',
+      reference_id: slug,
+      body: `${brand} posted in the community`,
+    }))
+    await db().from('notifications').insert(rows)
+  } catch {
+    // best-effort: a fan-out miss never fails the post.
+  }
+}
+
 /** Post to a Space's Community feed as a FOLLOWER (or operator). Gated: signed-in, the business allows
  *  member posts, and the caller follows the Space (an operator always may). Inserts a top-level
  *  post_type='space_update' post authored by the caller. Returns the new post id (its own interaction
@@ -80,7 +104,6 @@ export async function createMemberPost(
   body: string,
   imageUrl?: string | null,
 ): Promise<ActionResult<{ id: string }>> {
-  void imageUrl // member image uploads land in a later pass; text posts now.
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to post.')
 
@@ -95,7 +118,8 @@ export async function createMemberPost(
   }
 
   const trimmed = body.trim().slice(0, 20000)
-  if (!trimmed) return fail('Write something first.')
+  const image = safeUrl(imageUrl)
+  if (!trimmed && !image) return fail('Write something first.')
 
   const { data, error } = await db()
     .from('posts')
@@ -105,6 +129,7 @@ export async function createMemberPost(
       scope_id: space.id,
       visibility: 'public',
       post_type: 'space_update',
+      ...(image ? { media_urls: [image] } : {}),
     })
     .select('id')
     .single()
@@ -112,6 +137,61 @@ export async function createMemberPost(
 
   revalidateLanding(slug)
   return ok({ id: (data as { id: string }).id })
+}
+
+/** Upload an image for a Community post. Gated like posting: signed-in + a follower (or operator) of the
+ *  Space, and the business allows member posts. Files through the same service-role event-media bucket the
+ *  Space cover/block uploads use, under a space-scoped community prefix. Returns the public URL. */
+export async function uploadCommunityImage(
+  slug: string,
+  formData: FormData,
+): Promise<{ url: string } | { error: string }> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return { error: 'Sign in to add an image.' }
+
+  const space = await getVisibleSpaceBySlug(slug, profileId)
+  if (!space) return { error: 'That space is not available.' }
+  const caps = await getSpaceCapabilities(space, profileId)
+  const isOperator = caps.canEditProfile
+  if (!isOperator) {
+    if (!spaceAllowsMemberPosts(space.preferences)) return { error: 'This space is not taking member posts right now.' }
+    if (!(await isFollowing(space.id, profileId))) return { error: 'Follow this space to post in its community.' }
+  }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'Choose an image file.' }
+  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
+  if (file.size > 9 * 1024 * 1024) return { error: 'Image must be under 9MB.' }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+  const path = `spaces/${space.id}/community/${stamp}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const { error } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: true })
+  if (error) return { error: error.message }
+  return { url: admin.storage.from('event-media').getPublicUrl(path).data.publicUrl }
+}
+
+/** Pin or unpin a Community post to the top of the feed (operator only). Sets the anchor post's is_pinned
+ *  flag; the feed sorts pinned posts first. Scoped to a space_update post on this Space. */
+export async function pinCommunityPost(slug: string, postId: string, pin: boolean): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const { data } = await db().from('posts').select('id, scope_id, post_type').eq('id', postId).maybeSingle()
+  const post = data as { id: string; scope_id: string | null; post_type: string } | null
+  if (!post || post.post_type !== 'space_update' || post.scope_id !== auth.spaceId) {
+    return fail('That post is not available.')
+  }
+
+  const { error } = await db().from('posts').update({ is_pinned: pin }).eq('id', postId)
+  if (error) return fail('Could not update that post. Try again.')
+
+  revalidateLanding(slug)
+  return ok()
 }
 
 /** Turn member Community posting ON or OFF for a Space (operator control). Owner/admin/editor-gated.
@@ -211,6 +291,9 @@ export async function createSpaceUpdate(slug: string, input: UpdateInput): Promi
   if (anchorId) {
     await db().from('space_updates').update({ post_id: anchorId }).eq('id', data.id).eq('space_id', auth.spaceId)
   }
+
+  // Notify followers of a newly PUBLISHED Update (Phase 3). Best-effort; never blocks the post.
+  if (publish) await fanOutNewSpacePost(auth.spaceId, slug, auth.profileId)
 
   revalidateLanding(slug)
   return ok({ id: data.id })

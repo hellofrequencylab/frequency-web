@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Loader2, MessageCircle, Send } from 'lucide-react'
+import { ImagePlus, Loader2, MessageCircle, Pin, Send, X } from 'lucide-react'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
 import {
   createSpaceUpdate,
@@ -12,6 +12,8 @@ import {
   commentOnSpaceUpdate,
   setCommunityMemberPosts,
   removeCommunityPost,
+  uploadCommunityImage,
+  pinCommunityPost,
 } from '@/lib/spaces/content-actions'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { ToggleRow } from '@/components/entity-blocks/controls/field-controls'
@@ -24,6 +26,71 @@ import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } fro
 
 const inputCls =
   'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
+
+/** A photo attach control for a composer: uploads through the gated community-image action and returns the
+ *  public URL, with a preview + remove. */
+function PhotoField({ slug, value, onChange }: { slug: string; value: string | null; onChange: (url: string | null) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const upload = async (file: File) => {
+    setBusy(true)
+    setError(null)
+    if (file.size > 9 * 1024 * 1024) {
+      setError('Image must be under 9MB.')
+      setBusy(false)
+      return
+    }
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await uploadCommunityImage(slug, fd)
+    if ('error' in res) setError(res.error)
+    else onChange(res.url)
+    setBusy(false)
+  }
+
+  return (
+    <div className="space-y-1">
+      {value ? (
+        <div className="relative w-fit">
+          {/* eslint-disable-next-line @next/next/no-img-element -- freshly uploaded URL, previewed inline */}
+          <img src={value} alt="" className="max-h-40 rounded-lg object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            aria-label="Remove image"
+            className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+          className="inline-flex items-center gap-1.5 text-2xs font-semibold text-primary-strong hover:underline disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <ImagePlus className="h-3.5 w-3.5" aria-hidden />}
+          {busy ? 'Uploading' : 'Add photo'}
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void upload(f)
+          e.target.value = ''
+        }}
+      />
+      {error && <p className="text-2xs text-danger">{error}</p>}
+    </div>
+  )
+}
 
 export function SpaceCommunityFeed({
   slug,
@@ -56,7 +123,7 @@ export function SpaceCommunityFeed({
   const canMemberPost = !canPost && following && allowMemberPosts
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
+    <div className="space-y-5">
       {canPost && (
         <>
           <MemberPostsToggle slug={slug} initial={allowMemberPosts} />
@@ -111,18 +178,21 @@ function MemberPostsToggle({ slug, initial }: { slug: string; initial: boolean }
 function BrandComposer({ slug }: { slug: string }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const [image, setImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  const empty = !title.trim() && !body.trim() && !image
 
   const post = () => {
     setError(null)
-    if (!title.trim() && !body.trim()) return
+    if (empty) return
     start(async () => {
-      const res = await createSpaceUpdate(slug, { title, body })
+      const res = await createSpaceUpdate(slug, { title, body, imageUrl: image })
       if (isError(res)) setError(res.error)
       else {
         setTitle('')
         setBody('')
+        setImage(null)
       }
     })
   }
@@ -144,12 +214,13 @@ function BrandComposer({ slug }: { slug: string }) {
         maxLength={20000}
         className={inputCls}
       />
+      <PhotoField slug={slug} value={image} onChange={setImage} />
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end">
         <button
           type="button"
           onClick={post}
-          disabled={pending || (!title.trim() && !body.trim())}
+          disabled={pending || empty}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
@@ -163,16 +234,21 @@ function BrandComposer({ slug }: { slug: string }) {
 /** A follower's post composer: a single body, posted to the Community feed as a member post. */
 function MemberComposer({ slug }: { slug: string }) {
   const [body, setBody] = useState('')
+  const [image, setImage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  const empty = !body.trim() && !image
 
   const post = () => {
     setError(null)
-    if (!body.trim()) return
+    if (empty) return
     start(async () => {
-      const res = await createMemberPost(slug, body)
+      const res = await createMemberPost(slug, body, image)
       if (isError(res)) setError(res.error)
-      else setBody('')
+      else {
+        setBody('')
+        setImage(null)
+      }
     })
   }
 
@@ -186,12 +262,13 @@ function MemberComposer({ slug }: { slug: string }) {
         maxLength={20000}
         className={inputCls}
       />
+      <PhotoField slug={slug} value={image} onChange={setImage} />
       {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end">
         <button
           type="button"
           onClick={post}
-          disabled={pending || !body.trim()}
+          disabled={pending || empty}
           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
@@ -263,6 +340,7 @@ function PostCard({
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [removed, setRemoved] = useState(false)
+  const [pinned, setPinned] = useState(post.pinned)
   const [pending, start] = useTransition()
 
   // A member post can be removed by an operator (moderation) or by its own author.
@@ -307,22 +385,53 @@ function PostCard({
     })
   }
 
+  const togglePin = () => {
+    if (!anchorId) return
+    const next = !pinned
+    setPinned(next) // optimistic
+    start(async () => {
+      const res = await pinCommunityPost(slug, anchorId, next)
+      if (isError(res)) setPinned(!next)
+    })
+  }
+
   if (removed) return null
 
   return (
-    <article className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+    <article
+      className={`space-y-3 rounded-2xl border bg-surface p-4 shadow-sm ${pinned ? 'border-primary/50' : 'border-border'}`}
+    >
       <header className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{authorLabel}</span>
-        {canRemove && (
-          <button
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
-          >
-            Remove
-          </button>
-        )}
+        <span className="flex items-center gap-1.5">
+          {pinned && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-primary-bg px-1.5 py-0.5 text-2xs font-bold text-primary-strong">
+              <Pin className="h-3 w-3" aria-hidden /> Pinned
+            </span>
+          )}
+          <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{authorLabel}</span>
+        </span>
+        <span className="flex items-center gap-2">
+          {canModerate && anchorId && (
+            <button
+              type="button"
+              onClick={togglePin}
+              disabled={pending}
+              className="text-2xs font-semibold text-subtle hover:text-primary-strong disabled:opacity-60"
+            >
+              {pinned ? 'Unpin' : 'Pin'}
+            </button>
+          )}
+          {canRemove && (
+            <button
+              type="button"
+              onClick={remove}
+              disabled={pending}
+              className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+            >
+              Remove
+            </button>
+          )}
+        </span>
       </header>
       {update.title && <h3 className="text-lg font-bold text-text">{update.title}</h3>}
       {update.body && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{update.body}</p>}

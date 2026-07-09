@@ -306,6 +306,8 @@ export type SpaceCommunityPost = {
   author: { name: string; avatarUrl: string | null } | null
   /** The member author's profile id (a `member` post only), so the viewer can remove their OWN post. */
   authorId: string | null
+  /** Pinned to the top of the feed by the operator (Phase 3). */
+  pinned: boolean
   reactions: SpaceUpdateReactions
   comments: SpaceUpdateComment[]
 }
@@ -337,7 +339,7 @@ async function getSpaceMemberPosts(spaceId: string, brandAnchorIds: ReadonlySet<
   try {
     const { data } = await anyDb()
       .from('posts')
-      .select('id, author_id, body, created_at, author:profiles!author_id ( display_name, avatar_url )')
+      .select('id, author_id, body, media_urls, created_at, author:profiles!author_id ( display_name, avatar_url )')
       .eq('scope_id', spaceId)
       .eq('post_type', 'space_update')
       .is('parent_id', null)
@@ -351,7 +353,7 @@ async function getSpaceMemberPosts(spaceId: string, brandAnchorIds: ReadonlySet<
           id: str(r.id),
           title: '',
           body: str(r.body),
-          imageUrl: null,
+          imageUrl: Array.isArray(r.media_urls) ? strOrNull(r.media_urls[0]) : null,
           publishedAt: strOrNull(r.created_at),
           postId: str(r.id),
         },
@@ -378,7 +380,7 @@ export async function getSpaceCommunityFeed(
   const memberPosts = await getSpaceMemberPosts(spaceId, brandAnchorIds)
 
   // Merge brand + member into one newest-first list (both carry a `publishedAt` timestamp).
-  const merged: SpaceCommunityPost[] = [
+  const base = [
     ...updates.map((u) => ({ update: u, anchorId: u.postId, kind: 'brand' as const, author: null, authorId: null })),
     ...memberPosts.map((m) => ({
       update: m.item,
@@ -387,17 +389,26 @@ export async function getSpaceCommunityFeed(
       author: m.author,
       authorId: m.authorId,
     })),
-  ]
-    .sort((a, b) => (b.update.publishedAt ?? '').localeCompare(a.update.publishedAt ?? ''))
-    .map((p) => ({ ...p, reactions: { counts: {}, mine: [] } as SpaceUpdateReactions, comments: [] as SpaceUpdateComment[] }))
+  ].map((p) => ({
+    ...p,
+    pinned: false,
+    reactions: { counts: {}, mine: [] } as SpaceUpdateReactions,
+    comments: [] as SpaceUpdateComment[],
+  }))
+
+  // Newest-first, then pinned-first (applied after the pinned flags resolve below).
+  const byDateDesc = (a: SpaceCommunityPost, b: SpaceCommunityPost) =>
+    (b.update.publishedAt ?? '').localeCompare(a.update.publishedAt ?? '')
+  const merged: SpaceCommunityPost[] = base.sort(byDateDesc)
 
   const anchorIds = merged.map((p) => p.anchorId).filter((id): id is string => !!id)
   if (anchorIds.length === 0) return { posts: merged }
 
   const reactionsByAnchor = new Map<string, SpaceUpdateReactions>()
   const commentsByAnchor = new Map<string, SpaceUpdateComment[]>()
+  const pinnedAnchors = new Set<string>()
   try {
-    const [{ data: reactionRows }, { data: commentRows }] = await Promise.all([
+    const [{ data: reactionRows }, { data: commentRows }, { data: pinnedRows }] = await Promise.all([
       anyDb().from('post_reactions').select('post_id, profile_id, reaction_type').in('post_id', anchorIds),
       anyDb()
         .from('posts')
@@ -406,7 +417,9 @@ export async function getSpaceCommunityFeed(
         .is('hidden_at', null)
         .order('created_at', { ascending: true })
         .limit(COMMENTS_CAP),
+      anyDb().from('posts').select('id, is_pinned').in('id', anchorIds),
     ])
+    for (const p of (pinnedRows ?? []) as Row[]) if (p.is_pinned) pinnedAnchors.add(str(p.id))
     for (const r of (reactionRows ?? []) as Row[]) {
       const anchor = str(r.post_id)
       const type = str(r.reaction_type)
@@ -434,13 +447,15 @@ export async function getSpaceCommunityFeed(
     // Fall through: every post still renders, just without interaction state.
   }
 
-  return {
-    posts: merged.map((p) => ({
-      ...p,
-      reactions: (p.anchorId && reactionsByAnchor.get(p.anchorId)) || { counts: {}, mine: [] },
-      comments: (p.anchorId && commentsByAnchor.get(p.anchorId)) || [],
-    })),
-  }
+  const resolved = merged.map((p) => ({
+    ...p,
+    pinned: !!p.anchorId && pinnedAnchors.has(p.anchorId),
+    reactions: (p.anchorId && reactionsByAnchor.get(p.anchorId)) || { counts: {}, mine: [] },
+    comments: (p.anchorId && commentsByAnchor.get(p.anchorId)) || [],
+  }))
+  // Pinned first, then newest-first (a stable sort keeps the date order within each group).
+  resolved.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || byDateDesc(a, b))
+  return { posts: resolved }
 }
 
 type ReviewRow = Row & {

@@ -126,6 +126,22 @@ export async function isFollowing(spaceId: string, profileId: string | null): Pr
   }
 }
 
+/** The profile ids of everyone who FOLLOWS a Space (the audience to notify on a new post). Service-role
+ *  read; FAIL-SAFE (empty array on any error). Bounded is not applied here — a fan-out caller should cap. */
+export async function listSpaceFollowerIds(spaceId: string): Promise<string[]> {
+  try {
+    const result = (await followsTable()
+      .select('follower_profile_id')
+      .eq('space_id', spaceId)) as { data: Array<{ follower_profile_id?: string }> | null; error: unknown }
+    if (result.error || !result.data) return []
+    return result.data
+      .map((r) => r.follower_profile_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0)
+  } catch {
+    return []
+  }
+}
+
 /** The set of Space ids `profileId` follows — the input to the directory's "Following" filter.
  *  Service-role read; FAIL-SAFE (empty set on a missing profile or any error). */
 export async function listFollowedSpaceIds(profileId: string | null): Promise<Set<string>> {
