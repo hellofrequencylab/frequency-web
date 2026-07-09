@@ -13,7 +13,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Play, Zap, Loader2, Timer } from 'lucide-react'
+import { Check, Loader2, Timer } from 'lucide-react'
 import { useMindless } from '@/components/on-air/mindless'
 import { useMovement } from '@/components/on-air/movement'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
@@ -108,7 +108,7 @@ export function PracticeActions({
             onClick={openTimer}
             className={`${base} bg-primary text-on-primary hover:bg-primary-hover`}
           >
-            <Play className="h-4 w-4 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Practice'}
+            <Timer className="h-4 w-4 shrink-0" aria-hidden /> {isResume ? 'Continue Practice' : 'Start Practice'}
           </button>
         ) : (
           // Log it — earns Zaps + a streak tick. Confirms inline, then resets.
@@ -133,7 +133,7 @@ export function PracticeActions({
               </>
             ) : (
               <>
-                <Zap className="h-4 w-4 shrink-0" aria-hidden /> Log it
+                <Check className="h-4 w-4 shrink-0" aria-hidden /> Log it
               </>
             )}
           </button>

@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, Zap, Play } from 'lucide-react'
-import { LotusIcon } from '@/components/on-air/icons'
+import { Check, Timer } from 'lucide-react'
 import { logPracticeAction } from '@/app/(main)/practices/actions'
 import { isError } from '@/lib/action-result'
 import { showZapToast } from '@/components/zap-toast'
@@ -73,8 +72,10 @@ export function LogPracticeButton({
 
   const isTimer = timerKind != null
   const isResume = resumeFromSec != null && resumeFromSec > 0
-  // A timed practice's label leads with "Log practice"; a partial reads "Continue Practice".
-  const buttonLabel = label ?? (isResume ? 'Continue Practice' : 'Log practice')
+  // A timed practice leads with "Start Practice" (a partial reads "Continue Practice"); a
+  // no-timer practice is a one-tap check-off ("Log it"). An explicit `label` overrides both.
+  const timedLabel = label ?? (isResume ? 'Continue Practice' : 'Start Practice')
+  const logLabel = label ?? 'Log it'
 
   // A partial today IS technically logged, but the affordance the member wants is "Continue
   // Practice" (resume the timer for the rest), not the collapsed "Logged today" line. So a
@@ -113,14 +114,15 @@ export function LogPracticeButton({
         ;(mindless.open as TimerOpen)(opts)
       }
     }
-    const Icon = timerKind === 'movement' ? Play : LotusIcon
+    // A timed practice always shows the timer icon + "Start Practice" (a resume reads
+    // "Continue Practice"), matching PracticeTimerButton so the two never diverge.
     return (
       <button
         type="button"
         onClick={openTimer}
         className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold transition-colors"
       >
-        <Icon className="w-4 h-4" /> {buttonLabel}
+        <Timer className="w-4 h-4" /> {timedLabel}
       </button>
     )
   }
@@ -158,8 +160,8 @@ export function LogPracticeButton({
       }
       className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-primary-hover text-on-primary px-3 py-1.5 text-sm font-semibold disabled:opacity-60 transition-colors"
     >
-      <Zap className="w-4 h-4" strokeWidth={2.5} />
-      {pending ? 'Logging…' : buttonLabel ?? 'Log practice'}
+      <Check className="w-4 h-4" strokeWidth={2.5} />
+      {pending ? 'Logging…' : logLabel}
     </button>
   )
 }
