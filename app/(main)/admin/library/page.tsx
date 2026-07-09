@@ -6,6 +6,7 @@ import { LIBRARY_KINDS } from '@/lib/library/types'
 import { resolveActiveScope } from '@/lib/library/scope'
 import {
   searchLibraryAssets,
+  ensureCatalogElements,
   kindCounts,
   categoryFacets,
   listCollections,
@@ -112,6 +113,10 @@ export default async function LoomStudioPage({
   }
 
   const scope = await resolveActiveScope()
+  // Auto-add: reconcile the code element catalog into the master library so any newly-added
+  // code-drawn element (element-catalog.ALL_ELEMENTS) shows up here without a hand-written seed
+  // migration. Idempotent + fail-safe (never throws); only for a scope the viewer can manage.
+  if (scope?.canManage) await ensureCatalogElements(scope.spaceId)
   const recraftEnabled = recraftConfigured()
 
   const q = (sp.q ?? '').trim()
