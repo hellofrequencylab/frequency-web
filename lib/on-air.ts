@@ -402,6 +402,32 @@ export function clampWarmupSec(v: number | undefined): number {
   return v === 3 || v === 5 || v === 10 ? v : 5
 }
 
+// --- Creator-authored warm-up (ADR-592): a message + length shown during the pre-roll ------
+
+/** The longest a creator-authored warm-up message may be (characters). */
+export const WARMUP_MESSAGE_MAX = 140
+
+/** The longest a creator-authored warm-up (pre-roll) may run, in seconds. Longer than the
+ *  member presets (3/5/10) so an authored message has time to be read. */
+export const WARMUP_SEC_MAX = 120
+
+/** The lengths (seconds) the author's warm-up picker offers. `0` means "use the member's
+ *  personal pre-roll length" (the default). The others give a message room to land. */
+export const AUTHORED_WARMUP_PRESETS = [0, 5, 10, 15, 30] as const
+
+/** Clamp an authored warm-up length to 0..WARMUP_SEC_MAX (integer), or null when unset.
+ *  0 is kept (a real choice: fall back to the member's pre-roll length). */
+export function clampAuthoredWarmupSec(v: number | null | undefined): number | null {
+  if (v == null || !Number.isFinite(v)) return null
+  return Math.min(WARMUP_SEC_MAX, Math.max(0, Math.round(v)))
+}
+
+/** Trim + cap a creator warm-up message; an empty string becomes null (a silent pre-roll). */
+export function cleanWarmupMessage(v: string | null | undefined): string | null {
+  const t = (v ?? '').trim().slice(0, WARMUP_MESSAGE_MAX)
+  return t.length ? t : null
+}
+
 export const DEFAULT_PREFS: OnAirPrefs = {
   mode: 'breath',
   pattern: 'box',

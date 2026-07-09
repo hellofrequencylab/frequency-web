@@ -44,6 +44,8 @@ export default async function EditPracticePage({ params }: { params: Promise<{ i
       category={practice.category}
       timerKind={practice.timer_kind}
       movementConfig={practice.movement_config}
+      warmupMessage={practice.warmup_message}
+      warmupSec={practice.warmup_sec}
       icon={practice.icon}
       domainId={practice.domain_id}
       focusDetails={practice.focus_details ?? {}}

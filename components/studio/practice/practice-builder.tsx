@@ -18,6 +18,7 @@ import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import type { PracticeEdit, WeightClass, FocusDetail, TimerKind } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
+import { AUTHORED_WARMUP_PRESETS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import {
   MOVEMENT_MODES, STRENGTH_PRESETS, YOGA_PRESETS,
   WALK_DURATION_PRESETS, RUN_DURATION_PRESETS, STRETCH_DURATION_PRESETS,
@@ -69,6 +70,10 @@ export interface PracticeBuilderProps {
   timerKind: TimerKind
   /** Movement config when timerKind = 'movement' (mode + tuning). */
   movementConfig: MovementConfig | null
+  /** Creator-authored warm-up message shown during the pre-roll (null = a silent pre-roll). */
+  warmupMessage: string | null
+  /** Creator's warm-up (pre-roll) length in seconds; null = the member's personal pre-roll. */
+  warmupSec: number | null
   icon: string | null
   domainId: string | null
   /** Per-Focus instructions + timing, keyed by pillar id. The keys are the selected
@@ -128,6 +133,9 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [workSec, setWorkSec] = useState<number>(mc?.workSec ?? 20)
   const [restSec, setRestSec] = useState<number>(mc?.restSec ?? 10)
   const [rounds, setRounds] = useState<number>(mc?.rounds ?? 8)
+  // Creator-authored warm-up (ADR-592, P3): a message + length shown during the pre-roll.
+  const [warmupMessage, setWarmupMessage] = useState(props.warmupMessage ?? '')
+  const [warmupSec, setWarmupSec] = useState<number>(props.warmupSec ?? 0)
   const [icon, setIcon] = useState(props.icon ?? '')
   // Multi-Focus: focus_details is keyed by pillar id; the KEYS are the selected Focuses.
   // A legacy row may have a domain_id but no focus_details yet — seed that primary Pillar
@@ -640,6 +648,38 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
 
         <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Movement practice shows a Practice button; a Log it practice shows Log it.</p>
       </fieldset>
+
+      {/* Warm-up — a message + length shown during the timer pre-roll, before Start Practice
+          (ADR-592, P3). Only a timed practice has a pre-roll, so this is hidden for Log it. */}
+      {timerKind !== 'none' && (
+        <fieldset className="mt-4">
+          <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">Warm-up</legend>
+          <p className="mt-1 text-xs text-subtle">A short message shown on screen as the timer counts in, before Start Practice.</p>
+          <div className="mt-2">
+            <textarea
+              value={warmupMessage}
+              onChange={(e) => setWarmupMessage(e.target.value)}
+              onBlur={() => queueSave({ warmup_message: warmupMessage })}
+              rows={2}
+              maxLength={WARMUP_MESSAGE_MAX}
+              placeholder="e.g. Roll your shoulders. Take a slow breath. We start easy."
+              className={FIELD}
+            />
+            <p className="mt-0.5 text-2xs text-subtle">{warmupMessage.trim().length}/{WARMUP_MESSAGE_MAX}. Leave blank for a silent count-in.</p>
+          </div>
+          <div className="mt-2">
+            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Count-in length</p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {AUTHORED_WARMUP_PRESETS.map((sec) => (
+                <MoveChip key={sec} active={warmupSec === sec} onClick={() => { setWarmupSec(sec); queueSave({ warmup_sec: sec === 0 ? null : sec }) }}>
+                  {sec === 0 ? 'Member default' : `${sec}s`}
+                </MoveChip>
+              ))}
+            </div>
+            <p className="mt-1 text-2xs text-subtle">Member default keeps each person&rsquo;s own count-in (3, 5, or 10 seconds).</p>
+          </div>
+        </fieldset>
+      )}
 
       {/* Reward override — admin only. Overrides the weight-class payout + sets the card note. */}
       {props.isAdmin && (

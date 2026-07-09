@@ -671,7 +671,9 @@ export function MovementSession({
     // Open ARMED with the warm-up pre-roll (item #10): paused from the first millisecond, the
     // countdown ticks, then begin() unpauses. Same shape as the sit.
     setPausedAt(now)
-    setPreroll(warmupSec)
+    // The pre-roll length: the creator's authored warm-up (practice.warmupSec) when set, else the
+    // member's own pre-roll pref (ADR-592), so an authored message has time to land.
+    setPreroll(practice?.warmupSec && practice.warmupSec > 0 ? practice.warmupSec : warmupSec)
     setStage('live')
     // Open the server-authoritative active session immediately (ADR-521), even through warm-up.
     pushActiveSession({
@@ -881,9 +883,14 @@ export function MovementSession({
               <div className="flex h-56 w-56 items-center justify-center rounded-full ring-4 ring-move/40">
                 <p className="text-7xl font-semibold tabular-nums text-move">{preroll}</p>
               </div>
-              {/* A fixed-height spacer matches the running screen's phase chip + Next lines so
-                  the ring does not jump when the run begins. */}
-              <div className="h-5" aria-hidden />
+              {/* The creator's warm-up message (ADR-592), shown as the timer counts in. */}
+              {practice?.warmupMessage ? (
+                <p className="mt-1 max-w-sm text-balance text-base font-medium text-text/80">{practice.warmupMessage}</p>
+              ) : (
+                // A fixed-height spacer matches the running screen's phase chip + Next lines so
+                // the ring does not jump when the run begins.
+                <div className="h-5" aria-hidden />
+              )}
             </>
           ) : (
             <>
