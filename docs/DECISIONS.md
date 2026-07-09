@@ -12856,3 +12856,25 @@ polls / offers; realtime live updates.
 (`getSpaceCommunityFeed`), `lib/spaces/profile-nav.ts` (tab), `app/(main)/spaces/[slug]/(profile)/community/page.tsx`,
 `components/spaces/community/space-community-feed.tsx`. No migration (schema already live). The About home is
 untouched.
+
+## ADR-585: Reviews tab (Community feed Phase 2a)
+
+**Status:** Accepted · follows ADR-584 (Community feed Phase 1). Next free number after ADR-584.
+
+**Context.** The owner asked for member reviews on their OWN tab (not folded into the Community feed). The
+review BACKEND already existed and is live: `space_reviews` (one visible review per member, upsert), the
+member-self-insert + operator-hide RLS, and the server actions `submitSpaceReview` / `hideSpaceReview`, plus
+the reader `getSpaceReviews` (average + count + latest).
+
+**Decision.** A dedicated **Reviews** tab (`buildSpaceProfileNav`) → `(profile)/reviews/page.tsx` →
+`SpaceReviews`. Public read (the rating summary + the review wall). A signed-in member who is NOT the owner
+leaves one review they can revise (the form prefills from a new `getMySpaceReview(spaceId, viewerId)` reader
+so a re-submit edits rather than duplicates, matching the upsert). The operator may hide a review
+(`hideSpaceReview`, reversible). The owner sees no form (they cannot review their own Space, enforced in the
+action). No migration (schema already live).
+
+**Deferred to Phase 2b:** member-authored Community posts + the business on/off toggle (needs a brand-vs-member
+distinction and moderation for member posts) · follow → notification fan-out · pinned posts · polls / offers.
+
+**Consequences.** `lib/spaces/content-data.ts` (`getMySpaceReview`), `lib/spaces/profile-nav.ts` (Reviews tab),
+`app/(main)/spaces/[slug]/(profile)/reviews/page.tsx`, `components/spaces/community/space-reviews.tsx`.
