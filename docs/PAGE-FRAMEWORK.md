@@ -536,12 +536,23 @@ half-wired module fails there.
 | `trail` | `Crumb[]` (`{ href, label }`, exported from the file) | a `<Breadcrumbs>` at the very top of the header |
 | `heroImage` | `string \| null` | the STANDARD cropped header banner (`h-44 ... object-cover sm:h-56`, rounded, bordered). Renders **only when set** |
 | `banner` | `React.ReactNode` | the **escape hatch** for a bespoke header node (rendered after `trail` + `heroImage`). Prefer `trail` + `heroImage`; reach for `banner` only for the rare custom header |
+| `heroOverlay` | `boolean` | the **overlay Hero Header** (the Business Spaces grammar, #1639): the eyebrow / title / description / action render ON the `heroImage` over an ink legibility scrim, instead of the banner-above-heading lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below. |
 
 A standard index is therefore `trail={[...]}` + `heroImage={url}` + `title`, no hand-built
 banner. Exemplars (all migrated): [`circles/page.tsx`](<../app/(main)/circles/page.tsx>),
 [`events/page.tsx`](<../app/(main)/events/page.tsx>),
 [`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
 [`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>).
+
+**Overlay Hero Header (`heroOverlay`):** the uniform Business-Spaces hero band — a cover image
+with the title, subtitle, and the page's own action buttons overlaid on an ink scrim. Adopters:
+[`spaces/directory/page.tsx`](<../app/(main)/spaces/directory/page.tsx>) (Business Spaces),
+[`practices/page.tsx`](<../app/(main)/practices/page.tsx>),
+[`library/page.tsx`](<../app/(main)/library/page.tsx>),
+[`journeys/page.tsx`](<../app/(main)/journeys/page.tsx>). Each keeps its own title/description +
+buttons; a section default image (under `public/images/site/`) keeps the band present when the
+operator has set none. Secondary buttons that ride the scrim use on-ink styling
+(`border-white/30 bg-white/10 text-on-ink`); primary create buttons stay `bg-primary`.
 
 > **Where the hero comes from:** the page resolves its hero URL from the Settings header
 > image (`getPageHeaderImage`, [`lib/page-settings/store.ts`](../lib/page-settings/store.ts))
