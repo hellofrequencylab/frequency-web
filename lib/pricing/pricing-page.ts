@@ -288,7 +288,7 @@ export function pricingLadderSummary(): string[] {
     lines.push(`- ${t.name}: ${price}. For ${t.forWho.toLowerCase()} ${t.takeRate} take-rate.`)
   }
   for (const a of PRICING_ADDONS) {
-    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, metered, available on any paid tier.`)
+    lines.push(`- ${a.label} add-on: ${proAddonPrice(a.key)}, optional on any paid plan.`)
   }
   lines.push(`- ${CREW_NOTE.name}: ${CREW_NOTE.foundingLabel}/mo, the personal tier (list ${CREW_NOTE.listLabel}).`)
   return lines

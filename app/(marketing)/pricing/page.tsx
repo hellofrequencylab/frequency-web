@@ -30,26 +30,25 @@ import type { BillingInterval } from '@/lib/billing/pricing-keys'
 // intervals are rendered at build time and the toggle flips which is shown.
 export const revalidate = 3600
 
-// TODO(ADR-472 surfaces): rebuild this page as the four-tier ladder (Pro/Business/Nonprofit/Organization)
-// with the Business base. This pass keeps it compiling and truthful: Pro is the solo base, the higher
-// tiers carry the full depth, and the AI Engine is the only metered add-on.
+// The flat pricing model (ADR-590): Business $49/mo, Nonprofit $29/mo flat, the Resonance Engine add-on
+// +$20/mo, a flat 3% plus card processing, never per seat. One price, five doors.
 export const metadata: Metadata = {
   title: 'Pricing for Spaces',
   description:
-    'Frequency Spaces run on a tier that fits, from the Pro base up. Pro is $19 a month at the founding price, with Business, Nonprofit, and Organization tiers. The AI Engine add-on is metered on any paid tier. List anchor over a founding price, monthly or yearly.',
+    'One honest price. Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month, optional on any paid plan. Our fee is a flat 3% plus card processing, never per seat. Monthly or yearly, two months free.',
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Frequency pricing: a tier that fits, plus the AI Engine',
+    title: 'Frequency pricing: one honest price, never per seat',
     description:
-      'A tier ladder from the Pro base up: Business adds marketing automation, team roles, and your own domain, with Nonprofit and Organization tiers. The AI Engine is the only metered add-on. Founding price under a list anchor, monthly or yearly.',
+      'Business $49 a month, the Nonprofit plan $29 a month flat, and the Resonance Engine add-on $20 a month. A flat 3% plus card processing, shown in full, with no surprise fees. Monthly or yearly, two months free.',
     url: '/pricing',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Frequency pricing: a tier that fits, plus the AI Engine',
+    title: 'Frequency pricing: one honest price, never per seat',
     description:
-      'A tier ladder from the Pro base up, with the AI Engine as the only metered add-on. Founding price under a list anchor, monthly or yearly.',
+      'Business $49, the Nonprofit plan $29 flat, the Resonance Engine add-on $20. A flat 3% plus card processing, no surprise fees. Two months free on yearly.',
   },
 }
 
@@ -57,19 +56,23 @@ export const metadata: Metadata = {
 const PRICING_FAQ: { q: string; a: string }[] = [
   {
     q: 'How does Frequency pricing work?',
-    a: 'Every Space starts on the Pro base at $19 a month, the founding price, under a $29 list anchor. Pro is the solo tier with the CRM core. Business is the full-depth tier, adding marketing automation, full CRM, team roles, and your own domain, with multi-seat. Nonprofit carries the same full depth, discounted and per licensed seat, and Organization adds custom, white-label, and governance. The AI Engine is the only metered add-on, available on any paid tier for $20 a month.',
+    a: 'One price, presented by who you are. Business is $49 a month with the full depth: a branded Space site and custom domain, QR Studio, bookings, tickets, enrollment, check-in, donations, memberships, the full CRM, marketing automation, team roles, and analytics. The Nonprofit plan is $29 a month flat, everything in Business with donations built in, for verified 501(c)(3) organizations. The Resonance Engine add-on is $20 a month, optional on any paid plan. Flat, never per seat.',
   },
   {
-    q: 'What is the founding price?',
-    a: 'The founding price is the real price today. The list price sits above it as an anchor, so you can see where the price is headed. If you subscribe at the founding price, you keep it for as long as the subscription stays active, even after the list price rises.',
+    q: 'What is the Resonance Engine?',
+    a: "The Resonance Engine turns your community's signals into live matches and next-best actions. It is an optional $20 a month add-on on any paid plan, has a 14-day trial, and you can turn it on or off anytime.",
+  },
+  {
+    q: 'What are the fees?',
+    a: 'Our fee is a flat 3% plus card processing, shown in full, with no surprise fees ever. That is 3% on what you sell, and 3% on what a nonprofit raises. There are no per-seat charges, on any plan.',
   },
   {
     q: 'What does yearly billing save?',
-    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to lock your founding price for a full year.',
+    a: 'Yearly billing is two months free: you pay for ten months and get twelve. Monthly is the low-friction default; yearly is the way to save on either plan.',
   },
   {
-    q: 'What is the take-rate?',
-    a: 'Pro is 5% on what you sell, Nonprofit is 3% on what you raise, and Organization is custom. The take-rate is the only fee on transactions; there is no separate per-transaction charge from Frequency on top of it.',
+    q: 'Can I leave and take my people with me?',
+    a: 'Yes. Your people are yours. You can export your contacts and your data any time. We earn your stay, we do not trap it.',
   },
   {
     q: 'Is there a personal plan?',
@@ -121,11 +124,11 @@ export default function PricingPage() {
         eyebrow="Pricing for Spaces"
         title={
           <>
-            A tier that fits.
-            <br className="hidden sm:block" /> One AI add-on.
+            One honest price.
+            <br className="hidden sm:block" /> Five doors.
           </>
         }
-        subtitle="Run your business on Frequency. Start on the Pro base and move up to the full-depth Business tier as you grow. The AI Engine is the only metered add-on. Founding price under a list anchor, monthly or yearly."
+        subtitle="Run your business on Frequency. Business is $49 a month, the Nonprofit plan is $29 a month flat, and the Resonance Engine add-on is $20 a month. A flat 3% plus card processing, never per seat. Monthly or yearly, two months free."
       >
         <Button href="/spaces">
           Start a Space <ArrowRight className="h-5 w-5" />
@@ -137,14 +140,14 @@ export default function PricingPage() {
         <p className="text-center text-lg leading-relaxed text-muted sm:text-xl">{MISSION_FRAMING}</p>
       </Section>
 
-      {/* The pricing table: Pro / Nonprofit / Organization, with the monthly/yearly toggle island. */}
+      {/* The pricing table: Business + Nonprofit, with the monthly/yearly toggle island. */}
       <Section tone="surface" pad="pt-6 pb-20 sm:pb-24">
         <div className="mb-10 text-center">
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary-strong">
-            Three tiers
+            Two plans
           </p>
           <h2 className="font-display uppercase text-text text-4xl sm:text-5xl">
-            Pick the tier that fits.
+            Pick the plan that fits.
           </h2>
         </div>
 
@@ -153,17 +156,47 @@ export default function PricingPage() {
         </PricingBillingToggle>
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-subtle">
-          The list price is the anchor; the founding price beneath it is what you pay today. Subscribe at
-          the founding price and you keep it for as long as the subscription stays active.
+          Flat, never per seat. Yearly is two months free, and you can turn the Resonance Engine on or off
+          anytime, with a 14-day trial.
         </p>
+      </Section>
+
+      {/* The three promises that make it a movement, not a SaaS (ADR-590). */}
+      <Section tone="canvas">
+        <SectionHeading
+          eyebrow="Three promises"
+          title="Why people stay."
+          kicker="The parts of the deal we will not move on."
+        />
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              title: 'One honest price.',
+              body: 'Our 3% plus card processing, shown in full, with no surprise fees ever. You always know exactly what a sale costs.',
+            },
+            {
+              title: 'Your people are yours.',
+              body: 'Export your contacts and your data any time. We earn your stay, we do not trap it.',
+            },
+            {
+              title: 'Bring your community in.',
+              body: 'The card scan and the referral loop turn every real-world introduction into a new person in Frequency, so aligned people lend each other their audiences.',
+            },
+          ].map((p) => (
+            <div key={p.title} className="rounded-2xl border border-border bg-surface p-6">
+              <h3 className="font-display uppercase text-text text-xl">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{p.body}</p>
+            </div>
+          ))}
+        </div>
       </Section>
 
       {/* "By who you are": each Mode -> its recommended loadout + monthly total, linking to its page. */}
       <Section tone="canvas">
         <SectionHeading
           eyebrow="By who you are"
-          title="A loadout for how you work."
-          kicker="The Pro base, with the AI Engine add-on where it fits your operating model, and the monthly total."
+          title="One system, five doors."
+          kicker="The same Frequency, presented by who you are: Business, Business plus the Resonance Engine, or the flat Nonprofit plan."
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {strip.map((row) => (
@@ -223,17 +256,16 @@ export default function PricingPage() {
 
       <BetaCTA
         heading="Run your Space on Frequency."
-        body="Start on the Pro base, move up to Business for the full depth, and turn on the AI Engine when you need it. Founding price locked for as long as you stay subscribed."
+        body="One honest price, never per seat. Turn the Resonance Engine on when you want live matches, and your people are always yours to export."
       />
     </>
   )
 }
 
 // ── The pricing table ─────────────────────────────────────────────────────────
-// One header row of tier columns, then a labelled row per dimension (price, billing, for, core, the AI
-// Engine add-on, take-rate, CTA). Each price cell renders BOTH intervals (month + year), each wrapped in
-// a span the toggle CSS shows/hides. Semantic DAWN tokens only.
-// TODO(ADR-472 surfaces): rebuild as the four-tier table (Pro/Business/Nonprofit/Organization).
+// One header row of plan columns (Business + Nonprofit), then a labelled row per dimension (price,
+// billing, for, core, the Resonance Engine add-on, take-rate, CTA). Each price cell renders BOTH intervals
+// (month + year), each wrapped in a span the toggle CSS shows/hides. Semantic DAWN tokens only (ADR-590).
 
 function PricingTable({ tiers }: { tiers: PricingTier[] }) {
   return (
