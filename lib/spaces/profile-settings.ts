@@ -135,17 +135,44 @@ export async function updateSpaceProfile(
     patch.visibility = input.visibility === 'private' ? 'private' : 'network'
   }
 
-  // The Space page THEME (ADR-578) lives on preferences.theme (jsonb, no column). Read-modify-write so every
-  // other preferences key (profileLayout, moduleMenu, isDemo, ...) is preserved; a known non-default id is
-  // stored, the default ('bold') or an unknown value clears the key (kept sparse).
-  if (input.theme !== undefined) {
+  // PREFERENCES read-modify-write (jsonb, no columns). One pass so every untouched key (profileLayout,
+  // moduleMenu, isDemo, headerCta, ...) is preserved. Two things live here:
+  //   • THEME (ADR-578) — a known non-default id is stored on preferences.theme; the default ('bold') or an
+  //     unknown value clears it (kept sparse).
+  //   • HERO OVERRIDE CLEARING — the hero renders `preferences.hero.{heading,tagline}` OVERRIDE its column
+  //     when present (resolveHero: `config.tagline ?? tagline`). This Identity & Branding form is the
+  //     canonical place to set the hero's name + tagline (it writes the brand_name / tagline COLUMNS), so a
+  //     stale hero override would silently SHADOW the edit — the operator changes the tagline here and
+  //     "nothing happens" because an old override keeps winning. When they edit the canonical field, drop the
+  //     matching hero override so the new value actually shows.
+  const touchesPrefs =
+    input.theme !== undefined || input.tagline !== undefined || input.brandName !== undefined
+  if (touchesPrefs) {
     const prefs =
       space.preferences && typeof space.preferences === 'object' && !Array.isArray(space.preferences)
         ? { ...(space.preferences as Record<string, unknown>) }
         : {}
-    const theme = (input.theme ?? '').trim()
-    if (theme && isSpaceThemeId(theme) && theme !== DEFAULT_SPACE_THEME) prefs.theme = theme
-    else delete prefs.theme
+
+    if (input.theme !== undefined) {
+      const theme = (input.theme ?? '').trim()
+      if (theme && isSpaceThemeId(theme) && theme !== DEFAULT_SPACE_THEME) prefs.theme = theme
+      else delete prefs.theme
+    }
+
+    if (input.tagline !== undefined || input.brandName !== undefined) {
+      const hero =
+        prefs.hero && typeof prefs.hero === 'object' && !Array.isArray(prefs.hero)
+          ? { ...(prefs.hero as Record<string, unknown>) }
+          : null
+      if (hero) {
+        if (input.tagline !== undefined) delete hero.tagline
+        if (input.brandName !== undefined) delete hero.heading
+        // Keep the node sparse: drop it entirely once its last key is gone.
+        if (Object.keys(hero).length) prefs.hero = hero
+        else delete prefs.hero
+      }
+    }
+
     patch.preferences = prefs
   }
 
