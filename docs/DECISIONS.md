@@ -12912,3 +12912,37 @@ schema change; the union getter carries the small extra complexity instead.
 
 **Deferred:** member image uploads on member posts, follow → notification fan-out, pinned posts, polls/offers,
 realtime (Phase 3).
+
+## ADR-587: Community feed two-column layout + Phase 3 (notifications, images, pinned posts)
+
+**Status:** Accepted · redesigns the Community tab layout and adds the Phase 3 engagement add-ons. Next free
+number after ADR-586.
+
+**Context.** The Phase 1 Community tab rendered a single narrow centered column (composer + posts), which read
+as bare and undersold the "best-practice business page" the owner asked for. The owner wants the FEED on the
+left and a RIGHT RAIL of core business info plus DYNAMIC feature cards that appear only when the business has a
+feature on (events, practices/journeys, circles, booking). Plus three Phase 3 add-ons: notify followers on a
+new post, images on posts, pinned posts (realtime deferred to the backlog).
+
+**Decision.**
+1. **Two-column layout.** `(profile)/community/page.tsx` is a `lg:grid-cols-[minmax(0,1fr)_20rem]`: the feed
+   (full-column) on the left, a sticky right `SpaceCommunityRail` on the right (stacks below on mobile). The
+   rail composes existing readers (readProfileData + getSpaceUpcomingEvents/getSpacePractices/
+   getSpaceCommunity/getSpaceBookingInfo): an About card, a Contact/hours card, a Book CTA, and Events /
+   Practices+Journeys / Circles cards, each HONEST-EMPTY (rendered only when it has data).
+2. **Notify followers (Phase 3).** `fanOutNewSpacePost` inserts one batched `notifications` row per follower
+   (type `space_update`, `reference_type='space'`, `reference_id=slug`) on a newly published brand Update;
+   `notification-bell` links `space` notifications to the Community tab. Best-effort, bounded, never blocks.
+3. **Images on posts.** `uploadCommunityImage` (follower/operator-gated) uploads to the event-media bucket;
+   `createMemberPost` stores it on `posts.media_urls`; the feed reads `media_urls[0]`. Both composers gain a
+   photo field.
+4. **Pinned posts.** `pinCommunityPost` (operator) sets the anchor post's `is_pinned`; the feed reads it over
+   all anchors and sorts pinned-first, with a Pin/Unpin control + a Pinned chip. No migration (reuses
+   `is_pinned` + `media_urls` + free-text `notifications.type`).
+
+**Deferred:** realtime live updates (on the backlog).
+
+**Consequences.** `content-actions.ts` (`uploadCommunityImage`, `pinCommunityPost`, `fanOutNewSpacePost`, member
+image), `content-data.ts` (rail readers reused, `media_urls`/`is_pinned`/`pinned` in the feed), `follows.ts`
+(`listSpaceFollowerIds`), `notification-bell.tsx` (space link + icon), `community/page.tsx` (two-column),
+`space-community-feed.tsx` (photo field, pin controls), new `space-community-rail.tsx`. No migration.

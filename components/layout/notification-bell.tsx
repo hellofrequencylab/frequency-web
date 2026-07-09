@@ -18,6 +18,7 @@ const TYPE_ICON: Record<string, string> = {
   friend_request:  '👤',
   friend_accepted: '🤝',
   support_reply:   '🛟',
+  space_update:    '📣',
 }
 
 function notifHref(n: NotificationItem): string {
@@ -26,6 +27,8 @@ function notifHref(n: NotificationItem): string {
     return '/network/friends'
   }
   if (n.reference_type === 'post' && n.reference_id) return `/feed`
+  // A Space Community post: reference_id carries the Space slug, linking to its Community tab.
+  if (n.reference_type === 'space' && n.reference_id) return `/spaces/${n.reference_id}/community`
   if (n.reference_type === 'dispatch' && n.reference_id) return `/broadcast/${n.reference_id}`
   if (n.reference_type === 'support_ticket' && n.reference_id) return `/support/${n.reference_id}`
   // Posted-event notes (event_claimed / event_removed) reference the event by id;
