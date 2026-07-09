@@ -68,6 +68,16 @@ attribution carried through (`lib/attribution/*`, which already captures UTM + f
   has a pre-existing dead-slug bug at 173-176 to fix). JSON-LD via `lib/jsonld.ts` (article/faq/breadcrumb/
   product), the `/for/[persona]` metadata pattern.
 
+## 6a. Loom registration (the graphics are shared design-system elements)
+
+The five funnel graphics + the feature icon set (`components/marketing/funnel/funnel-graphics.tsx`) are
+registered as reusable **Loom** elements, not one-off page art: catalogued in
+`lib/library/element-catalog.ts` (`FUNNEL_ELEMENTS`, added to `REGISTRY_NAMES`), resolved to their live
+components in `lib/library/element-registry.tsx` (SPOT + ICON maps), and seeded into `library_assets`
+(shared master library, `kind='element'`, `config={registry,name}`) by
+`supabase/migrations/20261023000000_loom_funnel_elements.sql`, so they appear + sort + search in Loom
+Studio's element grid.
+
 ## 7. Pricing reconciliation (one honest source)
 
 The Coaches brief shows Business as **~~$79~~ $49/mo**. Our whole site prices from one catalog

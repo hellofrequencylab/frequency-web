@@ -87,11 +87,31 @@ export const TEMPLATE_PILLARS: Record<string, PillarSlug> = Object.fromEntries(
   CIRCLE_TEMPLATES.map((d) => [d.name, d.pillar as PillarSlug]),
 )
 
+// Operator funnel-door graphics (components/marketing/funnel/funnel-graphics.tsx) — the five signature
+// scenes + the feature icon set, catalogued so they are reusable Loom elements, not one-off page art.
+const FUNNEL_SPOTS: ElementDef[] = [
+  { registry: 'spot', name: 'funnel-hero-product', title: 'Funnel hero product', category: 'Funnel doors', tags: ['spot', 'funnel', 'hero', 'product', 'schedule', 'contact'] },
+  { registry: 'spot', name: 'funnel-scattered-stack', title: 'Funnel scattered stack', category: 'Funnel doors', tags: ['spot', 'funnel', 'problem', 'before', 'tools'] },
+  { registry: 'spot', name: 'funnel-setup-steps', title: 'Funnel setup steps', category: 'Funnel doors', tags: ['spot', 'funnel', 'how-it-works', 'steps'] },
+  { registry: 'spot', name: 'funnel-loop', title: 'Funnel referral loop', category: 'Funnel doors', tags: ['spot', 'funnel', 'loop', 'referral', 'signature'] },
+  { registry: 'spot', name: 'funnel-break-even', title: 'Funnel break-even chart', category: 'Funnel doors', tags: ['spot', 'funnel', 'pricing', 'break-even', 'chart'] },
+]
+const FUNNEL_ICONS: ElementDef[] = [
+  { registry: 'icon', name: 'funnel-calendar', title: 'Funnel calendar icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'calendar', 'bookings'] },
+  { registry: 'icon', name: 'funnel-contact', title: 'Funnel contact icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'contact', 'crm'] },
+  { registry: 'icon', name: 'funnel-qr', title: 'Funnel QR icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'qr', 'code'] },
+  { registry: 'icon', name: 'funnel-envelope', title: 'Funnel envelope icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'envelope', 'email'] },
+  { registry: 'icon', name: 'funnel-spark', title: 'Funnel spark icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'spark', 'grow'] },
+]
+
 /** Valid element names per non-illustration registry (for validation at render). */
 export const REGISTRY_NAMES: Record<Exclude<ElementRegistry, 'illustration'>, Set<string>> = {
-  icon: new Set(ON_AIR_ICONS.map((d) => d.name)),
-  spot: new Set(SPOT_ART.map((d) => d.name)),
+  icon: new Set([...ON_AIR_ICONS, ...FUNNEL_ICONS].map((d) => d.name)),
+  spot: new Set([...SPOT_ART, ...FUNNEL_SPOTS].map((d) => d.name)),
   'circle-template': new Set(CIRCLE_TEMPLATES.map((d) => d.name)),
   render: new Set(ONBOARDING_SCREENS.map((d) => d.name)),
   texture: new Set(TEXTURES.map((d) => d.name)),
 }
+
+/** The funnel-door element catalog rows (for the DB seed mirror in Loom). */
+export const FUNNEL_ELEMENTS: ElementDef[] = [...FUNNEL_SPOTS, ...FUNNEL_ICONS]
