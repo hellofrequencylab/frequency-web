@@ -165,7 +165,7 @@ export default async function MainLayout({
         <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} isAuth={false} />
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-        <main className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+        <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
           {/* Mirror the member shell's centered three-column grid (app-shell.tsx) so a public
               page reads at the SAME width as it does signed in: the page content sits in the
               centered column flanked by the rail gutters. A public viewer has no nav/community
