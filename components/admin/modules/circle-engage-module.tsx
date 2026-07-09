@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Trophy, X } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import {
   getCircleEngageData,
@@ -62,9 +61,6 @@ export function CircleEngageModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('circle.engage')
-  const Icon = mod?.Icon ?? Trophy
-
   function handleAdopt() {
     if (!data || !pick || pending) return
     startTransition(async () => {
@@ -95,14 +91,6 @@ export function CircleEngageModule() {
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'Engage'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         {/* Adopt a shared challenge. */}
         {data.adoptable.length > 0 && (
           <div className="space-y-1.5">

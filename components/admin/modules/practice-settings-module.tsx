@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Check, Wand2, ChevronRight } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
+import { Wand2, ChevronRight } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
+import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import {
   getPracticeAdminData,
   updatePracticeSettings,
@@ -17,12 +17,10 @@ import {
 import { deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
 import { DangerDelete } from '@/components/admin/danger-delete'
 
-// In-place "Practice settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside
-// the page admin dock on /practices/[id], and renders nothing unless the server grants
-// practice.editSettings (the practice's owner, staff, or whoever runs its parent
-// space). Mirrors the Circle settings module (flush, no card chrome; lg:grid 3-col).
-// Visibility is enforced SERVER-SIDE — getPracticeAdminData returns null unless the
-// caller holds practice.editSettings.
+// In-place "Practice settings" (EMBEDDED-ADMIN.md / ADR-133) on /practices/[id]. The rail section header
+// is the single title. The main fields autosave and reflect live (RailAutosaveForm); the cover self-saves;
+// the permalink keeps its own action (a rename rewrites the page URL). The full guide/cadence/Pillar editor
+// is one tap away.
 
 type PracticeData = NonNullable<Awaited<ReturnType<typeof getPracticeAdminData>>>
 
@@ -36,9 +34,6 @@ export function PracticeSettingsModule() {
 
   const [data, setData] = useState<PracticeData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
 
   const [permalink, setPermalink] = useState('')
   const [permaErr, setPermaErr] = useState<string | null>(null)
@@ -56,8 +51,6 @@ export function PracticeSettingsModule() {
         }
       })
       .catch(() => {
-        // A failed load shouldn't leave the dock spinning forever — drop the skeleton
-        // (data stays null → the module renders nothing, same as not-permitted).
         if (active) setLoading(false)
       })
     return () => {
@@ -71,26 +64,6 @@ export function PracticeSettingsModule() {
   }
   if (!data) return null // not permitted / not found → no chrome
 
-  const mod = moduleById('practice.settings')
-  const Icon = mod?.Icon
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    startTransition(async () => {
-      try {
-        // updatePracticeSettings throws on an unauthorized/DB error or a missing title —
-        // catch it so the owner sees why instead of a silent no-op + unhandled rejection.
-        await updatePracticeSettings(data!.id, data!.slug, fd)
-        setError(null)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not save your changes. Try again.')
-      }
-    })
-  }
-
   function handlePermalink() {
     setPermaErr(null)
     startPerma(async () => {
@@ -98,168 +71,103 @@ export function PracticeSettingsModule() {
       if ('error' in res) {
         setPermaErr(res.error)
       } else {
-        // The detail route is id-based (/practices/[id]), so a slug change doesn't move
-        // the URL — refresh the same page to pick up the new permalink.
         router.push(`/practices/${data!.id}`)
       }
     })
   }
 
-  // No card chrome — the settings sit flush on the panel's white surface.
   return (
-    <div className="space-y-6">
-      <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'Practice settings'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
-        {/* The deep/guided surface lives one tap from the single Edit entry (ADR-450): the full
-            guide, cadence, Pillar, tags, and Build-with-Vera. Quick edits stay inline below. */}
-        <Link
-          href={`/practices/${data.id}/edit`}
-          className="mb-5 flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
-        >
-          <Wand2 className="h-5 w-5 shrink-0 text-primary-strong" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-text">Open full editor</span>
-            <span className="block text-xs text-muted">
-              The full guide, cadence, Pillar, and tags. Build or rework it with Vera.
-            </span>
+    <div className="space-y-4">
+      {/* The deep/guided surface is one tap from the single Edit entry (ADR-450). */}
+      <Link
+        href={`/practices/${data.id}/edit`}
+        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:border-border-strong hover:bg-surface-elevated"
+      >
+        <Wand2 className="h-5 w-5 shrink-0 text-primary-strong" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-text">Open full editor</span>
+          <span className="block text-xs text-muted">
+            The full guide, cadence, Pillar, and tags. Build or rework it with Vera.
           </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
-        </Link>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-subtle" />
+      </Link>
 
-        <form onSubmit={handleSubmit} className="space-y-4 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0">
-          {/* LEFT 2/3 — cover, title, summary, description. */}
-          <div className="space-y-4 lg:col-span-2">
-            {/* Cover image — edited here in Settings (no inline editing on the page). */}
-            <div className="space-y-1.5">
-              <span className={fieldLabel}>Cover image</span>
-              <InlineCover
-                value={data.header_image ?? null}
-                alt={data.title}
-                canEdit
-                forceEdit
-                upload={uploadPracticeCover.bind(null, data.id, data.slug)}
-                remove={removePracticeCover.bind(null, data.id, data.slug)}
-              />
-            </div>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Title</span>
-              <input name="title" defaultValue={data.title} required disabled={pending} className={input} />
-            </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Summary</span>
-              <textarea
-                name="summary"
-                defaultValue={data.summary ?? ''}
-                rows={2}
-                disabled={pending}
-                className={`${input} resize-none`}
-              />
-            </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Description</span>
-              <textarea
-                name="description"
-                defaultValue={data.description ?? ''}
-                rows={3}
-                disabled={pending}
-                className={`${input} resize-none`}
-              />
-            </label>
-          </div>
-
-          {/* RIGHT 1/3 — duration, category, permalink. */}
-          <div className="space-y-4 lg:col-span-1">
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Duration (minutes)</span>
-              <input
-                name="duration_min"
-                type="number"
-                min={1}
-                defaultValue={data.duration_min ?? ''}
-                placeholder="Optional"
-                disabled={pending}
-                className={input}
-              />
-            </label>
-
-            <label className="block space-y-1.5">
-              <span className={fieldLabel}>Category</span>
-              <input
-                name="category"
-                defaultValue={data.category ?? ''}
-                placeholder="Optional"
-                disabled={pending}
-                className={input}
-              />
-            </label>
-
-            {/* Permalink — its own tiny action (not part of the content save) since a
-                rename rewrites the page URL. */}
-            <div className="space-y-1.5">
-              <span className={fieldLabel}>Permalink</span>
-              <div className="flex items-center gap-2">
-                <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
-                  <span className="shrink-0">/practices/</span>
-                  <input
-                    value={permalink}
-                    onChange={(e) => setPermalink(e.target.value)}
-                    disabled={permaPending}
-                    className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
-                  />
-                </span>
-                <button
-                  type="button"
-                  onClick={handlePermalink}
-                  disabled={permaPending || !permalink.trim() || permalink.trim() === (data.slug ?? '')}
-                  className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
-                >
-                  {permaPending ? 'Saving…' : 'Update'}
-                </button>
-              </div>
-              {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
-            </div>
-          </div>
-
-          {/* Error + save row — spans full width at the bottom. */}
-          <div className="space-y-3 pt-1 lg:col-span-3">
-            {error && <p className="text-xs font-medium text-danger">{error}</p>}
-            <div className="flex items-center justify-end gap-2">
-              {saved && (
-                <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
-                  <Check className="h-3.5 w-3.5" /> Saved
-                </span>
-              )}
-              <button
-                type="submit"
-                disabled={pending}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-              >
-                {pending ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <DangerDelete
-          entity="practice"
-          warning="Permanently removes this practice. Past logs are kept but unlinked. Once deleted it can’t be recovered."
-          onDelete={async () => {
-            const res = await deleteOwnPracticeAction(data!.id)
-            return 'error' in res ? { error: res.error } : undefined
-          }}
-          redirectTo="/practices"
+      {/* Cover image — self-saves through its own bound actions. */}
+      <div className="space-y-1.5">
+        <span className={fieldLabel}>Cover image</span>
+        <InlineCover
+          value={data.header_image ?? null}
+          alt={data.title}
+          canEdit
+          forceEdit
+          upload={uploadPracticeCover.bind(null, data.id, data.slug)}
+          remove={removePracticeCover.bind(null, data.id, data.slug)}
         />
-      </section>
+      </div>
+
+      <RailAutosaveForm action={updatePracticeSettings.bind(null, data.id, data.slug)}>
+        <label className="block space-y-1.5">
+          <span className={fieldLabel}>Title</span>
+          <input name="title" defaultValue={data.title} required className={input} />
+        </label>
+
+        <label className="block space-y-1.5">
+          <span className={fieldLabel}>Summary</span>
+          <textarea name="summary" defaultValue={data.summary ?? ''} rows={2} className={`${input} resize-none`} />
+        </label>
+
+        <label className="block space-y-1.5">
+          <span className={fieldLabel}>Description</span>
+          <textarea name="description" defaultValue={data.description ?? ''} rows={3} className={`${input} resize-none`} />
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Duration (minutes)</span>
+            <input name="duration_min" type="number" min={1} defaultValue={data.duration_min ?? ''} placeholder="Optional" className={input} />
+          </label>
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>Category</span>
+            <input name="category" defaultValue={data.category ?? ''} placeholder="Optional" className={input} />
+          </label>
+        </div>
+      </RailAutosaveForm>
+
+      {/* Permalink — its own action: a rename rewrites the page URL. */}
+      <div className="space-y-1.5">
+        <span className={fieldLabel}>Permalink</span>
+        <div className="flex items-center gap-2">
+          <span className="flex flex-1 items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+            <span className="shrink-0">/practices/</span>
+            <input
+              value={permalink}
+              onChange={(e) => setPermalink(e.target.value)}
+              disabled={permaPending}
+              className="min-w-0 flex-1 bg-transparent py-2 text-text outline-none disabled:opacity-50"
+            />
+          </span>
+          <button
+            type="button"
+            onClick={handlePermalink}
+            disabled={permaPending || !permalink.trim() || permalink.trim() === (data.slug ?? '')}
+            className="inline-flex shrink-0 items-center rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-40"
+          >
+            {permaPending ? 'Saving…' : 'Update'}
+          </button>
+        </div>
+        {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
+      </div>
+
+      <DangerDelete
+        entity="practice"
+        warning="Permanently removes this practice. Past logs are kept but unlinked. Once deleted it can’t be recovered."
+        onDelete={async () => {
+          const res = await deleteOwnPracticeAction(data!.id)
+          return 'error' in res ? { error: res.error } : undefined
+        }}
+        redirectTo="/practices"
+      />
     </div>
   )
 }
