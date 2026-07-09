@@ -196,12 +196,15 @@ export default async function SpaceProfileChromeLayout({
   const ctaLinkProps = hero.cta.external
     ? { target: '_blank' as const, rel: 'noopener noreferrer' }
     : {}
-  // The action cluster's layout: `row` (default) lays the buttons side by side; `stacked` lays them in a
-  // column. Applied to the desktop identity action row (the mobile band stays its own fixed 3-up layout).
-  // The row NEVER wraps its buttons onto a second line (flex-nowrap): when a long name crowds the row, the
-  // name column (min-w-0) gives way and wraps instead, so the buttons stay one clean row (owner ask). An
-  // operator who wants them vertical picks `stacked`.
-  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-nowrap items-center'
+  // The action cluster's layout: `row` (default) lays the buttons side by side, pushed to the RIGHT edge of
+  // their row (justify-end); `stacked` lays them in a column. Applied to the desktop identity action row (the
+  // mobile band stays its own fixed 3-up layout). The row NEVER wraps its buttons onto a second line
+  // (flex-nowrap): when a long name crowds the row, the name column (min-w-0) gives way and wraps instead, so
+  // the buttons stay one clean row (owner ask). In the Hero size the actions sit on their own full-width line
+  // under the identity, so justify-end aligns them right; in the Header size the content-width wrapper already
+  // rides the parent's justify-between to the right, so justify-end is a harmless no-op. An operator who wants
+  // them vertical picks `stacked`.
+  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-nowrap items-center justify-end'
 
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
