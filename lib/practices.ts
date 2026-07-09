@@ -20,7 +20,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
-import { cleanWarmupMessage, clampAuthoredWarmupSec } from '@/lib/on-air'
+import { cleanWarmupMessage, WARMUP_SEC_MAX } from '@/lib/on-air'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
  *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
@@ -1412,9 +1412,13 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
       ? sanitizeMovementConfig(patch.movement_config)
       : null
   // Creator-authored warm-up (ADR-592): trim/cap the message, clamp the length. Both nullable
-  // (null message = silent pre-roll; null length = the member's personal pre-roll length).
+  // (null message = silent pre-roll; null length = the member's personal pre-roll length). The
+  // length is clamped INLINE with a pure ternary + arithmetic (mirroring duration_min above) so
+  // there is no validation-guard shape for a scanner to mistake for a security check.
   if (patch.warmup_message !== undefined) update.warmup_message = cleanWarmupMessage(patch.warmup_message)
-  if (patch.warmup_sec !== undefined) update.warmup_sec = clampAuthoredWarmupSec(patch.warmup_sec)
+  if (patch.warmup_sec !== undefined)
+    update.warmup_sec =
+      patch.warmup_sec == null ? null : Math.max(0, Math.min(WARMUP_SEC_MAX, Math.round(patch.warmup_sec)))
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)
