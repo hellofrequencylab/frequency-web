@@ -21,7 +21,7 @@
 // the member's last chosen mode (localStorage), else Be Still. Crash recovery checks
 // BOTH live-session kinds and opens in the matching mode so the right engine re-prompts.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
@@ -82,6 +82,10 @@ export interface MindlessOpenOpts {
   /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
    *  pre-roll shows THIS instead of the practice's own warm-up message. */
   warmupMessage?: string
+  /** A SEQUENCED run (ADR-592, P6): an ordered list of practice ids to run back to back. When set
+   *  (2+ ids), the door opens the first and auto-advances to the next after each leg's reveal is
+   *  dismissed. Overrides `practiceId`. Each leg logs independently through the usual path. */
+  queue?: string[]
 }
 
 interface MindlessApi {
@@ -123,6 +127,9 @@ type OverlayState =
       autoStart?: boolean
       /** A per-step warm-up message override (P5), carried to the session's pre-roll. */
       warmupMessage?: string
+      /** A sequenced run's ordered practice ids + this leg's index (P6). */
+      queue?: string[]
+      queueIndex?: number
     }
   | {
       phase: 'ready'
@@ -136,6 +143,9 @@ type OverlayState =
       autoStart?: boolean
       /** A per-step warm-up message override (P5), passed to the session's pre-roll. */
       warmupMessage?: string
+      /** A sequenced run's ordered practice ids + this leg's index (P6). */
+      queue?: string[]
+      queueIndex?: number
     }
   | { phase: 'error' }
 
@@ -168,6 +178,11 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   // The server-authoritative active session (ADR-521), fetched on load. Passed to the matching
   // engine so a timer running on ANOTHER device resumes here as RUNNING (never a prompt).
   const [serverResume, setServerResume] = useState<LiveSessionRecord | null>(null)
+  // A sequenced run (P6): the ordered practice ids + current index, held in a ref so the exit
+  // callback reads the live value (never a stale closure). `legDone` flips true when the current
+  // leg genuinely completes (its reveal opens), so an early bail never advances the sequence.
+  const queueRef = useRef<{ ids: string[]; index: number } | null>(null)
+  const legDoneRef = useRef(false)
 
   // Closing the overlay refreshes the page underneath so anything the sit just changed (a practice
   // logged, the streak) lands without a navigation — e.g. a Journey step's "logged today" gating
@@ -175,10 +190,27 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
   const close = useCallback(() => {
     // Drop true fullscreen if the open gesture entered it (C.1-3); the dvh takeover
     // is unmounted with the overlay.
+    queueRef.current = null
+    legDoneRef.current = false
     void exitAppFullscreen()
     setState({ phase: 'closed' })
     router.refresh()
   }, [router])
+
+  // The session's exit callback for a SEQUENCED run (P6). If the current leg genuinely completed
+  // (legDone) and the queue has more, roll into the next leg (reload + auto-start, staying
+  // fullscreen); otherwise close normally. An early bail never sets legDone, so it just closes.
+  const advanceOrClose = useCallback(() => {
+    const q = queueRef.current
+    if (legDoneRef.current && q && q.index + 1 < q.ids.length) {
+      const next = q.index + 1
+      queueRef.current = { ids: q.ids, index: next }
+      legDoneRef.current = false
+      setState({ phase: 'loading', practiceId: q.ids[next], autoStart: true, queue: q.ids, queueIndex: next })
+      return
+    }
+    close()
+  }, [close])
 
   // The open implementation. `forceMode` is the crash-recovery override (open Get Moving so the
   // Movement engine, which owns the saved 'movement' record, mounts and re-prompts).
@@ -196,17 +228,27 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
       opts.resumeFromSec >= 0
         ? { resumeFromSec: Math.round(opts.resumeFromSec), secondsTarget: Math.round(opts.secondsTarget) }
         : undefined
+    // A sequenced run (P6): 2+ ids run back to back. The first leg opens now; the ref drives the
+    // auto-advance on each reveal dismissal. A fresh open (any kind) resets the sequence + the
+    // leg-done latch, so a plain single open never inherits a stale queue.
+    const queueIds = !forceMode ? (opts?.queue ?? []).filter(Boolean) : []
+    const hasQueue = queueIds.length > 1
+    queueRef.current = hasQueue ? { ids: queueIds, index: 0 } : null
+    legDoneRef.current = false
     // autoStart only rides a practice-SELECT open (never a crash-recovery one, which has no opts
     // and forces a mode); a recovered session must surface its own Resume prompt, not auto-run.
     setState({
       phase: 'loading',
-      practiceId: opts?.practiceId,
+      practiceId: hasQueue ? queueIds[0] : opts?.practiceId,
       movementMode: opts?.mode,
       resume,
       forceMode,
-      autoStart: forceMode ? false : opts?.autoStart,
+      // A queued run auto-starts each leg (it's a select launch by definition).
+      autoStart: forceMode ? false : (hasQueue ? true : opts?.autoStart),
       // A crash-recovery open (forceMode) carries no override; a normal open passes it through.
       warmupMessage: forceMode ? undefined : opts?.warmupMessage,
+      queue: hasQueue ? queueIds : undefined,
+      queueIndex: hasQueue ? 0 : undefined,
     })
   }, [])
 
@@ -231,6 +273,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
     const forceMode = state.forceMode
     const requestedAutoStart = state.autoStart
     const requestedWarmup = state.warmupMessage
+    const requestedQueue = state.queue
+    const requestedQueueIndex = state.queueIndex
     void (async () => {
       const result = await loadOnAirSession(requestedPracticeId)
       if (!live) return
@@ -248,6 +292,8 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
         resume: requestedResume,
         autoStart: requestedAutoStart,
         warmupMessage: requestedWarmup,
+        queue: requestedQueue,
+        queueIndex: requestedQueueIndex,
       })
     })()
     return () => {
@@ -368,9 +414,12 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             warmupSec={state.data.prefs.warmupSec}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}
+            // A sequenced run (P6): this leg's position, and the completion signal that drives advance.
+            queuePosition={state.queue ? { index: state.queueIndex ?? 0, total: state.queue.length } : undefined}
+            onCompleted={() => { legDoneRef.current = true }}
             // Cross-device resume (ADR-521): the server active run, if it is a movement run.
             resumeRecord={serverResume?.kind === 'movement' ? serverResume : null}
-            onExit={close}
+            onExit={advanceOrClose}
             // The Be Still | Get Moving toggle: passing onModeChange tells the session it's inside
             // the unified door (the standalone /on-air route omits it, so no toggle there).
             mode={state.mode}
@@ -388,9 +437,12 @@ export function MindlessProvider({ children }: { children: React.ReactNode }) {
             autoStart={state.autoStart}
             // A per-step warm-up message override (P5), shown in the pre-roll over the practice's own.
             warmupMessageOverride={state.warmupMessage}
+            // A sequenced run (P6): this leg's position, and the completion signal that drives advance.
+            queuePosition={state.queue ? { index: state.queueIndex ?? 0, total: state.queue.length } : undefined}
+            onCompleted={() => { legDoneRef.current = true }}
             // Cross-device resume (ADR-521): the server active run, if it is a sit.
             resumeRecord={serverResume?.kind === 'mindless' ? serverResume : null}
-            onExit={close}
+            onExit={advanceOrClose}
             mode={state.mode}
             onModeChange={setMode}
           />

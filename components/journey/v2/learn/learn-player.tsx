@@ -11,7 +11,8 @@
 
 import { useState, useTransition, useMemo, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ChevronDown, List, Lock, Sparkles, Award, Compass, AlertTriangle, Anchor, CalendarClock, Layers } from 'lucide-react'
+import { useMindless } from '@/components/on-air/mindless'
 import { parseVideoEmbed } from '@/lib/video-embed'
 import { isError } from '@/lib/action-result'
 import { phaseUnlockAt, isPhaseUnlocked } from '@/lib/journeys/schedule'
@@ -145,6 +146,14 @@ export function LearnPlayer({
 }: Props) {
   const router = useRouter()
   const [pending, start] = useTransition()
+  const mindless = useMindless()
+
+  // A module's timed practices, in order, as a launchable sequence (ADR-592, P6). Returns the
+  // ordered practice ids for the module's UNLOGGED timed-practice lessons; 2+ makes it a session.
+  const moduleQueue = (lessonIds: string[]): string[] =>
+    lessonIds
+      .filter((id) => (usesTimerByLesson[id] ?? false) && practiceIdByLesson[id])
+      .map((id) => practiceIdByLesson[id])
 
   const order = tree.lessonOrder
   const [milestone, setMilestone] = useState<TrophyMilestone | null>(null)
@@ -389,6 +398,21 @@ export function LearnPlayer({
                             )
                           })}
                         </ul>
+                        {/* Sequenced run (ADR-592, P6): a module with 2+ timed practices can be run
+                            back to back as one session, auto-advancing at each reveal. */}
+                        {!locked && (() => {
+                          const q = moduleQueue(m.lessons.map((l) => l.id))
+                          if (q.length < 2) return null
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => mindless.open({ queue: q })}
+                              className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-primary-strong transition-colors hover:bg-primary-bg"
+                            >
+                              <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden /> Start all {q.length} as one session
+                            </button>
+                          )
+                        })()}
                       </div>
                     ))}
                   </div>
