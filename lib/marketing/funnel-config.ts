@@ -153,12 +153,12 @@ export const COACHES_FUNNEL: FunnelConfig = {
   howItWorks: {
     header: 'One place. Ready before your next session.',
     steps: [
-      { title: 'Make your Space.', body: 'Your page, your name, your work. Free.' },
+      { title: 'Make your Space.', body: 'Your page, your name, and your work, ready in a few minutes. Free to start, always.' },
       {
         title: 'Bring your people in.',
-        body: 'Scan a business card and it fills itself in, import your list, or share your Frequency card. Everyone lands in Contacts.',
+        body: 'Scan a card, import a list, or share your Frequency card. Everyone lands in Contacts.',
       },
-      { title: 'Open your calendar.', body: 'Take bookings and payments the same day.' },
+      { title: 'Open your calendar.', body: 'Take bookings and payments the same day, right from the page clients already see.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },

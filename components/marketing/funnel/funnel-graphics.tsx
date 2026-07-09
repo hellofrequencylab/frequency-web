@@ -188,6 +188,63 @@ export function SetupStepsGraphic({ className = '' }: { className?: string }) {
   )
 }
 
+// ── SetupStepGraphic — ONE enlarged UI frame from the setup flow (profile · contacts+QR · calendar),
+//    for the "One place" section where each step stands on its own with its copy beneath. Same inner art
+//    as SetupStepsGraphic, drawn larger. step: 0 profile · 1 contacts · 2 calendar (the active frame). ──
+export function SetupStepGraphic({ step, className = '' }: { step: 0 | 1 | 2; className?: string }) {
+  return (
+    <svg viewBox="0 0 140 148" className={`h-auto w-full ${className}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      {/* frame */}
+      <rect x="14" y="14" width="112" height="120" rx="14" fill="currentColor" className="text-surface" />
+      <rect x="14" y="14" width="112" height="120" rx="14" fill="none" stroke="currentColor" className={step === 2 ? 'text-primary-strong' : 'text-border'} strokeWidth="1.5" />
+      <g transform="translate(14,14)">
+        {step === 0 && (
+          // profile page
+          <g>
+            <circle cx="56" cy="34" r="16" fill="currentColor" className="text-primary-bg" />
+            <circle cx="56" cy="29" r="6" fill="currentColor" className="text-primary-strong" />
+            <path d="M44 46 a12 9 0 0 1 24 0" fill="currentColor" className="text-primary-strong" />
+            <rect x="30" y="62" width="52" height="8" rx="4" fill="currentColor" className="text-text" opacity="0.8" />
+            <rect x="22" y="80" width="68" height="6" rx="3" fill="currentColor" className="text-subtle" opacity="0.55" />
+            <rect x="22" y="92" width="54" height="6" rx="3" fill="currentColor" className="text-subtle" opacity="0.55" />
+          </g>
+        )}
+        {step === 1 && (
+          // contacts list + QR badge
+          <g>
+            {[0, 1, 2].map((r) => (
+              <g key={r}>
+                <circle cx="26" cy={30 + r * 26} r="8" fill="currentColor" className="text-primary-bg" />
+                <rect x="40" y={26 + r * 26} width="46" height="6" rx="3" fill="currentColor" className="text-subtle" opacity="0.6" />
+              </g>
+            ))}
+            <g transform="translate(74,86)">
+              <rect x="0" y="0" width="24" height="24" rx="4" fill="currentColor" className="text-primary" />
+              <rect x="5" y="5" width="5" height="5" fill="currentColor" className="text-on-primary" />
+              <rect x="14" y="5" width="5" height="5" fill="currentColor" className="text-on-primary" />
+              <rect x="5" y="14" width="5" height="5" fill="currentColor" className="text-on-primary" />
+            </g>
+          </g>
+        )}
+        {step === 2 && (
+          // calendar with one active slot
+          <g>
+            <rect x="18" y="20" width="76" height="10" rx="5" fill="currentColor" className="text-subtle" opacity="0.5" />
+            {[0, 1, 2].map((r) =>
+              [0, 1, 2].map((c) => {
+                const active = r === 1 && c === 1
+                return (
+                  <rect key={`${r}-${c}`} x={20 + c * 26} y={40 + r * 24} width="20" height="18" rx="4" fill="currentColor" className={active ? 'text-primary-strong' : 'text-border'} opacity={active ? 1 : 0.45} />
+                )
+              }),
+            )}
+          </g>
+        )}
+      </g>
+    </svg>
+  )
+}
+
 // ── LoopGraphic — THE signature. Six nodes in a ring with clockwise directional arrows: Meet -> Scan ->
 //    Contacts -> Invite -> Join -> Return -> Meet. Frequency mark at center. Labelled for a11y. ─────────
 const LOOP_NODES = ['Meet', 'Scan', 'Save', 'Invite', 'Join', 'Return'] as const
@@ -225,7 +282,7 @@ export function LoopGraphic({ className = '' }: { className?: string }) {
   }
 
   return (
-    <svg viewBox="0 0 420 400" className={`h-auto w-full ${className}`} preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="loopTitle loopDesc">
+    <svg viewBox="0 -16 420 432" className={`h-auto w-full ${className}`} preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="loopTitle loopDesc">
       <title id="loopTitle">The Frequency referral loop</title>
       <desc id="loopDesc">
         A ring of six steps flowing clockwise: Meet someone, Scan a code, save them to Contacts, Invite them,
@@ -261,12 +318,28 @@ export function LoopGraphic({ className = '' }: { className?: string }) {
       {LOOP_NODES.map((label, i) => {
         const p = pts[i]
         const focal = i === 0 // Meet is the focal accent node
+        // Label sits radially OUTSIDE its node (along the node's own spoke), so it clears the
+        // ring arrows that run between nodes. Cream (same tone as the circles) reads on the ink.
+        const lo = nodeR + 22
+        const lx = lo * Math.cos(p.a)
+        const ly = lo * Math.sin(p.a)
         return (
           <g key={label} transform={`translate(${p.x.toFixed(1)},${p.y.toFixed(1)})`}>
             <circle r={nodeR} fill="currentColor" className={focal ? 'text-primary-bg' : 'text-surface-elevated'} />
             <circle r={nodeR} fill="none" stroke="currentColor" className={focal ? 'text-primary-strong' : 'text-border-strong'} strokeWidth={focal ? 2 : 1.5} />
             <g className={focal ? 'text-primary-strong' : 'text-muted'}>{loopGlyph(i)}</g>
-            <text y={nodeR + 18} textAnchor="middle" fill="currentColor" className="text-text" fontSize="13" fontWeight="700">{label}</text>
+            <text
+              x={lx.toFixed(1)}
+              y={ly.toFixed(1)}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="currentColor"
+              className="text-surface-elevated"
+              fontSize="17"
+              fontWeight="700"
+            >
+              {label}
+            </text>
           </g>
         )
       })}
