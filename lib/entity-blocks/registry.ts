@@ -72,7 +72,7 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space'], order: 235 },
   { id: 'gallery', label: 'Image gallery', description: 'One or many images you upload or link.', category: 'content', kinds: ['member', 'space'], order: 240 },
   { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space'], order: 250 },
-  { id: 'embed', label: 'Embed', description: 'An embedded video or player.', category: 'content', kinds: ['member', 'space'], order: 260 },
+  { id: 'embed', label: 'Music and video', description: 'Embed a YouTube, Spotify, SoundCloud, or Vimeo player, or link an Insight Timer track. Paste a link.', category: 'content', kinds: ['member', 'space'], order: 260 },
   { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space'], order: 270 },
   // The five reusable DESIGN blocks (2026), now offered in the ON-PAGE rail arranger too (they previously
   // lived only in the Puck editor at /spaces/[slug]/edit-page, which is not where operators actually edit).
@@ -140,8 +140,9 @@ export function blocksForKind(kind: EntityKind): EntityBlockDef[] {
  *  mess). A block NOT here is retired from the offer (existing placements still RENDER, fail-safe; they just
  *  cannot be re-added). Kept: the CONNECTED data sections that show live profile info (About, Offerings,
  *  Book, Events, Team, Reviews, Contact, Find-us-online) + the standard/custom content blocks (Heading,
- *  Text, Image). Retired: highlights, practices, circles, faq, updates (no wired data) + gallery, quote,
- *  embed, divider (rarely used), and the authored `links` block (Find-us-online covers links now). */
+ *  Text, Image) + the Music-and-video embed. Retired: highlights, practices, circles, faq, updates (no
+ *  wired data) + gallery, quote, divider (rarely used), and the authored `links` block (Find-us-online
+ *  covers links now). */
 export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   // Connected data sections — each shows live profile info the operator entered in Identity & Branding /
   // Info & Connect, or a wired feature.
@@ -157,10 +158,11 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'business', // "Find us online" — the social + business links from Info & Connect (SPACE).
   // Member-only data section (kept for the member profile).
   'topfriends',
-  // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section.
+  // SPACE free-form blocks (ADR-542): Callout, Image Gallery, Features section, Music-and-video embed.
   'callout',
   'gallery',
   'features',
+  'embed', // Music and video — paste a YouTube / Spotify / SoundCloud / Vimeo / Insight Timer link.
   // SPACE design blocks (2026 → ADR-571): the reusable design sections, offered in the rail arranger.
   'photoHero',
   'editorial',
