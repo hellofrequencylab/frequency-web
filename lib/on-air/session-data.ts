@@ -47,12 +47,14 @@ type PracticeRow = {
   mindless_mode: string | null
   movement_config: unknown
   duration_locked: boolean | null
+  warmup_message: string | null
+  warmup_sec: number | null
 }
 
 // The columns every practice row needs so the timer can ROUTE it (timer_kind), open to the right
 // Mindless sub-mode / Movement config, and respect a locked duration. Untyped admin handle reads the
 // freshly-added columns (ADR-246) until lib/database.types.ts regenerates.
-const PRACTICE_TIMER_COLS = 'id, title, duration_min, timer_kind, mindless_mode, movement_config, duration_locked'
+const PRACTICE_TIMER_COLS = 'id, title, duration_min, timer_kind, mindless_mode, movement_config, duration_locked, warmup_message, warmup_sec'
 
 /** Load a member's On Air setup state. `requestedPracticeId` pins + pre-selects a practice (the
  *  Journey "Practice" button, or a /on-air?practice link). The list is never empty — Free sit is
@@ -127,6 +129,8 @@ export async function loadOnAirSessionData(
       mindless_mode: p.mindless_mode,
       movement_config: p.movement_config,
       duration_locked: p.duration_locked,
+      warmup_message: p.warmup_message,
+      warmup_sec: p.warmup_sec,
     }))
   }
 
@@ -158,6 +162,8 @@ export async function loadOnAirSessionData(
     mindlessMode: (p.mindless_mode ?? null) as MindlessMode | null,
     movementConfig: (p.movement_config ?? null) as MovementConfig | null,
     durationLocked: p.duration_locked ?? false,
+    warmupMessage: p.warmup_message ?? null,
+    warmupSec: p.warmup_sec ?? null,
   }))
 
   // Free sit — always available so the timer is never blocked; it logs the default sit practice.
@@ -179,6 +185,8 @@ export async function loadOnAirSessionData(
       mindlessMode: null,
       movementConfig: null,
       durationLocked: false,
+      warmupMessage: null,
+      warmupSec: null,
     })
   }
 

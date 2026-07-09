@@ -20,6 +20,7 @@ import { loadRootSpaceId } from '@/lib/spaces/store'
 import { resolveMemberDay } from '@/lib/member-day'
 import { clampTierToDuration, achievedTier, type PracticeTier } from '@/lib/practices/tiers'
 import { sanitizeMovementConfig, type MovementConfig } from '@/lib/movement'
+import { cleanWarmupMessage, clampAuthoredWarmupSec } from '@/lib/on-air'
 
 /** Which timer a practice routes to (WEBSITE-CHANGES-PLAN §4 C.8): 'none' = a one-tap
  *  Log it; 'mindless' = the On Air sit/breathe (useMindless); 'movement' = the Movement
@@ -1336,6 +1337,12 @@ export interface PracticeEdit {
   timer_kind?: TimerKind
   /** Movement timer config when timer_kind = 'movement' (mode + tuning); null otherwise. */
   movement_config?: MovementConfig | null
+  /** Creator-authored warm-up message shown during the timer pre-roll (ADR-592). Null/empty
+   *  = a silent pre-roll. Trimmed + capped to WARMUP_MESSAGE_MAX server-side. */
+  warmup_message?: string | null
+  /** Creator's recommended warm-up (pre-roll) length in seconds. Null = the member's personal
+   *  pre-roll length. Clamped to WARMUP_SEC_MAX server-side. */
+  warmup_sec?: number | null
   category?: string | null
   icon?: string | null
   header_image?: string | null
@@ -1404,6 +1411,10 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
     update.movement_config = patch.movement_config
       ? sanitizeMovementConfig(patch.movement_config)
       : null
+  // Creator-authored warm-up (ADR-592): trim/cap the message, clamp the length. Both nullable
+  // (null message = silent pre-roll; null length = the member's personal pre-roll length).
+  if (patch.warmup_message !== undefined) update.warmup_message = cleanWarmupMessage(patch.warmup_message)
+  if (patch.warmup_sec !== undefined) update.warmup_sec = clampAuthoredWarmupSec(patch.warmup_sec)
   if (patch.category !== undefined) update.category = STR(patch.category, 40)
   if (patch.icon !== undefined) update.icon = STR(patch.icon, 40)
   if (patch.header_image !== undefined) update.header_image = STR(patch.header_image, 500)

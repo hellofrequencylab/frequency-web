@@ -129,6 +129,10 @@ export interface OnAirPractice {
   movementConfig?: MovementConfig | null
   /** Author locked the duration: members cannot change the minutes for this practice. */
   durationLocked?: boolean
+  /** Creator-authored warm-up message shown during the pre-roll (ADR-592). Null = a silent pre-roll. */
+  warmupMessage?: string | null
+  /** Creator's warm-up (pre-roll) length in seconds. Null = the member's personal pre-roll length. */
+  warmupSec?: number | null
 }
 
 type Stage = 'setup' | 'live' | 'saving' | 'reveal' | 'error'
@@ -860,7 +864,9 @@ export function OnAirSession({
     setOvertime(0)
     setFlash(false)
     setNeedRestore(false)
-    setPreroll(warmupSec)
+    // The pre-roll length: the creator's authored warm-up (practice.warmupSec) when set, else the
+    // member's own pre-roll pref (ADR-592). An authored warm-up gives its message time to land.
+    setPreroll(practice?.warmupSec && practice.warmupSec > 0 ? practice.warmupSec : warmupSec)
     setStage('live')
     // Open the server-authoritative active session immediately (armed/paused through warm-up), so a
     // reset even during warm-up recovers, cross-device (ADR-521). resumeTarget mirrors a top-up.
@@ -1168,6 +1174,10 @@ export function OnAirSession({
                   Warm up
                 </p>
                 <p className="text-8xl font-semibold tabular-nums text-primary-strong">{preroll}</p>
+                {/* The creator's warm-up message (ADR-592), shown as the timer counts in. */}
+                {practice?.warmupMessage && (
+                  <p className="mt-3 max-w-sm text-balance text-base font-medium text-text/80">{practice.warmupMessage}</p>
+                )}
               </>
             ) : (
               <>
