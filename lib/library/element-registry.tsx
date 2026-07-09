@@ -26,6 +26,14 @@ import { FrequencyArcs, RippleRings, CircleConstellation, OrganicBlob } from '@/
 import { FeedRender } from '@/components/onboarding/renders/feed-render'
 import { CirclesRender } from '@/components/onboarding/renders/circles-render'
 import { EventsRender } from '@/components/onboarding/renders/events-render'
+import {
+  HeroProductGraphic,
+  ScatteredStackGraphic,
+  SetupStepsGraphic,
+  LoopGraphic,
+  BreakEvenGraphic,
+  FeatureIcon,
+} from '@/components/marketing/funnel/funnel-graphics'
 import { REGISTRY_NAMES, TEMPLATE_PILLARS, type ElementRegistry } from './element-catalog'
 
 // The Loom's code-drawn element resolver. A library_assets row of kind 'element'
@@ -44,6 +52,12 @@ const ICONS: Record<string, IconFn> = {
   'bell-cue': BellCueIcon,
   vibration: VibrationIcon,
   'on-air': OnAirIcon,
+  // Operator funnel-door feature icons.
+  'funnel-calendar': (p) => <FeatureIcon name="calendar" {...p} />,
+  'funnel-contact': (p) => <FeatureIcon name="contact" {...p} />,
+  'funnel-qr': (p) => <FeatureIcon name="qr" {...p} />,
+  'funnel-envelope': (p) => <FeatureIcon name="envelope" {...p} />,
+  'funnel-spark': (p) => <FeatureIcon name="spark" {...p} />,
 }
 
 const SPOT: Record<string, IconFn> = {
@@ -55,6 +69,12 @@ const SPOT: Record<string, IconFn> = {
   mindless: MindlessArt,
   movement: MovementArt,
   connect: ConnectArt,
+  // Operator funnel-door signature scenes.
+  'funnel-hero-product': HeroProductGraphic,
+  'funnel-scattered-stack': ScatteredStackGraphic,
+  'funnel-setup-steps': SetupStepsGraphic,
+  'funnel-loop': LoopGraphic,
+  'funnel-break-even': BreakEvenGraphic,
 }
 
 const TEXTURES: Record<string, IconFn> = {

@@ -3,6 +3,7 @@
 // reading from a FunnelConfig. Built on the marketing UI kit (Button, Section) + house tokens; the graphics
 // are the inline SVGs in funnel-graphics.tsx. Voice/naming locked (no em dashes).
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button, Section } from '@/components/marketing/marketing-ui'
 import { catalogItem } from '@/lib/billing/pricing-keys'
@@ -37,8 +38,8 @@ export function SplashHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-canvas/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8">
-        <Link href="/" className="font-display text-xl uppercase tracking-tight text-text" aria-label="Frequency home">
-          Frequency
+        <Link href="/" className="shrink-0" aria-label="Frequency home">
+          <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} priority className="h-6 w-auto dark:invert sm:h-7" />
         </Link>
         <Button href={FUNNEL_START_HREF} size="sm">
           {FUNNEL_CTA_LABEL}
@@ -64,23 +65,24 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
   const { hero } = config
   return (
     <Section tone="canvas" pad="pt-12 pb-14 sm:pt-16 sm:pb-20">
-      <div className="grid items-center gap-10 lg:grid-cols-2">
+      {/* Centered eyebrow bookend across the full hero width. */}
+      <p className="text-center text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
+      {/* Text column is widened (1.2fr vs 0.8fr) so the CTA row stays on one line. */}
+      <div className="mt-6 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
+          <h1 className="font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{hero.subhead}</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href={FUNNEL_START_HREF} size="lg">
+            <Button href={FUNNEL_START_HREF} size="lg" className="whitespace-nowrap">
               {FUNNEL_CTA_LABEL}
             </Button>
-            <Button href="#how-it-works" variant="ghost" size="lg">
+            <Button href="#how-it-works" variant="ghost" size="lg" className="whitespace-nowrap">
               {FUNNEL_SECONDARY_LABEL}
             </Button>
           </div>
           <p className="mt-4 text-sm text-subtle">{hero.microcopy}</p>
-          <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
         </div>
         <div className="order-first lg:order-last">
           <div className="mx-auto max-w-md rounded-3xl border border-border bg-surface p-5 shadow-pop sm:p-7">
@@ -88,6 +90,8 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           </div>
         </div>
       </div>
+      {/* Centered trust-line bookend below the hero. */}
+      <p className="mt-10 text-center text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
     </Section>
   )
 }
@@ -165,43 +169,61 @@ export function FeatureBlocks({ config }: { config: FunnelConfig }) {
   return (
     <Section tone="surface">
       <div className="space-y-5">
-        {config.features.map((f, i) => (
-          <div
-            key={f.title}
-            className={`flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8 ${
-              f.soft ? 'border-dashed border-border bg-canvas' : 'border-border bg-surface-elevated'
-            } ${i % 2 === 1 ? 'sm:flex-row-reverse' : ''}`}
-          >
+        {config.features.map((f, i) => {
+          // The third block is the SPINE (the practice grows through the people you meet); give it accent
+          // weight so it reads as the hinge into the Loop, not one of four parallel claims.
+          const spine = i === 2 && !f.soft
+          return (
             <div
-              className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                f.soft ? 'bg-surface text-muted' : 'bg-primary-bg text-primary-strong'
-              }`}
+              key={f.title}
+              className={`flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:gap-6 sm:p-8 ${
+                f.soft
+                  ? 'border-dashed border-border bg-canvas'
+                  : spine
+                    ? 'border-primary/50 bg-primary-bg/50 shadow-sm'
+                    : 'border-border bg-surface-elevated'
+              } ${i % 2 === 1 ? 'sm:flex-row-reverse' : ''}`}
             >
-              <FeatureIcon name={f.icon} />
+              <div
+                className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                  f.soft ? 'bg-surface text-muted' : spine ? 'bg-primary text-on-primary' : 'bg-primary-bg text-primary-strong'
+                }`}
+              >
+                <FeatureIcon name={f.icon} />
+              </div>
+              <div className={i % 2 === 1 ? 'sm:text-right' : ''}>
+                <h3 className={`font-display text-2xl uppercase ${f.soft ? 'text-muted' : spine ? 'text-primary-strong' : 'text-text'}`}>
+                  {f.title}
+                </h3>
+                <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">{f.body}</p>
+              </div>
             </div>
-            <div className={i % 2 === 1 ? 'sm:text-right' : ''}>
-              <h3 className={`font-display text-2xl uppercase ${f.soft ? 'text-muted' : 'text-text'}`}>{f.title}</h3>
-              <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted">{f.body}</p>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </Section>
   )
 }
 
-// ── LoopDiagram (the signature; `prominent` enlarges it for the community niche) ──────────────────
-
-export function LoopSection({ prominent = false }: { prominent?: boolean }) {
+// ── LoopDiagram (the signature; the page's one idea made visual). It EXPLAINS itself: a setup line above
+//    the diagram and a plain payoff line below, so a cold visitor finishes understanding how a practice
+//    grows here. `prominent` enlarges it (community niche); `echo` is the compact repeat after How it works.
+export function LoopSection({ config, prominent = false, echo = false }: { config: FunnelConfig; prominent?: boolean; echo?: boolean }) {
+  const header = config.loop?.header ?? LOOP_COPY.header
+  const intro = echo ? undefined : config.loop?.intro
+  const payoff = echo ? undefined : (config.loop?.payoff ?? LOOP_COPY.caption)
   return (
-    <Section tone="ink" pad={prominent ? 'py-20 sm:py-28' : 'py-16 sm:py-20'}>
-      <div className="text-center">
-        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{LOOP_COPY.header}</h2>
-        <p className="mt-3 text-lg text-on-ink-muted">{LOOP_COPY.caption}</p>
+    <Section tone="ink" pad={echo ? 'py-12' : prominent ? 'py-20 sm:py-28' : 'py-16 sm:py-24'}>
+      <div className="mx-auto max-w-2xl text-center">
+        <h2 className="font-display uppercase text-on-ink text-4xl sm:text-5xl">{header}</h2>
+        {intro && <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-on-ink-muted">{intro}</p>}
       </div>
-      <div className={`mx-auto mt-10 ${prominent ? 'max-w-2xl' : 'max-w-lg'}`}>
+      <div className={`mx-auto mt-10 ${prominent ? 'max-w-2xl' : echo ? 'max-w-sm' : 'max-w-lg'}`}>
         <LoopGraphic />
       </div>
+      {payoff && (
+        <p className="mx-auto mt-8 max-w-xl text-center text-base leading-relaxed text-on-ink">{payoff}</p>
+      )}
     </Section>
   )
 }
@@ -212,6 +234,9 @@ function priceForRow(row: FunnelPriceRow): { price: string; anchor: string | nul
   if (row.kind === 'free') return { price: '$0', anchor: null }
   if (row.kind === 'resonance') {
     return { price: `+${formatLoadoutCents(catalogItem('addon_ai').month.foundingCents)}`, anchor: null }
+  }
+  if (row.kind === 'nonprofit') {
+    return { price: formatLoadoutCents(catalogItem('nonprofit_seat').month.foundingCents), anchor: null }
   }
   const biz = catalogItem('business_base').month
   return {
@@ -257,9 +282,12 @@ export function PricingBeat({ config }: { config: FunnelConfig }) {
         })}
       </div>
 
-      <div className="mx-auto mt-8 max-w-2xl">
-        <BreakEvenGraphic className="mx-auto max-w-md" />
-        <p className="mt-3 text-center text-sm text-subtle">{pricing.breakEvenCaption}</p>
+      {/* The break-even PROOF, promoted to a visible callout beside the chart (not fine print). */}
+      <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-primary/40 bg-primary-bg/40 p-6 sm:p-7">
+        <div className="grid items-center gap-5 sm:grid-cols-[1.05fr_1fr]">
+          <BreakEvenGraphic className="w-full" />
+          <p className="text-base font-semibold leading-relaxed text-text">{pricing.breakEvenCaption}</p>
+        </div>
       </div>
 
       <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-muted">{pricing.note}</p>
@@ -365,7 +393,7 @@ export function SplashFooter() {
   return (
     <footer className="border-t border-border bg-canvas">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center sm:px-8">
-        <span className="font-display text-xl uppercase tracking-tight text-text">Frequency</span>
+        <Image src="/frequency-logo.png" alt="Frequency" width={963} height={170} className="h-6 w-auto dark:invert" />
         <p className="text-sm text-muted">{FUNNEL_FOOTER.tagline}</p>
         <ul className="flex items-center gap-6 text-sm text-subtle">
           {FUNNEL_FOOTER.links.map((l) => (

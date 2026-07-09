@@ -47,7 +47,7 @@ export interface FunnelFeature {
  *  (lib/pricing/pricing-page.ts) so they never drift; the config carries only the row's identity + the
  *  take-rate / value wording. `kind` selects which catalog figure the component reads. */
 export interface FunnelPriceRow {
-  kind: 'free' | 'business' | 'resonance'
+  kind: 'free' | 'business' | 'nonprofit' | 'resonance'
   /** The plan name shown, e.g. "Free", "Business", "+ Resonance". */
   name: string
   /** The right-hand descriptor, e.g. "5% on what you sell", "3% on what you sell", "AI that works for you". */
@@ -77,6 +77,9 @@ export interface FunnelConfig {
   pricing: { header: string; intro: string; rows: FunnelPriceRow[]; breakEvenCaption: string; note: string }
   faq: FunnelFaq[]
   finalCta: { header: string; subhead: string; microcopy: string }
+  /** The Loop section copy: a setup line ABOVE the diagram (intro) + a plain payoff line BELOW it, so a
+   *  cold visitor understands exactly how a practice grows here. Falls back to the shared LOOP_COPY. */
+  loop?: { header?: string; intro?: string; payoff?: string }
   /** Override the shared 4-item assurance bar (the nonprofit route swaps the last item). */
   assuranceBar?: readonly string[]
   /** Give the Loop diagram extra prominence (rendered again after HowItWorks). Community builders. */
@@ -136,15 +139,15 @@ export const COACHES_FUNNEL: FunnelConfig = {
   mode: { type: 'business', variant: 'packages' },
   hero: {
     eyebrow: 'For coaches, healers, and guides',
-    h1: 'Your practice, held.',
+    h1: 'Your practice, made perfect.',
     subhead:
-      "Booking, payments, and everyone you've met, in one calm place that stays out of your way. Start free, and bring your people with you.",
+      "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. Free while you grow.',
     trustLine: 'A place to be human.',
   },
   problem: {
     header: 'The work is the calling. The admin is the tax.',
-    body: 'A booking here. A payment link there. Client notes in a notebook, an app, and your head. The reminders you meant to send. The person who never rebooked because the follow-up slipped. None of it is why you started.',
+    body: 'Your calendar lives in one app, payments in another, client notes in a notebook and in your head. You mean to follow up, and the day gets away from you. So the client who came once never books again, and you never quite know why. None of it is why you started.',
     caption: 'Six tabs, one you.',
   },
   howItWorks: {
@@ -152,39 +155,46 @@ export const COACHES_FUNNEL: FunnelConfig = {
     steps: [
       { title: 'Make your Space.', body: 'Your page, your name, your work. Free.' },
       {
-        title: 'Add your people.',
-        body: 'Scan a business card and it fills itself in. Import your list. Or share your Frequency card and they land in Contacts.',
+        title: 'Bring your people in.',
+        body: 'Scan a business card and it fills itself in, import your list, or share your Frequency card. Everyone lands in Contacts.',
       },
       { title: 'Open your calendar.', body: 'Take bookings and payments the same day.' },
     ],
     caption: 'Set up in an afternoon, not a weekend.',
   },
+  // The order ESCALATES to the growth engine: get paid -> remember everyone -> grow through them, which
+  // sets up the Loop. The third block is the page's unique idea, not a feature.
   features: [
     {
       icon: 'calendar',
-      title: 'Booked, not chased.',
-      body: 'Clients pick a time and pay up front. You get your calendar back, and your evenings.',
+      title: 'Booked and paid, without the chase.',
+      body: 'Clients pick a time and pay up front. No back and forth, no chasing invoices. Your calendar fills, and your evenings come back.',
     },
     {
       icon: 'contact',
-      title: "Everyone you've met, in one place.",
-      body: 'Contacts holds your real-world relationships, however they came in. Scan a card and it fills itself in. Share your details at an event and they save you back.',
+      title: "Every person you've met, in one place.",
+      body: 'Contacts holds your relationships, however they came in. Scan a business card and it fills itself in. Meet someone at an event and they save you back. The list you keep in five places, finally in one.',
     },
     {
       icon: 'qr',
-      title: 'A card that works while you sleep.',
-      body: 'Your own QR card and codes, for anything you want. Every real introduction becomes a saved contact, and a quiet invitation into Frequency.',
+      title: 'Your practice grows through the people you meet.',
+      body: 'Share your Frequency card and every hello becomes a saved contact, and an invitation in. The client who loved their session brings a friend. Word of mouth, working for you instead of getting lost.',
     },
     {
       icon: 'spark',
       soft: true,
       title: "When you're ready, it does more.",
-      body: "Email to bring past clients back. Reminders that send themselves, so no one slips. And a quiet nudge when someone's drifting, before they're gone.",
+      body: "Email to bring quiet clients back. Reminders that send themselves, so no one slips. And a nudge when someone's drifting, while there's still time to reach them.",
     },
   ],
+  loop: {
+    header: 'Every hello, an open door.',
+    intro: 'This is how a practice grows here. Not through ads, but through the people you actually meet.',
+    payoff: 'You meet someone, save them with a scan, and invite them in. They join, and they come back, and they bring the next person.',
+  },
   pricing: {
     header: 'One honest price.',
-    intro: 'Start free. When your practice grows, one plan opens everything. No add-on menu. No surprise fees.',
+    intro: 'Start free, and stay free while you grow. When your practice takes off, one plan opens everything. No add-on menu, no surprise fees.',
     rows: [
       { kind: 'free', name: 'Free', detail: '5% on what you sell' },
       { kind: 'business', name: 'Business', detail: '3% on what you sell', featured: true },
@@ -198,7 +208,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
     { q: 'Do I need to be technical?', a: 'No. Most practitioners are taking bookings the same afternoon.' },
     {
       q: 'What does it actually cost?',
-      a: 'Free to start. $49 when you grow. You always see the full fee, ours plus card processing, nothing hidden.',
+      a: 'Free to start. Business is $49 a month, and most coaches add Resonance for $69 total. You always see the full fee, ours plus card processing, nothing hidden.',
     },
     { q: 'Can I take my contacts with me?', a: 'Yes, any time. Download a VCard or export your whole list.' },
     { q: 'Will my clients need to download anything?', a: 'No. They book and pay from a link.' },
@@ -210,7 +220,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   ],
   finalCta: {
     header: 'Come home to one place.',
-    subhead: 'Booking, payments, and your people, held. Start free, and bring them with you.',
+    subhead: "Your bookings, your payments, and every person you've met, held together. Start free, and grow through the people you meet.",
     microcopy: 'No card. Free while you grow.',
   },
 }

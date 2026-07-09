@@ -190,7 +190,7 @@ export function SetupStepsGraphic({ className = '' }: { className?: string }) {
 
 // ── LoopGraphic — THE signature. Six nodes in a ring with clockwise directional arrows: Meet -> Scan ->
 //    Contacts -> Invite -> Join -> Return -> Meet. Frequency mark at center. Labelled for a11y. ─────────
-const LOOP_NODES = ['Meet', 'Scan', 'Contacts', 'Invite', 'Join', 'Return'] as const
+const LOOP_NODES = ['Meet', 'Scan', 'Save', 'Invite', 'Join', 'Return'] as const
 export function LoopGraphic({ className = '' }: { className?: string }) {
   const cx = 210
   const cy = 200

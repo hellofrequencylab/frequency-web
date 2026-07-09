@@ -39,9 +39,9 @@ export function NicheFunnel({
         <ProblemSection config={config} />
         <HowItWorks config={config} />
         {/* Community niche: a compact Loop echo right after How it works, because the loop IS the product. */}
-        {config.loopProminent && <LoopSection />}
+        {config.loopProminent && <LoopSection config={config} echo />}
         <FeatureBlocks config={config} />
-        <LoopSection prominent={config.loopProminent} />
+        <LoopSection config={config} prominent={config.loopProminent} />
         <PricingBeat config={config} />
         <ProofSection testimonials={testimonials} />
         <MissionSection />
