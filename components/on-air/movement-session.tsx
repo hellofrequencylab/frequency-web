@@ -167,6 +167,8 @@ export function MovementSession({
   autoStart = false,
   warmupSec: warmupSecProp,
   warmupMessageOverride,
+  queuePosition,
+  onCompleted,
   resumeRecord,
   onExit,
   mode: doorMode,
@@ -194,6 +196,12 @@ export function MovementSession({
   /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
    *  pre-roll shows THIS instead of the launched practice's own warm-up message. */
   warmupMessageOverride?: string | null
+  /** This leg's position in a sequenced run (ADR-592, P6): { index (0-based), total }. Absent for
+   *  a single run. Drives a "Practice N of M" chip + the "up next" reveal hint. */
+  queuePosition?: { index: number; total: number } | null
+  /** Fired once when the leg COMPLETES (log saved, reveal opens) — distinct from onExit (which also
+   *  fires on an early bail). Lets the provider auto-advance a sequence only on real completion. */
+  onCompleted?: () => void
   /** The server-authoritative active session (ADR-521): when present and no localStorage record
    *  exists, the run resumes as RUNNING on mount (cross-device), never a prompt. */
   resumeRecord?: LiveSessionRecord | null
@@ -757,6 +765,9 @@ export function MovementSession({
     }
     setPayload(result.data)
     setStage('reveal')
+    // The leg completed (log saved). Signal the provider so a sequenced run (P6) can auto-advance
+    // when the member dismisses the reveal — never on an early bail (leave() never runs this).
+    onCompleted?.()
   }
 
   function leave() {
@@ -783,8 +794,16 @@ export function MovementSession({
   // --- screens --------------------------------------------------------------
 
   if (stage === 'reveal' && payload) {
+    const hasNext = !!queuePosition && queuePosition.index + 1 < queuePosition.total
     return (
       <Overlay>
+        {/* Sequenced run (P6): a progress chip; when more remain, closing this rolls into the next. */}
+        {queuePosition && (
+          <div className="mx-auto shrink-0 rounded-full bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+            Practice {queuePosition.index + 1} of {queuePosition.total}
+            {hasNext ? ' · closing this starts the next' : ' · last one'}
+          </div>
+        )}
         {/* Completion economy line: a partial sit banks 1 Zap and clears the day; come
             back to finish for the rest. A top-up (finished) celebrates the rest landing.
             Plain, no shame, no em or en dashes (docs/CONTENT-VOICE.md). */}

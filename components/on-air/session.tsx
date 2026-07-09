@@ -242,6 +242,8 @@ export function OnAirSession({
   autoStart = false,
   resumeRecord,
   warmupMessageOverride,
+  queuePosition,
+  onCompleted,
   onExit,
   mode: doorMode,
   onModeChange,
@@ -268,6 +270,13 @@ export function OnAirSession({
   /** A per-step warm-up message override (ADR-592, P5): when set (a Journey-step launch), the
    *  pre-roll shows THIS instead of the launched practice's own warm-up message. */
   warmupMessageOverride?: string | null
+  /** This leg's position in a sequenced run (ADR-592, P6): { index (0-based), total }. Shows a
+   *  "Practice N of M" progress chip and an "Up next" hint on the reveal. Absent for a single run. */
+  queuePosition?: { index: number; total: number } | null
+  /** Fired once when the leg COMPLETES (its log is saved, the reveal opens) — distinct from onExit,
+   *  which also fires on an early bail. The provider uses it to auto-advance a sequenced run only
+   *  after a genuine completion. */
+  onCompleted?: () => void
   /** Overlay mode (the global Mindless launcher): when set, leaving the session
    *  CLOSES the overlay via this callback instead of navigating the router. The
    *  route page (/on-air) omits it, keeping its back/replace exit unchanged. */
@@ -996,6 +1005,9 @@ export function OnAirSession({
     }
     setPayload(result.data)
     setStage('reveal')
+    // The leg completed (log saved). Signal the provider so a sequenced run (P6) can auto-advance
+    // to the next practice when the member dismisses the reveal — never on an early bail.
+    onCompleted?.()
   }
 
   // --- screens -------------------------------------------------------------------
@@ -1074,8 +1086,17 @@ export function OnAirSession({
   }
 
   if (stage === 'reveal' && payload) {
+    const hasNext = !!queuePosition && queuePosition.index + 1 < queuePosition.total
     return (
       <Overlay>
+        {/* Sequenced run (P6): a progress chip; when more practices remain, closing this reveal
+            rolls into the next one. */}
+        {queuePosition && (
+          <div className="mx-auto mb-3 w-full max-w-sm rounded-full bg-surface-elevated px-3 py-1.5 text-center text-xs font-medium text-muted">
+            Practice {queuePosition.index + 1} of {queuePosition.total}
+            {hasNext ? ' · closing this starts the next' : ' · last one'}
+          </div>
+        )}
         {/* Completion economy messaging (item #4), above the reveal cards. PARTIAL: paid 1 Zap,
             no shame, a gentle "finish for the rest". FINISHED: celebrate the top-up. Plain copy,
             no em or en dashes. */}
