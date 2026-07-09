@@ -1,6 +1,7 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ALL_ELEMENTS } from './element-catalog'
 
 // Server-only data access for The Loom / Loom Studio. `library_assets` isn't in
 // lib/database.types.ts yet (the migration is applied but types aren't regenerated), so we
@@ -23,6 +24,48 @@ export async function getRootSpaceId(): Promise<string | null> {
     .limit(1)
     .maybeSingle()
   return (data as { id: string } | null)?.id ?? null
+}
+
+/**
+ * Reconcile the code element catalog (element-catalog.ALL_ELEMENTS) into `library_assets` for the
+ * master/shared library, so every code-drawn element shows in Loom Studio WITHOUT a hand-written
+ * seed migration. This is the auto-add path: adding art to a catalog registry array is all it takes
+ * — the next time a manager opens the master Loom, the missing rows self-heal in.
+ *
+ * Idempotent: inserts only catalog elements missing from the space, matched by (registry, name), as
+ * public + approved rows. Resilient: never throws (a sync hiccup must never break the Loom page).
+ * Returns how many rows it added (0 on a no-op or any error). Call with the ROOT space id.
+ */
+export async function ensureCatalogElements(spaceId: string): Promise<number> {
+  try {
+    const { data } = await db()
+      .from('library_assets')
+      .select('config')
+      .eq('space_id', spaceId)
+      .eq('kind', 'element')
+    const have = new Set(
+      ((data ?? []) as { config: { registry?: string; name?: string } | null }[]).map(
+        (r) => `${r.config?.registry ?? ''}:${r.config?.name ?? ''}`,
+      ),
+    )
+    const missing = ALL_ELEMENTS.filter((e) => !have.has(`${e.registry}:${e.name}`))
+    if (missing.length === 0) return 0
+    const rows = missing.map((e) => ({
+      kind: 'element',
+      title: e.title,
+      slug: e.name,
+      category: e.category,
+      tags: e.tags,
+      config: { registry: e.registry, name: e.name },
+      space_id: spaceId,
+      visibility: 'public',
+      status: 'approved',
+    }))
+    const { error } = await db().from('library_assets').insert(rows)
+    return error ? 0 : rows.length
+  } catch {
+    return 0
+  }
 }
 
 /** A gallery row — the fields Loom Studio's grid + detail drawer need. */
