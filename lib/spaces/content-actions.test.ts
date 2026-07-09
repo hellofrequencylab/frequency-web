@@ -75,7 +75,13 @@ function makeAdmin() {
 type Row = Record<string, unknown>
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => makeAdmin() }))
 
-import { reactToSpaceUpdate, commentOnSpaceUpdate } from './content-actions'
+import {
+  reactToSpaceUpdate,
+  commentOnSpaceUpdate,
+  createMemberPost,
+  removeCommunityPost,
+  setCommunityMemberPosts,
+} from './content-actions'
 import { isError } from '@/lib/action-result'
 
 beforeEach(() => {
@@ -177,5 +183,31 @@ describe('commentOnSpaceUpdate (any signed-in member; space_update thread only)'
     const r = await commentOnSpaceUpdate('willow', 'anchor', 'Let me in')
     expect(isError(r)).toBe(true)
     expect(calls.some((c) => c.op === 'insert' && c.table === 'posts')).toBe(false)
+  })
+})
+
+describe('member posts + toggle (Phase 2b)', () => {
+  it('createMemberPost refuses an anonymous caller', async () => {
+    currentProfileId = null
+    expect(isError(await createMemberPost('willow', 'Hi'))).toBe(true)
+  })
+
+  it('createMemberPost refuses when the space cannot be resolved', async () => {
+    // getVisibleSpaceBySlug is mocked to null, so even a signed-in member cannot resolve the space.
+    expect(isError(await createMemberPost('willow', 'Hi'))).toBe(true)
+  })
+
+  it('setCommunityMemberPosts refuses a non-operator', async () => {
+    expect(isError(await setCommunityMemberPosts('willow', false))).toBe(true)
+  })
+
+  it('removeCommunityPost refuses an anonymous caller', async () => {
+    currentProfileId = null
+    expect(isError(await removeCommunityPost('willow', 'anchor'))).toBe(true)
+  })
+
+  it('removeCommunityPost refuses on a post that is not a space_update', async () => {
+    expect(isError(await removeCommunityPost('willow', 'normal'))).toBe(true)
+    expect(calls.some((c) => c.op === 'update' && c.table === 'posts')).toBe(false)
   })
 })

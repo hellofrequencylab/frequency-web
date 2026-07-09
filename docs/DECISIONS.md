@@ -12878,3 +12878,37 @@ distinction and moderation for member posts) · follow → notification fan-out 
 
 **Consequences.** `lib/spaces/content-data.ts` (`getMySpaceReview`), `lib/spaces/profile-nav.ts` (Reviews tab),
 `app/(main)/spaces/[slug]/(profile)/reviews/page.tsx`, `components/spaces/community/space-reviews.tsx`.
+
+## ADR-586: Member Community posts + the business on/off toggle (Community feed Phase 2b)
+
+**Status:** Accepted · completes the Phase 2 Community work (ADR-584/585). Next free number after ADR-585.
+
+**Context.** The owner wants FOLLOWERS to post to a business's Community feed (not just the business), with a
+switch the business can flip to turn member posting off. Chosen approach (with the owner): MIGRATION-FREE, so
+no production schema change.
+
+**Decision.**
+1. **A member post is a plain `posts` row**, not a `space_updates` row: a top-level `post_type='space_update'`
+   post scoped to the Space, authored by the member. This (a) reuses the existing member react/comment
+   plumbing (`is_space_update_post` keys off the type), (b) is read by the Community feed's UNION, and (c)
+   stays OUT of the Home brand-updates block (which reads `space_updates`). Written through the admin client,
+   so the gate is enforced in `createMemberPost`: signed-in + the business allows member posts + the caller
+   FOLLOWS the Space (an operator always may). No RLS change needed.
+2. **The toggle** lives on `preferences.communityMemberPosts` (default ON; only an explicit `false` stored),
+   flipped by the operator via `setCommunityMemberPosts`. `createMemberPost` refuses when it is off.
+3. **The feed unions** brand Updates + member posts (`getSpaceCommunityFeed` → `getSpaceMemberPosts`),
+   newest-first, each tagged `kind` ('brand' | 'member') with the member author so the card shows who posted;
+   both share the reaction/comment resolution over their anchor.
+4. **Moderation:** `removeCommunityPost` soft-hides a member post (sets `hidden_at`) for the post's AUTHOR
+   (own) or an OPERATOR (any), scoped to a `space_update` post on that Space.
+
+**Alternatives.** A `space_updates.author_kind` column (cleaner queries) was rejected to avoid a production
+schema change; the union getter carries the small extra complexity instead.
+
+**Consequences.** `lib/spaces/content-actions.ts` (`createMemberPost`, `setCommunityMemberPosts`,
+`removeCommunityPost`), `lib/spaces/content-data.ts` (`getSpaceMemberPosts` + union in `getSpaceCommunityFeed`,
+`kind`/`author`/`authorId` on the post shape), `(profile)/community/page.tsx` (allowMemberPosts + viewerId),
+`space-community-feed.tsx` (member composer, operator toggle, author display, remove). No migration.
+
+**Deferred:** member image uploads on member posts, follow → notification fan-out, pinned posts, polls/offers,
+realtime (Phase 3).

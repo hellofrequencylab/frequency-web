@@ -299,6 +299,13 @@ export type SpaceCommunityPost = {
   update: SpaceUpdateItem
   /** The interaction anchor post id, or null when the Update has no anchor yet (no interaction). */
   anchorId: string | null
+  /** Who posted: a BRAND update (the business) or a MEMBER post (a follower on the wall). */
+  kind: 'brand' | 'member'
+  /** The member author for a `member` post (name + avatar); null for a brand post (the UI shows the
+   *  brand name). */
+  author: { name: string; avatarUrl: string | null } | null
+  /** The member author's profile id (a `member` post only), so the viewer can remove their OWN post. */
+  authorId: string | null
   reactions: SpaceUpdateReactions
   comments: SpaceUpdateComment[]
 }
@@ -313,22 +320,79 @@ function anyDb(): { from: (t: string) => any } {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-/** The Community feed for a Space: every PUBLISHED Update with its reaction counts (+ the viewer's own
- *  reactions) and its comment thread, resolved through the anchor post. FAIL-SAFE throughout: any miss
- *  yields empty interaction, so the feed always renders. Two batched queries, no N+1. */
+const MEMBER_POSTS_CAP = 60
+
+/** A member post (Phase 2b): a top-level post_type='space_update' post authored by a follower, shaped like
+ *  a brand Update so the feed renders both the same way. `postId` is its OWN id (it is its own interaction
+ *  anchor). */
+type MemberPost = {
+  item: SpaceUpdateItem
+  author: { name: string; avatarUrl: string | null } | null
+  authorId: string | null
+}
+
+/** The member Community posts for a Space: top-level post_type='space_update' posts NOT anchored to a brand
+ *  Update (so a brand anchor is excluded), newest first, with the author. Fail-safe to []. */
+async function getSpaceMemberPosts(spaceId: string, brandAnchorIds: ReadonlySet<string>): Promise<MemberPost[]> {
+  try {
+    const { data } = await anyDb()
+      .from('posts')
+      .select('id, author_id, body, created_at, author:profiles!author_id ( display_name, avatar_url )')
+      .eq('scope_id', spaceId)
+      .eq('post_type', 'space_update')
+      .is('parent_id', null)
+      .is('hidden_at', null)
+      .order('created_at', { ascending: false })
+      .limit(MEMBER_POSTS_CAP)
+    return ((data ?? []) as ReviewRow[])
+      .filter((r) => !brandAnchorIds.has(str(r.id)))
+      .map((r) => ({
+        item: {
+          id: str(r.id),
+          title: '',
+          body: str(r.body),
+          imageUrl: null,
+          publishedAt: strOrNull(r.created_at),
+          postId: str(r.id),
+        },
+        author: r.author
+          ? { name: str(r.author.display_name) || 'Member', avatarUrl: strOrNull(r.author.avatar_url) }
+          : null,
+        authorId: strOrNull(r.author_id),
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** The Community feed for a Space (Phase 1 + 2b): every PUBLISHED brand Update AND every member post,
+ *  merged newest-first, each with its reaction counts (+ the viewer's own) and comment thread resolved
+ *  through the anchor post. FAIL-SAFE throughout: any miss yields empty interaction, so the feed always
+ *  renders. Batched queries, no N+1. */
 export async function getSpaceCommunityFeed(
   spaceId: string,
   viewerId: string | null,
 ): Promise<SpaceCommunityFeed> {
   const updates = await getSpaceUpdates(spaceId)
-  const emptyPost = (u: SpaceUpdateItem): SpaceCommunityPost => ({
-    update: u,
-    anchorId: u.postId,
-    reactions: { counts: {}, mine: [] },
-    comments: [],
-  })
-  const anchorIds = updates.map((u) => u.postId).filter((id): id is string => !!id)
-  if (anchorIds.length === 0) return { posts: updates.map(emptyPost) }
+  const brandAnchorIds = new Set(updates.map((u) => u.postId).filter((id): id is string => !!id))
+  const memberPosts = await getSpaceMemberPosts(spaceId, brandAnchorIds)
+
+  // Merge brand + member into one newest-first list (both carry a `publishedAt` timestamp).
+  const merged: SpaceCommunityPost[] = [
+    ...updates.map((u) => ({ update: u, anchorId: u.postId, kind: 'brand' as const, author: null, authorId: null })),
+    ...memberPosts.map((m) => ({
+      update: m.item,
+      anchorId: m.item.postId,
+      kind: 'member' as const,
+      author: m.author,
+      authorId: m.authorId,
+    })),
+  ]
+    .sort((a, b) => (b.update.publishedAt ?? '').localeCompare(a.update.publishedAt ?? ''))
+    .map((p) => ({ ...p, reactions: { counts: {}, mine: [] } as SpaceUpdateReactions, comments: [] as SpaceUpdateComment[] }))
+
+  const anchorIds = merged.map((p) => p.anchorId).filter((id): id is string => !!id)
+  if (anchorIds.length === 0) return { posts: merged }
 
   const reactionsByAnchor = new Map<string, SpaceUpdateReactions>()
   const commentsByAnchor = new Map<string, SpaceUpdateComment[]>()
@@ -367,15 +431,14 @@ export async function getSpaceCommunityFeed(
       commentsByAnchor.set(parent, list)
     }
   } catch {
-    // Fall through: every Update still renders, just without interaction state.
+    // Fall through: every post still renders, just without interaction state.
   }
 
   return {
-    posts: updates.map((u) => ({
-      update: u,
-      anchorId: u.postId,
-      reactions: (u.postId && reactionsByAnchor.get(u.postId)) || { counts: {}, mine: [] },
-      comments: (u.postId && commentsByAnchor.get(u.postId)) || [],
+    posts: merged.map((p) => ({
+      ...p,
+      reactions: (p.anchorId && reactionsByAnchor.get(p.anchorId)) || { counts: {}, mine: [] },
+      comments: (p.anchorId && commentsByAnchor.get(p.anchorId)) || [],
     })),
   }
 }

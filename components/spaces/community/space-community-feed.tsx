@@ -5,15 +5,22 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, MessageCircle, Send } from 'lucide-react'
 import { REACTIONS, reactionLabel } from '@/lib/feed/reactions'
-import { createSpaceUpdate, reactToSpaceUpdate, commentOnSpaceUpdate } from '@/lib/spaces/content-actions'
+import {
+  createSpaceUpdate,
+  createMemberPost,
+  reactToSpaceUpdate,
+  commentOnSpaceUpdate,
+  setCommunityMemberPosts,
+  removeCommunityPost,
+} from '@/lib/spaces/content-actions'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
+import { ToggleRow } from '@/components/entity-blocks/controls/field-controls'
 import { isError } from '@/lib/action-result'
 import type { SpaceCommunityPost, SpaceUpdateComment, SpaceUpdateReactions } from '@/lib/spaces/content-data'
 
-// THE COMMUNITY FEED (business Community tab). Facebook/Yelp-style: the business posts Updates, members
-// react + comment. PUBLIC read; only FOLLOWERS (or the operator) may interact, enforced server-side in
-// reactToSpaceUpdate / commentOnSpaceUpdate. This client owns the optimistic interaction; the operator
-// composer posts through createSpaceUpdate. Semantic DAWN tokens only, voice canon (no em dashes).
+// THE COMMUNITY FEED (business Community tab). Facebook/Yelp-style: the business posts Updates, FOLLOWERS
+// may also post (when the business allows it), and members react + comment. PUBLIC read; only followers (or
+// the operator) may interact, enforced server-side. Semantic DAWN tokens only, voice canon (no em dashes).
 
 const inputCls =
   'w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle outline-none focus:border-primary'
@@ -22,44 +29,86 @@ export function SpaceCommunityFeed({
   slug,
   spaceId,
   brandName,
+  viewerId,
   canPost,
+  canModerate,
   signedIn,
   following,
+  allowMemberPosts,
   posts,
 }: {
   slug: string
   spaceId: string
   brandName: string
-  /** The operator (owner / admin / editor): may post Updates + always interact. */
+  viewerId: string | null
+  /** The operator (owner / admin / editor): posts brand Updates + always interacts. */
   canPost: boolean
+  /** The operator may hide any member post. */
+  canModerate: boolean
   signedIn: boolean
   following: boolean
+  /** Whether the business currently accepts member posts. */
+  allowMemberPosts: boolean
   posts: SpaceCommunityPost[]
 }) {
-  // A follower OR the operator may react + comment (the operator can always reply on its own wall).
   const canInteract = canPost || following
+  // A follower who is not the operator may post when the business allows member posts.
+  const canMemberPost = !canPost && following && allowMemberPosts
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      {canPost && <Composer slug={slug} />}
-
-      {!canInteract && (
-        <JoinPrompt spaceId={spaceId} brandName={brandName} signedIn={signedIn} />
+      {canPost && (
+        <>
+          <MemberPostsToggle slug={slug} initial={allowMemberPosts} />
+          <BrandComposer slug={slug} />
+        </>
       )}
+      {canMemberPost && <MemberComposer slug={slug} />}
+
+      {!canInteract && <JoinPrompt spaceId={spaceId} brandName={brandName} signedIn={signedIn} />}
 
       {posts.length === 0 ? (
         <EmptyState canPost={canPost} brandName={brandName} />
       ) : (
         posts.map((post) => (
-          <PostCard key={post.update.id} slug={slug} brandName={brandName} post={post} canInteract={canInteract} />
+          <PostCard
+            key={post.update.id}
+            slug={slug}
+            brandName={brandName}
+            viewerId={viewerId}
+            canModerate={canModerate}
+            post={post}
+            canInteract={canInteract}
+          />
         ))
       )}
     </div>
   )
 }
 
-/** The operator's post composer: a title + body, posted immediately as a published Update. */
-function Composer({ slug }: { slug: string }) {
+/** The operator switch that turns member posting on or off for the Space. */
+function MemberPostsToggle({ slug, initial }: { slug: string; initial: boolean }) {
+  const [on, setOn] = useState(initial)
+  const [, start] = useTransition()
+  return (
+    <div className="rounded-2xl border border-border bg-surface-elevated/50 px-4 py-2">
+      <ToggleRow
+        label="Allow members to post"
+        checked={on}
+        onChange={(next) => {
+          setOn(next) // optimistic
+          start(async () => {
+            const res = await setCommunityMemberPosts(slug, next)
+            if (isError(res)) setOn(!next)
+          })
+        }}
+      />
+    </div>
+  )
+}
+
+/** The operator's brand-post composer: a title + body, posted immediately as a published Update. */
+function BrandComposer({ slug }: { slug: string }) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -111,14 +160,56 @@ function Composer({ slug }: { slug: string }) {
   )
 }
 
+/** A follower's post composer: a single body, posted to the Community feed as a member post. */
+function MemberComposer({ slug }: { slug: string }) {
+  const [body, setBody] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [pending, start] = useTransition()
+
+  const post = () => {
+    setError(null)
+    if (!body.trim()) return
+    start(async () => {
+      const res = await createMemberPost(slug, body)
+      if (isError(res)) setError(res.error)
+      else setBody('')
+    })
+  }
+
+  return (
+    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Share something with this community"
+        rows={2}
+        maxLength={20000}
+        className={inputCls}
+      />
+      {error && <p className="text-xs text-danger">{error}</p>}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={post}
+          disabled={pending || !body.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+        >
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
+          Post
+        </button>
+      </div>
+    </div>
+  )
+}
+
 /** The prompt a non-interacting viewer sees: follow to join in, or sign in first. */
 function JoinPrompt({ spaceId, brandName, signedIn }: { spaceId: string; brandName: string; signedIn: boolean }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface-elevated/50 p-4">
       <p className="text-sm text-muted">
         {signedIn
-          ? `Follow ${brandName} to react and join the conversation.`
-          : 'Sign in and follow this space to react and comment.'}
+          ? `Follow ${brandName} to react, comment, and post.`
+          : 'Sign in and follow this space to react, comment, and post.'}
       </p>
       {signedIn ? (
         <FollowSpaceButton spaceId={spaceId} spaceName={brandName} initialFollowing={false} />
@@ -143,23 +234,26 @@ function EmptyState({ canPost, brandName }: { canPost: boolean; brandName: strin
       </p>
       <p className="mt-1 text-xs text-muted">
         {canPost
-          ? 'Share news, offers, or a behind-the-scenes look. Followers can react and comment.'
+          ? 'Share news, offers, or a behind-the-scenes look. Followers can react, comment, and post too.'
           : 'Follow this space to see updates the moment they land.'}
       </p>
     </div>
   )
 }
 
-/** One Update: its copy + image, a reaction bar, and its comment thread. Owns the OPTIMISTIC interaction
- *  state (reactions + comments), initialized from the server-rendered post. */
+/** One post: brand Update or member post. Owns the OPTIMISTIC interaction state (reactions + comments). */
 function PostCard({
   slug,
   brandName,
+  viewerId,
+  canModerate,
   post,
   canInteract,
 }: {
   slug: string
   brandName: string
+  viewerId: string | null
+  canModerate: boolean
   post: SpaceCommunityPost
   canInteract: boolean
 }) {
@@ -168,12 +262,16 @@ function PostCard({
   const [comments, setComments] = useState<SpaceUpdateComment[]>(post.comments)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [removed, setRemoved] = useState(false)
   const [pending, start] = useTransition()
+
+  // A member post can be removed by an operator (moderation) or by its own author.
+  const canRemove = post.kind === 'member' && (canModerate || (!!post.authorId && post.authorId === viewerId))
+  const authorLabel = post.kind === 'member' ? post.author?.name ?? 'Member' : brandName
 
   const toggleReaction = (emoji: string) => {
     if (!canInteract || !anchorId) return
     const active = reactions.mine.includes(emoji)
-    // Optimistic flip; roll back to the server-rendered state if the action fails.
     const prev = reactions
     const counts = { ...reactions.counts }
     counts[emoji] = (counts[emoji] ?? 0) + (active ? -1 : 1)
@@ -202,24 +300,37 @@ function PostCard({
     })
   }
 
+  const remove = () => {
+    start(async () => {
+      const res = await removeCommunityPost(slug, update.id)
+      if (!isError(res)) setRemoved(true)
+    })
+  }
+
+  if (removed) return null
+
   return (
     <article className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
-      <header className="text-xs font-semibold uppercase tracking-wide text-subtle">{brandName}</header>
+      <header className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-subtle">{authorLabel}</span>
+        {canRemove && (
+          <button
+            type="button"
+            onClick={remove}
+            disabled={pending}
+            className="text-2xs font-semibold text-subtle hover:text-danger disabled:opacity-60"
+          >
+            Remove
+          </button>
+        )}
+      </header>
       {update.title && <h3 className="text-lg font-bold text-text">{update.title}</h3>}
       {update.body && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{update.body}</p>}
       {update.imageUrl && (
-        <Image
-          src={update.imageUrl}
-          alt=""
-          width={800}
-          height={450}
-          unoptimized
-          className="w-full rounded-xl object-cover"
-        />
+        <Image src={update.imageUrl} alt="" width={800} height={450} unoptimized className="w-full rounded-xl object-cover" />
       )}
 
-      {/* Reaction bar: every curated emoji with its live count. Followers/operators toggle; others see
-          the counts read-only. */}
+      {/* Reaction bar */}
       <div className="flex flex-wrap gap-1.5 pt-1">
         {REACTIONS.map((r) => {
           const count = reactions.counts[r.key] ?? 0

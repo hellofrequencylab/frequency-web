@@ -25,14 +25,24 @@ export default async function SpaceCommunityPage({ params }: { params: Promise<{
     getSpaceCommunityFeed(space.id, viewerProfileId),
   ])
 
+  // Whether the business currently accepts member posts (default on; preferences.communityMemberPosts).
+  const prefs = space.preferences
+  const allowMemberPosts =
+    !prefs || typeof prefs !== 'object' || Array.isArray(prefs)
+      ? true
+      : (prefs as Record<string, unknown>).communityMemberPosts !== false
+
   return (
     <SpaceCommunityFeed
       slug={slug}
       spaceId={space.id}
       brandName={space.brandName ?? space.name}
+      viewerId={viewerProfileId}
       canPost={manage.canManage}
+      canModerate={manage.canManage}
       signedIn={!!viewerProfileId}
       following={following}
+      allowMemberPosts={allowMemberPosts}
       posts={feed.posts}
     />
   )
