@@ -6,8 +6,8 @@ import {
   FOUNDING_PLACE,
 } from '@/lib/site'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { PERSONAS, personaCopy } from '@/lib/marketing/personas'
-import { personaPath, pricingLadderSummary } from '@/lib/pricing/pricing-page'
+import { funnelSlugs, getFunnelConfig } from '@/lib/marketing/funnel-config'
+import { pricingLadderSummary } from '@/lib/pricing/pricing-page'
 
 // /llms.txt — the curated, short brand summary for language models (AIO,
 // docs/CONTENT-VOICE §8). This is the hand-written companion to /llms-full.txt
@@ -161,8 +161,11 @@ export async function GET() {
     ...pricingLadderSummary(),
     'Our fee is a flat 3% plus card processing, shown in full, with no surprise fees ever: 3% on what you sell, and 3% on what a nonprofit raises.',
     '',
-    '## Frequency by who you are (per-Mode landing pages)',
-    ...PERSONAS.map((p) => `- [${personaCopy(p).h1}](${abs(personaPath(p.slug))}): ${p.focus}`),
+    '## Frequency by who you are (operator funnel doors)',
+    ...funnelSlugs().map((slug) => {
+      const c = getFunnelConfig(slug)!
+      return `- [${c.hero.h1}](${abs(`/for/${slug}`)}): ${c.hero.eyebrow}. ${c.hero.subhead}`
+    }),
     '',
     '## How it fits together',
     '- Community: Pillar > Channel > Circle. Circles group into Hubs, Hubs into a Nexus.',

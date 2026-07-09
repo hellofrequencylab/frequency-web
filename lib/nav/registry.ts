@@ -169,11 +169,8 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     items: [
       { label: 'All Spaces', href: '/spaces/directory', desc: 'Browse every space in the network' },
       { label: 'About Spaces', href: '/spaces', desc: 'Bring your people. They join free' },
-      { label: 'Pricing', href: '/pricing', desc: 'One Pro plan, four add-ons' },
-      { label: 'For coaches', href: '/for/coaches', desc: 'Packages, scheduling, and a client CRM' },
-      { label: 'For service businesses', href: '/for/service-businesses', desc: 'Bookings, quotes, and repeat clients' },
-      { label: 'For product businesses', href: '/for/product-businesses', desc: 'A catalog, a storefront, your own domain' },
-      { label: 'For nonprofits', href: '/for/nonprofits', desc: 'Donations, supporters, and programs' },
+      { label: 'Pricing', href: '/pricing', desc: 'One honest price, never per seat' },
+      { label: 'For coaches and healers', href: '/for/coaches', desc: 'Booking, payments, and your people, held' },
     ],
   },
   {

@@ -12995,3 +12995,44 @@ promise is the paid-plan headline.
 secondary-doc figure sweep (~20 docs) + `PRICING-LADDER-PLAN.md` / `PRICING.md` rewrite; the Notion training
 page; and the Stripe go-live (operator clicks "Sync catalog to Stripe" at `/admin/pricing`, then flips
 `billing_live` — no live Stripe products are created in code).
+
+## ADR-591: Operator funnel doors (evolve /for/[niche] into chrome-free conversion funnels)
+
+**Status:** Accepted · the operator acquisition funnels. Next free number after ADR-590. Builds on the persona
+doors (ADR-590 / #1624). Spec: docs/OPERATOR-FUNNELS.md.
+
+**Context.** We want five niche marketing pages (one per operator type: coaches/healers, studios, event hosts,
+community builders, nonprofits) that are the top of the operator funnel, with one job: get an aligned operator
+to Start free and bring their audience in. Research (three passes) found: (a) "splash" is already a shipped
+concept (the QR scan-time interstitial), (b) the persona doors already are the five niches as short SEO pages,
+(c) there is NO working "Start free -> your free Space" path for a logged-out visitor, and (d) attribution, the
+QR referral loop, the analytics ledger, and the Growth-OS funnel-object system are all already built.
+
+**Decision.**
+1. **Name: funnel doors, not "splash"** (collision with `lib/qr/splash.ts` + the Loom splash lane).
+2. **Evolve, do not duplicate.** Grow the persona doors `/for/<niche>` into the full funnel template (one
+   surface per niche: SEO door + conversion funnel unified), keeping their sitemap/JSON-LD/pricing wiring.
+3. **Short slugs** (owner decision): `/for/coaches · studios · hosts · communities · nonprofits`; the long
+   slugs from #1624 redirect to these.
+4. **Chrome-free template** in its own route group (minimal splash header: logo + one `Start free`, no nav;
+   sticky mobile CTA), rendering a fixed skeleton (Hero -> AssuranceBar -> Problem -> HowItWorks -> Features ->
+   LoopDiagram -> Pricing -> Proof -> Mission -> FAQ -> FinalCTA -> Footer) from a per-niche `FunnelConfig`.
+   Shared: the CTA label, Loop copy, Mission, Footer, AssuranceBar base (nonprofit swaps the last item).
+5. **Real Start-free bridge** (owner decision): minimal signup -> `createSpace` pre-seeded in the niche's Mode
+   -> the editor, attribution carried through. Not a bounce to `/spaces` or the member induction.
+6. **Measurement** via the existing ledger + Growth-OS funnel objects (`splash.viewed`/`splash.cta_click` +
+   an entry->wedge->capture->convert funnel per niche); page-views tracked via a client component so the
+   template stays ISR.
+7. **Pricing** reads one catalog. To show the Coaches brief's `~~$79~~ $49` anchor, set `business_base` monthly
+   list to $79 (founding stays $49) globally, so the strike is consistent on every pricing surface.
+
+**Alternatives.** A parallel `/start/[niche]` splash route (rejected: two surfaces per niche competing for the
+same terms). Pointing Start free at the existing induction (rejected by the owner: the promise is "your Space").
+
+**Consequences.** New `lib/marketing/funnel-config.ts` (schema + shared constants + Coaches config), a new
+chrome-free route group + template + section components + five inline SVGs, the Start-free/createSpace bridge,
+new analytics events + funnel objects, SEO registration, and the `business_base` $79 list anchor. Voice/naming
+locked (Resonance Engine, Email + Automations, Bookings, Contacts, QR Studio, Profile and brand; no em dashes).
+
+**Deferred (phased, see docs/OPERATOR-FUNNELS.md):** P1 template + SVGs, P2 signup bridge, P3 the other four
+configs, P4 measurement + SEO wiring, P5 referral personalization + A/B + Proof content.

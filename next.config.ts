@@ -107,8 +107,13 @@ const nextConfig: NextConfig = {
       { source: '/help/the-game/:path*', destination: '/help/the-quest/:path*', permanent: false },
       // The pricing "five doors" rename (ADR-590): the old persona pages collapsed to five doors.
       // Redirect the retired slugs so bookmarks + inbound links keep landing somewhere real.
-      { source: '/for/coaches', destination: '/for/coaches-and-healers', permanent: false },
-      { source: '/for/event-spaces', destination: '/for/event-hosts', permanent: false },
+      // The funnel doors use SHORT slugs (ADR-591). The retired persona long-slugs redirect in. The short
+      // slugs studios / hosts / communities / nonprofits are real pages (or land as their funnels ship), so
+      // they are NOT redirected here (a redirect would shadow the real route).
+      { source: '/for/coaches-and-healers', destination: '/for/coaches', permanent: false },
+      { source: '/for/event-hosts', destination: '/pricing', permanent: false },
+      { source: '/for/community-builders', destination: '/pricing', permanent: false },
+      { source: '/for/event-spaces', destination: '/pricing', permanent: false },
       { source: '/for/service-businesses', destination: '/pricing', permanent: false },
       { source: '/for/product-businesses', destination: '/pricing', permanent: false },
     ]

@@ -149,7 +149,7 @@ describe('pricing table model', () => {
   it('Business headline reads $49/mo (list == founding today)', () => {
     const biz = pricingTiers().find((t) => t.id === 'business')!
     expect(tierHeadline(biz, 'month')).toBe('$49/mo')
-    expect(biz.price.month.listCents).toBe(4900)
+    expect(biz.price.month.listCents).toBe(7900) // $79 founding anchor (ADR-591)
   })
 
   it('Non Profit headline reads $29/mo flat (ADR-590)', () => {

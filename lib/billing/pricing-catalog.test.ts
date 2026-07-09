@@ -46,7 +46,7 @@ describe('the clean catalog shape (collapsed · ADR-552)', () => {
   it('Business base: $49 base, the full-depth paid tier, not per seat', () => {
     const biz = catalogItem('business_base')
     expect(biz.month.foundingCents).toBe(4900)
-    expect(biz.month.listCents).toBe(4900) // no separate anchor published today (founding == list)
+    expect(biz.month.listCents).toBe(7900) // $79 founding anchor over the $49 charged price (ADR-591)
     expect(biz.perSeat).toBe(false)
   })
 
