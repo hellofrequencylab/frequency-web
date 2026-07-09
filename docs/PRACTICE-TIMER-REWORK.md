@@ -62,6 +62,7 @@ touch **both**. This is why the engine rework (P6) is fenced off last.
 | **P4** | Timer preview on cards | Shape string from `movement_config` + `buildPlan()` on card + detail. | none | 🟢 | 📋 |
 | **P5** | Journey / Run choreography | Per-step **warm-up message** override at `journey_plan_items.settings` (merge-safe). Timer-shape override deferred. | none | 🟡 | ✅ |
 | **P6** | Sequenced practices | Chain timed practices into one continuous run, auto-advance; each leg logs its own practice. Entry: a Journey module's "Start all as one session". | none (provider-orchestrated) | 🔴 | ✅ |
+| **P7** | Full author controls + instruction blocks | Every practice×timer combo is authorable: Be Still sub-mode (Auto + 6 flavours), length lock, on top of the Get Moving preset + warm-up. `StudioNote` instruction blocks across the builder's timer sections. | none (columns exist) | 🟢 | ✅ |
 
 ### Phase P0 — Foundation · *this phase*
 *Goal: the schema + records the rest of the plan builds on. No member-visible change.*
