@@ -15,6 +15,7 @@ import {
   clampRounds,
   clampSeconds,
   sanitizeMovementConfig,
+  timerPreview,
 } from './movement'
 
 describe('modes + presets', () => {
@@ -248,5 +249,31 @@ describe('sanitizeMovementConfig (creator preset normalization, ADR-592)', () =>
   it('coerces an unknown Yoga kind to gentle', () => {
     expect(sanitizeMovementConfig({ mode: 'yoga', yogaKind: 'bogus' }).yogaKind).toBe('gentle')
     expect(sanitizeMovementConfig({ mode: 'yoga', yogaKind: 'yin' }).yogaKind).toBe('yin')
+  })
+})
+
+describe('timerPreview (card + detail summary, ADR-592 P4)', () => {
+  it('a non-timed practice reads "Log it"', () => {
+    expect(timerPreview({ timerKind: 'none' })).toBe('Log it')
+    expect(timerPreview({ timerKind: null })).toBe('Log it')
+  })
+
+  it('a Be Still practice names the mode + length', () => {
+    expect(timerPreview({ timerKind: 'mindless', durationMin: 10 })).toBe('Be Still · 10 min')
+    expect(timerPreview({ timerKind: 'mindless', durationMin: null })).toBe('Be Still')
+  })
+
+  it('a Strength practice names the shape + total', () => {
+    const out = timerPreview({ timerKind: 'movement', movementConfig: { mode: 'strength', strengthKind: 'tabata', workSec: 20, restSec: 10, rounds: 8 } })
+    expect(out.startsWith('Get Moving · Tabata, 8 rounds · ~')).toBe(true)
+    expect(out).toMatch(/min$/)
+  })
+
+  it('a Walk practice names its length', () => {
+    expect(timerPreview({ timerKind: 'movement', movementConfig: { mode: 'walk', walkMinutes: 30 } })).toBe('Get Moving · 30 min walk · ~30 min')
+  })
+
+  it('an open Play practice has no total', () => {
+    expect(timerPreview({ timerKind: 'movement', movementConfig: { mode: 'play' } })).toBe('Get Moving · Open play')
   })
 })
