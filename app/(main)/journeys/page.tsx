@@ -37,7 +37,9 @@ export default async function JourneysPage() {
   // Header image (page_settings, ADR-268/309) OR the older page-content hero (ADR-180).
   // Prefer the new uploader so a header set there actually shows here (it was being
   // dropped — the page only read the old field). Same source crew/practices use.
-  const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage
+  // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
+  // section default so the hero band always renders.
+  const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage ?? '/images/site/nature-viewing-sunset.jpg'
   // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
   const canBuildJourney = await canCreate('journey.create')
 
@@ -51,15 +53,17 @@ export default async function JourneysPage() {
         { href: '/journeys', label: 'Journeys' },
       ]}
       heroImage={bannerImage}
+      heroOverlay
       title={title}
       description={description}
       action={
         <div className="flex items-center gap-2">
           <NewJourneyButton canCreate={canBuildJourney} />
-          {/* The member's own management space (store / edit / publish / duplicate / delete). */}
+          {/* The member's own management space (store / edit / publish / duplicate / delete). On-ink
+              styling so the secondary button reads over the hero's dark scrim. */}
           <Link
             href="/journeys/mine"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20"
           >
             <FolderOpen className="h-4 w-4" /> Your journeys
           </Link>
