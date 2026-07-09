@@ -3,7 +3,7 @@ title: Practices, choose, do, log
 description: Adopt a practice or follow your Circle's, then log it each day to earn Zaps and build your streak.
 category: getting-started
 order: 3
-updated: 2026-06-22
+updated: 2026-07-09
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -22,26 +22,31 @@ your practice is the heart of Frequency, it is how showing up turns into progres
 ## Log it
 
 Each practice you've adopted sits in your **practices** row, one tight line each
-with a **Log practice** button and a **View practice** link to open its page. Each
-day you do your practice, hit **Log practice**. Logging **any** practice, your
-own or your Circle's, earns **Zaps** (the in-person, real-world currency). It also:
+with a **View practice** link to open its page. How you mark it done depends on the
+practice, and the button tells you which at a glance:
+
+- A **timed** practice shows **Start Practice** with a little **timer** icon. Tap it
+  and **[Mindless](/help/the-quest/on-air)** opens to run it; finishing the timer is
+  what logs the day.
+- A **log-it** practice (an action or a reflection, no timer) shows a **check-off**:
+  tap **Log it** and it's done in one tap.
+
+Either way, marking **any** practice done, your own or your Circle's, earns **Zaps**
+(the in-person, real-world currency). It also:
 
 - keeps your **streak** alive, and
 - counts you as active for the week.
 
-Once you log, the row reads **Logged today**. Tapped it by mistake? Hit **Undo** to
+Once it's done, the row reads **Logged today**. Tapped it by mistake? Hit **Undo** to
 un-log it, same day only. After today the log is locked in.
 
 You can log a practice once per day. Do it for a few days in a row and the streak
 starts to pull you back, which is exactly the point.
 
-Want to actually do the practice right there, with a timer and guided breathing?
-Tap the little lotus to **[tune out with Mindless](/help/the-quest/on-air)**. Same
-log, same rewards, plus the sit itself.
-
 One timer, two modes. **[Mindless](/help/the-quest/on-air)** has **Be Still** for
-a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. Pick a
-practice and it opens in the mode that fits. Same log, same rewards.
+a sit and **Get Moving** for a walk, run, yoga, strength, stretch or play. A timed
+practice can come **preset by whoever built it**, its mode, its length, its warm-up,
+even a full workout like Tabata, so it opens ready to go and you just start.
 
 ## Adopt or change anytime
 

@@ -3,7 +3,7 @@ title: Mindless, the practice timer
 description: One timer, two modes. Be Still for the quiet sit, Get Moving for a walk, run, yoga or workout. Then collect your rewards, streak and next assignment.
 category: the-quest
 order: 4
-updated: 2026-06-26
+updated: 2026-07-09
 audience: member
 featureKeys: [practices, gamification]
 status: published
@@ -22,7 +22,7 @@ practice and Mindless opens in the mode that fits it, and you can switch.
 ## Tuning out
 
 Open it from the **Mindless button in the header** (it opens fullscreen, taking
-over the screen wherever you are on the site), from the **Practice** button on a
+over the screen wherever you are on the site), from the **Start Practice** button on a
 timer practice in a Journey, from the Zap button (the **Mindless** row), from your
 home screen (the little lotus next to any practice), or from a practice page.
 Mindless opens already set to the right practice and its length, and it remembers
@@ -56,11 +56,14 @@ get a say over how you do it:
 
 Then hit **Start Practice**. A short **five-second countdown** settles you in first,
 the same for Be Still and Get Moving, with the length you're about to do shown right
-below it (tap **Begin now** to start right away). It's the same timer counting the
-lead-in and then your session. You can set the countdown to three, five, or ten
-seconds under **Sounds & Settings**. While you're tuned out the screen stays awake
-and everything else gets out of the way. **Pause** if life interrupts (paused time
-doesn't count), and when the timer runs out, hit **Finish** to collect.
+below it (tap **Begin now** to start right away). If the person who built the practice
+left a **warm-up note**, it shows on screen as the timer counts you in, so you know
+how to set up before you begin. It's the same timer counting the lead-in and then your
+session. You can set the countdown to three, five, or ten seconds under **Sounds &
+Settings** (a practice can carry its own warm-up length too). While you're tuned out
+the screen stays awake and everything else gets out of the way. **Pause** if life
+interrupts (paused time doesn't count), and when the timer runs out, hit **Finish** to
+collect.
 
 Stop early and it still counts, as long as you got at least **halfway**: the day
 is logged, your streak holds, and you bank **one Zap** right then. The practice
@@ -74,6 +77,17 @@ The practice is the point, not the clock.
 long walk with the screen off, a tab the browser drops), reopen Mindless and it
 offers to **Resume** right where you were, with the exact time you'd already done.
 Nothing is lost.
+
+## A whole session, back to back
+
+Some Journey weeks group a few timed practices together (a warm-up, the main
+practice, a cooldown). When they do, you'll see **Start all as one session** on that
+group. Tap it and Mindless runs them one after another: finish the first, collect its
+rewards, and it rolls straight into the next warm-up. A small **"Practice 2 of 3"**
+line keeps your place. Each one still logs on its own and pays its own Zaps, so a
+session is just the same practices in a row without stopping to set up between them.
+Close the rewards on the last one and you're done. Want to stop partway? Leave any
+time; everything you finished is already banked.
 
 ## Breathing patterns (Be Still)
 
