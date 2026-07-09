@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,8 @@ const SOCIAL_PLATFORMS: { key: string; label: string }[] = [
   { key: 'x', label: 'X' },
   { key: 'youtube', label: 'YouTube' },
   { key: 'tiktok', label: 'TikTok' },
+  { key: 'insighttimer', label: 'Insight Timer' },
+  { key: 'spotify', label: 'Spotify' },
 ]
 
 export function SpaceInfoConnectForm({
@@ -116,13 +118,24 @@ export function SpaceInfoConnectForm({
     })
   }
 
+  // Item 2: autosave — no Save button. Keep the latest `save` in a ref (it closes over current field
+  // state) and commit when a text field loses focus. A blur is a deliberate "done with this field" signal,
+  // so it commits immediately (idempotent — the action writes the whole current form).
+  const saveRef = useRef(save)
+  useEffect(() => {
+    saveRef.current = save
+  })
+  function onFieldBlur(e: React.FocusEvent<HTMLFormElement>) {
+    if (readOnly) return
+    const t = e.target
+    if (t instanceof HTMLElement && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) saveRef.current()
+  }
+
   return (
     <form
       className="space-y-8 rounded-2xl border border-border bg-surface p-5 shadow-sm sm:p-6"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (!pending && !readOnly) save()
-      }}
+      onSubmit={(e) => e.preventDefault()}
+      onBlur={onFieldBlur}
     >
       <fieldset disabled={readOnly} className="contents">
         {/* ABOUT + STORY — the words a visitor reads. */}
@@ -150,7 +163,13 @@ export function SpaceInfoConnectForm({
             action={
               <button
                 type="button"
-                onClick={() => runDraft(() => draftSpaceBioAction(spaceId), (t) => setBizField('story', t))}
+                onClick={() =>
+                  runDraft(() => draftSpaceBioAction(spaceId), (t) => {
+                    setBizField('story', t)
+                    // Persist the drafted story (a state change fires no blur to autosave on).
+                    requestAnimationFrame(() => saveRef.current())
+                  })
+                }
                 disabled={bioBusy}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-primary-strong transition-colors hover:text-primary disabled:opacity-50"
               >
@@ -213,21 +232,18 @@ export function SpaceInfoConnectForm({
 
       <div className="flex items-center gap-3 pt-1">
         {!readOnly && (
-          <Button type="submit" disabled={pending}>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-subtle" aria-live="polite">
             {pending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Saving…
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Saving…
+              </>
+            ) : saved ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-success" aria-hidden /> Saved
               </>
             ) : (
-              <>
-                <Check className="h-4 w-4" aria-hidden /> Save changes
-              </>
+              'Changes save automatically.'
             )}
-          </Button>
-        )}
-        {saved && !pending && (
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-success" role="status">
-            <Check className="h-4 w-4" aria-hidden /> Saved
           </span>
         )}
         <Button type="button" variant="ghost" onClick={() => router.push(`/spaces/${slug}`)} disabled={pending}>

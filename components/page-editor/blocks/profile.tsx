@@ -17,6 +17,7 @@ import {
   Globe,
   Video,
   Star,
+  Music,
 } from 'lucide-react'
 import type { ComponentConfig } from '@/lib/page-editor/types'
 
@@ -1315,6 +1316,8 @@ const BUSINESS_PLATFORM_META: Record<string, { label: string; icon: React.Compon
   tiktok: { label: 'TikTok', icon: Link2 },
   yelp: { label: 'Yelp', icon: Link2 },
   google: { label: 'Google', icon: Globe },
+  insighttimer: { label: 'Insight Timer', icon: Sparkles },
+  spotify: { label: 'Spotify', icon: Music },
 }
 
 export function SpaceBusinessBlock({
@@ -1475,6 +1478,8 @@ const businessLinkArrayField = {
         { label: 'TikTok', value: 'tiktok' },
         { label: 'Yelp', value: 'yelp' },
         { label: 'Google', value: 'google' },
+        { label: 'Insight Timer', value: 'insighttimer' },
+        { label: 'Spotify', value: 'spotify' },
       ],
     },
     url: { type: 'text' as const, label: 'URL' },

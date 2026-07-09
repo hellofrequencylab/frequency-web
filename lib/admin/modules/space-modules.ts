@@ -18,7 +18,6 @@ import {
   Workflow,
   BarChart3,
   CreditCard,
-  Blocks,
   Trash2,
 } from 'lucide-react'
 import type { SpaceFunctionKey } from '@/lib/spaces/functions'
@@ -104,6 +103,10 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── Audience & relationships ─────────────────────────────────────────────────────────────────────────
   { id: 'space.people', label: 'Members', desc: 'The people on your team and the role each one holds.', Icon: Users, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'members' }, featureKey: 'members', render: 'panel', deepLink: (s) => `${base(s)}/settings/members`, order: 30, tier: 'primary', priority: 10 },
   { id: 'space.crm', label: 'CRM', desc: 'Your pipeline, contacts, private notes, and Vera autonomy.', Icon: Briefcase, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'panel', deepLink: (s) => `${base(s)}/crm`, order: 35, tier: 'primary', priority: 15 },
+  // Automation is a CRM amplifier — item 7 moves it INTO the CRM / Audience section, right after CRM. It rides
+  // the `crm` feature gate; the surface self-gates on the automation entitlement and shows an upgrade notice
+  // when the plan lacks it. A `link` row out to its own Focus route (rules + drip editor); never banked.
+  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16 },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },
@@ -117,22 +120,14 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
   { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank' },
   { id: 'space.comms', label: 'Email', desc: 'Write a campaign, pick who gets it, and send or schedule it.', Icon: Mail, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'email' }, featureKey: 'email', render: 'panel', deepLink: (s) => `${base(s)}/settings/email`, order: 80, tier: 'primary', priority: 55, placement: 'bank' },
-  // Automation is a CRM AMPLIFIER (gated on the `crm.space.automation` capability = spaces.entitlements
-  // 'automation'). The menu catalog only gates on a SpaceFunctionKey, so this row rides the `crm` feature
-  // gate (automation lives alongside the CRM); the SURFACE itself self-gates on the automation entitlement
-  // and shows an upgrade notice when the plan lacks it (like the Email surface's own plan gate). A `link`
-  // row out to its own Focus route (rules + drip editor); never banked.
-  { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'reach', slot: 'comms', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 82, tier: 'extra', priority: 56 },
 
   // ── Growth & billing ─────────────────────────────────────────────────────────────────────────────────
   { id: 'space.insights', label: 'Insights', desc: 'Scans, growth, and how your space is doing.', Icon: BarChart3, family: 'growth', slot: 'insights', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'link', deepLink: (s) => `${base(s)}/settings/qr#scans`, order: 85, tier: 'extra', priority: 20, placement: 'bank' },
   { id: 'space.billing', label: 'Plan and usage', desc: 'Your plan, what it unlocks, and billing.', Icon: CreditCard, family: 'growth', slot: 'billing', gate: { kind: 'feature', fn: 'billing' }, featureKey: 'billing', render: 'panel', deepLink: (s) => `${base(s)}/settings/billing`, order: 90, tier: 'extra', priority: 30, placement: 'bank' },
 
   // ── System ───────────────────────────────────────────────────────────────────────────────────────────
-  // The Module Manager (ADR-546, P3): the owner-gated area that turns each service on or off, reorders the
-  // menu, and hides a module. An always-on shell area (no featureKey — it can never be turned off or hidden),
-  // gated to owner/admin at every render + write, not by a feature. Deep-links to its own page.
-  { id: 'space.modules', label: 'Menu and features', desc: 'Turn features on or off, reorder your menu, and hide what you do not use.', Icon: Blocks, family: 'system', slot: 'safety', gate: { kind: 'always' }, featureKey: null, render: 'link', deepLink: (s) => `${base(s)}/manage/modules`, order: 98, tier: 'extra', priority: 40 },
+  // The "Menu and features" (Module Manager) rail entry was REMOVED (item 7): the bottom More menu no longer
+  // lists it. The /manage/modules page still exists for direct access; it is just no longer a menu item.
   // Danger renders as a rail LINK-row (its inline delete lives in the /manage console + Module Manager, which
   // special-case `space.danger` by id — the `render` value drives only the rail, ADR-546b). It has no
   // deepLink, so the rail row falls back to the /manage console (its delete control home). Never banked.
@@ -148,7 +143,6 @@ export const UNHIDEABLE_MODULE_IDS: readonly string[] = [
   'space.basics',
   'space.layout',
   'space.settings',
-  'space.modules',
   'space.danger',
 ]
 

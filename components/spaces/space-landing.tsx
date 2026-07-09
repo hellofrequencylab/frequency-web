@@ -8,6 +8,7 @@ import { config } from '@/lib/page-editor/config'
 import { withVisibleBlocks } from '@/lib/page-editor/templates/space-blocks'
 import { resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readProfileData } from '@/lib/spaces/profile-data'
+import { getSpaceReviews } from '@/lib/spaces/content-data'
 import { readLayoutPreset, applyLayoutPreset } from '@/lib/spaces/layout-presets'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { getSpaceContentData } from '@/lib/spaces/content-data'
@@ -81,6 +82,21 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
   // (cover / logo / name / tagline / primary CTA) + the live highlight counts the Profile blocks read
   // (Phase 4). FAIL-SAFE: the reader defaults to empty, so a brand-new Space simply renders nothing for
   // a block with no rows and the landing never throws.
+  // The CENTRAL business info + story, injected so every authored block renders from the ONE source
+  // (edit once, changes everywhere). Read off preferences.profileData (fail-safe empty).
+  const profile = readProfileData(space.preferences)
+  // Item 6: the rating is AUTO-GENERATED from Reviews (the manual rating box was removed). Override the
+  // central rating + count with the live reviews aggregate; with no reviews yet, clear it so the identity
+  // block shows no rating rather than a stale manual value.
+  const reviews = await getSpaceReviews(space.id)
+  if (reviews.average != null && reviews.count > 0) {
+    profile.rating = reviews.average.toFixed(1)
+    profile.ratingCount = `${reviews.count} ${reviews.count === 1 ? 'review' : 'reviews'}`
+  } else {
+    profile.rating = ''
+    profile.ratingCount = ''
+  }
+
   const spaceContent = await getSpaceContentData(space.id, {
     name: brandName,
     type: space.type,
@@ -89,9 +105,7 @@ export async function SpaceLanding({ slug, pageSlug = HOME_SLUG }: { slug: strin
     tagline: space.tagline,
     primaryCta,
     slug: space.slug,
-    // The CENTRAL business info + story, injected so every authored block renders from the ONE
-    // source (edit once, changes everywhere). Read off preferences.profileData (fail-safe empty).
-    profile: readProfileData(space.preferences),
+    profile,
     layoutPreset,
   })
 

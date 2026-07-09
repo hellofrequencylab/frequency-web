@@ -7,10 +7,8 @@ import {
   ArrowRight,
   ArrowDown,
   ArrowUp,
-  ArrowUpRight,
   Check,
   Globe,
-  LayoutGrid,
   Loader2,
   Pencil,
   Plus,
@@ -26,7 +24,6 @@ import {
   renameSpacePage,
   reorderSpacePages,
   deleteSpacePage,
-  setWebsitePublished,
 } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 
 // THE PAGE quick-edit panel (the compact Manage surface, NO Puck runtime). A compact panel in Manage
@@ -43,7 +40,6 @@ export function SpacePagePanel({
   pages,
   activePageSlug,
   maxPages,
-  websitePublished = false,
   canManagePages = false,
   readOnly = false,
 }: {
@@ -67,6 +63,9 @@ export function SpacePagePanel({
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  // Item 5: publishing a standalone website is not live yet — the button reveals a Coming soon notice
+  // instead of publishing.
+  const [comingSoon, setComingSoon] = useState(false)
 
   function run<T = void>(fn: () => Promise<ActionResult<T>>, onSuccess?: (data: T) => void) {
     setError(null)
@@ -106,22 +105,6 @@ export function SpacePagePanel({
         <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm font-medium text-danger">
           {error}
         </p>
-      )}
-
-      {/* PRIMARY EDIT (ADR-516 Phase D): the freeform rows page builder is now the primary way to arrange
-          this profile, and it lives IN THE RAIL on the profile itself — the live page previews every change.
-          This links to the profile, where the builder mounts in the Page rail surface. */}
-      {!readOnly && (
-        <section>
-          <Link href={`/spaces/${slug}`} className={buttonClasses('primary', 'md')}>
-            <LayoutGrid className="h-4 w-4" aria-hidden />
-            Arrange your page
-          </Link>
-          <p className="mt-2 text-sm text-muted">
-            Open your page and use the Page panel to arrange your blocks into rows and columns. Every change
-            previews live.
-          </p>
-        </section>
       )}
 
       {/* Cover style, theme accent, and business info moved OUT of this panel (the profile+identity rework):
@@ -179,43 +162,29 @@ export function SpacePagePanel({
               ))}
           </section>
 
-          {/* EXTERNAL WEBSITE (ADR-508 U4-B): publish your Home page as a standalone public site at its own
-              link, reading the same content as your profile. Fail-closed: unpublished, only you can reach it. */}
+          {/* EXTERNAL WEBSITE — publishing your Home page as a standalone public site is COMING SOON
+              (item 5): the button reveals a notice instead of publishing. */}
           {!readOnly && (
             <section>
               <SectionHeader title="External website" />
               <p className="-mt-2 mb-3 text-sm text-muted">
-                Publish your Home page as a standalone website with its own link. It shows the same content as
-                your profile, so you edit once and it stays in sync.
+                Publish your Home page as a standalone website with its own link. It will show the same
+                content as your profile, so you edit once and it stays in sync.
               </p>
               <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant={websitePublished ? 'secondary' : 'primary'}
-                  size="sm"
-                  disabled={pending}
-                  onClick={() => run(() => setWebsitePublished(slug, !websitePublished))}
-                >
+                <Button type="button" variant="primary" size="sm" onClick={() => setComingSoon(true)}>
                   <Globe className="h-4 w-4" aria-hidden />
-                  {websitePublished ? 'Unpublish website' : 'Publish website'}
+                  Publish website
                 </Button>
-                {websitePublished && (
-                  <Link
-                    href={`/sites/${slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary-strong hover:underline"
-                  >
-                    View website
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  </Link>
-                )}
               </div>
-              <p className="mt-2 text-xs text-muted">
-                {websitePublished
-                  ? 'Your website is live and anyone with the link can view it.'
-                  : 'Your website is off. Publish it to share a public link.'}
-              </p>
+              {comingSoon && (
+                <p
+                  className="mt-3 rounded-xl border border-border bg-surface-elevated/60 px-3 py-2 text-sm font-medium text-text"
+                  role="status"
+                >
+                  Coming soon. Standalone websites are on the way. For now your profile is your public page.
+                </p>
+              )}
             </section>
           )}
       </div>

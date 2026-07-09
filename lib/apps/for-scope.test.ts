@@ -71,12 +71,12 @@ describe('appsForScope — Space editor apps render from the module manifest (mo
   it('gates on the viewer functions: a no-function viewer keeps only the always-on floor', () => {
     // With no functions the functioned modules (members, crm, the six functioned commerce modules, qr,
     // email, billing) drop; the always-on (gate 'none') floor — Identity / Info / Settings / Page / Store /
-    // the Module Manager / Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
+    // Danger — stays, so the owner NEVER sees an empty rail (the fail-safe).
     const noFn: AppViewer = { caps: new Set(), canUseSpaceFn: () => false }
     const got = appsForScope({ kind: 'space', id: 'x', spaceType: 'business' }, noFn, 'editor').map((a) => a.id)
     expect(got).toContain('space.basics')
     expect(got).toContain('space.danger')
-    expect(got).toContain('space.modules') // the Module Manager (always-on shell) stays
+    expect(got).not.toContain('space.modules') // the Module Manager rail entry was removed (item 7)
     expect(got).not.toContain('space.people') // members function absent
   })
 

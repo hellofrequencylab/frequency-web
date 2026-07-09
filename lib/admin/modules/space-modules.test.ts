@@ -111,18 +111,15 @@ describe('spaceModuleManifest', () => {
   })
 })
 
-// ADR-546 (docs/MODULAR-MENU.md P3): the Module Manager module + the hide/family metadata it drives.
-describe('Module Manager (space.modules) + hide/family metadata', () => {
-  it('ships a space.modules module: always-on shell, no featureKey, its own deep route', () => {
-    const m = spaceModuleById('space.modules')
-    expect(m).not.toBeNull()
-    expect(m!.gate.kind).toBe('always') // owner/admin gating lives in the board + page, not the manifest
-    expect(m!.featureKey).toBeNull() // never a toggleable feature
-    expect(m!.deepLink?.('demo')).toBe('/spaces/demo/manage/modules')
+// ADR-546 (docs/MODULAR-MENU.md P3): the hide/family metadata. (The "Menu and features" / space.modules rail
+// entry was removed — item 7 — so it is no longer part of the catalog.)
+describe('hide/family metadata', () => {
+  it('has no space.modules rail entry (removed, item 7)', () => {
+    expect(spaceModuleById('space.modules')).toBeNull()
   })
 
-  it('protects the shell config surfaces, Danger, and the Module Manager itself from hiding', () => {
-    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger', 'space.modules']) {
+  it('protects the shell config surfaces and Danger from hiding', () => {
+    for (const id of ['space.branding', 'space.basics', 'space.layout', 'space.settings', 'space.danger']) {
       expect(isModuleHideable(id), `${id} must be unhideable`).toBe(false)
       expect(UNHIDEABLE_MODULE_IDS).toContain(id)
     }
