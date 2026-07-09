@@ -139,7 +139,7 @@ export const COACHES_FUNNEL: FunnelConfig = {
   mode: { type: 'business', variant: 'packages' },
   hero: {
     eyebrow: 'For coaches, healers, and guides',
-    h1: 'Your practice, held.',
+    h1: 'Your practice, made perfect.',
     subhead:
       "Bookings, payments, and every person you've met, together in one place. Frequency keeps your relationships close, so the people you meet come back, and bring the next ones. Start free.",
     microcopy: 'No card. Free while you grow.',

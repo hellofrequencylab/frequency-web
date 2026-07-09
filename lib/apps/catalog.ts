@@ -85,7 +85,7 @@ const PAGE_APPS: App[] = LAYOUT_MODULES.map((m): App => ({
 }))
 
 // ── element Apps ← the element catalog (re-declared; drift-guarded against REGISTRY_NAMES) ───────────
-// The 34 code-drawn elements beyond the marketing illustration kit (illustrations are enumerated
+// The 44 code-drawn elements beyond the marketing illustration kit (illustrations are enumerated
 // separately and are NOT element-catalog entries). Data mirrors lib/library/element-catalog.ts.
 type ElementSeed = {
   registry: Exclude<ElementRegistry, 'illustration'>
@@ -136,6 +136,17 @@ const ELEMENT_SEEDS: readonly ElementSeed[] = [
   { registry: 'texture', name: 'ripple-rings', title: 'Ripple rings', category: 'Textures', tags: ['texture', 'abstract', 'ripple', 'brand'] },
   { registry: 'texture', name: 'circle-constellation', title: 'Circle constellation', category: 'Textures', tags: ['texture', 'abstract', 'network', 'brand'] },
   { registry: 'texture', name: 'organic-blob', title: 'Organic blob', category: 'Textures', tags: ['texture', 'abstract', 'blob', 'brand'] },
+  // Operator funnel-door graphics — the five signature scenes + the feature icon set (ADR-591).
+  { registry: 'spot', name: 'funnel-hero-product', title: 'Funnel hero product', category: 'Funnel doors', tags: ['spot', 'funnel', 'hero', 'product', 'schedule', 'contact'] },
+  { registry: 'spot', name: 'funnel-scattered-stack', title: 'Funnel scattered stack', category: 'Funnel doors', tags: ['spot', 'funnel', 'problem', 'before', 'tools'] },
+  { registry: 'spot', name: 'funnel-setup-steps', title: 'Funnel setup steps', category: 'Funnel doors', tags: ['spot', 'funnel', 'how-it-works', 'steps'] },
+  { registry: 'spot', name: 'funnel-loop', title: 'Funnel referral loop', category: 'Funnel doors', tags: ['spot', 'funnel', 'loop', 'referral', 'signature'] },
+  { registry: 'spot', name: 'funnel-break-even', title: 'Funnel break-even chart', category: 'Funnel doors', tags: ['spot', 'funnel', 'pricing', 'break-even', 'chart'] },
+  { registry: 'icon', name: 'funnel-calendar', title: 'Funnel calendar icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'calendar', 'bookings'] },
+  { registry: 'icon', name: 'funnel-contact', title: 'Funnel contact icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'contact', 'crm'] },
+  { registry: 'icon', name: 'funnel-qr', title: 'Funnel QR icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'qr', 'code'] },
+  { registry: 'icon', name: 'funnel-envelope', title: 'Funnel envelope icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'envelope', 'email'] },
+  { registry: 'icon', name: 'funnel-spark', title: 'Funnel spark icon', category: 'Funnel icons', tags: ['icon', 'funnel', 'spark', 'grow'] },
 ]
 
 const ELEMENT_APPS: App[] = ELEMENT_SEEDS.map((e): App => ({

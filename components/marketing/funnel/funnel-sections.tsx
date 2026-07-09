@@ -65,23 +65,24 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
   const { hero } = config
   return (
     <Section tone="canvas" pad="pt-12 pb-14 sm:pt-16 sm:pb-20">
-      <div className="grid items-center gap-10 lg:grid-cols-2">
+      {/* Centered eyebrow bookend across the full hero width. */}
+      <p className="text-center text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
+      {/* Text column is widened (1.2fr vs 0.8fr) so the CTA row stays on one line. */}
+      <div className="mt-6 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
-          <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
+          <h1 className="font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{hero.subhead}</p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href={FUNNEL_START_HREF} size="lg">
+            <Button href={FUNNEL_START_HREF} size="lg" className="whitespace-nowrap">
               {FUNNEL_CTA_LABEL}
             </Button>
-            <Button href="#how-it-works" variant="ghost" size="lg">
+            <Button href="#how-it-works" variant="ghost" size="lg" className="whitespace-nowrap">
               {FUNNEL_SECONDARY_LABEL}
             </Button>
           </div>
           <p className="mt-4 text-sm text-subtle">{hero.microcopy}</p>
-          <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
         </div>
         <div className="order-first lg:order-last">
           <div className="mx-auto max-w-md rounded-3xl border border-border bg-surface p-5 shadow-pop sm:p-7">
@@ -89,6 +90,8 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
           </div>
         </div>
       </div>
+      {/* Centered trust-line bookend below the hero. */}
+      <p className="mt-10 text-center text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
     </Section>
   )
 }
