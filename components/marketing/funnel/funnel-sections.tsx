@@ -21,7 +21,7 @@ import {
 import {
   HeroProductGraphic,
   ScatteredStackGraphic,
-  SetupStepsGraphic,
+  SetupStepGraphic,
   LoopGraphic,
   BreakEvenGraphic,
   FeatureIcon,
@@ -65,12 +65,13 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
   const { hero } = config
   return (
     <Section tone="canvas" pad="pt-12 pb-14 sm:pt-16 sm:pb-20">
-      {/* Centered eyebrow bookend across the full hero width. */}
-      <p className="text-center text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
-      {/* Text column is widened (1.2fr vs 0.8fr) so the CTA row stays on one line. */}
-      <div className="mt-6 grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+      {/* Equal columns give the product card more room so it balances the text block; the buttons keep
+          whitespace-nowrap so the CTA row stays on one line. Eyebrow + trust line are left-aligned in
+          the text column. */}
+      <div className="grid items-center gap-10 lg:grid-cols-2">
         <div>
-          <h1 className="font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
+          <p className="text-sm font-bold uppercase tracking-[0.22em] text-primary-strong">{hero.eyebrow}</p>
+          <h1 className="mt-4 font-display text-4xl uppercase leading-[1.02] text-text sm:text-5xl lg:text-6xl">
             {hero.h1}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted">{hero.subhead}</p>
@@ -83,15 +84,14 @@ export function FunnelHero({ config }: { config: FunnelConfig }) {
             </Button>
           </div>
           <p className="mt-4 text-sm text-subtle">{hero.microcopy}</p>
+          <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
         </div>
         <div className="order-first lg:order-last">
-          <div className="mx-auto max-w-md rounded-3xl border border-border bg-surface p-5 shadow-pop sm:p-7">
+          <div className="mx-auto max-w-lg rounded-3xl border border-border bg-surface p-6 shadow-pop sm:p-8">
             <HeroProductGraphic />
           </div>
         </div>
       </div>
-      {/* Centered trust-line bookend below the hero. */}
-      <p className="mt-10 text-center text-sm font-semibold uppercase tracking-wide text-muted">{hero.trustLine}</p>
     </Section>
   )
 }
@@ -144,21 +144,22 @@ export function HowItWorks({ config }: { config: FunnelConfig }) {
       <div className="text-center">
         <h2 className="font-display text-3xl uppercase text-text sm:text-4xl">{howItWorks.header}</h2>
       </div>
-      <ol className="mt-10 grid gap-6 sm:grid-cols-3">
+      {/* One row: the enlarged step graphic on top, its number + title + copy beneath. */}
+      <ol className="mx-auto mt-12 grid max-w-5xl gap-10 sm:grid-cols-3 sm:gap-8">
         {howItWorks.steps.map((s, i) => (
-          <li key={i} className="rounded-2xl border border-border bg-surface p-6">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
+          <li key={i} className="flex flex-col items-center text-center">
+            <div className="w-full max-w-[220px] rounded-2xl border border-border bg-surface p-5 shadow-sm">
+              <SetupStepGraphic step={i as 0 | 1 | 2} />
+            </div>
+            <span className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-on-primary">
               {i + 1}
             </span>
-            <h3 className="mt-4 font-display text-xl uppercase text-text">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{s.body}</p>
+            <h3 className="mt-3 font-display text-xl uppercase text-text">{s.title}</h3>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">{s.body}</p>
           </li>
         ))}
       </ol>
-      <div className="mt-8">
-        <SetupStepsGraphic className="mx-auto max-w-3xl" />
-        <p className="mt-3 text-center text-sm text-subtle">{howItWorks.caption}</p>
-      </div>
+      <p className="mt-10 text-center text-sm text-subtle">{howItWorks.caption}</p>
     </Section>
   )
 }
