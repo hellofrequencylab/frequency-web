@@ -23,11 +23,20 @@ security bugs**; the shop's auth (every mutating action object-authorizes), book
   `/marketplace` (→ the free Classifieds board). Now routes by `owner_kind` (platform → `/store`,
   else → `/market`).
 
-**Still open** (see also the master to-do below):
-- 🧑 **Migration-ledger drift (OPEN-THREADS A2)** — `schema_migrations` records only through
-  `20261007000000`; everything `20261008`→`20261104` is applied to prod but unrecorded (MCP-applied,
-  ledger not stamped). Needs `supabase migration repair --status applied <version>` across the range,
-  then flip `db-tests.yml` to a required gate. NOT mass-inserted here (would fight the planned repair).
+**Migration-ledger reconcile (OPEN-THREADS A2) — modern era CLOSED (2026-07-10):**
+- ✅ **Clean era (≥ `20260923000000`) fully reconciled — 35/35, zero drift.** Every modern-era
+  migration was verified genuinely applied on prod (distinctive object/constraint/function/effect
+  per file) *before* recording, then stamped into `schema_migrations`: the 20-file shop/practice era
+  `20261008`→`20261104` (all MCP-applied with no ledger row), plus the two stragglers
+  `20260927000000` (secdef helper lockdown) and `20261006000000` (redundant-index drop).
+- ✅ **Duplicate migration version fixed** — two files shared `20261010000000`
+  (`dm_conversation_summaries` + `library_sequence_kind`); the latter renumbered to
+  `20261010000001` so a fresh `supabase db start` (the db-tests gate) no longer errors on a dup version.
+- ⚠️ **Pre-`20260923` history still diverges** (~288 repo versions vs 373 orphan ledger rows) — the
+  long-standing "renumbered timestamps vs prod" condition (same schema, different stamps; "not
+  breaking"). Correct fix is **owner-run `supabase db pull`** (or `migration repair`) with the linked
+  CLI — NOT a blind SQL insert (some historical files could be genuinely unapplied). Then flip
+  `db-tests.yml` to a required PR gate.
 - 🧑 **Cron paging-blind** — 21 jobs, 0 monitors; set `CRON_HEARTBEAT_BASE_URL`.
 - LOW · Contact-only Market service (`service-booking-picker.tsx`) says "reach out to the space"
   with no DM affordance — needs a product decision on the Space DM target before wiring (ADR-596 §3/§7).

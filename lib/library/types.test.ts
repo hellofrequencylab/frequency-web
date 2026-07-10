@@ -11,7 +11,7 @@ import { RENDITION_PRESETS, CROP_FRAMES } from './renditions'
 
 // Locks the catalog vocabulary against the DB CHECK constraints in the migrations
 // (20260919000000_library_assets.sql, 20260920000000_library_dam.sql,
-// 20260925000000_library_lanes_expansion.sql, 20261010000000_library_sequence_kind.sql). If
+// 20260925000000_library_lanes_expansion.sql, 20261010000001_library_sequence_kind.sql). If
 // these lists and the migrations ever drift, one of them is wrong.
 describe('library catalog vocab', () => {
   it('kinds match the migration CHECK set', () => {
