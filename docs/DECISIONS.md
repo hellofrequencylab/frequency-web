@@ -13244,3 +13244,59 @@ offerings backfill), plus a take-rate config extension (8% rung beside free 5% /
 umbrella (acceptable, unpublished). Payments stay double-gated OFF (`host_payouts_enabled`, ADR-178)
 until Phase 7's launch posture. Regenerate `lib/database.types.ts` after apply (ADR-246). Phased
 build (P0–P9) tracked in `docs/SHOP-MARKETPLACE-PLAN.md`.
+
+---
+
+## ADR-597: Remove the Programs feature (Library content type + `/programs` route)
+
+**Status:** Accepted (owner-confirmed removal, 2026-07) · corroborated by the deleted
+`app/(main)/programs/`, `lib/programs.ts`, `content/programs/`, and the two migrations below.
+
+**Context.** "Programs" was an overloaded name spanning three unrelated surfaces. Two of them
+were retired:
+1. The Library **"Programs" content type** (ADR-109 outreach toolkits) — the third community-content
+   type beside Practices and Journeys, backed by the `programs` + `program_adoptions` tables and the
+   `programs` arm of the `community_library` RPC. Program creation was already retired; only read-only
+   rows and a pending-review path remained.
+2. The **`/programs` route** — the Foundation's Markdown frameworks/trainings surface
+   (`content/programs/*.md`, served by `lib/programs.ts`, rendered by the `programs-list` layout
+   module). Its `program_complete` engagement events tracked reading but awarded no points.
+
+Deliberately **left in place** (different meanings of "program"): the Space **enrollment** program
+(`lib/spaces/enroll.ts` `SpaceProgram`), the `/admin/programs` operator dashboard (see below), the
+`program_run` economy event (`lib/zaps.ts`/`lib/economy/ledger.ts`), and every persona/marketing/
+onboarding "program".
+
+**Decision.**
+- **Library type:** drop `'program'` from `ContentType` and its branches (`hrefFor`, `typeLabel`,
+  `getPendingReview`, `reviewContent`); remove the by-space `programs`-table helpers
+  (`listProgramsForSpace`, `stampProgramSpaceId`, `SpaceProgram`) and the Library "Programs" tab.
+- **RPC:** rewrite `community_library(_type, _pillar, _limit)` WITHOUT the `programs` union arm,
+  preserving the exact signature, the card-times columns, the `ghost/initiate/adept/master` endorser
+  ranks, and the REVOKE/GRANT — via drop + recreate (Postgres can't change a `RETURNS TABLE` in
+  place). Migration `20261113000000_community_library_drop_programs.sql` (safe).
+- **Route:** delete `app/(main)/programs/`, `content/programs/`, `lib/programs.ts`, the
+  `programs-list` module (registry + meta + route set), and `components/program/complete-button.tsx`;
+  deregister `/programs` from `page-chrome.ts`, `proxy.ts`, `app/robots.ts`, `lib/qr/destinations.ts`,
+  `components/layout/nav-icons.ts`, `components/layout/breadcrumbs.tsx`,
+  `components/admin/menu/known-routes.ts`, `lib/help/feature-keys.ts`, and the `leader-training` Studio
+  leaf (`lib/nav/studio.ts`) that pointed at it.
+- **Tables:** the `programs` + `program_adoptions` TABLES are dropped by a SEPARATE, clearly-labeled
+  destructive migration `20261114000000_drop_programs_tables.sql`, applied deliberately only after the
+  surfaces are gone.
+
+**NOT done (flagged for owner review): the `/admin/programs` operator console.** Despite the removal
+brief listing it as a third target ("Quest/gamification & seasons analytics dashboard"), it is NOT a
+standalone dashboard — it is the **operator hub for the entire Content Studio world**, aggregating
+nine *retained* admin surfaces (Seasons, Journeys, Practices, Challenges, Role training, Vera's tips,
+Gamification, Store, Crew tasks) and is the declared `href` of both the `content` Studio world and the
+`programs`/`content`/`rewards` admin domains in `lib/nav/studio.ts` (which the brief marked
+leave-alone). Deleting it would orphan those retained features and gut the admin IA. Per the
+"under-removing is recoverable, over-removing breaks live features" guardrail, it was left intact
+pending explicit confirmation.
+
+**Consequences.** The two migrations are WRITE-ONLY (not applied); regenerate `lib/database.types.ts`
+after the destructive one runs (ADR-246). `program_complete` history rows remain in
+`engagement_events` (harmless, no reader). SEO/robots + menu-contract checks stay green. Docs that
+described Programs as a live feature (PAGE-FRAMEWORK §8, DEVELOPMENT-MAP, BUILD-LIST) are updated;
+historical changelog/ADR references are kept as-is.
