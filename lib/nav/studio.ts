@@ -239,9 +239,6 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'library', href: '/admin/library', label: 'Loom Studio', desc: 'The media & asset library: every image the site uses, plus the illustration kit.', icon: 'Images', min: 'janitor',
     world: 'content', worldLabel: 'Loom', worldOrder: 9,
     adminGroups: [{ domain: 'acquisition', section: 'Assets' }] },
-  // Leader training (external /programs route) — Programs domain Enablement.
-  { id: 'leader-training', href: '/programs', label: 'Leader training', desc: 'Materials to start and run a circle.', icon: 'BookOpen', min: 'host', staffDomain: 'community',
-    adminGroups: [{ domain: 'programs', section: 'Enablement' }] },
 
   // ═══════════════ GROWTH ═══════════════
   // §5b: Entry points · QR · Referrals · Applications · Onboarding · Campaigns · Funnels ·
@@ -455,7 +452,6 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       { synthetic: { href: '/admin/programs?tab=content', label: 'Content', desc: 'Seasons, Journeys, Practices, and Challenges.', icon: 'Map', min: 'host', staffDomain: 'community', section: 'Workspaces' } },
       { synthetic: { href: '/admin/programs?tab=rewards', label: 'Rewards & economy', desc: 'Gamification, the store, retroactive rewards, and crew tasks.', icon: 'Trophy', min: 'host', staffDomain: 'community', section: 'Workspaces' } },
-      { leaf: 'leader-training', section: 'Enablement' },
     ],
   },
   {

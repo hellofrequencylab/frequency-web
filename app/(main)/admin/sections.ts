@@ -311,7 +311,7 @@ export function groupSections(
 
 // Every domain-owned href (and external route) → its domain key, built once from
 // ADMIN_GROUPS so the switcher highlights the right domain for any /admin/* page AND
-// the external routes (/programs, /pages, …). Longest hrefs first so the most
+// the external routes (/pages, …). Longest hrefs first so the most
 // specific prefix wins.
 const HREF_TO_DOMAIN: ReadonlyArray<{ href: string; key: DomainKey }> = ADMIN_GROUPS
   .flatMap((g) => g.links.map((l) => ({ href: l.href, key: g.key })))

@@ -59,7 +59,6 @@ export const AREA_ICONS: Record<string, ElementType> = {
   market: Store,
   practices: Sparkles,
   journeys: Route,
-  programs: BookOpen,
   library: Library,
   broadcast: Megaphone,
   messages: MessageSquare,
