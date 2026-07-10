@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       achievements: {
@@ -1320,6 +1295,70 @@ export type Database = {
           },
         ]
       }
+      commerce_disputes: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          opener_profile_id: string | null
+          order_id: string
+          reason: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          opener_profile_id?: string | null
+          order_id: string
+          reason: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          opener_profile_id?: string | null
+          order_id?: string
+          reason?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_disputes_opener_profile_id_fkey"
+            columns: ["opener_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_disputes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_disputes_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commerce_order_items: {
         Row: {
           created_at: string
@@ -1560,6 +1599,57 @@ export type Database = {
             columns: ["owner_space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commerce_reviews: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          reviewer_profile_id: string
+          status: string
+          updated_at: string
+          verified_purchase: boolean
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          reviewer_profile_id: string
+          status?: string
+          updated_at?: string
+          verified_purchase?: boolean
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          reviewer_profile_id?: string
+          status?: string
+          updated_at?: string
+          verified_purchase?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_reviews_reviewer_profile_id_fkey"
+            columns: ["reviewer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3027,6 +3117,81 @@ export type Database = {
           },
         ]
       }
+      event_placement_requests: {
+        Row: {
+          circle_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          requested_by: string
+          responded_at: string | null
+          responded_by: string | null
+          space_id: string | null
+          status: string
+          target_type: string
+        }
+        Insert: {
+          circle_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          requested_by: string
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id?: string | null
+          status?: string
+          target_type: string
+        }
+        Update: {
+          circle_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          requested_by?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          space_id?: string | null
+          status?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_placement_requests_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_placement_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_placement_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_placement_requests_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_placement_requests_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_post_reactions: {
         Row: {
           created_at: string
@@ -3463,6 +3628,7 @@ export type Database = {
           theme: Json
           time_zone: string
           title: string
+          venmo_handle: string | null
           venue_name: string | null
           visibility: string
         }
@@ -3522,6 +3688,7 @@ export type Database = {
           theme?: Json
           time_zone?: string
           title: string
+          venmo_handle?: string | null
           venue_name?: string | null
           visibility?: string
         }
@@ -3581,6 +3748,7 @@ export type Database = {
           theme?: Json
           time_zone?: string
           title?: string
+          venmo_handle?: string | null
           venue_name?: string | null
           visibility?: string
         }
@@ -12456,10 +12624,12 @@ export type Database = {
         Returns: {
           adoptions: number
           author_id: string
+          cadence: string
           completions: number
           content_type: string
           cover_image: string
           created_at: string
+          duration_min: number
           id: string
           pillar: string
           ratings: number
@@ -12467,6 +12637,8 @@ export type Database = {
           slug: string
           summary: string
           title: string
+          unit_count: number
+          unit_label: string
         }[]
       }
       dashboard_health_summary: {
@@ -14146,9 +14318,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       achievement_category: [
