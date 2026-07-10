@@ -30,7 +30,8 @@ import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
-import { listCohosts } from '@/lib/events/cohosts'
+import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
+import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
@@ -652,7 +653,15 @@ export default async function EventDetailPage({
   // Practice check-in availability + whether the viewer already checked in.
   const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
 
-  const [ciRes, cohostsRaw, { data: rawActivity }, { data: rawDispatches }, rawMediaRes] =
+  const [
+    ciRes,
+    cohostsRaw,
+    cohostInvitesRaw,
+    myCohostInvite,
+    { data: rawActivity },
+    { data: rawDispatches },
+    rawMediaRes,
+  ] =
     await Promise.all([
       canCheckIn && myProfileId
         ? admin
@@ -662,6 +671,10 @@ export default async function EventDetailPage({
             .maybeSingle()
         : Promise.resolve(null),
       listCohosts(event.id),
+      // Pending cohost invites — only the host needs them (their manager lists them).
+      isHost ? listCohostInvites(event.id) : Promise.resolve([]),
+      // The viewer's own pending invite, if any — drives the Accept/Decline banner.
+      myProfileId ? getMyCohostInvite(event.id, myProfileId) : Promise.resolve(null),
       (admin)
         .from('event_posts')
         .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
@@ -688,6 +701,7 @@ export default async function EventDetailPage({
   const alreadyCheckedIn = !!ciRes?.data
 
   const cohosts = cohostsRaw as CohostView[]
+  const cohostInvites = cohostInvitesRaw as CohostView[]
   const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
   // Who may add a comment / photo: ANY signed-in member (the old RSVP-holder
   // requirement was dropped so the event wall reads as open conversation; the
@@ -961,6 +975,7 @@ export default async function EventDetailPage({
     posterDetails,
     posterCropUrls,
     cohosts,
+    cohostInvites,
     isPaidEvent,
     soldTickets,
     activityPosts,
@@ -1052,6 +1067,13 @@ export default async function EventDetailPage({
           <Ticket className="h-4 w-4" />
           You&rsquo;re in. ${(ticketedCents / 100).toFixed(2)} ticket confirmed. See you there.
         </div>
+      )}
+
+      {/* Pending cohost invite — the signed-in viewer was invited to cohost this event.
+          Accept to join as a cohost, or decline. Hidden for the host (they can't invite
+          themselves) and once the invite is answered. */}
+      {myCohostInvite && !isHost && (
+        <CohostInviteBanner eventId={event.id} slug={event.slug} eventTitle={event.title} />
       )}
 
       {/* "This is not my event" — for an unclaimed posted event, name the poster +

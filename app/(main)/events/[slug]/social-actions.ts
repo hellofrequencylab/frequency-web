@@ -205,9 +205,13 @@ export async function deleteEventMedia(mediaId: string, slug: string) {
   revalidateEvent(slug)
 }
 
-// ── Cohosts ───────────────────────────────────────────────────────────────────
+// ── Cohosts (invite / accept lifecycle) ────────────────────────────────────────
+// The host INVITES a member to cohost (status 'invited'); the invitee accepts or
+// declines. Only an ACCEPTED cohost is displayed publicly and counts for the
+// host-capability checks. `removeCohost` deletes the row either way (a host
+// cancelling a pending invite, or removing a real cohost).
 
-export async function addCohost(
+export async function inviteCohost(
   eventId: string,
   slug: string,
   handle: string,
@@ -220,7 +224,7 @@ export async function addCohost(
 
   const admin = createAdminClient()
   if (!(await isEventHost(admin, eventId, profileId))) {
-    return fail('Only the host can add cohosts.')
+    return fail('Only the host can invite cohosts.')
   }
 
   // Resolve the handle to a real profile. A cohost must exist and not be the host.
@@ -232,19 +236,156 @@ export async function addCohost(
   if (!target) return fail('We could not find that member.')
   if (target.id === profileId) return fail('You are already the host.')
 
-  // Unique (event_id, profile_id). A unique violation (Postgres 23505) means they are
-  // already a cohost, which is a success from the caller's view; any OTHER error is a
-  // real failure and must surface rather than be swallowed.
+  // A profile is a cohost of an event at most once (unique event_id, profile_id).
+  // Look up any existing row so a re-invite after a decline works, and an already-
+  // accepted cohost is a no-op the host reads as success.
+  const { data: existing } = await admin
+    .from('event_cohosts')
+    .select('id, status')
+    .eq('event_id', eventId)
+    .eq('profile_id', target.id)
+    .maybeSingle()
+
+  const nowIso = new Date().toISOString()
+
+  if (existing?.status === 'accepted') {
+    // Already a live cohost — nothing to send.
+    revalidateEvent(slug)
+    return ok()
+  }
+
+  if (existing) {
+    // A prior 'invited' (re-send) or 'declined' (re-invite) row: reset it to a
+    // fresh pending invite rather than tripping the unique constraint.
+    const { error: upErr } = await admin
+      .from('event_cohosts')
+      .update({ status: 'invited', invited_at: nowIso, responded_at: null, added_by: profileId })
+      .eq('id', existing.id)
+    if (upErr) {
+      console.error('[inviteCohost update]', upErr.message)
+      return fail('We could not send that invite. Please try again.')
+    }
+  } else {
+    const { error } = await admin
+      .from('event_cohosts')
+      .insert({
+        event_id: eventId,
+        profile_id: target.id,
+        added_by: profileId,
+        status: 'invited',
+        invited_at: nowIso,
+      })
+    if (error) {
+      console.error('[inviteCohost insert]', error.message)
+      return fail('We could not send that invite. Please try again.')
+    }
+  }
+
+  // Tell the invitee. Best-effort: a notification failure never blocks the invite.
+  // The bell prefixes the actor's (host's) name, so `body` is the predicate.
+  try {
+    const { data: ev } = await admin.from('events').select('title').eq('id', eventId).maybeSingle()
+    const title = ev?.title ?? 'an event'
+    await admin.from('notifications').insert({
+      recipient_id: target.id,
+      actor_id: profileId,
+      type: 'cohost_invite',
+      reference_type: 'event',
+      reference_id: eventId,
+      body: `invited you to cohost "${title}"`,
+    })
+  } catch {
+    /* best-effort */
+  }
+
+  revalidateEvent(slug)
+  return ok()
+}
+
+// The invitee accepts their own pending invite: they become a real cohost and the
+// host is notified. Invitee-only — the row's profile_id must equal the caller.
+export async function acceptCohostInvite(
+  eventId: string,
+  slug: string,
+): Promise<ActionResult<void>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to respond to this invite.')
+
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('event_cohosts')
+    .select('id, status')
+    .eq('event_id', eventId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  if (!row || row.status === 'declined') return fail('This invite is no longer open.')
+  if (row.status === 'accepted') {
+    // Already accepted — idempotent success.
+    revalidateEvent(slug)
+    return ok()
+  }
+
   const { error } = await admin
     .from('event_cohosts')
-    .insert({
-      event_id: eventId,
-      profile_id: target.id,
-      added_by: profileId,
-    })
-  if (error && error.code !== '23505') {
-    console.error('[addCohost]', error.message)
-    return fail('We could not add that cohost. Please try again.')
+    .update({ status: 'accepted', responded_at: new Date().toISOString() })
+    .eq('id', row.id)
+  if (error) {
+    console.error('[acceptCohostInvite]', error.message)
+    return fail('Could not accept the invite. Please try again.')
+  }
+
+  // Notify the host that their invite was accepted. Best-effort.
+  try {
+    const { data: ev } = await admin
+      .from('events')
+      .select('host_id, title')
+      .eq('id', eventId)
+      .maybeSingle()
+    if (ev?.host_id) {
+      await admin.from('notifications').insert({
+        recipient_id: ev.host_id,
+        actor_id: profileId,
+        type: 'cohost_accepted',
+        reference_type: 'event',
+        reference_id: eventId,
+        body: `accepted your invite to cohost "${ev.title}"`,
+      })
+    }
+  } catch {
+    /* best-effort */
+  }
+
+  revalidateEvent(slug)
+  return ok()
+}
+
+// The invitee declines their own pending invite: the row is marked 'declined' and
+// stays out of every list. Invitee-only. Declining an already-accepted seat is not
+// allowed here (that is a host removal via removeCohost).
+export async function declineCohostInvite(
+  eventId: string,
+  slug: string,
+): Promise<ActionResult<void>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to respond to this invite.')
+
+  const admin = createAdminClient()
+  const { data: row } = await admin
+    .from('event_cohosts')
+    .select('id, status')
+    .eq('event_id', eventId)
+    .eq('profile_id', profileId)
+    .maybeSingle()
+  if (!row) return ok() // Nothing pending — nothing to decline.
+  if (row.status === 'accepted') return fail('You are already a cohost of this event.')
+
+  const { error } = await admin
+    .from('event_cohosts')
+    .update({ status: 'declined', responded_at: new Date().toISOString() })
+    .eq('id', row.id)
+  if (error) {
+    console.error('[declineCohostInvite]', error.message)
+    return fail('Could not decline the invite. Please try again.')
   }
 
   revalidateEvent(slug)
