@@ -27,6 +27,8 @@ export function IndexTemplate({
   trail,
   heroImage,
   heroOverlay = false,
+  heroSize = 'standard',
+  underHero,
   banner,
   adminBar = true,
   children,
@@ -52,6 +54,15 @@ export function IndexTemplate({
    *  lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below, so the
    *  operator Settings affordance never disappears. */
   heroOverlay?: boolean
+  /** Overlay hero band size. 'standard' (default) is the uniform index hero every section
+   *  shares; 'large' is a deliberately taller band with a bigger title — reserved for the
+   *  one surface that should read bigger (the Business Spaces directory). Only applies in
+   *  overlay mode. */
+  heroSize?: 'standard' | 'large'
+  /** Optional controls row rendered directly UNDER the standard (non-overlay) hero banner —
+   *  a wrapping pill row for secondary page controls (Manage / drafts / subscribe), keeping
+   *  the header-right `action` for the primary CTA only. Standard-banner branch only. */
+  underHero?: React.ReactNode
   /** Escape hatch for a fully custom header media node (rendered after trail + heroImage).
    *  Prefer `trail` + `heroImage` — `banner` is for the rare bespoke header. */
   banner?: React.ReactNode
@@ -64,23 +75,27 @@ export function IndexTemplate({
   // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
   // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.
   if (heroImage && heroOverlay) {
+    // The size lever: 'standard' reproduces the uniform index hero exactly; 'large' is the
+    // deliberately taller band (Business Spaces stays the biggest header on the site).
+    const bandMinH = heroSize === 'large' ? 'min-h-[18rem] sm:min-h-[24rem]' : 'min-h-[14rem] sm:min-h-[18rem]'
+    const titleSize = heroSize === 'large' ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'
     return (
       <div>
         {trail && <Breadcrumbs trail={trail} />}
-        <div className="relative mt-3 min-h-[14rem] overflow-hidden rounded-2xl border border-border sm:min-h-[18rem]">
+        <div className={`relative mt-3 ${bandMinH} overflow-hidden rounded-2xl border border-border`}>
           {/* Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
               still renders; fetchPriority high gives this above-the-fold hero an LCP hint. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={heroImage} alt="" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent" aria-hidden />
-          <div className="relative flex min-h-[14rem] flex-col justify-end gap-4 p-6 sm:min-h-[18rem] sm:flex-row sm:items-end sm:justify-between sm:p-8">
+          <div className={`relative flex ${bandMinH} flex-col justify-end gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8`}>
             <div className="min-w-0">
               {eyebrow && (
                 <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-on-ink-muted">
                   {eyebrow}
                 </p>
               )}
-              <h1 className="mb-1 text-balance text-2xl font-bold text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] sm:text-3xl">
+              <h1 className={`mb-1 text-balance ${titleSize} font-bold text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]`}>
                 {title}
               </h1>
               {description && (
@@ -105,7 +120,7 @@ export function IndexTemplate({
 
   return (
     <div>
-      {(trail || heroImage || banner) && (
+      {(trail || heroImage || banner || underHero) && (
         <div>
           {trail && <Breadcrumbs trail={trail} />}
           {heroImage && (
@@ -121,6 +136,9 @@ export function IndexTemplate({
               className="mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
             />
           )}
+          {/* Secondary page controls, sitting directly under the banner (a wrapping pill row) —
+              the primary CTA stays in the header-right `action` beside the title. */}
+          {underHero && <div className="mb-4 flex flex-wrap gap-2">{underHero}</div>}
           {banner}
         </div>
       )}
