@@ -171,6 +171,49 @@ reader; publish/visibility maps to `commerce_products.status` (active/draft/arch
 
 ---
 
+### 5b. Phase 4-6 build maps (from the review + scout fan-out, 2026-07-09)
+
+**Phase 4 — Bookable services** (a thin seam joining two existing engines, not a rebuild). The join column
+`commerce_products.booking_space_id` already exists; deposits/no-show live in `metadata.service`
+(`ServiceConfig`). Steps: (1) migration — on `space_bookings` add `order_id`, `product_id`, a `'pending'`
+status, and **widen the partial unique index to cover `pending`** so a hold blocks double-book; backfill
+`booking_space_id = owner_space_id` on existing service products. (2) `createSpaceProductAction` passes
+`bookingSpaceId: gate.spaceId` when `kind==='service'`. (3) new `createServiceBookingCheckout(productId,
+startsAtISO, note)` — branch on `ServiceConfig.priceModel`: `contact`→enquiry (no checkout, the sanctioned
+exception), `free`→`createBooking` directly, else **HOLD-FIRST** (insert `pending` booking, then
+`createCommerceCheckout` for `depositCents ?? priceCents`). (4) settle/refund hooks — extend
+`recordCommerceOrderFromSession` to flip the linked `pending` booking to `confirmed`, and
+`recordCommerceRefund` to cancel it (release slot). (5) service detail + deposit-aware picker (the one
+net-new UI — `/market/[id]` currently hard-404s non-maker; **generalize it, or every service card
+dead-ends**). (6) lazily treat `pending` holds older than ~30 min as free. **Gotchas:** slot length is
+authoritative from `space_availability.slot_minutes`, not `durationMin` (treat `durationMin` as display
+for v1); `createBooking` inserts `confirmed` with NO payment (use the pending-hold variant); gate the whole
+thing behind `host_payouts_enabled`.
+
+**Phase 5 — Market umbrella** (3 moves). (1) **THE GATE** — add a real boolean column
+`commerce_products.market_published` (default false, indexed) via a small migration + backfill
+`set market_published = true where vertical='maker'`; a Space `status='active'` means "live in my Shop", NOT
+"flood the global Market", so aggregating on status alone would expose every catalog — the opt-in is
+mandatory. Catalog tab gets a per-row "Publish to Market" toggle (`setSpaceListingMarketPublishedAction`,
+`gateSpaceItem`-authorized). (2) **THE READER** — `listMarketListings({ group?, q?, limit? })` =
+`status='active' AND market_published AND owner_kind in (profile,space) AND product_kind in
+kindsForGroup(group)`; add `kindsForGroup` (inverse of `marketGroupForKind`) to types. (3) **THE SURFACE** —
+rework `market/page.tsx` into `?group=` typed rails (mirror the classifieds `UnderlineTabs` pattern), each
+group its own Suspense grid; **generalize `market/[id]/page.tsx` (drop the `vertical==='maker'` 404) in the
+SAME phase** or space cards dead-end; services need a price-model-aware card (From/Free/Enquire + duration,
+lift from `SpaceOfferingsBlock`); rewrite the stale `TODO(services-marketplace)` in `offerings.tsx` to read
+the table.
+
+**Phase 6 — Public per-Space Shop tab** (3 pieces, no shell edits). (1) register the tab in the ONE source
+`lib/spaces/profile-nav.ts` — read `readStorefrontConfig(space.preferences)` in `buildSpaceProfileNav`,
+push `{ href: \`${base}/shop\`, label: storefront.tabLabel }` only when `published` (mirror the Community/
+Reviews hardcoded tabs). (2) new `listPublicSpaceCatalog(spaceId)` = `listSpaceCatalog` + `.eq('status',
+'active')` (never reuse `listSpaceCatalog` publicly — it leaks draft/archived). (3) new
+`(profile)/shop/page.tsx` cloned from `reviews/page.tsx`, **double-gated** (`notFound()` when
+`!published` — the nav gate only hides the tab, the URL is still reachable); group by `marketGroupForKind`
+into Products/Services/Tickets sections; mirror the `SpaceOfferingsBlock` card grammar but format with
+`formatCents(priceCents)` (SpaceOfferingsBlock is bound to `SpaceOffering`, so replicate markup, don't reuse).
+
 ## 6. Research-backed principles (lean sweep, 2026-07-09)
 
 | Principle | Applied as |
