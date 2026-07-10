@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { isPaid } from '@/lib/core/entitlement'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import type { ProductStatus } from '@/lib/commerce/types'
@@ -13,8 +14,12 @@ import type { ProductStatus } from '@/lib/commerce/types'
 // "payments aren't on yet" while billing is disabled — never a half-charge.
 
 export async function createMakerProductAction(formData: FormData): Promise<void> {
-  const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/market/sell')
+  const profile = await getCallerProfile()
+  if (!profile) redirect('/sign-in?next=/market/sell')
+  // Selling in the Market is a paid-member feature (ADR-593); free members trade in Classifieds.
+  // Server-side gate mirrors the page gate (defense in depth) — a free member is sent to upgrade.
+  if (!isPaid(profile.membershipTier)) redirect('/upgrade')
+  const profileId = profile.id
 
   const title = String(formData.get('title') ?? '').trim()
   const priceDollars = Number(formData.get('price'))
