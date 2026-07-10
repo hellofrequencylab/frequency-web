@@ -41,10 +41,16 @@ export function StorefrontTab({
           />
           <p className="mt-1 text-xs text-subtle">This is the label members see for your storefront tab.</p>
         </div>
-        <label className="flex items-center gap-2 text-sm text-text">
-          <input type="checkbox" name="published" defaultChecked={cfg.published} disabled={readOnly} className="h-4 w-4" />
-          Show the Shop tab on my public page
-        </label>
+        <div>
+          <label className="flex items-center gap-2 text-sm text-text">
+            <input type="checkbox" name="published" defaultChecked={cfg.published} disabled={readOnly} className="h-4 w-4" />
+            Show the Shop tab on my public page
+          </label>
+          <p className="mt-1 text-xs text-subtle">
+            When this is on, your Shop tab shows on your page with every Live item. Turn it off to hide the
+            whole tab.
+          </p>
+        </div>
         {!readOnly && (
           <div className="flex justify-end">
             <button type="submit" className={buttonClasses('primary', 'md')}>

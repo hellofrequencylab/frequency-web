@@ -100,7 +100,7 @@ export default async function MakerManagePage() {
       action={
         <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
           <Plus className="h-4 w-4" aria-hidden />
-          List a piece
+          List a product
         </Link>
       }
     >
@@ -143,12 +143,12 @@ export default async function MakerManagePage() {
         <EmptyState
           icon={Hammer}
           variant="first-use"
-          title="Your shelf is empty."
-          description="List your first piece. It shows up in Makers right away."
+          title="Nothing listed yet."
+          description="List your first product. It shows up in the Market right away."
           action={
             <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
               <Plus className="h-4 w-4" aria-hidden />
-              List a piece
+              List a product
             </Link>
           }
         />

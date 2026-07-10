@@ -1,6 +1,7 @@
 import { Package } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
+import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button'
 import { listSpaceCatalog } from '@/lib/commerce/products'
 import { marketGroupForKind, type CommerceProduct } from '@/lib/commerce/types'
 import {
@@ -51,6 +52,10 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                   <option value="service">Service</option>
                   <option value="ticket">Ticket</option>
                 </select>
+                <p className="mt-1 text-xs text-subtle">
+                  Product ships or hands over. Service is a booking on your calendar. Ticket is a spot at
+                  one of your events.
+                </p>
               </div>
               <div>
                 <label htmlFor="price" className={LABEL}>
@@ -71,19 +76,26 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
               </label>
               <textarea id="description" name="description" rows={3} maxLength={2000} className={FIELD} placeholder="What it is, what is included." />
             </div>
-            <fieldset className="grid grid-cols-1 gap-4 rounded-xl border border-border/70 p-3 sm:grid-cols-2">
-              <legend className="px-1 text-xs text-subtle">For services (optional)</legend>
-              <div>
-                <label htmlFor="durationMin" className={LABEL}>
-                  Duration (minutes)
-                </label>
-                <input id="durationMin" name="durationMin" type="number" min="0" step="1" className={FIELD} placeholder="e.g. 60" />
-              </div>
-              <div>
-                <label htmlFor="deposit" className={LABEL}>
-                  Deposit (USD)
-                </label>
-                <input id="deposit" name="deposit" type="number" min="0" step="0.01" className={FIELD} placeholder="e.g. 10" />
+            <fieldset className="space-y-3 rounded-xl border border-border/70 p-3">
+              <legend className="px-1 text-xs text-subtle">For services</legend>
+              <p className="text-xs text-muted">
+                A service is a booking on your calendar. Members pick a time from your Booking hours, so set
+                those in Booking first or there will be no times to pick.
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="durationMin" className={LABEL}>
+                    Duration (minutes)
+                  </label>
+                  <input id="durationMin" name="durationMin" type="number" min="0" step="1" className={FIELD} placeholder="e.g. 60" />
+                </div>
+                <div>
+                  <label htmlFor="deposit" className={LABEL}>
+                    Deposit (USD)
+                  </label>
+                  <input id="deposit" name="deposit" type="number" min="0" step="0.01" className={FIELD} placeholder="e.g. 10" />
+                  <p className="mt-1 text-xs text-subtle">Bookings charge the full price at checkout for now. Deposits are coming.</p>
+                </div>
               </div>
             </fieldset>
             <div className="flex justify-end">
@@ -93,6 +105,13 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
             </div>
           </form>
         </details>
+      )}
+
+      {items.length > 0 && !readOnly && (
+        <p className="text-xs text-muted">
+          Publish shows an item on your Shop tab. Add to Market also lists it in the community Market,
+          where anyone can find it.
+        </p>
       )}
 
       {items.length === 0 ? (
@@ -118,7 +137,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                   {p.marketPublished ? (
                     <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, false)}>
                       <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                        In Market
+                        Remove from Market
                       </button>
                     </form>
                   ) : (
@@ -142,9 +161,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                     </form>
                   )}
                   <form action={deleteSpaceProductAction.bind(null, slug, p.id)}>
-                    <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                      Delete
-                    </button>
+                    <ConfirmSubmitButton confirm="Delete this item? This cannot be undone." label="Delete" />
                   </form>
                 </div>
               )}
