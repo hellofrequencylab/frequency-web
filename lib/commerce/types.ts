@@ -25,6 +25,9 @@ export interface CommerceProduct {
   category: string | null
   status: ProductStatus
   bookingSpaceId: string | null
+  /** Opt-in to appear in the global Market umbrella (ADR-593). status='active' shows a listing in the
+   *  Space's own Shop; this flag additionally publishes it to the cross-space Market. */
+  marketPublished: boolean
   metadata: Record<string, unknown>
   isDemo: boolean
   createdAt: string
@@ -44,6 +47,9 @@ export interface ProductInput {
   stock?: number | null
   category?: string | null
   bookingSpaceId?: string | null
+  /** Opt this listing into the global Market on create (the maker path sets true; Space listings
+   *  default false and opt in per-listing from the Shop console). */
+  marketPublished?: boolean
 }
 
 export interface CheckoutInput {
@@ -60,6 +66,9 @@ export interface CheckoutInput {
 /** The three typed rails the Market umbrella groups listings into. */
 export type MarketGroup = 'products' | 'services' | 'tickets'
 
+/** The Market groups in display order (Products, Services, Tickets). */
+export const MARKET_GROUPS: readonly MarketGroup[] = ['products', 'services', 'tickets']
+
 /** Map a product_kind to its Market group (ADR-593). Physical/digital = Products; service/booking =
  *  Services; ticket = Tickets. PURE. */
 export function marketGroupForKind(kind: ProductKind): MarketGroup {
@@ -72,6 +81,25 @@ export function marketGroupForKind(kind: ProductKind): MarketGroup {
     default:
       return 'products'
   }
+}
+
+/** The product_kinds that make up a Market group (the inverse of marketGroupForKind), so the umbrella
+ *  reader can filter in SQL rather than post-fetch. PURE. */
+export function kindsForGroup(group: MarketGroup): ProductKind[] {
+  switch (group) {
+    case 'tickets':
+      return ['ticket']
+    case 'services':
+      return ['service', 'booking']
+    default:
+      return ['physical', 'digital']
+  }
+}
+
+/** Narrow an arbitrary value to a MarketGroup, or null (default-deny). PURE. */
+export function asMarketGroup(raw: string | string[] | undefined): MarketGroup | null {
+  const v = Array.isArray(raw) ? raw[0] : raw
+  return v === 'products' || v === 'services' || v === 'tickets' ? v : null
 }
 
 /** The pricing model a service quotes at (mirrors the retiring SpaceOffering.priceModel so the

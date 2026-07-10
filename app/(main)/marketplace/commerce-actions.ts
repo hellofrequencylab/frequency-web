@@ -34,6 +34,8 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
+    // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-593).
+    marketPublished: true,
   })
   if (!product) return
 

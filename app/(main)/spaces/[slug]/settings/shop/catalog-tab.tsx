@@ -3,7 +3,12 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { listSpaceCatalog } from '@/lib/commerce/products'
 import { marketGroupForKind, type CommerceProduct } from '@/lib/commerce/types'
-import { createSpaceProductAction, setSpaceProductStatusAction, deleteSpaceProductAction } from './shop-actions'
+import {
+  createSpaceProductAction,
+  setSpaceProductStatusAction,
+  deleteSpaceProductAction,
+  setSpaceListingMarketPublishedAction,
+} from './shop-actions'
 
 // The Catalog tab of the Shop console (ADR-593). Lists THIS space's commerce_products (owner_space_id
 // scoped — never the operator-wide list) and CRUDs them through the Space-gated shop actions. Server
@@ -105,10 +110,24 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                 <p className="truncate font-medium text-text">{p.title}</p>
                 <p className="text-xs text-muted">
                   {GROUP_LABEL[marketGroupForKind(p.productKind)]} · {usd(p.priceCents)} · {STATUS_LABEL[p.status]}
+                  {p.marketPublished ? ' · In Market' : ''}
                 </p>
               </div>
               {!readOnly && (
                 <div className="flex items-center gap-2">
+                  {p.marketPublished ? (
+                    <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, false)}>
+                      <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                        In Market
+                      </button>
+                    </form>
+                  ) : (
+                    <form action={setSpaceListingMarketPublishedAction.bind(null, slug, p.id, true)}>
+                      <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                        Add to Market
+                      </button>
+                    </form>
+                  )}
                   {p.status === 'active' ? (
                     <form action={setSpaceProductStatusAction.bind(null, slug, p.id, 'draft')}>
                       <button type="submit" className={buttonClasses('secondary', 'sm')}>

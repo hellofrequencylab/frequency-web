@@ -5,14 +5,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
-import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus } from './types'
+import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup } from './types'
+import { kindsForGroup } from './types'
 
 function db(): SupabaseClient {
   return createAdminClient()
 }
 
 const PRODUCT_COLS =
-  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, metadata, is_demo, created_at, updated_at'
+  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, market_published, metadata, is_demo, created_at, updated_at'
 
 function rowToProduct(r: Record<string, unknown>): CommerceProduct {
   return {
@@ -32,6 +33,7 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     category: (r.category as string) ?? null,
     status: r.status as ProductStatus,
     bookingSpaceId: (r.booking_space_id as string) ?? null,
+    marketPublished: !!r.market_published,
     metadata: (r.metadata as Record<string, unknown>) ?? {},
     isDemo: !!r.is_demo,
     createdAt: r.created_at as string,
@@ -89,6 +91,7 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
       stock: input.stock ?? null,
       category: input.category ?? null,
       booking_space_id: input.bookingSpaceId ?? null,
+      market_published: input.marketPublished ?? false,
       status: 'draft',
     })
     .select(PRODUCT_COLS)
@@ -144,6 +147,35 @@ export async function listSpaceCatalog(spaceId?: string): Promise<CommerceProduc
 export async function productOwnerSpaceId(id: string): Promise<string | null> {
   const { data } = await db().from('commerce_products').select('owner_space_id').eq('id', id).maybeSingle()
   return (data as { owner_space_id?: string } | null)?.owner_space_id ?? null
+}
+
+/** THE MARKET UMBRELLA READER (ADR-593): active + market-published listings across makers (owner_kind
+ *  'profile') and Business Spaces ('space'), optionally narrowed to one typed group + a title search.
+ *  The resolution of TODO(services-marketplace): after the Phase 3 backfill the cross-space browse is a
+ *  plain commerce_products query. Gated on market_published (NOT status alone), so a Space's active-in-
+ *  its-own-Shop listing only reaches the global Market when the owner opts in. */
+export async function listMarketListings(
+  opts: { group?: MarketGroup; q?: string; limit?: number } = {},
+): Promise<CommerceProduct[]> {
+  let query = db()
+    .from('commerce_products')
+    .select(PRODUCT_COLS)
+    .eq('status', 'active')
+    .eq('market_published', true)
+    .in('owner_kind', ['profile', 'space'])
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(opts.limit ?? 40, 1), 100))
+  if (opts.group) query = query.in('product_kind', kindsForGroup(opts.group))
+  if (opts.q?.trim()) query = query.ilike('title', `%${opts.q.trim()}%`)
+  const { data } = await query
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
+/** Set a listing's Market opt-in (the Shop console Catalog "Publish to Market" toggle). Caller (server
+ *  action) has authorized the owner. */
+export async function setProductMarketPublished(id: string, published: boolean): Promise<void> {
+  const { error } = await db().from('commerce_products').update({ market_published: published }).eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 export interface ProductPatch {

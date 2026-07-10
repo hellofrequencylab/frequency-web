@@ -12,6 +12,7 @@ import {
   deleteProduct,
   updateProduct,
   productOwnerSpaceId,
+  setProductMarketPublished,
 } from '@/lib/commerce/products'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig } from '@/lib/commerce/types'
@@ -103,6 +104,14 @@ export async function setSpaceProductStatusAction(slug: string, id: string, stat
 export async function deleteSpaceProductAction(slug: string, id: string): Promise<void> {
   if (!(await gateSpaceItem(slug, id))) return
   await deleteProduct(id)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Toggle whether a Space listing appears in the global Market (Phase 5, ADR-593). Separate from
+ *  status='active' (which only makes it live in the Space's own Shop). Owner-gated to this Space's item. */
+export async function setSpaceListingMarketPublishedAction(slug: string, id: string, published: boolean): Promise<void> {
+  if (!(await gateSpaceItem(slug, id))) return
+  await setProductMarketPublished(id, published)
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 
