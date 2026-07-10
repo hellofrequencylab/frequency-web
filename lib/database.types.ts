@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       achievements: {
@@ -274,6 +299,57 @@ export type Database = {
           },
         ]
       }
+      app_overrides: {
+        Row: {
+          app_id: string
+          enabled: boolean
+          min_role: string | null
+          note: string | null
+          position: number | null
+          scope_key: string
+          space_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          app_id: string
+          enabled?: boolean
+          min_role?: string | null
+          note?: string | null
+          position?: number | null
+          scope_key: string
+          space_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          app_id?: string
+          enabled?: boolean
+          min_role?: string | null
+          note?: string | null
+          position?: number | null
+          scope_key?: string
+          space_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_overrides_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           answers: Json
@@ -443,8 +519,75 @@ export type Database = {
           },
         ]
       }
+      business_intake: {
+        Row: {
+          applied_at: string | null
+          budget_spent: number
+          created_at: string
+          created_by: string
+          draft: Json
+          error: string | null
+          id: string
+          inputs: Json
+          ledger: Json
+          mode: string
+          raw_sources: Json
+          status: string
+          target_space_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          budget_spent?: number
+          created_at?: string
+          created_by: string
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          ledger?: Json
+          mode?: string
+          raw_sources?: Json
+          status?: string
+          target_space_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          budget_spent?: number
+          created_at?: string
+          created_by?: string
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          ledger?: Json
+          mode?: string
+          raw_sources?: Json
+          status?: string
+          target_space_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_intake_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_intake_target_space_id_fkey"
+            columns: ["target_space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
+          audience_filter: Json | null
           body: string
           created_at: string
           created_by: string | null
@@ -458,6 +601,7 @@ export type Database = {
           subject: string
         }
         Insert: {
+          audience_filter?: Json | null
           body: string
           created_at?: string
           created_by?: string | null
@@ -471,6 +615,7 @@ export type Database = {
           subject: string
         }
         Update: {
+          audience_filter?: Json | null
           body?: string
           created_at?: string
           created_by?: string | null
@@ -1329,6 +1474,7 @@ export type Database = {
           id: string
           images: string[]
           is_demo: boolean
+          market_published: boolean
           metadata: Json
           owner_kind: string
           owner_profile_id: string | null
@@ -1351,6 +1497,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_demo?: boolean
+          market_published?: boolean
           metadata?: Json
           owner_kind: string
           owner_profile_id?: string | null
@@ -1373,6 +1520,7 @@ export type Database = {
           id?: string
           images?: string[]
           is_demo?: boolean
+          market_published?: boolean
           metadata?: Json
           owner_kind?: string
           owner_profile_id?: string | null
@@ -1578,6 +1726,7 @@ export type Database = {
       }
       contacts: {
         Row: {
+          at_risk: boolean
           consent_state: string
           created_at: string
           display_name: string | null
@@ -1588,11 +1737,14 @@ export type Database = {
           last_seen_at: string | null
           meta: Json
           profile_id: string | null
+          risk_factors: Json
+          risk_score: number
           source: string | null
           space_id: string | null
           updated_at: string
         }
         Insert: {
+          at_risk?: boolean
           consent_state?: string
           created_at?: string
           display_name?: string | null
@@ -1603,11 +1755,14 @@ export type Database = {
           last_seen_at?: string | null
           meta?: Json
           profile_id?: string | null
+          risk_factors?: Json
+          risk_score?: number
           source?: string | null
           space_id?: string | null
           updated_at?: string
         }
         Update: {
+          at_risk?: boolean
           consent_state?: string
           created_at?: string
           display_name?: string | null
@@ -1618,6 +1773,8 @@ export type Database = {
           last_seen_at?: string | null
           meta?: Json
           profile_id?: string | null
+          risk_factors?: Json
+          risk_score?: number
           source?: string | null
           space_id?: string | null
           updated_at?: string
@@ -7708,6 +7865,67 @@ export type Database = {
           },
         ]
       }
+      practice_timer_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          mode: string
+          paused_at: string | null
+          practice_id: string | null
+          profile_id: string
+          seconds_target: number | null
+          setup: Json
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mode: string
+          paused_at?: string | null
+          practice_id?: string | null
+          profile_id: string
+          seconds_target?: number | null
+          setup?: Json
+          started_at: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mode?: string
+          paused_at?: string | null
+          practice_id?: string | null
+          profile_id?: string
+          seconds_target?: number | null
+          setup?: Json
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_timer_sessions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_timer_sessions_practice_id_fkey"
+            columns: ["practice_id"]
+            isOneToOne: false
+            referencedRelation: "practices_ranked"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_timer_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       practices: {
         Row: {
           body: string | null
@@ -9414,6 +9632,60 @@ export type Database = {
           },
         ]
       }
+      space_automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          name: string
+          space_id: string
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          space_id: string
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          space_id?: string
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_automation_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_automation_rules_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       space_availability: {
         Row: {
           created_at: string
@@ -9462,6 +9734,8 @@ export type Database = {
           id: string
           member_profile_id: string
           note: string | null
+          order_id: string | null
+          product_id: string | null
           space_id: string
           starts_at: string
           status: string
@@ -9472,6 +9746,8 @@ export type Database = {
           id?: string
           member_profile_id: string
           note?: string | null
+          order_id?: string | null
+          product_id?: string | null
           space_id: string
           starts_at: string
           status?: string
@@ -9482,6 +9758,8 @@ export type Database = {
           id?: string
           member_profile_id?: string
           note?: string | null
+          order_id?: string | null
+          product_id?: string | null
           space_id?: string
           starts_at?: string
           status?: string
@@ -9492,6 +9770,20 @@ export type Database = {
             columns: ["member_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_products"
             referencedColumns: ["id"]
           },
           {
@@ -9537,6 +9829,172 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "space_donation_asks_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_drip_enrollments: {
+        Row: {
+          contact_id: string
+          created_at: string
+          current_step: number
+          email: string
+          id: string
+          last_sent_at: string | null
+          next_run_at: string
+          sequence_id: string
+          space_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          current_step?: number
+          email: string
+          id?: string
+          last_sent_at?: string | null
+          next_run_at: string
+          sequence_id: string
+          space_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          current_step?: number
+          email?: string
+          id?: string
+          last_sent_at?: string | null
+          next_run_at?: string
+          sequence_id?: string
+          space_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_drip_enrollments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_drip_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "space_drip_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_drip_enrollments_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_drip_sequences: {
+        Row: {
+          audience: Json
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          id: string
+          name: string
+          space_id: string
+          updated_at: string
+        }
+        Insert: {
+          audience?: Json
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name: string
+          space_id: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: Json
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          id?: string
+          name?: string
+          space_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_drip_sequences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_drip_sequences_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_drip_steps: {
+        Row: {
+          body: string
+          created_at: string
+          delay_hours: number
+          enabled: boolean
+          id: string
+          sequence_id: string
+          space_id: string
+          step_order: number
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          id?: string
+          sequence_id: string
+          space_id: string
+          step_order?: number
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          id?: string
+          sequence_id?: string
+          space_id?: string
+          step_order?: number
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_drip_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "space_drip_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_drip_steps_space_id_fkey"
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
@@ -10857,6 +11315,50 @@ export type Database = {
           },
           {
             foreignKeyName: "support_tickets_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supporter_contributions: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          profile_id: string | null
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          succeeded_at: string | null
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          profile_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          succeeded_at?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          profile_id?: string | null
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          succeeded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supporter_contributions_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -13635,6 +14137,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       achievement_category: [
