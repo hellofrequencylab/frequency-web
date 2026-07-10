@@ -6,6 +6,7 @@ import { createTicketCheckout, refundTicket } from '@/lib/billing/tickets'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { setRsvpStatus } from '@/app/(main)/events/actions'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 
 // Start a ticket purchase: validates + records a pending ticket and returns the
 // hosted Stripe Checkout URL for the client to redirect to (ADR-177). Real money,
@@ -19,6 +20,10 @@ export async function startTicket(
   eventId: string,
   opts?: { qty?: number; ticketTypeId?: string | null; amountCents?: number | null },
 ): Promise<ActionResult<{ url?: string; free?: boolean }>> {
+  // Hard server-side off while platform payments are dormant (lib/events/ticketing):
+  // a stale link or client must never reach Stripe.
+  if (!TICKETING_ENABLED) return fail('Ticket sales are off right now.')
+
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return fail('Sign in to buy a ticket.')
 

@@ -47,6 +47,7 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { setEventContext } from '@/lib/events/active-event'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -536,6 +537,11 @@ export default async function EventDetailPage({
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
   const allTiersSoldOut = hasTiers && tiers.every((t) => t.soldOut)
+  // Checkout is live for this event only when the platform switch is on AND the event
+  // is priced. While ticketing is off (lib/events/ticketing) a priced event keeps its
+  // price header but behaves like a free event everywhere else: RSVP stays open and
+  // no buy/closed/sold-out states render.
+  const ticketingActive = TICKETING_ENABLED && isPaidEvent
 
   // Host sales + refunds (EVENTS-SYSTEM §7). The host (anyone who can manage this
   // event) sees the succeeded tickets and can refund them. RLS lets the host read
@@ -759,7 +765,11 @@ export default async function EventDetailPage({
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
-      {isPaidEvent && !event.is_cancelled ? (
+      {/* Price card for a priced event. With ticketing ON it carries the full checkout
+          cascade; with ticketing OFF (lib/events/ticketing) it keeps ONLY the price
+          header (plus the host's Venmo handle when set) and the RSVP card below opens
+          up like a free event — no closed/sold-out/sign-in/buy states. */}
+      {isPaidEvent && !event.is_cancelled && (
         <div className="rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2">
             <Ticket className="h-4 w-4 text-primary" />
@@ -767,31 +777,34 @@ export default async function EventDetailPage({
               {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
             </span>
           </div>
-          <div className="mt-3">
-            {ownsTicket ? (
-              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
-                <Check className="h-4 w-4" /> Ticket confirmed
-              </p>
-            ) : hasEnded ? (
-              <p className="text-sm text-muted">Ticket sales have closed.</p>
-            ) : allTiersSoldOut ? (
-              <p className="text-sm text-muted">Sold out.</p>
-            ) : !myProfileId ? (
-              <p className="text-sm text-muted">Sign in to get your ticket.</p>
-            ) : isHost ? (
-              <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
-            ) : hostPayoutReady ? (
-              <TicketButton
-                eventId={event.id}
-                priceLabel={priceLabel}
-                tiers={hasTiers ? tiers : undefined}
-              />
-            ) : (
-              <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
-            )}
-          </div>
+          {TICKETING_ENABLED && (
+            <div className="mt-3">
+              {ownsTicket ? (
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                  <Check className="h-4 w-4" /> Ticket confirmed
+                </p>
+              ) : hasEnded ? (
+                <p className="text-sm text-muted">Ticket sales have closed.</p>
+              ) : allTiersSoldOut ? (
+                <p className="text-sm text-muted">Sold out.</p>
+              ) : !myProfileId ? (
+                <p className="text-sm text-muted">Sign in to get your ticket.</p>
+              ) : isHost ? (
+                <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+              ) : hostPayoutReady ? (
+                <TicketButton
+                  eventId={event.id}
+                  priceLabel={priceLabel}
+                  tiers={hasTiers ? tiers : undefined}
+                />
+              ) : (
+                <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
+              )}
+            </div>
+          )}
         </div>
-      ) : !event.is_cancelled && myProfileId && !isPast ? (
+      )}
+      {ticketingActive ? null : !event.is_cancelled && myProfileId && !isPast ? (
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
           {/* RSVP is open to every member on any event, INCLUDING the host of their own
               gathering (a host counts themselves in like anyone else) — it is never
@@ -868,18 +881,19 @@ export default async function EventDetailPage({
   // Whether the mobile bottom bar should appear (there's a real action to take). A host
   // CAN RSVP to their own FREE event (so the bar shows), but never buys a ticket to it —
   // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
+  // While ticketing is off, a priced event rides the RSVP path (no "Get ticket" CTA).
   const showBottomBar =
-    !event.is_cancelled && !hasEnded && (isPaidEvent ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
-  const bottomBarLabel = isPaidEvent
+    !event.is_cancelled && !hasEnded && (ticketingActive ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
+  const bottomBarLabel = ticketingActive
     ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
     : isGoing
       ? 'Going'
       : capacityInfo.isFull
         ? 'Join waitlist'
         : 'RSVP'
-  const bottomBarStatus = isPaidEvent
+  const bottomBarStatus = ticketingActive
     ? hasTiers ? 'Tickets' : priceLabel
-    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
+    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : isPaidEvent ? priceLabel : 'Free'
 
   // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior
   // module (components/widgets/events/*) reads it without prop-drilling — then the single
