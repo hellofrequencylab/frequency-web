@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
   createProduct,
@@ -29,6 +30,9 @@ async function gateSpaceWrite(slug: string): Promise<{ spaceId: string } | null>
   if (!space) return null
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return null
+  // The Shop is a Business-account feature; enforce the same space-type gate as the page here too, since
+  // server actions are addressable independently of the page render (defense in depth, ADR-593).
+  if (!isConsoleSpaceType(space.type)) return null
   return { spaceId: space.id }
 }
 
@@ -108,6 +112,7 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   if (!space) return
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return
+  if (!isConsoleSpaceType(space.type)) return
 
   const current = readStorefrontConfig(space.preferences)
   const tabLabel = String(formData.get('tabLabel') ?? '').trim().slice(0, 40) || current.tabLabel

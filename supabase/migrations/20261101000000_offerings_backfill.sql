@@ -31,9 +31,13 @@ select
   'service',
   left(o->>'title', 200),
   nullif(o->>'blurb', ''),
+  -- Numeric fields are cast only when the text is actually numeric, so a blank or malformed value
+  -- (e.g. "durationMinutes":"") yields NULL instead of aborting the whole INSERT. Prod applied clean
+  -- (data was well-formed); this guard makes a fresh `db reset` in any environment robust too.
   case
     when coalesce(o->>'priceModel', 'fixed') in ('free', 'contact') then 0
-    else round(coalesce((o->>'price')::numeric, 0) * 100)::int
+    when o->>'price' ~ '^[0-9]+(\.[0-9]+)?$' then round((o->>'price')::numeric * 100)::int
+    else 0
   end,
   lower(coalesce(nullif(o->>'currency', ''), 'USD')),
   null,
@@ -42,17 +46,16 @@ select
     'source', 'offering_backfill',
     'service', jsonb_strip_nulls(jsonb_build_object(
       'priceModel',   nullif(o->>'priceModel', ''),
-      'durationMin',  (o->>'durationMinutes')::int,
-      'depositCents', case when (o->>'deposit') is not null
-                          then round((o->>'deposit')::numeric * 100)::int end,
+      'durationMin',  case when o->>'durationMinutes' ~ '^[0-9]+$' then (o->>'durationMinutes')::int end,
+      'depositCents', case when o->>'deposit' ~ '^[0-9]+(\.[0-9]+)?$' then round((o->>'deposit')::numeric * 100)::int end,
       'recurrence',   nullif(o->>'recurring', 'once'),
       'slidingScale', case when (o ? 'slidingScaleMin') or (o ? 'slidingScaleMax') then true end
     )),
     -- Lossless preservation of fields ServiceConfig has no home for yet (packageCount, band).
     'legacyOffering', jsonb_strip_nulls(jsonb_build_object(
-      'packageCount',    (o->>'packageCount')::int,
-      'slidingScaleMin', (o->>'slidingScaleMin')::numeric,
-      'slidingScaleMax', (o->>'slidingScaleMax')::numeric
+      'packageCount',    case when o->>'packageCount' ~ '^[0-9]+$' then (o->>'packageCount')::int end,
+      'slidingScaleMin', case when o->>'slidingScaleMin' ~ '^[0-9]+(\.[0-9]+)?$' then (o->>'slidingScaleMin')::numeric end,
+      'slidingScaleMax', case when o->>'slidingScaleMax' ~ '^[0-9]+(\.[0-9]+)?$' then (o->>'slidingScaleMax')::numeric end
     ))
   )
 from public.spaces s

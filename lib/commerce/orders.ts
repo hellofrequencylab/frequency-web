@@ -102,7 +102,9 @@ export async function listSpaceOrders(spaceId: string, opts: { limit?: number } 
     .from('commerce_orders')
     .select(ORDER_COLS)
     .eq('owner_space_id', spaceId)
-    .neq('status', 'pending')
+    // Settled + refunded only: a failed / cancelled checkout is not a sale, so it must not pad the
+    // Orders list or the count that sits beside the money figures (which sum settled orders only).
+    .in('status', ['paid', 'fulfilled', 'refunded'])
     .order('created_at', { ascending: false })
     .limit(LIMIT(opts.limit))
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
@@ -138,12 +140,15 @@ export async function spaceEarningsSummary(spaceId: string, sinceDays?: number):
     for (const r of rows) {
       const amt = Number(r.amount_cents) || 0
       const fee = Number(r.platform_fee_cents) || 0
-      out.orderCount += 1
+      // Count only meaningful (settled / refunded) orders, so orderCount agrees with the money figures.
+      // A failed / cancelled row contributes nothing and must not inflate the count.
       if (r.status === 'refunded') {
         out.refundedCents += amt
+        out.orderCount += 1
       } else if (r.status === 'paid' || r.status === 'fulfilled') {
         out.grossCents += amt
         out.feeCents += fee
+        out.orderCount += 1
       }
     }
     out.netCents = out.grossCents - out.feeCents

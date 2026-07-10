@@ -24,7 +24,9 @@ export default async function MarketSellPage() {
 
   // Free members trade in Classifieds; SELLING in the Market is a paid-member feature. The
   // member editor is deliberately thin, and selling is the first rung of the upgrade ladder.
-  if (!isPaid(profile.membershipTier)) {
+  // Gate on the REAL (never beta-overridden) tier, per the creation-gate convention (auth.ts, ADR-414):
+  // a genuinely free member still meets the "upgrade to sell" wall during beta, so the funnel fires.
+  if (!isPaid(profile.realMembershipTier)) {
     return (
       <FocusTemplate
         title="Selling is a paid feature"
