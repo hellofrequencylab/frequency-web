@@ -2849,21 +2849,30 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          invited_at: string | null
           profile_id: string
+          responded_at: string | null
+          status: string
         }
         Insert: {
           added_by?: string | null
           created_at?: string
           event_id: string
           id?: string
+          invited_at?: string | null
           profile_id: string
+          responded_at?: string | null
+          status?: string
         }
         Update: {
           added_by?: string | null
           created_at?: string
           event_id?: string
           id?: string
+          invited_at?: string | null
           profile_id?: string
+          responded_at?: string | null
+          status?: string
         }
         Relationships: [
           {
