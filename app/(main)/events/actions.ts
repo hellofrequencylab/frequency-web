@@ -48,6 +48,13 @@ function parseGalleryPaths(raw: string | null): string[] {
   }
 }
 
+// Venmo handle (shown next to the price until payments turn on): strip a leading @,
+// keep Venmo's own charset, cap the length. Empty → null (clears the column on edit).
+function parseVenmoHandle(raw: string | null): string | null {
+  const cleaned = (raw ?? '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30)
+  return cleaned || null
+}
+
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
 const VALID_VISIBILITY = ['public', 'unlisted', 'circle_only', 'private']
 const VALID_ENERGY = ['high_activation', 'grounding', 'social', 'ceremonial']
@@ -139,6 +146,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   // Additional gallery images (ordered storage paths in the same bucket).
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  // Host's Venmo handle, shown next to the price while ticket sales are off.
+  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
   // Event time zone (lib/time/zone): the venue's coordinates aren't known at insert (geocoding
   // runs async below), so seed the column with the creator's submitted zone when the form sends
@@ -213,6 +222,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
+      // venmo_handle is newer than the generated DB types → rides the payload cast below.
+      venmo_handle: venmoHandle,
       // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
       // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
       time_zone: timeZone,
@@ -324,6 +335,7 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
   const admin = createAdminClient()
   const { data: ev } = await admin
@@ -351,6 +363,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
+      // venmo_handle is newer than the generated DB types → rides the payload cast below.
+      venmo_handle: venmoHandle,
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }

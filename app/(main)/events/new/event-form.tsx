@@ -100,6 +100,8 @@ export interface EventFormInitial {
   coverImagePath: string
   /** Additional gallery image paths (event-media bucket), beyond the cover. */
   galleryImagePaths: string[]
+  /** Host's Venmo handle (no @) — shown next to the price until payments turn on. */
+  venmoHandle: string
 }
 
 export function EventForm({
@@ -167,6 +169,7 @@ export function EventForm({
   const [country, setCountry] = useState(initial?.country ?? '')
   const [coverImagePath, setCoverImagePath] = useState<string | null>(initial?.coverImagePath || null)
   const [galleryImagePaths, setGalleryImagePaths] = useState<string[]>(initial?.galleryImagePaths ?? [])
+  const [venmoHandle, setVenmoHandle] = useState(initial?.venmoHandle ?? '')
 
   // Client guard for the repeat-end date: when a cadence is set and an end is given,
   // it must be after the start day (the server re-validates the same rule). The until
@@ -206,6 +209,8 @@ export function EventForm({
     fd.set('visibility', visibility)
     if (capacity.trim()) fd.set('capacity', capacity.trim())
     if (energyTag) fd.set('energyTag', energyTag)
+    // Always sent (an empty value clears the handle on edit); the server sanitizes.
+    fd.set('venmoHandle', venmoHandle.trim())
 
     // Geolocation (EVENTS-REWORK B1). Attendance mode drives whether the address
     // geocodes; the structured fields resolve to a map point on save, online events
@@ -532,6 +537,24 @@ export function EventForm({
           disabled={isPending}
         />
         <p className="mt-1.5 text-2xs text-muted">Leave blank for unlimited.</p>
+      </div>
+
+      {/* Venmo (until payments turn on): where guests send the ticket money. Shown
+          next to the price on the event page when the event is priced. */}
+      <div className="space-y-1.5">
+        <Label className="text-sm text-text">
+          Venmo <span className="text-2xs font-normal text-subtle">(until payments turn on)</span>
+        </Label>
+        <Input
+          type="text"
+          value={venmoHandle}
+          onChange={(e) => setVenmoHandle(e.target.value)}
+          placeholder="@your-handle"
+          disabled={isPending}
+        />
+        <p className="mt-1.5 text-2xs text-muted">
+          Optional. Shown next to the ticket price so guests can pay you directly.
+        </p>
       </div>
 
       {/* Visibility */}

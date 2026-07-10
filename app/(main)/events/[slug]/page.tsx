@@ -246,6 +246,8 @@ export default async function EventDetailPage({
     city: string | null
     region: string | null
     postal_code: string | null
+    // Host's Venmo handle (no @) — shown next to the price while ticket sales are off.
+    venmo_handle: string | null
     // Event's IANA zone (newer than the generated types → untyped read). Drives every
     // is-past / check-in gate and the when-line abbrev via lib/time/zone.
     time_zone: string | null
@@ -260,7 +262,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, geog',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, venmo_handle, time_zone, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -800,6 +802,20 @@ export default async function EventDetailPage({
               {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
             </span>
           </div>
+          {/* Until payments turn on, a host can point guests at their Venmo. */}
+          {!TICKETING_ENABLED && extra?.venmo_handle && (
+            <p className="mt-3 text-sm text-muted">
+              Venmo{' '}
+              <a
+                href={`https://venmo.com/u/${extra.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary-strong hover:underline"
+              >
+                @{extra.venmo_handle}
+              </a>
+            </p>
+          )}
           {TICKETING_ENABLED && (
             <div className="mt-3">
               {ownsTicket ? (
