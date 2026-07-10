@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
+import { isError } from '@/lib/action-result'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
@@ -125,7 +127,11 @@ export function EventForm({
   // Sentinel scope for a standalone PUBLIC event (any Crew member — no circle needed).
   // createEvent reads scopeType='public' and places it in the creator's region.
   const PUBLIC_SCOPE = '__public__'
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // A failed save surfaces HERE (the actions return ActionResult); the popup stays
+  // open with the message instead of silently pretending success.
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
@@ -217,8 +223,15 @@ export function EventForm({
     }
 
     startTransition(async () => {
-      if (isEdit) await updateEvent(eventId, fd)
-      else await createEvent(fd)
+      setSubmitError(null)
+      const res = isEdit ? await updateEvent(eventId, fd) : await createEvent(fd)
+      if (isError(res)) {
+        // Keep the editor open and show what went wrong (mirrors the admin
+        // EventEditClient's error surface) — never close on a failed save.
+        setSubmitError(res.error)
+        return
+      }
+      router.push(`/events/${res.data.slug}`)
     })
   }
 
@@ -574,6 +587,12 @@ export function EventForm({
           className="resize-none leading-relaxed"
         />
       </div>
+
+      {submitError && (
+        <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+          {submitError}
+        </p>
+      )}
 
       <div className="flex items-center gap-3 pt-1">
         <button
