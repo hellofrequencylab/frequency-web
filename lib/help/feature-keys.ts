@@ -10,7 +10,7 @@
 export type FeatureArea =
   | 'community' // the group hierarchy and belonging
   | 'discovery' // finding people, groups, and gatherings
-  | 'content' // feeds, posts, broadcasts, practices, programs
+  | 'content' // feeds, posts, broadcasts, practices
   | 'comms' // messages, notifications, friends
   | 'engagement' // gamification: zaps, gems, ranks, store
   | 'account' // profile, settings, onboarding
@@ -50,7 +50,6 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'posts', label: 'Posts, reactions & comments', area: 'content', routes: ['/feed'], core: true },
   { key: 'broadcast', label: 'Broadcasts & dispatches', area: 'content', routes: ['/broadcast'], core: true },
   { key: 'practices', label: 'Practices', area: 'content', routes: ['/practices'], core: true },
-  { key: 'programs', label: 'Programs', area: 'content', routes: ['/programs'], core: false },
 
   // ── Comms ───────────────────────────────────────────────────────────────────
   { key: 'messages', label: 'Direct messages & rooms', area: 'comms', routes: ['/messages'], core: true },

@@ -27,7 +27,6 @@ export const SITE_DESTINATIONS: SiteDestination[] = [
   { group: 'Community', label: 'Events', path: '/events', value: 'Upcoming gatherings to RSVP to. Use at a venue to boost the next event.' },
   { group: 'Community', label: 'Channels', path: '/channels', value: 'Topic and event Channels to follow.' },
   { group: 'Community', label: 'Practices', path: '/practices', value: 'Weekly rituals members keep together — the retention loop.' },
-  { group: 'Community', label: 'Programs', path: '/programs', value: 'Frameworks to start and run a circle. Aim hosts here.' },
 
   // ── Network ─────────────────────────────────────────────────────────────────
   { group: 'Network', label: 'Member directory', path: '/people', value: 'Find members by interest and place.' },

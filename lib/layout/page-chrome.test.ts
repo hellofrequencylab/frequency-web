@@ -30,7 +30,6 @@ describe('railFor — the single source of truth for page chrome', () => {
       '/journeys/tune-in-b3fnjh',
       '/journeys/tune-in-b3fnjh/learn',
       '/journeys/tune-in-b3fnjh/edit',
-      '/programs',
       '/partners',
       '/broadcast',
       '/search',
