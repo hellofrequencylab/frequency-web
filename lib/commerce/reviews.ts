@@ -1,4 +1,4 @@
-// Product / listing-level reviews (ADR-597, Phase 8). A member leaves ONE 1-5 star rating +
+// Product / listing-level reviews (ADR-598, Phase 8). A member leaves ONE 1-5 star rating +
 // optional note on a commerce_products row (a Market listing or a Space Shop item); the
 // aggregate shows on the product card + detail. Mirrors the Space reviews shape
 // (lib/spaces/content-data.ts + content-actions.ts) — smallint rating, body, status

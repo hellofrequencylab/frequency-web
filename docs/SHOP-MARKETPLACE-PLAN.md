@@ -10,7 +10,7 @@
 > **Phase 7 (payments/earnings):** code-complete via Phases 1-3 (Orders/earnings tab, payout onboarding,
 > forced checkout + take-rate ladder); remaining work is the operator flag flip + launch posture.
 >
-> **Phase 8 (trust & safety):** built (2026-07-10, ADR-597) — product/listing reviews (`commerce_reviews`),
+> **Phase 8 (trust & safety):** built (2026-07-10, ADR-598) — product/listing reviews (`commerce_reviews`),
 > a member dispute/refund-request flow with an operator queue at `/admin/marketplace/disputes`
 > (`commerce_disputes`), and seller verification badges on cards/detail/storefront. Migration
 > `20261112000000_commerce_reviews.sql` is **written, NOT applied** — apply + regen `database.types.ts`, then
@@ -262,7 +262,7 @@ seller-brought reduced rate.
 | 5 | Market umbrella surface | Typed grouping + search + filters + collections; cross-space aggregation (resolves `TODO(services-marketplace)`) + publish-to-Market opt-in. | — |
 | 6 | Storefront + public Shop tab | Renameable tab, publish/visibility, ordering, reviews/ratings. | — |
 | 7 | Payments + earnings | Orders/earnings tab, payout onboarding, forced checkout + ladder enforced. | `host_payouts_enabled` |
-| 8 | Trust & safety | ✅ Product reviews (`commerce_reviews`), member dispute/refund queue (`commerce_disputes`), seller verification badges. ADR-597; migration written, not applied. | — |
+| 8 | Trust & safety | ✅ Product reviews (`commerce_reviews`), member dispute/refund queue (`commerce_disputes`), seller verification badges. ADR-598; migration written, not applied. | — |
 | 9 | Retire + docs/SEO sync | Remove old surfaces, redirects, help-center + Notion. | — |
 
 Phases 0–3 need no payments flag and stand up the authoring surface + funnel early.

@@ -13245,7 +13245,7 @@ umbrella (acceptable, unpublished). Payments stay double-gated OFF (`host_payout
 until Phase 7's launch posture. Regenerate `lib/database.types.ts` after apply (ADR-246). Phased
 build (P0–P9) tracked in `docs/SHOP-MARKETPLACE-PLAN.md`.
 
-## ADR-597: Marketplace trust & safety — product reviews, order disputes, seller verification badges
+## ADR-598: Marketplace trust & safety — product reviews, order disputes, seller verification badges
 
 **Status:** Accepted (2026-07-10) · Phase 8 of `docs/SHOP-MARKETPLACE-PLAN.md` · builds on ADR-596.
 

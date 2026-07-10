@@ -1,4 +1,4 @@
-// Seller verification signal for Market listings / storefronts (ADR-597, Phase 8). READ-ONLY:
+// Seller verification signal for Market listings / storefronts (ADR-598, Phase 8). READ-ONLY:
 // no new identity flow — this reads the verification state that already exists and derives a
 // single "is this seller verified" boolean the VerifiedBadge renders from.
 //

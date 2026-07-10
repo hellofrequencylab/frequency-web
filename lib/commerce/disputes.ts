@@ -1,4 +1,4 @@
-// Member-facing order disputes / refund requests (ADR-597, Phase 8). A buyer opens a dispute on
+// Member-facing order disputes / refund requests (ADR-598, Phase 8). A buyer opens a dispute on
 // their own order; it lands in a queue operators (and the seller, read-only) resolve. Mirrors the
 // reports triage shape (lib/commerce/reports.ts); the difference is a dispute is scoped to an ORDER
 // and resolving it can move money (refundCommerceOrder) once payments are on. Server-only (admin
