@@ -689,9 +689,11 @@ export default async function EventDetailPage({
 
   const cohosts = cohostsRaw as CohostView[]
   const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
-  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
-  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
-  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+  // Who may add a comment / photo: ANY signed-in member (the old RSVP-holder
+  // requirement was dropped so the event wall reads as open conversation; the
+  // server action createEventPost applies the same gate). Dispatches stay
+  // host/cohost-only below.
+  const canContribute = !!myProfileId
   const canDispatch = isHost || isCohost
 
   const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
