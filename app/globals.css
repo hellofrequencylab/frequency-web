@@ -22,6 +22,10 @@
   --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #FAF6EC;
+  /* Feed post-card surface — a neutral off-white (no yellow cast) that sits a
+     step darker than the pure-white composer so a post reads as a card and the
+     comment field reads as a bright input on top of it. */
+  --color-surface-post:      #F6F5F3;
 
   /* Borders */
   --color-border:           #E9E1D4;
@@ -182,6 +186,7 @@
   --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #FAF6EC;
+  --color-surface-post:      #F6F5F3;
   --color-border:            #E9E1D4;
   --color-border-strong:     #D8CDBB;
   --color-text:              #3D352A;
@@ -236,6 +241,8 @@
   --color-marketing-canvas:  #E3E8F1;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #F4F6FB;
+  /* Cool-neutral counterpart of the DAWN post surface (a step darker than white). */
+  --color-surface-post:      #F0F2F6;
 
   /* Borders — cool grey-blue hairlines. */
   --color-border:            #D5DBE6;
@@ -273,6 +280,8 @@
   --color-marketing-canvas: #120E07;
   --color-surface:          #211A10;
   --color-surface-elevated: #2B2415;
+  /* Post cards keep the elevated timber surface in dark mode. */
+  --color-surface-post:     #2B2415;
 
   --color-border:           #3C3220;
   --color-border-strong:    #50432B;
@@ -352,6 +361,7 @@
   --color-marketing-canvas: #080B12;
   --color-surface:          #161C28;
   --color-surface-elevated: #1F2736;
+  --color-surface-post:     #1F2736;
 
   /* Borders — cool slate. */
   --color-border:           #2A3445;
@@ -706,6 +716,7 @@
   --color-marketing-canvas: var(--color-marketing-canvas);
   --color-surface:          var(--color-surface);
   --color-surface-elevated: var(--color-surface-elevated);
+  --color-surface-post:     var(--color-surface-post);
 
   --color-border:           var(--color-border);
   --color-border-strong:    var(--color-border-strong);
