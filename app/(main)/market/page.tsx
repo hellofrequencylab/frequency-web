@@ -1,91 +1,33 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
-import { Store, Plus } from 'lucide-react'
-import { IndexTemplate } from '@/components/templates'
+import { Plus, ShoppingBag, Package, CalendarClock, Ticket } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Skeleton } from '@/components/ui/skeleton'
+import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
-import { MARKET_GROUPS, asMarketGroup, type MarketGroup } from '@/lib/commerce/types'
+import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
+import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
-// Market — the community commerce umbrella (ADR-596). One browse surface grouping Products / Services /
-// Tickets, aggregating market-published listings across makers (owner_kind='profile') and Business
-// Spaces ('space'). A ?group= rail narrows to one type; the default shows each non-empty group as a
-// section. Only listings the owner opted into the Market (market_published) appear. No em or en dashes.
+// Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
+// band, then Products / Services / Tickets rails aggregating market-published listings across makers and
+// Business Spaces. A ?group= narrows to one type. No em or en dashes.
 
 export const metadata = {
   title: 'Market',
   description: 'Products, services, and tickets from people and businesses in the Frequency community.',
 }
 
+const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
-
-function GridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-56 rounded-2xl" />
-      ))}
-    </div>
-  )
-}
 
 function Grid({ items }: { items: Awaited<ReturnType<typeof listMarketListings>> }) {
   return (
     <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
       {items.map((p) => (
         <ProductCard key={p.id} product={p} href={`/market/${p.id}`} />
-      ))}
-    </div>
-  )
-}
-
-// One group's grid (used when a ?group= is selected — the focused view).
-async function GroupGrid({ group, q }: { group: MarketGroup; q?: string }) {
-  const items = await listMarketListings({ group, q })
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={Store}
-        variant="first-use"
-        title={`No ${GROUP_LABEL[group].toLowerCase()} yet.`}
-        description="When people and businesses publish to the Market, they show up here."
-      />
-    )
-  }
-  return <div className="@container">{<Grid items={items} />}</div>
-}
-
-// The default (all-groups) view: each non-empty group as its own section.
-async function AllGroups({ q }: { q?: string }) {
-  const perGroup = await Promise.all(MARKET_GROUPS.map((g) => listMarketListings({ group: g, q, limit: 12 })))
-  const sections = MARKET_GROUPS.map((g, i) => ({ group: g, items: perGroup[i] })).filter((s) => s.items.length > 0)
-  if (sections.length === 0) {
-    return (
-      <EmptyState
-        icon={Store}
-        variant="first-use"
-        title="Nothing in the Market yet."
-        description="This is where the community sells. Publish a product, service, or ticket and it shows up here."
-      />
-    )
-  }
-  return (
-    <div className="@container space-y-10">
-      {sections.map((s) => (
-        <section key={s.group}>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
-            <Link href={`/market?group=${s.group}`} className="text-sm font-medium text-primary-strong hover:underline">
-              See all
-            </Link>
-          </div>
-          <Grid items={s.items} />
-        </section>
       ))}
     </div>
   )
@@ -127,34 +69,90 @@ export default async function MarketPage({
   const group = asMarketGroup(groupParam)
   const viewerProfileId = await getMyProfileId()
 
+  // One read powers the stats band, the rails, and the grid (grouped in-process).
+  const all = await listMarketListings({ q, limit: 100 })
+  const byGroup = (g: MarketGroup) => all.filter((p) => marketGroupForKind(p.productKind) === g)
+  const counts = {
+    total: all.length,
+    products: byGroup('products').length,
+    services: byGroup('services').length,
+    tickets: byGroup('tickets').length,
+  }
+
+  const shown = group ? byGroup(group) : null
+  const sections = MARKET_GROUPS.map((g) => ({ group: g, items: byGroup(g) })).filter((s) => s.items.length > 0)
+
   return (
-    <IndexTemplate
-      title="Market"
-      description="Products, services, and tickets from people and businesses in the community. Buy direct, the seller gets paid, the fee stays low."
-      action={
-        viewerProfileId ? (
-          <div className="flex items-center gap-2">
-            <Link href="/market/manage" className={buttonClasses('secondary', 'sm')}>
-              My storefront
-            </Link>
-            <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
-              <Plus className="h-4 w-4" aria-hidden />
-              List a product
-            </Link>
-          </div>
-        ) : undefined
-      }
-      toolbar={
-        <div className="space-y-3">
-          <MarketplaceFacets active="makers" />
-          <GroupRail active={group} />
-        </div>
-      }
-    >
+    <div className="space-y-8">
+      <MarketHero
+        image={HERO_IMAGE}
+        eyebrow="The Market"
+        title="Buy from your community"
+        subtitle="Products, services, and tickets from the people and businesses around you. Buy direct, the seller gets paid, the fee stays low."
+        action={
+          viewerProfileId ? (
+            <>
+              <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
+                <Plus className="h-4 w-4" aria-hidden /> List a product
+              </Link>
+              <Link href="/market/manage" className={buttonClasses('secondary', 'md')}>
+                My storefront
+              </Link>
+            </>
+          ) : undefined
+        }
+      />
+
       <MarketplaceHiddenBanner area="makers" />
-      <Suspense key={`${group ?? 'all'}:${q ?? ''}`} fallback={<GridSkeleton />}>
-        {group ? <GroupGrid group={group} q={q} /> : <AllGroups q={q} />}
-      </Suspense>
-    </IndexTemplate>
+
+      <div className="space-y-6">
+        <MarketplaceFacets active="makers" />
+
+        <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
+          <StatCard size="sm" label="Listings" value={counts.total} icon={ShoppingBag} />
+          <StatCard size="sm" label="Products" value={counts.products} icon={Package} />
+          <StatCard size="sm" label="Services" value={counts.services} icon={CalendarClock} />
+          <StatCard size="sm" label="Tickets" value={counts.tickets} icon={Ticket} />
+        </div>
+
+        <GroupRail active={group} />
+
+        <div className="@container">
+          {shown ? (
+            shown.length > 0 ? (
+              <Grid items={shown} />
+            ) : (
+              <EmptyState
+                icon={ShoppingBag}
+                variant="first-use"
+                title={`No ${GROUP_LABEL[group!].toLowerCase()} yet.`}
+                description="When people and businesses publish to the Market, they show up here."
+              />
+            )
+          ) : sections.length > 0 ? (
+            <div className="space-y-10">
+              {sections.map((s) => (
+                <section key={s.group}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
+                    <Link href={`/market?group=${s.group}`} className="text-sm font-medium text-primary-strong hover:underline">
+                      See all
+                    </Link>
+                  </div>
+                  <Grid items={s.items} />
+                </section>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={ShoppingBag}
+              variant="first-use"
+              title="Nothing in the Market yet."
+              description="This is where the community sells. Publish a product, service, or ticket and it shows up here."
+            />
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
