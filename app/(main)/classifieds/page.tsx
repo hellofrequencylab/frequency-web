@@ -100,7 +100,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
         {grid.length === 0 ? (
           <EmptyState
             icon={Store}
-            title={activeKind ? 'Nothing here yet' : 'The marketplace is just getting started'}
+            title={activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}
             description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
           />
         ) : (

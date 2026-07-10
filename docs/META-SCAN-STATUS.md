@@ -4,6 +4,38 @@
 > 49 high / 117 medium / 83 low) and the follow-up work. This is the durable record of
 > what shipped and what is still open. Update it as items close.
 
+## 2026-07-10 re-scan (post Shop-rework merge, #1647)
+
+Fresh pass on the merged `main` (base `3d9ca385`) once the marketplace build landed. Guard
+scripts + live Supabase advisors + a dedicated shop deep-audit. Headline: **no correctness or
+security bugs**; the shop's auth (every mutating action object-authorizes), booking/checkout
+(HOLD-FIRST, idempotent, atomic stock), and visibility gating all verified sound.
+
+**Shipped this pass** (branch `chore/meta-scan-hygiene`):
+- ✅ **DB advisor hygiene** — migration `20261104000000`: wrapped the 2 `auth_rls_initplan`
+  policies (`supporter_contributions`, `practice_timer_sessions`) in `(select auth.uid())` +
+  added the 8 unindexed-FK covering indexes. Applied to prod + verified; idempotent.
+- ✅ **Shop naming-canon copy** — 3 member strings called Classifieds "Marketplace"
+  (`classifieds/error.tsx`, `classifieds/page.tsx`) and the Store empty state said "the shop"
+  (`store/page.tsx`). Fixed per NAMING.md §Classifieds + Store/Shop collision guard. (These
+  live in `app/**`, which `check:canon` does not scan — a guard blind spot, see below.)
+- ✅ **Checkout `cancel_url`** — `lib/commerce/checkout.ts` sent cancelled buyers to
+  `/marketplace` (→ the free Classifieds board). Now routes by `owner_kind` (platform → `/store`,
+  else → `/market`).
+
+**Still open** (see also the master to-do below):
+- 🧑 **Migration-ledger drift (OPEN-THREADS A2)** — `schema_migrations` records only through
+  `20261007000000`; everything `20261008`→`20261104` is applied to prod but unrecorded (MCP-applied,
+  ledger not stamped). Needs `supabase migration repair --status applied <version>` across the range,
+  then flip `db-tests.yml` to a required gate. NOT mass-inserted here (would fight the planned repair).
+- 🧑 **Cron paging-blind** — 21 jobs, 0 monitors; set `CRON_HEARTBEAT_BASE_URL`.
+- LOW · Contact-only Market service (`service-booking-picker.tsx`) says "reach out to the space"
+  with no DM affordance — needs a product decision on the Space DM target before wiring (ADR-596 §3/§7).
+- 🟡 `check:canon` blind spot: it scans `content/**` only, so UI copy in `app/**`/`components/**`
+  can drift off-canon (this pass found 4 such). Consider extending the guard to member-facing JSX strings.
+- Owner config carried: `NEXT_PUBLIC_SITE_URL`, submit sitemap, leaked-password protection,
+  disable anon sign-ins, Stripe go-live (A3).
+
 ## Completion roadmap (phases)
 
 The remaining work, sequenced by risk + dependency. Each phase is one (or few) PRs, all

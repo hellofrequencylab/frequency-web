@@ -124,8 +124,8 @@ export function PostCard({
         isAnnouncement
           ? 'bg-warning-bg/20 dark:bg-warning-bg/10 ring-1 ring-warning/40'
           : post.is_pinned
-          ? 'bg-surface-elevated/70 ring-1 ring-primary-bg/60 dark:ring-primary/40'
-          : 'bg-surface-elevated/60'
+          ? 'bg-surface-elevated dark:bg-surface-elevated/70 ring-1 ring-primary-bg/60 dark:ring-primary/40'
+          : 'bg-surface-elevated dark:bg-surface-elevated/60 ring-1 ring-border/50 dark:ring-border/30'
       }`}
     >
       {/* ── Main content ──────────────────────────── */}

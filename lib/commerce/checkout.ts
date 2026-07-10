@@ -136,7 +136,10 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     client_reference_id: input.buyerProfileId,
     metadata: { kind: 'commerce_order', buyer_profile_id: input.buyerProfileId },
     success_url: `${appUrl()}/orders?ok=1&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${appUrl()}/marketplace`,
+    // Cancel back to the surface the buyer was purchasing from, never the free peer board
+    // (`/marketplace` redirects to Classifieds). Frequency Store → /store; Market + Space
+    // shops both browse under the Market umbrella.
+    cancel_url: `${appUrl()}${seller.owner_kind === 'platform' ? '/store' : '/market'}`,
   })
 
   const { data: orderRow } = await db()
