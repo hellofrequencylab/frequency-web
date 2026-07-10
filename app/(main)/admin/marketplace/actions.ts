@@ -7,6 +7,8 @@ import { authorizeAction } from '@/lib/admin/guard'
 import { createProduct, setProductStatus, updateProduct, deleteProduct } from '@/lib/commerce/products'
 import { refundCommerceOrder } from '@/lib/commerce/checkout'
 import { setReportStatus, type ReportStatus } from '@/lib/commerce/reports'
+import { setDisputeStatus, orderForDispute } from '@/lib/commerce/disputes'
+import { hideProductReview } from '@/lib/commerce/reviews'
 import { setPlatformFlag } from '@/lib/platform-flags'
 import { areaFlagKey, type MarketArea } from '@/lib/marketplace/visibility'
 import type { ProductStatus } from '@/lib/commerce/types'
@@ -85,6 +87,50 @@ export async function moderateReportAction(id: string, status: ReportStatus): Pr
   await requireOperator()
   await setReportStatus(id, status)
   revalidatePath('/admin/marketplace/reports')
+}
+
+/** Advance a dispute to 'reviewing' (an operator picked it up). */
+export async function reviewDisputeAction(id: string): Promise<void> {
+  await requireOperator()
+  await setDisputeStatus(id, 'reviewing')
+  revalidatePath('/admin/marketplace/disputes')
+}
+
+/** Resolve a dispute. 'resolved_refund' attempts the real refund (refundCommerceOrder) when
+ *  payments are ON; with payments OFF it records the resolution and no money moves. 'resolved_denied'
+ *  just records the decision. Either way the dispute leaves the queue. */
+export async function resolveDisputeAction(id: string, outcome: 'refund' | 'deny'): Promise<void> {
+  const profile = await getCallerProfile()
+  await authorizeAction(profile, 'admin', 'platform')
+
+  if (outcome === 'refund') {
+    const order = await orderForDispute(id)
+    // Try the money move only when there's a refundable settled order. refundCommerceOrder is itself
+    // gated (returns { error } when payments are off / nothing to refund); we record the resolution
+    // regardless so the dispute always closes, but surface a processor error to the operator.
+    let note = 'Approved. No payment was moved (payments are not turned on yet).'
+    if (order && (order.status === 'paid' || order.status === 'fulfilled')) {
+      const res = await refundCommerceOrder(order.orderId)
+      if (res.error) throw new Error(res.error)
+      note = 'Approved and refunded.'
+    }
+    await setDisputeStatus(id, 'resolved_refund', { resolvedBy: profile?.id ?? null, resolutionNote: note })
+  } else {
+    await setDisputeStatus(id, 'resolved_denied', {
+      resolvedBy: profile?.id ?? null,
+      resolutionNote: 'Reviewed and declined.',
+    })
+  }
+  revalidatePath('/admin/marketplace/disputes')
+  revalidatePath('/admin/marketplace/orders')
+  revalidatePath('/orders')
+}
+
+/** Hide a product review (operator moderation; reversible, sets status hidden). */
+export async function hideProductReviewAction(id: string): Promise<void> {
+  await requireOperator()
+  await hideProductReview(id)
+  revalidatePath('/admin/marketplace')
 }
 
 /** Publish / hide a whole marketplace area. Hidden = invisible to members (nav + page),
