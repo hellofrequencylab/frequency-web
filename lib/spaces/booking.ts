@@ -316,6 +316,7 @@ type AvailabilityQuery = {
 type BookingQuery = {
   select: (cols: string) => BookingQuery
   eq: (col: string, val: string) => BookingQuery
+  in: (col: string, vals: string[]) => BookingQuery
   gte: (col: string, val: string) => BookingQuery
   order: (col: string, opts: { ascending: boolean }) => BookingQuery
   update: (patch: Record<string, unknown>) => BookingQuery
@@ -368,6 +369,26 @@ async function readConfirmedBookings(spaceId: string, fromISO: string): Promise<
       .select(BOOKING_COLS)
       .eq('space_id', spaceId)
       .eq('status', 'confirmed')
+      .gte('starts_at', fromISO)
+      .order('starts_at', { ascending: true })
+    if (error || !data) return []
+    return data
+  } catch {
+    return []
+  }
+}
+
+/** The bookings that BLOCK a slot at/after `fromISO`: confirmed AND pending holds (Phase 4). The open-slot
+ *  read must exclude both, matching the widened unique index `status in (confirmed, pending)` — otherwise a
+ *  held-but-unpaid slot still renders as available and every booker bounces off it. Pending rows only exist
+ *  once the bookable-services migration is applied, so pre-migration this reads exactly like confirmed.
+ *  Service-role; FAIL-SAFE to []. */
+async function readBlockingBookings(spaceId: string, fromISO: string): Promise<BookingRow[]> {
+  try {
+    const { data, error } = await bookingsTable()
+      .select(BOOKING_COLS)
+      .eq('space_id', spaceId)
+      .in('status', ['confirmed', 'pending'])
       .gte('starts_at', fromISO)
       .order('starts_at', { ascending: true })
     if (error || !data) return []
@@ -486,7 +507,8 @@ export async function listOpenSlots(spaceId: string): Promise<OpenSlot[]> {
     // return [] without running the (already-overlapped, cheap) generator.
     const [windows, booked] = await Promise.all([
       readWindows(spaceId),
-      readConfirmedBookings(spaceId, now.toISOString()),
+      // Exclude confirmed AND pending holds, so a held-but-unpaid slot is not offered (matches the index).
+      readBlockingBookings(spaceId, now.toISOString()),
     ])
     if (windows.length === 0) return []
     const bookedMs = new Set(booked.map((b) => new Date(b.starts_at).getTime()))
@@ -542,8 +564,9 @@ export async function createBooking(
   const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
   if (slotMinutes == null) return fail('That time is no longer available. Pick another.')
 
-  // Already booked? (A fast pre-check for a friendly message; the unique index is the real guard.)
-  const booked = await readConfirmedBookings(spaceId, now.toISOString())
+  // Already taken (confirmed or held pending)? A fast pre-check for a friendly message; the unique index
+  // is the real guard.
+  const booked = await readBlockingBookings(spaceId, now.toISOString())
   if (booked.some((b) => new Date(b.starts_at).getTime() === startsAt.getTime())) {
     return fail('That time was just taken. Pick another.')
   }

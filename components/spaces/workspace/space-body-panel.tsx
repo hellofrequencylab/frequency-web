@@ -5,7 +5,6 @@ import { SURFACE_PANELS } from './surface-panels'
 import { ProfileBodySkeleton } from '@/components/spaces/profile-body-skeleton'
 import { MembersBody } from '@/app/(main)/spaces/[slug]/settings/members/members-body'
 import { OfferingsBody } from '@/app/(main)/spaces/[slug]/settings/offerings/offerings-body'
-import { ServicesBody } from '@/app/(main)/spaces/[slug]/settings/services/services-body'
 import { QrBody } from '@/app/(main)/spaces/[slug]/settings/qr/qr-body'
 import { EmailBody } from '@/app/(main)/spaces/[slug]/settings/email/email-body'
 import { BillingBody } from '@/app/(main)/spaces/[slug]/settings/billing/billing-body'
@@ -36,7 +35,7 @@ type PanelBody = (props: { slug: string }) => ReactNode | Promise<ReactNode>
 const PANEL_BODIES: Record<string, PanelBody> = {
   members: MembersBody,
   offerings: OfferingsBody,
-  services: ServicesBody,
+  // 'services' (retired JSON Store) removed — Phase 9, ADR-593; the Store is now the /settings/shop console.
   qr: QrBody,
   email: EmailBody,
   billing: BillingBody,

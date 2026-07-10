@@ -57,7 +57,9 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise.
     { href: `${base}/reviews`, label: 'Reviews' },
-    ...(storefront.published ? [{ href: `${base}/shop`, label: storefront.tabLabel }] : []),
+    ...(storefront.published && isConsoleSpaceType(space.type)
+      ? [{ href: `${base}/shop`, label: storefront.tabLabel }]
+      : []),
     ...pages
       .filter((p) => p.slug !== HOME_SLUG)
       .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),

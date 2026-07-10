@@ -66,10 +66,9 @@ export const SURFACE_PANELS: Record<string, SurfacePanel> = {
     label: 'Check in',
     fullHref: (slug) => `/spaces/${slug}/settings/offerings#checkin`,
   },
-  services: {
-    label: 'Services',
-    fullHref: (slug) => `/spaces/${slug}/settings/services`,
-  },
+  // 'services' (the retired JSON Store) panel removed (ADR-593, Phase 9): the Store became the Shop
+  // console at /settings/shop. space.services now deep-links there (no inline panel), so closing this
+  // inline path prevents reaching the dead JSON editor and split-braining the catalog.
   qr: {
     label: 'QR codes',
     fullHref: (slug) => `/spaces/${slug}/settings/qr`,
@@ -102,7 +101,7 @@ export function isPanelId(id: string | undefined): id is string {
 export const PANEL_SURFACE_TO_ID: Record<string, string> = {
   'space.people': 'members',
   'space.offerings': 'offerings',
-  'space.services': 'services',
+  // 'space.services' now deep-links to the Shop console (no inline panel) — Phase 9, ADR-593.
   'space.reach': 'qr',
   'space.comms': 'email',
   'space.billing': 'billing',

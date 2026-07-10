@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
+import { getCallerProfile } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
+import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
 import { DetailTemplate } from '@/components/templates'
 import { ReportButton } from '@/components/marketplace/report-button'
@@ -24,13 +27,33 @@ function servicePriceLabel(priceCents: number, currency: string, svc: ServiceCon
 
 export default async function MarketProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [profileId, product] = await Promise.all([getMyProfileId(), getProduct(id)])
+  const caller = await getCallerProfile()
+  const profileId = caller?.id ?? null
+  const product = await getProduct(id)
   if (!product) notFound()
   const isService = product.productKind === 'service'
-  // Any ACTIVE listing is viewable by link (from the Market browse, a Space Shop tab, or a shared link);
-  // market_published governs Market *discovery* (the umbrella query), not per-listing access. A non-active
-  // listing is visible only to its maker owner (draft preview).
-  const isOwner = !!profileId && product.ownerProfileId === profileId
+
+  // A Space-owned listing carries TWO extra publish gates beyond status='active' (which only means
+  // "live in the Space's own Shop console"): market_published (opt-in to the global Market) and the
+  // storefront.published flag (the public Shop tab). A non-manager may view it only when it is opted
+  // into the Market OR the Space's storefront is published AND the Space itself is visible. A manager
+  // may always preview. Maker (owner_kind='profile') listings keep the active===public semantic (the
+  // maker funnel sets market_published), so they skip this. (ADR-593, exposure fix.)
+  let isManager = false
+  if (product.ownerKind === 'space') {
+    const space = product.ownerSpaceId ? await getSpaceById(product.ownerSpaceId) : null
+    if (!space) notFound()
+    const manage = await resolveSpaceManageAccess(space, profileId, caller?.webRole)
+    isManager = manage.canManage || manage.staffViewing
+    if (!isManager) {
+      const storefront = readStorefrontConfig(space.preferences)
+      const visible = await getVisibleSpaceBySlug(space.slug, profileId)
+      if (!visible || !(product.marketPublished || storefront.published)) notFound()
+    }
+  }
+
+  // Owner/manager may preview a non-active (draft) listing; the public sees active only.
+  const isOwner = (!!profileId && product.ownerProfileId === profileId) || isManager
   if (product.status !== 'active' && !isOwner) notFound()
 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
@@ -109,7 +132,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               {isService
                 ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
                 : soldOut
-                  ? 'This piece is sold out.'
+                  ? 'This one is sold out.'
                   : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
             </p>
             <ReportButton targetKind="product" targetId={product.id} />

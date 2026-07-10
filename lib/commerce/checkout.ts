@@ -241,6 +241,23 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
   }
 }
 
+/** Abandon the pending order behind an EXPIRED or async-failed Checkout session (idempotent): mark it
+ *  cancelled and release any held booking (Phase 4). No charge occurred, so there is nothing to refund;
+ *  without this, an abandoned service checkout would leave its 'pending' booking hold occupying the slot
+ *  forever. FAIL-SOFT booking release (no-op for a normal product order / pre-migration). */
+export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.metadata?.kind !== 'commerce_order') return
+  const { data: updated } = await db()
+    .from('commerce_orders')
+    .update({ status: 'cancelled' })
+    .eq('stripe_checkout_session_id', session.id)
+    .eq('status', 'pending')
+    .select('id')
+  for (const row of (updated ?? []) as { id: string }[]) {
+    await cancelBookingByOrder(row.id)
+  }
+}
+
 /** Refund a paid order. Destination charges unwind with reverse_transfer +
  *  refund_application_fee; platform charges refund normally. */
 export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true; error?: string }> {

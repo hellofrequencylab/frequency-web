@@ -4,6 +4,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
+import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
 import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
@@ -24,8 +25,11 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
   if (!space) notFound()
   setActiveSpace(space)
 
+  // Double-gate: the nav hides the tab when unpublished, but the /shop URL is still directly reachable,
+  // so refuse it here when the storefront is not published OR the Space is not a Shop-capable type
+  // (matches the write-side isConsoleSpaceType gate — defense in depth).
   const storefront = readStorefrontConfig(space.preferences)
-  if (!storefront.published) notFound()
+  if (!storefront.published || !isConsoleSpaceType(space.type)) notFound()
 
   const items = await listPublicSpaceCatalog(space.id)
   const sections = MARKET_GROUPS.map((g) => ({

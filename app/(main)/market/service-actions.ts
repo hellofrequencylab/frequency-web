@@ -54,11 +54,13 @@ export async function bookServiceAction(
   if (!hold) return { error: 'That time is no longer available. Pick another.' }
 
   const checkout = await createCommerceCheckout({ buyerProfileId, items: [{ productId: product.id, qty: 1 }] })
-  if (checkout.error || !checkout.url) {
-    // Could not start payment: release the hold so the slot frees immediately.
+  // A missing url OR a missing orderId is a failure: without the order the settle webhook can never
+  // confirm the hold and a refund can never release it (both key on order_id), so keeping the hold + the
+  // payment coupled means we must release the hold and stop rather than send the buyer to pay.
+  if (checkout.error || !checkout.url || !checkout.orderId) {
     await cancelBooking(hold.bookingId)
     return { error: checkout.error ?? 'Could not start checkout.' }
   }
-  if (checkout.orderId) await linkBookingToOrder(hold.bookingId, checkout.orderId)
+  await linkBookingToOrder(hold.bookingId, checkout.orderId)
   return { url: checkout.url }
 }
