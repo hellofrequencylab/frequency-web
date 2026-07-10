@@ -44,7 +44,10 @@ export default async function CirclesPage({
         { href: '/network', label: 'Community' },
         { href: '/circles', label: 'Circles' },
       ]}
-      heroImage={content.heroImage}
+      // The uniform overlay Hero Header (the Journeys/Practices/Library grammar): operator image
+      // wins, else a calm section default so the hero band always renders.
+      heroImage={content.heroImage ?? '/images/site/group-of-friends.jpg'}
+      heroOverlay
       title={content.title}
       action={
         signedIn || (content.ctaLabel && content.ctaHref) ? (
