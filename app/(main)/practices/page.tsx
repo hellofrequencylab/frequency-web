@@ -106,7 +106,9 @@ export default async function PracticesPage({
   // older page-content hero (ADR-180). Prefer the new uploader, then fall back to the page-content
   // hero so an image set there actually shows (it was being dropped — the page read only the
   // page_settings field), mirroring how /journeys resolves its banner.
-  const heroImage = (await getPageHeaderImage('/practices')) ?? contentHero
+  // The uniform overlay Hero Header (the Business Spaces grammar): the operator image wins, else a calm
+  // section default so the hero band always renders. Swap the default by uploading a header image.
+  const heroImage = (await getPageHeaderImage('/practices')) ?? contentHero ?? '/images/site/meditation-circle.jpg'
 
   return (
     <IndexTemplate
@@ -169,6 +171,7 @@ export default async function PracticesPage({
         { href: '/practices', label: 'Practices' },
       ]}
       heroImage={heroImage}
+      heroOverlay
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven
           blocks that render only for a signed-in member with data; a dangling anchor is harmless

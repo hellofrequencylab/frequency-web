@@ -10,7 +10,7 @@ import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/comme
 import { ProductCard } from '@/components/marketplace/product-card'
 import { EmptyState } from '@/components/ui/empty-state'
 
-// THE PUBLIC SPACE SHOP TAB (ADR-593). The member-facing storefront: this Space's active catalog grouped
+// THE PUBLIC SPACE SHOP TAB (ADR-596). The member-facing storefront: this Space's active catalog grouped
 // by type (Products / Services / Tickets). Identity Hero + tab chrome come from the (profile) layout; this
 // is the body. DOUBLE-GATED: the nav (profile-nav.ts) only HIDES the tab when unpublished, but the /shop
 // URL is still directly reachable, so this route also refuses it when the storefront is not published.

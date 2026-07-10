@@ -95,7 +95,7 @@ export async function listOrdersForSeller(profileId: string, opts: { limit?: num
 
 /** A Space's sales (orders for products the Space owns), newest first. The Orders tab of the Shop
  *  console reads this — listOrdersForSeller filters owner_profile_id, which is NULL for a Space, so
- *  a Space's orders are invisible through the maker path (ADR-593). Paid+ states only. */
+ *  a Space's orders are invisible through the maker path (ADR-596). Paid+ states only. */
 export async function listSpaceOrders(spaceId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
   if (!spaceId) return []
   const { data } = await db()

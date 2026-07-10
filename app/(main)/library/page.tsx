@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials } from '@/lib/utils'
 import { getLibrary, getMyRatings, pendingReviewCount, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
+import { getPageHeaderImage } from '@/lib/page-settings/store'
 import { RateButton, AdoptButton, SubmitProgramForm } from './interactive'
 
 export const dynamic = 'force-dynamic'
@@ -63,19 +64,28 @@ export default async function LibraryPage({
   const q = (t: string) => (t === 'all' ? '/library' : `/library?type=${t}`)
 
   // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
+  const { title, description, heroImage: contentHero, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
+  // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
+  // section default so the hero band always renders.
+  const heroImage = (await getPageHeaderImage('/library')) ?? contentHero ?? '/images/site/community-1.jpg'
 
   return (
     <IndexTemplate
       title={title}
       description={description}
+      trail={[
+        { href: '/network', label: 'Community' },
+        { href: '/library', label: 'Library' },
+      ]}
+      heroImage={heroImage}
+      heroOverlay
       action={
         (isApprover || (ctaLabel && ctaHref)) ? (
           <div className="flex items-center gap-2">
             {isApprover && (
               <Link
                 href="/library/review"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 <ShieldCheck className="h-4 w-4" /> Review queue
                 {pending > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">{pending}</span>}

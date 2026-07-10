@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { Archive } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { getNexusAdminData, archiveNexus } from '@/app/(main)/nexuses/admin-actions'
 
 // In-place "Danger zone" module (ADMIN-RAIL.md Phase 7, the 'danger' spine cell for nexuses). Renders
@@ -48,8 +47,6 @@ export function NexusDangerModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('nexus.danger')
-  const Icon = mod?.Icon ?? Archive
   const alreadyArchived = data.status === 'archived'
 
   function handleArchive() {
@@ -67,17 +64,8 @@ export function NexusDangerModule() {
   }
 
   return (
-    <div className="@container space-y-6">
-      <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-danger" />}
-            {mod?.label ?? 'Danger zone'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
-        <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">
+    <div className="@container">
+      <div className="rounded-xl border border-danger/30 bg-danger/5 p-4">
           {alreadyArchived || done ? (
             <p className="text-sm font-medium text-text">This nexus is archived.</p>
           ) : !armed ? (
@@ -114,9 +102,8 @@ export function NexusDangerModule() {
               </div>
             </div>
           )}
-          {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
-        </div>
-      </section>
+        {error && <p className="mt-3 text-xs font-medium text-danger">{error}</p>}
+      </div>
     </div>
   )
 }

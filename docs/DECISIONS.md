@@ -13084,7 +13084,110 @@ ADR-246). **Naming:** member copy stays Mindless / Be Still / Get Moving / Stren
 the warm-up *noun* is an OPEN QUESTION pending a NAMING.md entry (keep the plain "Warm up" pre-roll
 label until then). Phased build (P0–P6) tracked in `docs/PRACTICE-TIMER-REWORK.md`.
 
-## ADR-593: Shop & Marketplace rework — one commerce spine, tiered sellers, unified Market
+## ADR-593: Admin rail save-model unification — autosave + live reflection + one title per module
+
+**Status:** Accepted + shipped (owner ask 2026-07-09). Extends the ADMIN-RAIL.md standard; enforced-menu
+contract (ADR-553) unchanged. Corroborated by `components/admin/rail/{use-rail-autosave.ts,rail-autosave-form.tsx}`
+and the converted `components/admin/modules/*-module.tsx`.
+
+**Context.** The admin rail for editing had drifted into three inconsistencies. (1) **Save model:** some
+editors had a Save button (circle/event/hub/nexus/channel/practice settings, place & time), some auto-saved
+(journey, space branding, the layout builders), and some MIXED both in one panel (event settings: a Save
+button beside auto-saving gallery/poster/cover and a separate permalink button). (2) **No live reflection:**
+form editors called `revalidatePath` server-side but the page behind the slide-over did not repaint until a
+manual navigation, so edits did not "appear on the page in real time." (3) **Duplicate titles:** the rail
+draws a section header from `SPINE_META` AND each module drew its own `<h3>`/`AdminModuleCard` title for the
+same thing — "Place & Time / Place & Time", "People / People", "Insights / Insights", "Danger / Danger zone".
+
+**Decision.**
+1. **One save engine.** `useRailAutosave(action)` (`components/admin/rail/use-rail-autosave.ts`) wraps the
+   entity's EXISTING full-form mutation (no server change). Text fields commit on blur (debounced 600ms),
+   selects/toggles/radios commit instantly; a flush-on-unmount never drops the last keystroke. On success it
+   calls `router.refresh()`, so the RSC page behind the rail re-renders with the new data — the "live
+   reflection" directive. `RailAutosaveForm` is the drop-in form wrapper; one shared `RailSaveRow` cue
+   ("Changes save automatically" → "Saving…" → "Saved") replaces every Save button. Programmatic changes (a
+   dragged map pin, a venue autocomplete that fills several fields) call `saveNow` from a small context, since
+   React setState fires no native form event.
+2. **Every core-entity editor autosaves.** Converted circle/event/hub/nexus/channel/practice settings,
+   circle + event Place & Time, event Engage, and circle Page text. **Exceptions (kept explicit):** permalink
+   keeps its own action (a rename REDIRECTS the page — not a silent field save); destructive actions keep
+   their arm-then-confirm; images self-save through their own bound actions as before.
+3. **One title per module area.** The rail section header is now the ONLY title. The per-module `<h3>` /
+   `AdminModuleCard` heading was stripped from every module. `AdminSection.nodes` carries a per-node label so
+   a MULTI-module section (Basics = settings + page text; You = profile/spotlight/layout/look) shows a compact
+   sub-label and stays distinct, while a single-module section reads as just its section header.
+4. **Microtoggles.** Personal Spotlight enable + publish are `Toggle` switches; channel Active commits the
+   moment it flips. (Enum settings — status, visibility — stay instant-committing selects; a toggle is only
+   used where the choice is genuinely on/off.)
+
+**Deferred (documented follow-ups, not in this pass).** (a) **Speed:** generalize the ADR-550 one-bundle
+provider (`space-rail-data.tsx`) to the core entities so a circle/event/hub/nexus/practice rail resolves its
+~6 modules from ONE server fetch instead of one self-fetch per module. (b) **Coverage:** broadcast/[id] still
+deep-links to `/admin/dispatches` via `StaffEditButton` rather than opening the rail (a dispatch is not yet an
+`adminScopeFor` scope); every other editable entity page already mounts the rail trigger. (c) True 0ms preview
+(the `EntityLayoutContext` store pattern) for marquee fields, beyond the `router.refresh()` sub-second refresh.
+
+## ADR-594: Space rail follow-ups — hero look moves to Branding, header controls autosave + collapse, one Page title
+
+**Status:** Accepted + shipped (owner review of the live Space rail, 2026-07-09). Follow-up to ADR-593 (which
+covered the CORE-entity rails; the Space rail is a separate, more complex surface untouched there).
+
+**Context.** Live review of the Space profile rail (`/spaces/<slug>`) surfaced weak spots the core-entity pass
+did not reach: a Save button sat in the middle of the "Header button" section; the header-shade + header-button
+controls were always-expanded; the "Page" title was doubled (rail section header + module `<h3>` + the builder's
+"Your page"); the pinned "Top Hero" editor in the page builder duplicated inputs already edited elsewhere (name /
+tagline / CTA); and the on-page cover title was crushed into a narrow column beside the action buttons.
+
+**Decision.**
+1. **Header button autosaves** (item 1). Removed the "Save button"; the CTA commits on each pick (mode /
+   function) and on blur of the label/URL fields via `setSpaceHeaderCta`, guarding an incomplete custom link.
+2. **Header shade + Header button collapse** (item 2). Both are now `<details>` dropdowns in Identity & Branding,
+   so the section leads with the most-used controls.
+3. **One Page title** (item 3). `space-page-module` no longer renders its own `<h3>Page</h3>` + description; the
+   rail section header ("Page") is the single title and the builder keeps its "Your page" heading.
+4. **Top Hero editor retired from the page builder** (items 4 + 6). `HeroEditPanel` (and its test) are deleted;
+   its only non-duplicate controls — **Height** and **Buttons** — moved into Identity & Branding (item 5) as
+   segmented controls that autosave through a NEW `setSpaceHeroLook` action (which never touches the header CTA,
+   so hero look + CTA are edited independently). The eyebrow/name/tagline/CTA hero fields were duplicates of the
+   Name/Tagline + Header button controls, so they are gone from the editor; existing overrides still render.
+5. **Cover title full width** (item 7). The Hero cover identity (avatar + title) now spans the full cover width
+   with the desktop action row on its OWN line below it (still a single horizontal row, never a stacked column),
+   so a long brand name reads on one or two lines instead of a crushed 3-line column.
+
+`HeroEditorValues` moved from the deleted panel into `lib/spaces/hero-config.ts`. No migration (hero look still
+lives in `spaces.preferences.hero`). Gate: `tsc && lint && test` (4560) + `pnpm check:menu`, all green.
+
+## ADR-595: Space rail refinements — one Header dropdown, autosave, auto rating, Automation→CRM
+
+**Status:** Accepted + shipped (owner review of the live Space rail, 2026-07-09). Follow-up to ADR-593/594.
+
+**Decision (8 owner-directed changes to the `/spaces/<slug>` admin rail).**
+1. **One Header dropdown** — the Identity & Branding "Hero" height/buttons, "Header shade", and "Header
+   button" controls fold into a single collapsible **Header** disclosure (was three separate blocks).
+2. **Info & Connect autosaves** — the About/Story/contact/links form commits on field blur (and after a Vera
+   draft); the Save button is gone (`space-business-info-form.tsx`).
+3. **More social/service links** — added **Insight Timer** and **Spotify** to the profile links list. Synced
+   across the three places a platform must be declared: `SOCIAL_PLATFORMS` (editor), `KNOWN_PLATFORMS`
+   (server allow-list, else the URL is dropped on read), and `BUSINESS_PLATFORM_META` + the Puck options
+   (render label/icon).
+4. **Removed "Arrange your page"** button from the Page panel (the page builder is reached from the profile).
+5. **"Publish website" shows Coming soon** — the button reveals a notice instead of calling
+   `setWebsitePublished` (standalone sites are not live yet).
+6. **Removed the manual rating box** — a Space's rating is **auto-generated from its Reviews**:
+   `space-landing.tsx` overrides the central `profile.rating`/`ratingCount` with the live `getSpaceReviews`
+   aggregate (cleared when there are no reviews), so the identity block reflects real reviews. The Settings
+   form keeps only Visibility, which autosaves.
+7. **Bottom "More" menu** — removed the **"Menu and features"** (`space.modules`) rail entry (the
+   `/manage/modules` page still exists for direct access), and moved **Automation** (`space.automation`) out
+   of Reach and into the **CRM / Audience** section (`slot: 'people'`, `family: 'audience'`, `tier: 'primary'`,
+   ordered right after CRM). Updated `UNHIDEABLE_MODULE_IDS` + the drift-guard tests accordingly.
+8. **Danger zone last** — kept `space.danger` at `priority: 99`, so it sorts last in the extra band after
+   the other changes drain items above it.
+
+Locked-contract note (ADR-553): all menu edits stay in `SPACE_MODULES`; `pnpm check:menu` + the drift-guard
+tests pass. Gate: `tsc && lint && test` (4563), all green.
+
+## ADR-596: Shop & Marketplace rework — one commerce spine, tiered sellers, unified Market
 
 **Status:** Accepted (owner decisions 2026-07-09) · Phase 0 in progress · full spec
 `docs/SHOP-MARKETPLACE-PLAN.md` · naming registered in `NAMING.md` → *Marketplace & Commerce*.

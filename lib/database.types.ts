@@ -7751,6 +7751,8 @@ export type Database = {
           title: string
           updated_at: string
           uses_timer: boolean | null
+          warmup_message: string | null
+          warmup_sec: number | null
           weight_class: string
         }
         Insert: {
@@ -7795,6 +7797,8 @@ export type Database = {
           title: string
           updated_at?: string
           uses_timer?: boolean | null
+          warmup_message?: string | null
+          warmup_sec?: number | null
           weight_class?: string
         }
         Update: {
@@ -7839,6 +7843,8 @@ export type Database = {
           title?: string
           updated_at?: string
           uses_timer?: boolean | null
+          warmup_message?: string | null
+          warmup_sec?: number | null
           weight_class?: string
         }
         Relationships: [

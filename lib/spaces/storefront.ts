@@ -1,4 +1,4 @@
-// Per-Space storefront ("Shop") settings, stored on preferences.storefront (ADR-593). Fail-safe reader
+// Per-Space storefront ("Shop") settings, stored on preferences.storefront (ADR-596). Fail-safe reader
 // + immutable writer mirroring lib/spaces/profile-data.ts. The renameable public Shop tab label + the
 // publish state live here; Phase 6 renders the public Shop tab on the Space profile from this node.
 // PURE (no I/O) so it is trivially testable and safe to import anywhere.

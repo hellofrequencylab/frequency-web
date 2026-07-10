@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { useRailSaveNow } from '@/components/admin/rail/rail-autosave-form'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import type { PlaceResult } from '@/lib/geocode'
 import { ATTENDANCE_OPTIONS } from '@/lib/events/options'
@@ -83,9 +84,13 @@ export interface EventLocationInitial {
 export function EventLocationFields({
   initial,
   disabled,
+  onCommit,
 }: {
   initial: EventLocationInitial
   disabled?: boolean
+  /** Called after a programmatic change (venue pick / pin drag) so a parent autosave form can commit —
+   *  React setState on a controlled input fires no native change event the form could catch on its own. */
+  onCommit?: () => void
 }) {
   const [mode, setMode] = useState(initial.attendance_mode ?? 'in_person')
   const [venueName, setVenueName] = useState(initial.venue_name ?? '')
@@ -96,6 +101,10 @@ export function EventLocationFields({
   const [country, setCountry] = useState(initial.country ?? '')
   const [lat, setLat] = useState<number | null>(initial.lat ?? null)
   const [lng, setLng] = useState<number | null>(initial.lng ?? null)
+  // Inside a RailAutosaveForm the enclosing form commits on this; standalone it is a no-op. `onCommit`
+  // (when passed) wins, so a non-rail host can still hook the programmatic changes.
+  const ctxSaveNow = useRailSaveNow()
+  const commit = onCommit ?? ctxSaveNow
 
   // A venue pick fills every address field it has AND drops the pin. A field missing from the
   // result keeps its current value.
@@ -108,6 +117,7 @@ export function EventLocationFields({
     if (p.country) setCountry(p.country)
     setLat(p.lat)
     setLng(p.lng)
+    requestAnimationFrame(commit)
   }
 
   return (
@@ -222,6 +232,7 @@ export function EventLocationFields({
             onChange={(nLat, nLng) => {
               setLat(nLat)
               setLng(nLng)
+              requestAnimationFrame(commit)
             }}
           />
           <p className="text-2xs text-subtle">

@@ -8,11 +8,11 @@ import { payoutsLive } from '@/lib/billing/connect'
 import { isError } from '@/lib/action-result'
 import type { ServiceConfig } from '@/lib/commerce/types'
 
-// Bookable-services checkout (Phase 4, ADR-593). Joins the two existing engines with no new charge
+// Bookable-services checkout (Phase 4, ADR-596). Joins the two existing engines with no new charge
 // machinery: HOLD-FIRST (a 'pending' booking) then the deposit rides the SAME commerce checkout, and the
 // settle webhook (recordCommerceOrderFromSession → confirmBookingByOrder) flips the hold to confirmed.
 // Branches on ServiceConfig.priceModel: 'contact' = enquiry only (the sanctioned no-checkout exception,
-// ADR-593 §3/§7), 'free' = confirm with no payment, else pay-and-book. The paid path is gated behind
+// ADR-596 §3/§7), 'free' = confirm with no payment, else pay-and-book. The paid path is gated behind
 // payoutsLive(), so it (and the 'pending'/order_id columns from migration 20261102000000) stay dormant
 // until payments are turned on. NOTE: v1 charges the full price; partial-deposit charging (depositCents)
 // is a documented follow-on (the field is stored + displayed but not yet the charged amount).

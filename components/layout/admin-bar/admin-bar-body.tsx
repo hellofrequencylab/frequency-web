@@ -186,9 +186,14 @@ export function AdminBarBody({
           <h2 className="text-2xs font-semibold uppercase tracking-wide text-subtle">{section.label}</h2>
         </div>
         <div className="space-y-4">
-          {section.nodes.map((node, i) => (
-            <div key={`${key}-${i}`} className="min-w-0">
-              {node}
+          {section.nodes.map((item) => (
+            <div key={`${key}-${item.id}`} className="min-w-0 space-y-2">
+              {/* A per-node label only when the section holds more than one node — a single-module
+                  section reads as just its section header, never a doubled title. */}
+              {section.nodes.length > 1 && item.label && (
+                <h3 className="text-xs font-semibold text-text">{item.label}</h3>
+              )}
+              {item.node}
             </div>
           ))}
         </div>

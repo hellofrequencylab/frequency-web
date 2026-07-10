@@ -1,4 +1,4 @@
--- Shop & Marketplace rework, Phase 3 (ADR-593): backfill the JSON Space "Store" offerings
+-- Shop & Marketplace rework, Phase 3 (ADR-596): backfill the JSON Space "Store" offerings
 -- (spaces.preferences.profileData.offerings[]) into commerce_products as space-owned services.
 --
 -- ONE-SHOT + IDEMPOTENT. Additive only: it INSERTs service rows and does NOT touch the JSON

@@ -41,11 +41,6 @@ describe('resolveSpaceMenu gating', () => {
     }
   })
 
-  it('gates the Module Manager (space.modules) on canManageMenu only', () => {
-    expect(idsOf(resolveSpaceMenu({ canUse: allOn, canManageMenu: true }))).toContain('space.modules')
-    expect(idsOf(resolveSpaceMenu({ canUse: allOn, canManageMenu: false }))).not.toContain('space.modules')
-  })
-
   it('honors the owner hide + order overrides (delegated to spaceModuleManifest)', () => {
     const menu = resolveSpaceMenu(
       { canUse: allOn, canManageMenu: true },

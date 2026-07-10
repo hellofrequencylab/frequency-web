@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ChevronDown, ChevronUp, Loader2, Palette, Plus, Upload, X } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
+import { ChevronDown, ChevronUp, Loader2, Plus, Upload, X } from 'lucide-react'
 import { getAppearanceRailData } from '@/app/(main)/settings/rail-getters'
 import {
   setSpotlightTheme,
@@ -69,8 +68,6 @@ export function PersonalAppearanceModule() {
     }
   }, [])
 
-  const mod = moduleById('account.spotlightAppearance')
-  const Icon = mod?.Icon ?? Palette
 
   async function run(work: () => Promise<{ error?: string } | void>) {
     setPending(true)
@@ -158,17 +155,11 @@ export function PersonalAppearanceModule() {
 
   return (
     <section className="min-w-0 space-y-6">
-      <header className="space-y-1">
-        <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-          <Icon className="h-4 w-4 shrink-0 text-primary-strong" aria-hidden />
-          {mod?.label ?? 'Page look'}
-        </h3>
-        {!data.spotlightEnabled && (
-          <p className="text-xs text-muted">
-            Turn your Spotlight on first to save these. They still shape your profile page.
-          </p>
-        )}
-      </header>
+      {!data.spotlightEnabled && (
+        <p className="text-xs text-muted">
+          Turn your Spotlight on first to save these. They still shape your profile page.
+        </p>
+      )}
 
       {/* Profile skin */}
       <div>

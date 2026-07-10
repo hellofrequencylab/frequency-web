@@ -43,7 +43,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const pages = readProfilePages(space.preferences)
   const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
   const sections = deriveSectionNav(homeDoc, presence)
-  // The public Shop tab (ADR-593): shown only when the owner has published their storefront, with the
+  // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
   // `published`, so this surfaces only a real, opted-in storefront.
   const storefront = readStorefrontConfig(space.preferences)

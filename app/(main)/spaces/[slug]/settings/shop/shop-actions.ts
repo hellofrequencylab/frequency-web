@@ -17,7 +17,7 @@ import {
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig } from '@/lib/commerce/types'
 
-// Space Shop console write actions (ADR-593). Every action gates on resolveSpaceManageAccess (owner /
+// Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
 // per-item action also checks productOwnerSpaceId === space.id so one Space can never touch another's
 // catalog. Reuses the existing commerce writers (createProduct / updateProduct / setProductStatus /
@@ -32,7 +32,7 @@ async function gateSpaceWrite(slug: string): Promise<{ spaceId: string } | null>
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return null
   // The Shop is a Business-account feature; enforce the same space-type gate as the page here too, since
-  // server actions are addressable independently of the page render (defense in depth, ADR-593).
+  // server actions are addressable independently of the page render (defense in depth, ADR-596).
   if (!isConsoleSpaceType(space.type)) return null
   return { spaceId: space.id }
 }
@@ -77,7 +77,7 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
-    // A service books against the Space's own availability calendar (Phase 4, ADR-593).
+    // A service books against the Space's own availability calendar (Phase 4, ADR-596).
     bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
   })
   if (!product) return
@@ -107,7 +107,7 @@ export async function deleteSpaceProductAction(slug: string, id: string): Promis
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 
-/** Toggle whether a Space listing appears in the global Market (Phase 5, ADR-593). Separate from
+/** Toggle whether a Space listing appears in the global Market (Phase 5, ADR-596). Separate from
  *  status='active' (which only makes it live in the Space's own Shop). Owner-gated to this Space's item. */
 export async function setSpaceListingMarketPublishedAction(slug: string, id: string, published: boolean): Promise<void> {
   if (!(await gateSpaceItem(slug, id))) return

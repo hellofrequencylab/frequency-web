@@ -13,7 +13,7 @@ import { CatalogTab } from './catalog-tab'
 import { OrdersTab } from './orders-tab'
 import { StorefrontTab } from './storefront-tab'
 
-// THE BUSINESS-SPACE SHOP CONSOLE (ADR-593). One DashboardTemplate page, three tabs (Catalog / Orders /
+// THE BUSINESS-SPACE SHOP CONSOLE (ADR-596). One DashboardTemplate page, three tabs (Catalog / Orders /
 // Storefront), that REPLACES /settings/services. Mirrors the CRM board triad: this page owns the route +
 // gate + chrome + stats; the tab bar is URL-driven (?tab=); each tab renders in its own Suspense. Selling
 // is a Business-account feature, so the console gates on isConsoleSpaceType (business / nonprofit) exactly

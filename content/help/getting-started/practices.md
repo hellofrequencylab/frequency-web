@@ -71,6 +71,13 @@ You can shape practices, not just pick them:
   summary, full "how to" guide, cadence, Pillar, category, and icon by hand, or use
   **Edit with Vera** to make a change in plain language ("make it a morning sit," "cut it
   to five minutes").
+- **Set up how it runs.** In the editor, **How it's done** picks the timer: **Mindless**
+  (a quiet Be Still sit, and you choose the flavour, Meditate, Breathe, Stillness, Ritual,
+  Journal or Just Log), **Get Moving** (a walk, run, yoga, stretch, play, or a full strength
+  workout with the work, rest and rounds set), or **Log it** (a one-tap check-off, no timer).
+  You can add a **warm-up** message and count-in, and **lock the length** so it runs exactly
+  as you set it. Short notes in the editor explain each choice, and it all ships preset so the
+  member just taps and starts.
 - **Remix one from the library.** See a practice that is close but not quite yours? Hit
   **Remix** to make your own copy and edit it freely. The idea is to put your own spin on
   it, a new angle or your own niche, not to repost the same thing. The original stays

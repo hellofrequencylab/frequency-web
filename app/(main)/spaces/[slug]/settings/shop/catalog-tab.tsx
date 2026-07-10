@@ -11,7 +11,7 @@ import {
   setSpaceListingMarketPublishedAction,
 } from './shop-actions'
 
-// The Catalog tab of the Shop console (ADR-593). Lists THIS space's commerce_products (owner_space_id
+// The Catalog tab of the Shop console (ADR-596). Lists THIS space's commerce_products (owner_space_id
 // scoped — never the operator-wide list) and CRUDs them through the Space-gated shop actions. Server
 // component + server-action forms (no client island): a create form (adaptive by item kind) plus a
 // per-item row with status + delete controls. Reads from commerce_products (post-backfill), not the

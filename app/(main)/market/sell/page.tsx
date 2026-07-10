@@ -7,7 +7,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { isPaid } from '@/lib/core/entitlement'
 import { createMakerProductAction } from '../../marketplace/commerce-actions'
 
-// List a product in the Market (ADR-593). The seller ladder: free members trade in
+// List a product in the Market (ADR-596). The seller ladder: free members trade in
 // Classifieds, PAID members list products here (limited: one product at a time, no
 // storefront), and Business Spaces get the full Shop. Creating a product lists it to browse
 // right away; getting PAID needs a connected payout account + billing on.

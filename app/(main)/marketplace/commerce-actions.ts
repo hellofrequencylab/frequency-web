@@ -16,7 +16,7 @@ import type { ProductStatus } from '@/lib/commerce/types'
 export async function createMakerProductAction(formData: FormData): Promise<void> {
   const profile = await getCallerProfile()
   if (!profile) redirect('/sign-in?next=/market/sell')
-  // Selling in the Market is a paid-member feature (ADR-593); free members trade in Classifieds.
+  // Selling in the Market is a paid-member feature (ADR-596); free members trade in Classifieds.
   // Server-side gate mirrors the page gate (defense in depth), on the REAL tier (never beta-overridden)
   // per the creation-gate convention (auth.ts, ADR-414) — a genuinely free member is sent to upgrade.
   if (!isPaid(profile.realMembershipTier)) redirect('/upgrade')
@@ -34,7 +34,7 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
-    // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-593).
+    // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
     marketPublished: true,
   })
   if (!product) return

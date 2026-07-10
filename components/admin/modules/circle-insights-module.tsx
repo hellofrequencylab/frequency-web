@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Zap, Flame, Users } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
+import { Zap, Flame, Users } from 'lucide-react'
 import { getCircleInsightsData, type CircleInsightsData } from '@/app/(main)/circles/admin-actions'
 
 // In-place "Insights" module (ADR-515 Phase 4, the CIRCLE rail, the 'insights' spine cell). Renders in
@@ -54,26 +53,11 @@ export function CircleInsightsModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('circle.insights')
-  const Icon = mod?.Icon ?? BarChart3
-
   return (
-    <div className="@container space-y-6">
-      <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'Insights'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
-        <div className="grid grid-cols-3 gap-2">
-          <Stat label="Zaps earned here" value={data.zapsEarned.toLocaleString()} Icon={Zap} />
-          <Stat label="Active streaks" value={String(data.activeStreaks)} Icon={Flame} />
-          <Stat label="New this week" value={String(data.newThisWeek)} Icon={Users} />
-        </div>
-      </section>
+    <div className="@container grid grid-cols-3 gap-2">
+      <Stat label="Zaps earned here" value={data.zapsEarned.toLocaleString()} Icon={Zap} />
+      <Stat label="Active streaks" value={String(data.activeStreaks)} Icon={Flame} />
+      <Stat label="New this week" value={String(data.newThisWeek)} Icon={Users} />
     </div>
   )
 }

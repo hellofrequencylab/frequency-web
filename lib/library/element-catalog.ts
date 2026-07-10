@@ -115,3 +115,18 @@ export const REGISTRY_NAMES: Record<Exclude<ElementRegistry, 'illustration'>, Se
 
 /** The funnel-door element catalog rows (for the DB seed mirror in Loom). */
 export const FUNNEL_ELEMENTS: ElementDef[] = [...FUNNEL_SPOTS, ...FUNNEL_ICONS]
+
+/** EVERY code-drawn catalog element, across all non-illustration registries. This is the single
+ *  source the Loom sync reconciles into `library_assets` (lib/library/store.ensureCatalogElements),
+ *  so adding art to a registry array above is all it takes for it to appear in Loom Studio — no
+ *  hand-written seed migration. Illustrations are enumerated separately (see the header) and are
+ *  NOT included here. */
+export const ALL_ELEMENTS: ElementDef[] = [
+  ...ON_AIR_ICONS,
+  ...SPOT_ART,
+  ...FUNNEL_SPOTS,
+  ...FUNNEL_ICONS,
+  ...CIRCLE_TEMPLATES,
+  ...ONBOARDING_SCREENS,
+  ...TEXTURES,
+]

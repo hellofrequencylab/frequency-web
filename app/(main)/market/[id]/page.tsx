@@ -38,7 +38,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   // storefront.published flag (the public Shop tab). A non-manager may view it only when it is opted
   // into the Market OR the Space's storefront is published AND the Space itself is visible. A manager
   // may always preview. Maker (owner_kind='profile') listings keep the active===public semantic (the
-  // maker funnel sets market_published), so they skip this. (ADR-593, exposure fix.)
+  // maker funnel sets market_published), so they skip this. (ADR-596, exposure fix.)
   let isManager = false
   if (product.ownerKind === 'space') {
     const space = product.ownerSpaceId ? await getSpaceById(product.ownerSpaceId) : null

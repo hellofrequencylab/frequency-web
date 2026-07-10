@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
-import { Check, Users } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
+import { Check } from 'lucide-react'
 import { getEventPeopleData, approveEventRsvp, type EventPeopleData } from '@/app/(main)/events/admin-actions'
 
 // In-place "People" module (ENTITY-MANAGEMENT-OVERHAUL §4, the 'people' spine cell). Renders in
@@ -47,8 +46,6 @@ export function EventPeopleModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('event.people')
-  const Icon = mod?.Icon ?? Users
   const { analytics } = data
   const cap = analytics.capacity.capacity
   const fillPct = cap && cap > 0 ? Math.min(100, Math.round((analytics.going / cap) * 100)) : null
@@ -71,14 +68,6 @@ export function EventPeopleModule() {
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            {Icon && <Icon className="h-4 w-4 shrink-0 text-primary-strong" />}
-            {mod?.label ?? 'People'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         {/* Counts — the roster at a glance. */}
         <div className="grid grid-cols-2 gap-2 @sm:grid-cols-4">
           {[

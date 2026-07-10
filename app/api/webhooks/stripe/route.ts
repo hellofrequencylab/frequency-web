@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       case 'checkout.session.expired':
       case 'checkout.session.async_payment_failed': {
         // A service booking HOLDs its slot (a 'pending' booking) before payment; an abandoned/failed
-        // checkout must release it or the slot is blocked forever (Phase 4, ADR-593). No-ops for a
+        // checkout must release it or the slot is blocked forever (Phase 4, ADR-596). No-ops for a
         // non-commerce session.
         const s = event.data.object as Stripe.Checkout.Session
         await abandonCommerceOrderFromSession(s)

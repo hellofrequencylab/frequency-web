@@ -130,7 +130,7 @@ export async function listPlatformCatalog(): Promise<CommerceProduct[]> {
 
 /** Space-owned products, newest first. Pass a `spaceId` to scope to ONE Space (its own Shop
  *  console Catalog tab); no arg returns every Space's products (operator oversight). Scoping the
- *  Catalog tab is essential — the no-arg form would leak every Space's catalog (ADR-593). */
+ *  Catalog tab is essential — the no-arg form would leak every Space's catalog (ADR-596). */
 export async function listSpaceCatalog(spaceId?: string): Promise<CommerceProduct[]> {
   let query = db()
     .from('commerce_products')
@@ -142,7 +142,7 @@ export async function listSpaceCatalog(spaceId?: string): Promise<CommerceProduc
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
 }
 
-/** A Space's PUBLIC catalog: only active listings, for the public Shop tab (Phase 6, ADR-593). Distinct
+/** A Space's PUBLIC catalog: only active listings, for the public Shop tab (Phase 6, ADR-596). Distinct
  *  from listSpaceCatalog, which returns every status (draft/archived) for the owner console — never reuse
  *  that reader publicly or it leaks unpublished items. */
 export async function listPublicSpaceCatalog(spaceId: string): Promise<CommerceProduct[]> {
@@ -164,7 +164,7 @@ export async function productOwnerSpaceId(id: string): Promise<string | null> {
   return (data as { owner_space_id?: string } | null)?.owner_space_id ?? null
 }
 
-/** THE MARKET UMBRELLA READER (ADR-593): active + market-published listings across makers (owner_kind
+/** THE MARKET UMBRELLA READER (ADR-596): active + market-published listings across makers (owner_kind
  *  'profile') and Business Spaces ('space'), optionally narrowed to one typed group + a title search.
  *  The resolution of TODO(services-marketplace): after the Phase 3 backfill the cross-space browse is a
  *  plain commerce_products query. Gated on market_published (NOT status alone), so a Space's active-in-

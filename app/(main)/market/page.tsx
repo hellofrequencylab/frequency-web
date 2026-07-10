@@ -12,7 +12,7 @@ import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
-// Market — the community commerce umbrella (ADR-593). One browse surface grouping Products / Services /
+// Market — the community commerce umbrella (ADR-596). One browse surface grouping Products / Services /
 // Tickets, aggregating market-published listings across makers (owner_kind='profile') and Business
 // Spaces ('space'). A ?group= rail narrows to one type; the default shows each non-empty group as a
 // section. Only listings the owner opted into the Market (market_published) appear. No em or en dashes.

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Package, Receipt, Store } from 'lucide-react'
 
-// SPACE SHOP CONSOLE TABS (ADR-593). The persistent, URL-driven tab bar for the three-tab Shop console
+// SPACE SHOP CONSOLE TABS (ADR-596). The persistent, URL-driven tab bar for the three-tab Shop console
 // (Catalog / Orders / Storefront). Mirrors crm-view-tabs.tsx: server Links, no client state, kit tokens
 // only, copy in voice (no em or en dashes). Catalog is the front door (the bare /settings/shop URL);
 // Orders and Storefront are behind ?tab=. The const is SHOP_TABS (never *_MODULES — check:menu guards that).

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { bookServiceAction } from '@/app/(main)/market/service-actions'
 import { buttonClasses } from '@/components/ui/button'
 
-// The member-facing slot picker for a bookable service (Phase 4, ADR-593). Server-fetched open slots
+// The member-facing slot picker for a bookable service (Phase 4, ADR-596). Server-fetched open slots
 // (from the Space's availability calendar) rendered as buttons; a click calls bookServiceAction, which
 // HOLDs the slot and redirects to Stripe (paid), confirms it (free), or signals enquiry (contact-only).
 // No em or en dashes.

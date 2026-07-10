@@ -482,4 +482,59 @@ so an author OR an operator reaches the rail in place — mirroring the channel 
 
 ---
 
-*Synthesized 2026-07-02 from three implementation-planning passes + a menu-management best-practice research pass; §5 added 2026-07-04 (ADR-515). A named track under the Loom Platform; routes per DOCS-PROTOCOL.md (this spec + ADRs → git).*
+---
+
+## 6. The save-model unification (ADR-593) — autosave, live reflection, one title per module
+
+The redesign directive: **any edit in the rail should appear on the page in real time; stop mixing Save
+buttons with auto-save; condense; no duplicate titles.** This standardizes HOW a rail editor saves and how it
+is titled, on top of the §1–§5 structure.
+
+### 6.1 One save engine — `components/admin/rail/`
+
+- **`useRailAutosave(action)`** wraps the entity's EXISTING full-form mutation (it still takes the whole
+  `FormData`; nothing on the server changes). Text fields commit on **blur** (debounced 600ms); selects,
+  toggles, and radios commit **instantly**. A flush-on-unmount guarantees the last keystroke lands. On
+  success it calls **`router.refresh()`**, so the RSC page behind the slide-over repaints with the new data —
+  the "live reflection" requirement. (Server actions already `revalidatePath`; the refresh is what paints it
+  without a manual reload.)
+- **`RailAutosaveForm`** is the drop-in form wrapper. There is **no Save button**: one shared **`RailSaveRow`**
+  cue stands in ("Changes save automatically" → "Saving…" → "Saved" / a reason on failure).
+- **`useRailSaveNow()`** exposes a `saveNow` from form context for a control that changes a field
+  **programmatically** (a dragged map pin, a venue autocomplete filling several fields) — React setState fires
+  no native form event the form could catch on its own.
+
+### 6.2 What autosaves, and the explicit exceptions
+
+Converted to autosave: **circle · event · hub · nexus · channel · practice settings**, **circle + event
+Place & Time**, **event Engage**, **circle Page text**. Kept deliberately separate:
+
+- **Permalink** keeps its own action — a rename REDIRECTS the page to the new URL, so it is a decision, not a
+  silent field save.
+- **Destructive** actions (delete / archive) keep arm-then-confirm; never autosaved, never banked.
+- **Images** self-save through their own bound actions (`InlineCover`, gallery), as before.
+- **Enum** settings (status, visibility) stay instant-committing `<select>`s; a **microtoggle** (`Toggle`) is
+  used only where the choice is genuinely on/off (personal Spotlight enable + publish, channel Active).
+
+### 6.3 One title per module area
+
+The rail **section header** (`SPINE_META` / `SPACE_GROUP_META`) is now the ONLY title. Every module renders
+flush BODY only — the per-module `<h3>` / `AdminModuleCard` heading was removed everywhere, killing the
+doubled "Place & Time / Place & Time" style titles. `AdminSection.nodes` carries a per-node label, drawn ONLY
+when a section holds more than one node, so a MULTI-module section (Basics = settings + page text; You =
+profile / spotlight / layout / look) keeps each area distinct while a single-module section reads as just its
+section header. Rendered in `admin-bar-body.tsx`'s `renderSection`.
+
+### 6.4 Deferred (documented, not in this pass)
+
+- **Speed:** generalize the ADR-550 one-bundle provider (`space-rail-data.tsx`) to the core entities so a
+  circle/event/hub/nexus/practice rail resolves its ~6 modules from ONE server fetch instead of one
+  self-fetch per module (the remaining "loads slow" contributor).
+- **Coverage:** `broadcast/[id]` still deep-links to `/admin/dispatches` via `StaffEditButton` (a dispatch is
+  not yet an `adminScopeFor` scope); every other editable entity page already mounts the rail trigger.
+- **True 0ms preview** (the `EntityLayoutContext` store) for marquee fields, beyond the sub-second
+  `router.refresh()`.
+
+---
+
+*Synthesized 2026-07-02 from three implementation-planning passes + a menu-management best-practice research pass; §5 added 2026-07-04 (ADR-515); §6 added 2026-07-09 (ADR-593). A named track under the Loom Platform; routes per DOCS-PROTOCOL.md (this spec + ADRs → git).*

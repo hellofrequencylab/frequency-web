@@ -1,4 +1,4 @@
--- Shop & Marketplace rework, Phase 5 (ADR-593): the per-listing "publish to Market" opt-in.
+-- Shop & Marketplace rework, Phase 5 (ADR-596): the per-listing "publish to Market" opt-in.
 --
 -- A Space setting a listing status='active' means "live in my own Shop console/tab", which is NOT
 -- consent to appear in the GLOBAL Market. So the umbrella reader (listMarketListings) filters on an

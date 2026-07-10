@@ -31,8 +31,6 @@ export function SpaceSettingsModule() {
       <SpaceSettingsForm
         spaceId={data.spaceId}
         slug={data.slug}
-        rating={data.rating}
-        ratingCount={data.ratingCount}
         visibility={data.visibility}
         readOnly={data.readOnly}
       />

@@ -181,6 +181,10 @@ export interface LoadoutStripRow {
   total: LoadoutTotal
   /** The plain monthly total label, e.g. "$59/mo" or "$12/seat/mo" for the Nonprofit row. */
   totalLabel: string
+  /** When the total is the plan PLUS a metered add-on, the plain breakdown of where it comes from, e.g.
+   *  "$49 plan + $20 Resonance Engine". Null when the total already IS the plan price (a Business-only
+   *  door, or the flat Nonprofit plan), so no bare higher number ever reads as the plan price. */
+  breakdownLabel: string | null
   /** A plain one-line note on what the loadout is for. */
   note: string
   /** True for the Nonprofit row: per-seat plan, not a Pro loadout. */
@@ -237,6 +241,27 @@ export function stripTotalLabel(p: PersonaLoadout): string {
   return `${formatLoadoutCents(total.foundingCents)}/mo`
 }
 
+/** The plain add-on label for the strip breakdown, e.g. "Resonance Engine" (from PRICING_ADDONS). Local
+ *  to this module so the breakdown never pulls in the personas layer (which imports this one). PURE. */
+function stripAddonLabel(addon: AddonKey): string {
+  return PRICING_ADDONS.find((a) => a.key === addon)?.label ?? addon
+}
+
+/** The plain breakdown of a loadout total, e.g. "$49 plan + $20 Resonance Engine", so a door whose
+ *  recommended loadout adds a metered add-on shows WHERE the total comes from and never reads as a bare
+ *  higher plan price. Returns null when there is nothing to break down: the flat Nonprofit plan, or a
+ *  Business-only door with no add-on (the total already IS the $49 plan price). PURE. */
+export function stripBreakdownLabel(p: PersonaLoadout): string | null {
+  if (p.perSeat || p.addons.length === 0) return null
+  const cat = pricingCatalog()
+  const base = `${formatLoadoutCents(cat.business_base.month.foundingCents)} plan`
+  const addonParts = p.addons.map((addon) => {
+    const item = cat[addonItemKey(addon)]
+    return `${formatLoadoutCents(item.month.foundingCents)} ${stripAddonLabel(addon)}`
+  })
+  return [base, ...addonParts].join(' + ')
+}
+
 /** Build one "by who you are" strip row from a persona loadout, computing its live monthly total from
  *  the CODE catalog. PURE. */
 export function loadoutStripRow(p: PersonaLoadout): LoadoutStripRow {
@@ -248,6 +273,7 @@ export function loadoutStripRow(p: PersonaLoadout): LoadoutStripRow {
     addons: [...p.addons],
     total,
     totalLabel: stripTotalLabel(p),
+    breakdownLabel: stripBreakdownLabel(p),
     note: p.note,
     perSeat: !!p.perSeat,
   }

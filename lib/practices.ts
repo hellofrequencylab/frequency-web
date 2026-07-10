@@ -1337,6 +1337,11 @@ export interface PracticeEdit {
   timer_kind?: TimerKind
   /** Movement timer config when timer_kind = 'movement' (mode + tuning); null otherwise. */
   movement_config?: MovementConfig | null
+  /** The Be Still flavour when timer_kind = 'mindless' (meditate | breathe | journal | stillness |
+   *  ritual | log). Null = derive from the Pillar at read time. Cleared when the kind isn't mindless. */
+  mindless_mode?: MindlessMode | null
+  /** When true, the author pinned a fixed length the member cannot adjust (length is duration_min). */
+  duration_locked?: boolean
   /** Creator-authored warm-up message shown during the timer pre-roll (ADR-592). Null/empty
    *  = a silent pre-roll. Trimmed + capped to WARMUP_MESSAGE_MAX server-side. */
   warmup_message?: string | null
@@ -1405,12 +1410,24 @@ export async function updatePractice(id: string, patch: PracticeEdit): Promise<P
   if (patch.timer_kind !== undefined) {
     const kind: TimerKind = TIMER_KINDS.includes(patch.timer_kind) ? patch.timer_kind : 'mindless'
     update.timer_kind = kind
+    // A 'movement' kind carries its config; a 'mindless' kind carries its flavour. Switching away
+    // clears the one that no longer applies so a stale config/flavour never lingers.
     if (kind !== 'movement') update.movement_config = null
+    if (kind !== 'mindless') update.mindless_mode = null
   }
   if (patch.movement_config !== undefined)
     update.movement_config = patch.movement_config
       ? sanitizeMovementConfig(patch.movement_config)
       : null
+  // The Be Still flavour a mindless practice opens on (meditate | breathe | journal | stillness |
+  // ritual | log). Null = derive from the Pillar at read time. Validated against the enum.
+  if (patch.mindless_mode !== undefined)
+    update.mindless_mode =
+      patch.mindless_mode && (MINDLESS_MODES as readonly string[]).includes(patch.mindless_mode)
+        ? patch.mindless_mode
+        : null
+  // The author pinned a fixed length the member cannot adjust (duration_min is the length).
+  if (patch.duration_locked !== undefined) update.duration_locked = patch.duration_locked === true
   // Creator-authored warm-up (ADR-592): trim/cap the message, clamp the length. Both nullable
   // (null message = silent pre-roll; null length = the member's personal pre-roll length). The
   // length is clamped INLINE with a pure ternary + arithmetic (mirroring duration_min above) so

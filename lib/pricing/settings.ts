@@ -43,7 +43,7 @@ export interface PricingDefaults {
    *  pays the higher `free_bps`; a paying Business pays `business_bps`; Non Profit pays `nonprofit_bps`
    *  (ADR-552). `member_bps` is the individual PAID-MEMBER seller rate (owner_kind='profile'): the
    *  Market listing ladder charges a paid member 8% and a Business Space 3%, so the subscription buys
-   *  down the fee (ADR-593). Free-vs-paid is a usage state within Business, so the space rate keys on
+   *  down the fee (ADR-596). Free-vs-paid is a usage state within Business, so the space rate keys on
    *  paying-state (a live subscription item), not the plan label — see pricing-keys.ts takeRateBpsForPlan. */
   take_rate: { free_bps: number; business_bps: number; nonprofit_bps: number; member_bps: number }
   /** Vera free-tier daily message cap. */
@@ -62,7 +62,7 @@ export const PRICING_DEFAULTS: PricingDefaults = {
     nonprofit: { monthly_cents: 2900, annual_cents: 29000 }, // $29 / $290 (verified 501c3)
   },
   // Free usage → 5% (the self-funding trigger); paying Business → 3%; Non Profit → 3% (ADR-552 §3.2).
-  // Individual paid-member seller → 8% (the Market listing ladder; Business buys it down to 3%, ADR-593).
+  // Individual paid-member seller → 8% (the Market listing ladder; Business buys it down to 3%, ADR-596).
   take_rate: { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 },
   vera_free_daily_cap: { messages: 10 },
   trial: { days: 14 }, // 14-day free trial on Space plans (card upfront; members get none, the free tier is their trial)

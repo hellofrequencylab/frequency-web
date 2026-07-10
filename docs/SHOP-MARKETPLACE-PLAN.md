@@ -1,7 +1,7 @@
 # Shop & Marketplace Rework — Build Spec
 
 > **Status:** Phases **0-7 + 9 shipped** on `feat/shop-marketplace-rework` (2026-07-09), adversarially
-> reviewed + fixed. **Decision record:** ADR-593 · **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md).
+> reviewed + fixed. **Decision record:** ADR-596 · **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md).
 >
 > **Migrations:** `offerings_backfill` (Phase 3) + `market_published` (Phase 5) **applied + verified** to
 > Frequency Community. `bookable_services` (Phase 4) is **written, NOT applied — apply when payments are
@@ -248,7 +248,7 @@ seller-brought reduced rate.
 
 | # | Phase | Goal | Gate |
 |---|---|---|---|
-| 0 | Naming + registry restructure | This spec + ADR-593 + NAMING.md; rename labels/routes/nav; redirects; help-center. No new UI. | — |
+| 0 | Naming + registry restructure | This spec + ADR-596 + NAMING.md; rename labels/routes/nav; redirects; help-center. No new UI. | — |
 | 1 | Unified catalog model | `type` discriminator + service/ticket fields; migrate JSON offerings; ladder + 8%/3% config. | — |
 | 2 | Member listing funnel | Thin product editor, forced checkout, 8%, Upgrade-to-Business CTA. Free = trade-only. | — |
 | 3 | Business Shop console | 3-tab console replacing `settings/services`; adaptive editor; Draft with Vera. | — |

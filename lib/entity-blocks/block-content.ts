@@ -1,4 +1,5 @@
 import { ENTITY_BLOCKS, entityBlockById, type EntityBlockDef } from './registry'
+import { parseEmbedUrl, parseLinkCard } from '@/lib/spotlight/embeds'
 
 // PER-BLOCK AUTHORED CONTENT + STYLE (ADR-528). The freeform grid (ADR-516/526) arranged blocks but their
 // CONTENT was still authored in the Puck Home doc. This module gives every block an inline-editable content
@@ -166,6 +167,10 @@ export type FieldType =
   | 'text'
   | 'textarea'
   | 'url'
+  // A MEDIA-EMBED link: the operator pastes a normal share URL; it is kept ONLY when it resolves to a
+  // known embed provider (YouTube / Spotify / SoundCloud / Vimeo) or a supported link-card host (Insight
+  // Timer). The renderer re-derives a known-safe iframe src or a link card — never the raw URL (ADR-437).
+  | 'embedUrl'
   | 'links'
   | 'images'
   | 'features'
@@ -326,7 +331,9 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
     { key: 'text', label: 'Quote', type: 'textarea', placeholder: 'The words you want to quote' },
     { key: 'by', label: 'Attribution', type: 'text', placeholder: 'Who said it' },
   ],
-  embed: [{ key: 'url', label: 'Embed URL', type: 'url', placeholder: 'https://' }],
+  embed: [
+    { key: 'url', label: 'Media link', type: 'embedUrl', placeholder: 'Paste a YouTube, Spotify, SoundCloud, Vimeo, or Insight Timer link' },
+  ],
   divider: [],
   // The five DESIGN blocks (2026), now editable in the rail arranger. The rail's field kit is text / textarea
   // / url / images / links / features, so each block exposes its CORE authored content through those types;
@@ -658,6 +665,13 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
       case 'url': {
         const u = safeUrl(v)
         if (u) out[field.key] = u
+        break
+      }
+      case 'embedUrl': {
+        // A media-embed link: keep the raw share URL ONLY when it resolves to a known embed provider or a
+        // supported link-card host. An arbitrary URL is dropped, so it can NEVER become an iframe src
+        // (ADR-437) — the renderer re-derives a reconstructed, host-allowlisted src from this on read.
+        if (typeof v === 'string' && (parseEmbedUrl(v) || parseLinkCard(v))) out[field.key] = v.trim().slice(0, 400)
         break
       }
       case 'toggle': {

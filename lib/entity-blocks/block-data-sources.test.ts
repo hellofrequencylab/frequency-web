@@ -316,7 +316,7 @@ describe('blockDataList', () => {
 // ── createHref (item 5): a real admin route from the ONE map ──────────────────────────────────────────
 
 describe('blockCreateHref', () => {
-  it('offerings → the Shop console route (ADR-593: the Store editor became /settings/shop)', () => {
+  it('offerings → the Shop console route (ADR-596: the Store editor became /settings/shop)', () => {
     expect(blockCreateHref('offerings', 'river-aid')).toBe('/spaces/river-aid/settings/shop')
   })
 

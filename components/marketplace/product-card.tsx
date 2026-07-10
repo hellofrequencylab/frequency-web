@@ -7,7 +7,7 @@ function usd(cents: number, currency = 'usd') {
 }
 
 /** The card's price label. A service honors its priceModel (From / Free / Enquire); a product shows its
- *  flat price. Keeps a raw '$0' Buy from rendering on an enquire-only service (ADR-593). */
+ *  flat price. Keeps a raw '$0' Buy from rendering on an enquire-only service (ADR-596). */
 function priceLabel(product: CommerceProduct): string {
   const svc = (product.metadata as Record<string, unknown>)?.service as { priceModel?: string } | undefined
   if (product.productKind === 'service' && svc?.priceModel) {

@@ -122,7 +122,7 @@ export function takeRateCents(
 }
 
 /** The take-rate bps for an individual PAID-MEMBER seller (owner_kind='profile') — the Market listing
- *  ladder rate (8% today, ADR-593). Distinct from the space plan rates: a member sells at member_bps,
+ *  ladder rate (8% today, ADR-596). Distinct from the space plan rates: a member sells at member_bps,
  *  and upgrading their space to Business buys the fee down to business_bps. PURE. Fails safe to the
  *  higher free_bps if a legacy row lacks member_bps (never under-collect). */
 export function memberTakeRateBps(takeRate: { member_bps?: number; free_bps: number }): number {

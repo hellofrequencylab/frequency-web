@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 // The one faceted nav across every commerce surface (Classifieds · Housing · Market ·
 // Frequency Store), so the areas read as one hub no matter which page you land on
-// (ADR-593). The `key` values are stable internal ids kept from the old taxonomy
+// (ADR-596). The `key` values are stable internal ids kept from the old taxonomy
 // (all=Classifieds, makers=Market, shop=Frequency Store) so callers do not churn;
 // only labels + hrefs carry the new naming. `active` highlights the current area.
 

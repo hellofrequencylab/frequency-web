@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { marketGroupForKind } from './types'
 
-describe('marketGroupForKind (ADR-593: Market umbrella typed rails)', () => {
+describe('marketGroupForKind (ADR-596: Market umbrella typed rails)', () => {
   it('maps physical/digital to Products', () => {
     expect(marketGroupForKind('physical')).toBe('products')
     expect(marketGroupForKind('digital')).toBe('products')

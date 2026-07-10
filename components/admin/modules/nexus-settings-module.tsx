@@ -1,17 +1,14 @@
 'use client'
 
-import { useEffect, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Check } from 'lucide-react'
-import { AdminModuleCard } from '@/components/admin/admin-module-card'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
+import { RailAutosaveForm } from '@/components/admin/rail/rail-autosave-form'
 import { getNexusAdminData, updateNexusSettings } from '@/app/(main)/nexuses/admin-actions'
 
-// In-place "Nexus settings" module (EMBEDDED-ADMIN.md / ADR-133). Mirrors the
-// circle/hub modules: renders inside the page admin dock on /nexuses/[slug], and
-// renders nothing unless the server grants nexus.manage (mentor of this nexus or
-// janitor). Mentor reassignment stays in the full admin editor.
+// In-place "Nexus settings" module (EMBEDDED-ADMIN.md / ADR-133). Renders inside the page admin dock on
+// /nexuses/[slug], and renders nothing unless the server grants nexus.manage. The rail section header is
+// the single title; edits autosave and reflect on the page live (RailAutosaveForm).
 
 type NexusData = NonNullable<Awaited<ReturnType<typeof getNexusAdminData>>>
 
@@ -24,11 +21,6 @@ export function NexusSettingsModule() {
 
   const [data, setData] = useState<NexusData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saved, setSaved] = useState(false)
-  // updateNexusSettings throws on failure; catch it so a failed save shows a
-  // reason instead of falsely reporting "Saved".
-  const [error, setError] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
 
   useEffect(() => {
     if (!slug) return
@@ -50,70 +42,27 @@ export function NexusSettingsModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('nexus.settings')
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    setError(null)
-    startTransition(async () => {
-      try {
-        await updateNexusSettings(data!.id, data!.slug, fd)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not save the nexus.')
-      }
-    })
-  }
-
   return (
-    <AdminModuleCard title={mod?.label ?? 'Nexus settings'} Icon={mod?.Icon} desc={mod?.desc}>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Name</span>
-          <input name="name" defaultValue={data.name} required disabled={pending} className={input} />
-        </label>
+    <RailAutosaveForm action={updateNexusSettings.bind(null, data.id, data.slug)} className="space-y-3">
+      <label className="block space-y-1">
+        <span className={fieldLabel}>Name</span>
+        <input name="name" defaultValue={data.name} required className={input} />
+      </label>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Member cap</span>
-          <input
-            name="member_cap"
-            type="number"
-            min={1}
-            max={2000}
-            defaultValue={data.member_cap ?? 100}
-            disabled={pending}
-            className={input}
-          />
-        </label>
+      <label className="block space-y-1">
+        <span className={fieldLabel}>Member cap</span>
+        <input name="member_cap" type="number" min={1} max={2000} defaultValue={data.member_cap ?? 100} className={input} />
+      </label>
 
-        <label className="block space-y-1">
-          <span className={fieldLabel}>Status</span>
-          <select name="status" defaultValue={data.status} disabled={pending} className={input}>
-            <option value="forming">Forming</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
-
-        <div className="flex items-center justify-end gap-2 pt-1">
-          {error && <span role="alert" className="mr-auto text-xs font-medium text-danger">{error}</span>}
-          {saved && (
-            <span className="flex items-center gap-1 text-xs font-medium text-primary-strong">
-              <Check className="h-3.5 w-3.5" /> Saved
-            </span>
-          )}
-          <button
-            type="submit"
-            disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
-          >
-            {pending ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </AdminModuleCard>
+      <label className="block space-y-1">
+        <span className={fieldLabel}>Status</span>
+        <select name="status" defaultValue={data.status} className={input}>
+          <option value="forming">Forming</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+          <option value="archived">Archived</option>
+        </select>
+      </label>
+    </RailAutosaveForm>
   )
 }

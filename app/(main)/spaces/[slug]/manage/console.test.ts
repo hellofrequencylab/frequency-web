@@ -77,7 +77,7 @@ describe('panelHrefForModule (on-page panel first, else deep link, no regression
     expect(panelHrefForModule(byId('space.billing'), slug)).toBe(`/spaces/${slug}?panel=billing`)
   })
 
-  it('deep-links Shop (was Store) to the 3-tab Shop console, not an inline panel (ADR-593)', () => {
+  it('deep-links Shop (was Store) to the 3-tab Shop console, not an inline panel (ADR-596)', () => {
     // space.services was relabeled 'Shop' and its MODULE_PANEL_ID entry removed, so it falls through to
     // the deepLink at /settings/shop (the Catalog/Orders/Storefront console) instead of opening ?panel=.
     expect(panelHrefForModule(byId('space.services'), slug)).toBe(`/spaces/${slug}/settings/shop`)

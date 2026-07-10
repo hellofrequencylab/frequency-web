@@ -21,7 +21,7 @@ import {
 } from './pricing-keys'
 
 // ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
-// ADR-593: individual paid-member seller 8% (800 bps).
+// ADR-596: individual paid-member seller 8% (800 bps).
 const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 }
 
 describe('priceKey', () => {
@@ -136,7 +136,7 @@ describe('take-rate by paying-state (ADR-552: free usage 5% / paying Business 3%
   })
 })
 
-describe('member seller take-rate (ADR-593: paid member 8%, Business buys it down)', () => {
+describe('member seller take-rate (ADR-596: paid member 8%, Business buys it down)', () => {
   it('memberTakeRateBps returns member_bps', () => {
     expect(memberTakeRateBps(TAKE_RATE)).toBe(800)
   })

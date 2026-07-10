@@ -99,6 +99,8 @@ const KNOWN_PLATFORMS = new Set([
   'tiktok',
   'yelp',
   'google',
+  'insighttimer',
+  'spotify',
 ])
 
 function str(v: unknown): string | undefined {

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { BarChart3 } from 'lucide-react'
-import { moduleById } from '@/lib/admin/modules/registry'
 import { getChannelInsightsData, type ChannelInsightsData } from '@/app/(main)/channels/admin-actions'
 
 // In-place "Insights" module (ADR-515 Phase 5, the 'insights' spine cell for channels). Renders in the page
@@ -42,9 +40,6 @@ export function ChannelInsightsModule() {
   }
   if (!data) return null
 
-  const mod = moduleById('channel.insights')
-  const Icon = mod?.Icon ?? BarChart3
-
   const stats = [
     { label: 'Tuned in', value: data.tunedIn },
     { label: 'Circles', value: data.circleCount },
@@ -53,14 +48,6 @@ export function ChannelInsightsModule() {
   return (
     <div className="@container space-y-6">
       <section>
-        <header className="mb-4 space-y-1">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-text">
-            <Icon className="h-4 w-4 shrink-0 text-primary-strong" />
-            {mod?.label ?? 'Insights'}
-          </h3>
-          {mod?.desc && <p className="text-sm text-muted">{mod.desc}</p>}
-        </header>
-
         <div className="grid grid-cols-2 gap-2">
           {stats.map((s) => (
             <div key={s.label} className="rounded-xl border border-border bg-surface p-3">

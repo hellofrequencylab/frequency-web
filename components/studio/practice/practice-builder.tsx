@@ -10,13 +10,13 @@ import {
 } from 'lucide-react'
 import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
-import { StudioField } from '../kit/studio-field'
+import { StudioField, StudioNote } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { DangerModal } from '@/components/admin/danger-modal'
 import { isError } from '@/lib/action-result'
 import { updatePracticeAction, setPracticeTagsAction, setPracticeRewardAction, deleteOwnPracticeAction } from '@/app/(main)/practices/actions'
-import type { PracticeEdit, WeightClass, FocusDetail, TimerKind } from '@/lib/practices'
+import type { PracticeEdit, WeightClass, FocusDetail, TimerKind, MindlessMode } from '@/lib/practices'
 import { isTierAllowed, clampTierToDuration, TIER_FLOOR_MIN } from '@/lib/practices/tiers'
 import { AUTHORED_WARMUP_PRESETS, WARMUP_MESSAGE_MAX } from '@/lib/on-air'
 import {
@@ -41,6 +41,17 @@ const ICONS: { key: string; Icon: LucideIcon }[] = [
   { key: 'heart', Icon: Heart }, { key: 'leaf', Icon: Leaf }, { key: 'sun', Icon: Sun }, { key: 'moon', Icon: Moon },
 ]
 const ICON_BY_KEY = new Map(ICONS.map((i) => [i.key, i.Icon]))
+
+// The Be Still flavours a Mindless practice opens on (NAMING: Be Still sub-modes). Value =
+// practices.mindless_mode; leaving it unset lets the timer derive one from the Pillar.
+const BE_STILL_MODES: { value: MindlessMode; label: string; hint: string }[] = [
+  { value: 'meditate', label: 'Meditate', hint: 'A quiet timed sit; the clock counts down.' },
+  { value: 'breathe', label: 'Breathe', hint: 'A guided breathing pattern with rings to follow.' },
+  { value: 'stillness', label: 'Stillness', hint: 'A longer, quieter sit with no cues.' },
+  { value: 'ritual', label: 'Ritual', hint: 'The same set practice, same length each time.' },
+  { value: 'journal', label: 'Journal', hint: 'A timed sit with a notes field to write in.' },
+  { value: 'log', label: 'Just Log', hint: 'Skip the timer; mark it done, add a note.' },
+]
 
 // Weight class → its per-log Zap payout. These mirror ZAP_AMOUNTS (lib/zaps.ts:
 // practice_logged_light 8 / practice_logged 12 / practice_logged_heavy 15); kept as
@@ -70,6 +81,10 @@ export interface PracticeBuilderProps {
   timerKind: TimerKind
   /** Movement config when timerKind = 'movement' (mode + tuning). */
   movementConfig: MovementConfig | null
+  /** The Be Still flavour when timerKind = 'mindless' (null = derive from the Pillar). */
+  mindlessMode: MindlessMode | null
+  /** Author pinned a fixed length the member cannot adjust. */
+  durationLocked: boolean
   /** Creator-authored warm-up message shown during the pre-roll (null = a silent pre-roll). */
   warmupMessage: string | null
   /** Creator's warm-up (pre-roll) length in seconds; null = the member's personal pre-roll. */
@@ -118,6 +133,10 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
   const [timerKind, setTimerKind] = useState<TimerKind>(props.timerKind ?? 'mindless')
   // The Movement mode picked when timerKind = 'movement'. Seeds from the saved config.
   const [movementMode, setMovementMode] = useState<MovementMode>(props.movementConfig?.mode ?? 'walk')
+  // The Be Still flavour when timerKind = 'mindless' (null = derive from the Pillar), and whether
+  // the length is locked. Full author control over every practice x timer combo (P7).
+  const [mindlessMode, setMindlessMode] = useState<MindlessMode | null>(props.mindlessMode ?? null)
+  const [durationLocked, setDurationLocked] = useState<boolean>(props.durationLocked ?? false)
   // Full per-mode tuning the CREATOR presets, so the timer opens ready (ADR-592, P2). Seeded
   // from the saved movement_config; each mode reads only its own fields, mirroring the member
   // setup in movement-session.tsx. Defaults match lib/movement's builders.
@@ -439,6 +458,19 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
             {TIER_FLOOR_MIN.standard} min = Standard, {TIER_FLOOR_MIN.heavy} min = Heavy.
           </p>
         </StudioField>
+        {/* Lock the length: on a timed practice the member normally adjusts it; locking pins it.
+            A sibling of the Time field (not nested in its label), spanning the row. */}
+        {timerKind !== 'none' && (
+          <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-muted sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={durationLocked}
+              onChange={(e) => { setDurationLocked(e.target.checked); queueSave({ duration_locked: e.target.checked }) }}
+              className="h-3.5 w-3.5 rounded border-border"
+            />
+            Lock this length so members can&rsquo;t change it at the timer
+          </label>
+        )}
         <StudioField label="Category">
           <select value={category} onChange={(e) => { setCategory(e.target.value); queueSave({ category: e.target.value || null }) }} className={FIELD}>
             <option value="">None</option>
@@ -503,7 +535,14 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           records in one tap. A Movement kind also picks the mode it opens on. */}
       <fieldset className="mt-4">
         <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">How it&rsquo;s done</legend>
-        <div role="radiogroup" aria-label="How it's done" className="mt-1 grid grid-cols-3 gap-2">
+        <StudioNote className="mt-1.5">
+          Pick how a member does this practice. <strong>Mindless</strong> opens the quiet timer
+          (Be Still) so they sit or breathe. <strong>Get Moving</strong> opens the moving timer
+          (a walk, run, yoga, stretch, play, or a full strength workout). <strong>Log it</strong>
+          is a one-tap check-off, no timer. Whatever you pick here, you can preset the rest below
+          so it opens ready to go.
+        </StudioNote>
+        <div role="radiogroup" aria-label="How it's done" className="mt-2 grid grid-cols-3 gap-2">
           {([
             { value: 'mindless', label: 'Mindless', hint: 'Opens Mindless to sit or breathe' },
             { value: 'movement', label: 'Get Moving', hint: 'Opens Mindless in Get Moving mode' },
@@ -518,12 +557,15 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
                 aria-checked={active}
                 onClick={() => {
                   setTimerKind(k.value)
-                  // Switching to Movement seeds its config from the current mode; anything else
-                  // clears it (the server also nulls movement_config off a non-movement kind).
+                  // Switching to Movement seeds its config from the current mode; Mindless carries
+                  // its Be Still flavour; anything else clears both (the server nulls the config /
+                  // flavour that no longer applies off a mismatched kind).
                   if (k.value === 'movement') {
                     saveMovement()
+                  } else if (k.value === 'mindless') {
+                    queueSave({ timer_kind: 'mindless', movement_config: null, mindless_mode: mindlessMode })
                   } else {
-                    queueSave({ timer_kind: k.value, movement_config: null })
+                    queueSave({ timer_kind: 'none', movement_config: null })
                   }
                 }}
                 className={`flex min-h-11 flex-col items-start justify-center rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
@@ -541,7 +583,13 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
         {timerKind === 'movement' && (
           <div className="mt-3">
             <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Movement mode</p>
-            <div role="radiogroup" aria-label="Movement mode" className="mt-1 grid grid-cols-4 gap-2">
+            <StudioNote className="mt-1.5">
+              Pick the kind of moving, then set it up below. <strong>Strength</strong> gives you a
+              full workout (Tabata, EMOM, AMRAP or a circuit, with the work, rest and rounds dialed
+              in); Walk, Run and Stretch take a length and optional cues; Yoga picks a flow. Whatever
+              you set here ships preset, so the member taps once and it&rsquo;s ready.
+            </StudioNote>
+            <div role="radiogroup" aria-label="Movement mode" className="mt-2 grid grid-cols-4 gap-2">
               {MOVEMENT_MODES.map((m) => {
                 const active = movementMode === m.mode
                 return (
@@ -646,7 +694,33 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
           </div>
         )}
 
-        <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Movement practice shows a Practice button; a Log it practice shows Log it.</p>
+        {/* The Be Still flavour a Mindless practice opens on (P7). "Auto" leaves it to the Pillar. */}
+        {timerKind === 'mindless' && (
+          <div className="mt-3">
+            <p className="text-2xs font-semibold uppercase tracking-wide text-subtle">Be Still mode</p>
+            <StudioNote className="mt-1.5">
+              How the quiet timer opens. <strong>Meditate</strong>, <strong>Stillness</strong> and
+              <strong> Ritual</strong> are quiet countdowns; <strong>Breathe</strong> guides a
+              breathing pattern; <strong>Journal</strong> adds a notes field; <strong>Just Log</strong>
+              skips the timer. Leave it on <strong>Auto</strong> to fit the practice&rsquo;s Pillar.
+            </StudioNote>
+            <div role="radiogroup" aria-label="Be Still mode" className="mt-2 flex flex-wrap gap-2">
+              <MoveChip active={mindlessMode === null} onClick={() => { setMindlessMode(null); queueSave({ mindless_mode: null }) }}>
+                Auto
+              </MoveChip>
+              {BE_STILL_MODES.map((m) => (
+                <MoveChip key={m.value} active={mindlessMode === m.value} title={m.hint} onClick={() => { setMindlessMode(m.value); queueSave({ mindless_mode: m.value }) }}>
+                  {m.label}
+                </MoveChip>
+              ))}
+            </div>
+            <p className="mt-1 text-2xs text-subtle">
+              {mindlessMode ? BE_STILL_MODES.find((m) => m.value === mindlessMode)?.hint : 'Picks a fitting mode from the practice’s Pillar.'}
+            </p>
+          </div>
+        )}
+
+        <p className="mt-1 text-xs text-subtle">On a Journey, a Mindless or Get Moving practice shows a Start Practice button; a Log it practice shows a Log it check-off.</p>
       </fieldset>
 
       {/* Warm-up — a message + length shown during the timer pre-roll, before Start Practice
@@ -654,7 +728,12 @@ export function PracticeBuilder(props: PracticeBuilderProps) {
       {timerKind !== 'none' && (
         <fieldset className="mt-4">
           <legend className="text-2xs font-semibold uppercase tracking-wide text-subtle">Warm-up</legend>
-          <p className="mt-1 text-xs text-subtle">A short message shown on screen as the timer counts in, before Start Practice.</p>
+          <StudioNote className="mt-1.5">
+            A short message shown on screen while the timer counts in, before Start Practice, so
+            the member can set up. Optional. Set a longer count-in below if the message needs a
+            moment to read; leave it on <strong>Member default</strong> to keep each person&rsquo;s
+            own 3, 5 or 10 second lead-in.
+          </StudioNote>
           <div className="mt-2">
             <textarea
               value={warmupMessage}

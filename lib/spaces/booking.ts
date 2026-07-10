@@ -637,7 +637,7 @@ export async function cancelBooking(bookingId: string): Promise<ActionResult> {
   return ok()
 }
 
-// ── Bookable services (Phase 4, ADR-593): HOLD-FIRST booking tied to a commerce deposit ─────────
+// ── Bookable services (Phase 4, ADR-596): HOLD-FIRST booking tied to a commerce deposit ─────────
 // These write the 'pending' status + order_id/product_id columns from migration 20261102000000, which
 // is applied only when payments are enabled. They run ONLY in the paid service-booking path (gated
 // behind commerce checkout, which is OFF until payouts are live), never in the free createBooking path

@@ -9,7 +9,7 @@ import { ModuleSection } from './section'
 // Reads the central offerings catalog off the data bag (profileData.offerings) and renders only the
 // LISTED services (private ones are direct-link only). FAIL-SAFE: no listed services, no section.
 //
-// RESOLVED (ADR-593): the cross-space services marketplace shipped. The JSON offerings were backfilled
+// RESOLVED (ADR-596): the cross-space services marketplace shipped. The JSON offerings were backfilled
 // into commerce_products (migration 20261101000000), the umbrella aggregates them via
 // lib/commerce/products.ts listMarketListings (the Services rail at /market), and each Space's public
 // storefront is the /spaces/[slug]/shop tab (Phase 6, reads listPublicSpaceCatalog). FOLLOW-ON: this

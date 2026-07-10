@@ -274,11 +274,11 @@
   `event_space`, `lab`, `partner`, `whitelabel` (as a tier). They may persist as archived catalog
   keys or Focus ids, but never as a member-facing type or plan name.
 
-## Marketplace & Commerce (ADR-593, July 2026)
+## Marketplace & Commerce (ADR-596, July 2026)
 
 The four consumer commerce surfaces. **Member-facing names + public routes are canonical; the
 internal vertical ids stay stable** (a documented mismatch: internal id ≠ member label, to avoid
-data churn — see ADR-593 §6 and the collision guard below).
+data churn — see ADR-596 §6 and the collision guard below).
 
 - **Classifieds** = the peer board: members post **offer / free / lend / request** listings,
   connect-only (no in-app money, contact via DM). Free members and up. Route `/classifieds`.
@@ -315,7 +315,7 @@ Collision guards:
   vertical is **Frequency Store**, never "Shop." The management console is the **Shop console**.
 - **"Market"**: the umbrella commerce surface (id `maker`), never the peer board. The peer board is
   **Classifieds** (id `market`). The internal id `market` therefore backs the member-facing
-  *Classifieds*, and id `maker` backs member-facing *Market* — intentional, documented in ADR-593.
+  *Classifieds*, and id `maker` backs member-facing *Market* — intentional, documented in ADR-596.
 - **"Store"**: retired as the per-Space services label (now **Shop**) and reserved for **Frequency
   Store** (first-party) only. The **Vault Store** (Gems, unchanged) is a separate proper noun.
 

@@ -57,7 +57,7 @@ export async function spaceTakeRateCents(
 }
 
 /** The application fee (cents) on a charge from an individual PAID-MEMBER seller (owner_kind='profile'):
- *  the Market listing ladder rate (member_bps, 8% today — ADR-593). A member sells at this higher rate;
+ *  the Market listing ladder rate (member_bps, 8% today — ADR-596). A member sells at this higher rate;
  *  upgrading to a Business Space buys it down to the space rate. Reads the operator pricing_settings
  *  (fail-safe to the seeded defaults, then to the platform default fee — never 0, never under-collect). */
 export async function memberTakeRateCents(grossCents: number): Promise<number> {

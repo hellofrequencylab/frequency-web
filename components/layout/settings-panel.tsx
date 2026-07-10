@@ -124,6 +124,16 @@ export function useIsDesktop(): boolean {
 /** One populated spine section, rendered inline in the flattened bar (inline-first rail, ADR-514): a
  *  lightweight header (SPINE_META label + Icon) followed by that slot's nodes — inline editors and/or
  *  feature-workflow link-rows, interspersed in spine order, all in view at once. */
+/** One rendered rail item — its node plus the label the section shows for it. The label is drawn ONLY
+ *  when a section holds more than one node (so a single-module section reads as just its section header,
+ *  never a doubled title — the "no duplicate titles" directive). Modules render flush BODY only; the
+ *  section header is the single source of the title. */
+export interface RailNode {
+  id: string
+  label: string
+  node: ReactNode
+}
+
 export interface AdminSection {
   /** The rail band this section renders in (ADR-514 three-tier reorg): standard (inline, top) /
    *  primary (ordered by importance) / extra (under the "More" disclosure). */
@@ -132,7 +142,7 @@ export interface AdminSection {
   label: string
   Icon: LucideIcon
   /** The slot's rendered nodes: inline editor components, link-rows, and any folded inline extra. */
-  nodes: ReactNode[]
+  nodes: RailNode[]
 }
 
 /** A lightweight, searchable row for the fuzzy "Search settings" filter (P1/P6 — one catalog source
@@ -412,13 +422,13 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
     </div>
   ) : null
 
-  const allExtraItems: { slot: AdminSlot; tier: RailTier; priority: number; node: ReactNode }[] = [
-    { slot: 'engage', tier: 'primary', priority: 90, node: questBlock },
-    { slot: 'basics', tier: 'standard', priority: 90, node: contentBlock },
-    { slot: 'layout', tier: 'primary', priority: 90, node: circleLayoutNode },
-    { slot: 'layout', tier: 'primary', priority: 90, node: eventLayoutNode },
-    { slot: 'layout', tier: 'primary', priority: 90, node: practiceLayoutNode },
-    { slot: 'danger', tier: 'extra', priority: 99, node: dangerBlock },
+  const allExtraItems: { slot: AdminSlot; tier: RailTier; priority: number; node: ReactNode; label: string }[] = [
+    { slot: 'engage', tier: 'primary', priority: 90, node: questBlock, label: 'Circle Quest' },
+    { slot: 'basics', tier: 'standard', priority: 90, node: contentBlock, label: 'Page content' },
+    { slot: 'layout', tier: 'primary', priority: 90, node: circleLayoutNode, label: 'Layout' },
+    { slot: 'layout', tier: 'primary', priority: 90, node: eventLayoutNode, label: 'Layout' },
+    { slot: 'layout', tier: 'primary', priority: 90, node: practiceLayoutNode, label: 'Layout' },
+    { slot: 'danger', tier: 'extra', priority: 99, node: dangerBlock, label: 'Danger zone' },
   ]
   const extraItems = allExtraItems.filter((x) => x.node != null)
 
@@ -437,10 +447,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   }
   const railItems: RailItem[] = []
   const nodeById = new Map<string, ReactNode>()
+  const labelById = new Map<string, string>()
   for (const app of inlineApps) {
     const node = nodeForApp(app.id)
     if (node == null) continue
     nodeById.set(app.id, node)
+    labelById.set(app.id, app.label)
     railItems.push({
       id: app.id,
       category: app.category,
@@ -452,6 +464,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   extraItems.forEach((x, i) => {
     const id = `extra:${x.slot}:${i}`
     nodeById.set(id, <div key={id}>{x.node}</div>)
+    labelById.set(id, x.label)
     railItems.push({ id, category: x.slot, tier: x.tier, priority: x.priority, personal: false })
   })
 
@@ -467,7 +480,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       Icon: meta.Icon,
       nodes: g.appIds.flatMap((id) => {
         const node = nodeById.get(id)
-        return node != null ? [node] : []
+        return node != null ? [{ id, label: labelById.get(id) ?? '', node }] : []
       }),
     }
   })

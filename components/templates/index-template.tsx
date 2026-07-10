@@ -12,6 +12,7 @@
 
 import { PageHeading } from './page-heading'
 import { Breadcrumbs } from '@/components/layout/breadcrumbs'
+import { PageAdminBar } from '@/components/layout/page-admin-bar'
 
 /** One crumb in the standard index breadcrumb (`/network` -> this section). */
 export type Crumb = { href: string; label: string }
@@ -25,6 +26,7 @@ export function IndexTemplate({
   toolbar,
   trail,
   heroImage,
+  heroOverlay = false,
   banner,
   adminBar = true,
   children,
@@ -45,6 +47,11 @@ export function IndexTemplate({
   /** Operator hero image URL. Rendered as the STANDARD cropped header banner below the
    *  breadcrumb (16:9-ish, object-cover) so every index reads the same. Renders only when set. */
   heroImage?: string | null
+  /** OVERLAY hero mode: the title / description / action render ON the hero image over an ink
+   *  legibility scrim (the Space-profile hero grammar), instead of the banner-above-heading
+   *  lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below, so the
+   *  operator Settings affordance never disappears. */
+  heroOverlay?: boolean
   /** Escape hatch for a fully custom header media node (rendered after trail + heroImage).
    *  Prefer `trail` + `heroImage` — `banner` is for the rare bespoke header. */
   banner?: React.ReactNode
@@ -53,6 +60,49 @@ export function IndexTemplate({
   adminBar?: boolean
   children: React.ReactNode
 }) {
+  // OVERLAY hero: one composed header band — image + bottom-heavy ink scrim + the page heading
+  // grammar (eyebrow / h1 / description on-ink, the action bottom-right) anchored over it. The
+  // standard PageHeading is suppressed (its h1 would double), but the admin-bar rule below stays.
+  if (heroImage && heroOverlay) {
+    return (
+      <div>
+        {trail && <Breadcrumbs trail={trail} />}
+        <div className="relative mt-3 min-h-[14rem] overflow-hidden rounded-2xl border border-border sm:min-h-[18rem]">
+          {/* Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
+              still renders; fetchPriority high gives this above-the-fold hero an LCP hint. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={heroImage} alt="" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent" aria-hidden />
+          <div className="relative flex min-h-[14rem] flex-col justify-end gap-4 p-6 sm:min-h-[18rem] sm:flex-row sm:items-end sm:justify-between sm:p-8">
+            <div className="min-w-0">
+              {eyebrow && (
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-on-ink-muted">
+                  {eyebrow}
+                </p>
+              )}
+              <h1 className="mb-1 text-balance text-2xl font-bold text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)] sm:text-3xl">
+                {title}
+              </h1>
+              {description && (
+                <p className="max-w-2xl text-sm font-medium leading-relaxed text-on-ink [text-shadow:0_1px_2px_rgb(0_0_0/0.4)]">
+                  {description}
+                </p>
+              )}
+            </div>
+            {action && <div className="shrink-0">{action}</div>}
+          </div>
+        </div>
+        {banner}
+        {/* The header rule + operator Settings, same contract as the standard heading. */}
+        <div className="mt-4">
+          {adminBar ? <PageAdminBar asDivider /> : <div className="mb-5 border-b border-border sm:mb-6" />}
+        </div>
+        {toolbar && <div className="mb-4">{toolbar}</div>}
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div>
       {(trail || heroImage || banner) && (

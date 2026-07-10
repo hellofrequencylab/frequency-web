@@ -1,4 +1,4 @@
--- Shop & Marketplace rework, Phase 4 (ADR-593): bookable services — the seam that lets a
+-- Shop & Marketplace rework, Phase 4 (ADR-596): bookable services — the seam that lets a
 -- commerce_products service (product_kind='service') be booked against the Space's existing
 -- availability calendar and paid through the existing commerce checkout (HOLD-FIRST deposit).
 --

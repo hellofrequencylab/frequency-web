@@ -35,7 +35,7 @@ type PanelBody = (props: { slug: string }) => ReactNode | Promise<ReactNode>
 const PANEL_BODIES: Record<string, PanelBody> = {
   members: MembersBody,
   offerings: OfferingsBody,
-  // 'services' (retired JSON Store) removed — Phase 9, ADR-593; the Store is now the /settings/shop console.
+  // 'services' (retired JSON Store) removed — Phase 9, ADR-596; the Store is now the /settings/shop console.
   qr: QrBody,
   email: EmailBody,
   billing: BillingBody,

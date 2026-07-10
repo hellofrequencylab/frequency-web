@@ -25,7 +25,7 @@ export interface CommerceProduct {
   category: string | null
   status: ProductStatus
   bookingSpaceId: string | null
-  /** Opt-in to appear in the global Market umbrella (ADR-593). status='active' shows a listing in the
+  /** Opt-in to appear in the global Market umbrella (ADR-596). status='active' shows a listing in the
    *  Space's own Shop; this flag additionally publishes it to the cross-space Market. */
   marketPublished: boolean
   metadata: Record<string, unknown>
@@ -58,7 +58,7 @@ export interface CheckoutInput {
   shipping?: Record<string, unknown>
 }
 
-// ── Market grouping (ADR-593) ──────────────────────────────────────────────────────────────
+// ── Market grouping (ADR-596) ──────────────────────────────────────────────────────────────
 // The Market umbrella surface groups every listing by TYPE into three rails. The grouping is
 // derived from the existing `product_kind` discriminator (no new column): the schema already
 // distinguishes physical/digital/service/booking/ticket, so the umbrella reads the group from it.
@@ -69,7 +69,7 @@ export type MarketGroup = 'products' | 'services' | 'tickets'
 /** The Market groups in display order (Products, Services, Tickets). */
 export const MARKET_GROUPS: readonly MarketGroup[] = ['products', 'services', 'tickets']
 
-/** Map a product_kind to its Market group (ADR-593). Physical/digital = Products; service/booking =
+/** Map a product_kind to its Market group (ADR-596). Physical/digital = Products; service/booking =
  *  Services; ticket = Tickets. PURE. */
 export function marketGroupForKind(kind: ProductKind): MarketGroup {
   switch (kind) {
@@ -110,7 +110,7 @@ export type ServicePriceModel = 'fixed' | 'from' | 'free' | 'contact'
 export type ServiceRecurrence = 'once' | 'weekly' | 'monthly'
 
 /** The service-specific config stored under `commerce_products.metadata.service` for a
- *  product_kind='service'|'booking' listing (ADR-593). Scheduling itself rides `booking_space_id`
+ *  product_kind='service'|'booking' listing (ADR-596). Scheduling itself rides `booking_space_id`
  *  + the Booking engine (Phase 4); this holds the quote + policy. All fields optional so a minimal
  *  service (fixed price, no policy) needs none of them. */
 export interface ServiceConfig {

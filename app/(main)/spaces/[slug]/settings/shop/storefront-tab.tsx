@@ -3,7 +3,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { saveStorefrontSettingsAction } from './shop-actions'
 
-// The Storefront tab of the Shop console (ADR-593). The settings for the public per-Space Shop tab:
+// The Storefront tab of the Shop console (ADR-596). The settings for the public per-Space Shop tab:
 // its renameable name and whether it shows on the Space profile (Phase 6 renders the public tab from
 // preferences.storefront). Plus a pointer to payout onboarding. Server-action form, read-only for a
 // staff preview. No em or en dashes.

@@ -56,7 +56,7 @@ async function resolveCharge(seller: ProductRow, grossCents: number): Promise<Re
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
-    // An individual paid-member seller pays the Market listing ladder rate (member_bps, 8% — ADR-593),
+    // An individual paid-member seller pays the Market listing ladder rate (member_bps, 8% — ADR-596),
     // not a space plan rate. Upgrading to a Business Space buys the fee down (the space branch below).
     return { platformFeeCents: await memberTakeRateCents(grossCents), sellerStripeAccountId: status.accountId }
   }
@@ -235,7 +235,7 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       idempotencyKey: `commerce_order:${row.id}`,
     }).catch(() => {})
 
-    // Bookable services (Phase 4, ADR-593): if this order paid the deposit on a held booking, confirm
+    // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
     // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
     await confirmBookingByOrder(row.id)
   }
@@ -319,7 +319,7 @@ export async function recordCommerceRefund(paymentIntentId: string | null): Prom
       idempotencyKey: `commerce_order-refund:${row.id}`,
     }).catch(() => {})
 
-    // Bookable services (Phase 4, ADR-593): release the slot behind a refunded service order. Fail-soft.
+    // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
     await cancelBookingByOrder(row.id)
   }
 }

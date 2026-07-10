@@ -2,7 +2,7 @@ import { Receipt } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { listSpaceOrders, spaceEarningsSummary } from '@/lib/commerce/orders'
 
-// The Orders tab of the Shop console (ADR-593). A Space's sales + earnings, scoped by owner_space_id
+// The Orders tab of the Shop console (ADR-596). A Space's sales + earnings, scoped by owner_space_id
 // (listOrdersForSeller filters owner_profile_id, which is null for a Space, so a Space's orders are
 // invisible through the maker path). Read-only. While billing is gated OFF there are no settled orders,
 // so this shows a calm "no orders yet" state. No em or en dashes.
