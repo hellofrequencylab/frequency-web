@@ -7,7 +7,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
+import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -30,20 +30,16 @@ export const dynamic = 'force-dynamic'
 
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-classifieds/1600/600'
 
-export default async function ClassifiedsPage({ searchParams }: { searchParams: Promise<{ kind?: string; q?: string }> }) {
-  const { kind, q } = await searchParams
+export default async function ClassifiedsPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
+  const { kind } = await searchParams
   const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
-  const query = (q ?? '').trim().toLowerCase()
 
   const { description, ctaLabel, ctaHref } = await resolvePageContent('/classifieds', CONTENT_FALLBACK)
-  // One unfiltered read powers the stats; the grid filters to the active kind + the search query in-process.
+  // One unfiltered read powers the stats; the grid filters to the active kind in-process. The hero
+  // search bar filters the grid instantly on the client (MarketGrid reads the shared query).
   const [profileId, allListings] = await Promise.all([getMyProfileId(), listListings({})])
   const kindCount = (k: string) => allListings.filter((l) => l.kind === k).length
-  const listings = allListings
-    .filter((l) => (activeKind ? l.kind === activeKind : true))
-    .filter((l) =>
-      query ? `${l.title} ${l.description ?? ''}`.toLowerCase().includes(query) : true,
-    )
+  const listings = allListings.filter((l) => (activeKind ? l.kind === activeKind : true))
 
   const grid: GridListing[] = listings.map((l) => ({
     id: l.id,
@@ -60,6 +56,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
   }))
 
   return (
+    <MarketSearchProvider>
     <div className="space-y-8">
       <MarketHero
         image={HERO_IMAGE}
@@ -115,5 +112,6 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
         )}
       </div>
     </div>
+    </MarketSearchProvider>
   )
 }
