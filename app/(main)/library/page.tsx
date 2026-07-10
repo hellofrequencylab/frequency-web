@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
@@ -6,7 +5,6 @@ import { IndexTemplate } from '@/components/templates'
 import { EntityCard } from '@/components/cards/entity-card'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getInitials } from '@/lib/utils'
 import { getLibrary, getMyRatings, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
@@ -107,53 +105,73 @@ export default async function LibraryPage({
           description="Create a practice or build a journey. Once a leader approves it, it shows up here, ranked."
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <LibraryCard key={`${item.contentType}:${item.id}`} item={item} rated={myRatings.has(`${item.contentType}:${item.id}`)} />
           ))}
-        </ul>
+        </div>
       )}
     </IndexTemplate>
   )
 }
 
+/** The card's time chip: '10 min · Daily' (practice) / '6 weeks · 24 lessons' (journey).
+ *  FAIL-SAFE: null whenever the time fields are null (e.g. the RPC predates the
+ *  library_card_times migration), so the card simply renders without it. */
+function timeChipFor(item: LibraryItem): string | null {
+  if (item.contentType === 'practice') {
+    const parts = [item.durationMin ? `${item.durationMin} min` : null, item.cadence].filter(Boolean)
+    return parts.length ? parts.join(' · ') : null
+  }
+  if (item.contentType === 'journey' && item.unitCount && item.unitLabel) {
+    return `${item.unitCount} ${item.unitLabel}`
+  }
+  return null
+}
+
+// Composed on the framework browse card (EntityCard) — the meta row carries the time chip +
+// the adoption/completion/score stats; the rate toggle sits in the footer, outside the link.
 function LibraryCard({ item, rated }: { item: LibraryItem; rated: boolean }) {
   const Icon = TYPE_ICON[item.contentType]
-  const href = hrefFor(item)
+  // Programs have no detail route (they render inline in the Library), so their card
+  // links to the Programs tab of the catalog itself.
+  const href = hrefFor(item) ?? '/library?type=program'
+  const time = timeChipFor(item)
   return (
-    <li className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5 shadow-sm">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_TONE[item.contentType]}`}>
-          <Icon className="h-3 w-3" /> {typeLabel(item.contentType)}
+    <EntityCard
+      href={href}
+      anchor={
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${TYPE_TONE[item.contentType]}`}>
+          <Icon className="h-4 w-4" />
         </span>
-        <span className="inline-flex items-center gap-1 text-xs font-semibold text-subtle" title="Best-of score">
-          <TrendingUp className="h-3.5 w-3.5" /> {item.score}
-        </span>
-      </div>
-
-      <h3 className="text-base font-bold leading-tight text-text">
-        {href ? <Link href={href} className="hover:underline">{item.title}</Link> : item.title}
-      </h3>
-      {item.summary && <p className="mt-1 line-clamp-2 text-sm text-muted">{item.summary}</p>}
-
-      {item.author && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-subtle">
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-bg text-3xs font-semibold text-primary-strong">
-            {getInitials(item.author.display_name)}
+      }
+      title={item.title}
+      context={item.author ? `${typeLabel(item.contentType)} · by ${item.author.display_name}` : typeLabel(item.contentType)}
+      description={item.summary}
+      metaNoWrap
+      meta={
+        <>
+          {time && (
+            <span className="inline-flex shrink-0 items-center gap-1 font-medium text-muted" title="Time">
+              <Clock className="h-3.5 w-3.5" /> {time}
+            </span>
+          )}
+          <span className="inline-flex shrink-0 items-center gap-1" title="Adoptions">
+            <Users2 className="h-3.5 w-3.5" /> {item.adoptions}
           </span>
-          {item.author.display_name}
-        </div>
-      )}
-
-      <div className="mt-auto flex items-center justify-between gap-2 pt-4">
-        <div className="flex items-center gap-3 text-xs text-subtle">
-          <span className="inline-flex items-center gap-1" title="Adoptions"><Users2 className="h-3.5 w-3.5" />{item.adoptions}</span>
-          <span className="inline-flex items-center gap-1" title="Completions / real-world use"><Flame className="h-3.5 w-3.5" />{item.completions}</span>
-        </div>
-        <div className="flex items-center gap-2">
+          <span className="inline-flex shrink-0 items-center gap-1" title="Completions / real-world use">
+            <Flame className="h-3.5 w-3.5" /> {item.completions}
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-1" title="Best-of score">
+            <TrendingUp className="h-3.5 w-3.5" /> {item.score}
+          </span>
+        </>
+      }
+      footer={
+        <div className="flex justify-end">
           <RateButton type={item.contentType} id={item.id} count={item.ratings} rated={rated} />
         </div>
-      </div>
-    </li>
+      }
+    />
   )
 }

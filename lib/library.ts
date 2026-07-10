@@ -86,6 +86,16 @@ export type LibraryItem = {
   ratings: number
   score: number
   author: PersonLite | null
+  // Time / size data (migration 20261109000000_library_card_times). FAIL-SAFE: all four
+  // are null when the RPC predates the migration, so the card simply drops its time chip.
+  /** Practice session length in minutes (practices.duration_min). */
+  durationMin: number | null
+  /** Practice rhythm, e.g. 'Daily' (practices.cadence). */
+  cadence: string | null
+  /** Journey structural size — weekly Phases, else lesson/step count. */
+  unitCount: number | null
+  /** Pluralized descriptor for unitCount, e.g. 'weeks · 24 lessons' or 'lessons'. */
+  unitLabel: string | null
 }
 
 export type PendingItem = {
@@ -142,6 +152,11 @@ export async function getLibrary(opts: { type?: ContentType | null; pillar?: str
     ratings: Number(r.ratings) || 0,
     score: Number(r.score) || 0,
     author: r.author_id ? people.get(r.author_id as string) ?? null : null,
+    // Fail-safe: absent (pre-migration RPC) or null columns all map to null.
+    durationMin: r.duration_min == null ? null : Number(r.duration_min) || null,
+    cadence: (r.cadence as string) ?? null,
+    unitCount: r.unit_count == null ? null : Number(r.unit_count) || null,
+    unitLabel: (r.unit_label as string) ?? null,
   }))
 }
 
