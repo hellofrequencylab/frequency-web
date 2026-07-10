@@ -1,7 +1,19 @@
 # Shop & Marketplace Rework — Build Spec
 
-> **Status:** ✅ Approved (owner, 2026-07-09) · **Decision record:** ADR-593 ·
-> **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md) · **Branch:** `feat/shop-marketplace-rework`
+> **Status:** Phases **0-7 + 9 shipped** on `feat/shop-marketplace-rework` (2026-07-09), adversarially
+> reviewed + fixed. **Decision record:** ADR-593 · **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md).
+>
+> **Migrations:** `offerings_backfill` (Phase 3) + `market_published` (Phase 5) **applied + verified** to
+> Frequency Community. `bookable_services` (Phase 4) is **written, NOT applied — apply when payments are
+> turned on** (instructions in the migration header). Then flip `host_payouts_enabled` for money to flow.
+>
+> **Phase 7 (payments/earnings):** code-complete via Phases 1-3 (Orders/earnings tab, payout onboarding,
+> forced checkout + take-rate ladder); remaining work is the operator flag flip + launch posture.
+>
+> **Remaining follow-ons (non-blocking):** partial-deposit charging for services (v1 charges full price);
+> re-point / retire the legacy JSON offerings profile widget + drop the JSON node; **Phase 8 (trust &
+> safety)** — refunds exist (`refundCommerceOrder`), Space reviews + `persona_verification` exist; the
+> net-new work is product/listing-level reviews + a dispute UI + seller verification badges on listings.
 
 Lead: turn the fragmented set of marketplace surfaces (a JSON-only per-Space "Store",
 an individual-only Makers vertical, a first-party Shop, a peer board, and a dormant
