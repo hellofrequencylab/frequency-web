@@ -81,15 +81,16 @@ export default async function EventsPage({
         { href: '/network', label: 'Community' },
         { href: '/events', label: 'Events' },
       ]}
-      heroImage={heroImage}
+      // Coded fallback so the banner (and the controls row under it) always renders even when no
+      // operator hero is set — the same pattern Journeys / Practices / Library use.
+      heroImage={heroImage ?? '/images/site/community-dinner.jpg'}
       title={pageTitle}
       description={pageDescription}
-      action={
-        (myProfileId || isCrew || isHost || operatorCta) ? (
-          // A wrapping pill cluster: the secondary actions are uniform pills that wrap onto a new
-          // line on a phone (never overflow off-screen), while the primary "New Event" + operator CTA
-          // keep their own emphasis. Left-aligned under the title on mobile, right-aligned on desktop.
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+      // Secondary controls live UNDER the hero banner (a wrapping pill row); the header-right
+      // action keeps only the primary "New Event" + the operator CTA.
+      underHero={
+        (isHost || myProfileId) ? (
+          <>
             {isHost && (
               <Link
                 href="/admin/events"
@@ -110,6 +111,12 @@ export default async function EventsPage({
             )}
             {/* Subscribe-to-calendar affordance (Events B-4) — signed-in members only. */}
             {myProfileId && <CalendarSubscribe />}
+          </>
+        ) : undefined
+      }
+      action={
+        (myProfileId || operatorCta) ? (
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {/* Create an event. Crew (and stewards) get the real composer; everyone else
                 signed in gets the "Crew is free during beta" upgrade popup. */}
             {myProfileId && (

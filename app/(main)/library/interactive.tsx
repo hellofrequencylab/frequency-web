@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Heart, Loader2, Plus, Check, Sparkles } from 'lucide-react'
-import { rateContent, adoptProgram, submitProgram } from './actions'
+import { ChevronDown, Dumbbell, Heart, Plus, Route } from 'lucide-react'
+import { rateContent } from './actions'
 import { isError } from '@/lib/action-result'
 import type { ContentType } from '@/lib/library'
-
-const PILLARS = ['', 'mind', 'body', 'spirit', 'expression'] as const
 
 // A "love" toggle — the ratings signal that feeds the best-of score.
 export function RateButton({ type, id, count, rated }: { type: ContentType; id: string; count: number; rated: boolean }) {
@@ -40,90 +39,55 @@ export function RateButton({ type, id, count, rated }: { type: ContentType; id: 
   )
 }
 
-export function AdoptButton({ id }: { id: string }) {
-  const router = useRouter()
-  const [pending, start] = useTransition()
-  const [done, setDone] = useState(false)
-  return (
-    <button
-      type="button"
-      disabled={pending || done}
-      onClick={() =>
-        start(async () => {
-          const res = await adoptProgram(id)
-          if (!isError(res)) { setDone(true); router.refresh() }
-        })
-      }
-      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-    >
-      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : done ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-      {done ? 'Adopted' : 'Run this'}
-    </button>
-  )
-}
-
-// Anyone can propose a Program (outreach toolkit) → enters the review queue.
-export function SubmitProgramForm() {
-  const router = useRouter()
+// The header "Create" menu — a small popover offering the two guided create flows.
+// Links straight through: /practices/new and /journeys/new carry their own
+// canCreate gates (a free member is redirected and sees the upgrade popup there,
+// ADR-414), so the menu needs no gating of its own.
+export function CreateMenu() {
   const [open, setOpen] = useState(false)
-  const [pending, start] = useTransition()
-  const [title, setTitle] = useState('')
-  const [summary, setSummary] = useState('')
-  const [body, setBody] = useState('')
-  const [pillar, setPillar] = useState('')
-  const [msg, setMsg] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
 
-  const field = 'w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:border-border-strong focus:outline-none'
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
-  if (!open) {
-    return (
+  const item =
+    'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-text transition-colors hover:bg-surface-elevated'
+
+  return (
+    <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
       >
-        <Plus className="h-4 w-4" /> Propose a program
+        <Plus className="h-4 w-4" /> Create
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-    )
-  }
-
-  return (
-    <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center gap-1.5">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <p className="text-sm font-bold text-text">Propose a program</p>
-      </div>
-      <p className="text-xs text-muted">A toolkit that helps people put a real-world activity together. A Host or Guide+ reviews it before it joins the Library.</p>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (e.g. Start a neighborhood ride)" className={field} />
-      <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="One-line summary" className={field} />
-      <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} placeholder="The how-to: steps, tips, what to bring…" className={`${field} resize-none`} />
-      <div className="flex flex-wrap items-center gap-2">
-        <select value={pillar} onChange={(e) => setPillar(e.target.value)} className={field + ' w-auto'}>
-          {PILLARS.map((p) => <option key={p} value={p}>{p ? p[0].toUpperCase() + p.slice(1) : 'No pillar'}</option>)}
-        </select>
-        <button
-          type="button"
-          disabled={pending || !title.trim()}
-          onClick={() =>
-            start(async () => {
-              setError(null); setMsg(null)
-              const res = await submitProgram({ title, summary, body, pillar })
-              if (isError(res)) { setError(res.error); return }
-              setMsg('Submitted for review. A leader will approve it into the Library.')
-              setTitle(''); setSummary(''); setBody(''); setPillar('')
-              setOpen(false)
-              router.refresh()
-            })
-          }
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
-        >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Submit for review
-        </button>
-        <button type="button" onClick={() => setOpen(false)} className="text-sm text-subtle hover:text-text">Cancel</button>
-      </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {msg && <p className="text-xs text-success">{msg}</p>}
+      {open && (
+        <div role="menu" aria-label="Create" className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-border bg-surface p-1 shadow-pop">
+          <Link href="/practices/new" role="menuitem" className={item} onClick={() => setOpen(false)}>
+            <Dumbbell className="h-4 w-4 text-primary-strong" /> Practice
+          </Link>
+          <Link href="/journeys/new" role="menuitem" className={item} onClick={() => setOpen(false)}>
+            <Route className="h-4 w-4 text-primary-strong" /> Journey
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

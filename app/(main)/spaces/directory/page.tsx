@@ -120,6 +120,9 @@ export default async function SpacesDirectoryPage({
       // replacing public/images/site/business-directory-hero.jpg — no code change.
       heroImage="/images/site/business-directory-hero.jpg"
       heroOverlay
+      // The one deliberately LARGER hero on the site: the directory keeps its taller band + bigger
+      // title while every other index shares the standard overlay size.
+      heroSize="large"
       action={
         viewerProfileId ? (
           <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
