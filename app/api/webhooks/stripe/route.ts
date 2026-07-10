@@ -34,7 +34,11 @@ import { recordTipFromSession } from '@/lib/billing/tips'
 import { recordTicketFromSession, recordTicketRefundFromCharge } from '@/lib/billing/tickets'
 import { recordMembershipDuesFromInvoice } from '@/lib/billing/checkout'
 import { recordSupporterContributionFromSession } from '@/lib/billing/supporter'
-import { recordCommerceOrderFromSession, recordCommerceRefundFromCharge } from '@/lib/commerce/checkout'
+import {
+  recordCommerceOrderFromSession,
+  recordCommerceRefundFromCharge,
+  abandonCommerceOrderFromSession,
+} from '@/lib/commerce/checkout'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -142,6 +146,16 @@ export async function POST(req: Request) {
         await recordTicketFromSession(s)
         await recordSupporterContributionFromSession(s)
         await recordCommerceOrderFromSession(s)
+        break
+      }
+
+      case 'checkout.session.expired':
+      case 'checkout.session.async_payment_failed': {
+        // A service booking HOLDs its slot (a 'pending' booking) before payment; an abandoned/failed
+        // checkout must release it or the slot is blocked forever (Phase 4, ADR-596). No-ops for a
+        // non-commerce session.
+        const s = event.data.object as Stripe.Checkout.Session
+        await abandonCommerceOrderFromSession(s)
         break
       }
 

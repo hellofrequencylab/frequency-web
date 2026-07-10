@@ -5,5 +5,5 @@ import { redirect } from 'next/navigation'
 // MarketplaceFacets bar). This route is kept as a stable alias so any /marketplace link
 // lands on the canonical hub rather than a second, empty General grid.
 export default function MarketplaceHubRedirect() {
-  redirect('/market')
+  redirect('/classifieds')
 }

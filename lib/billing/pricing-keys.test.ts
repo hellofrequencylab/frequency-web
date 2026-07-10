@@ -13,13 +13,16 @@ import {
   asSpacePlanKey,
   takeRateBpsForPlan,
   takeRateCents,
+  memberTakeRateBps,
+  memberTakeRateCents,
   monthlyTakeRateSavingsCents,
   memberCheckoutPriceKey,
   PERIODS_BY_KEY,
 } from './pricing-keys'
 
 // ADR-552 Phase 3: free usage 5% (500 bps) / paying Business 3% (300) / Non Profit 3% (300).
-const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300 }
+// ADR-596: individual paid-member seller 8% (800 bps).
+const TAKE_RATE = { free_bps: 500, business_bps: 300, nonprofit_bps: 300, member_bps: 800 }
 
 describe('priceKey', () => {
   it('builds <base>_<period> and the founder variant', () => {
@@ -130,6 +133,31 @@ describe('take-rate by paying-state (ADR-552: free usage 5% / paying Business 3%
     expect(takeRateCents(0, 'business', TAKE_RATE)).toBe(0)
     expect(takeRateCents(-100, 'business', TAKE_RATE)).toBe(0)
     expect(takeRateCents(NaN, 'business', TAKE_RATE)).toBe(0)
+  })
+})
+
+describe('member seller take-rate (ADR-596: paid member 8%, Business buys it down)', () => {
+  it('memberTakeRateBps returns member_bps', () => {
+    expect(memberTakeRateBps(TAKE_RATE)).toBe(800)
+  })
+
+  it('fails safe to the higher free_bps when member_bps is absent (never under-collect)', () => {
+    expect(memberTakeRateBps({ free_bps: 500 })).toBe(500)
+  })
+
+  it('memberTakeRateCents applies 8% and floors fractional cents', () => {
+    expect(memberTakeRateCents(10000, TAKE_RATE)).toBe(800) // $100 → $8
+    expect(memberTakeRateCents(333, TAKE_RATE)).toBe(26) // 333*800/10000 = 26.64 → 26
+  })
+
+  it('is 0 for non-positive / invalid gross', () => {
+    expect(memberTakeRateCents(0, TAKE_RATE)).toBe(0)
+    expect(memberTakeRateCents(-100, TAKE_RATE)).toBe(0)
+    expect(memberTakeRateCents(NaN, TAKE_RATE)).toBe(0)
+  })
+
+  it('a paid member pays more than a paying Business (the upgrade is real)', () => {
+    expect(memberTakeRateBps(TAKE_RATE)).toBeGreaterThan(takeRateBpsForPlan('business', TAKE_RATE, true))
   })
 })
 

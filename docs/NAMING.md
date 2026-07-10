@@ -274,6 +274,51 @@
   `event_space`, `lab`, `partner`, `whitelabel` (as a tier). They may persist as archived catalog
   keys or Focus ids, but never as a member-facing type or plan name.
 
+## Marketplace & Commerce (ADR-596, July 2026)
+
+The four consumer commerce surfaces. **Member-facing names + public routes are canonical; the
+internal vertical ids stay stable** (a documented mismatch: internal id ≠ member label, to avoid
+data churn — see ADR-596 §6 and the collision guard below).
+
+- **Classifieds** = the peer board: members post **offer / free / lend / request** listings,
+  connect-only (no in-app money, contact via DM). Free members and up. Route `/classifieds`.
+  Internal vertical id stays `market`; table stays `market_listings`. **Supersedes "General
+  Marketplace" / "Marketplace"** as the name for this surface.
+- **Market** = the **umbrella commerce surface** grouped by type (**Products · Services ·
+  Tickets**), aggregating listings across every Space and every paid member. One browse surface,
+  typed rails + curated collections, unified search. Route `/market`. Internal vertical id stays
+  `maker`. **Supersedes "Makers."** "Market" is NEVER the peer board (that is Classifieds).
+- **Frequency Store** = **first-party** Frequency retail (merch / retreats), Frequency is the
+  seller (`commerce_products` `owner_kind='platform'`). Route `/store`. Internal vertical id stays
+  `shop`. **Supersedes "Shop"** as the first-party name — "Shop" now belongs to the per-Space tab.
+- **Shop** (a Space's) = the per-Space storefront **tab** on a Space profile, showing that Space's
+  own catalog. Member-facing default label **"Shop"**, **renameable per Space** by the owner. Its
+  listings feed up into **Market**. Distinct from **Frequency Store** (first-party) — see collision
+  guard. Managed in the **Shop console** (Catalog · Orders · Storefront).
+
+Commerce item vocabulary (one `commerce_products` row, discriminated by `type`):
+
+- **Product** = a physical or digital good (`type='product'`). Listable by paid members (limited)
+  and Business Spaces (full).
+- **Service** = a **bookable, payable** offering (`type='service'`): duration, deposit, scheduling
+  via the Booking engine, cancellation/no-show policy. **Business Spaces only.** **Supersedes the
+  old JSON "Store" services** (`preferences.profileData.offerings`, retired) and the space
+  module label "Store" (relabeled to **Shop**).
+- **Ticket** = a Market projection of a ticketed event (`type='ticket'`, reuses the event-ticket
+  channel, ADR-177). **Business Spaces only.**
+- **Listing** = the generic word for any published commerce item OR a Classifieds post; qualify
+  ("Market listing" / "Classifieds listing") when the surface matters.
+- Reserved item types (schema-only, no surface yet): `digital`, `membership`.
+
+Collision guards:
+- **"Shop"**: the per-Space storefront **tab** (member word, renameable). The first-party retail
+  vertical is **Frequency Store**, never "Shop." The management console is the **Shop console**.
+- **"Market"**: the umbrella commerce surface (id `maker`), never the peer board. The peer board is
+  **Classifieds** (id `market`). The internal id `market` therefore backs the member-facing
+  *Classifieds*, and id `maker` backs member-facing *Market* — intentional, documented in ADR-596.
+- **"Store"**: retired as the per-Space services label (now **Shop**) and reserved for **Frequency
+  Store** (first-party) only. The **Vault Store** (Gems, unchanged) is a separate proper noun.
+
 ## Retired: zero hits allowed outside this list and ADR-208
 
 Spark/Current/Deep (tiers) · Runner/Operative/Agent (ranks) ·

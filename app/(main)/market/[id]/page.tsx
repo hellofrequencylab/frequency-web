@@ -1,108 +1,143 @@
-import Image from 'next/image'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
-import { getListing, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
-import { relativeTime } from '@/lib/utils'
-import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
+import { getCallerProfile } from '@/lib/auth'
+import { getProduct } from '@/lib/commerce/products'
+import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
+import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { readStorefrontConfig } from '@/lib/spaces/storefront'
+import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
 import { DetailTemplate } from '@/components/templates'
+import { ReportButton } from '@/components/marketplace/report-button'
+import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
+import { BuyButton } from '../../marketplace/buy-button'
+import type { ServiceConfig } from '@/lib/commerce/types'
 
 export const dynamic = 'force-dynamic'
 
-const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
+function usd(cents: number, currency = 'usd') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
+}
 
-export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
+/** The price label for a service, honoring its priceModel (fixed / from / free / contact). */
+function servicePriceLabel(priceCents: number, currency: string, svc: ServiceConfig): string {
+  if (svc.priceModel === 'free') return 'Free'
+  if (svc.priceModel === 'contact') return 'Contact for pricing'
+  const base = usd(priceCents, currency)
+  return svc.priceModel === 'from' ? `From ${base}` : base
+}
+
+export default async function MarketProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [profileId, listing] = await Promise.all([getMyProfileId(), getListing(id)])
-  if (!listing) notFound()
+  const caller = await getCallerProfile()
+  const profileId = caller?.id ?? null
+  const product = await getProduct(id)
+  if (!product) notFound()
+  const isService = product.productKind === 'service'
 
-  const isOwner = !!profileId && listing.author_id === profileId
-  // Non-active listings are visible only to their author.
-  if (!isOwner && listing.status !== 'active') notFound()
+  // A Space-owned listing carries TWO extra publish gates beyond status='active' (which only means
+  // "live in the Space's own Shop console"): market_published (opt-in to the global Market) and the
+  // storefront.published flag (the public Shop tab). A non-manager may view it only when it is opted
+  // into the Market OR the Space's storefront is published AND the Space itself is visible. A manager
+  // may always preview. Maker (owner_kind='profile') listings keep the active===public semantic (the
+  // maker funnel sets market_published), so they skip this. (ADR-596, exposure fix.)
+  let isManager = false
+  if (product.ownerKind === 'space') {
+    const space = product.ownerSpaceId ? await getSpaceById(product.ownerSpaceId) : null
+    if (!space) notFound()
+    const manage = await resolveSpaceManageAccess(space, profileId, caller?.webRole)
+    isManager = manage.canManage || manage.staffViewing
+    if (!isManager) {
+      const storefront = readStorefrontConfig(space.preferences)
+      const visible = await getVisibleSpaceBySlug(space.slug, profileId)
+      if (!visible || !(product.marketPublished || storefront.published)) notFound()
+    }
+  }
 
-  const place = [listing.neighborhood, listing.city].filter(Boolean).join(', ')
+  // Owner/manager may preview a non-active (draft) listing; the public sees active only.
+  const isOwner = (!!profileId && product.ownerProfileId === profileId) || isManager
+  if (product.status !== 'active' && !isOwner) notFound()
+
+  const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
+  const soldOut = product.status === 'sold_out' || product.stock === 0
+
+  // A service pulls its open slots from the Space's availability calendar (booking_space_id).
+  const [slots, tz] =
+    isService && product.bookingSpaceId
+      ? await Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
+      : [[], 'UTC']
+
+  const subtitle = isService
+    ? servicePriceLabel(product.priceCents, product.currency, svc)
+    : usd(product.priceCents, product.currency)
 
   return (
     <div className="mx-auto w-full max-w-2xl">
       <DetailTemplate
         back={{ href: '/market', label: 'Market' }}
-        title={listing.title}
-        subtitle={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {listing.price_note && <span className="font-semibold text-text">{listing.price_note}</span>}
-            {place && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{place}</span>}
-            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" />{relativeTime(listing.created_at)}</span>
-          </span>
-        }
-        badges={
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
-              {KIND_LABEL[listing.kind] ?? listing.kind}
-            </span>
-            {listing.category && <span className="text-xs text-subtle">{listing.category}</span>}
-            {listing.status !== 'active' && (
-              <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">{listing.status}</span>
-            )}
-          </span>
-        }
+        title={product.title}
+        subtitle={<span className="font-semibold text-text">{subtitle}</span>}
+        badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}
       >
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-        {/* Images */}
-        {listing.images.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {listing.images.map((src, i) => (
-              <div key={i} className="relative aspect-square w-full overflow-hidden rounded-xl border border-border">
-                <Image
+        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+          {product.images.length > 0 && (
+            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {product.images.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
                   src={src}
-                  alt={`${listing.title}, photo ${i + 1}`}
-                  fill
-                  sizes="(min-width: 640px) 33vw, 50vw"
-                  className="object-cover"
+                  alt={`${product.title}, photo ${i + 1}`}
+                  className="aspect-square w-full rounded-xl border border-border object-cover"
                 />
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        {listing.description && (
-          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-text">{listing.description}</p>
-        )}
+          {isService && (svc.durationMin || svc.cancellationWindowHours) && (
+            <p className="mb-3 text-xs text-subtle">
+              {svc.durationMin ? `${svc.durationMin} minutes` : null}
+              {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
+              {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
+            </p>
+          )}
 
-        {/* Seller + contact */}
-        {listing.author && (
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            <Link href={`/people/${listing.author.handle}`} className="text-sm text-muted hover:text-text">
-              Posted by <span className="font-semibold text-text">{listing.author.display_name}</span>
-            </Link>
-            {isOwner ? (
-              <Link
-                href={`/market/${listing.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated"
-              >
-                <Pencil className="h-4 w-4" /> Edit listing
-              </Link>
+          {product.description && (
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{product.description}</p>
+          )}
+
+          <div className="mt-5 border-t border-border pt-4">
+            {isService ? (
+              isOwner ? (
+                <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>
+              ) : (
+                <ServiceBookingPicker
+                  productId={product.id}
+                  slots={slots}
+                  timezone={tz}
+                  contactOnly={svc.priceModel === 'contact'}
+                />
+              )
+            ) : soldOut ? (
+              <p className="text-sm font-medium text-subtle">Sold out.</p>
+            ) : isOwner ? (
+              <p className="text-sm text-subtle">This is your listing. Buyers see a Buy button here.</p>
             ) : (
-              <Link
-                href={`/people/${listing.author.handle}`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
-              >
-                <MessageCircle className="h-4 w-4" /> Contact {listing.author.display_name.split(' ')[0]}
-              </Link>
+              <BuyButton productId={product.id} />
             )}
           </div>
-        )}
-      </div>
-
-      {!isOwner && (
-        <p className="mt-3 px-1 text-xs text-subtle">No payment happens in the app. Message {listing.author?.display_name.split(' ')[0] ?? 'the poster'} to arrange it offline.</p>
-      )}
-
-      {isOwner && (
-        <div className="mt-4">
-          <ListingOwnerControls id={listing.id} status={listing.status} />
         </div>
-      )}
+
+        {!isOwner && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+            <p className="text-xs text-subtle">
+              {isService
+                ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
+                : soldOut
+                  ? 'This one is sold out.'
+                  : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
+            </p>
+            <ReportButton targetKind="product" targetId={product.id} />
+          </div>
+        )}
       </DetailTemplate>
     </div>
   )

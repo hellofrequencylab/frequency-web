@@ -24,7 +24,7 @@ export async function createListingAction(input: ListingInput): Promise<ActionRe
   if (!input.title?.trim()) return fail('Give your listing a title.')
   const listing = await createListing(profileId, input)
   if (!listing) return fail('Could not post the listing. Try again.')
-  revalidatePath('/market')
+  revalidatePath('/classifieds')
   return ok({ id: listing.id })
 }
 
@@ -35,8 +35,8 @@ export async function updateListingAction(id: string, patch: ListingPatch): Prom
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the listing.')
   }
-  revalidatePath('/market')
-  revalidatePath(`/market/${id}`)
+  revalidatePath('/classifieds')
+  revalidatePath(`/classifieds/${id}`)
   return ok()
 }
 
@@ -47,8 +47,8 @@ export async function setListingStatusAction(id: string, status: ListingStatus):
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not update the listing status.')
   }
-  revalidatePath('/market')
-  revalidatePath(`/market/${id}`)
+  revalidatePath('/classifieds')
+  revalidatePath(`/classifieds/${id}`)
   return ok()
 }
 
@@ -59,6 +59,6 @@ export async function deleteListingAction(id: string): Promise<ActionResult> {
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not delete the listing.')
   }
-  revalidatePath('/market')
+  revalidatePath('/classifieds')
   return ok()
 }

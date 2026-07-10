@@ -8,11 +8,11 @@ import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
-// Shop — first-party Frequency retail (commerce core, owner_kind='platform').
-// Frequency is the seller. Distinct from the Vault (Gems).
+// Frequency Store — first-party Frequency retail (commerce core, owner_kind='platform').
+// Frequency is the seller. Distinct from the Vault (Gems) and a Space's own Shop tab.
 
 export const metadata = {
-  title: 'Shop',
+  title: 'Frequency Store',
   description: 'Frequency merch, event passes, and retreats.',
 }
 
@@ -42,7 +42,7 @@ async function ShopGrid() {
     <div className="@container">
       <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-4">
         {products.map((p) => (
-          <ProductCard key={p.id} product={p} href={`/shop/${p.id}`} />
+          <ProductCard key={p.id} product={p} href={`/store/${p.id}`} />
         ))}
       </div>
     </div>
@@ -52,7 +52,7 @@ async function ShopGrid() {
 export default function ShopPage() {
   return (
     <IndexTemplate
-      title="Shop"
+      title="Frequency Store"
       description="Frequency merch, event passes, and retreats. Wear it, gift it, show up."
       toolbar={<MarketplaceFacets active="shop" />}
     >

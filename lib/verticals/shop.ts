@@ -21,8 +21,8 @@ export const shop: Vertical = {
       after: 'maker',
       area: {
         key: 'shop',
-        href: '/shop',
-        label: 'Shop',
+        href: '/store',
+        label: 'Frequency Store',
         section: 'Community',
         defaultAccess: 'visitor',
         surface: 'shop',
@@ -31,7 +31,7 @@ export const shop: Vertical = {
   ],
   rail: [
     {
-      test: (p) => p === '/shop' || p.startsWith('/shop/'),
+      test: (p) => p === '/store' || p.startsWith('/store/'),
       panels: ['events'],
     },
   ],

@@ -17,8 +17,8 @@ export const maker: Vertical = {
       after: 'housing',
       area: {
         key: 'maker',
-        href: '/marketplace/makers',
-        label: 'Makers',
+        href: '/market',
+        label: 'Market',
         section: 'Community',
         defaultAccess: 'visitor',
         surface: 'maker',
@@ -27,7 +27,7 @@ export const maker: Vertical = {
   ],
   rail: [
     {
-      test: (p) => p === '/marketplace/makers' || p.startsWith('/marketplace/makers/'),
+      test: (p) => p === '/market' || p.startsWith('/market/'),
       panels: ['online', 'circles', 'events'],
     },
   ],

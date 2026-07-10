@@ -43,7 +43,7 @@ export const FEATURE_KEYS: FeatureKey[] = [
   { key: 'people', label: 'People directory', area: 'discovery', routes: ['/people'], core: true },
   { key: 'search', label: 'Search', area: 'discovery', routes: ['/search'], core: true },
   { key: 'events', label: 'Events & RSVPs', area: 'discovery', routes: ['/events'], core: true },
-  { key: 'marketplace', label: 'Local Marketplace', area: 'discovery', routes: ['/market'], core: true },
+  { key: 'marketplace', label: 'Classifieds', area: 'discovery', routes: ['/classifieds'], core: true },
 
   // ── Content ─────────────────────────────────────────────────────────────────
   { key: 'feed', label: 'The feed', area: 'content', routes: ['/feed'], core: true },

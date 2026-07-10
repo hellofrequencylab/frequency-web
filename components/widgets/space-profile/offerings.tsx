@@ -9,10 +9,12 @@ import { ModuleSection } from './section'
 // Reads the central offerings catalog off the data bag (profileData.offerings) and renders only the
 // LISTED services (private ones are direct-link only). FAIL-SAFE: no listed services, no section.
 //
-// TODO(services-marketplace): the community marketplace aggregates these LISTED services across every
-// space into a single cross-space browse surface. That needs a new cross-space read (a query over all
-// spaces' preferences.profileData.offerings filtered to isServiceListed) plus a new public route; it is
-// a documented follow-up, not built here. This per-space storefront is the read model it will reuse.
+// RESOLVED (ADR-596): the cross-space services marketplace shipped. The JSON offerings were backfilled
+// into commerce_products (migration 20261101000000), the umbrella aggregates them via
+// lib/commerce/products.ts listMarketListings (the Services rail at /market), and each Space's public
+// storefront is the /spaces/[slug]/shop tab (Phase 6, reads listPublicSpaceCatalog). FOLLOW-ON: this
+// legacy JSON widget still reads profileData.offerings; re-point it to commerce (or retire the block)
+// and drop the JSON node once the Shop tab fully supersedes this profile section.
 export function OfferingsBlock({
   data,
   header,

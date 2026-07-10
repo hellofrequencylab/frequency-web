@@ -18,7 +18,7 @@ export default async function ShopProductPage({ params }: { params: Promise<{ id
   return (
     <div className="mx-auto w-full max-w-2xl">
       <DetailTemplate
-        back={{ href: '/shop', label: 'Shop' }}
+        back={{ href: '/store', label: 'Frequency Store' }}
         title={product.title}
         subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
         badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}

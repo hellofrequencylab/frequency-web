@@ -11,7 +11,7 @@ export default function NotFound() {
         description="It may have moved, or the link's broken. Head back to the full list."
         action={
           <Button asChild>
-            <Link href="/market">Back to the marketplace</Link>
+            <Link href="/classifieds">Back to Classifieds</Link>
           </Button>
         }
       />

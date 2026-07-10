@@ -1,15 +1,16 @@
 import Link from 'next/link'
 
-// The one faceted nav across every marketplace surface (General · Housing · Makers ·
-// Shop), so the areas read as one hub no matter which page you land on. General lives
-// at /market (the entrenched listings surface); Housing/Makers are /marketplace
-// sub-areas; Shop is the first-party store. `active` highlights the current area.
+// The one faceted nav across every commerce surface (Classifieds · Housing · Market ·
+// Frequency Store), so the areas read as one hub no matter which page you land on
+// (ADR-596). The `key` values are stable internal ids kept from the old taxonomy
+// (all=Classifieds, makers=Market, shop=Frequency Store) so callers do not churn;
+// only labels + hrefs carry the new naming. `active` highlights the current area.
 
 const AREAS = [
-  { key: 'all', href: '/market', label: 'All' },
+  { key: 'all', href: '/classifieds', label: 'Classifieds' },
   { key: 'housing', href: '/marketplace/housing', label: 'Housing' },
-  { key: 'makers', href: '/marketplace/makers', label: 'Makers' },
-  { key: 'shop', href: '/shop', label: 'Shop' },
+  { key: 'makers', href: '/market', label: 'Market' },
+  { key: 'shop', href: '/store', label: 'Frequency Store' },
 ] as const
 
 export type MarketplaceArea = (typeof AREAS)[number]['key']

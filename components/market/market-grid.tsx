@@ -27,7 +27,7 @@ export interface GridListing {
 function Card({ l, distance }: { l: GridListing; distance: number | null }) {
   const place = [l.neighborhood, l.city].filter(Boolean).join(', ')
   return (
-    <Link href={`/market/${l.id}`} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary/60">
+    <Link href={`/classifieds/${l.id}`} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-colors hover:border-primary/60">
       {l.images[0] && (
         <div className="relative h-36 w-full">
           <Image

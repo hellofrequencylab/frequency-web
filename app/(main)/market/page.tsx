@@ -1,99 +1,160 @@
-import { Store } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
-import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
-import { IndexTemplate } from '@/components/templates/index-template'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { Store, Plus } from 'lucide-react'
+import { IndexTemplate } from '@/components/templates'
+import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { NewListingButton } from '@/components/studio/market/new-listing-button'
-import { MarketGrid, type GridListing } from '@/components/market/market-grid'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getMyProfileId } from '@/lib/auth'
+import { listMarketListings } from '@/lib/commerce/products'
+import { MARKET_GROUPS, asMarketGroup, type MarketGroup } from '@/lib/commerce/types'
+import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
-import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
-// Coded defaults for the operator-editable header content (ADR-180).
-const CONTENT_FALLBACK = {
-  title: 'Marketplace',
-  description: 'Swap, give, lend, and find things with people near you. No fees, no in-app payment, just neighbors helping out. Arrange the handoff offline.',
+// Market — the community commerce umbrella (ADR-596). One browse surface grouping Products / Services /
+// Tickets, aggregating market-published listings across makers (owner_kind='profile') and Business
+// Spaces ('space'). A ?group= rail narrows to one type; the default shows each non-empty group as a
+// section. Only listings the owner opted into the Market (market_published) appear. No em or en dashes.
+
+export const metadata = {
+  title: 'Market',
+  description: 'Products, services, and tickets from people and businesses in the Frequency community.',
 }
 
-// Operator-set title/description also drive <title> + og/twitter cards (PX.2);
-// the fallback strings are the page's previous static metadata, unchanged.
-export function generateMetadata() {
-  return pageContentMetadata('/market', {
-    title: 'Marketplace',
-    description: 'Swap, give, lend, and find things with people near you. No fees, just neighbors.',
-  })
+const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
+
+function GridSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-56 rounded-2xl" />
+      ))}
+    </div>
+  )
 }
-export const dynamic = 'force-dynamic'
 
-export default async function MarketPage({ searchParams }: { searchParams: Promise<{ kind?: string }> }) {
-  const { kind } = await searchParams
-  const activeKind = LISTING_KINDS.some((k) => k.key === kind) ? (kind as ListingKind) : null
+function Grid({ items }: { items: Awaited<ReturnType<typeof listMarketListings>> }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
+      {items.map((p) => (
+        <ProductCard key={p.id} product={p} href={`/market/${p.id}`} />
+      ))}
+    </div>
+  )
+}
 
-  // Operator-editable page header (ADR-180) — falls back to the coded defaults.
-  const { title, description, ctaLabel, ctaHref } = await resolvePageContent('/market', CONTENT_FALLBACK)
-  const [profileId, listings] = await Promise.all([
-    getMyProfileId(),
-    listListings({ kind: activeKind }),
-  ])
+// One group's grid (used when a ?group= is selected — the focused view).
+async function GroupGrid({ group, q }: { group: MarketGroup; q?: string }) {
+  const items = await listMarketListings({ group, q })
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        icon={Store}
+        variant="first-use"
+        title={`No ${GROUP_LABEL[group].toLowerCase()} yet.`}
+        description="When people and businesses publish to the Market, they show up here."
+      />
+    )
+  }
+  return <div className="@container">{<Grid items={items} />}</div>
+}
 
-  const grid: GridListing[] = listings.map((l) => ({
-    id: l.id,
-    title: l.title,
-    kind: l.kind,
-    price_note: l.price_note,
-    description: l.description,
-    neighborhood: l.neighborhood,
-    city: l.city,
-    images: l.images ?? [],
-    latitude: l.latitude,
-    longitude: l.longitude,
-    author: l.author ? { display_name: l.author.display_name } : null,
-  }))
+// The default (all-groups) view: each non-empty group as its own section.
+async function AllGroups({ q }: { q?: string }) {
+  const perGroup = await Promise.all(MARKET_GROUPS.map((g) => listMarketListings({ group: g, q, limit: 12 })))
+  const sections = MARKET_GROUPS.map((g, i) => ({ group: g, items: perGroup[i] })).filter((s) => s.items.length > 0)
+  if (sections.length === 0) {
+    return (
+      <EmptyState
+        icon={Store}
+        variant="first-use"
+        title="Nothing in the Market yet."
+        description="This is where the community sells. Publish a product, service, or ticket and it shows up here."
+      />
+    )
+  }
+  return (
+    <div className="@container space-y-10">
+      {sections.map((s) => (
+        <section key={s.group}>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
+            <Link href={`/market?group=${s.group}`} className="text-sm font-medium text-primary-strong hover:underline">
+              See all
+            </Link>
+          </div>
+          <Grid items={s.items} />
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function GroupRail({ active }: { active: MarketGroup | null }) {
+  const tabs: { key: MarketGroup | null; label: string }[] = [
+    { key: null, label: 'All' },
+    ...MARKET_GROUPS.map((g) => ({ key: g, label: GROUP_LABEL[g] })),
+  ]
+  return (
+    <nav aria-label="Market groups" className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 shadow-sm">
+      {tabs.map((t) => {
+        const on = t.key === active
+        const href = t.key ? `/market?group=${t.key}` : '/market'
+        return (
+          <Link
+            key={t.label}
+            href={href}
+            aria-current={on ? 'page' : undefined}
+            className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
+              on ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
+            }`}
+          >
+            {t.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; group?: string | string[] }>
+}) {
+  const { q, group: groupParam } = await searchParams
+  const group = asMarketGroup(groupParam)
+  const viewerProfileId = await getMyProfileId()
 
   return (
     <IndexTemplate
-      title={title}
-      description={description}
+      title="Market"
+      description="Products, services, and tickets from people and businesses in the community. Buy direct, the seller gets paid, the fee stays low."
       action={
-        (profileId || (ctaLabel && ctaHref)) ? (
+        viewerProfileId ? (
           <div className="flex items-center gap-2">
-            {profileId && <NewListingButton />}
-            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-            {ctaLabel && ctaHref && (
-              <a
-                href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-              >
-                {ctaLabel}
-              </a>
-            )}
+            <Link href="/market/manage" className={buttonClasses('secondary', 'sm')}>
+              My storefront
+            </Link>
+            <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
+              <Plus className="h-4 w-4" aria-hidden />
+              List a product
+            </Link>
           </div>
         ) : undefined
       }
       toolbar={
         <div className="space-y-3">
-          <MarketplaceFacets active="all" />
-          <UnderlineTabs
-            activeHref={activeKind ? `/market?kind=${activeKind}` : '/market'}
-            tabs={[
-              { href: '/market', label: 'All' },
-              ...LISTING_KINDS.map((k) => ({ href: `/market?kind=${k.key}`, label: k.label })),
-            ]}
-          />
+          <MarketplaceFacets active="makers" />
+          <GroupRail active={group} />
         </div>
       }
     >
-      <MarketplaceHiddenBanner area="market" />
-      {grid.length === 0 ? (
-        <EmptyState
-          icon={Store}
-          title={activeKind ? 'Nothing here yet' : 'The marketplace is just getting started'}
-          description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
-        />
-      ) : (
-        <MarketGrid listings={grid} />
-      )}
+      <MarketplaceHiddenBanner area="makers" />
+      <Suspense key={`${group ?? 'all'}:${q ?? ''}`} fallback={<GridSkeleton />}>
+        {group ? <GroupGrid group={group} q={q} /> : <AllGroups q={q} />}
+      </Suspense>
     </IndexTemplate>
   )
 }

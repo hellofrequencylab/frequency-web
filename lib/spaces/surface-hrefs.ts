@@ -61,8 +61,9 @@ export function hrefForSurface(id: string, slug: string): string | null {
     case 'space.crm':
       return `${base}/crm`
     case 'space.services':
-      // The storefront services editor (item 10): CRUD the store items + their pricing + visibility.
-      return `${base}/settings/services`
+      // The Shop console (ADR-596): Catalog / Orders / Storefront. Replaced the retired JSON Store editor
+      // (the old /settings/services route now redirects here).
+      return `${base}/settings/shop`
     case 'space.reach':
       return `${base}/settings/qr`
     case 'space.comms':
@@ -102,7 +103,8 @@ export function panelHrefForSurface(id: string, slug: string): string | null {
 const MODULE_PANEL_ID: Record<string, string> = {
   'space.people': 'members', // Members
   'space.crm': 'crm', // CRM (the bounded board panel — legacy surface id was space.engage.crm)
-  'space.services': 'services', // Store
+  // 'space.services' (relabeled 'Shop') intentionally has NO inline panel: it deep-links to the 3-tab
+  // Shop console at /settings/shop (ADR-596). A panel entry here would short-circuit that deepLink.
   'space.reach': 'qr', // QR codes
   'space.comms': 'email', // Email
   'space.billing': 'billing', // Plan and usage

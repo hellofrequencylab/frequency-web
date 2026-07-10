@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, getCallerProfile } from '@/lib/auth'
+import { isPaid } from '@/lib/core/entitlement'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import type { ProductStatus } from '@/lib/commerce/types'
@@ -13,8 +14,13 @@ import type { ProductStatus } from '@/lib/commerce/types'
 // "payments aren't on yet" while billing is disabled — never a half-charge.
 
 export async function createMakerProductAction(formData: FormData): Promise<void> {
-  const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/makers/sell')
+  const profile = await getCallerProfile()
+  if (!profile) redirect('/sign-in?next=/market/sell')
+  // Selling in the Market is a paid-member feature (ADR-596); free members trade in Classifieds.
+  // Server-side gate mirrors the page gate (defense in depth), on the REAL tier (never beta-overridden)
+  // per the creation-gate convention (auth.ts, ADR-414) — a genuinely free member is sent to upgrade.
+  if (!isPaid(profile.realMembershipTier)) redirect('/upgrade')
+  const profileId = profile.id
 
   const title = String(formData.get('title') ?? '').trim()
   const priceDollars = Number(formData.get('price'))
@@ -28,14 +34,16 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
+    // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
+    marketPublished: true,
   })
   if (!product) return
 
   // A maker listing their piece means it is live to browse immediately. Payouts still
   // require a Connect account + billing enabled before a buyer can actually check out.
   await setProductStatus(product.id, 'active')
-  revalidatePath('/marketplace/makers')
-  redirect(`/marketplace/makers/${product.id}`)
+  revalidatePath('/market')
+  redirect(`/market/${product.id}`)
 }
 
 /** Start a one-item checkout for a product. Returns the Stripe Checkout URL, or a
@@ -57,15 +65,15 @@ async function ownsProduct(id: string): Promise<boolean> {
 export async function setMyProductStatusAction(id: string, status: ProductStatus): Promise<void> {
   if (!(await ownsProduct(id))) return
   await setProductStatus(id, status)
-  revalidatePath('/marketplace/makers/manage')
-  revalidatePath('/marketplace/makers')
-  revalidatePath(`/marketplace/makers/${id}`)
+  revalidatePath('/market/manage')
+  revalidatePath('/market')
+  revalidatePath(`/market/${id}`)
 }
 
 /** Delete one of MY products. */
 export async function deleteMyProductAction(id: string): Promise<void> {
   if (!(await ownsProduct(id))) return
   await deleteProduct(id)
-  revalidatePath('/marketplace/makers/manage')
-  revalidatePath('/marketplace/makers')
+  revalidatePath('/market/manage')
+  revalidatePath('/market')
 }

@@ -11,7 +11,7 @@ import { listMyMakerProducts } from '@/lib/commerce/products'
 import { listOrdersForSeller } from '@/lib/commerce/orders'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import type { CommerceProduct } from '@/lib/commerce/types'
-import { setMyProductStatusAction, deleteMyProductAction } from '../../commerce-actions'
+import { setMyProductStatusAction, deleteMyProductAction } from '../../marketplace/commerce-actions'
 
 // Seller storefront manager — a maker's own products + payout readiness + recent sales.
 // Listing is free; getting paid needs a payout account (Stripe Connect) at /settings/billing.
@@ -50,7 +50,7 @@ function ProductRow({ p }: { p: CommerceProduct }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <div className="min-w-0">
-        <Link href={`/marketplace/makers/${p.id}`} className="font-medium text-text hover:text-primary">
+        <Link href={`/market/${p.id}`} className="font-medium text-text hover:text-primary">
           {p.title}
         </Link>
         <p className="text-sm text-subtle">
@@ -83,7 +83,7 @@ function ProductRow({ p }: { p: CommerceProduct }) {
 
 export default async function MakerManagePage() {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/makers/manage')
+  if (!profileId) redirect('/sign-in?next=/market/manage')
 
   const [products, sales, connect, live] = await Promise.all([
     listMyMakerProducts(profileId),
@@ -98,9 +98,9 @@ export default async function MakerManagePage() {
       title="My storefront"
       description="Your maker listings, payouts, and sales in one place."
       action={
-        <Link href="/marketplace/makers/sell" className={buttonClasses('primary', 'md')}>
+        <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
           <Plus className="h-4 w-4" aria-hidden />
-          List a piece
+          List a product
         </Link>
       }
     >
@@ -143,12 +143,12 @@ export default async function MakerManagePage() {
         <EmptyState
           icon={Hammer}
           variant="first-use"
-          title="Your shelf is empty."
-          description="List your first piece. It shows up in Makers right away."
+          title="Nothing listed yet."
+          description="List your first product. It shows up in the Market right away."
           action={
-            <Link href="/marketplace/makers/sell" className={buttonClasses('primary', 'md')}>
+            <Link href="/market/sell" className={buttonClasses('primary', 'md')}>
               <Plus className="h-4 w-4" aria-hidden />
-              List a piece
+              List a product
             </Link>
           }
         />

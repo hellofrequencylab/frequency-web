@@ -3,7 +3,7 @@ import { productSchema, productListSchema, housingListingSchema } from '@/lib/js
 
 describe('productSchema', () => {
   it('emits a Product with a priced Offer', () => {
-    const s = productSchema({ title: 'Stoneware mug', priceCents: 2400, currency: 'usd', path: '/shop/mug' }) as {
+    const s = productSchema({ title: 'Stoneware mug', priceCents: 2400, currency: 'usd', path: '/store/mug' }) as {
       '@type': string
       name: string
       offers: { '@type': string; price: string; priceCurrency: string; availability: string }
@@ -14,11 +14,11 @@ describe('productSchema', () => {
     expect(s.offers.price).toBe('24.00')
     expect(s.offers.priceCurrency).toBe('USD')
     expect(s.offers.availability).toBe('https://schema.org/InStock')
-    expect(s.url).toContain('/shop/mug')
+    expect(s.url).toContain('/store/mug')
   })
 
   it('marks sold-out items', () => {
-    const s = productSchema({ title: 'x', priceCents: 100, inStock: false, path: '/shop/x' }) as {
+    const s = productSchema({ title: 'x', priceCents: 100, inStock: false, path: '/store/x' }) as {
       offers: { availability: string }
     }
     expect(s.offers.availability).toBe('https://schema.org/SoldOut')
@@ -27,7 +27,7 @@ describe('productSchema', () => {
 
 describe('productListSchema', () => {
   it('emits an ItemList with positions', () => {
-    const s = productListSchema([{ title: 'a', path: '/p/a' }, { title: 'b', path: '/p/b' }], 'Makers') as {
+    const s = productListSchema([{ title: 'a', path: '/p/a' }, { title: 'b', path: '/p/b' }], 'Market') as {
       '@type': string
       numberOfItems: number
       itemListElement: { position: number }[]

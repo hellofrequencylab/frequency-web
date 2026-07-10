@@ -11,7 +11,8 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
-import { spaceTakeRateCents } from '@/lib/billing/fees'
+import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
+import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
 import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
@@ -40,6 +41,8 @@ const PRODUCT_COLS =
 export interface CommerceCheckoutResult {
   url?: string
   error?: string
+  /** The pending order's id (Phase 4: lets a service booking link its hold to the order it will settle). */
+  orderId?: string
 }
 
 type ResolvedCharge =
@@ -53,7 +56,9 @@ async function resolveCharge(seller: ProductRow, grossCents: number): Promise<Re
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
-    return { platformFeeCents: await spaceTakeRateCents(grossCents, 'maker'), sellerStripeAccountId: status.accountId }
+    // An individual paid-member seller pays the Market listing ladder rate (member_bps, 8% — ADR-596),
+    // not a space plan rate. Upgrading to a Business Space buys the fee down (the space branch below).
+    return { platformFeeCents: await memberTakeRateCents(grossCents), sellerStripeAccountId: status.accountId }
   }
   const { data } = await db()
     .from('spaces')
@@ -175,7 +180,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   }
 
   if (!session.url) return { error: 'Could not start checkout.' }
-  return { url: session.url }
+  return { url: session.url, orderId }
 }
 
 /** Settle the order behind a completed Checkout session (idempotent). Platform
@@ -229,6 +234,27 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       sourceId: row.id,
       idempotencyKey: `commerce_order:${row.id}`,
     }).catch(() => {})
+
+    // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
+    // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
+    await confirmBookingByOrder(row.id)
+  }
+}
+
+/** Abandon the pending order behind an EXPIRED or async-failed Checkout session (idempotent): mark it
+ *  cancelled and release any held booking (Phase 4). No charge occurred, so there is nothing to refund;
+ *  without this, an abandoned service checkout would leave its 'pending' booking hold occupying the slot
+ *  forever. FAIL-SOFT booking release (no-op for a normal product order / pre-migration). */
+export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.Session): Promise<void> {
+  if (session.metadata?.kind !== 'commerce_order') return
+  const { data: updated } = await db()
+    .from('commerce_orders')
+    .update({ status: 'cancelled' })
+    .eq('stripe_checkout_session_id', session.id)
+    .eq('status', 'pending')
+    .select('id')
+  for (const row of (updated ?? []) as { id: string }[]) {
+    await cancelBookingByOrder(row.id)
   }
 }
 
@@ -292,6 +318,9 @@ export async function recordCommerceRefund(paymentIntentId: string | null): Prom
       sourceId: row.id,
       idempotencyKey: `commerce_order-refund:${row.id}`,
     }).catch(() => {})
+
+    // Bookable services (Phase 4, ADR-596): release the slot behind a refunded service order. Fail-soft.
+    await cancelBookingByOrder(row.id)
   }
 }
 

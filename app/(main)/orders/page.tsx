@@ -68,7 +68,7 @@ export default async function OrdersPage() {
           title="No orders yet."
           description="When you buy from a maker or the shop, your orders show up here."
           action={
-            <Link href="/marketplace/makers" className={buttonClasses('primary', 'md')}>
+            <Link href="/market" className={buttonClasses('primary', 'md')}>
               <ShoppingBag className="h-4 w-4" aria-hidden />
               Browse makers
             </Link>

@@ -111,11 +111,16 @@ function availabilityBuilder() {
 }
 
 function bookingsBuilder() {
-  const filters: { space_id?: string; status?: string; id?: string; gte?: string } = {}
+  const filters: { space_id?: string; status?: string; statusIn?: string[]; id?: string; gte?: string } = {}
   let pendingInsert: Record<string, unknown> | null = null
   let pendingUpdate: Record<string, unknown> | null = null
   const api = {
     select() {
+      return api
+    },
+    in(col: string, vals: string[]) {
+      // readBlockingBookings uses .in('status', ['confirmed','pending']) to exclude held + confirmed slots.
+      if (col === 'status') filters.statusIn = vals
       return api
     },
     eq(col: string, val: string) {
@@ -166,6 +171,7 @@ function bookingsBuilder() {
     then(resolve: (r: { data: BookRow[] | null; error: null }) => unknown) {
       let data = db.bookings.filter((b) => b.space_id === filters.space_id)
       if (filters.status) data = data.filter((b) => b.status === filters.status)
+      if (filters.statusIn) data = data.filter((b) => filters.statusIn!.includes(b.status))
       if (filters.gte) data = data.filter((b) => b.starts_at >= filters.gte!)
       data = [...data].sort((a, b) => a.starts_at.localeCompare(b.starts_at))
       return Promise.resolve(resolve({ data, error: null }))
