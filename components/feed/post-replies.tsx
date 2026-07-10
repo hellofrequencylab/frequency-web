@@ -154,7 +154,7 @@ function ReplyComposer({
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) onSubmit(e)
         }}
-        className="flex-1 resize-none rounded-xl bg-surface px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/40 focus:outline-none focus:ring-1 focus:ring-border-strong/40 disabled:opacity-50"
+        className="flex-1 resize-none rounded-xl bg-surface shadow-sm px-3.5 py-2 text-xs leading-relaxed text-text placeholder-subtle ring-1 ring-border/60 focus:outline-none focus:ring-1 focus:ring-border-strong/40 disabled:opacity-50"
       />
       <button
         type="submit"
