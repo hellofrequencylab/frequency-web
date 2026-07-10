@@ -59,14 +59,6 @@ export default async function JourneysPage() {
       action={
         <div className="flex items-center gap-2">
           <NewJourneyButton canCreate={canBuildJourney} />
-          {/* The member's own management space (store / edit / publish / duplicate / delete). On-ink
-              styling so the secondary button reads over the hero's dark scrim. */}
-          <Link
-            href="/journeys/mine"
-            className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20"
-          >
-            <FolderOpen className="h-4 w-4" /> Your journeys
-          </Link>
           {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
           {ctaLabel && ctaHref && (
             <a
@@ -79,8 +71,21 @@ export default async function JourneysPage() {
         </div>
       }
     >
-      <div className="max-w-4xl">
-        <PageModules route="/journeys" />
+      {/* Two-column body: the modules keep their reading width; the page-owned right column
+          carries the member's own management space (store / edit / publish / duplicate / delete)
+          as a full-width button — moved out of the hero action cluster. */}
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="min-w-0 flex-1 lg:max-w-4xl">
+          <PageModules route="/journeys" />
+        </div>
+        <aside className="w-full lg:w-72 lg:shrink-0">
+          <Link
+            href="/journeys/mine"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+          >
+            <FolderOpen className="h-4 w-4" /> Your journeys
+          </Link>
+        </aside>
       </div>
     </IndexTemplate>
   )
