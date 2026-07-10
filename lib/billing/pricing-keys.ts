@@ -121,6 +121,24 @@ export function takeRateCents(
   return Math.floor((grossCents * bps) / 10000)
 }
 
+/** The take-rate bps for an individual PAID-MEMBER seller (owner_kind='profile') — the Market listing
+ *  ladder rate (8% today, ADR-593). Distinct from the space plan rates: a member sells at member_bps,
+ *  and upgrading their space to Business buys the fee down to business_bps. PURE. Fails safe to the
+ *  higher free_bps if a legacy row lacks member_bps (never under-collect). */
+export function memberTakeRateBps(takeRate: { member_bps?: number; free_bps: number }): number {
+  return typeof takeRate.member_bps === 'number' ? takeRate.member_bps : takeRate.free_bps
+}
+
+/** The application-fee cents on a gross charge for an individual paid-member seller. PURE (no I/O).
+ *  Floors fractional cents so the recipient is never short-changed (mirrors takeRateCents). */
+export function memberTakeRateCents(
+  grossCents: number,
+  takeRate: { member_bps?: number; free_bps: number },
+): number {
+  if (!Number.isFinite(grossCents) || grossCents <= 0) return 0
+  return Math.floor((grossCents * memberTakeRateBps(takeRate)) / 10000)
+}
+
 /** The monthly take-rate saving (cents) a not-yet-paying space would get on paid Business: the bps
  *  delta (free rate minus the paid Business rate) applied to its trailing monthly processed volume.
  *  PURE (ADR-552, the self-funding trigger). Returns 0 when the delta or the volume is non-positive, so

@@ -11,7 +11,7 @@ import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
-import { spaceTakeRateCents } from '@/lib/billing/fees'
+import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
 import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
@@ -53,7 +53,9 @@ async function resolveCharge(seller: ProductRow, grossCents: number): Promise<Re
   if (seller.owner_kind === 'profile') {
     const status = await getConnectStatus(seller.owner_profile_id ?? '')
     if (!status.accountId || !status.ready) return { error: 'This seller can’t take payment yet.' }
-    return { platformFeeCents: await spaceTakeRateCents(grossCents, 'maker'), sellerStripeAccountId: status.accountId }
+    // An individual paid-member seller pays the Market listing ladder rate (member_bps, 8% — ADR-593),
+    // not a space plan rate. Upgrading to a Business Space buys the fee down (the space branch below).
+    return { platformFeeCents: await memberTakeRateCents(grossCents), sellerStripeAccountId: status.accountId }
   }
   const { data } = await db()
     .from('spaces')
