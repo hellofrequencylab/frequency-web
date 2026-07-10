@@ -614,6 +614,87 @@ export async function cancelBooking(bookingId: string): Promise<ActionResult> {
   return ok()
 }
 
+// ── Bookable services (Phase 4, ADR-593): HOLD-FIRST booking tied to a commerce deposit ─────────
+// These write the 'pending' status + order_id/product_id columns from migration 20261102000000, which
+// is applied only when payments are enabled. They run ONLY in the paid service-booking path (gated
+// behind commerce checkout, which is OFF until payouts are live), never in the free createBooking path
+// above. All are FAIL-SOFT so a normal product-order settle/refund is never blocked pre-migration.
+
+/**
+ * Place a HOLD (a 'pending' booking) on an open slot for a paid service, before its deposit settles.
+ * Re-validates the slot server-side (same rules as createBooking) and inserts status='pending' stamped
+ * with the service product_id. The widened unique index (confirmed OR pending) blocks a second
+ * hold/confirm on the same slot. Returns the new booking id + its end instant, or null on any miss.
+ */
+export async function holdSlotForBooking(
+  spaceId: string,
+  memberProfileId: string,
+  startsAtISO: string,
+  productId: string,
+): Promise<{ bookingId: string; endsAt: string } | null> {
+  const startsAt = new Date(startsAtISO)
+  if (Number.isNaN(startsAt.getTime())) return null
+  const now = new Date()
+  if (startsAt.getTime() <= now.getTime()) return null
+  const windows = await readWindows(spaceId)
+  if (windows.length === 0) return null
+  const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
+  if (slotMinutes == null) return null
+  const endsAt = new Date(startsAt.getTime() + slotMinutes * 60000)
+  try {
+    const { data, error } = await bookingsTable()
+      .insert([
+        {
+          space_id: spaceId,
+          member_profile_id: memberProfileId,
+          starts_at: startsAt.toISOString(),
+          ends_at: endsAt.toISOString(),
+          status: 'pending',
+          product_id: productId,
+          note: null,
+        },
+      ])
+      .select(BOOKING_COLS)
+      .maybeSingle()
+    if (error || !data) return null
+    return { bookingId: data.id, endsAt: endsAt.toISOString() }
+  } catch {
+    return null
+  }
+}
+
+/** Stamp the commerce order that will pay for a held booking onto it (after checkout creates the
+ *  order). FAIL-SOFT. */
+export async function linkBookingToOrder(bookingId: string, orderId: string): Promise<void> {
+  try {
+    await bookingsTable().update({ order_id: orderId }).eq('id', bookingId)
+  } catch {
+    /* fail-soft */
+  }
+}
+
+/** Confirm the held booking behind a settled order (deposit paid). Idempotent (flips only a still
+ *  'pending' hold). FAIL-SOFT + a no-op pre-migration, so a normal product-order settle is never
+ *  blocked by a missing column. */
+export async function confirmBookingByOrder(orderId: string): Promise<void> {
+  if (!orderId) return
+  try {
+    await bookingsTable().update({ status: 'confirmed' }).eq('order_id', orderId).eq('status', 'pending')
+  } catch {
+    /* pre-migration / no linked booking: no-op */
+  }
+}
+
+/** Release (cancel) the booking behind a refunded / cancelled order, freeing the slot. FAIL-SOFT. */
+export async function cancelBookingByOrder(orderId: string): Promise<void> {
+  if (!orderId) return
+  try {
+    await bookingsTable().update({ status: 'cancelled' }).eq('order_id', orderId)
+  } catch {
+    /* fail-soft */
+  }
+}
+
 /**
  * The owner's UPCOMING confirmed bookings (member name + time). Gated on canEditProfile (owner /
  * admin / editor). Reads the confirmed rows from now forward, then resolves member display names in

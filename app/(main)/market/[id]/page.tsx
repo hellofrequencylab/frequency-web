@@ -1,9 +1,12 @@
 import { notFound } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
+import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
 import { DetailTemplate } from '@/components/templates'
 import { ReportButton } from '@/components/marketplace/report-button'
+import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
 import { BuyButton } from '../../marketplace/buy-button'
+import type { ServiceConfig } from '@/lib/commerce/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,24 +14,47 @@ function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 }
 
-export default async function MakerProductPage({ params }: { params: Promise<{ id: string }> }) {
+/** The price label for a service, honoring its priceModel (fixed / from / free / contact). */
+function servicePriceLabel(priceCents: number, currency: string, svc: ServiceConfig): string {
+  if (svc.priceModel === 'free') return 'Free'
+  if (svc.priceModel === 'contact') return 'Contact for pricing'
+  const base = usd(priceCents, currency)
+  return svc.priceModel === 'from' ? `From ${base}` : base
+}
+
+export default async function MarketProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const [profileId, product] = await Promise.all([getMyProfileId(), getProduct(id)])
-  if (!product || product.vertical !== 'maker') notFound()
+  if (!product) notFound()
+  const isService = product.productKind === 'service'
+  // Maker products (Phase 2/3) and services (Phase 4) render here; other space verticals wait for the
+  // Phase 5 umbrella + its market_published gate.
+  if (product.vertical !== 'maker' && !isService) notFound()
 
-  const isOwner = !!profileId && product.ownerProfileId === profileId
-  if (!isOwner && product.status !== 'active') notFound()
+  const isOwner =
+    !!profileId && (product.ownerProfileId === profileId || (isService && !!product.ownerSpaceId))
+  if (product.status !== 'active' && product.ownerProfileId !== profileId) notFound()
+
+  const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
   const soldOut = product.status === 'sold_out' || product.stock === 0
+
+  // A service pulls its open slots from the Space's availability calendar (booking_space_id).
+  const [slots, tz] =
+    isService && product.bookingSpaceId
+      ? await Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
+      : [[], 'UTC']
+
+  const subtitle = isService
+    ? servicePriceLabel(product.priceCents, product.currency, svc)
+    : usd(product.priceCents, product.currency)
 
   return (
     <div className="mx-auto w-full max-w-2xl">
       <DetailTemplate
         back={{ href: '/market', label: 'Market' }}
         title={product.title}
-        subtitle={<span className="font-semibold text-text">{usd(product.priceCents, product.currency)}</span>}
-        badges={
-          product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined
-        }
+        subtitle={<span className="font-semibold text-text">{subtitle}</span>}
+        badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}
       >
         <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
           {product.images.length > 0 && (
@@ -45,12 +71,31 @@ export default async function MakerProductPage({ params }: { params: Promise<{ i
             </div>
           )}
 
+          {isService && (svc.durationMin || svc.cancellationWindowHours) && (
+            <p className="mb-3 text-xs text-subtle">
+              {svc.durationMin ? `${svc.durationMin} minutes` : null}
+              {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
+              {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
+            </p>
+          )}
+
           {product.description && (
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{product.description}</p>
           )}
 
           <div className="mt-5 border-t border-border pt-4">
-            {soldOut ? (
+            {isService ? (
+              isOwner ? (
+                <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>
+              ) : (
+                <ServiceBookingPicker
+                  productId={product.id}
+                  slots={slots}
+                  timezone={tz}
+                  contactOnly={svc.priceModel === 'contact'}
+                />
+              )
+            ) : soldOut ? (
               <p className="text-sm font-medium text-subtle">Sold out.</p>
             ) : isOwner ? (
               <p className="text-sm text-subtle">This is your listing. Buyers see a Buy button here.</p>
@@ -63,7 +108,11 @@ export default async function MakerProductPage({ params }: { params: Promise<{ i
         {!isOwner && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
             <p className="text-xs text-subtle">
-              {soldOut ? 'This piece is sold out.' : 'Checkout is secure on Stripe. The maker gets paid directly; the platform fee stays low.'}
+              {isService
+                ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
+                : soldOut
+                  ? 'This piece is sold out.'
+                  : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
             </p>
             <ReportButton targetKind="product" targetId={product.id} />
           </div>

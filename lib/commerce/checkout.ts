@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { stripe, appUrl } from '@/lib/billing/stripe'
 import { getConnectStatus, payoutsLive } from '@/lib/billing/connect'
 import { spaceTakeRateCents, memberTakeRateCents } from '@/lib/billing/fees'
+import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/booking'
 import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
@@ -40,6 +41,8 @@ const PRODUCT_COLS =
 export interface CommerceCheckoutResult {
   url?: string
   error?: string
+  /** The pending order's id (Phase 4: lets a service booking link its hold to the order it will settle). */
+  orderId?: string
 }
 
 type ResolvedCharge =
@@ -177,7 +180,7 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   }
 
   if (!session.url) return { error: 'Could not start checkout.' }
-  return { url: session.url }
+  return { url: session.url, orderId }
 }
 
 /** Settle the order behind a completed Checkout session (idempotent). Platform
@@ -231,6 +234,10 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
       sourceId: row.id,
       idempotencyKey: `commerce_order:${row.id}`,
     }).catch(() => {})
+
+    // Bookable services (Phase 4, ADR-593): if this order paid the deposit on a held booking, confirm
+    // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
+    await confirmBookingByOrder(row.id)
   }
 }
 
@@ -294,6 +301,9 @@ export async function recordCommerceRefund(paymentIntentId: string | null): Prom
       sourceId: row.id,
       idempotencyKey: `commerce_order-refund:${row.id}`,
     }).catch(() => {})
+
+    // Bookable services (Phase 4, ADR-593): release the slot behind a refunded service order. Fail-soft.
+    await cancelBookingByOrder(row.id)
   }
 }
 

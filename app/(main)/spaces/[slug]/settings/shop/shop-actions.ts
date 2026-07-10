@@ -76,6 +76,8 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
+    // A service books against the Space's own availability calendar (Phase 4, ADR-593).
+    bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
   })
   if (!product) return
 
