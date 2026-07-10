@@ -1,94 +1,103 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
-import { Home, Plus, Users } from 'lucide-react'
-import { IndexTemplate } from '@/components/templates'
+import { Home, Plus, Users, DoorOpen } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Skeleton } from '@/components/ui/skeleton'
+import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
-// Housing — rentals + roommates (connect-only). Member-only surface (high-trust).
-// Resonance-based roommate matching + geo browse arrive with the housing detail
-// pages in the follow-up; this is the browse + post entry.
+// Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
+// match Classifieds / Market / Frequency Store. No em or en dashes.
 
 export const metadata = {
   title: 'Housing',
   description: 'Find a rental or a roommate who actually fits, in your community.',
 }
 
-function GridSkeleton() {
-  return (
-    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-44 rounded-2xl" />
-      ))}
-    </div>
-  )
-}
+const HERO_IMAGE = 'https://picsum.photos/seed/frequency-housing/1600/600'
 
-async function HousingGrid() {
-  const listings = await listListings({ vertical: 'housing' })
-  if (listings.length === 0) {
-    return (
-      <EmptyState
-        icon={Home}
-        variant="first-use"
-        title="No housing listed near you yet."
-        description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
-      />
-    )
-  }
-  return (
-    <div className="@container">
-      <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
-        {listings.map((l) => (
-          <ListingCard key={l.id} listing={l} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export default async function HousingPage() {
+export default async function HousingPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams
+  const query = (q ?? '').trim().toLowerCase()
   const viewerProfileId = await getMyProfileId()
+
+  const hero = (
+    <MarketHero
+      image={HERO_IMAGE}
+      eyebrow="Housing"
+      title="Find your place, and your people"
+      subtitle="Rentals, sublets, and roommates who actually fit. Listings stay local, and contact is a message away."
+      search={<MarketSearchBar placeholder="Search housing" />}
+      action={
+        viewerProfileId ? (
+          <>
+            <Link href="/marketplace/housing/roommates" className={buttonClasses('secondary', 'md')}>
+              <Users className="h-4 w-4" aria-hidden /> Find a roommate
+            </Link>
+            <Link href="/marketplace/housing/new" className={buttonClasses('primary', 'md')}>
+              <Plus className="h-4 w-4" aria-hidden /> List housing
+            </Link>
+          </>
+        ) : undefined
+      }
+    />
+  )
+
   if (!viewerProfileId) {
     return (
-      <IndexTemplate title="Housing" description="Rentals and roommates, matched to your community.">
+      <div className="space-y-8">
+        {hero}
         <EmptyState
           icon={Home}
           variant="permission"
           title="Sign in to browse housing."
           description="Housing is for members. It's where you find a place, or a roommate the resonance engine thinks you'd click with."
         />
-      </IndexTemplate>
+      </div>
     )
   }
+
+  const allListings = await listListings({ vertical: 'housing' })
+  const listings = query
+    ? allListings.filter((l) => `${l.title} ${l.description ?? ''}`.toLowerCase().includes(query))
+    : allListings
+
   return (
-    <IndexTemplate
-      title="Housing"
-      description="Find a place, or a roommate who actually fits. Listings stay local, and contact is a message away."
-      action={
-        <div className="flex items-center gap-2">
-          <Link href="/marketplace/housing/roommates" className={buttonClasses('secondary', 'sm')}>
-            <Users className="h-4 w-4" aria-hidden />
-            Find a roommate
-          </Link>
-          <Link href="/marketplace/housing/new" className={buttonClasses('primary', 'md')}>
-            <Plus className="h-4 w-4" aria-hidden />
-            List housing
-          </Link>
-        </div>
-      }
-      toolbar={<MarketplaceFacets active="housing" />}
-    >
+    <div className="space-y-8">
+      {hero}
+
       <MarketplaceHiddenBanner area="housing" />
-      <Suspense fallback={<GridSkeleton />}>
-        <HousingGrid />
-      </Suspense>
-    </IndexTemplate>
+
+      <div className="space-y-6">
+        <MarketplaceFacets active="housing" />
+
+        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
+          <StatCard size="sm" label="Listings" value={allListings.length} icon={Home} />
+          <StatCard size="sm" label="Roommates" value="Matched" icon={DoorOpen} />
+        </div>
+
+        {listings.length === 0 ? (
+          <EmptyState
+            icon={Home}
+            variant="first-use"
+            title="No housing listed near you yet."
+            description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
+          />
+        ) : (
+          <div className="@container">
+            <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
+              {listings.map((l) => (
+                <ListingCard key={l.id} listing={l} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

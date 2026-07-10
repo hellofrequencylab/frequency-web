@@ -1,21 +1,25 @@
 import Image from 'next/image'
 
-// MARKET HERO — the section header for the commerce surfaces (Classifieds / Market / Frequency Store),
-// following the site's PhotoHero grammar (components/marketing/marketing-ui.tsx): a full-bleed image
-// under a dark vertical gradient + the amber glow, a bold uppercase eyebrow, a heavy font-display
-// uppercase title, a subtitle, and an optional CTA, capped by the light strip. Contained (rounded) so
-// it sits inside the app shell. Voice-canon copy comes from the caller (no em dashes).
+// MARKET HERO — the section header for the FOUR commerce surfaces (Classifieds / Market / Frequency
+// Store / Housing), following the site's PhotoHero grammar (components/marketing/marketing-ui.tsx): a
+// full-bleed image under a dark vertical gradient + the amber glow, a bold uppercase eyebrow, a heavy
+// font-display uppercase title, a subtitle, an instant search bar, and an optional CTA, capped by the
+// light strip. Contained (rounded). FIXED HEIGHT (min-h) so all four heroes render the SAME size
+// regardless of their copy. Voice-canon copy comes from the caller (no em dashes).
 export function MarketHero({
   image,
   eyebrow,
   title,
   subtitle,
+  search,
   action,
 }: {
   image: string
   eyebrow?: string
   title: React.ReactNode
   subtitle?: string
+  /** The instant search bar (MarketSearchBar), rendered inside the hero image. */
+  search?: React.ReactNode
   action?: React.ReactNode
 }) {
   return (
@@ -30,7 +34,9 @@ export function MarketHero({
         aria-hidden
       />
       <div className="amber-glow pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative z-10 mx-auto max-w-3xl px-6 py-16 text-center sm:py-24">
+      {/* Fixed min-height + centered content = every hero is the same height (matches the Frequency
+          Store hero) no matter how much copy or how many controls it carries. */}
+      <div className="relative z-10 mx-auto flex min-h-[24rem] max-w-3xl flex-col items-center justify-center px-6 py-12 text-center">
         {eyebrow && (
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-primary">{eyebrow}</p>
         )}
@@ -42,7 +48,8 @@ export function MarketHero({
             {subtitle}
           </p>
         )}
-        {action && <div className="mt-8 flex flex-wrap items-center justify-center gap-3">{action}</div>}
+        {search && <div className="mt-6 w-full max-w-lg">{search}</div>}
+        {action && <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{action}</div>}
       </div>
       <div className="light-strip absolute inset-x-0 bottom-0 z-10" aria-hidden />
     </section>

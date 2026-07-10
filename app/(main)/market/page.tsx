@@ -8,6 +8,7 @@ import { listMarketListings } from '@/lib/commerce/products'
 import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
+import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -89,6 +90,7 @@ export default async function MarketPage({
         eyebrow="The Market"
         title="Buy from your community"
         subtitle="Products, services, and tickets from the people and businesses around you. Buy direct, the seller gets paid, the fee stays low."
+        search={<MarketSearchBar placeholder="Search the Market" />}
         action={
           viewerProfileId ? (
             <>
