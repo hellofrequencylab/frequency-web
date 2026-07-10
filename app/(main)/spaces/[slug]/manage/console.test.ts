@@ -69,13 +69,18 @@ describe('groupForModule (every module folds into one of the 7 console groups)',
 describe('panelHrefForModule (on-page panel first, else deep link, no regression)', () => {
   const slug = 'demo'
 
-  it('opens Members / CRM / Store / QR / Email / Billing on-page via ?panel=', () => {
+  it('opens Members / CRM / QR / Email / Billing on-page via ?panel=', () => {
     expect(panelHrefForModule(byId('space.people'), slug)).toBe(`/spaces/${slug}?panel=members`)
     expect(panelHrefForModule(byId('space.crm'), slug)).toBe(`/spaces/${slug}?panel=crm`)
-    expect(panelHrefForModule(byId('space.services'), slug)).toBe(`/spaces/${slug}?panel=services`)
     expect(panelHrefForModule(byId('space.reach'), slug)).toBe(`/spaces/${slug}?panel=qr`)
     expect(panelHrefForModule(byId('space.comms'), slug)).toBe(`/spaces/${slug}?panel=email`)
     expect(panelHrefForModule(byId('space.billing'), slug)).toBe(`/spaces/${slug}?panel=billing`)
+  })
+
+  it('deep-links Shop (was Store) to the 3-tab Shop console, not an inline panel (ADR-593)', () => {
+    // space.services was relabeled 'Shop' and its MODULE_PANEL_ID entry removed, so it falls through to
+    // the deepLink at /settings/shop (the Catalog/Orders/Storefront console) instead of opening ?panel=.
+    expect(panelHrefForModule(byId('space.services'), slug)).toBe(`/spaces/${slug}/settings/shop`)
   })
 
   it('opens each split commerce module on-page via ?panel= (modular menu P2, ADR-545)', () => {
