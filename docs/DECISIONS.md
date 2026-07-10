@@ -13300,3 +13300,55 @@ after the destructive one runs (ADR-246). `program_complete` history rows remain
 `engagement_events` (harmless, no reader). SEO/robots + menu-contract checks stay green. Docs that
 described Programs as a live feature (PAGE-FRAMEWORK §8, DEVELOPMENT-MAP, BUILD-LIST) are updated;
 historical changelog/ADR references are kept as-is.
+
+---
+
+## ADR-598: Marketplace trust & safety — product reviews, order disputes, seller verification badges
+
+**Status:** Accepted (2026-07-10) · Phase 8 of `docs/SHOP-MARKETPLACE-PLAN.md` · builds on ADR-596.
+
+**Context.** The commerce spine (ADR-596) shipped Phases 0-7 + 9, but the trust surface was thin:
+Space-level reviews (`space_reviews`) and library "loves" (`content_ratings`) existed, `refundCommerceOrder`
+existed as a backend, and `persona_verification` (audit columns on `profile_personas`) + the `VerifiedBadge`
+component existed unused. There was no way for a buyer to review a *product/listing*, no member-facing
+dispute/refund-request flow, and no seller-verification signal on a listing. Payments are double-gated OFF
+(`payoutsLive()` / `host_payouts_enabled`, ADR-178), so anything money-moving must be inert until they flip.
+
+**Decision.** Three additive slices, each reusing an existing pattern.
+
+1. **Product reviews (`commerce_reviews`).** A near-clone of `space_reviews`: `smallint` rating 1-5, `body`,
+   `status` (visible/hidden) moderation, one-per-buyer upsert key `(product_id, reviewer_profile_id)`, plus a
+   `verified_purchase` boolean. Public read is gated on the parent product being `active`; insert `with check
+   (reviewer_profile_id = get_my_profile_id())`; the author revises their own; operators hide through the
+   service-role client. The aggregate (average + count) shows on the product card and the detail page.
+2. **Order disputes (`commerce_disputes`).** A buyer opens a dispute on their own order (reason + detail);
+   it lands in an operator queue at `/admin/marketplace/disputes` (mirrors the `marketplace_reports` triage
+   surface) where an operator approves a refund or declines. A partial unique index caps it at one live
+   (open/reviewing) dispute per order. Read access spans the buyer and the seller (profile or Space member);
+   resolution is operator-only via the service-role client. **Approving a refund calls `refundCommerceOrder`
+   only when the order is settled AND payments are on; with payments OFF the resolution is recorded and no
+   money moves** (the dispute still closes with a note). The buyer may withdraw a live dispute.
+3. **Seller verification badges (READ-ONLY).** No new identity flow. A single derived boolean feeds the
+   existing `VerifiedBadge`: a Space seller is verified when its type is Business/nonprofit (`isConsoleSpaceType`,
+   the Business Space designator); a member seller is verified when they hold a LIVE partner persona
+   (`profile_personas` state in verified/active, ADR-163). Batched per card grid; rendered on the product card,
+   the detail page, and (via the Space type) the storefront.
+
+**Data model choice.** `verified_purchase` defaults false. With payments OFF no order ever settles, so today any
+signed-in member (not the seller) may review and the flag stays false; `hasPurchasedProduct()` derives it and
+carries a `TODO(payments-on)` to GATE review creation on a real settled order once `host_payouts_enabled` flips.
+Both new tables ride ONE migration `20261112000000_commerce_reviews.sql` (**written, NOT applied**); until it
+applies + `database.types.ts` regenerates, the data layer reads them through the untyped admin client behind
+app-code authz (the `lib/commerce/reports.ts` idiom).
+
+**Alternatives.** Extend `content_ratings` for products (rejected: it is a presence-toggle with no star value or
+body). A generic polymorphic `reviews` table spanning Spaces + products (rejected: `space_reviews` is entrenched;
+a parallel product table is lower-risk than a migration of live data). Block reviews entirely until payments
+(rejected: reviews are not money-dependent; only the *verified* signal is, and it degrades cleanly). A separate
+disputes table vs. reusing `marketplace_reports` (chose separate: a dispute is order-scoped and can settle to a
+refund, which a report cannot).
+
+**Consequences.** One additive migration (two tables, RLS per repo convention), inert money paths behind
+`payoutsLive()`, one new operator surface registered in `lib/nav/studio.ts` (not a new `*_MODULES` catalog, so
+the MENU-CONTRACT guard stays green). Regenerate `lib/database.types.ts` after apply (ADR-246), then the data
+layer's untyped casts can tighten.

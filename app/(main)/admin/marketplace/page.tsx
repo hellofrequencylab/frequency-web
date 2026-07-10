@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Store, ShoppingCart, Receipt, Flag, Plus, Eye, EyeOff } from 'lucide-react'
+import { Store, ShoppingCart, Receipt, Flag, ShieldAlert, Plus, Eye, EyeOff } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin/guard'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
@@ -8,6 +8,7 @@ import { buttonClasses } from '@/components/ui/button'
 import { listPlatformCatalog, listSpaceCatalog } from '@/lib/commerce/products'
 import { orderStatusCounts } from '@/lib/commerce/orders'
 import { reportStatusCounts } from '@/lib/commerce/reports'
+import { disputeStatusCounts } from '@/lib/commerce/disputes'
 import { marketplaceVisibility, MARKET_AREAS, AREA_LABEL } from '@/lib/marketplace/visibility'
 import type { CommerceProduct } from '@/lib/commerce/types'
 import {
@@ -65,16 +66,18 @@ function CatalogRow({ p, oversight = false }: { p: CommerceProduct; oversight?: 
 export default async function MarketplaceAdminPage() {
   await requireAdmin('admin', { staff: 'platform' })
 
-  const [catalog, spaceCatalog, orderCounts, reportCounts, visibility] = await Promise.all([
+  const [catalog, spaceCatalog, orderCounts, reportCounts, disputeCounts, visibility] = await Promise.all([
     listPlatformCatalog(),
     listSpaceCatalog(),
     orderStatusCounts(),
     reportStatusCounts(),
+    disputeStatusCounts(),
     marketplaceVisibility(),
   ])
   const liveCount = catalog.filter((p) => p.status === 'active').length
   const ordersDone = (orderCounts.paid ?? 0) + (orderCounts.fulfilled ?? 0)
   const openReports = (reportCounts.open ?? 0) + (reportCounts.reviewing ?? 0)
+  const openDisputes = (disputeCounts.open ?? 0) + (disputeCounts.reviewing ?? 0)
 
   return (
     <AdminTemplate
@@ -91,14 +94,18 @@ export default async function MarketplaceAdminPage() {
           <Link href="/admin/marketplace/reports" className={buttonClasses('secondary', 'sm')}>
             <Flag className="h-4 w-4" aria-hidden /> Reports
           </Link>
+          <Link href="/admin/marketplace/disputes" className={buttonClasses('secondary', 'sm')}>
+            <ShieldAlert className="h-4 w-4" aria-hidden /> Disputes
+          </Link>
         </div>
       }
     >
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatCard label="Shop products" value={catalog.length} icon={Store} />
         <StatCard label="Live" value={liveCount} icon={ShoppingCart} />
         <StatCard label="Orders" value={ordersDone} icon={Receipt} href="/admin/marketplace/orders" />
         <StatCard label="Open reports" value={openReports} icon={Flag} href="/admin/marketplace/reports" />
+        <StatCard label="Open disputes" value={openDisputes} icon={ShieldAlert} href="/admin/marketplace/disputes" />
       </div>
 
       <AdminSection

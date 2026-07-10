@@ -6,6 +6,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
 import { listOrdersForBuyer, type CommerceOrder } from '@/lib/commerce/orders'
+import { disputesForOrders, type CommerceDispute } from '@/lib/commerce/disputes'
+import { DisputeButton } from '@/components/marketplace/dispute-button'
 
 // My Orders — a member's purchase history across Makers + Shop. Checkout's success_url
 // lands here. Connect-only verticals (General / Housing) never create orders.
@@ -25,8 +27,10 @@ const STATUS_TONE: Record<string, string> = {
   failed: 'bg-surface-elevated text-warning',
 }
 
-function OrderCard({ order }: { order: CommerceOrder }) {
+function OrderCard({ order, dispute }: { order: CommerceOrder; dispute: CommerceDispute | null }) {
   const when = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  // A dispute makes sense on a completed purchase, not a failed / cancelled checkout.
+  const disputable = order.status === 'paid' || order.status === 'fulfilled'
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
@@ -50,6 +54,14 @@ function OrderCard({ order }: { order: CommerceOrder }) {
         <span className="text-sm font-semibold text-text">Total</span>
         <span className="text-sm font-semibold text-text">{usd(order.amountCents, order.currency)}</span>
       </div>
+      {(disputable || dispute) && (
+        <div className="mt-3 border-t border-border pt-3">
+          <DisputeButton
+            orderId={order.id}
+            existing={dispute ? { id: dispute.id, status: dispute.status } : null}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -58,6 +70,7 @@ export default async function OrdersPage() {
   const profileId = await getMyProfileId()
   if (!profileId) redirect('/sign-in?next=/orders')
   const orders = await listOrdersForBuyer(profileId)
+  const disputes = await disputesForOrders(orders.map((o) => o.id))
 
   return (
     <IndexTemplate title="My orders" description="Everything you've bought from makers and the Frequency shop.">
@@ -77,7 +90,7 @@ export default async function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((o) => (
-            <OrderCard key={o.id} order={o} />
+            <OrderCard key={o.id} order={o} dispute={disputes.get(o.id) ?? null} />
           ))}
         </div>
       )}

@@ -6,6 +6,7 @@ import { setActiveSpace } from '@/lib/spaces/active-space'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { listPublicSpaceCatalog } from '@/lib/commerce/products'
+import { productRatingsFor } from '@/lib/commerce/reviews'
 import { marketGroupForKind, MARKET_GROUPS, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,6 +33,10 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
   if (!storefront.published || !isConsoleSpaceType(space.type)) notFound()
 
   const items = await listPublicSpaceCatalog(space.id)
+  // Trust & Safety (Phase 8): aggregate ratings per item (batch); every item shares this Space's
+  // verification, so the badge is derived once from the Space type (a Business/nonprofit page = verified).
+  const ratings = await productRatingsFor(items.map((p) => p.id))
+  const spaceVerified = isConsoleSpaceType(space.type)
   const sections = MARKET_GROUPS.map((g) => ({
     group: g,
     items: items.filter((p) => marketGroupForKind(p.productKind) === g),
@@ -56,7 +61,13 @@ export default async function SpaceShopTabPage({ params }: { params: Promise<{ s
           <h2 className="mb-4 text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
           <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
             {s.items.map((p) => (
-              <ProductCard key={p.id} product={p} href={`/market/${p.id}`} />
+              <ProductCard
+                key={p.id}
+                product={p}
+                href={`/market/${p.id}`}
+                rating={ratings.get(p.id) ?? null}
+                verified={spaceVerified}
+              />
             ))}
           </div>
         </section>
