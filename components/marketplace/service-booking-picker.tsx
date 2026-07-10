@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { bookServiceAction } from '@/app/(main)/market/service-actions'
+import { bookServiceAction, sendServiceEnquiry } from '@/app/(main)/market/service-actions'
 import { buttonClasses } from '@/components/ui/button'
 
 // The member-facing slot picker for a bookable service (Phase 4, ADR-596). Server-fetched open slots
@@ -29,8 +29,33 @@ export function ServiceBookingPicker({
   const [error, setError] = useState<string | null>(null)
   const [enquiry, setEnquiry] = useState(false)
 
+  // Contact-only services have no checkout: open a message thread with the Space owner instead.
+  const enquire = () => {
+    setError(null)
+    startTransition(async () => {
+      const res = await sendServiceEnquiry(productId)
+      if (res.error) {
+        setError(res.error)
+        return
+      }
+      if (res.url) window.location.href = res.url
+    })
+  }
+
+  const enquiryButton = (
+    <button type="button" disabled={pending} onClick={enquire} className={buttonClasses('primary', 'sm')}>
+      {pending ? 'Opening…' : 'Message the Space'}
+    </button>
+  )
+
   if (contactOnly) {
-    return <p className="text-sm text-muted">This service is by enquiry. Reach out to the space to arrange a time.</p>
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted">This service is by enquiry. Send the Space a message to arrange a time.</p>
+        {enquiryButton}
+        {error && <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-sm text-text">{error}</p>}
+      </div>
+    )
   }
   if (slots.length === 0) {
     return <p className="text-sm text-subtle">No open times right now. Check back soon.</p>
@@ -65,9 +90,10 @@ export function ServiceBookingPicker({
   return (
     <div className="space-y-3">
       {enquiry && (
-        <p className="rounded-lg bg-warning-bg/20 px-3 py-2 text-sm text-text">
-          This service is by enquiry. Reach out to the space to arrange it.
-        </p>
+        <div className="space-y-2 rounded-lg bg-warning-bg/20 px-3 py-2">
+          <p className="text-sm text-text">This service is by enquiry. Send the Space a message to arrange it.</p>
+          {enquiryButton}
+        </div>
       )}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {slots.slice(0, 24).map((s) => (
