@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getCallerProfile } from '@/lib/auth'
@@ -12,6 +13,7 @@ import { Compass, CreditCard, Users } from 'lucide-react'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { StaffPreviewBanner } from '@/components/spaces/staff-preview-banner'
+import { PlacementApprovals } from '@/components/events/placement-approvals'
 import { SpaceManageBoard } from './manage-board'
 
 // The Space OWNER CONSOLE (ADR-441 EM1-3, the Spaces harmonization slice). The unified
@@ -97,6 +99,13 @@ export default async function SpaceManagePage({
       }
     >
       <SpaceManageBoard slug={slug} />
+      {/* Pending "where does this event live" requests a Space steward can approve. Only a manager
+          (not a staff previewer) acts on them; the actions re-check steward caps server-side. */}
+      {canManage && (
+        <Suspense fallback={null}>
+          <PlacementApprovals target={{ type: 'space', id: space.id }} />
+        </Suspense>
+      )}
     </DashboardTemplate>
   )
 }

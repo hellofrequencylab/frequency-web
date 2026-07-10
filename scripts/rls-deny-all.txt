@@ -85,3 +85,4 @@ team_members
 trust_scores
 trust_signals
 vera_config
+event_placement_requests
