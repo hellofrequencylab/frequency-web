@@ -7,7 +7,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
+import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -21,9 +21,7 @@ export const metadata = {
 
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-housing/1600/600'
 
-export default async function HousingPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams
-  const query = (q ?? '').trim().toLowerCase()
+export default async function HousingPage() {
   const viewerProfileId = await getMyProfileId()
 
   const hero = (
@@ -50,54 +48,59 @@ export default async function HousingPage({ searchParams }: { searchParams: Prom
 
   if (!viewerProfileId) {
     return (
-      <div className="space-y-8">
-        {hero}
-        <EmptyState
-          icon={Home}
-          variant="permission"
-          title="Sign in to browse housing."
-          description="Housing is for members. It's where you find a place, or a roommate the resonance engine thinks you'd click with."
-        />
-      </div>
+      <MarketSearchProvider>
+        <div className="space-y-8">
+          {hero}
+          <EmptyState
+            icon={Home}
+            variant="permission"
+            title="Sign in to browse housing."
+            description="Housing is for members. It's where you find a place, or a roommate the resonance engine thinks you'd click with."
+          />
+        </div>
+      </MarketSearchProvider>
     )
   }
 
-  const allListings = await listListings({ vertical: 'housing' })
-  const listings = query
-    ? allListings.filter((l) => `${l.title} ${l.description ?? ''}`.toLowerCase().includes(query))
-    : allListings
+  // Full list; the hero search bar filters it instantly on the client (no server round-trip).
+  const listings = await listListings({ vertical: 'housing' })
 
   return (
-    <div className="space-y-8">
-      {hero}
+    <MarketSearchProvider>
+      <div className="space-y-8">
+        {hero}
 
-      <MarketplaceHiddenBanner area="housing" />
+        <MarketplaceHiddenBanner area="housing" />
 
-      <div className="space-y-6">
-        <MarketplaceFacets active="housing" />
+        <div className="space-y-6">
+          <MarketplaceFacets active="housing" />
 
-        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-          <StatCard size="sm" label="Listings" value={allListings.length} icon={Home} />
-          <StatCard size="sm" label="Roommates" value="Matched" icon={DoorOpen} />
-        </div>
-
-        {listings.length === 0 ? (
-          <EmptyState
-            icon={Home}
-            variant="first-use"
-            title="No housing listed near you yet."
-            description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
-          />
-        ) : (
-          <div className="@container">
-            <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
-              {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} />
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
+            <StatCard size="sm" label="Listings" value={listings.length} icon={Home} />
+            <StatCard size="sm" label="Roommates" value="Matched" icon={DoorOpen} />
           </div>
-        )}
+
+          {listings.length === 0 ? (
+            <EmptyState
+              icon={Home}
+              variant="first-use"
+              title="No housing listed near you yet."
+              description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
+            />
+          ) : (
+            <div className="@container">
+              <InstantGrid
+                items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
+                className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3"
+              >
+                {listings.map((l) => (
+                  <ListingCard key={l.id} listing={l} />
+                ))}
+              </InstantGrid>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </MarketSearchProvider>
   )
 }

@@ -7,6 +7,7 @@ import { MapPin, Navigation, Loader2 } from 'lucide-react'
 import { distanceKm } from '@/lib/distance'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
+import { useMarketQuery, marketMatch } from '@/components/marketplace/market-search'
 
 const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
 
@@ -62,6 +63,8 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
 export function MarketGrid({ listings }: { listings: GridListing[] }) {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
+  // The shared hero search query — filters the grid instantly on every keystroke (no server round-trip).
+  const query = useMarketQuery()
 
   const nearMe = async () => {
     if (coords) { setCoords(null); return } // toggle off
@@ -71,16 +74,19 @@ export function MarketGrid({ listings }: { listings: GridListing[] }) {
     if (pos) setCoords(pos)
   }
 
-  // When located, sort by distance (listings without coords sink to the bottom).
+  // Instant search first, then (when located) sort by distance (listings without coords sink to the bottom).
   const ordered = useMemo(() => {
-    if (!coords) return listings.map((l) => ({ l, distance: null as number | null }))
-    return listings
+    const matched = query
+      ? listings.filter((l) => marketMatch(`${l.title} ${l.description ?? ''}`, query))
+      : listings
+    if (!coords) return matched.map((l) => ({ l, distance: null as number | null }))
+    return matched
       .map((l) => ({
         l,
         distance: l.latitude != null && l.longitude != null ? distanceKm(coords.lat, coords.lng, l.latitude, l.longitude) : null,
       }))
       .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
-  }, [listings, coords])
+  }, [listings, coords, query])
 
   return (
     <div>
@@ -95,9 +101,13 @@ export function MarketGrid({ listings }: { listings: GridListing[] }) {
           {coords ? 'Sorted by distance' : 'Near me'}
         </button>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {ordered.map(({ l, distance }) => <Card key={l.id} l={l} distance={distance} />)}
-      </div>
+      {ordered.length === 0 ? (
+        <p className="text-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {ordered.map(({ l, distance }) => <Card key={l.id} l={l} distance={distance} />)}
+        </div>
+      )}
     </div>
   )
 }
