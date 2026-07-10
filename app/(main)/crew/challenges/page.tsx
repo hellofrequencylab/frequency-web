@@ -16,7 +16,7 @@ export default async function ChallengesPage() {
     <DashboardTemplate
       eyebrow="The Quest · Season 1"
       title="Season Challenges"
-      description="Complete challenges this season to earn bonus zaps. Each season runs 13 weeks."
+      description="Complete challenges this season to earn bonus Zaps. Each season runs 13 weeks."
     >
       <PageModules route="/crew/challenges" />
     </DashboardTemplate>

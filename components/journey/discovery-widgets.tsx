@@ -160,7 +160,7 @@ export function JourneyStatChips({
       {time && <StatChip icon={Clock}>{time}</StatChip>}
       <StatChip icon={CalendarDays}>{cadenceLabel(plan.drip_interval_days)}</StatChip>
       <StatChip icon={Gem} tone="reward">
-        {plan.completion_gems} gems
+        {plan.completion_gems} Gems
       </StatChip>
       {plan.certificate_enabled && <StatChip icon={Award}>Certificate</StatChip>}
       {enrolledCount > 0 && (

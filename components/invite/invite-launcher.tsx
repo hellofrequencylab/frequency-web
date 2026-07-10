@@ -124,7 +124,7 @@ export function InviteLauncher() {
             </button>
 
             <p className="mt-3 flex items-center justify-center gap-1.5 text-2xs text-subtle">
-              <Gem className="h-3 w-3 text-signal" /> They land on your profile; when they join, you’re connected and the zaps are yours.
+              <Gem className="h-3 w-3 text-signal" /> They land on your profile; when they join, you’re connected and the Zaps are yours.
             </p>
           </>
         ) : null}

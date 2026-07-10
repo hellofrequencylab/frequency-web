@@ -250,9 +250,9 @@ function StatsView({ show, meta }: { show: SpotlightStatKey[]; meta: SpotlightRe
   const s = meta.stats
   const pills: React.ReactNode[] = []
   for (const key of show) {
-    if (key === 'zaps' && s.zaps && s.zaps > 0) pills.push(<StatPill key={key} icon={Zap} value={s.zaps.toLocaleString()} label="zaps" />)
+    if (key === 'zaps' && s.zaps && s.zaps > 0) pills.push(<StatPill key={key} icon={Zap} value={s.zaps.toLocaleString()} label="Zaps" />)
     else if (key === 'streak' && s.streak && s.streak > 0) pills.push(<StatPill key={key} icon={Flame} value={String(s.streak)} label="day streak" />)
-    else if (key === 'gems' && s.gems && s.gems > 0) pills.push(<StatPill key={key} icon={Gem} value={s.gems.toLocaleString()} label="gems earned" />)
+    else if (key === 'gems' && s.gems && s.gems > 0) pills.push(<StatPill key={key} icon={Gem} value={s.gems.toLocaleString()} label="Gems earned" />)
     else if (key === 'joined' && s.joinedYear) pills.push(<StatPill key={key} icon={CalendarDays} value={String(s.joinedYear)} label="member since" />)
     else if (key === 'region' && s.region) pills.push(<StatPill key={key} icon={MapPin} value={s.region} label="" />)
   }

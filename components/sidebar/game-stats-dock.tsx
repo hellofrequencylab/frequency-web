@@ -190,7 +190,7 @@ export function GameStatsPanel({ data, showSummary = false }: { data: DockData; 
         </div>
         <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-text">
           <Gem className="w-3.5 h-3.5 text-signal" />
-          {vaultGems.toLocaleString()} gems to spend
+          {vaultGems.toLocaleString()} Gems to spend
         </p>
         <p className="mt-0.5 text-2xs text-subtle">Titles, cosmetics &amp; membership credits →</p>
       </Link>

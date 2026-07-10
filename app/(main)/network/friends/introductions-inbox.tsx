@@ -65,7 +65,7 @@ function StatusChip({ intro, rewardGems }: { intro: IntroductionMade; rewardGems
   }
   return (
     <span className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-2xs font-medium text-muted">
-      Waiting for them to connect · +{rewardGems} gems when they do
+      Waiting for them to connect · +{rewardGems} Gems when they do
     </span>
   )
 }

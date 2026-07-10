@@ -166,7 +166,7 @@ export function ProfileSettingsDrawer({
                   <UserCog className="h-4 w-4" /> Full account management
                   <ExternalLink className="h-3 w-3" />
                 </Link>
-                <p className="text-xs text-muted">Role, activate/deactivate, delete, gems &amp; zaps.</p>
+                <p className="text-xs text-muted">Role, activate/deactivate, delete, Gems &amp; Zaps.</p>
               </section>
             </div>
           </aside>

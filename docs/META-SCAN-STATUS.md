@@ -40,8 +40,13 @@ security bugs**; the shop's auth (every mutating action object-authorizes), book
 - 🧑 **Cron paging-blind** — 21 jobs, 0 monitors; set `CRON_HEARTBEAT_BASE_URL`.
 - LOW · Contact-only Market service (`service-booking-picker.tsx`) says "reach out to the space"
   with no DM affordance — needs a product decision on the Space DM target before wiring (ADR-596 §3/§7).
-- 🟡 `check:canon` blind spot: it scans `content/**` only, so UI copy in `app/**`/`components/**`
-  can drift off-canon (this pass found 4 such). Consider extending the guard to member-facing JSX strings.
+- ✅ `check:canon` blind spot CLOSED — new AST-aware `scripts/check-canon-ui.mjs` (wired into
+  `pnpm check:canon`, so it runs in CI) parses `app/**`+`components/**` .tsx and enforces canon on
+  genuinely member-facing copy only (JSX text + copy-bearing attributes; identifiers/comments/config
+  strings ignored). Enforces the retired-surface-word ("Marketplace") + Zaps/Gems casing rules;
+  fixed the 13 member-facing Zaps/Gems stragglers it found. Em-dash + "cohort" are report-only
+  (`--report`) backlog — both have deferred operator prose + legitimate non-Journey uses. Operator
+  copy (`/admin/`, marketing widgets) is out of enforced scope per the member-first voice policy.
 - Owner config carried: `NEXT_PUBLIC_SITE_URL`, submit sitemap, leaked-password protection,
   disable anon sign-ins, Stripe go-live (A3).
 

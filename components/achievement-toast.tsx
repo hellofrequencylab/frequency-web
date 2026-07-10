@@ -80,7 +80,7 @@ function AchievementToastCard({ achievement, onDismiss }: ToastProps) {
               {achievement.zapsReward > 0 && (
                 <span className="text-2xs font-medium text-warning flex items-center gap-0.5">
                   <Zap className="w-3 h-3" />
-                  +{achievement.zapsReward} zaps
+                  +{achievement.zapsReward} Zaps
                 </span>
               )}
             </div>

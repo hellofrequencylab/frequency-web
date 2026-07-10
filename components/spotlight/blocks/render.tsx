@@ -52,11 +52,11 @@ function StatsView({ show, stats, cardStyle }: { show: SpotlightStatKey[]; stats
   const pills: { key: SpotlightStatKey; node: React.ReactNode }[] = []
   for (const key of show) {
     if (key === 'zaps' && stats.zaps && stats.zaps > 0) {
-      pills.push({ key, node: <StatPill icon={Zap} value={stats.zaps.toLocaleString()} label="zaps" cardStyle={cardStyle} /> })
+      pills.push({ key, node: <StatPill icon={Zap} value={stats.zaps.toLocaleString()} label="Zaps" cardStyle={cardStyle} /> })
     } else if (key === 'streak' && stats.streak && stats.streak > 0) {
       pills.push({ key, node: <StatPill icon={Flame} value={String(stats.streak)} label="day streak" cardStyle={cardStyle} /> })
     } else if (key === 'gems' && stats.gems && stats.gems > 0) {
-      pills.push({ key, node: <StatPill icon={Gem} value={stats.gems.toLocaleString()} label="gems earned" cardStyle={cardStyle} /> })
+      pills.push({ key, node: <StatPill icon={Gem} value={stats.gems.toLocaleString()} label="Gems earned" cardStyle={cardStyle} /> })
     } else if (key === 'joined' && stats.joinedYear) {
       pills.push({ key, node: <StatPill icon={CalendarDays} value={String(stats.joinedYear)} label="member since" cardStyle={cardStyle} /> })
     } else if (key === 'region' && stats.region) {
