@@ -1,16 +1,16 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, ShieldCheck } from 'lucide-react'
+import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
-import { atLeastRole } from '@/lib/core/roles'
 import { IndexTemplate } from '@/components/templates'
+import { EntityCard } from '@/components/cards/entity-card'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getInitials } from '@/lib/utils'
-import { getLibrary, getMyRatings, pendingReviewCount, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
+import { getLibrary, getMyRatings, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 import { getPageHeaderImage } from '@/lib/page-settings/store'
-import { RateButton, AdoptButton, SubmitProgramForm } from './interactive'
+import { RateButton, CreateMenu } from './interactive'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,15 +50,13 @@ export default async function LibraryPage({
   const { type: typeParam, pillar } = await searchParams
   const type = (['practice', 'program', 'journey'].includes(typeParam ?? '') ? typeParam : null) as ContentType | null
 
-  const isApprover = atLeastRole(caller.community_role, 'host')
-  const [items, myRatings, pending] = await Promise.all([
+  const [items, myRatings] = await Promise.all([
     // Surface the full catalog — every approved/public practice, program, AND journey
     // (the `community_library` RPC unions all three). `type`/`pillar` stay as the tab +
     // filter, both defaulting to null (the "All" tab) so nothing is hidden. We ask for
     // the RPC's max so a published item is never silently dropped by the default cap.
     getLibrary({ type, pillar: pillar ?? null, limit: 200 }),
     getMyRatings(caller.id),
-    isApprover ? pendingReviewCount() : Promise.resolve(0),
   ])
 
   const q = (t: string) => (t === 'all' ? '/library' : `/library?type=${t}`)
@@ -80,44 +78,33 @@ export default async function LibraryPage({
       heroImage={heroImage}
       heroOverlay
       action={
-        (isApprover || (ctaLabel && ctaHref)) ? (
-          <div className="flex items-center gap-2">
-            {isApprover && (
-              <Link
-                href="/library/review"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-3 py-1.5 text-sm font-semibold text-on-ink backdrop-blur-sm transition-colors hover:bg-white/20"
-              >
-                <ShieldCheck className="h-4 w-4" /> Review queue
-                {pending > 0 && <span className="rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">{pending}</span>}
-              </Link>
-            )}
-            {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
-            {ctaLabel && ctaHref && (
-              <a
-                href={ctaHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
-              >
-                {ctaLabel}
-              </a>
-            )}
-          </div>
-        ) : undefined
+        <div className="flex items-center gap-2">
+          {/* The two guided create flows (each route carries its own canCreate gate). The
+              review queue keeps living at /library/review, reachable from admin. */}
+          <CreateMenu />
+          {/* Operator-set CTA (PX.1) — shows only when both label + link are set. */}
+          {ctaLabel && ctaHref && (
+            <a
+              href={ctaHref}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-hover"
+            >
+              {ctaLabel}
+            </a>
+          )}
+        </div>
       }
       toolbar={
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <UnderlineTabs
-            activeHref={q(type ?? 'all')}
-            tabs={TYPES.map((t) => ({ href: q(t.key), label: t.label }))}
-          />
-          <SubmitProgramForm />
-        </div>
+        <UnderlineTabs
+          activeHref={q(type ?? 'all')}
+          tabs={TYPES.map((t) => ({ href: q(t.key), label: t.label }))}
+        />
       }
     >
       {items.length === 0 ? (
         <EmptyState
           icon={TrendingUp}
           title="Nothing in the Library yet"
-          description="Create a practice, propose a program, or build a journey. Once a leader approves it, it shows up here, ranked."
+          description="Create a practice or build a journey. Once a leader approves it, it shows up here, ranked."
         />
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,7 +152,6 @@ function LibraryCard({ item, rated }: { item: LibraryItem; rated: boolean }) {
         </div>
         <div className="flex items-center gap-2">
           <RateButton type={item.contentType} id={item.id} count={item.ratings} rated={rated} />
-          {item.contentType === 'program' && <AdoptButton id={item.id} />}
         </div>
       </div>
     </li>
