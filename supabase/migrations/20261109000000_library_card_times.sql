@@ -90,8 +90,8 @@ as $$
            (select count(*) from content_ratings cr where cr.content_type = r.content_type and cr.content_id = r.id)::int as ratings,
            -- endorser rank order (1=ghost … 6=luminary), 0 if unreviewed
            case rv.current_season_rank
-             when 'luminary' then 6 when 'conduit' then 5 when 'agent' then 4
-             when 'operative' then 3 when 'runner' then 2 when 'ghost' then 1 else 0
+             when 'master' then 4 when 'adept' then 3 when 'initiate' then 2
+             when 'ghost' then 1 else 0
            end as endorser_order
     from rows r
     left join profiles rv on rv.id = r.reviewed_by
