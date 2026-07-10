@@ -16,6 +16,15 @@ import { createClient } from '@/lib/supabase/client'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB, matching the event-media bucket limit.
 
+// Mirror the event-media bucket's MIME allowlist (migration 20261105000000) so a
+// file the bucket would reject fails HERE with a clear message instead of a raw
+// Storage 400. Covers what phones actually shoot (HEIC/HEIF) plus AVIF.
+const ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'image/heic', 'image/heif', 'image/avif',
+])
+const ALLOWED_MIME_MESSAGE = 'That file type is not supported. Use a JPEG, PNG, GIF, WebP, HEIC, or AVIF image.'
+
 export function MultiImageUpload({
   value,
   onChange,
@@ -76,6 +85,13 @@ export function MultiImageUpload({
     for (const file of batch) {
       if (!file.type.startsWith('image/')) {
         setError('Choose image files only.')
+        continue
+      }
+      // Reject a type the bucket allowlist would bounce, with a clear message
+      // instead of a raw "Upload failed: 400" (this component always uploads
+      // straight into the event-media bucket).
+      if (!ALLOWED_MIME.has(file.type)) {
+        setError(ALLOWED_MIME_MESSAGE)
         continue
       }
       if (file.size > MAX_BYTES) {
