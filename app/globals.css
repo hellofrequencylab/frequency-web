@@ -22,10 +22,10 @@
   --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #FAF6EC;
-  /* Feed post-card surface — a neutral off-white (no yellow cast) that sits a
-     step darker than the pure-white composer so a post reads as a card and the
-     comment field reads as a bright input on top of it. */
-  --color-surface-post:      #F6F5F3;
+  /* Feed post-card surface — a soft warm off-white that sits a step darker than
+     the pure-white composer so a post reads as a card and the comment field reads
+     as a bright input on top of it. Warm, but short of the yellow cream cast. */
+  --color-surface-post:      #F7F5EF;
 
   /* Borders */
   --color-border:           #E9E1D4;
@@ -186,7 +186,7 @@
   --color-marketing-canvas:  #F2EAD9;
   --color-surface:           #FFFFFF;
   --color-surface-elevated:  #FAF6EC;
-  --color-surface-post:      #F6F5F3;
+  --color-surface-post:      #F7F5EF;
   --color-border:            #E9E1D4;
   --color-border-strong:     #D8CDBB;
   --color-text:              #3D352A;
