@@ -1,13 +1,14 @@
 // Platform-wide ticket sales switch.
 //
-// Ticket sales are OFF for now (platform payments have not been turned on).
-// While off, the event page keeps the "$X ticket" price header but renders no
-// checkout cascade (no TicketButton, no "Ticket sales have closed." / "Sold
-// out." / "Sign in to get your ticket" states), the paid mobile CTA is
-// suppressed, RSVP stays open on priced events, and startTicket refuses to
-// start a Stripe checkout. Hosts can point guests at their Venmo handle
-// (events.venmo_handle) in the meantime.
+// Ticket sales are ON: platform payments have been turned on (host_payouts_enabled
+// + Stripe keys → payoutsLive()), so the event page renders the full checkout
+// cascade (TicketButton and the "Ticket sales have closed." / "Sold out." / "Sign
+// in to get your ticket" states), the paid mobile CTA shows, and startTicket opens
+// a Stripe checkout. The Venmo-handle fallback (events.venmo_handle) is hidden
+// while this is on. RSVP still works alongside paid tickets.
 //
-// All the ticketing code is GATED, not deleted — flip this one constant to
-// bring checkout back.
-export const TICKETING_ENABLED = false
+// This constant is the code-level master switch; the actual charge still also
+// requires payoutsLive() (host_payouts_enabled flag AND a configured Stripe key),
+// so a seller with no Connect account still can't be charged against. Flip to
+// false to re-gate ticketing platform-wide without touching the flag.
+export const TICKETING_ENABLED = true
