@@ -55,6 +55,9 @@ export interface EventFactsData {
   whenLine: string
   isOnline: boolean
   location: string | null
+  /** Google Maps deep link for the venue (structured address when present, else the
+   *  free-text location). Null for online events or when there is no address. */
+  mapsHref: string | null
   onlineUrl: string | null
   mapPin: EventMapPin | null
   /** The event's OWN precise geog point — published + in-person + geocoded, else null. */

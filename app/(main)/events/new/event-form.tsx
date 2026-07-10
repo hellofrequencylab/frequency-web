@@ -2,7 +2,9 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createEvent, updateEvent } from '@/app/(main)/events/actions'
+import { isError } from '@/lib/action-result'
 import { Input, Textarea, Label, fieldClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
@@ -98,6 +100,8 @@ export interface EventFormInitial {
   coverImagePath: string
   /** Additional gallery image paths (event-media bucket), beyond the cover. */
   galleryImagePaths: string[]
+  /** Host's Venmo handle (no @) — shown next to the price until payments turn on. */
+  venmoHandle: string
 }
 
 export function EventForm({
@@ -125,7 +129,11 @@ export function EventForm({
   // Sentinel scope for a standalone PUBLIC event (any Crew member — no circle needed).
   // createEvent reads scopeType='public' and places it in the creator's region.
   const PUBLIC_SCOPE = '__public__'
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // A failed save surfaces HERE (the actions return ActionResult); the popup stays
+  // open with the message instead of silently pretending success.
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
@@ -161,6 +169,7 @@ export function EventForm({
   const [country, setCountry] = useState(initial?.country ?? '')
   const [coverImagePath, setCoverImagePath] = useState<string | null>(initial?.coverImagePath || null)
   const [galleryImagePaths, setGalleryImagePaths] = useState<string[]>(initial?.galleryImagePaths ?? [])
+  const [venmoHandle, setVenmoHandle] = useState(initial?.venmoHandle ?? '')
 
   // Client guard for the repeat-end date: when a cadence is set and an end is given,
   // it must be after the start day (the server re-validates the same rule). The until
@@ -200,6 +209,8 @@ export function EventForm({
     fd.set('visibility', visibility)
     if (capacity.trim()) fd.set('capacity', capacity.trim())
     if (energyTag) fd.set('energyTag', energyTag)
+    // Always sent (an empty value clears the handle on edit); the server sanitizes.
+    fd.set('venmoHandle', venmoHandle.trim())
 
     // Geolocation (EVENTS-REWORK B1). Attendance mode drives whether the address
     // geocodes; the structured fields resolve to a map point on save, online events
@@ -217,8 +228,15 @@ export function EventForm({
     }
 
     startTransition(async () => {
-      if (isEdit) await updateEvent(eventId, fd)
-      else await createEvent(fd)
+      setSubmitError(null)
+      const res = isEdit ? await updateEvent(eventId, fd) : await createEvent(fd)
+      if (isError(res)) {
+        // Keep the editor open and show what went wrong (mirrors the admin
+        // EventEditClient's error surface) — never close on a failed save.
+        setSubmitError(res.error)
+        return
+      }
+      router.push(`/events/${res.data.slug}`)
     })
   }
 
@@ -521,6 +539,24 @@ export function EventForm({
         <p className="mt-1.5 text-2xs text-muted">Leave blank for unlimited.</p>
       </div>
 
+      {/* Venmo (until payments turn on): where guests send the ticket money. Shown
+          next to the price on the event page when the event is priced. */}
+      <div className="space-y-1.5">
+        <Label className="text-sm text-text">
+          Venmo <span className="text-2xs font-normal text-subtle">(until payments turn on)</span>
+        </Label>
+        <Input
+          type="text"
+          value={venmoHandle}
+          onChange={(e) => setVenmoHandle(e.target.value)}
+          placeholder="@your-handle"
+          disabled={isPending}
+        />
+        <p className="mt-1.5 text-2xs text-muted">
+          Optional. Shown next to the ticket price so guests can pay you directly.
+        </p>
+      </div>
+
       {/* Visibility */}
       <div className="space-y-1.5">
         <Label className="text-sm text-text">Who can see this?</Label>
@@ -574,6 +610,12 @@ export function EventForm({
           className="resize-none leading-relaxed"
         />
       </div>
+
+      {submitError && (
+        <p className="rounded-lg border border-danger/40 bg-danger-bg/40 px-3 py-2 text-sm text-danger">
+          {submitError}
+        </p>
+      )}
 
       <div className="flex items-center gap-3 pt-1">
         <button

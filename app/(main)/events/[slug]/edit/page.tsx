@@ -38,6 +38,7 @@ interface EventEditRow {
   gallery_image_paths: string[] | null
   recurrence_type: string | null
   recurrence_until: string | null
+  venmo_handle: string | null
 }
 
 // A stored recurrence_until ISO -> the `YYYY-MM-DD` the date input wants (UTC date part).
@@ -67,11 +68,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .from('events')
     .select(
       'id, title, description, location, scope_id, starts_at, ends_at, capacity, visibility, category, ' +
-        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until',
+        'energy_tag, attendance_mode, online_url, venue_name, street, city, region, postal_code, country, is_cancelled, cover_image_path, gallery_image_paths, recurrence_type, recurrence_until, venmo_handle',
     )
     .eq('slug', slug)
     .maybeSingle()
-  const ev = data as EventEditRow | null
+  // venmo_handle is newer than the generated DB types, so the typed select narrows to a
+  // query error — read through unknown (repo convention for not-yet-regenerated columns).
+  const ev = data as unknown as EventEditRow | null
   if (!ev) notFound()
 
   // Author / circle manager / community admin only (re-checked server-side in updateEvent too).
@@ -109,6 +112,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     country: ev.country ?? '',
     coverImagePath: ev.cover_image_path ?? '',
     galleryImagePaths: ev.gallery_image_paths ?? [],
+    venmoHandle: ev.venmo_handle ?? '',
   }
 
   return (

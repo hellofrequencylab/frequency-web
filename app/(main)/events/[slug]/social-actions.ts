@@ -84,7 +84,11 @@ export async function createEventPost(
   if (!trimmed && !image) return fail('Add a message or a photo first.')
 
   const admin = createAdminClient()
-  if (!(await isOnEvent(admin, eventId, profileId))) return fail('Only the host and guests can post here.')
+  // ANY signed-in member may comment on an event they can see (the RSVP/guest
+  // requirement was dropped so the wall reads as open conversation — recap photos
+  // below still require being on the event). The event just has to exist.
+  const { data: ev } = await admin.from('events').select('id').eq('id', eventId).maybeSingle()
+  if (!ev) return fail('This event no longer exists.')
 
   const { error } = await admin
     .from('event_posts')
