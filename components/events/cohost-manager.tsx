@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { X, UserPlus, Crown } from 'lucide-react'
-import { addCohost, removeCohost, transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
+import { inviteCohost, removeCohost, transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { getInitials } from '@/lib/utils'
 
@@ -22,12 +22,15 @@ export function CohostManager({
   eventId,
   slug,
   cohosts,
+  pendingInvites = [],
   canManage,
 }: {
   eventId: string
   slug: string
   cohosts: CohostView[]
-  /** Viewer is the event host — shows the add/remove controls. */
+  /** Cohosts the host has invited who have not yet responded (host-only view). */
+  pendingInvites?: CohostView[]
+  /** Viewer is the event host — shows the invite/remove controls and pending list. */
   canManage: boolean
 }) {
   // Hide the section entirely when there's nothing to show and nothing to do.
@@ -60,11 +63,40 @@ export function CohostManager({
                 <p className="truncate text-xs text-subtle">@{c.handle}</p>
               </Link>
               {canManage && (
-                <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={c.profileId} />
+                <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={c.profileId} label="Remove cohost" />
               )}
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Pending invites — host-only. People invited who have not answered yet. The X
+          cancels the invite (same delete path as removing a cohost). */}
+      {canManage && pendingInvites.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Pending invites</p>
+          <ul className="space-y-0.5">
+            {pendingInvites.map((p) => (
+              <li key={p.id} className="flex items-center gap-3 rounded-lg px-3 py-2 -mx-3 hover:bg-surface transition-colors">
+                {p.avatarUrl ? (
+                  <Image src={p.avatarUrl} alt={p.displayName} width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-elevated text-2xs font-bold text-subtle select-none">
+                    {getInitials(p.displayName)}
+                  </div>
+                )}
+                <Link href={`/people/${p.handle}`} className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-text">{p.displayName}</p>
+                  <p className="truncate text-xs text-subtle">@{p.handle}</p>
+                </Link>
+                <span className="shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold text-muted">
+                  Invited
+                </span>
+                <RemoveCohostButton eventId={eventId} slug={slug} cohostProfileId={p.profileId} label="Cancel invite" />
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {canManage && <AddCohost eventId={eventId} slug={slug} />}
@@ -77,10 +109,12 @@ function RemoveCohostButton({
   eventId,
   slug,
   cohostProfileId,
+  label,
 }: {
   eventId: string
   slug: string
   cohostProfileId: string
+  label: string
 }) {
   const [pending, startTransition] = useTransition()
   return (
@@ -88,7 +122,7 @@ function RemoveCohostButton({
       type="button"
       onClick={() => startTransition(() => removeCohost(eventId, slug, cohostProfileId))}
       disabled={pending}
-      aria-label="Remove cohost"
+      aria-label={label}
       className="shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:text-danger disabled:opacity-40"
     >
       <X className="h-4 w-4" />
@@ -120,10 +154,10 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
     }, 150)
   }, [])
 
-  function add(handle: string) {
+  function invite(handle: string) {
     setError(null)
     startTransition(async () => {
-      const res = await addCohost(eventId, slug, handle)
+      const res = await inviteCohost(eventId, slug, handle)
       if (isError(res)) {
         setError(res.error)
         return
@@ -147,7 +181,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
             setQuery(v)
             search(v)
           }}
-          placeholder="Add a cohost by name or @handle"
+          placeholder="Invite a cohost by name or @handle"
           disabled={pending}
           className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-subtle outline-none disabled:opacity-60"
         />
@@ -166,7 +200,7 @@ function AddCohost({ eventId, slug }: { eventId: string; slug: string }) {
             <button
               key={p.id}
               type="button"
-              onClick={() => add(p.handle)}
+              onClick={() => invite(p.handle)}
               disabled={pending}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated disabled:opacity-40"
             >
