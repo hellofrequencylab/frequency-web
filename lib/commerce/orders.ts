@@ -93,6 +93,66 @@ export async function listOrdersForSeller(profileId: string, opts: { limit?: num
   return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
 }
 
+/** A Space's sales (orders for products the Space owns), newest first. The Orders tab of the Shop
+ *  console reads this — listOrdersForSeller filters owner_profile_id, which is NULL for a Space, so
+ *  a Space's orders are invisible through the maker path (ADR-593). Paid+ states only. */
+export async function listSpaceOrders(spaceId: string, opts: { limit?: number } = {}): Promise<CommerceOrder[]> {
+  if (!spaceId) return []
+  const { data } = await db()
+    .from('commerce_orders')
+    .select(ORDER_COLS)
+    .eq('owner_space_id', spaceId)
+    .neq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(LIMIT(opts.limit))
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(rowToOrder)
+}
+
+/** A Space's earnings summary for the Orders tab header / StatCards. Gross + platform fee on settled
+ *  orders (paid / fulfilled), refunded total on refunded orders, net = gross − fee. Optional trailing
+ *  window (`sinceDays`, by created_at). Server-only; FAIL-SAFE to zeros so the header never breaks. */
+export interface SpaceEarnings {
+  grossCents: number
+  feeCents: number
+  netCents: number
+  refundedCents: number
+  orderCount: number
+}
+
+export async function spaceEarningsSummary(spaceId: string, sinceDays?: number): Promise<SpaceEarnings> {
+  const empty: SpaceEarnings = { grossCents: 0, feeCents: 0, netCents: 0, refundedCents: 0, orderCount: 0 }
+  if (!spaceId) return empty
+  try {
+    let query = db()
+      .from('commerce_orders')
+      .select('amount_cents, platform_fee_cents, status')
+      .eq('owner_space_id', spaceId)
+      .neq('status', 'pending')
+    if (sinceDays && sinceDays > 0) {
+      const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000).toISOString()
+      query = query.gte('created_at', since)
+    }
+    const { data } = await query
+    const rows = (data ?? []) as { amount_cents?: number | null; platform_fee_cents?: number | null; status?: string }[]
+    const out = { ...empty }
+    for (const r of rows) {
+      const amt = Number(r.amount_cents) || 0
+      const fee = Number(r.platform_fee_cents) || 0
+      out.orderCount += 1
+      if (r.status === 'refunded') {
+        out.refundedCents += amt
+      } else if (r.status === 'paid' || r.status === 'fulfilled') {
+        out.grossCents += amt
+        out.feeCents += fee
+      }
+    }
+    out.netCents = out.grossCents - out.feeCents
+    return out
+  } catch {
+    return empty
+  }
+}
+
 /** All orders (operator view), optionally filtered by status. */
 export async function listAllOrders(opts: { status?: OrderStatus; limit?: number } = {}): Promise<CommerceOrder[]> {
   let query = db()

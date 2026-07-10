@@ -125,14 +125,25 @@ export async function listPlatformCatalog(): Promise<CommerceProduct[]> {
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
 }
 
-/** Every Space-owned product (operator oversight of Space storefronts), newest first. */
-export async function listSpaceCatalog(): Promise<CommerceProduct[]> {
-  const { data } = await db()
+/** Space-owned products, newest first. Pass a `spaceId` to scope to ONE Space (its own Shop
+ *  console Catalog tab); no arg returns every Space's products (operator oversight). Scoping the
+ *  Catalog tab is essential — the no-arg form would leak every Space's catalog (ADR-593). */
+export async function listSpaceCatalog(spaceId?: string): Promise<CommerceProduct[]> {
+  let query = db()
     .from('commerce_products')
     .select(PRODUCT_COLS)
     .eq('owner_kind', 'space')
     .order('created_at', { ascending: false })
+  if (spaceId) query = query.eq('owner_space_id', spaceId)
+  const { data } = await query
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
+/** The Space that owns this product (or null) — the ownership gate for a Space's own write
+ *  actions (parallels productOwnerProfileId, which is null for owner_kind='space'). */
+export async function productOwnerSpaceId(id: string): Promise<string | null> {
+  const { data } = await db().from('commerce_products').select('owner_space_id').eq('id', id).maybeSingle()
+  return (data as { owner_space_id?: string } | null)?.owner_space_id ?? null
 }
 
 export interface ProductPatch {
@@ -142,6 +153,11 @@ export interface ProductPatch {
   category?: string | null
   stock?: number | null
   images?: string[]
+  /** The adaptive editor may change the item type (product | service | ticket → product_kind). */
+  productKind?: CommerceProduct['productKind']
+  /** Partial metadata to MERGE over the row's existing metadata (never clobbers sibling keys such
+   *  as the backfill 'source' marker) — e.g. `{ service: ServiceConfig }`. */
+  metadata?: Record<string, unknown>
 }
 
 /** Edit a product's fields. Caller (server action) has authorized the owner/operator. */
@@ -155,6 +171,13 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.category !== undefined) update.category = patch.category ?? null
   if (patch.stock !== undefined) update.stock = patch.stock ?? null
   if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
+  if (patch.productKind !== undefined) update.product_kind = patch.productKind
+  if (patch.metadata !== undefined) {
+    // Merge over existing metadata so we never clobber sibling keys (backfill 'source', etc.).
+    const { data: cur } = await db().from('commerce_products').select('metadata').eq('id', id).maybeSingle()
+    const existing = (cur as { metadata?: Record<string, unknown> } | null)?.metadata ?? {}
+    update.metadata = { ...existing, ...patch.metadata }
+  }
   if (Object.keys(update).length === 0) return
   const { error } = await db().from('commerce_products').update(update).eq('id', id)
   if (error) throw new Error(error.message)

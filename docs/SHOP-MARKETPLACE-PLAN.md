@@ -132,6 +132,43 @@ Member editor (Phase 2, paid members) is the thin subset of the Catalog editor: 
 product, no service/ticket, no storefront theming, with the upgrade CTA on every locked
 control.
 
+### 5a. Phase 3 build map (from the scout pass, 2026-07-09)
+
+**Route:** console at `app/(main)/spaces/[slug]/settings/shop/` (manage side); the public per-Space
+Shop tab is a *separate* `(profile)/shop` route (Phase 6) — they must not collide on `/spaces/[slug]/shop`.
+**Mirror the CRM board triad exactly:** `crm/page.tsx` (DashboardTemplate + `?tab=` typed union + gate
++ stats + a calm `LockedShop` for a manager whose Space lacks `space_storefront`, `notFound()` for
+non-managers), `crm-view-tabs.tsx` → `shop-tabs.tsx` (URL-driven, default `catalog` = bare URL), and
+`crm-body.tsx` → `shop-body.tsx` (chrome-free, self-gating, Suspense-per-tab). Tab const = `SHOP_TABS`
+(never `*_MODULES`). Gate via `resolveSpaceManageAccess`.
+
+**Data layer (✅ shipped, this commit):** `listSpaceCatalog(spaceId?)` (scoped — no-arg leaks all
+Spaces), `productOwnerSpaceId(id)`, `ProductPatch { productKind, metadata(merge) }`, `listSpaceOrders`,
+`spaceEarningsSummary` + `SpaceEarnings`. Backfill migration `20261101000000_offerings_backfill.sql`
+(idempotent, additive; **written, not applied** — apply + regen types per ADR-246, then the Catalog
+reads `commerce_products` instead of the JSON).
+
+**Space actions (Phase 3 UI):** new `settings/shop/shop-actions.ts` — `createSpaceProductAction` (MUST
+pass `vertical:'service'|'shop'` + explicit `productKind`; `createProduct` defaults to `maker`/`physical`),
+`update/setStatus/delete/refund`, each gated by `resolveSpaceManageAccess` + `productOwnerSpaceId===space.id`.
+
+**Module re-point (data-only, MENU-CONTRACT):** in `space-modules.ts` re-point the `space.services` row
+(label `Store`→`Shop`, deepLink → `${base(s)}/settings/shop`, keep order 70 / priority 40 / no `bank`);
+re-point the six offerings rows' deepLinks to console tabs (do NOT delete them — `space-modules.test.ts`
+asserts each is non-null + every `SpaceFunctionKey` is covered). **Critical:** delete the 7 `space.services`
++ offerings entries from `MODULE_PANEL_ID` in `lib/spaces/surface-hrefs.ts` or `panelHrefForModule`
+short-circuits the deepLink to the old inline `?panel=`. Leave `railFor` alone (falls through to `global`).
+
+**Draft with Vera:** `lib/ai/listing-copy.ts` = a near-verbatim clone of `lib/ai/circle-spark.ts`
+(`draftCircleSpark`) — forced single tool, `withVoice(SYSTEM)`, **pass `spaceId`** to `featureOverBudget`
++ `recordAiUsage` (per-Space cap), `clean()`-sanitize title/hints (prompt-injection), `stripEmDashes()`
+on output, return `null` on any failure. Side-effect-free preview action (no DB write).
+
+**Storefront tab + public tab (Phase 6):** store renameable tab name + settings in a new
+`preferences.storefront` node (`{ tabLabel:'Shop', published, collections, itemOrder, policies }`) mirroring
+`profile-pages.ts`; public tab via `profile-nav.ts` (one source) reading a new status='active' space-scoped
+reader; publish/visibility maps to `commerce_products.status` (active/draft/archived/sold_out) — no new column.
+
 ---
 
 ## 6. Research-backed principles (lean sweep, 2026-07-09)
