@@ -217,7 +217,17 @@ export function EntityLayoutMount({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const scope = adminScopeFor(pathname)
   if (railArchetypeFor(pathname) === 'builder' && scope?.kind === 'space' && scope.id) {
-    return <SpaceLayoutProvider slug={scope.id}>{children}</SpaceLayoutProvider>
+    // KEYED by slug: this mount lives ABOVE the [slug] segment in the app shell, so without a key React
+    // preserves the SAME provider instance across a space->space soft navigation. The store is "first
+    // mounter wins" (seed() no-ops once seeded), so Space A's rows/content/styles kept rendering on
+    // Space B until a hard refresh - and worse, an edit on Space B could debounce-save Space A's layout
+    // over B's. The key remounts the store per space: the old instance's unmount flush persists any
+    // pending edit through its own (correctly bound) save, then the new instance seeds fresh.
+    return (
+      <SpaceLayoutProvider key={`space:${scope.id}`} slug={scope.id}>
+        {children}
+      </SpaceLayoutProvider>
+    )
   }
   return <ProfileLayoutProvider>{children}</ProfileLayoutProvider>
 }
