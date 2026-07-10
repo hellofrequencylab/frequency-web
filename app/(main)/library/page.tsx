@@ -140,6 +140,20 @@ function LibraryCard({ item, rated }: { item: LibraryItem; rated: boolean }) {
   return (
     <EntityCard
       href={href}
+      cover={
+        item.coverImage ? (
+          // Raw <img> (not next/image): cover URLs are arbitrary operator/host URLs the
+          // image loader's allowlist would reject.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
+        ) : (
+          // Coded fallback so EVERY card leads with a header image — a calm type-toned wash
+          // with the content icon centered (practices carry no cover_image from the RPC).
+          <div className={`flex h-full w-full items-center justify-center ${TYPE_TONE[item.contentType]}`}>
+            <Icon className="h-8 w-8 opacity-70" />
+          </div>
+        )
+      }
       anchor={
         <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${TYPE_TONE[item.contentType]}`}>
           <Icon className="h-4 w-4" />
