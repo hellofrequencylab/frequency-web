@@ -37,7 +37,7 @@ export type Destination = {
 const CURATED: Destination[] = [
   // ── Marketplace — the General market plus the Housing / Makers / Shop verticals ──
   {
-    href: '/market/new', label: 'List something', group: 'Marketplace', surface: 'market',
+    href: '/classifieds/new', label: 'List something', group: 'Marketplace', surface: 'market',
     keywords: ['sell', 'list', 'new listing', 'post item', 'create listing'],
   },
   {
@@ -49,19 +49,19 @@ const CURATED: Destination[] = [
     keywords: ['roommate', 'roommates', 'housemate', 'match'],
   },
   {
-    href: '/marketplace/makers', label: 'Makers', group: 'Marketplace', surface: 'maker',
+    href: '/market', label: 'Market', group: 'Marketplace', surface: 'maker',
     keywords: ['makers', 'maker', 'artisans', 'handmade', 'crafts', 'creators'],
   },
   {
-    href: '/marketplace/makers/sell', label: 'Sell as a maker', group: 'Marketplace', surface: 'maker',
+    href: '/market/sell', label: 'Sell a product', group: 'Marketplace', surface: 'maker',
     keywords: ['sell', 'maker', 'open a shop', 'become a seller'],
   },
   {
-    href: '/marketplace/makers/manage', label: 'My storefront', group: 'Marketplace', surface: 'maker',
+    href: '/market/manage', label: 'My storefront', group: 'Marketplace', surface: 'maker',
     keywords: ['storefront', 'my shop', 'manage products', 'my listings', 'seller dashboard'],
   },
   {
-    href: '/shop', label: 'Shop', group: 'Marketplace', surface: 'shop',
+    href: '/store', label: 'Frequency Store', group: 'Marketplace', surface: 'shop',
     keywords: ['shop', 'store', 'merch', 'merchandise', 'products', 'frequency shop'],
   },
   {

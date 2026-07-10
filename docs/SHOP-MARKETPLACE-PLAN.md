@@ -1,0 +1,184 @@
+# Shop & Marketplace Rework — Build Spec
+
+> **Status:** ✅ Approved (owner, 2026-07-09) · **Decision record:** ADR-593 ·
+> **Naming:** [`NAMING.md` → Marketplace & Commerce](NAMING.md) · **Branch:** `feat/shop-marketplace-rework`
+
+Lead: turn the fragmented set of marketplace surfaces (a JSON-only per-Space "Store",
+an individual-only Makers vertical, a first-party Shop, a peer board, and a dormant
+`owner_kind='space'` commerce path) into **one commerce spine**: a tiered ladder of
+sellers, a single unified item model (products · services · tickets), one Space "Shop"
+console, and one **Market** browse surface that aggregates every Space's listings.
+
+This doc is the source of truth for the whole effort. Each phase links back here.
+
+---
+
+## 1. Locked decisions (owner)
+
+| # | Decision |
+|---|---|
+| 1 | **Who sells** — Individual Makers are retired. **Any paid member** may list *products* with limited functions; **Business Spaces** get the full Shop (products + services + tickets). Free members cannot sell (trade only). |
+| 2 | **Take-rate ladder** — Paid member **8%**, Business **3%**. The subscription buys down the fee; the 5-point spread is the upgrade math. |
+| 3 | **Forced on-platform checkout** — all transactional sales settle through Stripe Connect. No "contact to buy" for priced items. Connect-only is reserved for Classifieds. |
+| 4 | **Classifieds** — the peer board (offer / free / lend / request), connect-only, free members and up. Renamed from "General Marketplace". |
+| 5 | **Market is an umbrella** — one browse surface grouped by **type** (Products · Services · Tickets), not separate top-level verticals. Renamed from "Makers". |
+| 6 | **Frequency Store** — the first-party retail vertical, renamed from "Shop" to free the word "Shop" for the per-Space storefront tab. |
+| 7 | **Services are bookable + payable** — reuse the existing Booking engine (deposits, scheduling, no-show policy); contact-only is a per-service option. |
+| 8 | **One Shop console** — a single Space page (Catalog · Orders · Storefront) *replaces* `settings/services` and absorbs the commerce "Offerings" modules as item types. Net Space pages go down. |
+| 9 | **Upgrade funnel** — the member product editor is deliberately thin; every locked capability (services, tickets, storefront theming, grouping) is a labeled "Upgrade to Business" CTA. |
+
+---
+
+## 2. The seller ladder
+
+| Tier | Classifieds | Market | Console | Take rate |
+|---|---|---|---|---|
+| **Free member** | ✅ trade only (offer / free / lend / request) | ❌ | — | — |
+| **Paid member** | ✅ | ✅ Products (thin editor + upgrade CTA) | none | **8%** |
+| **Business Space** | ✅ | ✅ Products · Services · Tickets | **full Shop console** | **3%** |
+
+"Business Space" = a `spaces.type='business'` (or `nonprofit`) profile holding the
+`space_storefront` entitlement. Aligns with the existing designator canon
+(NAMING.md → *Business pages (Spaces)*) and the existing take-rate keying by paying-state
+(`lib/pricing/settings.ts`).
+
+**Open pricing knobs (owner to set, not blocking structure):** the exact paid-member
+listing cap (a natural upsell lever) and whether a reduced/0% "seller-brought" rate
+(the Faire Direct model) lands in a later phase.
+
+---
+
+## 3. Consumer surfaces & the rename map
+
+Public routes and member-facing names change wholesale (the site is early and the
+marketplace is unpublished, so there are no meaningful inbound links to preserve —
+owner directive). **Internal vertical ids, capability namespaces, `platform_flags`
+keys, and the `commerce_products.vertical` enum stay stable** to avoid data churn; only
+the display `label`, the `href`, and the route directory move. Developers read the
+mapping table below; members see only the new names.
+
+| Internal id (stable) | Old label | Old route | **New label** | **New route** | Contents |
+|---|---|---|---|---|---|
+| `market` | General Marketplace | `/market` | **Classifieds** | `/classifieds` | Peer board: offer / free / lend / request (connect-only) |
+| `maker` | Makers | `/marketplace/makers` | **Market** | `/market` | Umbrella: Products · Services · Tickets (aggregated across Spaces + paid members) |
+| `shop` | Shop | `/shop` | **Frequency Store** | `/store` | First-party retail |
+| `housing` | Housing | `/marketplace/housing` | Housing | `/marketplace/housing` | Unchanged |
+
+⚠️ **Route reuse:** `/market` is repurposed from the old General Marketplace to the new
+umbrella. Because the URL is reused (not vacated), old `/market` links resolve to the
+umbrella, not to Classifieds. Acceptable given no live inbound links. Redirects:
+`/marketplace/makers → /market`, `/shop → /store`, and the old `/market` → `/classifieds`
+mapping is **not** added (the path is taken); a one-time note goes in the changelog.
+
+Per-Space **Shop tab** is a *separate* system from these verticals: it is a tab on the
+Space profile (member-facing name "Shop", renameable per Space) that renders that Space's
+own catalog. Its listings *feed up* into Market.
+
+---
+
+## 4. Data model (Phase 1)
+
+One catalog table, one discriminator. Retire the JSON `preferences.profileData.offerings`
+Store.
+
+> **Implementation note (Phase 1 shipped):** the discriminator **already exists** as
+> `commerce_products.product_kind` (`physical | digital | service | booking | ticket`) with a
+> `vertical` (`shop | maker | service`) and a `booking_space_id` link — so **no `type`
+> column and no migration were needed**. Phase 1 shipped the take-rate ladder + the
+> derived Market grouping + the service-metadata convention in code; the offerings backfill
+> is **deferred to the Phase 3 cutover** (running it now would split-brain against the
+> still-authoritative JSON Store, which stays the write path until the Shop console replaces it).
+
+- **Discriminator** — `product_kind` is the type. `marketGroupForKind()`
+  (`lib/commerce/types.ts`) derives the Market rail: physical/digital → Products,
+  service/booking → Services, ticket → Tickets. `membership` stays a future reservation
+  (added to the check only when a surface needs it).
+- **Service fields** — held under `commerce_products.metadata.service` (`ServiceConfig`:
+  priceModel, durationMin, depositCents, recurrence, cancellationWindowHours, noShowFeePct,
+  slidingScale), mirroring the retiring `SpaceOffering` so the Phase 3 backfill is a field
+  map. Scheduling rides `booking_space_id` + the Booking engine (Phase 4).
+- **Ticket fields** — reuse / link the existing event-ticket channel (ADR-177); a Market
+  "ticket" is a thin projection of a ticketed event.
+- **`owner_kind`** — unchanged (`platform | profile | space`). Paid-member products =
+  `profile`; Business = `space`. The old non-checkout maker/JSON paths retire at cutover:
+  every `profile`/`space` listing routes through checkout.
+- **Backfill (Phase 3)** — `preferences.profileData.offerings[]` → `commerce_products`
+  (`product_kind='service'`, `vertical='service'`, `owner_kind='space'`), preserving
+  visibility/price fields; the `offerings` node goes read-legacy then drops (Phase 9).
+
+**Take-rate ladder (shipped):** `lib/pricing/settings.ts` `take_rate.member_bps = 800`
+(8%) beside the existing `free_bps` 5% / `business_bps` 3%; pure helpers
+`memberTakeRateBps` / `memberTakeRateCents` (`lib/billing/pricing-keys.ts`) + the IO wrapper
+`memberTakeRateCents` (`lib/billing/fees.ts`); wired into the profile-seller branch of
+`lib/commerce/checkout.ts` (billing still gated OFF, so nothing charges yet).
+
+---
+
+## 5. The Space Shop console (Phase 3)
+
+One page, Dashboard template, three tabs. Registered as **one** `SPACE_MODULES` row
+family (MENU-CONTRACT / ADR-543) — the existing `space.services` "Store" row is
+re-pointed and relabeled; the six commerce "Offerings" rows fold in as item types.
+
+- **Catalog** — unified list (products · services · tickets), filter by type, inline
+  status / price / stock, bulk actions, one adaptive **"+ New"** editor (fields adapt by
+  type). **"Draft with Vera"** AI copy generation from day one (reuses `lib/ai/voice.ts`).
+- **Orders** — orders + bookings + earnings + payout status in one place (fills the
+  current per-Space earnings gap). Behind `host_payouts_enabled`.
+- **Storefront** — renameable Shop-tab name, publish / visibility states, collections /
+  grouping, ordering, policies, payout onboarding, reviews.
+
+Member editor (Phase 2, paid members) is the thin subset of the Catalog editor: single
+product, no service/ticket, no storefront theming, with the upgrade CTA on every locked
+control.
+
+---
+
+## 6. Research-backed principles (lean sweep, 2026-07-09)
+
+| Principle | Applied as |
+|---|---|
+| Hybrid IA beats pure verticals; unified browse + typed filters + curation | Market = one surface, typed rails + collections |
+| 8% / 3% sits at the competitive floor (industry 5–20%, effective 8–15% w/ processing) | Ladder as specified; transparent fee shown in editor |
+| Faire Direct: 0% on seller-brought sales | Reserved lever, later phase |
+| One console, not many panels (sellers lose ~14 hrs/wk hopping) | Single 3-tab Shop console |
+| AI listing generation is table stakes | "Draft with Vera" in the editor |
+| Services need deposits + no-show protection (no-show 10–15%) | Booking engine + deposit + policy fields |
+| Structured data = AI-agent discoverability (agents ~25% of e-comm by 2030) | Rich catalog schema now |
+
+**Future-proofing reservations (build schema to accept, ship later):** digital products &
+memberships-as-products (`type` reserved); video / live commerce (media field); the
+seller-brought reduced rate.
+
+---
+
+## 7. Phases
+
+| # | Phase | Goal | Gate |
+|---|---|---|---|
+| 0 | Naming + registry restructure | This spec + ADR-593 + NAMING.md; rename labels/routes/nav; redirects; help-center. No new UI. | — |
+| 1 | Unified catalog model | `type` discriminator + service/ticket fields; migrate JSON offerings; ladder + 8%/3% config. | — |
+| 2 | Member listing funnel | Thin product editor, forced checkout, 8%, Upgrade-to-Business CTA. Free = trade-only. | — |
+| 3 | Business Shop console | 3-tab console replacing `settings/services`; adaptive editor; Draft with Vera. | — |
+| 4 | Bookable services | Booking engine + deposits + no-show/cancellation policy + reminders. | — |
+| 5 | Market umbrella surface | Typed grouping + search + filters + collections; cross-space aggregation (resolves `TODO(services-marketplace)`) + publish-to-Market opt-in. | — |
+| 6 | Storefront + public Shop tab | Renameable tab, publish/visibility, ordering, reviews/ratings. | — |
+| 7 | Payments + earnings | Orders/earnings tab, payout onboarding, forced checkout + ladder enforced. | `host_payouts_enabled` |
+| 8 | Trust & safety | Reviews, buyer protection, dispute/refund, seller verification badges. | — |
+| 9 | Retire + docs/SEO sync | Remove old surfaces, redirects, help-center + Notion. | — |
+
+Phases 0–3 need no payments flag and stand up the authoring surface + funnel early.
+
+---
+
+## 8. Systems touched (reference)
+
+- **Verticals:** `lib/verticals/{market,maker,shop,housing}.ts`, `registry.ts`
+- **Visibility/flags:** `lib/marketplace/visibility.ts` (area labels, prefixes, flag keys)
+- **Peer board:** `lib/marketplace.ts` (+ `market_listings`), `app/(main)/market/*`
+- **Commerce core:** `lib/commerce/{products,checkout,orders}.ts`, `commerce_*` tables
+- **Space Store (retiring):** `lib/spaces/profile-data.ts` (`offerings`),
+  `app/(main)/spaces/[slug]/settings/services/*`, `components/spaces/space-services-form.tsx`
+- **Space menu:** `lib/admin/modules/space-modules.ts` (`space.services` + the six offerings rows)
+- **Payments:** `lib/billing/{connect,fees,stripe}.ts`, `lib/pricing/settings.ts`
+- **Help center:** `content/help/connecting/marketplace.md`

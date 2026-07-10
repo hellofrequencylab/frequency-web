@@ -13,20 +13,20 @@ export const market: Vertical = {
       after: 'events',
       area: {
         key: 'market',
-        href: '/market',
-        label: 'Marketplace',
+        href: '/classifieds',
+        label: 'Classifieds',
         section: 'Community',
         defaultAccess: 'visitor',
         surface: 'market',
       },
     },
   ],
-  // The marketplace's own right-rail (was a hardcoded `/market` arm of the base map): who's
+  // The marketplace's own right-rail (was a hardcoded `/classifieds` arm of the base map): who's
   // around + circles to join + what's on — the people-led-browse panels. Owned here now, so
   // adding a vertical's rail is one descriptor edit, not a core edit (ADR-278).
   rail: [
     {
-      test: (p) => p === '/market' || p.startsWith('/market/'),
+      test: (p) => p === '/classifieds' || p.startsWith('/classifieds/'),
       panels: ['online', 'circles', 'events'],
     },
   ],

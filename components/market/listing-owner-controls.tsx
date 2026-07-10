@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, RotateCcw, X, Trash2, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import { setListingStatusAction, deleteListingAction } from '@/app/(main)/market/actions'
+import { setListingStatusAction, deleteListingAction } from '@/app/(main)/classifieds/actions'
 import type { ListingStatus } from '@/lib/marketplace'
 
 const BTN = 'inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated disabled:opacity-50'
@@ -28,7 +28,7 @@ export function ListingOwnerControls({ id, status }: { id: string; status: Listi
       setError(null)
       const res = await deleteListingAction(id)
       if (isError(res)) setError(res.error)
-      else router.push('/market')
+      else router.push('/classifieds')
     })
 
   return (

@@ -14,7 +14,7 @@ import type { ProductStatus } from '@/lib/commerce/types'
 
 export async function createMakerProductAction(formData: FormData): Promise<void> {
   const profileId = await getMyProfileId()
-  if (!profileId) redirect('/sign-in?next=/marketplace/makers/sell')
+  if (!profileId) redirect('/sign-in?next=/market/sell')
 
   const title = String(formData.get('title') ?? '').trim()
   const priceDollars = Number(formData.get('price'))
@@ -34,8 +34,8 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   // A maker listing their piece means it is live to browse immediately. Payouts still
   // require a Connect account + billing enabled before a buyer can actually check out.
   await setProductStatus(product.id, 'active')
-  revalidatePath('/marketplace/makers')
-  redirect(`/marketplace/makers/${product.id}`)
+  revalidatePath('/market')
+  redirect(`/market/${product.id}`)
 }
 
 /** Start a one-item checkout for a product. Returns the Stripe Checkout URL, or a
@@ -57,15 +57,15 @@ async function ownsProduct(id: string): Promise<boolean> {
 export async function setMyProductStatusAction(id: string, status: ProductStatus): Promise<void> {
   if (!(await ownsProduct(id))) return
   await setProductStatus(id, status)
-  revalidatePath('/marketplace/makers/manage')
-  revalidatePath('/marketplace/makers')
-  revalidatePath(`/marketplace/makers/${id}`)
+  revalidatePath('/market/manage')
+  revalidatePath('/market')
+  revalidatePath(`/market/${id}`)
 }
 
 /** Delete one of MY products. */
 export async function deleteMyProductAction(id: string): Promise<void> {
   if (!(await ownsProduct(id))) return
   await deleteProduct(id)
-  revalidatePath('/marketplace/makers/manage')
-  revalidatePath('/marketplace/makers')
+  revalidatePath('/market/manage')
+  revalidatePath('/market')
 }

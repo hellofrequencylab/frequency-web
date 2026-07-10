@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { FocusTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
-import { createMakerProductAction } from '../../commerce-actions'
+import { createMakerProductAction } from '../../marketplace/commerce-actions'
 
 // Open a maker storefront — list your first piece. Creating a product is free and lists it
 // to browse immediately. Getting PAID needs a connected payout account (Stripe Connect) and
@@ -16,13 +16,13 @@ const LABEL = 'mb-1 block text-sm font-medium text-text'
 
 export default async function MakerSellPage() {
   const viewerProfileId = await getMyProfileId()
-  if (!viewerProfileId) redirect('/sign-in?next=/marketplace/makers/sell')
+  if (!viewerProfileId) redirect('/sign-in?next=/market/sell')
 
   return (
     <FocusTemplate
       title="Open a storefront"
       description="List a piece and it shows up in Makers right away. Set up payouts later to start taking orders."
-      back={{ href: '/marketplace/makers', label: 'Makers' }}
+      back={{ href: '/market', label: 'Market' }}
     >
       <form action={createMakerProductAction} className="space-y-6">
         <div>

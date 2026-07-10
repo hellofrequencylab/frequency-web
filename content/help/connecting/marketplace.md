@@ -1,25 +1,25 @@
 ---
 title: Marketplace
-description: Swap and share with neighbors, plus housing, local makers, and the Frequency shop.
+description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
 category: connecting
 order: 5
-updated: 2026-06-25
+updated: 2026-07-09
 audience: member
 featureKeys: [marketplace]
 status: published
 ---
 
 The Marketplace is where the community trades, shares, and finds what it needs. It has a few
-areas: **General** goods to swap or give away, **Housing** for rentals and roommates, **Makers**
-for handmade goods, and the **Shop** for Frequency's own merch and events. The area bar at the
-top moves you between them.
+areas: **Classifieds** to swap or give things away, **Housing** for rentals and roommates,
+the **Market** where members and businesses sell, and the **Frequency Store** for Frequency's
+own merch and events. The area bar at the top moves you between them.
 
-General and Housing are no-fee and connect-only. No money changes hands in the app. You reach
-the person and arrange the rest offline.
+Classifieds and Housing are no-fee and connect-only. No money changes hands in the app. You
+reach the person and arrange the rest offline.
 
-## General goods
+## Classifieds
 
-- Open **Marketplace** at `/market` to see what's around.
+- Open **Classifieds** at `/classifieds` to see what's around.
 - Filter by type: **Offering**, **Free**, **To lend**, or **Looking for**.
 - Tap **Near me** to sort by distance using your device location. The closest show first.
 - **Post a listing** with a title, a type, and a few details. Add a price in plain words
@@ -30,21 +30,21 @@ the person and arrange the rest offline.
 
 - Open **Housing** to browse rentals, sublets, and rooms with a roommate.
 - **List housing** with the type, the rent, and the basics. Contact stays in messages, like
-  the rest of the Marketplace.
+  Classifieds.
 - **Find a roommate** opens roommate matches. Tell us your budget and city, and the resonance
   engine suggests members it thinks you'd click with, the same matching that powers
   introductions. It is opt-in, so you stay in control.
 
-## Makers and Shop
+## Market and Frequency Store
 
-- **Makers** is where members sell what they make. Open a storefront to list your first piece;
-  manage your shelf and set up payouts from **My storefront**.
-- **Shop** is Frequency's own store for merch, event passes, and retreats.
+- The **Market** is where members and businesses sell. Open a storefront to list your first
+  product, then manage it and set up payouts from **My storefront**.
+- The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
 - Anything you buy shows up under **My orders** in your account menu.
 
 ## Making contact
 
-- A General or Housing listing links to the poster's profile, where you can reach out and
+- A Classifieds or Housing listing links to the poster's profile, where you can reach out and
   arrange the details.
 - Keep it kind and local. This is mutual support first.
 

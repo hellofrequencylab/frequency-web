@@ -13083,3 +13083,61 @@ the clock/pre-roll logic. Regenerate `lib/database.types.ts` after apply (untype
 ADR-246). **Naming:** member copy stays Mindless / Be Still / Get Moving / Strength / Start Practice;
 the warm-up *noun* is an OPEN QUESTION pending a NAMING.md entry (keep the plain "Warm up" pre-roll
 label until then). Phased build (P0–P6) tracked in `docs/PRACTICE-TIMER-REWORK.md`.
+
+## ADR-593: Shop & Marketplace rework — one commerce spine, tiered sellers, unified Market
+
+**Status:** Accepted (owner decisions 2026-07-09) · Phase 0 in progress · full spec
+`docs/SHOP-MARKETPLACE-PLAN.md` · naming registered in `NAMING.md` → *Marketplace & Commerce*.
+
+**Context.** Marketplace surfaces were fragmented across five disconnected systems: a JSON-only
+per-Space "Store" (`preferences.profileData.offerings`, contact-only, no checkout), an
+individual-only Makers vertical (`commerce_products` `owner_kind='profile'`), a first-party Shop
+(`owner_kind='platform'`), a peer board (General Marketplace / `market_listings`), and a dormant
+`owner_kind='space'` commerce path with no owner-facing UI. Spaces could not truly sell, listings
+never aggregated across Spaces (an explicit `TODO(services-marketplace)`), and there was no
+per-Space earnings surface. The owner directed a rework that lets Spaces sell products AND services,
+surfaces them in a shared Market, and monetizes via a subscription-buys-down-fee ladder — while
+*condensing* admin surfaces, not adding them.
+
+**Decision.**
+1. **Seller ladder, not a binary.** Individual Makers are retired. **Any paid member** may list
+   *products* with limited functions at an **8%** take rate; **Business Spaces** get the full Shop
+   (products + services + tickets) at **3%**. Free members trade only (no selling). The subscription
+   buys down the fee; the member editor is the top of the Business funnel (every locked capability is
+   an "Upgrade to Business" CTA).
+2. **Forced on-platform checkout.** All priced sales settle through Stripe Connect (destination
+   charge + application fee, the existing rails). "Contact to buy" is removed for priced items;
+   connect-only survives **only** in Classifieds.
+3. **Unified item model.** `commerce_products` gains `type ∈ {product, service, ticket}` (reserve
+   `digital`, `membership`). The JSON `offerings` Store is migrated into `commerce_products`
+   (`type='service'`, `owner_kind='space'`) and retired. One table, one editor.
+4. **Services are bookable + payable** — reuse the existing Booking engine (deposits, scheduling,
+   no-show/cancellation policy), not a rebuild; contact-only is a per-service option.
+5. **Market is an umbrella.** One browse surface grouped by type (Products · Services · Tickets)
+   with unified search + filters + curated collections, aggregating listings across every Space and
+   paid member — *not* separate top-level `/services` `/tickets` verticals. Resolves
+   `TODO(services-marketplace)`.
+6. **Renames (member-facing + routes wholesale; internal ids stable).** `market`→"Classifieds"
+   `/classifieds`; `maker`→"Market" `/market` (the umbrella); `shop`→"Frequency Store" `/store`
+   (freeing "Shop" for the per-Space storefront tab); `housing` unchanged. Internal vertical ids,
+   capability namespaces, `platform_flags` keys, and the `commerce_products.vertical` enum stay
+   stable to avoid data churn; only `label`, `href`, and route directories move (owner: the site is
+   early and the marketplace is unpublished, so no inbound links to preserve).
+7. **One Shop console.** A single Space page (Catalog · Orders · Storefront) replaces
+   `settings/services` and absorbs the six commerce "Offerings" modules as item types — registered as
+   one `SPACE_MODULES` family per the MENU-CONTRACT (ADR-543/553), never a parallel menu. Net Space
+   pages decrease.
+
+**Alternatives.** Keep the JSON Store beside commerce (rejected: doubles every surface). Separate
+`/services` + `/tickets` verticals (rejected: owner chose a unified Market with typed groups).
+Rename internal ids + migrate flag/enum data (rejected for now: unnecessary data risk; member-facing
+mapping suffices). Allow individual (non-business) profiles the full shop (rejected: Business is the
+upsell). Connect-only "contact to buy" services (rejected: leaks the take rate and buyer protection).
+
+**Consequences.** One migration family (the `type` discriminator + service/ticket fields + the
+offerings backfill), plus a take-rate config extension (8% rung beside free 5% / business 3% in
+`lib/pricing/settings.ts`). Routes move (directory renames + redirects `/marketplace/makers→/market`,
+`/shop→/store`); the reused `/market` path means old General-Marketplace links now resolve to the
+umbrella (acceptable, unpublished). Payments stay double-gated OFF (`host_payouts_enabled`, ADR-178)
+until Phase 7's launch posture. Regenerate `lib/database.types.ts` after apply (ADR-246). Phased
+build (P0–P9) tracked in `docs/SHOP-MARKETPLACE-PLAN.md`.

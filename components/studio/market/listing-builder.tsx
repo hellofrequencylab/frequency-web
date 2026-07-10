@@ -9,7 +9,7 @@ import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingKind, type ListingPatch } from '@/lib/marketplace'
-import { updateListingAction } from '@/app/(main)/market/actions'
+import { updateListingAction } from '@/app/(main)/classifieds/actions'
 
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
@@ -30,7 +30,7 @@ export interface ListingBuilderProps {
 // field via updateListingAction. Status/delete live on the detail page.
 export function ListingBuilder(props: ListingBuilderProps) {
   const router = useRouter()
-  const close = useCallback(() => router.push(`/market/${props.id}`), [router, props.id])
+  const close = useCallback(() => router.push(`/classifieds/${props.id}`), [router, props.id])
 
   const save = useCallback((patch: ListingPatch) => updateListingAction(props.id, patch), [props.id])
   const onError = useCallback(() => router.refresh(), [router])
@@ -57,7 +57,7 @@ export function ListingBuilder(props: ListingBuilderProps) {
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
-      <a href={`/market/${props.id}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+      <a href={`/classifieds/${props.id}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
         <Eye className="h-4 w-4" /> View
       </a>
       <button type="button" onClick={close} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover">

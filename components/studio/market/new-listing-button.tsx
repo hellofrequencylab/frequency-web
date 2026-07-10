@@ -9,7 +9,7 @@ import { StudioFooter } from '../kit/studio-footer'
 import { isError } from '@/lib/action-result'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { getBrowserPosition } from '@/lib/geo-browser'
-import { createListingAction } from '@/app/(main)/market/actions'
+import { createListingAction } from '@/app/(main)/classifieds/actions'
 
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
 
@@ -48,7 +48,7 @@ export function NewListingButton({ className }: { className?: string }) {
         latitude: coords?.lat ?? null, longitude: coords?.lng ?? null,
       })
       if (isError(res)) { setError(res.error); return }
-      router.push(`/market/${res.data.id}`)
+      router.push(`/classifieds/${res.data.id}`)
     })
   }
 

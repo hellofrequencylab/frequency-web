@@ -20,7 +20,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
               Try again
             </Button>
             <Button asChild>
-              <Link href="/market">Back to the marketplace</Link>
+              <Link href="/classifieds">Back to Classifieds</Link>
             </Button>
           </div>
         }

@@ -15,8 +15,8 @@ describe('pageRailPanels', () => {
 
   it('lets a vertical own its routes via the registry (marketplace), before the base map (ADR-278)', () => {
     // /market now resolves from the marketplace descriptor's `rail`, not a hardcoded base rule.
-    expect(pageRailPanels('/market')).toEqual(['online', 'circles', 'events'])
-    expect(pageRailPanels('/market/listing/abc')).toEqual(['online', 'circles', 'events'])
+    expect(pageRailPanels('/classifieds')).toEqual(['online', 'circles', 'events'])
+    expect(pageRailPanels('/classifieds/listing/abc')).toEqual(['online', 'circles', 'events'])
     // sibling people-led routes still resolve from the base map
     expect(pageRailPanels('/channels')).toEqual(['online', 'circles', 'events'])
     expect(pageRailPanels('/people/jane')).toEqual(['online', 'circles', 'events'])

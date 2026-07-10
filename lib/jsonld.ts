@@ -642,7 +642,7 @@ export function productSchema(p: {
   currency?: string | null
   inStock?: boolean
   sellerName?: string | null
-  /** Canonical app path, e.g. `/shop/tote` or `/marketplace/makers/<id>`. */
+  /** Canonical app path, e.g. `/store/tote` or `/market/<id>`. */
   path: string
 }) {
   const url = abs(p.path)

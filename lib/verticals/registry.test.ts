@@ -21,7 +21,7 @@ describe('vertical registry (ADR-250 step 3/4)', () => {
     expect(keys.indexOf('market')).toBe(keys.indexOf('events') + 1)
     // And it carries through with its declared shape.
     const market = NAV_AREAS.find((a) => a.key === 'market')
-    expect(market?.label).toBe('Marketplace')
+    expect(market?.label).toBe('Classifieds')
     expect(market?.section).toBe('Community')
     expect(verticalNavAreas().some((a) => a.key === 'market')).toBe(true)
   })

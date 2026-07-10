@@ -18,19 +18,19 @@ export type MarketArea = 'market' | 'housing' | 'makers' | 'shop'
 export const MARKET_AREAS: readonly MarketArea[] = ['market', 'housing', 'makers', 'shop']
 
 export const AREA_LABEL: Record<MarketArea, string> = {
-  market: 'General Marketplace',
+  market: 'Classifieds',
   housing: 'Housing',
-  makers: 'Makers',
-  shop: 'Shop',
+  makers: 'Market',
+  shop: 'Frequency Store',
 }
 
 // The route prefix each area owns. The shell gates a member out of any path under a hidden
-// area's prefix (exact, or prefix + '/', so '/market' never swallows '/marketplace/...').
+// area's prefix (exact, or prefix + '/', so '/classifieds' never swallows '/marketplace/...').
 export const AREA_PREFIX: Record<MarketArea, string> = {
-  market: '/market',
+  market: '/classifieds',
   housing: '/marketplace/housing',
-  makers: '/marketplace/makers',
-  shop: '/shop',
+  makers: '/market',
+  shop: '/store',
 }
 
 // The NAV_AREAS key each area maps to (the maker vertical's nav key is the singular 'maker').

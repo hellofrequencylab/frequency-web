@@ -19,7 +19,7 @@ export const CONTENT_EDIT_ROUTES = [
   '/circles',
   '/channels',
   '/events',
-  '/market',
+  '/classifieds',
   '/messages',
   '/journeys',
   '/practices',
