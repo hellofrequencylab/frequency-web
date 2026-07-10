@@ -17,6 +17,7 @@ import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import type { CheckoutInput } from './types'
+import { notifySellerOfOrder } from './notify'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -200,10 +201,12 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     .update({ status: 'paid', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntentId })
     .eq('stripe_checkout_session_id', session.id)
     .eq('status', 'pending')
-    .select('id, owner_kind, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
+    .select('id, owner_kind, owner_profile_id, owner_space_id, entity_id, amount_cents, platform_fee_cents, buyer_profile_id, currency')
   const rows = (updated ?? []) as {
     id: string
     owner_kind: 'platform' | 'profile' | 'space'
+    owner_profile_id: string | null
+    owner_space_id: string | null
     entity_id: string
     amount_cents: number
     platform_fee_cents: number
@@ -241,6 +244,18 @@ export async function recordCommerceOrderFromSession(session: Stripe.Checkout.Se
     // Bookable services (Phase 4, ADR-596): if this order paid the deposit on a held booking, confirm
     // it. No-op / fail-soft for a normal product order (no linked booking) and pre-migration.
     await confirmBookingByOrder(row.id)
+
+    // Tell the seller they made a sale (in-app notification + email). Best-effort and single-shot:
+    // this runs only on the pending->paid flip, so a webhook retry never re-notifies.
+    await notifySellerOfOrder(db(), {
+      id: row.id,
+      ownerKind: row.owner_kind,
+      ownerProfileId: row.owner_profile_id,
+      ownerSpaceId: row.owner_space_id,
+      buyerProfileId: row.buyer_profile_id,
+      amountCents: row.amount_cents,
+      currency: row.currency,
+    }).catch(() => {})
   }
 }
 

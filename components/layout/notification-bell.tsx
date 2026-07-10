@@ -34,6 +34,8 @@ function notifHref(n: NotificationItem): string {
   // Posted-event notes (event_claimed / event_removed) reference the event by id;
   // the events index is the stable landing spot.
   if (n.reference_type === 'event') return '/events'
+  // A sale: makers manage orders here; a Space seller's email carries the exact console link.
+  if (n.type === 'order_received') return '/market/manage'
   return '/feed'
 }
 
