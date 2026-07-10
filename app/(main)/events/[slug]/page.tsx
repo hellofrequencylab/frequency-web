@@ -48,6 +48,7 @@ import { setEventContext } from '@/lib/events/active-event'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
 import { TICKETING_ENABLED } from '@/lib/events/ticketing'
+import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -239,6 +240,12 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    // Structured venue address (feeds the Maps deep link; coarser fields omitted).
+    venue_name: string | null
+    street: string | null
+    city: string | null
+    region: string | null
+    postal_code: string | null
     // Event's IANA zone (newer than the generated types → untyped read). Drives every
     // is-past / check-in gate and the when-line abbrev via lib/time/zone.
     time_zone: string | null
@@ -253,7 +260,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, time_zone, geog',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, time_zone, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -760,6 +767,22 @@ export default async function EventDetailPage({
     event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''
   } ${zoneAbbrev(event.starts_at, eventTz)}`.trim()
 
+  // Maps deep link for the venue: the structured address when the host entered one,
+  // else the free-text location line. One https URL opens native Maps on a phone and
+  // the map site on desktop. Null for online events or when there is no address.
+  const mapsHref = isOnline
+    ? null
+    : mapsSearchUrl(
+        eventMapsQuery({
+          venueName: extra?.venue_name,
+          street: extra?.street,
+          city: extra?.city,
+          region: extra?.region,
+          postalCode: extra?.postal_code,
+          location: event.location,
+        }),
+      )
+
   const mode = MODE_CHIP[attendanceMode]
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
@@ -940,6 +963,7 @@ export default async function EventDetailPage({
       whenLine,
       isOnline,
       location: event.location,
+      mapsHref,
       onlineUrl,
       mapPin,
       venuePoint,
@@ -1106,7 +1130,20 @@ export default async function EventDetailPage({
             {event.location && !isOnline && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-subtle shrink-0" />
-                <span>{event.location}</span>
+                {/* The address deep-links into Maps (native app on a phone, the map
+                    site on desktop) so guests can navigate in one tap. */}
+                {mapsHref ? (
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary-strong hover:underline"
+                  >
+                    {event.location}
+                  </a>
+                ) : (
+                  <span>{event.location}</span>
+                )}
               </div>
             )}
 
