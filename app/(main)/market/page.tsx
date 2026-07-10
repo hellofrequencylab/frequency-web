@@ -5,6 +5,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
+import { productRatingsFor, type ProductRating } from '@/lib/commerce/reviews'
+import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
 import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
@@ -24,11 +26,25 @@ export const metadata = {
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
-function Grid({ items }: { items: Awaited<ReturnType<typeof listMarketListings>> }) {
+function Grid({
+  items,
+  ratings,
+  verified,
+}: {
+  items: Awaited<ReturnType<typeof listMarketListings>>
+  ratings: Map<string, ProductRating>
+  verified: Map<string, boolean>
+}) {
   return (
     <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
       {items.map((p) => (
-        <ProductCard key={p.id} product={p} href={`/market/${p.id}`} />
+        <ProductCard
+          key={p.id}
+          product={p}
+          href={`/market/${p.id}`}
+          rating={ratings.get(p.id) ?? null}
+          verified={verified.get(p.id) ?? false}
+        />
       ))}
     </div>
   )
@@ -72,6 +88,11 @@ export default async function MarketPage({
 
   // One read powers the stats band, the rails, and the grid (grouped in-process).
   const all = await listMarketListings({ q, limit: 100 })
+  // Trust & Safety (Phase 8): aggregate ratings + seller verification for every card, in two batch reads.
+  const [ratings, verified] = await Promise.all([
+    productRatingsFor(all.map((p) => p.id)),
+    sellerVerifiedFor(all),
+  ])
   const byGroup = (g: MarketGroup) => all.filter((p) => marketGroupForKind(p.productKind) === g)
   const counts = {
     total: all.length,
@@ -122,7 +143,7 @@ export default async function MarketPage({
         <div className="@container">
           {shown ? (
             shown.length > 0 ? (
-              <Grid items={shown} />
+              <Grid items={shown} ratings={ratings} verified={verified} />
             ) : (
               <EmptyState
                 icon={ShoppingBag}
@@ -141,7 +162,7 @@ export default async function MarketPage({
                       See all
                     </Link>
                   </div>
-                  <Grid items={s.items} />
+                  <Grid items={s.items} ratings={ratings} verified={verified} />
                 </section>
               ))}
             </div>

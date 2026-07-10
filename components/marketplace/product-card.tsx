@@ -1,7 +1,9 @@
 import Image from 'next/image'
-import { Package, CalendarClock, Ticket } from 'lucide-react'
+import { Package, CalendarClock, Ticket, Star } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
+import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { marketGroupForKind, type CommerceProduct, type MarketGroup } from '@/lib/commerce/types'
+import type { ProductRating } from '@/lib/commerce/reviews'
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
@@ -34,8 +36,19 @@ const GROUP_META: Record<MarketGroup, { label: string; Icon: typeof Package }> =
 
 // Browse card for a commerce product (maker / Frequency Store / Space storefront). Every card leads with
 // a header image: the listing's first photo, or a branded gradient + type icon when it has none, so the
-// grid always reads as a real catalog. Stats: the type, category, price, and a service's duration.
-export function ProductCard({ product, href }: { product: CommerceProduct; href: string }) {
+// grid always reads as a real catalog. Stats: the type, category, price, a service's duration, the
+// aggregate rating (Phase 8) and a seller "Verified" badge when the seller carries verification.
+export function ProductCard({
+  product,
+  href,
+  rating,
+  verified = false,
+}: {
+  product: CommerceProduct
+  href: string
+  rating?: ProductRating | null
+  verified?: boolean
+}) {
   const soldOut = product.status === 'sold_out' || product.stock === 0
   const group = marketGroupForKind(product.productKind)
   const { label: groupLabel, Icon } = GROUP_META[group]
@@ -55,8 +68,11 @@ export function ProductCard({ product, href }: { product: CommerceProduct; href:
       cover={cover}
       title={product.title}
       badge={
-        <span className="rounded-full bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
-          {groupLabel}
+        <span className="flex items-center gap-1.5">
+          <span className="rounded-full bg-primary-bg/60 px-2 py-0.5 text-2xs font-semibold text-primary-strong">
+            {groupLabel}
+          </span>
+          <VerifiedBadge verified={verified} />
         </span>
       }
       context={product.category ?? undefined}
@@ -65,6 +81,15 @@ export function ProductCard({ product, href }: { product: CommerceProduct; href:
         <>
           <span className="font-semibold text-text">{priceLabel(product)}</span>
           {duration && <span>{duration}</span>}
+          {rating && rating.count > 0 && (
+            <span className="inline-flex items-center gap-1 text-subtle">
+              <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden />
+              <span>
+                {rating.average.toFixed(1)}
+                <span className="text-2xs"> ({rating.count})</span>
+              </span>
+            </span>
+          )}
           {soldOut && (
             <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-medium text-subtle">
               Sold out

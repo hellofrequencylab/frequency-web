@@ -1,12 +1,16 @@
 import { notFound } from 'next/navigation'
-import { getCallerProfile } from '@/lib/auth'
+import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
 import { getProduct } from '@/lib/commerce/products'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
+import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
+import { sellerVerifiedForProduct } from '@/lib/commerce/seller-verification'
 import { DetailTemplate } from '@/components/templates'
+import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
+import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
 import { BuyButton } from '../../marketplace/buy-button'
 import type { ServiceConfig } from '@/lib/commerce/types'
@@ -69,13 +73,29 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
     ? servicePriceLabel(product.priceCents, product.currency, svc)
     : usd(product.priceCents, product.currency)
 
+  // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
+  // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
+  const [sellerVerified, reviews, myReview, operator] = await Promise.all([
+    sellerVerifiedForProduct(product),
+    getProductReviews(product.id),
+    getMyProductReview(product.id, profileId),
+    isPlatformStaff(),
+  ])
+
   return (
     <div className="mx-auto w-full max-w-2xl">
       <DetailTemplate
         back={{ href: '/market', label: 'Market' }}
         title={product.title}
         subtitle={<span className="font-semibold text-text">{subtitle}</span>}
-        badges={product.category ? <span className="text-xs text-subtle">{product.category}</span> : undefined}
+        badges={
+          product.category || sellerVerified ? (
+            <span className="flex items-center gap-2">
+              {product.category && <span className="text-xs text-subtle">{product.category}</span>}
+              <VerifiedBadge verified={sellerVerified} withLabel />
+            </span>
+          ) : undefined
+        }
       >
         <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
           {product.images.length > 0 && (
@@ -138,6 +158,16 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
             <ReportButton targetKind="product" targetId={product.id} />
           </div>
         )}
+
+        <ProductReviews
+          productId={product.id}
+          productTitle={product.title}
+          reviews={reviews}
+          myReview={myReview}
+          signedIn={!!profileId}
+          canReview={!!profileId && !isOwner}
+          canModerate={operator}
+        />
       </DetailTemplate>
     </div>
   )
