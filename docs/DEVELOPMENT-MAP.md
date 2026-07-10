@@ -642,16 +642,12 @@ verticals that don't need the money foundation. **Depends on:** Stage A.
 - [x] **Member-driven circle creation** (the flywheel enabler): any signed-in member can
       start a circle around an Interest and become its host (was admin-only). Creator is
       auto-enrolled as host + member. Matches what the Programs guides teach.
-- [~] **Programs (vertical 4)**: the circle start/run/maintain framework + training library,
-      hubbed into the network, with lifecycle gamification. Free; deepens activation and the
-      North Star directly. *Done:* content library shipped (`/programs` + `lib/programs.ts`,
-      MDX-in-git, 4 seed frameworks: start a circle, run a gathering, grow/split, keep
-      alive; reuses the help markdown renderer; nav entry). Progress tracking shipped (mark
-      complete via the engagement ledger, no migration; per the guardrail, reading is tracked
-      but not rewarded). Circle-lifecycle rewards shipped: starting a circle, activating it
-      (first practice), and an accepted invite all award zaps through the ledger (attending
-      already did). Credits live today; will land in the Vault for free users once the
-      entitlement layer ships (ADR-037).
+- [-] **Programs (vertical 4)**: ~~the circle start/run/maintain framework + training library~~
+      **REMOVED 2026-07 (ADR-597).** The `/programs` route, `lib/programs.ts`, and
+      `content/programs/*.md` frameworks were retired, along with the Library "Programs" content
+      type. The circle-lifecycle reward events (`program_run`, start/activate/invite zaps) remain in
+      the economy ledger and are unaffected. Leader-facing training materials live under
+      `/lead/training-library` (`content/leader-training/`), a separate feature.
 - [x] **Local Marketplace (vertical 5)**: Foundation, no fee, geolocated to circle/hub/nexus,
       listings + messaging (no in-app payment). Proves local exchange + feeds the density
       signal. *Shipped (ADR-148, migration `20260607090000`):* `market_listings`

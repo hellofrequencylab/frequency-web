@@ -10,7 +10,7 @@ import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
 import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
+import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -26,29 +26,9 @@ export const metadata = {
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
-function Grid({
-  items,
-  ratings,
-  verified,
-}: {
-  items: Awaited<ReturnType<typeof listMarketListings>>
-  ratings: Map<string, ProductRating>
-  verified: Map<string, boolean>
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
-      {items.map((p) => (
-        <ProductCard
-          key={p.id}
-          product={p}
-          href={`/market/${p.id}`}
-          rating={ratings.get(p.id) ?? null}
-          verified={verified.get(p.id) ?? false}
-        />
-      ))}
-    </div>
-  )
-}
+type MarketItem = Awaited<ReturnType<typeof listMarketListings>>[number]
+const GRID_CLASS = 'grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3'
+const searchText = (p: MarketItem) => `${p.title} ${p.description ?? ''}`
 
 function GroupRail({ active }: { active: MarketGroup | null }) {
   const tabs: { key: MarketGroup | null; label: string }[] = [
@@ -80,14 +60,15 @@ function GroupRail({ active }: { active: MarketGroup | null }) {
 export default async function MarketPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; group?: string | string[] }>
+  searchParams: Promise<{ group?: string | string[] }>
 }) {
-  const { q, group: groupParam } = await searchParams
+  const { group: groupParam } = await searchParams
   const group = asMarketGroup(groupParam)
   const viewerProfileId = await getMyProfileId()
 
-  // One read powers the stats band, the rails, and the grid (grouped in-process).
-  const all = await listMarketListings({ q, limit: 100 })
+  // One read powers the stats band, the rails, and the grid (grouped in-process). The hero search bar
+  // filters every rail instantly on the client (InstantGrid / InstantSection read the shared query).
+  const all = await listMarketListings({ limit: 100 })
   // Trust & Safety (Phase 8): aggregate ratings + seller verification for every card, in two batch reads.
   const [ratings, verified] = await Promise.all([
     productRatingsFor(all.map((p) => p.id)),
@@ -105,6 +86,7 @@ export default async function MarketPage({
   const sections = MARKET_GROUPS.map((g) => ({ group: g, items: byGroup(g) })).filter((s) => s.items.length > 0)
 
   return (
+    <MarketSearchProvider>
     <div className="space-y-8">
       <MarketHero
         image={HERO_IMAGE}
@@ -143,7 +125,17 @@ export default async function MarketPage({
         <div className="@container">
           {shown ? (
             shown.length > 0 ? (
-              <Grid items={shown} ratings={ratings} verified={verified} />
+              <InstantGrid items={shown.map((p) => ({ text: searchText(p) }))} className={GRID_CLASS}>
+                {shown.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    href={`/market/${p.id}`}
+                    rating={ratings.get(p.id) ?? null}
+                    verified={verified.get(p.id) ?? false}
+                  />
+                ))}
+              </InstantGrid>
             ) : (
               <EmptyState
                 icon={ShoppingBag}
@@ -155,15 +147,23 @@ export default async function MarketPage({
           ) : sections.length > 0 ? (
             <div className="space-y-10">
               {sections.map((s) => (
-                <section key={s.group}>
-                  <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-bold text-text">{GROUP_LABEL[s.group]}</h2>
-                    <Link href={`/market?group=${s.group}`} className="text-sm font-medium text-primary-strong hover:underline">
-                      See all
-                    </Link>
-                  </div>
-                  <Grid items={s.items} ratings={ratings} verified={verified} />
-                </section>
+                <InstantSection
+                  key={s.group}
+                  title={GROUP_LABEL[s.group]}
+                  seeAllHref={`/market?group=${s.group}`}
+                  items={s.items.map((p) => ({ text: searchText(p) }))}
+                  className={GRID_CLASS}
+                >
+                  {s.items.map((p) => (
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      href={`/market/${p.id}`}
+                      rating={ratings.get(p.id) ?? null}
+                      verified={verified.get(p.id) ?? false}
+                    />
+                  ))}
+                </InstantSection>
               ))}
             </div>
           ) : (
@@ -177,5 +177,6 @@ export default async function MarketPage({
         </div>
       </div>
     </div>
+    </MarketSearchProvider>
   )
 }

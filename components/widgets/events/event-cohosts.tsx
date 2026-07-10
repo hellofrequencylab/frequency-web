@@ -11,8 +11,16 @@ import { CohostManager } from '@/components/events/cohost-manager'
 export const EventCohosts = async () => {
   const ctx = getEventContext()
   if (!ctx) return null
-  const { event, cohosts, isHost } = ctx
+  const { event, cohosts, cohostInvites, isHost } = ctx
   if (cohosts.length === 0 && !isHost) return null
 
-  return <CohostManager eventId={event.id} slug={event.slug} cohosts={cohosts} canManage={isHost} />
+  return (
+    <CohostManager
+      eventId={event.id}
+      slug={event.slug}
+      cohosts={cohosts}
+      pendingInvites={isHost ? cohostInvites : []}
+      canManage={isHost}
+    />
+  )
 }

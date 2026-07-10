@@ -91,6 +91,8 @@ export interface EventDetailContext {
   posterDetails: EventDetailsWithMedia
   posterCropUrls: Record<string, string>
   cohosts: CohostView[]
+  /** Pending cohost invites (status 'invited') — the host's manager lists these to cancel. */
+  cohostInvites: CohostView[]
   /** The event sells tickets (active tiers or a flat price) — gates the host Sales module. */
   isPaidEvent: boolean
   soldTickets: SoldTicket[]

@@ -413,7 +413,6 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/practices', label: 'Practices', area: 'Member' },
   { route: '/practices/new', label: 'Practice builder', area: 'Member' },
   { route: '/journeys', label: 'Journeys', area: 'Member' },
-  { route: '/programs', label: 'Programs', area: 'Member' },
   { route: '/messages', label: 'Messages (inbox)', area: 'Member' },
   { route: '/connections', label: 'Connections (index)', area: 'Member' },
   { route: '/friends', label: 'Friends', area: 'Member' },

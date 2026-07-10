@@ -13,7 +13,6 @@ const PROTECTED_PATHS = [
   '/broadcast',
   '/circles',
   '/practices',
-  '/programs',
   '/channels',
   '/events',
   '/messages',

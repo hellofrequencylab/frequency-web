@@ -54,7 +54,6 @@ import { PracticeDetailGuide } from '@/components/widgets/practice-detail/practi
 import { PracticeDetailTags } from '@/components/widgets/practice-detail/practice-detail-tags'
 import { PracticeDetailUsedIn } from '@/components/widgets/practice-detail/practice-detail-usedin'
 import { PracticeDetailLineage } from '@/components/widgets/practice-detail/practice-detail-lineage'
-import { ProgramsList } from '@/components/widgets/programs/programs-list'
 import { ChannelsList } from '@/components/widgets/channels/channels-list'
 import { ChallengesSeason } from '@/components/widgets/challenges/challenges-season'
 import { EntityGettingStarted } from '@/components/widgets/entity/entity-getting-started'
@@ -231,8 +230,6 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'practice-detail-tags': PracticeDetailTags,
   'practice-detail-usedin': PracticeDetailUsedIn,
   'practice-detail-lineage': PracticeDetailLineage,
-  // Programs page (/programs) — the frameworks browse list.
-  'programs-list': ProgramsList,
   // Channels page (/channels) — the pillar-grouped topical browse.
   'channels-list': ChannelsList,
   // Season Challenges (/crew/challenges) — the season KPI band + challenges grid.

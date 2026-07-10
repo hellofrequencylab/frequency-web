@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
+import { Dumbbell, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
   title: 'Library',
-  description: "The community's best practices, programs, and journeys. Created by members, approved by leadership, ranked by what's actually working.",
+  description: "The community's best practices and journeys. Created by members, approved by leadership, ranked by what's actually working.",
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
@@ -27,13 +27,11 @@ export function generateMetadata() {
 const TYPES: { key: ContentType | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'practice', label: 'Practices' },
-  { key: 'program', label: 'Programs' },
   { key: 'journey', label: 'Journeys' },
 ]
-const TYPE_ICON: Record<ContentType, typeof Dumbbell> = { practice: Dumbbell, program: Megaphone, journey: Route }
+const TYPE_ICON: Record<ContentType, typeof Dumbbell> = { practice: Dumbbell, journey: Route }
 const TYPE_TONE: Record<ContentType, string> = {
   practice: 'bg-primary-bg text-primary-strong',
-  program: 'bg-signal-bg text-signal-strong',
   journey: 'bg-success-bg text-success',
 }
 
@@ -46,13 +44,13 @@ export default async function LibraryPage({
   if (!caller) redirect('/feed')
 
   const { type: typeParam, pillar } = await searchParams
-  const type = (['practice', 'program', 'journey'].includes(typeParam ?? '') ? typeParam : null) as ContentType | null
+  const type = (['practice', 'journey'].includes(typeParam ?? '') ? typeParam : null) as ContentType | null
 
   const [items, myRatings] = await Promise.all([
-    // Surface the full catalog — every approved/public practice, program, AND journey
-    // (the `community_library` RPC unions all three). `type`/`pillar` stay as the tab +
-    // filter, both defaulting to null (the "All" tab) so nothing is hidden. We ask for
-    // the RPC's max so a published item is never silently dropped by the default cap.
+    // Surface the full catalog — every approved/public practice AND journey (the
+    // `community_library` RPC unions both). `type`/`pillar` stay as the tab + filter,
+    // both defaulting to null (the "All" tab) so nothing is hidden. We ask for the RPC's
+    // max so a published item is never silently dropped by the default cap.
     getLibrary({ type, pillar: pillar ?? null, limit: 200 }),
     getMyRatings(caller.id),
   ])
@@ -133,13 +131,25 @@ function timeChipFor(item: LibraryItem): string | null {
 // the adoption/completion/score stats; the rate toggle sits in the footer, outside the link.
 function LibraryCard({ item, rated }: { item: LibraryItem; rated: boolean }) {
   const Icon = TYPE_ICON[item.contentType]
-  // Programs have no detail route (they render inline in the Library), so their card
-  // links to the Programs tab of the catalog itself.
-  const href = hrefFor(item) ?? '/library?type=program'
+  const href = hrefFor(item)
   const time = timeChipFor(item)
   return (
     <EntityCard
       href={href}
+      cover={
+        item.coverImage ? (
+          // Raw <img> (not next/image): cover URLs are arbitrary operator/host URLs the
+          // image loader's allowlist would reject.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.coverImage} alt="" className="h-full w-full object-cover" />
+        ) : (
+          // Coded fallback so EVERY card leads with a header image — a calm type-toned wash
+          // with the content icon centered (practices carry no cover_image from the RPC).
+          <div className={`flex h-full w-full items-center justify-center ${TYPE_TONE[item.contentType]}`}>
+            <Icon className="h-8 w-8 opacity-70" />
+          </div>
+        )
+      }
       anchor={
         <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${TYPE_TONE[item.contentType]}`}>
           <Icon className="h-4 w-4" />

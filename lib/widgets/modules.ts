@@ -102,9 +102,6 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'practice-detail-usedin', label: 'Used in', description: 'The Journeys and Circles running this practice.' },
   { id: 'practice-detail-lineage', label: 'Remix lineage', description: 'Where this practice was remixed from, how many times it has been remixed, and the other remixes off the same original.' },
 
-  // ── Programs blocks (/programs) — the Foundation's frameworks browse list ──
-  { id: 'programs-list', label: 'Programs', description: 'The open browse list of frameworks and trainings for starting, running, and growing a circle, each with the viewer’s completion.' },
-
   // ── Channels blocks (/channels) — the pillar-grouped topical browse ──
   { id: 'channels-list', label: 'Channels', description: 'The four Pillars (Mind, Body, Spirit, Expression) with the Channels inside each, split into tuned-in and explore, plus the Pillars jump-nav.' },
 
@@ -531,11 +528,6 @@ const CRM_TODAY_MODULE_IDS = ['crm-today'] as const
 // here and vice versa).
 const CRM_MEMBERS_MODULE_IDS = ['crm-members-roster'] as const
 
-// The Programs page (/programs). The whole interior is one self-fetching browse list (the framework
-// library + the viewer's completion, including the "coming soon" empty), keyed only on the viewer
-// with no searchParams facet, so it converts wholesale to one module.
-const PROGRAMS_MODULE_IDS = ['programs-list'] as const
-
 // The Channels page (/channels). The whole pillar-grouped browse (the toc, the four Pillars with
 // their Channels split tuned-in vs explore, and the Pillars jump-nav) derives from one viewer-scoped
 // fetch with no searchParams facet, so the whole interior converts wholesale to one module.
@@ -670,7 +662,6 @@ export const ROUTE_MODULE_IDS: Record<string, readonly string[]> = {
   '/practices/*': PRACTICE_DETAIL_MODULE_IDS,
   '/crew/store': VAULT_MODULE_IDS,
   '/crew/challenges': CHALLENGES_MODULE_IDS,
-  '/programs': PROGRAMS_MODULE_IDS,
   '/channels': CHANNELS_MODULE_IDS,
   // Section scope: every entity profile tab (/spaces/<slug>/<tab>) shares one family module set;
   // the shell narrows it to the active tab's blocks via the `moduleIds` override (ADR-294).

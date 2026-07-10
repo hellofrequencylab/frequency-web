@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -6,6 +7,7 @@ import { resolveEntityConsole } from '@/lib/admin/entity-console'
 import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { EntityManageConsole } from '@/components/admin/modules/entity-manage-console'
+import { PlacementApprovals } from '@/components/events/placement-approvals'
 
 // The circle OWNER CONSOLE (ADR-441 EM1-2). The unified `/{entity}/[id]/manage` Dashboard
 // surface: a host (or a guide/mentor who leads the parent hub/nexus, or staff) manages
@@ -71,6 +73,11 @@ export default async function CircleManagePage({
       }
     >
       <EntityManageConsole caps={[...caps]} />
+      {/* Pending "where does this event live" requests the circle host can approve. The approve /
+          decline actions re-check circle.editSettings server-side. */}
+      <Suspense fallback={null}>
+        <PlacementApprovals target={{ type: 'circle', id: circle.id }} />
+      </Suspense>
     </DashboardTemplate>
   )
 }

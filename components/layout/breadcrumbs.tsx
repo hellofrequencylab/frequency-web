@@ -22,7 +22,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   vault: 'Vault',
   practices: 'Practices',
   journeys: 'Journeys',
-  programs: 'Programs',
   friends: 'Friends',
   partners: 'Partners',
   people: 'People',
@@ -45,6 +44,19 @@ const SEGMENT_LABELS: Record<string, string> = {
 }
 
 type Crumb = { href: string; label: string }
+
+// The four commerce surfaces live at their own top-level routes (/classifieds, /market,
+// /store) except Housing (/marketplace/housing), so auto-derivation would give three of
+// them a single crumb (hidden) and only Housing a "Marketplace > Housing" trail. Pin an
+// explicit, uniform "Marketplace > <Segment>" trail on all four so the Marketplace reads
+// the same everywhere. "Marketplace" is the umbrella (it redirects to /classifieds).
+const MARKETPLACE = { href: '/marketplace', label: 'Marketplace' }
+const PATH_TRAILS: Record<string, Crumb[]> = {
+  '/classifieds': [MARKETPLACE, { href: '/classifieds', label: 'Classifieds' }],
+  '/market': [MARKETPLACE, { href: '/market', label: 'Market' }],
+  '/store': [MARKETPLACE, { href: '/store', label: 'Frequency Store' }],
+  '/marketplace/housing': [MARKETPLACE, { href: '/marketplace/housing', label: 'Housing' }],
+}
 
 function titleize(seg: string) {
   // Don't titleize raw uuids into noise; show a tidy fallback instead.
@@ -72,6 +84,7 @@ export function Breadcrumbs({
 
   const crumbs: Crumb[] =
     trail ??
+    PATH_TRAILS[pathname] ??
     pathname
       .split('/')
       .filter(Boolean)

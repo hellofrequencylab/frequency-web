@@ -19,6 +19,9 @@ const TYPE_ICON: Record<string, string> = {
   friend_accepted: '🤝',
   support_reply:   '🛟',
   space_update:    '📣',
+  event_placement_request:  '📍',
+  event_placement_approved: '📍',
+  event_placement_declined: '📍',
 }
 
 function notifHref(n: NotificationItem): string {

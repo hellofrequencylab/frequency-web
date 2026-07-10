@@ -11,6 +11,7 @@ import {
 } from './event-shared-fields-module'
 import { getEventPlaceTimeData, updateEventPlaceTime } from '@/app/(main)/events/admin-actions'
 import { isoToWallClockInput } from '@/lib/events/datetime'
+import { EventPlacementField } from '@/components/events/event-placement-field'
 
 // In-place "Place & Time" module (EMBEDDED-ADMIN.md / ADR-133; ENTITY-MANAGEMENT-OVERHAUL §4, the 'place'
 // spine cell) on /events/[slug]. Owns when/where: start + end, timezone, recurrence, location + map pin,
@@ -157,6 +158,12 @@ export function EventPlaceTimeModule() {
             </div>
         </>
       </RailAutosaveForm>
+
+      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved). Sits OUTSIDE the
+          autosave form: it drives its own request/approve server actions, not form fields. */}
+      <div className="mt-3">
+        <EventPlacementField eventId={data.id} slug={data.slug} />
+      </div>
     </div>
   )
 }
