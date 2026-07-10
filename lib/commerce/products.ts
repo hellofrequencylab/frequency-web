@@ -142,6 +142,21 @@ export async function listSpaceCatalog(spaceId?: string): Promise<CommerceProduc
   return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
 }
 
+/** A Space's PUBLIC catalog: only active listings, for the public Shop tab (Phase 6, ADR-593). Distinct
+ *  from listSpaceCatalog, which returns every status (draft/archived) for the owner console — never reuse
+ *  that reader publicly or it leaks unpublished items. */
+export async function listPublicSpaceCatalog(spaceId: string): Promise<CommerceProduct[]> {
+  if (!spaceId) return []
+  const { data } = await db()
+    .from('commerce_products')
+    .select(PRODUCT_COLS)
+    .eq('owner_kind', 'space')
+    .eq('owner_space_id', spaceId)
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToProduct)
+}
+
 /** The Space that owns this product (or null) — the ownership gate for a Space's own write
  *  actions (parallels productOwnerProfileId, which is null for owner_kind='space'). */
 export async function productOwnerSpaceId(id: string): Promise<string | null> {

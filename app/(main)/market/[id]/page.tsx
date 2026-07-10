@@ -27,13 +27,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   const [profileId, product] = await Promise.all([getMyProfileId(), getProduct(id)])
   if (!product) notFound()
   const isService = product.productKind === 'service'
-  // Maker products, services, and any Market-published listing (a Space's opt-in, Phase 5) render here.
-  if (product.vertical !== 'maker' && !isService && !product.marketPublished) notFound()
-
-  // Owner = the maker who owns it (space-owned services show the picker to everyone, incl. the owner
-  // previewing). Non-active listings are visible only to their maker owner.
+  // Any ACTIVE listing is viewable by link (from the Market browse, a Space Shop tab, or a shared link);
+  // market_published governs Market *discovery* (the umbrella query), not per-listing access. A non-active
+  // listing is visible only to its maker owner (draft preview).
   const isOwner = !!profileId && product.ownerProfileId === profileId
-  if (product.status !== 'active' && product.ownerProfileId !== profileId) notFound()
+  if (product.status !== 'active' && !isOwner) notFound()
 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
   const soldOut = product.status === 'sold_out' || product.stock === 0

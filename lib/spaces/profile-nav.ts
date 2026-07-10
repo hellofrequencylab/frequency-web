@@ -2,6 +2,7 @@ import { getCallerProfile } from '@/lib/auth'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
+import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
@@ -42,6 +43,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const pages = readProfilePages(space.preferences)
   const homeDoc = resolveSpacePageDoc(space.preferences, brandName, HOME_SLUG)
   const sections = deriveSectionNav(homeDoc, presence)
+  // The public Shop tab (ADR-593): shown only when the owner has published their storefront, with the
+  // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
+  // `published`, so this surfaces only a real, opted-in storefront.
+  const storefront = readStorefrontConfig(space.preferences)
 
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
@@ -52,6 +57,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise.
     { href: `${base}/reviews`, label: 'Reviews' },
+    ...(storefront.published ? [{ href: `${base}/shop`, label: storefront.tabLabel }] : []),
     ...pages
       .filter((p) => p.slug !== HOME_SLUG)
       .map((p) => ({ href: `${base}/${p.slug}`, label: p.label })),
