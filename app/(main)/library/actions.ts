@@ -12,11 +12,6 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-// NOTE: Program CREATION is retired (the "Propose a program" form + submitProgram and the
-// Adopt/"Run this" action are gone). Existing approved Program rows keep rendering read-only
-// in the Library, and reviewContent below still handles the pending 'program' rows a host
-// can see at /library/review.
-
 // Submit a practice or journey you own into the Library (→ pending review). It
 // stays private to you until a leader approves it (then it goes public).
 export async function submitToLibrary(type: 'practice' | 'journey', id: string): Promise<ActionResult> {
@@ -53,8 +48,6 @@ export async function reviewContent(
 
   if (type === 'practice') {
     await d.from('practices').update({ ...review, ...(approved ? { is_public: true } : {}) }).eq('id', id)
-  } else if (type === 'program') {
-    await d.from('programs').update(review).eq('id', id)
   } else {
     await d.from('journey_plans').update({ ...review, ...(approved ? { visibility: 'public' } : {}) }).eq('id', id)
   }

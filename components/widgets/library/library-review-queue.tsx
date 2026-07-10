@@ -7,7 +7,7 @@ import { ReviewActions } from '@/app/(main)/library/review/review-actions'
 import { Inbox } from 'lucide-react'
 
 // Library layout module (ADR-270/294): the leadership review queue — community submissions
-// (practices, programs, journeys) waiting to join the Library (ADR-109). A self-fetching RSC gated
+// (practices, journeys) waiting to join the Library (ADR-109). A self-fetching RSC gated
 // to Host+ (returns null for anyone below, the module contract), so the page's redirect stays the
 // real gate and an operator placing this block never leaks the queue to a member. The empty state is
 // part of the block, so a placed queue always renders a clear "nothing to review" rather than blank.
@@ -22,7 +22,7 @@ export async function LibraryReviewQueue() {
       <EmptyState
         icon={Inbox}
         title="Nothing to review"
-        description="When members submit practices, programs, or journeys, they'll line up here."
+        description="When members submit practices or journeys, they'll line up here."
       />
     )
   }

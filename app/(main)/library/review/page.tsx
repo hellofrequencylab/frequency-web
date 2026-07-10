@@ -9,7 +9,7 @@ import { PageModules } from '@/components/widgets/page-modules'
 export const dynamic = 'force-dynamic'
 
 // Leadership review queue — a circle Host or any Guide+ approves community submissions (practices,
-// programs, journeys) into the Library (ADR-109). The interior is module-driven (ADR-270/294): the
+// journeys) into the Library (ADR-109). The interior is module-driven (ADR-270/294): the
 // queue block self-fetches the pending submissions and is Host-gated (returns null below Host), so
 // the page's redirect stays the real gate. The page keeps only the guard + the Focus header + the
 // back-link footer and renders <PageModules>.

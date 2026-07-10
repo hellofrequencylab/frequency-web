@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { Dumbbell, Megaphone, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
+import { Dumbbell, Route, TrendingUp, Users2, Flame, Clock } from 'lucide-react'
 import { getCallerProfile } from '@/lib/auth'
 import { IndexTemplate } from '@/components/templates'
 import { EntityCard } from '@/components/cards/entity-card'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // page header and the SEO metadata below.
 const CONTENT_FALLBACK = {
   title: 'Library',
-  description: "The community's best practices, programs, and journeys. Created by members, approved by leadership, ranked by what's actually working.",
+  description: "The community's best practices and journeys. Created by members, approved by leadership, ranked by what's actually working.",
 }
 
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
@@ -27,13 +27,11 @@ export function generateMetadata() {
 const TYPES: { key: ContentType | 'all'; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'practice', label: 'Practices' },
-  { key: 'program', label: 'Programs' },
   { key: 'journey', label: 'Journeys' },
 ]
-const TYPE_ICON: Record<ContentType, typeof Dumbbell> = { practice: Dumbbell, program: Megaphone, journey: Route }
+const TYPE_ICON: Record<ContentType, typeof Dumbbell> = { practice: Dumbbell, journey: Route }
 const TYPE_TONE: Record<ContentType, string> = {
   practice: 'bg-primary-bg text-primary-strong',
-  program: 'bg-signal-bg text-signal-strong',
   journey: 'bg-success-bg text-success',
 }
 
@@ -46,13 +44,13 @@ export default async function LibraryPage({
   if (!caller) redirect('/feed')
 
   const { type: typeParam, pillar } = await searchParams
-  const type = (['practice', 'program', 'journey'].includes(typeParam ?? '') ? typeParam : null) as ContentType | null
+  const type = (['practice', 'journey'].includes(typeParam ?? '') ? typeParam : null) as ContentType | null
 
   const [items, myRatings] = await Promise.all([
-    // Surface the full catalog — every approved/public practice, program, AND journey
-    // (the `community_library` RPC unions all three). `type`/`pillar` stay as the tab +
-    // filter, both defaulting to null (the "All" tab) so nothing is hidden. We ask for
-    // the RPC's max so a published item is never silently dropped by the default cap.
+    // Surface the full catalog — every approved/public practice AND journey (the
+    // `community_library` RPC unions both). `type`/`pillar` stay as the tab + filter,
+    // both defaulting to null (the "All" tab) so nothing is hidden. We ask for the RPC's
+    // max so a published item is never silently dropped by the default cap.
     getLibrary({ type, pillar: pillar ?? null, limit: 200 }),
     getMyRatings(caller.id),
   ])
@@ -133,9 +131,7 @@ function timeChipFor(item: LibraryItem): string | null {
 // the adoption/completion/score stats; the rate toggle sits in the footer, outside the link.
 function LibraryCard({ item, rated }: { item: LibraryItem; rated: boolean }) {
   const Icon = TYPE_ICON[item.contentType]
-  // Programs have no detail route (they render inline in the Library), so their card
-  // links to the Programs tab of the catalog itself.
-  const href = hrefFor(item) ?? '/library?type=program'
+  const href = hrefFor(item)
   const time = timeChipFor(item)
   return (
     <EntityCard
