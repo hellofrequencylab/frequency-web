@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -28,6 +27,7 @@ import { shouldSend } from '@/lib/notification-preferences'
 import { sendSms } from '@/lib/comms/sms'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import { buildGoogleCalendarUrl } from '@/components/events/add-to-calendar'
+import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 // Gallery images ride as a JSON array of storage paths (the form has no native array
 // shape). Parse defensively: a missing/garbage value, a non-array, or any non-string
@@ -46,6 +46,13 @@ function parseGalleryPaths(raw: string | null): string[] {
   } catch {
     return []
   }
+}
+
+// Venmo handle (shown next to the price until payments turn on): strip a leading @,
+// keep Venmo's own charset, cap the length. Empty → null (clears the column on edit).
+function parseVenmoHandle(raw: string | null): string | null {
+  const cleaned = (raw ?? '').trim().replace(/^@/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 30)
+  return cleaned || null
 }
 
 const VALID_RECURRENCE: RecurrenceType[] = ['none', 'daily', 'weekly', 'monthly']
@@ -92,7 +99,11 @@ async function geocodeEventOnCreate(eventId: string, fd: FormData): Promise<void
   }
 }
 
-export async function createEvent(formData: FormData) {
+// Returns ActionResult so the form can SHOW a failure (lib/action-result). Every
+// guard used to be a silent `return`, which left the editor open with no message
+// and nothing saved — indistinguishable from success. Navigation moved client-side
+// (the form redirects to the returned slug on ok).
+export async function createEvent(formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const title = (formData.get('title') as string | null)?.trim()
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
@@ -135,6 +146,8 @@ export async function createEvent(formData: FormData) {
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   // Additional gallery images (ordered storage paths in the same bucket).
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  // Host's Venmo handle, shown next to the price while ticket sales are off.
+  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
   // Event time zone (lib/time/zone): the venue's coordinates aren't known at insert (geocoding
   // runs async below), so seed the column with the creator's submitted zone when the form sends
@@ -143,29 +156,31 @@ export async function createEvent(formData: FormData) {
   const submittedTz = (formData.get('timeZone') as string | null)?.trim() || null
   const timeZone = isValidTimeZone(submittedTz) ? submittedTz : HOME_TZ
 
-  if (!title || !startsAt) return
+  if (!title || !startsAt) return fail('Give the event a title and a start time.')
   // A circle event must name a circle; a public event resolves its scope below.
-  if (!isPublic && !formScopeId) return
-  // An end before the start is never valid — drop the bad write rather than store a
+  if (!isPublic && !formScopeId) return fail('Pick where this event lives.')
+  // An end before the start is never valid — reject the bad write rather than store a
   // negative-duration event (the form should also block it, this is the server guard).
-  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return fail('The end time must be after the start.')
 
   // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
   const startsIso = wallClockToIso(startsAt)
   const endsIso = endsAt ? wallClockToIso(endsAt) : null
-  if (!startsIso) return
+  if (!startsIso) return fail('That start time did not read as a valid date.')
 
   // A repeat-end before the start would yield zero occurrences — reject rather than
   // store a dead series (the form blocks it too; this is the server guard).
-  if (validateRecurrenceUntil(recurrenceType, startsIso, recurrenceUntil)) return
+  if (validateRecurrenceUntil(recurrenceType, startsIso, recurrenceUntil)) {
+    return fail('The repeat end date must be after the start.')
+  }
 
   const myProfileId = await getMyProfileId()
-  if (!myProfileId) return
+  if (!myProfileId) return fail('Sign in to create an event.')
 
   // Resolve the scope: a circle event uses the chosen circle; a public event is placed in
   // the creator's region (the same resolver the poster-scan flow uses).
   const scopeId = isPublic ? await resolveRegionScopeId(myProfileId) : formScopeId
-  if (!scopeId) return
+  if (!scopeId) return fail('We could not place this event in your area. Please try again.')
 
   const admin = createAdminClient()
 
@@ -207,6 +222,8 @@ export async function createEvent(formData: FormData) {
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
+      // venmo_handle is newer than the generated DB types → rides the payload cast below.
+      venmo_handle: venmoHandle,
       // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
       // venue point in geocodeEventOnCreate; this seed keeps it non-null for online events too.
       time_zone: timeZone,
@@ -215,9 +232,9 @@ export async function createEvent(formData: FormData) {
       ...(spaceId ? { space_id: spaceId } : {}),
     } as never).select('id').single()
 
-  if (error) {
+  if (error || !inserted) {
     console.error('createEvent error', error)
-    return
+    return fail('Could not create the event. Please try again.')
   }
 
   // Persist the structured address + geocode the venue to a map point (best-effort;
@@ -257,7 +274,9 @@ export async function createEvent(formData: FormData) {
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
-  redirect(`/events/${slug}`)
+  // Navigation happens client-side off this result (a server redirect would
+  // short-circuit returning the ActionResult).
+  return ok({ slug })
 }
 
 // Edit an existing event's details (EVENTS host self-service). Gated by the same
@@ -267,24 +286,28 @@ export async function createEvent(formData: FormData) {
 // else the create form sets is editable, including the recurrence cadence (changing it
 // re-materialises the occurrence window; the daily cron is the backstop). The structured
 // address re-geocodes on save (best-effort).
-export async function updateEvent(eventId: string, formData: FormData) {
+// Returns ActionResult so the editor can SHOW a failure (lib/action-result). Every guard
+// (and the DB write error itself) used to be a silent `return`: the popup stayed open, the
+// button flipped back to "Save changes", and nothing persisted — the "save ran but my
+// content is gone" bug. Navigation moved client-side (the form redirects on ok).
+export async function updateEvent(eventId: string, formData: FormData): Promise<ActionResult<{ slug: string }>> {
   const caps = await getEventCapabilities(eventId)
-  if (!caps.has('event.editSettings')) return
+  if (!caps.has('event.editSettings')) return fail('You do not have permission to edit this event.')
 
   const title = (formData.get('title') as string | null)?.trim()
   const startsAt = formData.get('startsAt') as string | null
-  if (!title || !startsAt) return
+  if (!title || !startsAt) return fail('Give the event a title and a start time.')
 
   const description = (formData.get('description') as string | null)?.trim() || null
   const location = (formData.get('location') as string | null)?.trim() || null
   const endsAt = (formData.get('endsAt') as string | null) || null
   // Reject a negative-duration edit (the form blocks it too; this is the server guard).
-  if (endsAt && new Date(endsAt) < new Date(startsAt)) return
+  if (endsAt && new Date(endsAt) < new Date(startsAt)) return fail('The end time must be after the start.')
 
   // UTC-naive: keep the picked wall-clock literally (lib/events/datetime), not tz-shifted.
   const startsIso = wallClockToIso(startsAt)
   const endsIso = endsAt ? wallClockToIso(endsAt) : null
-  if (!startsIso) return
+  if (!startsIso) return fail('That start time did not read as a valid date.')
 
   // Recurrence (additive, validated). Only an ANCHOR row (parent_event_id IS NULL) may
   // carry a cadence — a DB CHECK forbids a materialised occurrence from itself recurring,
@@ -297,7 +320,9 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const recurrenceUntilEdit = recurrenceTypeEdit !== 'none' && recurrenceUntilRawEdit
     ? dateToWallClockIso(recurrenceUntilRawEdit)
     : null
-  if (validateRecurrenceUntil(recurrenceTypeEdit, startsIso, recurrenceUntilEdit)) return
+  if (validateRecurrenceUntil(recurrenceTypeEdit, startsIso, recurrenceUntilEdit)) {
+    return fail('The repeat end date must be after the start.')
+  }
 
   const capacityRaw = (formData.get('capacity') as string | null)?.trim() || ''
   const capacityParsed = capacityRaw ? parseInt(capacityRaw, 10) : NaN
@@ -310,6 +335,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
   const admin = createAdminClient()
   const { data: ev } = await admin
@@ -319,7 +345,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
     .maybeSingle()
   const evRow = ev as { slug: string; parent_event_id: string | null } | null
   const slug = evRow?.slug
-  if (!slug) return
+  if (!slug) return fail('This event could not be found.')
   // Recurrence is an anchor-only concern (a child occurrence cannot itself recur).
   const isAnchor = !evRow?.parent_event_id
 
@@ -337,6 +363,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
       energy_tag: energyTag,
       cover_image_path: coverImagePath,
       gallery_image_paths: galleryImagePaths,
+      // venmo_handle is newer than the generated DB types → rides the payload cast below.
+      venmo_handle: venmoHandle,
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.
       ...(isAnchor
         ? { recurrence_type: recurrenceTypeEdit, recurrence_until: recurrenceUntilEdit }
@@ -345,7 +373,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
     .eq('id', eventId)
   if (error) {
     console.error('updateEvent error', error)
-    return
+    return fail('Could not save your changes. Please try again.')
   }
 
   // If this anchor is (still) recurring, materialise the occurrence window for the
@@ -367,7 +395,9 @@ export async function updateEvent(eventId: string, formData: FormData) {
   revalidatePath(`/events/${slug}/edit`)
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
-  redirect(`/events/${slug}`)
+  // Navigation happens client-side off this result (a server redirect would
+  // short-circuit returning the ActionResult).
+  return ok({ slug })
 }
 
 // The "when" line for RSVP confirmations + reminders. starts_at stores the event's

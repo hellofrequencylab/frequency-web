@@ -20,6 +20,15 @@ import { createClient } from '@/lib/supabase/client'
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB, matching the event-media bucket limit.
 
+// Mirror the event-media bucket's MIME allowlist (migration 20261105000000) so a
+// file the bucket would reject fails HERE with a clear message instead of a raw
+// Storage 400. Covers what phones actually shoot (HEIC/HEIF) plus AVIF.
+const ALLOWED_MIME = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+  'image/heic', 'image/heif', 'image/avif',
+])
+const ALLOWED_MIME_MESSAGE = 'That file type is not supported. Use a JPEG, PNG, GIF, WebP, HEIC, or AVIF image.'
+
 export function ImageUpload({
   value,
   onChange,
@@ -60,6 +69,15 @@ export function ImageUpload({
     setError(null)
     if (!file.type.startsWith('image/')) {
       setError('Choose an image file.')
+      return
+    }
+    // The direct browser path uploads into the event-media bucket, whose MIME
+    // allowlist Storage enforces server-side — reject a type it would bounce
+    // with a clear message here instead of a raw "Upload failed: 400". A custom
+    // uploadFn targets its own bucket and does its own validation, so it keeps
+    // the broad image/* gate above.
+    if (!uploadFn && !ALLOWED_MIME.has(file.type)) {
+      setError(ALLOWED_MIME_MESSAGE)
       return
     }
     if (file.size > MAX_BYTES) {

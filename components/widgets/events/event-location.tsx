@@ -23,7 +23,19 @@ export const EventLocation = async () => {
       {facts.location && (
         <p className="flex items-start gap-2 text-sm text-text">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-subtle" />
-          <span>{facts.location}</span>
+          {/* Deep-links into Maps (native app on a phone, the map site on desktop). */}
+          {facts.mapsHref ? (
+            <a
+              href={facts.mapsHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-strong hover:underline"
+            >
+              {facts.location}
+            </a>
+          ) : (
+            <span>{facts.location}</span>
+          )}
         </p>
       )}
       <EventLocationMap isOnline={facts.isOnline} mapPin={facts.mapPin} venuePoint={facts.venuePoint} />

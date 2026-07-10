@@ -21,11 +21,13 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     .select(
       'title, description, location, scope_id, scope_type, capacity, visibility, category, energy_tag, ' +
         'attendance_mode, online_url, venue_name, street, city, region, postal_code, country, ' +
-        'recurrence_type, recurrence_until',
+        'recurrence_type, recurrence_until, venmo_handle',
     )
     .eq('id', sourceId)
     .maybeSingle()
-  const src = data as Record<string, unknown> | null
+  // venmo_handle is newer than the generated DB types, so the typed select narrows to a
+  // query error — read through unknown (repo convention for not-yet-regenerated columns).
+  const src = data as unknown as Record<string, unknown> | null
   if (!src) return null
 
   const str = (v: unknown): string => (typeof v === 'string' ? v : '')
@@ -60,6 +62,7 @@ async function buildDuplicateInitial(sourceId: string): Promise<Partial<EventFor
     country: str(src.country),
     recurrenceType,
     recurrenceUntil,
+    venmoHandle: str(src.venmo_handle),
     // Date is intentionally omitted so the copy defaults to the active day.
   }
 }

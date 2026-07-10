@@ -47,6 +47,8 @@ import { PageModules } from '@/components/widgets/page-modules'
 import { setEventContext } from '@/lib/events/active-event'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { nextOccurrence } from '@/lib/events/recurrence'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
+import { mapsSearchUrl, eventMapsQuery } from '@/lib/events/maps-link'
 
 type AttendanceMode = 'in_person' | 'online' | 'hybrid'
 
@@ -238,6 +240,14 @@ export default async function EventDetailPage({
     attendance_mode: AttendanceMode | null
     online_url: string | null
     status: string | null
+    // Structured venue address (feeds the Maps deep link; coarser fields omitted).
+    venue_name: string | null
+    street: string | null
+    city: string | null
+    region: string | null
+    postal_code: string | null
+    // Host's Venmo handle (no @) — shown next to the price while ticket sales are off.
+    venmo_handle: string | null
     // Event's IANA zone (newer than the generated types → untyped read). Drives every
     // is-past / check-in gate and the when-line abbrev via lib/time/zone.
     time_zone: string | null
@@ -252,7 +262,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, time_zone, geog',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, venmo_handle, time_zone, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -536,6 +546,11 @@ export default async function EventDetailPage({
   if (ticketedCents !== null) ownsTicket = true
   const priceLabel = `$${(flatPriceCents / 100).toFixed(2)}`
   const allTiersSoldOut = hasTiers && tiers.every((t) => t.soldOut)
+  // Checkout is live for this event only when the platform switch is on AND the event
+  // is priced. While ticketing is off (lib/events/ticketing) a priced event keeps its
+  // price header but behaves like a free event everywhere else: RSVP stays open and
+  // no buy/closed/sold-out states render.
+  const ticketingActive = TICKETING_ENABLED && isPaidEvent
 
   // Host sales + refunds (EVENTS-SYSTEM §7). The host (anyone who can manage this
   // event) sees the succeeded tickets and can refund them. RLS lets the host read
@@ -674,9 +689,11 @@ export default async function EventDetailPage({
 
   const cohosts = cohostsRaw as CohostView[]
   const isCohost = myProfileId != null && cohosts.some((c) => c.profileId === myProfileId)
-  // Who may add a comment / photo: the host, a cohost, or anyone holding an RSVP.
-  const isGuest = myRsvpStatus === 'going' || myRsvpStatus === 'maybe' || myRsvpStatus === 'waitlist'
-  const canContribute = !!myProfileId && (isHost || isCohost || isGuest)
+  // Who may add a comment / photo: ANY signed-in member (the old RSVP-holder
+  // requirement was dropped so the event wall reads as open conversation; the
+  // server action createEventPost applies the same gate). Dispatches stay
+  // host/cohost-only below.
+  const canContribute = !!myProfileId
   const canDispatch = isHost || isCohost
 
   const commentPosts: ActivityPost[] = ((rawActivity ?? []) as unknown as RawActivityPost[]).map((p) => ({
@@ -754,12 +771,32 @@ export default async function EventDetailPage({
     event.ends_at ? ` to ${formatTime(event.ends_at)}` : ''
   } ${zoneAbbrev(event.starts_at, eventTz)}`.trim()
 
+  // Maps deep link for the venue: the structured address when the host entered one,
+  // else the free-text location line. One https URL opens native Maps on a phone and
+  // the map site on desktop. Null for online events or when there is no address.
+  const mapsHref = isOnline
+    ? null
+    : mapsSearchUrl(
+        eventMapsQuery({
+          venueName: extra?.venue_name,
+          street: extra?.street,
+          city: extra?.city,
+          region: extra?.region,
+          postalCode: extra?.postal_code,
+          location: event.location,
+        }),
+      )
+
   const mode = MODE_CHIP[attendanceMode]
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
   const joinActions = (
     <div className="space-y-4">
-      {isPaidEvent && !event.is_cancelled ? (
+      {/* Price card for a priced event. With ticketing ON it carries the full checkout
+          cascade; with ticketing OFF (lib/events/ticketing) it keeps ONLY the price
+          header (plus the host's Venmo handle when set) and the RSVP card below opens
+          up like a free event — no closed/sold-out/sign-in/buy states. */}
+      {isPaidEvent && !event.is_cancelled && (
         <div className="rounded-2xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2">
             <Ticket className="h-4 w-4 text-primary" />
@@ -767,31 +804,48 @@ export default async function EventDetailPage({
               {hasTiers ? (tiers.length === 1 ? 'Ticket' : 'Tickets') : `${priceLabel} ticket`}
             </span>
           </div>
-          <div className="mt-3">
-            {ownsTicket ? (
-              <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
-                <Check className="h-4 w-4" /> Ticket confirmed
-              </p>
-            ) : hasEnded ? (
-              <p className="text-sm text-muted">Ticket sales have closed.</p>
-            ) : allTiersSoldOut ? (
-              <p className="text-sm text-muted">Sold out.</p>
-            ) : !myProfileId ? (
-              <p className="text-sm text-muted">Sign in to get your ticket.</p>
-            ) : isHost ? (
-              <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
-            ) : hostPayoutReady ? (
-              <TicketButton
-                eventId={event.id}
-                priceLabel={priceLabel}
-                tiers={hasTiers ? tiers : undefined}
-              />
-            ) : (
-              <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
-            )}
-          </div>
+          {/* Until payments turn on, a host can point guests at their Venmo. */}
+          {!TICKETING_ENABLED && extra?.venmo_handle && (
+            <p className="mt-3 text-sm text-muted">
+              Venmo{' '}
+              <a
+                href={`https://venmo.com/u/${extra.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-primary-strong hover:underline"
+              >
+                @{extra.venmo_handle}
+              </a>
+            </p>
+          )}
+          {TICKETING_ENABLED && (
+            <div className="mt-3">
+              {ownsTicket ? (
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-success">
+                  <Check className="h-4 w-4" /> Ticket confirmed
+                </p>
+              ) : hasEnded ? (
+                <p className="text-sm text-muted">Ticket sales have closed.</p>
+              ) : allTiersSoldOut ? (
+                <p className="text-sm text-muted">Sold out.</p>
+              ) : !myProfileId ? (
+                <p className="text-sm text-muted">Sign in to get your ticket.</p>
+              ) : isHost ? (
+                <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+              ) : hostPayoutReady ? (
+                <TicketButton
+                  eventId={event.id}
+                  priceLabel={priceLabel}
+                  tiers={hasTiers ? tiers : undefined}
+                />
+              ) : (
+                <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
+              )}
+            </div>
+          )}
         </div>
-      ) : !event.is_cancelled && myProfileId && !isPast ? (
+      )}
+      {ticketingActive ? null : !event.is_cancelled && myProfileId && !isPast ? (
         <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
           {/* RSVP is open to every member on any event, INCLUDING the host of their own
               gathering (a host counts themselves in like anyone else) — it is never
@@ -868,18 +922,19 @@ export default async function EventDetailPage({
   // Whether the mobile bottom bar should appear (there's a real action to take). A host
   // CAN RSVP to their own FREE event (so the bar shows), but never buys a ticket to it —
   // so the host is excluded only on the paid path ("you're hosting, no ticket needed").
+  // While ticketing is off, a priced event rides the RSVP path (no "Get ticket" CTA).
   const showBottomBar =
-    !event.is_cancelled && !hasEnded && (isPaidEvent ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
-  const bottomBarLabel = isPaidEvent
+    !event.is_cancelled && !hasEnded && (ticketingActive ? !isHost && !ownsTicket && !allTiersSoldOut : !!myProfileId)
+  const bottomBarLabel = ticketingActive
     ? `Get ticket${hasTiers ? '' : ` · ${priceLabel}`}`
     : isGoing
       ? 'Going'
       : capacityInfo.isFull
         ? 'Join waitlist'
         : 'RSVP'
-  const bottomBarStatus = isPaidEvent
+  const bottomBarStatus = ticketingActive
     ? hasTiers ? 'Tickets' : priceLabel
-    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : 'Free'
+    : isGoing ? "You're going" : isWaitlisted ? 'On the waitlist' : isPaidEvent ? priceLabel : 'Free'
 
   // Stamp the resolved per-viewer context into the request-scoped holder so EVERY event interior
   // module (components/widgets/events/*) reads it without prop-drilling — then the single
@@ -926,6 +981,7 @@ export default async function EventDetailPage({
       whenLine,
       isOnline,
       location: event.location,
+      mapsHref,
       onlineUrl,
       mapPin,
       venuePoint,
@@ -1092,7 +1148,20 @@ export default async function EventDetailPage({
             {event.location && !isOnline && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-subtle shrink-0" />
-                <span>{event.location}</span>
+                {/* The address deep-links into Maps (native app on a phone, the map
+                    site on desktop) so guests can navigate in one tap. */}
+                {mapsHref ? (
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary-strong hover:underline"
+                  >
+                    {event.location}
+                  </a>
+                ) : (
+                  <span>{event.location}</span>
+                )}
               </div>
             )}
 

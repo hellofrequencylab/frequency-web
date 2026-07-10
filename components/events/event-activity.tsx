@@ -410,7 +410,9 @@ export function EventActivity({
           )}
         </div>
       ) : (
-        <p className="mb-4 text-sm text-subtle">RSVP to join the conversation.</p>
+        // canContribute is false only for a signed-out visitor now (any signed-in
+        // member may comment; the old RSVP requirement was dropped).
+        <p className="mb-4 text-sm text-subtle">Sign in to join the conversation.</p>
       )}
 
       {posts.length === 0 ? (
