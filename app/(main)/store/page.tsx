@@ -33,7 +33,7 @@ async function ShopGrid() {
       <EmptyState
         icon={Store}
         variant="first-use"
-        title="The shop is being stocked."
+        title="The Store is being stocked."
         description="Merch, event passes, and retreats are coming. Check back soon."
       />
     )
