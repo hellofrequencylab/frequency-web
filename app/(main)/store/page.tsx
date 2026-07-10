@@ -4,6 +4,7 @@ import { StatCard } from '@/components/ui/stat-card'
 import { listShopProducts } from '@/lib/commerce/products'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
+import { MarketSearchBar } from '@/components/marketplace/market-search-bar'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -17,8 +18,13 @@ export const metadata = {
 
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-store/1600/600'
 
-export default async function ShopPage() {
-  const products = await listShopProducts()
+export default async function ShopPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams
+  const query = (q ?? '').trim().toLowerCase()
+  const allProducts = await listShopProducts()
+  const products = query
+    ? allProducts.filter((p) => `${p.title} ${p.description ?? ''}`.toLowerCase().includes(query))
+    : allProducts
   return (
     <div className="space-y-8">
       <MarketHero
@@ -26,6 +32,7 @@ export default async function ShopPage() {
         eyebrow="Frequency Store"
         title="Wear it, gift it, show up"
         subtitle="Frequency merch, event passes, and retreats, straight from us to you."
+        search={<MarketSearchBar placeholder="Search the Store" />}
       />
 
       <MarketplaceHiddenBanner area="shop" />
@@ -34,7 +41,7 @@ export default async function ShopPage() {
         <MarketplaceFacets active="shop" />
 
         <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-          <StatCard size="sm" label="In stock" value={products.length} icon={ShoppingBag} />
+          <StatCard size="sm" label="In stock" value={allProducts.length} icon={ShoppingBag} />
           <StatCard size="sm" label="Shipping" value="Flat" icon={Store} />
         </div>
 
