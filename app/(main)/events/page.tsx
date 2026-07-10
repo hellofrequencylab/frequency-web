@@ -84,6 +84,10 @@ export default async function EventsPage({
       // Coded fallback so the banner (and the controls row under it) always renders even when no
       // operator hero is set — the same pattern Journeys / Practices / Library use.
       heroImage={heroImage ?? '/images/site/community-dinner.jpg'}
+      // Overlay hero (the uniform Journeys / Practices / Library / Circles grammar): title and
+      // description sit ON the image. Events was the last index still on the banner-above-title
+      // lockup, so it read differently from its siblings.
+      heroOverlay
       title={pageTitle}
       description={pageDescription}
       // Secondary controls live UNDER the hero banner (a wrapping pill row); the header-right

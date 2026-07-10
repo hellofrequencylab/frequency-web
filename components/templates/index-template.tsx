@@ -59,9 +59,9 @@ export function IndexTemplate({
    *  one surface that should read bigger (the Business Spaces directory). Only applies in
    *  overlay mode. */
   heroSize?: 'standard' | 'large'
-  /** Optional controls row rendered directly UNDER the standard (non-overlay) hero banner —
-   *  a wrapping pill row for secondary page controls (Manage / drafts / subscribe), keeping
-   *  the header-right `action` for the primary CTA only. Standard-banner branch only. */
+  /** Optional controls row rendered directly UNDER the hero banner — a wrapping pill row for
+   *  secondary page controls (Manage / drafts / subscribe), keeping the header-right `action`
+   *  for the primary CTA only. Rendered in BOTH the standard-banner and overlay-hero branches. */
   underHero?: React.ReactNode
   /** Escape hatch for a fully custom header media node (rendered after trail + heroImage).
    *  Prefer `trail` + `heroImage` — `banner` is for the rare bespoke header. */
@@ -107,6 +107,9 @@ export function IndexTemplate({
             {action && <div className="shrink-0">{action}</div>}
           </div>
         </div>
+        {/* Secondary page controls, directly under the overlaid hero band (same wrapping pill
+            row as the standard-banner branch) — keeps the header-right `action` for the CTA. */}
+        {underHero && <div className="mt-4 flex flex-wrap gap-2">{underHero}</div>}
         {banner}
         {/* The header rule + operator Settings, same contract as the standard heading. */}
         <div className="mt-4">
