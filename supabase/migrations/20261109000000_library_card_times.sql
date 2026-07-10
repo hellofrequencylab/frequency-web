@@ -88,7 +88,7 @@ as $$
            r.cover_image, r.created_at, r.adoptions, r.completions,
            r.duration_min, r.cadence, r.unit_count, r.unit_label,
            (select count(*) from content_ratings cr where cr.content_type = r.content_type and cr.content_id = r.id)::int as ratings,
-           -- endorser rank order (1=ghost … 6=luminary), 0 if unreviewed
+           -- endorser rank order (1=ghost ... 4=master, the completion canon), 0 if unreviewed
            case rv.current_season_rank
              when 'master' then 4 when 'adept' then 3 when 'initiate' then 2
              when 'ghost' then 1 else 0
