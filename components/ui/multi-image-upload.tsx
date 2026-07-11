@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { ImageIcon, Loader2, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, Loader2, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // Multi-image sibling of ImageUpload (components/ui/image-upload). Manages an ORDERED
@@ -25,6 +25,20 @@ const ALLOWED_MIME = new Set([
 ])
 const ALLOWED_MIME_MESSAGE = 'That file type is not supported. Use a JPEG, PNG, GIF, WebP, HEIC, or AVIF image.'
 
+/** A read-only image pinned as the FIRST tile of the grid — the event's key/cover image (e.g. the
+ *  original poster), folded into the gallery so the whole set reads as one ordered strip. It lives
+ *  OUTSIDE `value` (it may sit in a different bucket, resolved to a URL by the caller), so it never
+ *  reorders and never counts against `max`. */
+export interface LeadingImage {
+  /** An already-resolved public or signed URL. */
+  url: string
+  /** Badge shown on the tile, e.g. 'Key image'. */
+  label: string
+  alt?: string
+  /** Optional remove handler; omit to render the tile without a remove control. */
+  onRemove?: () => void
+}
+
 export function MultiImageUpload({
   value,
   onChange,
@@ -35,6 +49,8 @@ export function MultiImageUpload({
   max = 12,
   disabled = false,
   upload,
+  reorderable = false,
+  leading = null,
 }: {
   /** Ordered storage paths in `bucket`. */
   value: string[]
@@ -57,14 +73,28 @@ export function MultiImageUpload({
    * under the signer's own uid prefix (the pre-creation new-event form, which owns its uid path).
    */
   upload?: (formData: FormData) => Promise<{ path: string } | { error: string }>
+  /** Opt in to drag-and-drop + keyboard reordering of the tiles (persisted via onChange). */
+  reorderable?: boolean
+  /** A pinned first tile (the key/cover image) folded in ahead of the reorderable gallery. */
+  leading?: LeadingImage | null
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   const supabase = createClient()
   const publicUrl = (path: string) => supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
   const atMax = value.length >= max
+
+  /** Move the tile at `from` to `to`, clamped, and persist the new order. */
+  function move(from: number, to: number) {
+    if (to < 0 || to >= value.length || from === to) return
+    const next = value.slice()
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    onChange(next)
+  }
 
   async function addFiles(files: File[]) {
     setError(null)
@@ -158,8 +188,49 @@ export function MultiImageUpload({
       </span>
 
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {/* The pinned key/cover image (e.g. the original poster), folded in as the first tile. It
+            sits outside `value`, so it never drags and never counts toward `max`. */}
+        {leading && (
+          <div className="group relative aspect-square overflow-hidden rounded-xl border border-border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={leading.url} alt={leading.alt ?? ''} className="h-full w-full object-cover" />
+            <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-white">
+              {leading.label}
+            </span>
+            {leading.onRemove && (
+              <button
+                type="button"
+                onClick={leading.onRemove}
+                disabled={disabled || busy}
+                aria-label={`Remove ${leading.label}`}
+                className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white opacity-0 shadow-sm transition-opacity hover:bg-black/80 focus:opacity-100 group-hover:opacity-100 disabled:opacity-60"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
         {value.map((path, i) => (
-          <div key={path} className="group relative aspect-square overflow-hidden rounded-xl border border-border">
+          <div
+            key={path}
+            draggable={reorderable && !disabled && !busy}
+            onDragStart={reorderable ? () => setDragIndex(i) : undefined}
+            onDragEnd={reorderable ? () => setDragIndex(null) : undefined}
+            onDragOver={reorderable ? (e) => e.preventDefault() : undefined}
+            onDrop={
+              reorderable
+                ? (e) => {
+                    e.preventDefault()
+                    if (dragIndex !== null) move(dragIndex, i)
+                    setDragIndex(null)
+                  }
+                : undefined
+            }
+            className={`group relative aspect-square overflow-hidden rounded-xl border border-border ${
+              reorderable && !disabled && !busy ? 'cursor-grab active:cursor-grabbing' : ''
+            } ${dragIndex === i ? 'opacity-50' : ''}`}
+          >
             {/* Unoptimized: gallery images come from Supabase Storage, not the configured
                 next/image domains (same as ImageUpload's preview). */}
             <Image
@@ -170,6 +241,12 @@ export function MultiImageUpload({
               unoptimized
               className="h-full w-full object-cover"
             />
+            {/* When there is no pinned key image, the first gallery photo leads the strip. */}
+            {reorderable && !leading && i === 0 && (
+              <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-white">
+                Shown first
+              </span>
+            )}
             <button
               type="button"
               onClick={() => removeAt(i)}
@@ -179,6 +256,29 @@ export function MultiImageUpload({
             >
               <X className="h-3.5 w-3.5" />
             </button>
+            {/* Keyboard + click fallback for reordering (drag needs a pointer). */}
+            {reorderable && value.length > 1 && (
+              <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => move(i, i - 1)}
+                  disabled={disabled || busy || i === 0}
+                  aria-label="Move earlier"
+                  className="rounded-full bg-black/60 p-1 text-white shadow-sm transition-colors hover:bg-black/80 disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(i, i + 1)}
+                  disabled={disabled || busy || i === value.length - 1}
+                  aria-label="Move later"
+                  className="rounded-full bg-black/60 p-1 text-white shadow-sm transition-colors hover:bg-black/80 disabled:opacity-30"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         ))}
 
