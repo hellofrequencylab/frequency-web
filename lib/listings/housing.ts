@@ -143,6 +143,30 @@ export async function matchRoommates(
   }))
 }
 
+/** A roommate<->roommate match: another active seeker ranked against the caller. Symmetric
+ *  (reciprocal resonance). Coarse city/score band only — never coordinates. */
+export interface RoommateSeekerMatch {
+  profileId: string
+  resonance: number
+  city: string | null
+  score: number
+}
+
+/** Rank OTHER active seekers against the caller (roommate<->roommate), via the consent-gated
+ *  housing_roommate_matches RPC. Pass an authed client so auth.uid() resolves to the caller. */
+export async function matchRoommateSeekers(
+  authedClient: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
+  limit = 12,
+): Promise<RoommateSeekerMatch[]> {
+  const { data } = await authedClient.rpc('housing_roommate_matches', { _limit: limit })
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    profileId: r.profile_id as string,
+    resonance: (r.resonance as number) ?? 0,
+    city: (r.city as string) ?? null,
+    score: (r.score as number) ?? 0,
+  }))
+}
+
 export interface HousingFacets {
   propertyType?: PropertyType | null
   /** Dollars-per-month bounds (inclusive), applied to rent_cents. */
@@ -179,6 +203,82 @@ export async function listHousingListings(facets: HousingFacets = {}): Promise<L
   return ((data ?? []) as Record<string, unknown>[]).map(rowToListing)
 }
 
+// ── Seeker lifestyle preferences (Phase 3) ───────────────────────────────────
+// Controlled vocab for the lifestyle block on the seeker form. The values feed the
+// LIFESTYLE term of the roommate match blend (migration 20261133000000). Kept here
+// (server-safe) and validated on write so a tampered form can never smuggle a value
+// the match reads. Gender preference is gated to shared-living intents (the US Fair
+// Housing shared-housing exemption permits sex/gender only when sharing a home); age
+// is a SOFT ranking hint, never a public "must be X" advertisement.
+
+const SEEKER_ENUMS = {
+  social_level: new Set(['homebody', 'balanced', 'social']),
+  schedule: new Set(['early_bird', 'night_owl', 'flexible']),
+  diet: new Set(['omnivore', 'vegetarian', 'vegan', 'halal', 'kosher']),
+  pets: new Set(['have_pets', 'ok_with_pets', 'no_pets']),
+  smoking: new Set(['yes', 'outside_only', 'no']),
+  cannabis: new Set(['yes', 'outside_only', 'no']),
+  gender_pref: new Set(['women', 'men', 'nonbinary', 'same_as_me']),
+} as const
+
+/** Raw (untrusted) lifestyle inputs, as strings off the form. */
+export interface SeekerPreferenceInput {
+  cleanliness?: string | null
+  social_level?: string | null
+  schedule?: string | null
+  diet?: string | null
+  pets?: string | null
+  smoking?: string | null
+  cannabis?: string | null
+  arrangement?: string | null
+  gender_pref?: string | null
+  age_min?: string | null
+  age_max?: string | null
+}
+
+function intInRange(v: string | null | undefined, lo: number, hi: number): number | null {
+  if (v == null || v === '') return null
+  const n = Number(v)
+  if (!Number.isFinite(n)) return null
+  const r = Math.round(n)
+  return r >= lo && r <= hi ? r : null
+}
+
+/** Clean the seeker lifestyle block into the lean `preferences` jsonb the match RPC reads.
+ *  PURE (no IO) so it is unit-testable and reusable. Only recognised values survive; unknown
+ *  keys/values are dropped. gender_pref is retained ONLY for shared-living arrangements. */
+export function sanitizeSeekerPreferences(input: SeekerPreferenceInput): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+
+  const cleanliness = intInRange(input.cleanliness, 1, 5)
+  if (cleanliness != null) out.cleanliness = cleanliness
+
+  for (const key of ['social_level', 'schedule', 'diet', 'pets', 'smoking', 'cannabis'] as const) {
+    const v = input[key]
+    if (typeof v === 'string' && SEEKER_ENUMS[key].has(v)) out[key] = v
+  }
+
+  const arrangement = input.arrangement === 'private' ? 'private' : 'shared'
+  out.arrangement = arrangement
+
+  // Fair-Housing gate: sex/gender preference is only lawful (and only stored) when the member
+  // is sharing a living space. Silently dropped for a private-place search.
+  if (arrangement === 'shared' && typeof input.gender_pref === 'string' && SEEKER_ENUMS.gender_pref.has(input.gender_pref)) {
+    out.gender_pref = input.gender_pref
+  }
+
+  // Age is a SOFT hint only. Stored under age_pref for ranking, never surfaced as a requirement.
+  const ageMin = intInRange(input.age_min, 18, 120)
+  const ageMax = intInRange(input.age_max, 18, 120)
+  if (ageMin != null || ageMax != null) {
+    const lo = ageMin ?? 18
+    const hi = ageMax ?? 120
+    out.age_pref = { min: Math.min(lo, hi), max: Math.max(lo, hi) }
+  }
+
+  return out
+}
+
 export interface SeekerProfile {
   active: boolean
   budgetMinCents: number | null
@@ -188,13 +288,15 @@ export interface SeekerProfile {
   searchLat: number | null
   searchLng: number | null
   searchRadiusM: number
+  /** The lifestyle block (cleanliness/schedule/…), for prefilling the form. */
+  preferences: Record<string, unknown>
 }
 
 /** The caller's seeker profile (to prefill the roommate-match form), or null. */
 export async function getSeekerProfile(profileId: string): Promise<SeekerProfile | null> {
   const { data } = await db()
     .from('housing_seeker_profiles')
-    .select('active, budget_min_cents, budget_max_cents, move_in_from, search_city, search_lat, search_lng, search_radius_m')
+    .select('active, budget_min_cents, budget_max_cents, move_in_from, search_city, search_lat, search_lng, search_radius_m, preferences')
     .eq('profile_id', profileId)
     .maybeSingle()
   if (!data) return null
@@ -208,6 +310,7 @@ export async function getSeekerProfile(profileId: string): Promise<SeekerProfile
     searchLat: (r.search_lat as number) ?? null,
     searchLng: (r.search_lng as number) ?? null,
     searchRadiusM: (r.search_radius_m as number) ?? 25000,
+    preferences: (r.preferences as Record<string, unknown>) ?? {},
   }
 }
 
