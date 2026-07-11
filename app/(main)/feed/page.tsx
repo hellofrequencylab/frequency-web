@@ -6,6 +6,7 @@ import { CaptureBar } from '@/components/feed/capture-bar'
 import { CreateMenu } from '@/components/feed/create-menu'
 import { FeedList } from '@/components/feed/feed-list'
 import { LocalCornerCard } from '@/components/feed/local-corner-card'
+import { HostPromptCard } from '@/components/feed/host-prompt-card'
 import { RomanceStrip } from '@/components/feed/romance-strip'
 import { getLocalActivity } from '@/lib/feed/density'
 import { StreamTemplate } from '@/components/templates/stream-template'
@@ -355,6 +356,19 @@ export default async function FeedPage({
           <div className="mb-4">
             <Suspense fallback={null}>
               <LocalCornerCard viewerProfileId={myProfileId} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* Lone-Wolf -> Local-Host graduation prompt (Beta P2 "Wolf-to-host prompts"):
+            the celebratory "you're ready to start a Circle" ask once a member reaches the
+            host-ready rank, or the "a few people near you are into this" ignition. Inert
+            until platform_flags.beta_host_prompts is on; dismissible + capped so it never
+            nags. Streamed so it never blocks the feed. */}
+        {myProfileId && sort !== 'story' && (
+          <div className="mb-4">
+            <Suspense fallback={null}>
+              <HostPromptCard viewerProfileId={myProfileId} />
             </Suspense>
           </div>
         )}
