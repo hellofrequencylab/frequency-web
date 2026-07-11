@@ -72,8 +72,10 @@ export function EventHeaderControls({
     <div className="space-y-1.5">
       <span className={labelClasses}>Header</span>
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-start">
-        {/* LEFT — cover focus (the crop preview + sliders). Constrained by the grid column, so the
-            preview reads as a compact header crop rather than a full-width band. */}
+        {/* LEFT — cover focus (the draggable crop preview). Constrained by the grid column, so the
+            preview reads as a compact header crop rather than a full-width band. The Vertical +
+            Horizontal sliders are hidden here (showSliders={false}) — the draggable marker, with
+            arrow-key nudging, is the only control, which keeps the rail panel tidy. */}
         {imageUrl ? (
           <ImageFocalPicker
             imageUrl={imageUrl}
@@ -81,6 +83,7 @@ export function EventHeaderControls({
             onChange={onFocusChange}
             label="Cover focus"
             hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
+            showSliders={false}
           />
         ) : (
           <p className="text-2xs text-subtle">

@@ -30,6 +30,7 @@ export function ImageFocalPicker({
   disabled = false,
   label = 'Focal point',
   hint = 'Drag the marker to keep the important part of the photo in frame when it is cropped.',
+  showSliders = true,
   className,
 }: {
   /** The image to preview. Required — the picker is meaningless without it. */
@@ -47,6 +48,10 @@ export function ImageFocalPicker({
   label?: string
   /** Helper line under the control. Pass '' to hide. */
   hint?: string
+  /** Show the Vertical + Horizontal sliders under the drag preview. Off leaves the draggable
+   *  marker (plus arrow-key nudging) as the only control — used where the compact marker is
+   *  enough and the sliders would crowd the panel (the event cover-focus control). */
+  showSliders?: boolean
   className?: string
 }) {
   const { x, y } = objectPositionToXY(value)
@@ -135,7 +140,11 @@ export function ImageFocalPicker({
       <div
         ref={frameRef}
         role="group"
-        aria-label={`${label}: drag to reposition, or use the arrow keys and sliders below`}
+        aria-label={
+          showSliders
+            ? `${label}: drag to reposition, or use the arrow keys and sliders below`
+            : `${label}: drag to reposition, or use the arrow keys`
+        }
         aria-disabled={disabled || undefined}
         tabIndex={disabled ? -1 : 0}
         onPointerDown={onPointerDown}
@@ -170,42 +179,46 @@ export function ImageFocalPicker({
 
       {/* VERTICAL slider — the primary, most-precise control and the accessible fallback for the
           drag target. 0 keeps the TOP of the photo, 100 keeps the BOTTOM. */}
-      <div className="space-y-1">
-        <label htmlFor={vId} className="flex items-center justify-between text-2xs font-medium text-subtle">
-          <span>Vertical focus</span>
-          <span className="tabular-nums">{y}%</span>
-        </label>
-        <input
-          id={vId}
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={y}
-          disabled={disabled}
-          onChange={(e) => emit(x, Number(e.target.value))}
-          className="w-full accent-primary disabled:opacity-50"
-        />
-      </div>
+      {showSliders && (
+        <div className="space-y-1">
+          <label htmlFor={vId} className="flex items-center justify-between text-2xs font-medium text-subtle">
+            <span>Vertical focus</span>
+            <span className="tabular-nums">{y}%</span>
+          </label>
+          <input
+            id={vId}
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={y}
+            disabled={disabled}
+            onChange={(e) => emit(x, Number(e.target.value))}
+            className="w-full accent-primary disabled:opacity-50"
+          />
+        </div>
+      )}
 
       {/* HORIZONTAL slider — secondary, for the rarer case where the crop needs a left/right nudge. */}
-      <div className="space-y-1">
-        <label htmlFor={hId} className="flex items-center justify-between text-2xs font-medium text-subtle">
-          <span>Horizontal focus</span>
-          <span className="tabular-nums">{x}%</span>
-        </label>
-        <input
-          id={hId}
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={x}
-          disabled={disabled}
-          onChange={(e) => emit(Number(e.target.value), y)}
-          className="w-full accent-primary disabled:opacity-50"
-        />
-      </div>
+      {showSliders && (
+        <div className="space-y-1">
+          <label htmlFor={hId} className="flex items-center justify-between text-2xs font-medium text-subtle">
+            <span>Horizontal focus</span>
+            <span className="tabular-nums">{x}%</span>
+          </label>
+          <input
+            id={hId}
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={x}
+            disabled={disabled}
+            onChange={(e) => emit(Number(e.target.value), y)}
+            className="w-full accent-primary disabled:opacity-50"
+          />
+        </div>
+      )}
 
       {hint && <p className="text-2xs text-subtle">{hint}</p>}
     </div>
