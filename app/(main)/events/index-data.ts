@@ -195,6 +195,39 @@ export function formatWhen(iso: string, now: Date) {
   return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} at ${time}`
 }
 
+// Whole-dollar money label — "$20", "$20.50" (cents shown only when non-zero).
+// Brand voice keeps prices plain, so no trailing ".00".
+function usd(cents: number): string {
+  const dollars = cents / 100
+  return cents % 100 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`
+}
+
+type TierPriceRow = {
+  event_id: string
+  pricing_mode: string
+  price_cents: number | null
+  min_cents: number | null
+  suggested_cents: number | null
+}
+
+// The card's price stat — "Free" / "$X" (a single fixed price) / "From $X" (a
+// floor, when the buyer picks among tiers or a pay-what-you-can mode sets a
+// minimum). Active ticket tiers win when present; otherwise the event's flat
+// price_cents (null/0 = free). Mirrors the detail page's pricing read.
+export function eventPriceLabel(flatCents: number | null, tiers: TierPriceRow[]): string {
+  if (tiers.length > 0) {
+    const priced = tiers
+      .map((t) => (t.pricing_mode === 'free' ? 0 : t.price_cents ?? t.min_cents ?? t.suggested_cents ?? 0))
+      .filter((c): c is number => typeof c === 'number' && c > 0)
+    if (priced.length === 0) return 'Free'
+    const min = Math.min(...priced)
+    // "From" whenever there's a choice of tiers or a flexible mode floors the price.
+    const isFloor = tiers.length > 1 || tiers.some((t) => t.pricing_mode !== 'fixed')
+    return isFloor ? `From ${usd(min)}` : usd(min)
+  }
+  return flatCents && flatCents > 0 ? usd(flatCents) : 'Free'
+}
+
 // Coded defaults for the operator-editable content (ADR-180) — shared by the
 // page header and the SEO metadata below.
 export const CONTENT_FALLBACK = {
@@ -237,6 +270,8 @@ export interface EventsIndexData {
   circleNames: Record<string, string>
   coverUrls: Record<string, string>
   rsvpCounts: Record<string, number>
+  /** Per-event price stat for the card — "Free" / "$X" / "From $X". */
+  priceLabels: Record<string, string>
   myRsvps: Set<string>
   /** Empty-state branching: any active facet, and whether the viewer has any scope. */
   filtering: boolean
@@ -432,7 +467,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     .filter((e) => !e.cover_image_path && e.poster_path)
     .map((e) => e.poster_path as string)
 
-  const [circlesRows, posterUrlByPath, rsvpRows, myRsvpRows] = await Promise.all([
+  const [circlesRows, posterUrlByPath, rsvpRows, myRsvpRows, tierRows] = await Promise.all([
     circleScopeIds.length > 0
       ? admin.from('circles').select('id, name, latitude, longitude').in('id', circleScopeIds)
           .then(({ data }) => (data ?? []) as { id: string; name: string; latitude: number | null; longitude: number | null }[])
@@ -446,6 +481,13 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
       ? admin.from('event_rsvps').select('event_id').in('event_id', eventIds).eq('profile_id', myProfileId).eq('status', 'going')
           .then(({ data }) => (data ?? []) as { event_id: string }[])
       : Promise.resolve([] as { event_id: string }[]),
+    // Active ticket tiers for the whole listing in ONE batched read (never N+1) — the
+    // card's "From $X" needs the cheapest tier, and a flat-priced event simply has none.
+    eventIds.length > 0
+      ? admin.from('event_ticket_types').select('event_id, pricing_mode, price_cents, min_cents, suggested_cents')
+          .in('event_id', eventIds).eq('active', true)
+          .then(({ data }) => (data ?? []) as TierPriceRow[])
+      : Promise.resolve([] as TierPriceRow[]),
   ])
 
   // Circle names + coordinates for the circle-scoped events.
@@ -473,6 +515,12 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
   const rsvpCounts: Record<string, number> = {}
   for (const r of rsvpRows) rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1
   const myRsvps = new Set<string>(myRsvpRows.map((r) => r.event_id))
+
+  // Group the batched tiers by event, then resolve each card's price stat once.
+  const tiersByEvent: Record<string, TierPriceRow[]> = {}
+  for (const t of tierRows) (tiersByEvent[t.event_id] ??= []).push(t)
+  const priceLabels: Record<string, string> = {}
+  for (const e of events) priceLabels[e.id] = eventPriceLabel(e.price_cents, tiersByEvent[e.id] ?? [])
 
   // ── Facets (applied server-side; URL-driven so the view stays shareable) ────
   const goingCount = (e: EventRow) => rsvpCounts[e.id] ?? 0
@@ -643,6 +691,7 @@ export async function getEventsIndexData(params: EventsIndexParams): Promise<Eve
     circleNames,
     coverUrls,
     rsvpCounts,
+    priceLabels,
     myRsvps,
     filtering,
     hasAnyScope,
