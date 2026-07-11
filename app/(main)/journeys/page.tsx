@@ -5,7 +5,7 @@ import { NewJourneyButton } from '@/components/studio/journey/new-journey-button
 import { canCreate } from '@/lib/core/load-capabilities'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage } from '@/lib/page-settings/store'
+import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
 
 // The Journeys browse + build page. Module-driven (ADR-270/294): the page resolves its
 // operator-editable header (ADR-180) and composes the IndexTemplate chrome, then renders
@@ -39,7 +39,10 @@ export default async function JourneysPage() {
   // dropped — the page only read the old field). Same source crew/practices use.
   // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
   // section default so the hero band always renders.
-  const bannerImage = (await getPageHeaderImage('/journeys')) ?? heroImage ?? '/images/site/nature-viewing-sunset.jpg'
+  const operatorHero = await getPageHeaderImage('/journeys')
+  const bannerImage = operatorHero ?? heroImage ?? '/images/site/nature-viewing-sunset.jpg'
+  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
+  const bannerFocus = operatorHero ? await getPageHeaderFocus('/journeys') : null
   // Real Crew (or steward/staff) may build a journey; others get the free-beta popup.
   const canBuildJourney = await canCreate('journey.create')
 
@@ -53,6 +56,7 @@ export default async function JourneysPage() {
         { href: '/journeys', label: 'Journeys' },
       ]}
       heroImage={bannerImage}
+      heroFocus={bannerFocus}
       heroOverlay
       title={title}
       description={description}

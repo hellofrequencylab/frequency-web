@@ -8,6 +8,7 @@ import Image from 'next/image'
 // regardless of their copy. Voice-canon copy comes from the caller (no em dashes).
 export function MarketHero({
   image,
+  focal,
   eyebrow,
   title,
   subtitle,
@@ -15,6 +16,9 @@ export function MarketHero({
   action,
 }: {
   image: string
+  /** Focal point for the hero image, a CSS object-position string ("x% y%"). Unset = centered
+   *  (the object-center default). Lets a surface keep the important part of the photo in frame. */
+  focal?: string | null
   eyebrow?: string
   title: React.ReactNode
   subtitle?: string
@@ -24,7 +28,15 @@ export function MarketHero({
 }) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border">
-      <Image src={image} alt="" fill preload sizes="100vw" className="object-cover object-center" />
+      <Image
+        src={image}
+        alt=""
+        fill
+        preload
+        sizes="100vw"
+        style={focal ? { objectPosition: focal } : undefined}
+        className={`object-cover ${focal ? '' : 'object-center'}`}
+      />
       <div
         className="absolute inset-0"
         style={{

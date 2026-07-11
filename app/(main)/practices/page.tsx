@@ -8,7 +8,7 @@ import { IndexTemplate } from '@/components/templates/index-template'
 import { PageContents } from '@/components/templates/page-contents'
 import { PageModules } from '@/components/widgets/page-modules'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage } from '@/lib/page-settings/store'
+import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
 
 // Practices (ADR-270/294). The whole interior is module-driven: the personal blocks (stats ·
 // activity · Pillar balance · your practices) AND the faceted Practice Library are layout modules
@@ -108,7 +108,10 @@ export default async function PracticesPage({
   // page_settings field), mirroring how /journeys resolves its banner.
   // The uniform overlay Hero Header (the Business Spaces grammar): the operator image wins, else a calm
   // section default so the hero band always renders. Swap the default by uploading a header image.
-  const heroImage = (await getPageHeaderImage('/practices')) ?? contentHero ?? '/images/site/meditation-circle.jpg'
+  const operatorHero = await getPageHeaderImage('/practices')
+  const heroImage = operatorHero ?? contentHero ?? '/images/site/meditation-circle.jpg'
+  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
+  const heroFocus = operatorHero ? await getPageHeaderFocus('/practices') : null
 
   return (
     <IndexTemplate
@@ -171,6 +174,7 @@ export default async function PracticesPage({
         { href: '/practices', label: 'Practices' },
       ]}
       heroImage={heroImage}
+      heroFocus={heroFocus}
       heroOverlay
     >
       {/* Jump between your stuff and the library. The personal entries point at module-driven

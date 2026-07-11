@@ -4,6 +4,8 @@
 // We restrict results to populated places (city/locality/district) so "start
 // typing your city and it autocompletes" returns places, not street addresses.
 
+import { distanceKm } from '@/lib/distance'
+
 export type PlaceSuggestion = {
   /** Human label, e.g. "Encinitas, California, United States". */
   label: string
@@ -152,6 +154,17 @@ async function photonAddressPass(
  *  tight enough to keep a far-flung same-named street out of the local pass. */
 const LOCAL_BOX_HALF_DEG = 0.9
 
+/** Closest-first: order results by great-circle distance from the bias (ascending). Photon's own
+ *  ranking is a soft blend of text match + proximity, so a nearer address can still land below a
+ *  better-spelled far one — this makes "the closest result is first" a hard guarantee. Returns a
+ *  new array; leaves the input untouched when there is no bias. */
+function sortByProximity(list: PlaceResult[], bias: { lat: number; lng: number } | null): PlaceResult[] {
+  if (!bias) return list
+  return [...list].sort(
+    (a, b) => distanceKm(bias.lat, bias.lng, a.lat, a.lng) - distanceKm(bias.lat, bias.lng, b.lat, b.lng),
+  )
+}
+
 /**
  * Address / venue typeahead. Unlike searchPlaces (populated places only), this lets
  * Photon return venues, POIs, and street addresses too, and surfaces the structured
@@ -159,11 +172,13 @@ const LOCAL_BOX_HALF_DEG = 0.9
  * code AND drop the map pin. Same keyless Photon endpoint, same fail-quiet contract.
  *
  * LOCAL-FIRST (Event settings overhaul): people almost always post local events, so when we
- * have a bias (the event's pin, else the viewer's home) we run a LOCAL-bounded pass first — a
- * bbox drawn around the bias — so a typed local street ("6882 Embarcadero Ln, Carlsbad") returns
- * the nearby address instead of a same-named street in France or India. Only if the local pass
- * finds nothing do we fall back to a worldwide (unbounded) pass, keeping the bias so results
- * still rank near home. With no bias at all it's a single worldwide pass (unchanged behaviour).
+ * have a bias (the device's location, the event's pin, else the viewer's home) we run a
+ * LOCAL-bounded pass first — a bbox drawn around the bias — so a typed local street
+ * ("6882 Embarcadero Ln, Carlsbad") returns the nearby address instead of a same-named street in
+ * France or India. Only if the local pass finds nothing do we fall back to a worldwide (unbounded)
+ * pass, keeping the bias so results still rank near home. Either way, a present bias re-sorts the
+ * results CLOSEST-first (Photon's soft ranking alone can bury a nearer address). With no bias at
+ * all it's a single worldwide pass in Photon's order (unchanged behaviour).
  */
 export async function searchAddresses(
   query: string,
@@ -185,12 +200,12 @@ export async function searchAddresses(
     const south = Math.max(-90, b.lat - LOCAL_BOX_HALF_DEG)
     const north = Math.min(90, b.lat + LOCAL_BOX_HALF_DEG)
     const local = await photonAddressPass(q, b, [west, south, east, north], signal)
-    if (local.length > 0) return local
+    if (local.length > 0) return sortByProximity(local, b)
   }
 
   // WORLDWIDE fallback (or the only pass when there is no bias). Bias, when present, still ranks
-  // near-home results first.
-  return photonAddressPass(q, b, null, signal)
+  // near-home results first — and we re-sort closest-first so the nearest match leads.
+  return sortByProximity(await photonAddressPass(q, b, null, signal), b)
 }
 
 // Metres → a friendly distance string for circle results.

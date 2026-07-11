@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
+import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { isError } from '@/lib/action-result'
 import { getPageSeoForEditor, savePageSeo } from '@/lib/page-settings/actions'
 import type { SeoPane } from '@/lib/page-settings/seo'
@@ -26,6 +28,7 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
   const [description, setDescription] = useState('')
   const [ogImage, setOgImage] = useState('')
   const [headerImage, setHeaderImage] = useState('')
+  const [headerFocal, setHeaderFocal] = useState(DEFAULT_OBJECT_POSITION)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +43,7 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
         setDescription(d.seo_description ?? '')
         setOgImage(d.og_image_url ?? '')
         setHeaderImage(d.header_image_url ?? '')
+        setHeaderFocal(d.header_image_focal ?? DEFAULT_OBJECT_POSITION)
         setLoading(false)
       })
       .catch(() => active && setLoading(false))
@@ -53,7 +57,7 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
     setSaved(false)
     startTransition(async () => {
       // Each pane saves only the fields it owns; the action merges them over the shared row.
-      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage }, spaceId, pane)
+      const r = await savePageSeo(pathname, { title, description, ogImage, headerImage, headerFocal }, spaceId, pane)
       if (isError(r)) setError(r.error)
       else {
         setSaved(true)
@@ -92,6 +96,17 @@ export function SeoEditor({ spaceId, pane = 'meta' }: { spaceId?: string; pane?:
               folder="page-headers"
               disabled={pending}
             />
+            {/* Focal point — only meaningful once there IS a header image to reposition. */}
+            {headerImage && (
+              <ImageFocalPicker
+                imageUrl={headerImage}
+                value={headerFocal}
+                onChange={setHeaderFocal}
+                label="Header focus"
+                hint="Drag to choose which part of the banner stays in frame where it is cropped. Vertical matters most. Save to apply."
+                disabled={pending}
+              />
+            )}
           </>
         ) : (
           <>

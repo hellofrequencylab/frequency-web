@@ -26,6 +26,7 @@ export function IndexTemplate({
   toolbar,
   trail,
   heroImage,
+  heroFocus,
   heroOverlay = false,
   heroSize = 'standard',
   underHero,
@@ -49,6 +50,10 @@ export function IndexTemplate({
   /** Operator hero image URL. Rendered as the STANDARD cropped header banner below the
    *  breadcrumb (16:9-ish, object-cover) so every index reads the same. Renders only when set. */
   heroImage?: string | null
+  /** Focal point for the hero image, a CSS object-position string ("x% y%") from the operator's
+   *  focal-point picker. Applied to the hero <img> in BOTH the banner and overlay branches so the
+   *  important part of the photo survives the crop. Unset = centered (today's behavior). */
+  heroFocus?: string | null
   /** OVERLAY hero mode: the title / description / action render ON the hero image over an ink
    *  legibility scrim (the Space-profile hero grammar), instead of the banner-above-heading
    *  lockup. Only applies when `heroImage` is set; the admin-bar rule still draws below, so the
@@ -86,7 +91,13 @@ export function IndexTemplate({
           {/* Raw <img> (not next/image) so an arbitrary operator URL on a non-whitelisted host
               still renders; fetchPriority high gives this above-the-fold hero an LCP hint. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={heroImage} alt="" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
+          <img
+            src={heroImage}
+            alt=""
+            fetchPriority="high"
+            style={heroFocus ? { objectPosition: heroFocus } : undefined}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/35 to-transparent" aria-hidden />
           <div className={`relative flex ${bandMinH} flex-col justify-end gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8`}>
             <div className="min-w-0">
@@ -136,6 +147,7 @@ export function IndexTemplate({
               src={heroImage}
               alt=""
               fetchPriority="high"
+              style={heroFocus ? { objectPosition: heroFocus } : undefined}
               className="mb-6 mt-3 h-44 w-full rounded-2xl border border-border object-cover sm:h-56"
             />
           )}
