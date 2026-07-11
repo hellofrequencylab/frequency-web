@@ -16,9 +16,11 @@ import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
+import { VariantPicker } from '@/components/marketplace/variant-picker'
 import { EventGallery } from '@/components/events/event-gallery'
 import { BuyButton } from '../../marketplace/buy-button'
-import { isBookableServiceKind } from '@/lib/commerce/types'
+import { listActiveVariants } from '@/lib/commerce/variants'
+import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
 
 export const dynamic = 'force-dynamic'
@@ -69,7 +71,22 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   if (product.status !== 'active' && !isOwner) notFound()
 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
-  const soldOut = product.status === 'sold_out' || product.stock === 0
+
+  // Purchasable variants (Etsy-Grade Phase 2): only a plain product carries them (a service books, never
+  // buys). With variants the buyer picks one (the picker sets the price + availability); the price label
+  // reads "From <min variant price>" and sold-out means EVERY tracked variant is out (not product.stock).
+  const variants = !isService ? await listActiveVariants(product.id) : []
+  const hasVariants = variants.length > 0
+  const minVariantPrice = hasVariants
+    ? Math.min(...variants.map((v) => effectiveVariantPriceCents({ priceCents: product.priceCents }, v)))
+    : product.priceCents
+  const allVariantsSoldOut =
+    hasVariants &&
+    variants.every((v) => {
+      const s = effectiveVariantStock(v)
+      return s != null && s <= 0
+    })
+  const soldOut = product.status === 'sold_out' || (hasVariants ? allVariantsSoldOut : product.stock === 0)
 
   // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
   // individual maker listing is CONNECT-ONLY — the buyer messages the seller instead of a Buy button.
@@ -84,7 +101,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
 
   const subtitle = isService
     ? servicePriceLabel(product.priceCents, product.currency, svc)
-    : usd(product.priceCents, product.currency)
+    : hasVariants
+      ? `From ${usd(minVariantPrice, product.currency)}`
+      : usd(product.priceCents, product.currency)
 
   // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
   // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
@@ -160,6 +179,13 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               ) : (
                 <p className="text-sm text-subtle">Message the seller to arrange this.</p>
               )
+            ) : hasVariants ? (
+              <VariantPicker
+                productId={product.id}
+                priceCents={product.priceCents}
+                currency={product.currency}
+                variants={variants}
+              />
             ) : (
               <BuyButton productId={product.id} />
             )}

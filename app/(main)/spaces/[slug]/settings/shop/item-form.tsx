@@ -5,7 +5,14 @@ import { Sparkles, X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
-import type { ProductCondition, ProductKind, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
+import type {
+  CommerceVariant,
+  ProductCondition,
+  ProductKind,
+  ServiceConfig,
+  ServicePriceModel,
+  VariantInput,
+} from '@/lib/commerce/types'
 import { createSpaceProductAction, updateProductAction, draftListingCopyAction } from './shop-actions'
 
 // Gallery photos are stored as event-media storage PATHS but read back as resolved public URLs
@@ -41,6 +48,42 @@ export interface ItemFormProduct {
   images: string[]
   category: string | null
   tags: string[]
+  /** Existing variants (Etsy-Grade Phase 2), seeded into the optional variants editor on edit. */
+  variants?: CommerceVariant[]
+}
+
+// A single client-side variant row in the editor. Prices/stock are kept as strings so a blank field
+// (inherit price / untracked stock) round-trips cleanly.
+interface VariantRow {
+  id?: string
+  name: string
+  opt1: string
+  opt2: string
+  price: string
+  stock: string
+  sku: string
+}
+
+/** Derive up to two option dimension names from an existing variant set (the union of option keys). */
+function seedDimensions(variants: CommerceVariant[]): [string, string] {
+  const keys: string[] = []
+  for (const v of variants) {
+    for (const k of Object.keys(v.options ?? {})) if (!keys.includes(k)) keys.push(k)
+  }
+  return [keys[0] ?? '', keys[1] ?? '']
+}
+
+/** Seed editor rows from existing variants, aligning each option value to the two dimension columns. */
+function seedRows(variants: CommerceVariant[], d1: string, d2: string): VariantRow[] {
+  return variants.map((v) => ({
+    id: v.id,
+    name: v.name,
+    opt1: d1 ? (v.options?.[d1] ?? '') : '',
+    opt2: d2 ? (v.options?.[d2] ?? '') : '',
+    price: v.priceCents != null ? String(v.priceCents / 100) : '',
+    stock: v.stock != null ? String(v.stock) : '',
+    sku: v.sku ?? '',
+  }))
 }
 
 const PRICE_MODEL_LABEL: Record<ServicePriceModel, string> = {
@@ -92,6 +135,51 @@ export function ItemForm({
   const [pending, startTransition] = useTransition()
   const [drafting, setDrafting] = useState(false)
 
+  // Optional variants editor (Etsy-Grade Phase 2). Two option dimension names + a row per variant.
+  const initialDims = seedDimensions(product?.variants ?? [])
+  const [optName1, setOptName1] = useState(initialDims[0])
+  const [optName2, setOptName2] = useState(initialDims[1])
+  const [variantRows, setVariantRows] = useState<VariantRow[]>(() =>
+    seedRows(product?.variants ?? [], initialDims[0], initialDims[1]),
+  )
+
+  function addVariantRow() {
+    setVariantRows((rows) => [...rows, { name: '', opt1: '', opt2: '', price: '', stock: '', sku: '' }])
+  }
+  function updateVariantRow(idx: number, patch: Partial<VariantRow>) {
+    setVariantRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
+  }
+  function removeVariantRow(idx: number) {
+    setVariantRows((rows) => rows.filter((_, i) => i !== idx))
+  }
+
+  /** Build the sanitized VariantInput[] the actions expect. A blank price = inherit (null); a blank
+   *  stock = untracked (null). Nameless rows are dropped. Option values map onto the two dimension names. */
+  function buildVariants(): VariantInput[] {
+    const d1 = optName1.trim()
+    const d2 = optName2.trim()
+    return variantRows
+      .map((r, i): VariantInput | null => {
+        const name = r.name.trim()
+        if (!name) return null
+        const options: Record<string, string> = {}
+        if (d1 && r.opt1.trim()) options[d1] = r.opt1.trim()
+        if (d2 && r.opt2.trim()) options[d2] = r.opt2.trim()
+        const priceNum = r.price.trim() === '' ? null : Number(r.price)
+        const stockNum = r.stock.trim() === '' ? null : Number(r.stock)
+        return {
+          id: r.id,
+          name,
+          options,
+          priceCents: priceNum != null && Number.isFinite(priceNum) && priceNum >= 0 ? Math.round(priceNum * 100) : null,
+          stock: stockNum != null && Number.isFinite(stockNum) && stockNum >= 0 ? Math.floor(stockNum) : null,
+          sku: r.sku.trim() || null,
+          sortOrder: i,
+        }
+      })
+      .filter((v): v is VariantInput => v !== null)
+  }
+
   function commitTags(next: string) {
     setTags(normalizeTags([...tags, ...next.split(',')]))
     setTagDraft('')
@@ -130,6 +218,8 @@ export function ItemForm({
     // Gallery paths + tags are React state (not native inputs), so attach them for the create action.
     fd.set('images', JSON.stringify(images))
     fd.set('tags', JSON.stringify(tags))
+    // Variants are React state too; attach the set for the create action (a product only).
+    fd.set('variants', JSON.stringify(kind === 'product' ? buildVariants() : []))
     startTransition(async () => {
       if (mode === 'create') {
         await createSpaceProductAction(slug, fd)
@@ -141,20 +231,29 @@ export function ItemForm({
         setImages([])
         setCategory('')
         setTags([])
+        setOptName1('')
+        setOptName2('')
+        setVariantRows([])
       } else if (product) {
         const priceDollars = Number(fd.get('price'))
-        await updateProductAction(slug, product.id, {
-          title,
-          description: description || null,
-          priceCents: Number.isFinite(priceDollars) && priceDollars >= 0 ? Math.round(priceDollars * 100) : undefined,
-          productKind: toProductKind(kind),
-          // Condition applies to a product; clear it when the item is a service or ticket.
-          condition: kind === 'product' ? condition : null,
-          category: category || null,
-          images,
-          tags,
-          service: isService ? buildServiceConfig(fd) : undefined,
-        })
+        await updateProductAction(
+          slug,
+          product.id,
+          {
+            title,
+            description: description || null,
+            priceCents: Number.isFinite(priceDollars) && priceDollars >= 0 ? Math.round(priceDollars * 100) : undefined,
+            productKind: toProductKind(kind),
+            // Condition applies to a product; clear it when the item is a service or ticket.
+            condition: kind === 'product' ? condition : null,
+            category: category || null,
+            images,
+            tags,
+            service: isService ? buildServiceConfig(fd) : undefined,
+          },
+          // A product replaces its variant set; a service/ticket clears any variants ([]).
+          kind === 'product' ? buildVariants() : [],
+        )
       }
       onDone?.()
     })
@@ -355,6 +454,110 @@ export function ItemForm({
           <p className="mt-1 text-xs text-subtle">Enter or comma to add. Up to 12.</p>
         </div>
       </div>
+
+      {kind === 'product' && (
+        <fieldset className="space-y-3 rounded-xl border border-border/70 p-3">
+          <legend className="px-1 text-xs text-subtle">Variants (optional)</legend>
+          <p className="text-xs text-muted">
+            Add options like size or color. Leave price blank to use the item price. Leave stock blank for
+            unlimited.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor={`optName1-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+                Option 1 name
+              </label>
+              <input
+                id={`optName1-${mode}-${product?.id ?? 'new'}`}
+                className={FIELD}
+                placeholder="e.g. Size"
+                value={optName1}
+                onChange={(e) => setOptName1(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor={`optName2-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+                Option 2 name
+              </label>
+              <input
+                id={`optName2-${mode}-${product?.id ?? 'new'}`}
+                className={FIELD}
+                placeholder="e.g. Color"
+                value={optName2}
+                onChange={(e) => setOptName2(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {variantRows.map((row, idx) => (
+            <div key={idx} className="space-y-2 rounded-lg border border-border/60 bg-surface p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-subtle">Variant {idx + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => removeVariantRow(idx)}
+                  aria-label={`Remove variant ${idx + 1}`}
+                  className="text-muted transition-colors hover:text-text"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <input
+                className={FIELD}
+                placeholder="Name, e.g. Small / Blue"
+                value={row.name}
+                onChange={(e) => updateVariantRow(idx, { name: e.target.value })}
+              />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <input
+                  className={FIELD}
+                  placeholder={optName1.trim() || 'Option 1'}
+                  value={row.opt1}
+                  onChange={(e) => updateVariantRow(idx, { opt1: e.target.value })}
+                />
+                <input
+                  className={FIELD}
+                  placeholder={optName2.trim() || 'Option 2'}
+                  value={row.opt2}
+                  onChange={(e) => updateVariantRow(idx, { opt2: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className={FIELD}
+                  placeholder="Price (USD)"
+                  value={row.price}
+                  onChange={(e) => updateVariantRow(idx, { price: e.target.value })}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  className={FIELD}
+                  placeholder="Stock"
+                  value={row.stock}
+                  onChange={(e) => updateVariantRow(idx, { stock: e.target.value })}
+                />
+                <input
+                  className={FIELD}
+                  placeholder="SKU"
+                  value={row.sku}
+                  onChange={(e) => updateVariantRow(idx, { sku: e.target.value })}
+                />
+              </div>
+            </div>
+          ))}
+
+          <button type="button" onClick={addVariantRow} className={buttonClasses('secondary', 'sm')}>
+            Add a variant
+          </button>
+        </fieldset>
+      )}
 
       {isService && (
         <fieldset className="space-y-3 rounded-xl border border-border/70 p-3">

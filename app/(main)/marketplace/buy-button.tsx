@@ -8,7 +8,18 @@ import { startCheckoutAction } from './commerce-actions'
 // Buy control for a commerce product (maker / shop). Calls the checkout action and
 // hands off to Stripe Checkout; surfaces the friendly error inline when payments
 // aren't on yet (billing off) or the seller isn't payout-ready.
-export function BuyButton({ productId, label = 'Buy now' }: { productId: string; label?: string }) {
+export function BuyButton({
+  productId,
+  variantId,
+  label = 'Buy now',
+  disabled = false,
+}: {
+  productId: string
+  /** Optional selected variant (Etsy-Grade Phase 2). Passed through to checkout. */
+  variantId?: string | null
+  label?: string
+  disabled?: boolean
+}) {
   const [pending, start] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -16,12 +27,12 @@ export function BuyButton({ productId, label = 'Buy now' }: { productId: string;
     <div>
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || disabled}
         className={buttonClasses('primary', 'md')}
         onClick={() =>
           start(async () => {
             setError(null)
-            const res = await startCheckoutAction(productId)
+            const res = await startCheckoutAction(productId, variantId)
             if (res.url) window.location.href = res.url
             else setError(res.error ?? 'Could not start checkout.')
           })

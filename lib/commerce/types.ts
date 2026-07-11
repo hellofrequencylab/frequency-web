@@ -74,6 +74,57 @@ export interface CheckoutInput {
   shipping?: Record<string, unknown>
 }
 
+// ── Variants (Etsy-Grade Phase 2) ───────────────────────────────────────────
+// A product may have 0..N variants (e.g. "Small / Blue"). A plain product with no
+// variants keeps its single price + single stock and behaves exactly as before.
+
+/** A single purchasable variant of a product. `priceCents` null = inherit the product price;
+ *  `stock` null = untracked / unlimited (does NOT inherit product stock — the variant governs). */
+export interface CommerceVariant {
+  id: string
+  productId: string
+  /** Human label, e.g. "Small / Blue" (snapshotted onto the order item at purchase). */
+  name: string
+  /** Structured option dimensions, e.g. { Size: 'S', Color: 'Blue' } (up to ~2 dimensions). */
+  options: Record<string, string>
+  /** null = inherit the product price; a number = this variant's own price. */
+  priceCents: number | null
+  /** null = untracked / unlimited; a number = tracked stock. */
+  stock: number | null
+  sku: string | null
+  sortOrder: number
+  active: boolean
+  createdAt: string
+}
+
+/** An authoring-side variant row (create or edit). An `id` marks an existing row to update;
+ *  no `id` inserts a new one. Blank price/stock map to null (inherit price / untracked stock). */
+export interface VariantInput {
+  id?: string
+  name: string
+  options?: Record<string, string>
+  priceCents?: number | null
+  stock?: number | null
+  sku?: string | null
+  sortOrder?: number
+  active?: boolean
+}
+
+/** The price a buyer pays for this variant: the variant's own price, or the product price when the
+ *  variant does not override it (priceCents null = inherit). PURE. */
+export function effectiveVariantPriceCents(
+  product: { priceCents: number },
+  variant: { priceCents: number | null },
+): number {
+  return variant.priceCents ?? product.priceCents
+}
+
+/** The quantity available for this variant. A variant governs its OWN stock: `stock` null = untracked
+ *  (unlimited), a number = that many. It never falls back to the product's stock (unlike price). PURE. */
+export function effectiveVariantStock(variant: { stock: number | null }): number | null {
+  return variant.stock
+}
+
 // ── Market grouping (ADR-596) ──────────────────────────────────────────────────────────────
 // The Market umbrella surface groups every listing by TYPE into three rails. The grouping is
 // derived from the existing `product_kind` discriminator (no new column): the schema already
