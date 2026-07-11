@@ -18,6 +18,13 @@ import { eventBlurb } from '@/lib/ai/event-blurb'
 import { aiAvailable } from '@/lib/ai/usage'
 import { getEventsIndexData, CONTENT_FALLBACK, type EventRow } from './index-data'
 
+// The browse grid degrades on CONTAINER width, not viewport — so it thins to two
+// columns (then one) inside the rail-narrowed main column and only opens to four
+// on a genuinely wide column. Every event lane composes this one class.
+const EVENT_GRID = 'grid grid-cols-1 gap-4 @lg:grid-cols-2 @4xl:grid-cols-4'
+// The highlight lanes ("You're going" / "For you") stay a calmer two-up.
+const EVENT_GRID_TWO = 'grid grid-cols-1 gap-4 @lg:grid-cols-2'
+
 // Operator-set title/description also drive <title> + og/twitter cards (PX.2).
 export function generateMetadata() {
   return pageContentMetadata('/events', CONTENT_FALLBACK)
@@ -183,7 +190,8 @@ export default async function EventsPage({
         {goingEvents.length > 0 && (
           <section id="events-going" className="scroll-mt-20">
             <SectionHeader title="You're going" count={goingEvents.length} />
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="@container">
+              <div className={EVENT_GRID_TWO}>
               {goingEvents.map((event) => (
                 <EventCard
                   key={event.id}
@@ -196,6 +204,7 @@ export default async function EventsPage({
                   canRsvp={!!myProfileId}
                 />
               ))}
+              </div>
             </div>
           </section>
         )}
@@ -256,7 +265,8 @@ export default async function EventsPage({
             // Map/list toggle (Events B-4): the list is the default; the map is a
             // lazily-mounted client island plotting in-person events at city level.
             <EventsMapToggle pins={mapPins}>
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <div className="@container">
+                <div className={EVENT_GRID}>
                 {sortedEvents.map((event) => (
                   <EventCard
                     key={event.id}
@@ -269,6 +279,7 @@ export default async function EventsPage({
                     canRsvp={!!myProfileId}
                   />
                 ))}
+                </div>
               </div>
             </EventsMapToggle>
           )}
@@ -330,7 +341,8 @@ async function ForYouLane({
       <p className="-mt-2 mb-3 text-xs text-muted">
         Picked from your circles, the people you know, and what’s near you.
       </p>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="@container">
+        <div className={EVENT_GRID}>
         {forYouEvents.map((event) => (
           <EventCard
             key={event.id}
@@ -344,6 +356,7 @@ async function ForYouLane({
             blurb={forYouBlurbs[event.id]}
           />
         ))}
+        </div>
       </div>
     </section>
   )
