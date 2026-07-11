@@ -18,7 +18,7 @@ import {
 } from '@/lib/commerce/products'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
-import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
+import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
@@ -58,6 +58,13 @@ function asPriceModel(raw: unknown): ServicePriceModel | undefined {
   return v === 'fixed' || v === 'from' || v === 'free' || v === 'contact' ? v : undefined
 }
 
+/** Narrow a raw form value to a ProductCondition, or null (default-deny). A Business Space may list
+ *  New or Used (R3), so both pass. */
+function asCondition(raw: unknown): ProductCondition | null {
+  const v = String(raw ?? '')
+  return v === 'new' || v === 'used' ? v : null
+}
+
 /** Build the metadata.service ServiceConfig from the form (service items only): the price model,
  *  the session length + deposit, and the cancellation/no-show policy. */
 function serviceConfigFromForm(formData: FormData): ServiceConfig | null {
@@ -90,6 +97,8 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
   const kind = String(formData.get('kind') ?? 'product')
   const { productKind, vertical } = kindToCommerce(kind)
   const service = productKind === 'service' ? serviceConfigFromForm(formData) : null
+  // Condition applies to a product only (R3); a service/ticket carries none.
+  const condition = productKind === 'physical' ? asCondition(formData.get('condition')) : null
 
   const product = await createProduct({
     ownerKind: 'space',
@@ -101,6 +110,7 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
+    condition,
     // A service books against the Space's own availability calendar (Phase 4, ADR-596).
     bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
     // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.

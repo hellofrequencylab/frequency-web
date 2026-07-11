@@ -6,6 +6,7 @@ import { getMyProfileId, getCallerProfile } from '@/lib/auth'
 import { isPaid } from '@/lib/core/entitlement'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
+import { canListNew } from '@/lib/commerce/selling'
 import type { ProductStatus } from '@/lib/commerce/types'
 
 // Commerce actions (Makers + Shop, ADR-39X). Selling = createProduct on the commerce
@@ -26,6 +27,11 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   const priceDollars = Number(formData.get('price'))
   if (!title || !Number.isFinite(priceDollars) || priceDollars < 0) return
 
+  // R3 (Phase 0), fail-closed: an individual ('profile') may list USED only. Listing New is a Business
+  // feature, so a 'new' submission is rejected (the form disables it) and sent to the Business path;
+  // everything an individual lists stores as 'used'. canListNew is the single source of truth.
+  if (String(formData.get('condition') ?? 'used') === 'new' && !canListNew('profile')) redirect('/spaces/new')
+
   const product = await createProduct({
     ownerKind: 'profile',
     ownerProfileId: profileId,
@@ -34,6 +40,8 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     description: (formData.get('description') as string) || null,
     category: (formData.get('category') as string) || null,
     priceCents: Math.round(priceDollars * 100),
+    // Individuals list used items (R3); New is a Business feature, rejected above.
+    condition: 'used',
     // A member product IS a Market listing (the maker path implicitly opts into the umbrella, ADR-596).
     marketPublished: true,
   })

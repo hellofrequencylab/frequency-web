@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition, type FormEvent } from 'react'
 import { Sparkles } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
-import type { ProductKind, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
+import type { ProductCondition, ProductKind, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
 import { createSpaceProductAction, updateProductAction, draftListingCopyAction } from './shop-actions'
 
 // The Catalog item authoring form (ADR-596, findings #3/#5/F5). One client form serves both create and
@@ -24,6 +24,7 @@ export interface ItemFormProduct {
   description: string | null
   priceCents: number
   productKind: ProductKind
+  condition: ProductCondition | null
   service: ServiceConfig | null
 }
 
@@ -66,6 +67,7 @@ export function ItemForm({
   const formRef = useRef<HTMLFormElement>(null)
   const [kind, setKind] = useState<FormKind>(product ? toFormKind(product.productKind) : 'product')
   const [priceModel, setPriceModel] = useState<ServicePriceModel>(product?.service?.priceModel ?? 'fixed')
+  const [condition, setCondition] = useState<ProductCondition>(product?.condition ?? 'used')
   const [title, setTitle] = useState(product?.title ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [pending, startTransition] = useTransition()
@@ -107,6 +109,8 @@ export function ItemForm({
           description: description || null,
           priceCents: Number.isFinite(priceDollars) && priceDollars >= 0 ? Math.round(priceDollars * 100) : undefined,
           productKind: toProductKind(kind),
+          // Condition applies to a product; clear it when the item is a service or ticket.
+          condition: kind === 'product' ? condition : null,
           service: isService ? buildServiceConfig(fd) : undefined,
         })
       }
@@ -179,6 +183,25 @@ export function ItemForm({
           )}
         </div>
       </div>
+
+      {kind === 'product' && (
+        <div>
+          <label htmlFor={`condition-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+            Condition
+          </label>
+          {/* Business Spaces may list New or Used (R3). */}
+          <select
+            id={`condition-${mode}-${product?.id ?? 'new'}`}
+            name="condition"
+            className={FIELD}
+            value={condition}
+            onChange={(e) => setCondition(e.target.value as ProductCondition)}
+          >
+            <option value="new">New</option>
+            <option value="used">Used</option>
+          </select>
+        </div>
+      )}
 
       <div>
         <div className="mb-1 flex items-center justify-between gap-2">

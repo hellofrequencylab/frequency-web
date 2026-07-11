@@ -5,7 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
-import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig } from './types'
+import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig, ProductCondition } from './types'
 import { kindsForGroup } from './types'
 
 /** Drop undefined keys from a ServiceConfig so a partial edit never writes `undefined` into the JSON
@@ -30,7 +30,7 @@ function db(): SupabaseClient {
 }
 
 const PRODUCT_COLS =
-  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, market_published, metadata, is_demo, created_at, updated_at'
+  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, condition, market_published, metadata, is_demo, created_at, updated_at'
 
 function rowToProduct(r: Record<string, unknown>): CommerceProduct {
   return {
@@ -50,6 +50,7 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     category: (r.category as string) ?? null,
     status: r.status as ProductStatus,
     bookingSpaceId: (r.booking_space_id as string) ?? null,
+    condition: (r.condition as CommerceProduct['condition']) ?? null,
     marketPublished: !!r.market_published,
     metadata: (r.metadata as Record<string, unknown>) ?? {},
     isDemo: !!r.is_demo,
@@ -108,6 +109,7 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
       stock: input.stock ?? null,
       category: input.category ?? null,
       booking_space_id: input.bookingSpaceId ?? null,
+      condition: input.condition ?? null,
       market_published: input.marketPublished ?? false,
       // Persist the full service quote + policy (priceModel, cancellation/no-show fields, duration,
       // deposit) under metadata.service when present, so a service can be authored in one write.
@@ -222,6 +224,8 @@ export interface ProductPatch {
   images?: string[]
   /** The adaptive editor may change the item type (product | service | ticket → product_kind). */
   productKind?: CommerceProduct['productKind']
+  /** New or Used (Phase 0). null clears it (e.g. an item switched to a service). */
+  condition?: ProductCondition | null
   /** Partial metadata to MERGE over the row's existing metadata (never clobbers sibling keys such
    *  as the backfill 'source' marker) — e.g. `{ service: ServiceConfig }`. */
   metadata?: Record<string, unknown>
@@ -243,6 +247,7 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.stock !== undefined) update.stock = patch.stock ?? null
   if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
   if (patch.productKind !== undefined) update.product_kind = patch.productKind
+  if (patch.condition !== undefined) update.condition = patch.condition ?? null
   if (patch.metadata !== undefined || patch.service !== undefined) {
     // Merge over existing metadata so we never clobber sibling keys (backfill 'source', etc.). One
     // read serves both `metadata` and the typed `service` convenience.
@@ -264,6 +269,20 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await db().from('commerce_products').delete().eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+/** The public contact card (handle + display name) for a profile-owned listing's seller — for the
+ *  connect-only "Contact seller" action (Phase 0, R2), where an individual maker can't take in-app
+ *  payment and the buyer reaches out instead. Null for a non-profile listing or a missing/handle-less
+ *  profile. */
+export async function getSellerContact(
+  profileId: string | null,
+): Promise<{ handle: string; displayName: string } | null> {
+  if (!profileId) return null
+  const { data } = await db().from('profiles').select('handle, display_name').eq('id', profileId).maybeSingle()
+  const row = data as { handle: string | null; display_name: string | null } | null
+  if (!row?.handle) return null
+  return { handle: row.handle, displayName: row.display_name ?? 'the seller' }
 }
 
 /** Ownership gate for app-code authz: the profile that owns this product (or null). */

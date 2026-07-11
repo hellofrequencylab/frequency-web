@@ -175,6 +175,7 @@ export async function listTicketedEventProjections(
         category: ownerLabel,
         status: 'active',
         bookingSpaceId: null,
+        condition: null,
         marketPublished: true,
         metadata: {},
         isDemo: !!e.is_demo,

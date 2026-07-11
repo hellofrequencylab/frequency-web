@@ -17,6 +17,7 @@ import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
+import { canTakePayments } from './selling'
 import type { CheckoutInput, ServiceConfig } from './types'
 
 function db(): SupabaseClient {
@@ -98,6 +99,13 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     return { error: 'Please check out items from one seller at a time.' }
   }
   const seller = products[0]
+
+  // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
+  // individual maker ('profile') listing is connect-only — never open a Stripe session for it; the
+  // buyer contacts the seller instead. Single source of truth: canTakePayments.
+  if (!canTakePayments(seller.owner_kind)) {
+    return { error: 'This seller takes contact only. Message them to arrange the sale.' }
+  }
 
   const gross = input.items.reduce((sum, it) => {
     const p = products.find((x) => x.id === it.productId)!

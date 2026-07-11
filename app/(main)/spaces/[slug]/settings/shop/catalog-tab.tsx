@@ -148,6 +148,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                         description: p.description,
                         priceCents: p.priceCents,
                         productKind: p.productKind,
+                        condition: p.condition,
                         service: svc,
                       }}
                     />

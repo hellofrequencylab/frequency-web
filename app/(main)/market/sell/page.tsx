@@ -93,6 +93,26 @@ export default async function MarketSellPage() {
           </div>
         </div>
         <div>
+          <label htmlFor="condition" className={LABEL}>
+            Condition
+          </label>
+          {/* R3: individuals may list Used only. New is a Business feature, so it is disabled here and
+              rejected server-side (fail-closed) in createMakerProductAction. */}
+          <select id="condition" name="condition" defaultValue="used" className={FIELD}>
+            <option value="used">Used</option>
+            <option value="new" disabled>
+              New (Business accounts only)
+            </option>
+          </select>
+          <p className="mt-1 text-xs text-subtle">
+            Individuals list used items.{' '}
+            <Link href="/spaces/new" className="font-medium text-primary-strong hover:underline">
+              Go Business to sell new products
+            </Link>
+            .
+          </p>
+        </div>
+        <div>
           <label htmlFor="description" className={LABEL}>
             Details
           </label>
