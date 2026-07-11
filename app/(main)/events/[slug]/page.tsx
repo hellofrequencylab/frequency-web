@@ -645,6 +645,9 @@ export default async function EventDetailPage({
     body: string | null
     image_url: string | null
     created_at: string
+    // 'rsvp' = a system "<Name> RSVP'd" entry; anything else = a guest comment.
+    // Newer than the generated types → read via the untyped client below.
+    kind: string | null
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
   // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
@@ -664,6 +667,28 @@ export default async function EventDetailPage({
   // the lib/events/* data layer, which writes these rows).
   // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
   const adminUntyped = admin as unknown as SupabaseClient
+
+  // event_posts.kind ships in migration 20261125000000. Until it's applied the column
+  // doesn't exist, so PostgREST would reject a select naming it and blank the whole feed.
+  // Read defensively: try WITH kind, and on that error fall back to the pre-kind shape
+  // (every row is then a comment — correct, since the RSVP writer no-ops pre-migration).
+  const loadActivityPosts = async (): Promise<{ data: RawActivityPost[] }> => {
+    const rel = 'author:profiles!profile_id ( id, display_name, handle, avatar_url )'
+    const withKind = await adminUntyped
+      .from('event_posts')
+      .select(`id, body, image_url, created_at, kind, ${rel}`)
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (!withKind.error) return { data: (withKind.data ?? []) as unknown as RawActivityPost[] }
+    const noKind = await adminUntyped
+      .from('event_posts')
+      .select(`id, body, image_url, created_at, ${rel}`)
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    return { data: (noKind.data ?? []) as unknown as RawActivityPost[] }
+  }
 
   // Practice check-in availability + whether the viewer already checked in.
   const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
@@ -690,12 +715,9 @@ export default async function EventDetailPage({
       isHost ? listCohostInvites(event.id) : Promise.resolve([]),
       // The viewer's own pending invite, if any — drives the Accept/Decline banner.
       myProfileId ? getMyCohostInvite(event.id, myProfileId) : Promise.resolve(null),
-      (admin)
-        .from('event_posts')
-        .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: false })
-        .limit(100),
+      // Untyped read (event_posts.kind is newer than the generated types, migration
+      // 20261125000000) + migration-safe fallback. Map below casts to RawActivityPost.
+      loadActivityPosts(),
       adminUntyped
         .from('event_dispatches')
         .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
@@ -730,6 +752,7 @@ export default async function EventDetailPage({
     body: p.body ?? '',
     imageUrl: p.image_url,
     createdAt: p.created_at,
+    kind: p.kind === 'rsvp' ? 'rsvp' : 'comment',
     author: p.author
       ? { id: p.author.id, displayName: p.author.display_name, handle: p.author.handle, avatarUrl: p.author.avatar_url }
       : null,
@@ -874,7 +897,27 @@ export default async function EventDetailPage({
               ) : !myProfileId ? (
                 <p className="text-sm text-muted">Sign in to get your ticket.</p>
               ) : isHost ? (
-                <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+                hostPayoutReady ? (
+                  <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+                ) : (
+                  /* The buy path is gated on the HOST's Stripe Connect account being
+                     charges + payouts ready (getConnectStatus.ready). When it isn't, the
+                     old copy read "Tickets aren't available for this event yet" to
+                     everyone with no way forward. Tell the host the real prerequisite and
+                     link them straight to payout setup. */
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted">
+                      Connect payouts to start selling tickets for this event.
+                    </p>
+                    <Link
+                      href="/settings/billing"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      Set up payouts
+                    </Link>
+                  </div>
+                )
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}
@@ -882,7 +925,9 @@ export default async function EventDetailPage({
                   tiers={hasTiers ? tiers : undefined}
                 />
               ) : (
-                <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
+                /* Host hasn't finished payout setup, so there is no one to pay yet.
+                   Honest to the buyer, no dead "not available" phrasing. */
+                <p className="text-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
               )}
             </div>
           )}

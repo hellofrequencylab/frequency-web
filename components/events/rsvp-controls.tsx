@@ -65,6 +65,10 @@ export function RsvpControls({
   const isGoing = current === 'going'
   const isMaybe = current === 'maybe'
   const isWaitlisted = current === 'waitlist'
+  // "Can't go" is pressed only on an EXPLICIT not_going — never for a member who
+  // hasn't answered yet (status null also reads as not_going for the toggle logic,
+  // but we don't want the decline segment lit before they've chosen).
+  const isNotGoing = status === 'not_going'
   const isPending = requiresApproval && approvalStatus === 'pending'
 
   // A1 questionnaire: once the guest has expressed any interest, surface the host's
@@ -95,7 +99,7 @@ export function RsvpControls({
 
   const go = (intent: 'going' | 'maybe' | 'not_going') =>
     startTransition(() => {
-      setRsvpStatus(eventId, intent)
+      setRsvpStatus(eventId, intent, { slug })
     })
 
   // Approval-required join → write a 'pending' RSVP through the depth layer.
@@ -133,6 +137,8 @@ export function RsvpControls({
   // Tapping the active segment again steps back out (toggle off) to 'not_going'.
   const onGoing = () => go(isGoing || isWaitlisted ? 'not_going' : 'going')
   const onMaybe = () => go(isMaybe ? 'not_going' : 'maybe')
+  // Can't go is an explicit decline; tapping it just records 'not_going' (idempotent).
+  const onCantGo = () => go('not_going')
 
   // ── Approval-required, not yet in: a single "Request to join" button ──
   if (requiresApproval && !isGoing && !isWaitlisted && !isMaybe && !isPending) {
@@ -202,7 +208,22 @@ export function RsvpControls({
           }`}
         >
           <Star className="h-4 w-4" />
-          Interested
+          Maybe
+        </button>
+
+        <button
+          type="button"
+          onClick={onCantGo}
+          disabled={pending}
+          aria-pressed={isNotGoing}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-60 ${
+            isNotGoing
+              ? 'bg-surface-elevated text-text'
+              : 'text-muted hover:bg-surface-elevated hover:text-text'
+          }`}
+        >
+          <X className="h-4 w-4" />
+          Can&rsquo;t go
         </button>
       </div>
 
@@ -250,7 +271,65 @@ export function RsvpControls({
         </div>
       ) : null}
 
+      {/* An optional note the member leaves when they RSVP — it rides along as the
+          body of their "RSVP'd" entry in the event conversation. Only a confirmed
+          attendee posts to the feed, so the note field shows only when going. */}
+      {isGoing && <RsvpNote eventId={eventId} slug={slug} />}
+
       {questionnaireBlock}
+    </div>
+  )
+}
+
+// Optional "say something to the group" note attached to a Going RSVP (item: leave a
+// comment when you RSVP). Saving calls the same setRsvpStatus('going') with the note
+// as `message`, which upserts the member's single activity-feed entry — idempotent, no
+// spam. Left untouched, it never fires, so a plain RSVP keeps any earlier note.
+function RsvpNote({ eventId, slug }: { eventId: string; slug?: string }) {
+  const [note, setNote] = useState('')
+  const [saved, setSaved] = useState(false)
+  const [pending, startTransition] = useTransition()
+
+  const save = () =>
+    startTransition(async () => {
+      await setRsvpStatus(eventId, 'going', { slug, message: note })
+      setSaved(true)
+    })
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+      <label htmlFor={`rsvp-note-${eventId}`} className="block text-xs font-medium text-muted">
+        Say something to the group (optional)
+      </label>
+      <textarea
+        id={`rsvp-note-${eventId}`}
+        value={note}
+        onChange={(e) => {
+          setNote(e.target.value)
+          setSaved(false)
+        }}
+        rows={2}
+        placeholder="Bringing snacks, running a little late, can’t wait…"
+        disabled={pending}
+        className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-subtle focus:border-border-strong focus:ring-2 focus:ring-border-strong/30 disabled:opacity-60"
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending || !note.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-50"
+        >
+          <Check className="h-3.5 w-3.5" />
+          {pending ? 'Saving…' : 'Add note'}
+        </button>
+        {saved && !pending && (
+          <span className="inline-flex items-center gap-1 text-2xs text-success">
+            <Check className="h-3 w-3" />
+            Shared with the group
+          </span>
+        )}
+      </div>
     </div>
   )
 }
