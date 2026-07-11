@@ -7,6 +7,7 @@ import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
 import { productRatingsFor, type ProductRating } from '@/lib/commerce/reviews'
 import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
+import { foundingSellersFor } from '@/lib/founding/status'
 import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
@@ -69,10 +70,12 @@ export default async function MarketPage({
   // One read powers the stats band, the rails, and the grid (grouped in-process). The hero search bar
   // filters every rail instantly on the client (InstantGrid / InstantSection read the shared query).
   const all = await listMarketListings({ limit: 100 })
-  // Trust & Safety (Phase 8): aggregate ratings + seller verification for every card, in two batch reads.
-  const [ratings, verified] = await Promise.all([
+  // Trust & Safety (Phase 8): aggregate ratings + seller verification for every card, in batch reads.
+  // Plus the Founding charter mark (ADR-599), resolved read-only from active founding_members rows.
+  const [ratings, verified, founding] = await Promise.all([
     productRatingsFor(all.map((p) => p.id)),
     sellerVerifiedFor(all),
+    foundingSellersFor(all),
   ])
   const byGroup = (g: MarketGroup) => all.filter((p) => marketGroupForKind(p.productKind) === g)
   const counts = {
@@ -133,6 +136,7 @@ export default async function MarketPage({
                     href={`/market/${p.id}`}
                     rating={ratings.get(p.id) ?? null}
                     verified={verified.get(p.id) ?? false}
+                    founding={founding.get(p.id) ?? false}
                   />
                 ))}
               </InstantGrid>
@@ -161,6 +165,7 @@ export default async function MarketPage({
                       href={`/market/${p.id}`}
                       rating={ratings.get(p.id) ?? null}
                       verified={verified.get(p.id) ?? false}
+                      founding={founding.get(p.id) ?? false}
                     />
                   ))}
                 </InstantSection>

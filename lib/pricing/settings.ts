@@ -18,6 +18,7 @@ import {
   HOUSEHOLD_BUNDLE_DEFAULT,
   type HouseholdBundleConfig,
 } from './bundle'
+import { asFoundingConfig, FOUNDING_DEFAULT, type FoundingConfig } from './founding'
 
 // ── The seeded DEFAULT values (kept in sync with 20260723010000_pricing_foundation.sql) ──
 // Prices in CENTS. annual ≈ 2 months free (the spec). Business + Nonprofit both offer monthly + annual
@@ -243,6 +244,19 @@ export async function bundleSellable(): Promise<boolean> {
     return flags.bundle_household_enabled === true
   } catch {
     return false
+  }
+}
+
+/** The Founders Round + Founding Businesses rate config (ADR-599), merged over the seeded default.
+ *  FAIL-SAFE to FOUNDING_DEFAULT. Like getHouseholdBundle, this is kept out of the typed PricingDefaults
+ *  core and read through here (a founding rate is a locked display value, never a live charge — nothing
+ *  here charges; the money flip is gated by billingLive()). Read via the 'founding' pricing_settings key. */
+export async function getFoundingConfig(): Promise<FoundingConfig> {
+  try {
+    const raw = await loadPricingSettings()
+    return asFoundingConfig(raw.founding)
+  } catch {
+    return FOUNDING_DEFAULT
   }
 }
 

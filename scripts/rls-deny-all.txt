@@ -35,6 +35,7 @@ entry_template_settings
 event_blurb_cache
 event_embeddings
 financial_transactions
+founding_members
 help_chunks
 journey_enrollments
 journey_phase_events
