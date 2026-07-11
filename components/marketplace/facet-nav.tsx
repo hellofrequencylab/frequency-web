@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 // The one faceted nav across every commerce surface (Classifieds · Housing · Market ·
-// Frequency Store), so the areas read as one hub no matter which page you land on
-// (ADR-596). The `key` values are stable internal ids kept from the old taxonomy
+// Events · Frequency Store), so the areas read as one hub no matter which page you land
+// on (ADR-596). The `key` values are stable internal ids kept from the old taxonomy
 // (all=Classifieds, makers=Market, shop=Frequency Store) so callers do not churn;
 // only labels + hrefs carry the new naming. `active` highlights the current area.
 
@@ -10,6 +10,7 @@ const AREAS = [
   { key: 'all', href: '/classifieds', label: 'Classifieds' },
   { key: 'housing', href: '/marketplace/housing', label: 'Housing' },
   { key: 'makers', href: '/market', label: 'Market' },
+  { key: 'events', href: '/events', label: 'Events' },
   { key: 'shop', href: '/store', label: 'Frequency Store' },
 ] as const
 
@@ -24,6 +25,7 @@ export function MarketplaceFacets({ active }: { active: MarketplaceArea }) {
           <Link
             key={a.key}
             href={a.href}
+            scroll={false}
             aria-current={on ? 'page' : undefined}
             className={
               'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +

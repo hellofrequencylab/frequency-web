@@ -66,6 +66,22 @@ export interface CheckoutInput {
 // derived from the existing `product_kind` discriminator (no new column): the schema already
 // distinguishes physical/digital/service/booking/ticket, so the umbrella reads the group from it.
 
+/** A Market browse item: either a real `commerce_products` listing or a READ-ONLY projection (a
+ *  ticketed event surfaced in the Tickets rail, ADR-596 / audit #2 — events stay the source of
+ *  truth, never a commerce_products row). Extends the product shape with two optional fields:
+ *  `href` (an explicit destination override, so a projected ticket deep-links to /events/<slug>
+ *  instead of /market/<id>) and `projected` (the discriminator). Real commerce products omit both,
+ *  so they keep routing to /market/<id>. `priceCents` is widened to nullable so a free projection
+ *  (no positive tier) reads as "Free" rather than "$0". A plain CommerceProduct is assignable to a
+ *  MarketItem, so every existing reader/consumer keeps working unchanged. */
+export type MarketItem = Omit<CommerceProduct, 'priceCents'> & {
+  priceCents: number | null
+  /** Explicit link override. Absent for commerce products (they route to /market/<id>). */
+  href?: string
+  /** True for a read-only ticketed-event projection (never backed by a commerce_products row). */
+  projected?: boolean
+}
+
 /** The three typed rails the Market umbrella groups listings into. */
 export type MarketGroup = 'products' | 'services' | 'tickets'
 
