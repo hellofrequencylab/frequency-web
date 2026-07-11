@@ -40,11 +40,13 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   // Events (/events/<slug>): the FULL interior is arrangeable, but this is the ONE canonical layout
   // every event shares unless an operator deliberately rearranges it (per-event saved layouts were
   // cleared so every event reads the same — same boxes, same order). MAIN carries the content the
-  // host wrote + the conversation (description → activity → the poster sections → recap); SIDE is the
-  // at-a-glance + action column: RSVP first, then when/where facts, cohosts, and host-only ticket sales.
+  // host wrote + the conversation (description → activity → the Host profile box → poster sections →
+  // recap); SIDE is the at-a-glance + action column: RSVP first, then when/where facts, and cohosts.
   // The address (with its Maps deep-link) is in the page header and the venue map is the bottom-of-main
   // block, so the old side `event-location` card is dropped here to avoid a second map (re-addable in Layout). The host "Post an update" composer is folded into activity
   // (one role-based composer); the poster "Details" block stays re-addable from Settings → Layout.
+  // Ticketing lives in the RSVP/Join box (event-join), so the poster 'event-pricing' box and the
+  // host 'event-sales' box are OUT of the default layout (both stay re-addable from Settings → Layout).
   '/events/*': {
     template: 'main-side',
     slots: {
@@ -54,7 +56,6 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-activity',
           'event-lineup',
           'event-good-to-know',
-          'event-pricing',
           'event-links',
           'event-sponsors',
           'event-recap',
@@ -71,7 +72,6 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-facts',
           'event-warm-proof',
           'event-cohosts',
-          'event-sales',
         ],
         hidden: [],
         roles: {},
