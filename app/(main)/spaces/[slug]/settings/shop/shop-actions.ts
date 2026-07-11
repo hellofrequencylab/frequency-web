@@ -14,9 +14,11 @@ import {
   updateProduct,
   productOwnerSpaceId,
   setProductMarketPublished,
+  type ProductPatch,
 } from '@/lib/commerce/products'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
-import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig } from '@/lib/commerce/types'
+import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
+import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
@@ -50,13 +52,30 @@ function kindToCommerce(kind: string): { productKind: ProductKind; vertical: Com
   return { productKind: 'physical', vertical: 'shop' }
 }
 
-/** Build the metadata.service ServiceConfig from the form (service items only). */
+/** Narrow a raw form value to a ServicePriceModel, or undefined (default-deny). */
+function asPriceModel(raw: unknown): ServicePriceModel | undefined {
+  const v = String(raw ?? '')
+  return v === 'fixed' || v === 'from' || v === 'free' || v === 'contact' ? v : undefined
+}
+
+/** Build the metadata.service ServiceConfig from the form (service items only): the price model,
+ *  the session length + deposit, and the cancellation/no-show policy. */
 function serviceConfigFromForm(formData: FormData): ServiceConfig | null {
-  const durationMin = Number(formData.get('durationMin'))
-  const depositDollars = Number(formData.get('deposit'))
   const cfg: ServiceConfig = {}
+  const priceModel = asPriceModel(formData.get('priceModel'))
+  if (priceModel) cfg.priceModel = priceModel
+  const durationMin = Number(formData.get('durationMin'))
   if (Number.isFinite(durationMin) && durationMin > 0) cfg.durationMin = Math.round(durationMin)
+  const depositDollars = Number(formData.get('deposit'))
   if (Number.isFinite(depositDollars) && depositDollars > 0) cfg.depositCents = Math.round(depositDollars * 100)
+  const cancellationWindowHours = Number(formData.get('cancellationWindowHours'))
+  if (Number.isFinite(cancellationWindowHours) && cancellationWindowHours > 0) {
+    cfg.cancellationWindowHours = Math.round(cancellationWindowHours)
+  }
+  const noShowFeePct = Number(formData.get('noShowFeePct'))
+  if (Number.isFinite(noShowFeePct) && noShowFeePct > 0) {
+    cfg.noShowFeePct = Math.min(100, Math.round(noShowFeePct))
+  }
   return Object.keys(cfg).length ? cfg : null
 }
 
@@ -84,10 +103,11 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     priceCents: Math.round(priceDollars * 100),
     // A service books against the Space's own availability calendar (Phase 4, ADR-596).
     bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
+    // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.
+    service,
   })
   if (!product) return
 
-  if (service) await updateProduct(product.id, { metadata: { service } })
   // A listed item is live to browse immediately; checkout still needs payouts + billing on.
   await setProductStatus(product.id, 'active')
   revalidatePath(`/spaces/${slug}/settings/shop`)
@@ -110,6 +130,37 @@ export async function deleteSpaceProductAction(slug: string, id: string): Promis
   if (!(await gateSpaceItem(slug, id))) return
   await deleteProduct(id)
   revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Edit a catalog item in place (F5). Owner-gated to this Space's item, then hands the patch (title,
+ *  price, description, kind, and the deep-merged service config) to the commerce writer. The `service`
+ *  subtree is deep-merged, so a partial edit never clobbers untouched fields. */
+export async function updateProductAction(slug: string, id: string, patch: ProductPatch): Promise<void> {
+  if (!(await gateSpaceItem(slug, id))) return
+  await updateProduct(id, patch)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Draft the title + description for a listing with Vera (#5). Gated to a manager of this Space (same
+ *  gate the write actions use). Grounds Vera in the Space brand + the fields the author has typed so
+ *  far. Never throws: draftListingCopy falls back to a deterministic draft when AI is off/over budget,
+ *  and an unauthorized caller gets empty copy (the form leaves its fields untouched). */
+export async function draftListingCopyAction(
+  slug: string,
+  input: { kind: ProductKind; seed?: string | null; priceModel?: ServicePriceModel | null },
+): Promise<ListingCopy> {
+  const gate = await gateSpaceWrite(slug)
+  if (!gate) return { title: '', description: '' }
+  const caller = await getCallerProfile()
+  const space = await getVisibleSpaceBySlug(slug, caller?.id ?? null)
+  return draftListingCopy({
+    kind: input.kind,
+    seed: input.seed ?? null,
+    priceModel: input.priceModel ?? null,
+    brandName: space?.brandName ?? space?.name ?? null,
+    profileId: caller?.id ?? null,
+    spaceId: gate.spaceId,
+  })
 }
 
 /** Toggle whether a Space listing appears in the global Market (Phase 5, ADR-596). Separate from
