@@ -667,6 +667,28 @@ export default async function EventDetailPage({
   // eslint-disable-next-line no-restricted-syntax -- event_dispatches not in generated types yet (ADR-246 exception)
   const adminUntyped = admin as unknown as SupabaseClient
 
+  // event_posts.kind ships in migration 20261125000000. Until it's applied the column
+  // doesn't exist, so PostgREST would reject a select naming it and blank the whole feed.
+  // Read defensively: try WITH kind, and on that error fall back to the pre-kind shape
+  // (every row is then a comment — correct, since the RSVP writer no-ops pre-migration).
+  const loadActivityPosts = async (): Promise<{ data: RawActivityPost[] }> => {
+    const rel = 'author:profiles!profile_id ( id, display_name, handle, avatar_url )'
+    const withKind = await adminUntyped
+      .from('event_posts')
+      .select(`id, body, image_url, created_at, kind, ${rel}`)
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (!withKind.error) return { data: (withKind.data ?? []) as unknown as RawActivityPost[] }
+    const noKind = await adminUntyped
+      .from('event_posts')
+      .select(`id, body, image_url, created_at, ${rel}`)
+      .eq('event_id', event.id)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    return { data: (noKind.data ?? []) as unknown as RawActivityPost[] }
+  }
+
   // Practice check-in availability + whether the viewer already checked in.
   const canCheckIn = !!myProfileId && isGoing && isPast && !event.is_cancelled
 
@@ -692,14 +714,9 @@ export default async function EventDetailPage({
       isHost ? listCohostInvites(event.id) : Promise.resolve([]),
       // The viewer's own pending invite, if any — drives the Accept/Decline banner.
       myProfileId ? getMyCohostInvite(event.id, myProfileId) : Promise.resolve(null),
-      // Untyped client: event_posts.kind is newer than the generated types (migration
-      // 20261125000000). The map below casts the rows to RawActivityPost.
-      adminUntyped
-        .from('event_posts')
-        .select('id, body, image_url, created_at, kind, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: false })
-        .limit(100),
+      // Untyped read (event_posts.kind is newer than the generated types, migration
+      // 20261125000000) + migration-safe fallback. Map below casts to RawActivityPost.
+      loadActivityPosts(),
       adminUntyped
         .from('event_dispatches')
         .select('id, title, body, created_at, author:profiles!author_id ( id, display_name, handle, avatar_url )')
