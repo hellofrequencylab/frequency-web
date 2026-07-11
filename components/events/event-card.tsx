@@ -3,7 +3,6 @@ import { MapPin, Users, Globe, Calendar, Repeat, Ticket, Navigation } from 'luci
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
-import { RsvpButton } from '@/components/events/rsvp-button'
 import { formatWhen, type EventRow } from '@/app/(main)/events/index-data'
 import { recurrenceLabel, type RecurrenceType } from '@/lib/events/recurrence'
 
@@ -65,16 +64,14 @@ function distanceLabel(distanceM: number | null | undefined): string | null {
 }
 
 export function EventCard({
-  event, circleName, coverUrl, going, isGoing, now, canRsvp, priceLabel, blurb,
+  event, circleName, coverUrl, going, now, priceLabel, blurb,
 }: {
   event: EventRow
   circleName?: string
   /** Public URL of the event's expressive cover, when it has one. */
   coverUrl?: string
   going: number
-  isGoing: boolean
   now: Date
-  canRsvp: boolean
   /** Price stat resolved by the index loader — "Free" / "$X" / "From $X". */
   priceLabel: string
   /** Optional AI "why you'd vibe" line — only set on the "For you" lane. */
@@ -89,9 +86,6 @@ export function EventCard({
       : event.parent_event_id
         ? 'Part of a series'
         : null
-  // At capacity → the one-tap RSVP joins the waitlist (framed as care, not scarcity).
-  // RsvpButton already supports this; the index just needs to pass it.
-  const isFull = event.capacity != null && going >= event.capacity
   // Compact stat row: who's coming (capacity-aware, never a FOMO countdown —
   // EVENTS-SYSTEM §4), and how far. Price rides the row via the priceLabel prop.
   const attendanceLabel =
@@ -177,7 +171,6 @@ export function EventCard({
           )}
         </>
       }
-      action={canRsvp ? <RsvpButton eventId={event.id} isGoing={isGoing} isFull={isFull} /> : undefined}
     />
   )
 }

@@ -202,9 +202,7 @@ export default async function EventsPage({
                   coverUrl={coverUrls[event.id]}
                   going={rsvpCounts[event.id] ?? 0}
                   priceLabel={priceLabels[event.id] ?? 'Free'}
-                  isGoing
                   now={nowDate}
-                  canRsvp={!!myProfileId}
                 />
               ))}
               </div>
@@ -278,9 +276,7 @@ export default async function EventsPage({
                     coverUrl={coverUrls[event.id]}
                     going={rsvpCounts[event.id] ?? 0}
                     priceLabel={priceLabels[event.id] ?? 'Free'}
-                    isGoing={myRsvps.has(event.id)}
                     now={nowDate}
-                    canRsvp={!!myProfileId}
                   />
                 ))}
                 </div>
@@ -356,9 +352,7 @@ async function ForYouLane({
             coverUrl={coverUrls[event.id]}
             going={rsvpCounts[event.id] ?? 0}
             priceLabel={priceLabels[event.id] ?? 'Free'}
-            isGoing={myRsvps.has(event.id)}
             now={now}
-            canRsvp
             blurb={forYouBlurbs[event.id]}
           />
         ))}
