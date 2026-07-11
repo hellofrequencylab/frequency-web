@@ -10,17 +10,18 @@ import { useRailAutosave, isInstant, isTextLike } from '@/components/admin/rail/
 import { createClient } from '@/lib/supabase/client'
 import {
   getEventAdminData,
-  getEventEngageData,
+  getEventCoreStats,
   updateEventSettings,
   updateEventPermalink,
   removeEventPoster,
   setEventGalleryImages,
   uploadEventGalleryImage,
-  type EventEngageData,
   // Aliased: it's a server action, not a React hook — the `use*` name would trip the
   // rules-of-hooks lint when called inside a callback.
   useEventPosterAsCover as promotePosterToCover,
 } from '@/app/(main)/events/admin-actions'
+import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import type { EventCoreStats } from '@/lib/events/event-stats'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
@@ -47,7 +48,8 @@ import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 // fills the hidden address inputs, a dragged map pin) call saveNow(). Images + hero height self-save
 // through their own actions; the permalink keeps its own action (a rename redirects the page).
 //
-// Flow (top to bottom): Stats box (Sold | Revenue | Checked in) · Images · Title · Capacity · Ticket
+// Flow (top to bottom): shared core-stats row (Sold · Revenue · Going · Interested · Waitlist ·
+// Checked in · Capacity) · Images · Title · Capacity · Ticket
 // price · Description · Starts / Ends / Who / Format / What kind / Energy (+ time zone / repeats) ·
 // RSVP window · Location (one live venue search + one map; the street/city/region/postal/country ride
 // as hidden derived inputs) · Permalink · Placement.
@@ -81,16 +83,6 @@ function isoToDateInput(iso: string | null): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 }
 
-function formatMoney(cents: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(
-      cents / 100,
-    )
-  } catch {
-    return `$${(cents / 100).toFixed(2)}`
-  }
-}
-
 /** A human one-line location string composed from a venue pick, so the public page's location line
  *  and the Maps deep link still have text even though the structured fields are hidden. */
 function composeLocation(p: PlaceResult): string {
@@ -107,7 +99,7 @@ export function EventSettingsModule() {
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
 
   const [data, setData] = useState<EventData | null>(null)
-  const [engage, setEngage] = useState<EventEngageData | null>(null)
+  const [engage, setEngage] = useState<EventCoreStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -187,8 +179,9 @@ export function EventSettingsModule() {
       .catch(() => {
         if (active) setLoading(false)
       })
-    // Stats (Sold | Revenue | Checked in) — its own read; failure just hides the box.
-    getEventEngageData(slug)
+    // Core stats — its own read; failure just hides the box. Same shape the Manage
+    // dashboard leads with (lib/events/event-stats), rendered via the shared component.
+    getEventCoreStats(slug)
       .then((e) => {
         if (active) setEngage(e)
       })
@@ -283,21 +276,9 @@ export function EventSettingsModule() {
 
   return (
     <div className="space-y-4">
-      {/* STATS — Sold | Revenue | Checked in, pinned at the very top. */}
-      {engage && (
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Sold', value: String(engage.ticketsSold) },
-            { label: 'Revenue', value: formatMoney(engage.revenueCents, engage.currency) },
-            { label: 'Checked in', value: `${engage.checkedIn}/${engage.going}` },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
-              <div className="truncate text-base font-bold text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* STATS — the shared core-stats row (item 13), pinned at the very top. Same read +
+          component the Manage dashboard leads with, in the rail's compact panel variant. */}
+      {engage && <EventCoreStatsCards stats={engage} variant="panel" />}
 
       {/* IMAGES — ONE ordered gallery leads the area: the FIRST photo IS the header. Then the
           "Select from Loom" picker, the scanned-poster shortcut, and the hero-height / focus controls. */}

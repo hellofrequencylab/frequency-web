@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
+import { loadEventCoreStats, type EventCoreStats } from '@/lib/events/event-stats'
 import { getMyProfileId } from '@/lib/auth'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
 import { logAdminAction } from '@/lib/admin/audit'
@@ -1021,71 +1022,20 @@ export async function approveEventRsvp(
 // paid tickets (events.price_cents). Sold-ticket + check-in counts are read for the summary.
 // Read + write re-check event.editSettings.
 
-export interface EventEngageData {
-  eventId: string
-  priceCents: number | null
-  currency: string
-  ticketsSold: number
-  revenueCents: number
-  checkedIn: number
-  going: number
-}
-
-export async function getEventEngageData(slug: string): Promise<EventEngageData | null> {
+/** Hydrate the in-rail Event settings stats box (event-settings-module) with the SAME
+ *  core headline numbers the Manage dashboard shows — one shared read + shape
+ *  (lib/events/event-stats). Resolves the event by slug, re-checks the host capability,
+ *  and returns null on a miss so the rail simply hides the box (a hydration read like
+ *  getEventAdminData, not a mutation, so it returns the value shape, not ActionResult). */
+export async function getEventCoreStats(slug: string): Promise<EventCoreStats | null> {
   const admin = createAdminClient()
-  const { data: ev } = await (admin as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (c: string, v: string) => {
-          maybeSingle: () => Promise<{
-            data: { id: string; price_cents: number | null; currency: string | null } | null
-          }>
-        }
-      }
-    }
-  })
-    .from('events')
-    .select('id, price_cents, currency')
-    .eq('slug', slug)
-    .maybeSingle()
+  const { data: ev } = await admin.from('events').select('id').eq('slug', slug).maybeSingle()
   if (!ev) return null
 
   const caps = await getEventCapabilities(ev.id)
   if (!caps.has('event.editSettings')) return null
 
-  const [ticketsRes, goingRes, checkinRes] = await Promise.all([
-    admin.from('event_tickets').select('amount_cents, qty, status').eq('event_id', ev.id),
-    admin
-      .from('event_rsvps')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_id', ev.id)
-      .eq('status', 'going'),
-    admin
-      .from('engagement_events')
-      .select('actor_profile_id')
-      .eq('event_type', 'practice.verified')
-      .like('idempotency_key', `event_checkin:${ev.id}:%`),
-  ])
-
-  const tickets = (ticketsRes.data ?? []) as { amount_cents: number; qty: number; status: string }[]
-  const succeeded = tickets.filter((t) => t.status === 'succeeded')
-  const ticketsSold = succeeded.reduce((sum, t) => sum + (t.qty ?? 1), 0)
-  const revenueCents = succeeded.reduce((sum, t) => sum + (t.amount_cents ?? 0), 0)
-  const checkedIn = new Set(
-    ((checkinRes.data ?? []) as { actor_profile_id: string | null }[])
-      .map((r) => r.actor_profile_id)
-      .filter((v): v is string => !!v),
-  ).size
-
-  return {
-    eventId: ev.id,
-    priceCents: ev.price_cents ?? null,
-    currency: ev.currency ?? 'usd',
-    ticketsSold,
-    revenueCents,
-    checkedIn,
-    going: goingRes.count ?? 0,
-  }
+  return loadEventCoreStats(ev.id)
 }
 
 /** Set (or clear) the event's ticket price. Blank / 0 clears it back to a free RSVP event.
