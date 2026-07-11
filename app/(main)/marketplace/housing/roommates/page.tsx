@@ -3,12 +3,11 @@ import Link from 'next/link'
 import { Users, MapPin, Sparkles } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
-import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { getSeekerProfile, matchRoommates } from '@/lib/listings/housing'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
-import { saveSeekerProfileAction } from '../../actions'
+import { SeekerForm } from './seeker-form'
 
 // Roommate matching — the seeker half. A member says what they're looking for; the
 // consent-gated resonance RPC ranks roommate listings by member-to-member compatibility
@@ -16,10 +15,6 @@ import { saveSeekerProfileAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Roommate matches' }
-
-const FIELD =
-  'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
-const LABEL = 'mb-1 block text-sm font-medium text-text'
 
 function dollars(cents: number | null): string {
   return cents == null ? '' : String(Math.round(cents / 100))
@@ -41,64 +36,18 @@ export default async function RoommatesPage() {
       description="Tell us what you're after. We rank roommate listings by who you'd actually click with, your budget, and how close it is."
       toolbar={<MarketplaceFacets active="housing" />}
     >
-      <form
-        action={saveSeekerProfileAction}
-        className="mb-8 space-y-5 rounded-2xl border border-border bg-surface p-5 shadow-sm"
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="budget_min" className={LABEL}>
-              Budget min (per month)
-            </label>
-            <input
-              id="budget_min"
-              name="budget_min"
-              type="number"
-              min="0"
-              defaultValue={dollars(seeker?.budgetMinCents ?? null)}
-              className={FIELD}
-              placeholder="e.g. 600"
-            />
-          </div>
-          <div>
-            <label htmlFor="budget_max" className={LABEL}>
-              Budget max (per month)
-            </label>
-            <input
-              id="budget_max"
-              name="budget_max"
-              type="number"
-              min="0"
-              defaultValue={dollars(seeker?.budgetMaxCents ?? null)}
-              className={FIELD}
-              placeholder="e.g. 1200"
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="city" className={LABEL}>
-              City
-            </label>
-            <input id="city" name="city" defaultValue={seeker?.searchCity ?? ''} className={FIELD} placeholder="Where do you want to live?" />
-          </div>
-          <div>
-            <label htmlFor="move_in" className={LABEL}>
-              Move-in from
-            </label>
-            <input id="move_in" name="move_in" type="date" defaultValue={seeker?.moveInFrom ?? ''} className={FIELD} />
-          </div>
-        </div>
-        <label className="flex items-center gap-2 text-sm text-text">
-          <input type="checkbox" name="active" defaultChecked={seeker?.active ?? true} className="h-4 w-4 rounded border-border" />
-          Show me as actively looking
-        </label>
-        <div className="flex justify-end">
-          <button type="submit" className={buttonClasses('primary', 'md')}>
-            Save and refresh matches
-          </button>
-        </div>
-      </form>
+      <SeekerForm
+        initial={{
+          active: seeker?.active ?? true,
+          budgetMin: dollars(seeker?.budgetMinCents ?? null),
+          budgetMax: dollars(seeker?.budgetMaxCents ?? null),
+          moveIn: seeker?.moveInFrom ?? '',
+          city: seeker?.searchCity ?? '',
+          lat: seeker?.searchLat ?? null,
+          lng: seeker?.searchLng ?? null,
+          radiusMiles: seeker ? Math.round(seeker.searchRadiusM / 1609.344) : 25,
+        }}
+      />
 
       {matches.length === 0 ? (
         <EmptyState

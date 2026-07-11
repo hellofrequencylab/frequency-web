@@ -4,10 +4,45 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { HousingDetail, HousingType, RoommateMatch } from './types'
+import { rowToListing } from './index'
+import { AMENITIES, PROPERTY_TYPES } from './types'
+import type {
+  AmenitySlug,
+  HousingDetail,
+  HousingType,
+  Listing,
+  PropertyType,
+  RoommateMatch,
+} from './types'
 
 function db(): SupabaseClient {
   return createAdminClient()
+}
+
+// ── Controlled-vocabulary helpers (the slug arrays live in ./types, client-safe) ──
+
+const PROPERTY_TYPE_SET = new Set<string>(PROPERTY_TYPES.map((p) => p.slug))
+const AMENITY_SET = new Set<string>(AMENITIES.map((a) => a.slug))
+
+/** Coerce an untrusted string to a valid PropertyType, or null. */
+export function toPropertyType(v: unknown): PropertyType | null {
+  return typeof v === 'string' && PROPERTY_TYPE_SET.has(v) ? (v as PropertyType) : null
+}
+
+/** Keep only recognised amenity slugs (deduped), so a tampered form can't
+ *  smuggle a value past the DB CHECK. */
+export function toAmenities(values: readonly string[]): AmenitySlug[] {
+  const seen = new Set<AmenitySlug>()
+  for (const v of values) if (AMENITY_SET.has(v)) seen.add(v as AmenitySlug)
+  return [...seen]
+}
+
+export function propertyTypeLabel(slug: string | null): string | null {
+  return PROPERTY_TYPES.find((p) => p.slug === slug)?.label ?? null
+}
+
+export function amenityLabel(slug: string): string {
+  return AMENITIES.find((a) => a.slug === slug)?.label ?? slug
 }
 
 function rowToHousingDetail(r: Record<string, unknown>): HousingDetail {
@@ -25,6 +60,12 @@ function rowToHousingDetail(r: Record<string, unknown>): HousingDetail {
     petsOk: (r.pets_ok as boolean) ?? null,
     utilitiesIncluded: (r.utilities_included as boolean) ?? null,
     householdSize: (r.household_size as number) ?? null,
+    propertyType: toPropertyType(r.property_type),
+    sqft: (r.sqft as number) ?? null,
+    amenities: toAmenities((r.amenities as string[] | null) ?? []),
+    smokingOk: (r.smoking_ok as boolean) ?? null,
+    cannabisOk: (r.cannabis_ok as boolean) ?? null,
+    details: (r.details as Record<string, unknown>) ?? {},
     preferences: (r.preferences as Record<string, unknown>) ?? {},
   }
 }
@@ -42,28 +83,41 @@ export interface HousingDetailInput {
   petsOk?: boolean | null
   utilitiesIncluded?: boolean | null
   householdSize?: number | null
+  propertyType?: PropertyType | null
+  sqft?: number | null
+  amenities?: AmenitySlug[]
+  smokingOk?: boolean | null
+  cannabisOk?: boolean | null
+  details?: Record<string, unknown>
   preferences?: Record<string, unknown>
 }
 
 export async function upsertHousingDetail(listingId: string, input: HousingDetailInput): Promise<void> {
-  await db()
-    .from('housing_listings')
-    .upsert({
-      listing_id: listingId,
-      listing_type: input.listingType,
-      rent_cents: input.rentCents ?? null,
-      deposit_cents: input.depositCents ?? null,
-      bedrooms: input.bedrooms ?? null,
-      bathrooms: input.bathrooms ?? null,
-      room_type: input.roomType ?? null,
-      lease_months: input.leaseMonths ?? null,
-      available_from: input.availableFrom ?? null,
-      furnished: input.furnished ?? null,
-      pets_ok: input.petsOk ?? null,
-      utilities_included: input.utilitiesIncluded ?? null,
-      household_size: input.householdSize ?? null,
-      preferences: input.preferences ?? {},
-    })
+  // Cast to a loose row: the new Phase-2 columns are intentionally absent from the
+  // generated types (ADR-246 — database.types.ts is never regenerated here).
+  const row: Record<string, unknown> = {
+    listing_id: listingId,
+    listing_type: input.listingType,
+    rent_cents: input.rentCents ?? null,
+    deposit_cents: input.depositCents ?? null,
+    bedrooms: input.bedrooms ?? null,
+    bathrooms: input.bathrooms ?? null,
+    room_type: input.roomType ?? null,
+    lease_months: input.leaseMonths ?? null,
+    available_from: input.availableFrom ?? null,
+    furnished: input.furnished ?? null,
+    pets_ok: input.petsOk ?? null,
+    utilities_included: input.utilitiesIncluded ?? null,
+    household_size: input.householdSize ?? null,
+    property_type: input.propertyType ?? null,
+    sqft: input.sqft ?? null,
+    amenities: input.amenities ?? [],
+    smoking_ok: input.smokingOk ?? null,
+    cannabis_ok: input.cannabisOk ?? null,
+    details: input.details ?? {},
+    preferences: input.preferences ?? {},
+  }
+  await db().from('housing_listings').upsert(row)
 }
 
 export async function getHousingDetail(listingId: string): Promise<HousingDetail | null> {
@@ -89,19 +143,58 @@ export async function matchRoommates(
   }))
 }
 
+export interface HousingFacets {
+  propertyType?: PropertyType | null
+  /** Dollars-per-month bounds (inclusive), applied to rent_cents. */
+  minPriceCents?: number | null
+  maxPriceCents?: number | null
+  /** Every slug must be present on the listing (AND semantics). */
+  amenities?: AmenitySlug[]
+  limit?: number
+}
+
+/** Active housing listings narrowed by the Phase-2 facets (property type, price
+ *  band, required amenities). Returns the shared Listing base, newest first. The
+ *  housing extension is joined `!inner` so only rows with a housing row match, and
+ *  the facet predicates are applied on the embedded table. Fail-safe to []. */
+export async function listHousingListings(facets: HousingFacets = {}): Promise<Listing[]> {
+  const limit = Math.min(Math.max(facets.limit ?? 40, 1), 100)
+  let query = db()
+    .from('listings')
+    .select(
+      'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, created_at, updated_at, housing:housing_listings!inner(property_type, rent_cents, amenities)',
+    )
+    .eq('vertical', 'housing')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (facets.propertyType) query = query.eq('housing.property_type', facets.propertyType)
+  if (facets.minPriceCents != null) query = query.gte('housing.rent_cents', facets.minPriceCents)
+  if (facets.maxPriceCents != null) query = query.lte('housing.rent_cents', facets.maxPriceCents)
+  const wanted = toAmenities(facets.amenities ?? [])
+  if (wanted.length) query = query.contains('housing.amenities', wanted)
+
+  const { data } = await query
+  return ((data ?? []) as Record<string, unknown>[]).map(rowToListing)
+}
+
 export interface SeekerProfile {
   active: boolean
   budgetMinCents: number | null
   budgetMaxCents: number | null
   moveInFrom: string | null
   searchCity: string | null
+  searchLat: number | null
+  searchLng: number | null
+  searchRadiusM: number
 }
 
 /** The caller's seeker profile (to prefill the roommate-match form), or null. */
 export async function getSeekerProfile(profileId: string): Promise<SeekerProfile | null> {
   const { data } = await db()
     .from('housing_seeker_profiles')
-    .select('active, budget_min_cents, budget_max_cents, move_in_from, search_city')
+    .select('active, budget_min_cents, budget_max_cents, move_in_from, search_city, search_lat, search_lng, search_radius_m')
     .eq('profile_id', profileId)
     .maybeSingle()
   if (!data) return null
@@ -112,6 +205,9 @@ export async function getSeekerProfile(profileId: string): Promise<SeekerProfile
     budgetMaxCents: (r.budget_max_cents as number) ?? null,
     moveInFrom: (r.move_in_from as string) ?? null,
     searchCity: (r.search_city as string) ?? null,
+    searchLat: (r.search_lat as number) ?? null,
+    searchLng: (r.search_lng as number) ?? null,
+    searchRadiusM: (r.search_radius_m as number) ?? 25000,
   }
 }
 
