@@ -16,6 +16,10 @@ ai_help_queries
 ai_usage
 app_instances
 automation_rules
+beta_admission_waves
+beta_audit_log
+beta_phases
+beta_tasks
 business_intake
 campaigns
 challenge_qr_codes

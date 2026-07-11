@@ -286,6 +286,14 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-beta', href: '/admin/marketing/beta', label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
+  // Beta Command Center. The operator home for the Beta
+  // launch: the phase plan, the task board, admission waves, and the APPROVAL QUEUE where
+  // nothing sends without an admin/janitor sign-off. A ?tab= workspace (today · stats ·
+  // strategy · phases · timeline · email), like the Vera AI dashboard. The legacy Beta
+  // waitlist leaf above stays live until Wave 2 folds its triage into this center.
+  { id: 'beta-command', href: '/admin/beta', label: 'Beta Command', desc: 'Run the Beta launch: the phase plan, admission waves, and the approval queue where nothing sends without your sign-off.', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
+    world: 'growth', worldLabel: 'Beta Command', worldOrder: 13,
+    adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-analytics', href: '/admin/marketing/analytics', label: 'Marketing analytics', desc: 'Sends, opens, clicks, and bounces by type.', icon: 'PieChart', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Analytics' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-deliverability', href: '/admin/marketing/deliverability', label: 'Deliverability', desc: 'Outbox health and the dead-letter queue, with one-tap recovery.', icon: 'Activity', min: 'host', staffDomain: 'marketing',
@@ -526,7 +534,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     primary: false, related: ['crm', 'vera-ai', 'acquisition'],
     links: [
       { leaf: 'marketing-campaigns' }, { leaf: 'growth-funnels' }, { leaf: 'marketing-funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' },
-      { leaf: 'marketing-beta' },
+      { leaf: 'beta-command' }, { leaf: 'marketing-beta' },
       { leaf: 'marketing-analytics' }, { leaf: 'marketing-deliverability' }, { leaf: 'marketing-market-read' },
       { leaf: 'marketing-agent' },
     ],
@@ -594,7 +602,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/growth', label: 'Growth', min: 'host', staffDomain: 'marketing',
     groups: [
       { heading: 'Acquisition', leaves: [{ leaf: 'growth-applications' }, { leaf: 'referrals' }] },
-      { heading: 'Marketing', leaves: [{ leaf: 'marketing-campaigns' }, { leaf: 'marketing-funnels', label: 'Funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' }, { leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'marketing-beta', label: 'Beta' }] },
+      { heading: 'Marketing', leaves: [{ leaf: 'marketing-campaigns' }, { leaf: 'marketing-funnels', label: 'Funnels' }, { leaf: 'marketing-automations' }, { leaf: 'marketing-nurture' }, { leaf: 'marketing-analytics', label: 'Analytics' }, { leaf: 'beta-command', label: 'Beta Command' }, { leaf: 'marketing-beta', label: 'Beta waitlist' }] },
     ],
   },
   {
