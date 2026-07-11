@@ -18,6 +18,7 @@ app_instances
 automation_rules
 beta_admission_waves
 beta_audit_log
+beta_host_prompts
 beta_phases
 beta_tasks
 business_intake

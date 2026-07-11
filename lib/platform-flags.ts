@@ -118,6 +118,27 @@ export const feedOpenFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Host-prompt switch (platform_flags.beta_host_prompts) — gates the Lone-Wolf ->
+// Local-Host graduation nudges on the member feed (the rank-gated "you're ready to
+// start a Circle" prompt AND the "a few people near you are into this" ignition).
+// Seeded FALSE (migration 20261124000000): the whole surface stays inert until an
+// operator flips it, so nothing new appears on the feed until it is turned on.
+// Defaults to FALSE on any read error — fail-closed, so a transient DB hiccup never
+// switches the prompts on by accident. Cached per request.
+export const betaHostPromptsFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'beta_host_prompts')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
 export interface FlagEvent {
   id: string
   flagKey: string
