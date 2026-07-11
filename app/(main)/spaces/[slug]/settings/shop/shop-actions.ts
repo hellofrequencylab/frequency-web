@@ -17,10 +17,11 @@ import {
   setProductMarketPublished,
   type ProductPatch,
 } from '@/lib/commerce/products'
+import { upsertVariants } from '@/lib/commerce/variants'
 import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
-import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
+import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel, VariantInput } from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
@@ -100,6 +101,48 @@ function serviceConfigFromForm(formData: FormData): ServiceConfig | null {
   return Object.keys(cfg).length ? cfg : null
 }
 
+/** Parse the optional variants set posted as a JSON array in a hidden form field (Etsy-Grade Phase 2).
+ *  Every field is sanitized to its expected type here (defense in depth); the writer clamps + caps again.
+ *  Only rows with a non-empty name survive. A blank price maps to null (inherit the product price); a
+ *  blank stock maps to null (untracked). Options are coerced to a string->string record. */
+function parseVariantInputs(raw: FormDataEntryValue | null): VariantInput[] {
+  if (typeof raw !== 'string' || !raw.trim()) return []
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return []
+  }
+  if (!Array.isArray(parsed)) return []
+  const out: VariantInput[] = []
+  for (const item of parsed) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const name = String(r.name ?? '').trim()
+    if (!name) continue
+    const options: Record<string, string> = {}
+    if (r.options && typeof r.options === 'object') {
+      for (const [k, v] of Object.entries(r.options as Record<string, unknown>)) {
+        const key = String(k).trim()
+        const val = String(v ?? '').trim()
+        if (key && val) options[key.slice(0, 40)] = val.slice(0, 80)
+      }
+    }
+    const priceCents = r.priceCents == null || r.priceCents === '' ? null : Number(r.priceCents)
+    const stock = r.stock == null || r.stock === '' ? null : Number(r.stock)
+    out.push({
+      id: typeof r.id === 'string' && r.id ? r.id : undefined,
+      name,
+      options,
+      priceCents: priceCents != null && Number.isFinite(priceCents) ? priceCents : null,
+      stock: stock != null && Number.isFinite(stock) ? stock : null,
+      sku: r.sku != null && String(r.sku).trim() ? String(r.sku).trim() : null,
+      sortOrder: out.length,
+    })
+  }
+  return out
+}
+
 export async function createSpaceProductAction(slug: string, formData: FormData): Promise<void> {
   const gate = await gateSpaceWrite(slug)
   if (!gate) return
@@ -134,6 +177,13 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
   })
   if (!product) return
 
+  // Optional variants (Etsy-Grade Phase 2): only a product carries them (services book, tickets are
+  // event spots). Persist the authored set; a plain product with no rows is unchanged.
+  if (productKind === 'physical') {
+    const variants = parseVariantInputs(formData.get('variants'))
+    if (variants.length) await upsertVariants(product.id, variants)
+  }
+
   // A listed item is live to browse immediately; checkout still needs payouts + billing on.
   await setProductStatus(product.id, 'active')
   revalidatePath(`/spaces/${slug}/settings/shop`)
@@ -161,7 +211,12 @@ export async function deleteSpaceProductAction(slug: string, id: string): Promis
 /** Edit a catalog item in place (F5). Owner-gated to this Space's item, then hands the patch (title,
  *  price, description, kind, and the deep-merged service config) to the commerce writer. The `service`
  *  subtree is deep-merged, so a partial edit never clobbers untouched fields. */
-export async function updateProductAction(slug: string, id: string, patch: ProductPatch): Promise<void> {
+export async function updateProductAction(
+  slug: string,
+  id: string,
+  patch: ProductPatch,
+  variants?: VariantInput[],
+): Promise<void> {
   if (!(await gateSpaceItem(slug, id))) return
   // Re-sanitize the client-supplied taxonomy + tags server-side (defense in depth); images and tag
   // counts are also capped in the writer.
@@ -169,6 +224,30 @@ export async function updateProductAction(slug: string, id: string, patch: Produ
   if (patch.category !== undefined) safe.category = normalizeCategory(patch.category)
   if (patch.tags !== undefined) safe.tags = normalizeTags(patch.tags)
   await updateProduct(id, safe)
+  // Variants (Etsy-Grade Phase 2): when the editor sends a set, REPLACE the product's variants to
+  // exactly it (rows added/edited/removed). undefined means the editor did not touch variants, so leave
+  // them as-is. Re-sanitize each row server-side, then upsert the whole set.
+  if (variants !== undefined) {
+    await upsertVariants(
+      id,
+      variants.map((v, i) => ({
+        id: v.id,
+        name: String(v.name ?? '').trim(),
+        options:
+          v.options && typeof v.options === 'object'
+            ? Object.fromEntries(
+                Object.entries(v.options)
+                  .map(([k, val]) => [String(k).trim().slice(0, 40), String(val ?? '').trim().slice(0, 80)])
+                  .filter(([k, val]) => k && val),
+              )
+            : {},
+        priceCents: v.priceCents != null && Number.isFinite(v.priceCents) ? v.priceCents : null,
+        stock: v.stock != null && Number.isFinite(v.stock) ? v.stock : null,
+        sku: v.sku != null && String(v.sku).trim() ? String(v.sku).trim() : null,
+        sortOrder: i,
+      })),
+    )
+  }
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 

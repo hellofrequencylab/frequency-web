@@ -1,18 +1,17 @@
 import Link from 'next/link'
 import { Users, UserPlus, CalendarDays, Building2, ArrowUpRight } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
-import { buttonClasses } from '@/components/ui/button'
-import { spaceTypeLabel } from './space-type'
-import { SPACE_CATEGORIES, spaceCategoryLabel } from '@/lib/spaces/categories'
+import { spaceCategoryLabel } from '@/lib/spaces/categories'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 
 // The directory card for one networked entity Space — a COVER-LED composition of the shared EntityCard
 // (ENTITY-SPACES-BUILD §A.2 D2: compose, never author). The cover leads the card and now carries three
-// overlays: the TYPE pill (top-left), the brand LOGO (bottom-left), and the Space's own ACTION control
-// (bottom-right). The type pill + logo are decorative (they sit inside the profile link but never take a
-// click — `coverOverlay`, pointer-events-none); the action is a REAL navigational Link rendered as a
-// sibling of the profile link (`coverAction`), so the two anchors are never nested. The body carries the
-// tagline plus a compact stats row (category · members · followers · upcoming events).
+// overlays: the CATEGORY pill (top-left — the browse subcategory: Studios / Shops / …), the brand LOGO
+// (bottom-left), and the Space's own ACTION control (bottom-right). The category pill + logo are
+// decorative (they sit inside the profile link but never take a click — `coverOverlay`,
+// pointer-events-none); the action is a REAL navigational Link rendered as a sibling of the profile link
+// (`coverAction`) and styled as an unfilled text link, so the two anchors are never nested. The body
+// carries the tagline plus a compact stats row (members · followers · upcoming events).
 //
 // Tokens only, no hex (D6): overlays sit on neutral DAWN surfaces + an ink legibility scrim so the logo
 // and action read over any operator cover. The per-Space brand_accent is deliberately NOT painted here
@@ -69,14 +68,10 @@ function Stat({ Icon, label }: { Icon: typeof Users; label: string }) {
 }
 
 export function SpaceCard({ space }: { space: NetworkedSpace }) {
-  const categoryIcon = SPACE_CATEGORIES.find((c) => c.key === space.category)?.Icon ?? Building2
-
   // Cheap stats — each shows only when it carries a real, non-zero count (a 0 or null is noise here).
   const members = space.memberCount && space.memberCount > 0 ? space.memberCount : null
   const followers = space.followerCount && space.followerCount > 0 ? space.followerCount : null
   const events = space.upcomingEventCount && space.upcomingEventCount > 0 ? space.upcomingEventCount : null
-
-  const CategoryIcon = categoryIcon
 
   return (
     <EntityCard
@@ -87,9 +82,10 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
         <>
           {/* Bottom-heavy ink scrim so the logo + action read over any cover image. */}
           <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/10 to-transparent" />
-          {/* TYPE pill, top-left — a light chip on a soft backdrop (legible over photo or gradient). */}
+          {/* CATEGORY pill, top-left — the Space's browse subcategory (Studios / Shops / …) on a soft
+              backdrop (legible over photo or gradient). */}
           <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm">
-            {spaceTypeLabel(space.type)}
+            {spaceCategoryLabel(space.category)}
           </span>
           {/* LOGO, bottom-left. */}
           <span className="absolute bottom-3 left-3">
@@ -99,7 +95,13 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       }
       coverAction={
         space.action ? (
-          <Link href={space.action.href} className={buttonClasses('primary', 'sm', 'shadow-md')}>
+          // A text LINK, not a filled button (D-refine #6): an unfilled label that underlines on hover.
+          // It sits over the cover's ink scrim bottom-right, so it rides a subtle translucent surface chip
+          // (like the top-left pill) to stay legible on ANY operator cover — tokens only, no accent fill.
+          <Link
+            href={space.action.href}
+            className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-2.5 py-1 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm underline-offset-2 hover:underline"
+          >
             {space.action.label}
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
           </Link>
@@ -109,10 +111,7 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       description={space.tagline ?? undefined}
       meta={
         <>
-          <span className="flex items-center gap-1 shrink-0 rounded-full bg-surface-elevated px-2 py-0.5 font-medium text-muted">
-            <CategoryIcon className="h-3.5 w-3.5" aria-hidden />
-            {spaceCategoryLabel(space.category)}
-          </span>
+          {/* The category now lives in the top-left cover pill (#7), so the body meta is stats only. */}
           {members != null && (
             <Stat Icon={Users} label={`${members} ${members === 1 ? 'member' : 'members'}`} />
           )}

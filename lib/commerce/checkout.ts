@@ -18,7 +18,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
 import { computeBookingRefundCents } from './cancellation'
 import { canTakePayments } from './selling'
-import type { CheckoutInput, ServiceConfig } from './types'
+import { getVariantsByIds } from './variants'
+import { effectiveVariantPriceCents, effectiveVariantStock } from './types'
+import type { CheckoutInput, CommerceVariant, ServiceConfig } from './types'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -107,10 +109,36 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
     return { error: 'This seller takes contact only. Message them to arrange the sale.' }
   }
 
-  const gross = input.items.reduce((sum, it) => {
+  // Resolve any selected variants (Etsy-Grade Phase 2): each must belong to its product AND be active;
+  // its effective price (variant override, else the product price) drives the line + gross, and its
+  // effective stock is soft-checked here (the paid-order RPC still enforces it atomically). A plain
+  // item with no variantId is unchanged. One Line per cart item feeds gross, the Stripe line items, and
+  // the order-item rows so price + variant stay consistent across all three.
+  const variantMap = await getVariantsByIds(input.items.map((i) => i.variantId ?? '').filter(Boolean))
+  const lines: {
+    product: ProductRow
+    variant: CommerceVariant | null
+    qty: number
+    unitCents: number
+    title: string
+  }[] = []
+  for (const it of input.items) {
     const p = products.find((x) => x.id === it.productId)!
-    return sum + p.price_cents * Math.max(1, Math.floor(it.qty))
-  }, 0)
+    const qty = Math.max(1, Math.floor(it.qty))
+    let variant: CommerceVariant | null = null
+    if (it.variantId) {
+      variant = variantMap.get(it.variantId) ?? null
+      if (!variant || variant.productId !== p.id || !variant.active) {
+        return { error: 'That option is no longer available.' }
+      }
+      const available = effectiveVariantStock(variant)
+      if (available != null && available < qty) return { error: 'That option is out of stock.' }
+    }
+    const unitCents = variant ? effectiveVariantPriceCents({ priceCents: p.price_cents }, variant) : p.price_cents
+    lines.push({ product: p, variant, qty, unitCents, title: variant ? `${p.title} (${variant.name})` : p.title })
+  }
+
+  const gross = lines.reduce((sum, l) => sum + l.unitCents * l.qty, 0)
   if (gross <= 0) return { error: 'Nothing to charge.' }
 
   const charge = await resolveCharge(seller, gross)
@@ -121,17 +149,14 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
 
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
-    line_items: input.items.map((it) => {
-      const p = products.find((x) => x.id === it.productId)!
-      return {
-        quantity: Math.max(1, Math.floor(it.qty)),
-        price_data: {
-          currency: (p.currency || 'usd').toLowerCase(),
-          unit_amount: p.price_cents,
-          product_data: { name: p.title },
-        },
-      }
-    }),
+    line_items: lines.map((l) => ({
+      quantity: l.qty,
+      price_data: {
+        currency: (l.product.currency || 'usd').toLowerCase(),
+        unit_amount: l.unitCents,
+        product_data: { name: l.title },
+      },
+    })),
     ...(charge.sellerStripeAccountId
       ? {
           payment_intent_data: {
@@ -173,21 +198,17 @@ export async function createCommerceCheckout(input: CheckoutInput): Promise<Comm
   const orderId = (orderRow as { id?: string } | null)?.id
   if (orderId) {
     await db().from('commerce_order_items').insert(
-      input.items.map((it) => {
-        const p = products.find((x) => x.id === it.productId)!
-        const qty = Math.max(1, Math.floor(it.qty))
-        return {
-          // variant_id intentionally omitted: variants were never populated
-          // (commerce_variants is empty), so this always wrote null. Dropping the
-          // write unblocks retiring the column + table (Phase A2). See META-SCAN-STATUS.
-          order_id: orderId,
-          product_id: p.id,
-          title: p.title,
-          qty,
-          unit_cents: p.price_cents,
-          subtotal_cents: p.price_cents * qty,
-        }
-      }),
+      lines.map((l) => ({
+        order_id: orderId,
+        product_id: l.product.id,
+        // variant_id drives the per-variant stock decrement in decrement_commerce_stock_atomic
+        // (Etsy-Grade Phase 2); null for a plain item, which decrements product stock as before.
+        variant_id: l.variant?.id ?? null,
+        title: l.title,
+        qty: l.qty,
+        unit_cents: l.unitCents,
+        subtotal_cents: l.unitCents * l.qty,
+      })),
     )
   }
 

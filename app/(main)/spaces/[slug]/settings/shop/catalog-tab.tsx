@@ -3,6 +3,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { buttonClasses } from '@/components/ui/button'
 import { ConfirmSubmitButton } from '@/components/ui/confirm-submit-button'
 import { listSpaceCatalog } from '@/lib/commerce/products'
+import { listVariantsForProducts } from '@/lib/commerce/variants'
 import { marketGroupForKind, type CommerceProduct, type ServiceConfig } from '@/lib/commerce/types'
 import { ItemForm } from './item-form'
 import {
@@ -63,6 +64,8 @@ const STATUS_LABEL: Record<CommerceProduct['status'], string> = {
 
 export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; spaceId: string; readOnly: boolean }) {
   const items = await listSpaceCatalog(spaceId)
+  // Seed each edit form's variants editor in one query (no N+1); products with none are simply absent.
+  const variantsByProduct = await listVariantsForProducts(items.map((p) => p.id))
 
   return (
     <div className="mt-4 space-y-6">
@@ -159,6 +162,7 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                         images: p.images,
                         category: p.category,
                         tags: p.tags,
+                        variants: variantsByProduct.get(p.id) ?? [],
                       }}
                     />
                   </details>

@@ -71,13 +71,13 @@ export const SPACE_CATEGORIES: readonly SpaceCategoryChoice[] = [
   },
   {
     key: 'studio',
-    label: 'Studio & Classes',
+    label: 'Studios',
     blurb: 'Yoga, movement, group classes, and fitness you gather people for.',
     Icon: Users,
   },
   {
     key: 'maker',
-    label: 'Maker & Shop',
+    label: 'Shops',
     blurb: 'Products, art, craft, and goods you make and sell.',
     Icon: ShoppingBag,
   },

@@ -70,12 +70,15 @@ export async function createMakerProductAction(formData: FormData): Promise<void
   redirect(`/market/${product.id}`)
 }
 
-/** Start a one-item checkout for a product. Returns the Stripe Checkout URL, or a
- *  friendly error (payments off / seller not payout-ready). The BuyButton navigates. */
-export async function startCheckoutAction(productId: string): Promise<{ url?: string; error?: string }> {
+/** Start a one-item checkout for a product (optionally a specific variant). Returns the Stripe Checkout
+ *  URL, or a friendly error (payments off / seller not payout-ready). The BuyButton navigates. */
+export async function startCheckoutAction(
+  productId: string,
+  variantId?: string | null,
+): Promise<{ url?: string; error?: string }> {
   const buyerProfileId = await getMyProfileId()
   if (!buyerProfileId) return { error: 'Sign in to buy.' }
-  return createCommerceCheckout({ buyerProfileId, items: [{ productId, qty: 1 }] })
+  return createCommerceCheckout({ buyerProfileId, items: [{ productId, variantId: variantId ?? null, qty: 1 }] })
 }
 
 // ── Seller (maker) storefront management — owner-gated ────────────────────────────

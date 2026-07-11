@@ -49,6 +49,26 @@ const FORBIDDEN_SEGMENTS = new Set<string>([
 // landing — safe for anyone, signed in or not (see lib/qr/destinations.ts).
 export const SAFE_FALLBACK = '/discover'
 
+// A referrer id (a profile id) is a UUID. Both the person-page share link and the
+// proxy validate the `ref` param against this cheap regex before it is ever written
+// into the `fq_ref` attribution cookie, so a junk value can't poison it. This is a
+// SHAPE check only — applyReferralAttribution (lib/qr/referral.ts) still confirms the
+// referrer exists and isn't the new member before crediting anyone, so it stays safe.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** True when `value` looks like a profile id (a UUID) that may ride the `fq_ref`
+ *  referral cookie. Pure + isomorphic, so the proxy (middleware) can reuse it. */
+export function isProfileRef(value: string | null | undefined): value is string {
+  return typeof value === 'string' && UUID_RE.test(value)
+}
+
+/** True for a PERSON detail page (`/people/<handle>`) — the only surface whose share
+ *  link/QR carries a profile `?ref`. A circle/space/event share never gets a person ref. */
+function isPersonPath(path: string): boolean {
+  const segs = path.split('/').filter(Boolean)
+  return segs.length === 2 && segs[0] === 'people'
+}
+
 /** Extract the root-relative pathname from a pathname or an absolute URL. */
 function toPathname(input: string): string {
   const raw = (input ?? '').trim()
@@ -98,8 +118,21 @@ export function publicUrlFor(input: string): string {
  * routed through {@link publicUrlFor}. The single seam the share component uses so
  * the QR image, the copy link, and the saved code target all agree on one public
  * destination.
+ *
+ * REFERRAL ATTRIBUTION: pass `opts.ref` (the PROFILE OWNER's id) on a person page so
+ * BOTH the copied link and the QR (which encodes the same url) attribute a new signup
+ * to that owner. The ref rides only the `url` (the shareable/QR/saved-code target),
+ * never the returned `path` — so the page's QR folder + "open" link stay the clean
+ * canonical `/people/<handle>`. It is attached only when the ref is a valid UUID AND
+ * the resolved target is a `/people/<handle>` page; every non-person share is unchanged.
  */
-export function publicShareUrl(origin: string, pathname: string): { path: string; url: string } {
+export function publicShareUrl(
+  origin: string,
+  pathname: string,
+  opts?: { ref?: string | null },
+): { path: string; url: string } {
   const path = publicUrlFor(pathname)
-  return { path, url: `${origin}${path}` }
+  const attachRef = isProfileRef(opts?.ref) && isPersonPath(path)
+  const url = attachRef ? `${origin}${path}?ref=${opts!.ref}` : `${origin}${path}`
+  return { path, url }
 }

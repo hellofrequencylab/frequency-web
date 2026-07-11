@@ -4,7 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
-import { toAmenities, toPropertyType, upsertHousingDetail, upsertSeekerProfile } from '@/lib/listings/housing'
+import {
+  sanitizeSeekerPreferences,
+  toAmenities,
+  toPropertyType,
+  upsertHousingDetail,
+  upsertSeekerProfile,
+} from '@/lib/listings/housing'
 import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 
 // Housing actions (connect-only, ADR-39Y/148). General goods live on /market
@@ -141,6 +147,26 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
       ? Math.round(Math.min(Math.max(radiusMiles, 1), 100) * 1609.344)
       : 25000
 
+  const str = (k: string): string | null => {
+    const v = formData.get(k)
+    return typeof v === 'string' ? v : null
+  }
+  // Lifestyle block → the lean preferences jsonb the roommate match blends on. Validated +
+  // Fair-Housing gated in the pure sanitizer (gender_pref kept only for shared living).
+  const preferences = sanitizeSeekerPreferences({
+    cleanliness: str('cleanliness'),
+    social_level: str('social_level'),
+    schedule: str('schedule'),
+    diet: str('diet'),
+    pets: str('pets'),
+    smoking: str('smoking'),
+    cannabis: str('cannabis'),
+    arrangement: str('arrangement'),
+    gender_pref: str('gender_pref'),
+    age_min: str('age_min'),
+    age_max: str('age_max'),
+  })
+
   await upsertSeekerProfile(profileId, {
     active: formData.get('active') !== null,
     budgetMinCents: dollarsToCents('budget_min'),
@@ -150,6 +176,7 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
     searchLat: coord('search_lat'),
     searchLng: coord('search_lng'),
     searchRadiusM: radiusM,
+    preferences,
   })
   revalidatePath('/marketplace/housing/roommates')
 }

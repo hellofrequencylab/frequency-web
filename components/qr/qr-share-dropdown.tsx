@@ -6,6 +6,7 @@ import { Share2 } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { PageQrManager, PageShareKit } from '@/components/qr/page-qr-manager'
 import { publicShareUrl } from '@/lib/qr/public-url'
+import { useShareRef } from '@/components/qr/share-ref-context'
 
 // "QR & Share" — the page's share affordance, split out of PageAdminBar (D.1).
 // On any shareable page it is shown to ANY signed-in role: managers get the full
@@ -41,9 +42,15 @@ export function QrShareDropdown({
   }
 
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  // The PUBLIC canonical page for this route — the QR image, the copy link, and
-  // any saved code all point here, never at an admin/manage/settings path.
-  const { path: publicPath, url } = publicShareUrl(origin, pathname)
+  // On a PERSON page this is the profile owner's id (set by the page's ShareRefProvider);
+  // null everywhere else. It rides the share url as `?ref=` so the copied link AND the QR
+  // attribute a new signup to the owner (proxy → fq_ref → applyReferralAttribution).
+  const shareRef = useShareRef()
+  // The PUBLIC canonical page for this route — the QR image, the copy link, and any saved
+  // code all point here, never at an admin/manage/settings path. `path` stays the clean
+  // canonical route; only `url` carries the referral `?ref` (person pages only — the seam
+  // enforces both the person-page scope and a valid-UUID ref).
+  const { path: publicPath, url } = publicShareUrl(origin, pathname, { ref: shareRef })
 
   return (
     <>
