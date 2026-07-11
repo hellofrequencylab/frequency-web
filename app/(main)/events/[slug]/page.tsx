@@ -28,6 +28,7 @@ import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
+import { HostHovercard } from '@/components/events/host-hovercard'
 import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
@@ -1269,11 +1270,10 @@ export default async function EventDetailPage({
             )}
 
             {event.host ? (
+              // In-network host: bold, clickable, with a hover/focus profile-preview popover
+              // (items 2 + 3). An out-of-network organizer stays plain text below.
               <p>
-                Hosted by{' '}
-                <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
-                  {event.host.display_name}
-                </Link>
+                Hosted by <HostHovercard host={event.host} />
               </p>
             ) : isPostedEvent ? (
               <p className="text-subtle">
