@@ -19,6 +19,7 @@ import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
+import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvp } from '@/lib/events/rsvp-depth'
 import {
@@ -32,6 +33,28 @@ import {
 const RECURRENCE_VALUES: ReadonlySet<string> = new Set(['none', 'daily', 'weekly', 'monthly'])
 
 const MAX_GALLERY_IMAGES = 12
+
+/**
+ * The signed-in viewer's home {lat,lng} from their profile, or null. Used to DEFAULT the venue
+ * autocomplete's location bias when an event has no pin yet (Event settings overhaul: local-first
+ * address search). People almost always post events near home, so biasing the first, local-bounded
+ * Photon pass to the host's home surfaces the right local address instead of a far-flung same-named
+ * street. Best-effort — a viewer with no saved home just gets the unbiased worldwide search.
+ */
+export async function getViewerHome(): Promise<{ lat: number; lng: number } | null> {
+  const profileId = await getMyProfileId().catch(() => null)
+  if (!profileId) return null
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('profiles')
+    .select('home_lat, home_lng')
+    .eq('id', profileId)
+    .maybeSingle()
+  const row = data as { home_lat?: number | null; home_lng?: number | null } | null
+  const lat = row?.home_lat != null ? Number(row.home_lat) : NaN
+  const lng = row?.home_lng != null ? Number(row.home_lng) : NaN
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
+}
 
 // In-place "Event settings" admin module (EMBEDDED-ADMIN.md / ADR-133). Read +
 // write both re-resolve event.editSettings server-side (the dock's role gate is UX;
@@ -63,7 +86,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, geog',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -92,8 +115,24 @@ export async function getEventAdminData(slug: string) {
   // {type, coordinates:[lng,lat]}) so the editor's draggable pin can seed from it.
   // Same decode the dispatch-audience resolver uses; null when never geocoded.
   const point = pointFromGeog(event.geog)
+  // The viewer's home, to DEFAULT the venue autocomplete bias when this event has no pin yet
+  // (local-first address search). Null for a viewer with no saved home.
+  const viewerHome = await getViewerHome()
+  // Booking window rides in events.details.rsvpWindow (no dedicated column).
+  const window = readRsvpWindow(event.details)
 
-  return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems, lat: point?.lat ?? null, lng: point?.lng ?? null }
+  return {
+    ...event,
+    coverUrl,
+    posterUrl,
+    galleryPaths,
+    galleryItems,
+    lat: point?.lat ?? null,
+    lng: point?.lng ?? null,
+    viewerHome,
+    rsvpOpensAt: window.opensAt,
+    rsvpClosesAt: window.closesAt,
+  }
 }
 
 type EventAdminRow = {
@@ -120,6 +159,13 @@ type EventAdminRow = {
   category: string | null
   visibility: string | null
   energy_tag: string | null
+  theme: unknown
+  price_cents: number | null
+  currency: string | null
+  time_zone: string | null
+  recurrence_type: string | null
+  recurrence_until: string | null
+  details: Record<string, unknown> | null
   geog: unknown
 }
 
@@ -171,6 +217,39 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const visibility = VISIBILITY_VALUES.has(visibilityRaw) ? visibilityRaw : undefined
   const energyTag = coerceEnergyTag(fd.get('energy_tag'))
 
+  // Ticket price (folded in from the retired Engage module): whole currency units → cents; blank /
+  // non-positive clears back to a free RSVP event. Purchases still move only through the
+  // service-role checkout — this only sets the price column.
+  const priceRaw = ((fd.get('price') as string) ?? '').trim()
+  const priceAmount = priceRaw ? Number(priceRaw) : NaN
+  const priceCents = Number.isFinite(priceAmount) && priceAmount > 0 ? Math.round(priceAmount * 100) : null
+
+  // Time zone (folded in from Place & Time): only a valid IANA zone is written, else left unchanged.
+  const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
+  const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
+
+  // Recurrence (folded in from Place & Time): only a recognised cadence is written (CHECK-constrained
+  // column); the repeat-until is validated against the start so a zero-occurrence series can't save.
+  const recurrenceRaw = ((fd.get('recurrence_type') as string) ?? '').trim()
+  const recurrence = RECURRENCE_VALUES.has(recurrenceRaw) ? (recurrenceRaw as RecurrenceType) : 'none'
+  const startIsoForRec = startsAt ? wallClockToIso(startsAt) : null
+  const untilIso = recurrence === 'none' ? null : dateToWallClockIso(fd.get('recurrence_until') as string)
+  const recurrenceError = validateRecurrenceUntil(recurrence, startIsoForRec, untilIso)
+  if (recurrenceError) throw new Error(recurrenceError)
+
+  // Booking window (folded in from Place & Time; no dedicated column): read-merge-write into
+  // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
+  const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
+  const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
+  const { data: currentDetails } = await admin.from('events').select('details').eq('id', id).maybeSingle()
+  const baseDetails = ((currentDetails as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
+    string,
+    unknown
+  >
+  const nextDetails: Record<string, unknown> = { ...baseDetails }
+  if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
+  else delete nextDetails.rsvpWindow
+
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
     .update({
@@ -182,6 +261,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ends_at: endsAt ? wallClockToIso(endsAt) : null,
       capacity,
       energy_tag: energyTag,
+      price_cents: priceCents,
+      recurrence_type: recurrence,
+      recurrence_until: untilIso,
+      details: nextDetails,
+      ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
       ...(visibility ? { visibility } : {}),
     })
@@ -347,6 +431,31 @@ export async function uploadEventCover(
   return { url: data.publicUrl }
 }
 
+/** Set the event page's hero HEIGHT (Short / Standard / Tall). Stored on the events.theme jsonb
+ *  bag under `heroHeight` (read-merge-write so other theme keys survive; the default is dropped so
+ *  a plain event keeps an empty theme). Same event.editSettings gate. */
+export async function updateEventHeroHeight(
+  id: string,
+  slug: string,
+  height: EventHeroHeight,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
+  const nextTheme = writeEventHeroHeight((current as { theme?: unknown } | null)?.theme, height)
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ theme: nextTheme })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/events/${slug}`)
+  return { ok: true }
+}
+
 export async function removeEventCover(id: string, slug: string) {
   const caps = await getEventCapabilities(id)
   if (!caps.has('event.editSettings')) throw new Error('Unauthorized')
@@ -381,8 +490,51 @@ export async function removeEventPoster(id: string, slug: string) {
   revalidatePath('/feed')
 }
 
+// Gallery upload accepts what the bucket accepts (migration 20261105000000 widened event-media
+// to the formats phones actually shoot). SVG is deliberately excluded (it can carry script).
+const GALLERY_MIME = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif', 'image/avif']
+
+/**
+ * Upload ONE gallery photo to the public `event-media` bucket through the SERVER (admin client),
+ * returning its storage PATH. Mirrors uploadEventCover: the browser can't insert into event-media
+ * directly (its RLS gates writes to `split_part(name,'/',1) = auth.uid()`, so a co-host — or the
+ * host on an event scanned under another id — hit "new row violates row-level security policy").
+ * Routing the write server-side, gated on event.editSettings, fixes that for every host/co-host and
+ * lands the photo under the EVENT's path prefix (`${id}/…`), like the cover. The caller persists the
+ * returned path into events.gallery_image_paths via setEventGalleryImages.
+ */
+export async function uploadEventGalleryImage(
+  id: string,
+  slug: string,
+  formData: FormData,
+): Promise<{ path: string } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'No file selected.' }
+  if (file.size > 10 * 1024 * 1024) return { error: 'Image must be under 10MB.' }
+  if (!GALLERY_MIME.includes(file.type)) {
+    return { error: 'Use a JPEG, PNG, GIF, WebP, HEIC, or AVIF image.' }
+  }
+
+  const admin = createAdminClient()
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${id}/gallery-${crypto.randomUUID()}.${ext}`
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const { error: upErr } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  return { path }
+}
+
 /** Replace the event's uploaded gallery images (events.gallery_image_paths). Used by the
- *  Photos manager to add or delete photos. Validates + caps the array; same gate. */
+ *  Photos manager to add or delete photos. Validates + caps the array; same gate. Any image
+ *  DROPPED from the array (a removed photo) has its bytes deleted from event-media too, so
+ *  removing a photo cleans up storage instead of orphaning it (best-effort; only event-scoped
+ *  paths are touched). */
 export async function setEventGalleryImages(
   id: string,
   slug: string,
@@ -397,11 +549,23 @@ export async function setEventGalleryImages(
     .slice(0, MAX_GALLERY_IMAGES)
 
   const admin = createAdminClient()
+
+  // What was there before, so a removed photo's bytes can be cleaned up (delete works too).
+  const { data: prev } = await admin.from('events').select('gallery_image_paths').eq('id', id).maybeSingle()
+  const before = ((prev as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
+
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
     .update({ gallery_image_paths: clean })
     .eq('id', id)
   if (error) return { error: error.message }
+
+  // Remove now-orphaned objects from storage. Only delete images under THIS event's own path
+  // prefix (`${id}/…`) — a legacy user-prefixed path is left alone to avoid touching another
+  // bucket owner's object. Best-effort: a storage miss never fails the save.
+  const keep = new Set(clean)
+  const orphans = before.filter((p) => !keep.has(p) && p.startsWith(`${id}/`))
+  if (orphans.length) await admin.storage.from('event-media').remove(orphans).catch(() => {})
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
@@ -533,6 +697,7 @@ export async function getEventPlaceTimeData(slug: string) {
 
   const point = pointFromGeog(event.geog)
   const window = readRsvpWindow(event.details)
+  const viewerHome = await getViewerHome()
 
   return {
     ...event,
@@ -540,6 +705,7 @@ export async function getEventPlaceTimeData(slug: string) {
     lng: point?.lng ?? null,
     rsvpOpensAt: window.opensAt,
     rsvpClosesAt: window.closesAt,
+    viewerHome,
   }
 }
 

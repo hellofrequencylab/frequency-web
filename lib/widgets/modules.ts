@@ -239,6 +239,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'event-warm-proof', label: 'Warm proof', description: 'Who is going: the avatar pile and a warm line of real attendance numbers.' },
   { id: 'event-facts', label: 'Event facts', description: 'The when card, the capacity line, and the guest list.' },
   { id: 'event-location', label: 'Location & map', description: 'The venue line and the map: the exact spot when the event is geocoded, or the hosting circle’s city-level pin.' },
+  { id: 'event-venue-map', label: 'Venue map', description: 'A full-width map of the venue, pinned at the bottom of the main column. Hidden when the event is online or has no location.' },
   { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
   // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
   // moves or hides any one of them independently. Each renders only when the poster carried it.
@@ -615,6 +616,8 @@ const EVENT_DETAIL_MODULE_IDS = [
   'event-join',
   'event-facts',
   'event-location',
+  // The venue map block — pinned at the bottom of MAIN by default (self-hides with no geo).
+  'event-venue-map',
   // Spine-paired blocks (LP-EVENT): Place & Time → when/where; People → waitlist; Engage →
   // check-in. Each self-hides when it has nothing, so they cost one query and render nothing off
   // their window.

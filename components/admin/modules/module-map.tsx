@@ -19,9 +19,7 @@ import { NexusLayoutModule } from './nexus-layout-module'
 import { NexusInsightsModule } from './nexus-insights-module'
 import { NexusDangerModule } from './nexus-danger-module'
 import { EventSettingsModule } from './event-settings-module'
-import { EventPlaceTimeModule } from './event-place-time-module'
 import { EventPeopleModule } from './event-people-module'
-import { EventEngageModule } from './event-engage-module'
 import { PracticeSettingsModule } from './practice-settings-module'
 import { PracticeInsightsModule } from './practice-insights-module'
 import { ChannelSettingsModule } from './channel-settings-module'
@@ -65,10 +63,10 @@ export const MODULE_COMPONENTS: Record<string, ComponentType> = {
   'nexus.layout': NexusLayoutModule,
   'nexus.insights': NexusInsightsModule,
   'nexus.danger': NexusDangerModule,
+  // The former event.placeAndTime + event.engage editors folded into event.settings (Event page
+  // overhaul), so the host edits the whole event in one flow. People stays its own module.
   'event.settings': EventSettingsModule,
-  'event.placeAndTime': EventPlaceTimeModule,
   'event.people': EventPeopleModule,
-  'event.engage': EventEngageModule,
   'practice.settings': PracticeSettingsModule,
   'practice.insights': PracticeInsightsModule,
   'channel.settings': ChannelSettingsModule,

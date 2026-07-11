@@ -83,46 +83,13 @@ function structuredLabel(p: Record<string, string | undefined>): string {
   return parts.filter((x) => (seen.has(x) ? false : (seen.add(x), true))).join(', ')
 }
 
-/**
- * Address / venue typeahead. Unlike searchPlaces (populated places only), this lets
- * Photon return venues, POIs, and street addresses too, and surfaces the structured
- * address parts so a pick can fill venue + street + city + region + country + postal
- * code AND drop the map pin. Same keyless Photon endpoint, same fail-quiet contract.
- */
-export async function searchAddresses(
-  query: string,
-  signal?: AbortSignal,
-  /** Optional location bias — Photon ranks results NEAR this point first, so "8950 Villa La
-   *  Jolla" surfaces the La Jolla venue instead of a same-named street on the other coast.
-   *  Pass the event's current pin, or the viewer's home location. */
-  bias?: { lat: number; lng: number } | null,
-): Promise<PlaceResult[]> {
-  const q = query.trim()
-  if (q.length < 2) return []
-
-  // No `layer` filter here — we WANT venues / streets / POIs, not just cities. A larger limit
-  // gives the local-bias re-ranking more candidates to pull the right venue up from.
-  const params = new URLSearchParams({ q, limit: '10', lang: 'en' })
-  if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
-    params.set('lat', String(bias.lat))
-    params.set('lon', String(bias.lng))
-  }
-
-  let res: Response
-  try {
-    res = await fetch(`${PHOTON_URL}?${params.toString()}`, { signal })
-  } catch {
-    return [] // network/abort — fail quietly, the UI just shows no suggestions
-  }
-  if (!res.ok) return []
-
-  const data = (await res.json()) as {
-    features?: Array<{
-      geometry: { coordinates: [number, number] }
-      properties: Record<string, string | undefined>
-    }>
-  }
-
+/** Parse Photon's GeoJSON features into our structured PlaceResult list, deduped by label. */
+function parseAddressFeatures(data: {
+  features?: Array<{
+    geometry: { coordinates: [number, number] }
+    properties: Record<string, string | undefined>
+  }>
+}): PlaceResult[] {
   const seen = new Set<string>()
   const out: PlaceResult[] = []
   for (const f of data.features ?? []) {
@@ -144,6 +111,86 @@ export async function searchAddresses(
     })
   }
   return out
+}
+
+/** One Photon address pass. `box` (west,south,east,north) restricts results to that window;
+ *  omit it for a worldwide query. Fails quiet (network/abort/!ok → []). */
+async function photonAddressPass(
+  q: string,
+  bias: { lat: number; lng: number } | null,
+  box: [number, number, number, number] | null,
+  signal?: AbortSignal,
+): Promise<PlaceResult[]> {
+  // No `layer` filter — we WANT venues / streets / POIs, not just cities. A larger limit gives the
+  // local-bias re-ranking more candidates to pull the right venue up from.
+  const params = new URLSearchParams({ q, limit: '10', lang: 'en' })
+  if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+    params.set('lat', String(bias.lat))
+    params.set('lon', String(bias.lng))
+  }
+  if (box) params.set('bbox', box.join(','))
+
+  let res: Response
+  try {
+    res = await fetch(`${PHOTON_URL}?${params.toString()}`, { signal })
+  } catch {
+    return [] // network/abort — fail quietly, the UI just shows no suggestions
+  }
+  if (!res.ok) return []
+  return parseAddressFeatures(
+    (await res.json()) as {
+      features?: Array<{
+        geometry: { coordinates: [number, number] }
+        properties: Record<string, string | undefined>
+      }>
+    },
+  )
+}
+
+/** Half-width, in degrees, of the LOCAL bounding box drawn around the bias for the first pass.
+ *  ~0.9° ≈ 60 mi at mid-latitudes — a metro-sized window, wide enough for a suburb's venues,
+ *  tight enough to keep a far-flung same-named street out of the local pass. */
+const LOCAL_BOX_HALF_DEG = 0.9
+
+/**
+ * Address / venue typeahead. Unlike searchPlaces (populated places only), this lets
+ * Photon return venues, POIs, and street addresses too, and surfaces the structured
+ * address parts so a pick can fill venue + street + city + region + country + postal
+ * code AND drop the map pin. Same keyless Photon endpoint, same fail-quiet contract.
+ *
+ * LOCAL-FIRST (Event settings overhaul): people almost always post local events, so when we
+ * have a bias (the event's pin, else the viewer's home) we run a LOCAL-bounded pass first — a
+ * bbox drawn around the bias — so a typed local street ("6882 Embarcadero Ln, Carlsbad") returns
+ * the nearby address instead of a same-named street in France or India. Only if the local pass
+ * finds nothing do we fall back to a worldwide (unbounded) pass, keeping the bias so results
+ * still rank near home. With no bias at all it's a single worldwide pass (unchanged behaviour).
+ */
+export async function searchAddresses(
+  query: string,
+  signal?: AbortSignal,
+  /** Optional location bias — the event's current pin, or the viewer's home location. Drives both
+   *  the local bounding box (first pass) and Photon's near-point ranking. */
+  bias?: { lat: number; lng: number } | null,
+): Promise<PlaceResult[]> {
+  const q = query.trim()
+  if (q.length < 2) return []
+
+  const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null
+
+  // LOCAL pass: a bounding box around the bias so nearby addresses win. Guard the box to valid
+  // lat/lng ranges so a bias near a pole / the antimeridian still yields a sane window.
+  if (b) {
+    const west = Math.max(-180, b.lng - LOCAL_BOX_HALF_DEG)
+    const east = Math.min(180, b.lng + LOCAL_BOX_HALF_DEG)
+    const south = Math.max(-90, b.lat - LOCAL_BOX_HALF_DEG)
+    const north = Math.min(90, b.lat + LOCAL_BOX_HALF_DEG)
+    const local = await photonAddressPass(q, b, [west, south, east, north], signal)
+    if (local.length > 0) return local
+  }
+
+  // WORLDWIDE fallback (or the only pass when there is no bias). Bias, when present, still ranks
+  // near-home results first.
+  return photonAddressPass(q, b, null, signal)
 }
 
 // Metres → a friendly distance string for circle results.

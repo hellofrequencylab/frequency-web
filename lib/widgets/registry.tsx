@@ -145,6 +145,7 @@ import { EventJoin } from '@/components/widgets/events/event-join'
 import { EventWarmProof } from '@/components/widgets/events/event-warm-proof'
 import { EventFacts } from '@/components/widgets/events/event-facts'
 import { EventLocation } from '@/components/widgets/events/event-location'
+import { EventVenueMapBlock } from '@/components/widgets/events/event-venue-map-block'
 import { EventWhenWhere } from '@/components/widgets/events/event-when-where'
 import { EventAttendees } from '@/components/widgets/events/event-attendees'
 import { EventCheckin } from '@/components/widgets/events/event-checkin'
@@ -327,6 +328,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-warm-proof': EventWarmProof,
   'event-facts': EventFacts,
   'event-location': EventLocation,
+  'event-venue-map': EventVenueMapBlock,
   'event-when-where': EventWhenWhere,
   'event-attendees': EventAttendees,
   'event-checkin': EventCheckin,
