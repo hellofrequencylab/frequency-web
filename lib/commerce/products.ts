@@ -5,8 +5,18 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
-import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup } from './types'
+import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGroup, ServiceConfig } from './types'
 import { kindsForGroup } from './types'
+
+/** Drop undefined keys from a ServiceConfig so a partial edit never writes `undefined` into the JSON
+ *  (and an all-undefined config collapses to null, meaning "no policy"). */
+function pruneServiceConfig(svc: ServiceConfig): ServiceConfig | null {
+  const out: ServiceConfig = {}
+  for (const [k, v] of Object.entries(svc)) {
+    if (v !== undefined && v !== null) (out as Record<string, unknown>)[k] = v
+  }
+  return Object.keys(out).length ? out : null
+}
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -92,6 +102,9 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
       category: input.category ?? null,
       booking_space_id: input.bookingSpaceId ?? null,
       market_published: input.marketPublished ?? false,
+      // Persist the full service quote + policy (priceModel, cancellation/no-show fields, duration,
+      // deposit) under metadata.service when present, so a service can be authored in one write.
+      ...(input.service ? { metadata: { service: pruneServiceConfig(input.service) ?? {} } } : {}),
       status: 'draft',
     })
     .select(PRODUCT_COLS)
@@ -205,6 +218,10 @@ export interface ProductPatch {
   /** Partial metadata to MERGE over the row's existing metadata (never clobbers sibling keys such
    *  as the backfill 'source' marker) — e.g. `{ service: ServiceConfig }`. */
   metadata?: Record<string, unknown>
+  /** The service quote + policy (priceModel, duration, deposit, cancellationWindowHours,
+   *  noShowFeePct). Convenience over `metadata`: MERGED over the existing metadata.service so a
+   *  partial edit (e.g. just the policy) never clobbers the other service fields. */
+  service?: ServiceConfig | null
 }
 
 /** Edit a product's fields. Caller (server action) has authorized the owner/operator. */
@@ -219,11 +236,18 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.stock !== undefined) update.stock = patch.stock ?? null
   if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
   if (patch.productKind !== undefined) update.product_kind = patch.productKind
-  if (patch.metadata !== undefined) {
-    // Merge over existing metadata so we never clobber sibling keys (backfill 'source', etc.).
+  if (patch.metadata !== undefined || patch.service !== undefined) {
+    // Merge over existing metadata so we never clobber sibling keys (backfill 'source', etc.). One
+    // read serves both `metadata` and the typed `service` convenience.
     const { data: cur } = await db().from('commerce_products').select('metadata').eq('id', id).maybeSingle()
     const existing = (cur as { metadata?: Record<string, unknown> } | null)?.metadata ?? {}
-    update.metadata = { ...existing, ...patch.metadata }
+    const merged: Record<string, unknown> = { ...existing, ...(patch.metadata ?? {}) }
+    if (patch.service !== undefined) {
+      // Deep-merge the service subtree so a partial policy edit keeps the other service fields.
+      const existingSvc = (existing.service as ServiceConfig | undefined) ?? {}
+      merged.service = pruneServiceConfig({ ...existingSvc, ...(patch.service ?? {}) }) ?? {}
+    }
+    update.metadata = merged
   }
   if (Object.keys(update).length === 0) return
   const { error } = await db().from('commerce_products').update(update).eq('id', id)

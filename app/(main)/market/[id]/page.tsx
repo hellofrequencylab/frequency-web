@@ -13,6 +13,7 @@ import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
 import { BuyButton } from '../../marketplace/buy-button'
+import { isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   const profileId = caller?.id ?? null
   const product = await getProduct(id)
   if (!product) notFound()
-  const isService = product.productKind === 'service'
+  // 'booking' is an alias of 'service' for rendering/booking: both take the calendar picker, never a
+  // Buy button, so a product_kind='booking' row can never mis-render as a plain product (F11).
+  const isService = isBookableServiceKind(product.productKind)
 
   // A Space-owned listing carries TWO extra publish gates beyond status='active' (which only means
   // "live in the Space's own Shop console"): market_published (opt-in to the global Market) and the
