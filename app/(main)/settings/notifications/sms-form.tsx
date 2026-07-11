@@ -24,7 +24,13 @@ const SMS_CATEGORIES: { key: 'sms_dispatches' | 'sms_events'; label: string; des
   { key: 'sms_events', label: 'Events', description: 'RSVP confirmations and reminders before an event.' },
 ]
 
-export function SmsForm({ initial }: { initial: SmsFormState }) {
+export function SmsForm({
+  initial,
+  smsProvisioned,
+}: {
+  initial: SmsFormState
+  smsProvisioned: boolean
+}) {
   const [optedIn, setOptedIn] = useState(initial.optedIn)
   const [maskedPhone, setMaskedPhone] = useState(initial.maskedPhone)
   const [prefs, setPrefs] = useState<SmsPreferences>(initial.preferences)
@@ -88,8 +94,25 @@ export function SmsForm({ initial }: { initial: SmsFormState }) {
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-elevated">
         <MessageSquare className="w-4 h-4 text-muted" />
         <span className="text-sm font-semibold text-text">Text messages</span>
+        {!smsProvisioned && (
+          <span className="ml-auto rounded-full bg-surface px-2 py-0.5 text-xs font-medium text-muted">
+            Coming soon
+          </span>
+        )}
       </div>
 
+      {!smsProvisioned ? (
+        // SMS is not turned on for this community yet (isSmsProvisioned() is false).
+        // Show the channel so members know it is planned, but never a live opt-in or
+        // toggle that would silently do nothing. The interactive form returns once the
+        // owner completes provisioning.
+        <div className="px-4 py-4">
+          <p className="text-sm text-muted">
+            Text messages are coming soon. When they turn on, you can opt in here to get
+            event reminders and group updates by text.
+          </p>
+        </div>
+      ) : (
       <div className="px-4 py-4 space-y-4">
         {!optedIn ? (
           <>
@@ -222,6 +245,7 @@ export function SmsForm({ initial }: { initial: SmsFormState }) {
           </p>
         )}
       </div>
+      )}
     </div>
   )
 }

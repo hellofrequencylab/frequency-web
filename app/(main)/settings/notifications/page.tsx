@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isSmsProvisioned } from '@/lib/comms/sms'
 import { DEFAULT_PREFERENCES, type NotificationPreferences } from '@/lib/notification-preferences'
 import { FocusTemplate } from '@/components/templates'
 import { NotificationsForm } from './form'
@@ -86,7 +87,9 @@ export default async function NotificationsPage() {
       back={{ href: '/settings', label: 'Settings' }}
     >
       <NotificationsForm initial={initial} />
-      <SmsForm initial={smsInitial} />
+      {/* isSmsProvisioned() is a server-only env check; pass the boolean to the client
+          form so it renders a "Coming soon" state until the owner turns SMS on. */}
+      <SmsForm initial={smsInitial} smsProvisioned={isSmsProvisioned()} />
     </FocusTemplate>
   )
 }
