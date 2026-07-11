@@ -57,6 +57,8 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-links',
           'event-sponsors',
           'event-recap',
+          // The venue map, pinned at the bottom of the main column (self-hides when there's no geo).
+          'event-venue-map',
         ],
         hidden: [],
         roles: {},
