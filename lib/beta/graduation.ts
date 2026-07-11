@@ -20,6 +20,8 @@ import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { setPlatformFlag } from '@/lib/platform-flags'
 import { approverGate } from './guard'
 import { logBetaAction } from './audit'
+import { grantFoundingStatus } from '@/lib/founding/status'
+import { awardReferralWinners } from '@/lib/beta/referral-contest'
 
 /** The exact phrase graduateBeta() requires, so it can never fire from a stray click or a default arg. */
 export const GRADUATE_CONFIRM = 'GRADUATE' as const
@@ -45,15 +47,37 @@ export async function graduateBeta(confirm: string): Promise<ActionResult> {
     return fail('Could not turn billing live. Nothing was changed.')
   }
 
-  // GRADUATION HOOK: grant founding status (founding agent)
-  // GRADUATION HOOK: award referral winners (referral agent)
+  // GRADUATION HOOKS. billing_live is already ON (the critical step), and BOTH grants below are
+  // idempotent + re-runnable, so a failure here is logged and folded into the audit detail but never
+  // blocks graduation or throws to the UI. Re-running graduateBeta() (or the grants directly) settles up.
+
+  // Grant founding status to every reserved founder (member + business), applying their locked rate.
+  let foundingGranted = 0
+  try {
+    const r = await grantFoundingStatus()
+    if ('error' in r) console.error('[beta] graduateBeta: grantFoundingStatus failed:', r.error)
+    else foundingGranted = r.data.granted
+  } catch (err) {
+    console.error('[beta] graduateBeta: grantFoundingStatus threw:', err)
+  }
+
+  // Record the referral + Circle-starter contest prizes for the winners (free-membership credits +
+  // Founding perks). Recorded only; the paid time itself settles through the now-live billing path.
+  let referralAwarded: unknown = null
+  try {
+    const r = await awardReferralWinners()
+    if ('error' in r) console.error('[beta] graduateBeta: awardReferralWinners failed:', r.error)
+    else referralAwarded = r.data
+  } catch (err) {
+    console.error('[beta] graduateBeta: awardReferralWinners threw:', err)
+  }
 
   await logBetaAction({
     actorProfileId: gate.profileId,
     action: 'graduate_beta',
     targetType: 'platform',
     targetId: null,
-    detail: { billingLive: true, at: new Date().toISOString() },
+    detail: { billingLive: true, foundingGranted, referralAwarded, at: new Date().toISOString() },
   })
 
   return ok()
