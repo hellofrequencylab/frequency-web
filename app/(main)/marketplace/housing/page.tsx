@@ -8,6 +8,7 @@ import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
@@ -89,16 +90,21 @@ export default async function HousingPage() {
               description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
             />
           ) : (
-            <div className="@container">
-              <InstantGrid
-                items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
-                className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3"
-              >
-                {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </InstantGrid>
-            </div>
+            <MarketplaceColumnsProvider>
+              <div className="mb-4 flex justify-end">
+                <MarketplaceColumns />
+              </div>
+              <div className="@container">
+                <InstantGrid
+                  items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
+                  className="mp-grid gap-6"
+                >
+                  {listings.map((l) => (
+                    <ListingCard key={l.id} listing={l} />
+                  ))}
+                </InstantGrid>
+              </div>
+            </MarketplaceColumnsProvider>
           )}
         </div>
 

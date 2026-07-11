@@ -5,6 +5,7 @@ import { listShopProducts } from '@/lib/commerce/products'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
@@ -51,16 +52,21 @@ export default async function ShopPage() {
               description="Merch, event passes, and retreats are coming. Check back soon."
             />
           ) : (
-            <div className="@container">
-              <InstantGrid
-                items={products.map((p) => ({ text: `${p.title} ${p.description ?? ''}` }))}
-                className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-4"
-              >
-                {products.map((p) => (
-                  <ProductCard key={p.id} product={p} href={`/store/${p.id}`} />
-                ))}
-              </InstantGrid>
-            </div>
+            <MarketplaceColumnsProvider>
+              <div className="mb-4 flex justify-end">
+                <MarketplaceColumns />
+              </div>
+              <div className="@container">
+                <InstantGrid
+                  items={products.map((p) => ({ text: `${p.title} ${p.description ?? ''}` }))}
+                  className="mp-grid gap-6"
+                >
+                  {products.map((p) => (
+                    <ProductCard key={p.id} product={p} href={`/store/${p.id}`} />
+                  ))}
+                </InstantGrid>
+              </div>
+            </MarketplaceColumnsProvider>
           )}
         </div>
 

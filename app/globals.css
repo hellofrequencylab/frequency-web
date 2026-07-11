@@ -1322,6 +1322,21 @@ h1, h2, h3, h4, h5, h6 {
   .brandmark-link { transition: none; animation: none; }
 }
 
+/* ── Marketplace card-density grid ─────────────────────────────────────────
+   A member-selectable column count for every Marketplace surface. The count is
+   driven by CSS variables set on a wrapper (MarketplaceColumnsProvider), so the
+   grid repaints instantly with no Tailwind rebuild and no server round-trip.
+   Defaults: mobile 2, desktop 3. Keep each surface's own `gap-*` alongside. */
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--mp-cols-mobile, 2), minmax(0, 1fr));
+}
+@media (min-width: 1024px) {
+  .mp-grid {
+    grid-template-columns: repeat(var(--mp-cols-desktop, 3), minmax(0, 1fr));
+  }
+}
+
 /* Embossed label text — the same warm two-tone catch-light/shadow as the brand
    mark, for button text so it reads raised/engraved into a filled button. */
 .text-emboss {

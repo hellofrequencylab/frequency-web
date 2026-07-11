@@ -8,6 +8,7 @@ import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
@@ -109,7 +110,12 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
             description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
           />
         ) : (
-          <MarketGrid listings={grid} />
+          <MarketplaceColumnsProvider>
+            <div className="mb-4 flex justify-end">
+              <MarketplaceColumns />
+            </div>
+            <MarketGrid listings={grid} />
+          </MarketplaceColumnsProvider>
         )}
       </div>
 

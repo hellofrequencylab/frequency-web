@@ -104,7 +104,7 @@ export function MarketGrid({ listings }: { listings: GridListing[] }) {
       {ordered.length === 0 ? (
         <p className="text-sm text-muted">No matches for &ldquo;{query}&rdquo;.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mp-grid gap-3">
           {ordered.map(({ l, distance }) => <Card key={l.id} l={l} distance={distance} />)}
         </div>
       )}
