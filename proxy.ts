@@ -106,7 +106,8 @@ export async function proxy(request: NextRequest) {
     if (isProfileRef(ref) && !request.cookies.get(REF_COOKIE)) {
       // Master switch (defaults on, like the /q resolver). Read defensively: the flag
       // reader is React-cache wrapped, so a non-render context must never throw the proxy.
-      let enabled = true
+      // Both branches assign, so no initializer is needed (and a dead one trips CodeQL).
+      let enabled: boolean
       try {
         enabled = await referralsEnabled()
       } catch {
