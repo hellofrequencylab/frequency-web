@@ -458,6 +458,289 @@ export type Database = {
           },
         ]
       }
+      beta_admission_waves: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          phase_id: string | null
+          proposed_count: number
+          scheduled_for: string | null
+          segment: string
+          sent_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          phase_id?: string | null
+          proposed_count?: number
+          scheduled_for?: string | null
+          segment?: string
+          sent_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          phase_id?: string | null
+          proposed_count?: number
+          scheduled_for?: string | null
+          segment?: string
+          sent_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_admission_waves_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beta_admission_waves_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beta_admission_waves_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "beta_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beta_audit_log: {
+        Row: {
+          action: string
+          actor_profile_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_profile_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_profile_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_audit_log_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beta_host_prompts: {
+        Row: {
+          dismissed_at: string | null
+          first_seen_at: string
+          id: string
+          kind: string
+          last_seen_at: string
+          profile_id: string
+          seen_count: number
+        }
+        Insert: {
+          dismissed_at?: string | null
+          first_seen_at?: string
+          id?: string
+          kind: string
+          last_seen_at?: string
+          profile_id: string
+          seen_count?: number
+        }
+        Update: {
+          dismissed_at?: string | null
+          first_seen_at?: string
+          id?: string
+          kind?: string
+          last_seen_at?: string
+          profile_id?: string
+          seen_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_host_prompts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beta_phases: {
+        Row: {
+          created_at: string
+          ends_on: string | null
+          goal: string
+          id: string
+          key: string
+          position: number
+          starts_on: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_on?: string | null
+          goal?: string
+          id?: string
+          key: string
+          position?: number
+          starts_on?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_on?: string | null
+          goal?: string
+          id?: string
+          key?: string
+          position?: number
+          starts_on?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      beta_referrals: {
+        Row: {
+          activated_at: string
+          created_at: string
+          id: string
+          invitee_profile_id: string
+          referrer_profile_id: string
+          source: string
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          invitee_profile_id: string
+          referrer_profile_id: string
+          source?: string
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          invitee_profile_id?: string
+          referrer_profile_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_referrals_invitee_profile_id_fkey"
+            columns: ["invitee_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beta_referrals_referrer_profile_id_fkey"
+            columns: ["referrer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beta_tasks: {
+        Row: {
+          acceptance: string
+          created_at: string
+          detail: string
+          due_on: string | null
+          id: string
+          owner: string | null
+          phase_id: string
+          position: number
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acceptance?: string
+          created_at?: string
+          detail?: string
+          due_on?: string | null
+          id?: string
+          owner?: string | null
+          phase_id: string
+          position?: number
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acceptance?: string
+          created_at?: string
+          detail?: string
+          due_on?: string | null
+          id?: string
+          owner?: string | null
+          phase_id?: string
+          position?: number
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_tasks_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "beta_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blocked_users: {
         Row: {
           blocked_id: string
@@ -562,11 +845,15 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           audience_filter: Json | null
           body: string
           created_at: string
           created_by: string | null
           id: string
+          phase_id: string | null
           recipient_count: number
           scheduled_for: string | null
           segment: string
@@ -574,13 +861,18 @@ export type Database = {
           space_id: string | null
           status: string
           subject: string
+          test_sent_at: string | null
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           audience_filter?: Json | null
           body: string
           created_at?: string
           created_by?: string | null
           id?: string
+          phase_id?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -588,13 +880,18 @@ export type Database = {
           space_id?: string | null
           status?: string
           subject: string
+          test_sent_at?: string | null
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           audience_filter?: Json | null
           body?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          phase_id?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -602,13 +899,28 @@ export type Database = {
           space_id?: string | null
           status?: string
           subject?: string
+          test_sent_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "campaigns_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "beta_phases"
             referencedColumns: ["id"]
           },
           {
@@ -1369,6 +1681,7 @@ export type Database = {
           subtotal_cents: number
           title: string
           unit_cents: number
+          variant_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1379,6 +1692,7 @@ export type Database = {
           subtotal_cents: number
           title: string
           unit_cents: number
+          variant_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1389,6 +1703,7 @@ export type Database = {
           subtotal_cents?: number
           title?: string
           unit_cents?: number
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -1403,6 +1718,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "commerce_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commerce_order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -1506,7 +1828,6 @@ export type Database = {
         Row: {
           booking_space_id: string | null
           category: string | null
-          condition: string | null
           created_at: string
           currency: string
           description: string | null
@@ -1530,7 +1851,6 @@ export type Database = {
         Insert: {
           booking_space_id?: string | null
           category?: string | null
-          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1554,7 +1874,6 @@ export type Database = {
         Update: {
           booking_space_id?: string | null
           category?: string | null
-          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1653,6 +1972,53 @@ export type Database = {
             columns: ["reviewer_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commerce_variants: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          options: Json
+          price_cents: number | null
+          product_id: string
+          sku: string | null
+          sort_order: number
+          stock: number | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          options?: Json
+          price_cents?: number | null
+          product_id: string
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          options?: Json
+          price_cents?: number | null
+          product_id?: string
+          sku?: string | null
+          sort_order?: number
+          stock?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commerce_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "commerce_products"
             referencedColumns: ["id"]
           },
         ]
@@ -3241,6 +3607,7 @@ export type Database = {
           event_id: string
           id: string
           image_url: string | null
+          kind: string
           profile_id: string
         }
         Insert: {
@@ -3249,6 +3616,7 @@ export type Database = {
           event_id: string
           id?: string
           image_url?: string | null
+          kind?: string
           profile_id: string
         }
         Update: {
@@ -3257,6 +3625,7 @@ export type Database = {
           event_id?: string
           id?: string
           image_url?: string | null
+          kind?: string
           profile_id?: string
         }
         Relationships: [
@@ -3873,6 +4242,72 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      founding_members: {
+        Row: {
+          card_on_file: boolean
+          charged_at: string | null
+          cohort_city: string | null
+          created_at: string
+          id: string
+          kind: string
+          locked_rate_cents: number | null
+          locked_take_bps: number | null
+          meta: Json
+          profile_id: string | null
+          reserved_at: string
+          space_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          card_on_file?: boolean
+          charged_at?: string | null
+          cohort_city?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          locked_rate_cents?: number | null
+          locked_take_bps?: number | null
+          meta?: Json
+          profile_id?: string | null
+          reserved_at?: string
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          card_on_file?: boolean
+          charged_at?: string | null
+          cohort_city?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          locked_rate_cents?: number | null
+          locked_take_bps?: number | null
+          meta?: Json
+          profile_id?: string | null
+          reserved_at?: string
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "founding_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "founding_members_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
         ]
@@ -7070,6 +7505,7 @@ export type Database = {
       }
       page_settings: {
         Row: {
+          header_image_focal: string | null
           header_image_url: string | null
           layout: Json | null
           og_image_url: string | null
@@ -7083,6 +7519,7 @@ export type Database = {
           visibility_role: string | null
         }
         Insert: {
+          header_image_focal?: string | null
           header_image_url?: string | null
           layout?: Json | null
           og_image_url?: string | null
@@ -7096,6 +7533,7 @@ export type Database = {
           visibility_role?: string | null
         }
         Update: {
+          header_image_focal?: string | null
           header_image_url?: string | null
           layout?: Json | null
           og_image_url?: string | null
@@ -12797,6 +13235,12 @@ export type Database = {
         Returns: string
       }
       handle_is_available: { Args: { check_handle: string }; Returns: boolean }
+      housing_astro_compat: { Args: { a: string; b: string }; Returns: number }
+      housing_element_pair: { Args: { a: string; b: string }; Returns: number }
+      housing_lifestyle_agreement: {
+        Args: { a: Json; b: Json }
+        Returns: number
+      }
       housing_match_candidates: {
         Args: { _limit?: number }
         Returns: {
@@ -12808,6 +13252,20 @@ export type Database = {
           score: number
         }[]
       }
+      housing_roommate_matches: {
+        Args: { _limit?: number }
+        Returns: {
+          city: string
+          profile_id: string
+          resonance: number
+          score: number
+        }[]
+      }
+      housing_safe_date: { Args: { t: string }; Returns: string }
+      housing_safe_int: { Args: { t: string }; Returns: number }
+      housing_sign_element: { Args: { s: string }; Returns: string }
+      housing_sign_modality: { Args: { s: string }; Returns: string }
+      housing_sun_sign: { Args: { d: string }; Returns: string }
       interaction_surface_stats: {
         Args: { _days?: number; _limit?: number }
         Returns: {
