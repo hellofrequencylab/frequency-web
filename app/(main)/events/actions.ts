@@ -701,7 +701,10 @@ export async function toggleRSVP(eventId: string) {
 
 // Explicit RSVP intent (going / maybe / not_going). Unlike `toggleRSVP` (which
 // flips between attend/withdraw), this lets a member move directly between the
-// three states the UI offers — Going, Interested (maybe), and stepping out.
+// three states the RSVP control offers — Going, Interested (maybe), and Can't go.
+// This is the FREE-event / RSVP path — entirely independent of the ticket branch
+// (a priced event with a payouts-ready host renders TicketButton instead). A free
+// event never routes through Stripe; the member just lands in `event_rsvps` here.
 // Self-authorized: only ever touches the caller's own RSVP row.
 //
 //   • 'going'      → honours real capacity (full ⇒ 'waitlist'); fires the
@@ -711,7 +714,15 @@ export async function toggleRSVP(eventId: string) {
 //                    If the member was holding a confirmed seat, leaving it frees
 //                    it, so we promote the next person off the waitlist.
 //   • 'not_going'  → withdraw. Frees a seat + promotes from waitlist if needed.
-export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' | 'not_going') {
+//
+// `opts.slug` (when the caller knows it — the detail control passes it) revalidates
+// the specific /events/[slug] page so the RSVP reflects immediately, not only via
+// the broader /events layout sweep.
+export async function setRsvpStatus(
+  eventId: string,
+  intent: 'going' | 'maybe' | 'not_going',
+  opts?: { slug?: string },
+) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
   if (!(await eventOpenForRsvp(eventId))) return
@@ -803,6 +814,8 @@ export async function setRsvpStatus(eventId: string, intent: 'going' | 'maybe' |
   revalidatePath('/events', 'layout')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+  // Reflect the change on the event's own detail page right away when we know its slug.
+  if (opts?.slug) revalidatePath(`/events/${opts.slug}`)
 }
 
 // Capacity-neutral headcount the host cares about: how many guests a confirmed

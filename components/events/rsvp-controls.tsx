@@ -95,7 +95,7 @@ export function RsvpControls({
 
   const go = (intent: 'going' | 'maybe' | 'not_going') =>
     startTransition(() => {
-      setRsvpStatus(eventId, intent)
+      setRsvpStatus(eventId, intent, { slug })
     })
 
   // Approval-required join → write a 'pending' RSVP through the depth layer.
