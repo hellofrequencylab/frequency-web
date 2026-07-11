@@ -11,6 +11,9 @@ import {
   type RsvpStatus,
 } from '@/lib/events/rsvp-depth'
 import { composeEventDispatch } from '@/lib/events/dispatch'
+import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
+import { isBlockedBetween } from '@/lib/blocking'
+import { rateLimitOk } from '@/lib/rate-limit'
 
 // Post-event social loop (slice B-2): the event activity feed (event_posts), the
 // recap album (event_media), and cohosts (event_cohosts).
@@ -66,6 +69,58 @@ async function isEventHost(
 
 function revalidateEvent(slug: string) {
   revalidatePath(`/events/${slug}`)
+}
+
+// ── Message the host ──────────────────────────────────────────────────────────
+// Powers the event Host profile box (the `event-lineup` module, repurposed): a guest writes the
+// host a direct message from the event page. Reuses the shared 1:1 conversation seam
+// (findOrCreateDirectConversation) + the messages table — the SAME messaging backend as /messages —
+// so the note lands in a real conversation the host reads there. Deliberately does NOT gate on
+// friendship (a visitor should be able to reach the host of an event they're eyeing), matching the
+// marketplace service-enquiry entry point; the block gate + a rate limit stand in for that.
+const MAX_HOST_MESSAGE = 2000
+
+export async function messageHost(
+  eventId: string,
+  body: string,
+): Promise<ActionResult<{ conversationId: string }>> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to message the host.')
+
+  const trimmed = (body ?? '').trim().slice(0, MAX_HOST_MESSAGE)
+  if (!trimmed) return fail('Write a message first.')
+
+  const admin = createAdminClient()
+  const { data: ev } = await admin
+    .from('events')
+    .select('host_id')
+    .eq('id', eventId)
+    .maybeSingle()
+  const hostId = ev?.host_id ?? null
+  if (!hostId) return fail('This event has no host to reach right now.')
+  if (hostId === profileId) return fail('You are hosting this event.')
+
+  // Block gate (parity with startConversation / sendMessage).
+  if (await isBlockedBetween(profileId, hostId)) {
+    return fail('You cannot message this host.')
+  }
+
+  // Spam guard: this bypasses the friendship gate, so cap notes per sender.
+  if (!(await rateLimitOk('event_message_host', profileId, 5, '1 h'))) {
+    return fail('You have sent a lot of messages. Try again in a little while.')
+  }
+
+  const conversationId = await findOrCreateDirectConversation(admin, profileId, hostId)
+  const { error } = await admin.from('messages').insert({
+    conversation_id: conversationId,
+    sender_id: profileId,
+    body: trimmed,
+  })
+  if (error) return fail('Could not send your message. Try again.')
+
+  revalidatePath('/messages')
+  revalidatePath(`/messages/${conversationId}`)
+  return ok({ conversationId })
 }
 
 // ── Activity feed ─────────────────────────────────────────────────────────────

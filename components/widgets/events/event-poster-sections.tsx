@@ -1,6 +1,5 @@
 import { getEventContext } from '@/lib/events/active-event'
 import {
-  PosterLineup,
   PosterSchedule,
   PosterFeatures,
   PosterPricing,
@@ -10,17 +9,13 @@ import {
 } from '@/components/events/poster-details'
 
 // The poster harvest, split into INDEPENDENT movable modules — one per section the scanner captured
-// (lineup · schedule · good-to-know · pricing · links · sponsors · details). Each is a zero-prop
+// (schedule · good-to-know · pricing · links · sponsors · details). Each is a zero-prop
 // self-fetching RSC that reads the request-scoped event context (lib/events/active-event.ts) and
 // renders its section only when the poster carried it, so an operator can move or hide any one of
 // them from the Layout editor without touching the others. (The combined `event-poster-details`
 // block is retired from the event set — these per-section modules replace it so nothing is lumped.)
-
-export const EventLineup = async () => {
-  const ctx = getEventContext()
-  if (!ctx) return null
-  return <PosterLineup details={ctx.posterDetails} signedUrls={ctx.posterCropUrls} />
-}
+// The old poster "Lineup" section is retired: the `event-lineup` id now binds the Host profile box
+// (components/widgets/events/event-host.tsx).
 
 export const EventSchedule = async () => {
   const ctx = getEventContext()

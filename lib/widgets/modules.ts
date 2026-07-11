@@ -243,7 +243,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
   // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
   // moves or hides any one of them independently. Each renders only when the poster carried it.
-  { id: 'event-lineup', label: 'Lineup', description: 'The acts / people captured from the poster.' },
+  { id: 'event-lineup', label: 'Host', description: "The host's profile with a Message Host button. Hidden when the event has no host." },
   { id: 'event-schedule', label: 'Schedule', description: 'The run of show captured from the poster.' },
   { id: 'event-good-to-know', label: 'Good to know', description: 'The quick what-to-expect tags captured from the poster.' },
   { id: 'event-pricing', label: 'Pricing', description: 'The prices as printed on the poster.' },
