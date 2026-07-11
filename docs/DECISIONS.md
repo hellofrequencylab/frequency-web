@@ -13352,3 +13352,28 @@ refund, which a report cannot).
 `payoutsLive()`, one new operator surface registered in `lib/nav/studio.ts` (not a new `*_MODULES` catalog, so
 the MENU-CONTRACT guard stays green). Regenerate `lib/database.types.ts` after apply (ADR-246), then the data
 layer's untyped casts can tighten.
+
+---
+
+## ADR-599: Founding status model — the durable, grandfathered Founder record (Founders Round + Founding Businesses)
+
+**Status:** Accepted (2026-07-10) · Beta Command Center P2/P4 (`docs/*` beta plan) · builds on ADR-362 (everything ships OFF), ADR-596 (the take-rate ladder), ADR-598 (`VerifiedBadge`).
+
+**Context.** The individual `/founders` flow (ADR pre-dating this: the Founders Round) captures a member reservation as a `contacts` waitlist lead and, once billing is live, sells a one-time `$250` founding membership that flips `profiles.is_founding_member` and locks a price. Two gaps remained for the Beta cohort launch (P2 "launch Founding Members and Founding Businesses", P4 "grant founding status"):
+
+1. There was **no Founding Business offer** — a Space variant that locks the bought-down marketplace take-rate (3% vs the 5-8% ladder, ADR-596) and a locked annual membership rate against a per-CITY cap.
+2. `profiles.is_founding_member` (a boolean) is enough for a member but cannot carry a **durable, grandfathered relationship**: a locked rate + take-rate, a cohort city, a reservation that exists before any charge, and a lifecycle that survives the September 1 billing graduation for both members and Spaces.
+
+Everything must ship **INERT**: reserve-now only, charging nobody until the operator graduates the Beta (billing turns on Sept 1).
+
+**Decision.** One additive migration + a small additive lib, each reusing an existing pattern.
+
+1. **`founding_members` (one durable row per member/Space).** Columns: `profile_id` / `space_id` (at least one, enforced by a check), `kind` ('member'|'business'), `locked_rate_cents` (the one-time member rate OR the business monthly rate), `locked_take_bps` (the business fee-buydown, 300 = 3%), `cohort_city`, `reserved_at`, `charged_at`, `status` ('reserved'|'active'|'lapsed'), `card_on_file`, `meta`. Partial unique indexes on `profile_id` and `space_id` make reserve + grant upsert-safe and one-per-subject. **RLS ENABLED, NO policies** (service-role only, fail-closed) — the repo convention for a table no caller-role touches directly (mirrors `business_intake` / `beta_*`); registered in `scripts/rls-deny-all.txt`. The public charter badge reads through the same admin client (like `seller-verification.ts`), never from a browser.
+
+2. **Reserve-now-charge-at-graduation (the no-charge invariant).** A reservation writes a row with `status='reserved'` and `charged_at=NULL`; `card_on_file` stays false (a card is optional and never charged on reserve). Anonymous visitors reserve via the proven `contacts`-lead waitlist (the member `/founders` pattern), so the offer works before signup; a signed-in Space owner also gets a durable `reserveFounding()` row. **Nothing charges on reserve.** `grantFoundingStatus()` (the beta-graduation hook, called by `graduateBeta()`) flips reserved -> active and applies the locked rate; it is idempotent, callable targeted or as a sweep, and **never sets `charged_at` or calls Stripe** — the money flip stays behind `billingLive()` / `payoutsLive()`, owned by the billing path. `charged_at` non-null is the proof money moved.
+
+3. **Founding-rate config (additive).** `lib/pricing/founding.ts` holds the operator-editable `FoundingConfig` (member one-time `$250` + cap 150; business monthly `$39`, take-rate 3%, per-city cap 25), read through `getFoundingConfig()` in `lib/pricing/settings.ts` via the `founding` `pricing_settings` key — mirroring the `household_bundle` bundle-config pattern, kept out of the typed `PricingDefaults` core. A founding rate is a locked display value, never a live charge.
+
+4. **Charter badge (READ-ONLY).** `components/ui/verified-badge.tsx` gains a `CharterBadge` (the Phase 8 `VerifiedBadge` sibling): a calm "Founding" trust mark rendered from an active `founding_members` row, resolved batched via `foundingActiveFor()` and passed into the storefront product card exactly like the verified boolean. No new identity flow.
+
+**Consequences.** One additive migration (one table, RLS per repo convention, NOT applied from the worktree), one new public marketing route (`/founders/business`, advertised in `app/sitemap.ts`), and additive libs only. No existing money path changes; the Founders Round member flow is untouched. `grantFoundingStatus()` is the single, idempotent seam the beta-access agent's `graduateBeta()` calls. Regenerate `lib/database.types.ts` after apply (ADR-246); until then `lib/founding/*` reaches the table through the loose service-role handle idiom.

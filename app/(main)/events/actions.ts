@@ -146,6 +146,13 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   // Additional gallery images (ordered storage paths in the same bucket).
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  // Unified gallery: the FIRST gallery image IS the header/cover. Lead the gallery with the cover and
+  // set cover_image_path = gallery[0], so the editor + event-page invariant holds from creation.
+  const galleryWithCover =
+    coverImagePath && !galleryImagePaths.includes(coverImagePath)
+      ? [coverImagePath, ...galleryImagePaths]
+      : galleryImagePaths
+  const headerCover = galleryWithCover[0] ?? null
   // Host's Venmo handle, shown next to the price while ticket sales are off.
   const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
@@ -220,8 +227,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult<{ sl
       visibility,
       category,
       energy_tag: energyTag,
-      cover_image_path: coverImagePath,
-      gallery_image_paths: galleryImagePaths,
+      cover_image_path: headerCover,
+      gallery_image_paths: galleryWithCover,
       // venmo_handle is newer than the generated DB types → rides the payload cast below.
       venmo_handle: venmoHandle,
       // Event's IANA zone (newer than the generated DB types → cast). Refined from the geocoded
@@ -335,6 +342,13 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
   const energyTag = VALID_ENERGY.includes(energyRaw) ? energyRaw : null
   const coverImagePath = (formData.get('coverImagePath') as string | null)?.trim() || null
   const galleryImagePaths = parseGalleryPaths(formData.get('galleryImagePaths') as string | null)
+  // Unified gallery: the FIRST gallery image IS the header/cover. Lead the gallery with the cover and
+  // set cover_image_path = gallery[0], so the editor + event-page invariant holds from creation.
+  const galleryWithCover =
+    coverImagePath && !galleryImagePaths.includes(coverImagePath)
+      ? [coverImagePath, ...galleryImagePaths]
+      : galleryImagePaths
+  const headerCover = galleryWithCover[0] ?? null
   const venmoHandle = parseVenmoHandle(formData.get('venmoHandle') as string | null)
 
   const admin = createAdminClient()
@@ -361,8 +375,8 @@ export async function updateEvent(eventId: string, formData: FormData): Promise<
       visibility,
       category,
       energy_tag: energyTag,
-      cover_image_path: coverImagePath,
-      gallery_image_paths: galleryImagePaths,
+      cover_image_path: headerCover,
+      gallery_image_paths: galleryWithCover,
       // venmo_handle is newer than the generated DB types → rides the payload cast below.
       venmo_handle: venmoHandle,
       // Only stamp recurrence on an anchor row; a child occurrence keeps recurrence_type 'none'.

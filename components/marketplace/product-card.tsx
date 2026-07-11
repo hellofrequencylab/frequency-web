@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { Package, CalendarClock, Ticket, Star } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
-import { VerifiedBadge } from '@/components/ui/verified-badge'
+import { VerifiedBadge, CharterBadge } from '@/components/ui/verified-badge'
 import { marketGroupForKind, type CommerceProduct, type MarketGroup } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
 
@@ -43,11 +43,14 @@ export function ProductCard({
   href,
   rating,
   verified = false,
+  founding = false,
 }: {
   product: CommerceProduct
   href: string
   rating?: ProductRating | null
   verified?: boolean
+  /** The seller is an active Founder (charter badge, ADR-599). Resolved read-only by the caller. */
+  founding?: boolean
 }) {
   const soldOut = product.status === 'sold_out' || product.stock === 0
   const group = marketGroupForKind(product.productKind)
@@ -77,6 +80,7 @@ export function ProductCard({
             {groupLabel}
           </span>
           <VerifiedBadge verified={verified} />
+          <CharterBadge founding={founding} />
         </span>
       }
       context={product.category ?? undefined}

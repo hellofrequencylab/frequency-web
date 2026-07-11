@@ -20,6 +20,7 @@ beta_admission_waves
 beta_audit_log
 beta_host_prompts
 beta_phases
+beta_referrals
 beta_tasks
 business_intake
 campaigns
@@ -35,6 +36,7 @@ entry_template_settings
 event_blurb_cache
 event_embeddings
 financial_transactions
+founding_members
 help_chunks
 journey_enrollments
 journey_phase_events

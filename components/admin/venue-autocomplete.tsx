@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Loader2, MapPin, X } from 'lucide-react'
-import { searchAddresses, type PlaceResult } from '@/lib/geocode'
+import { searchVenues, type PlaceResult } from '@/lib/geocode'
 import { getBrowserPosition } from '@/lib/geo-browser'
 
 // Device location, requested at most ONCE per page load and shared across every autocomplete on
@@ -40,8 +40,9 @@ function useDeviceLocation(): { location: { lat: number; lng: number } | null; r
 // Venue / address typeahead (Event settings overhaul §1). Sibling of
 // LocationAutocomplete, but it searches addresses + venues + POIs (not just cities)
 // and hands back the FULL structured result so a pick can fill venue + street + city
-// + region + country + postal code AND drop the map pin. Keyless Photon via
-// lib/geocode (searchAddresses).
+// + region + country + postal code AND drop the map pin. Server-side Nominatim via
+// lib/geocode (searchVenues → /api/geocode/venues), local-first so a typed local
+// street surfaces the nearby address rather than a same-named place worldwide.
 //
 // A pre-filled `value` (the saved venue name) seeds the input but must NOT trigger a
 // search on mount — only real keystrokes do (same gate as LocationAutocomplete).
@@ -70,8 +71,8 @@ export function VenueAutocomplete({
   const touched = useRef(false) // true once the user types — gates the search
   const { location: deviceLocation, request: requestLocation } = useDeviceLocation()
   // Effective bias, best-first: the device's own location (closest to where the member actually is)
-  // → the event's current pin (`bias`) → unbiased. `searchAddresses` draws the local bbox and the
-  // closest-first sort from whichever wins. Held in a ref so a fresh object each render never
+  // → the event's current pin (`bias`) → unbiased. `searchVenues` draws the hard local viewbox and
+  // the closest-first sort from whichever wins. Held in a ref so a fresh object each render never
   // re-arms the debounce (the search effect only depends on the typed query).
   const effectiveBias = deviceLocation ?? bias ?? null
   const biasRef = useRef(effectiveBias)
@@ -90,7 +91,7 @@ export function VenueAutocomplete({
         return
       }
       setLoading(true)
-      const r = await searchAddresses(term, ctrl.signal, biasRef.current)
+      const r = await searchVenues(term, ctrl.signal, biasRef.current)
       setResults(r)
       setLoading(false)
       setOpen(true)
