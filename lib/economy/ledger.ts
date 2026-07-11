@@ -163,6 +163,7 @@ const LEDGER_LABELS: Record<string, string> = {
   event_host: 'Hosted an event',
   circle_activate: 'Activated a circle',
   invite_accepted: 'An invite you sent joined',
+  beta_circle_starter: 'A Circle you started reached ten members',
   community_join: 'Joined the community',
   referred_join_bonus: 'Joined through a friend',
   referral_activated: 'A member you brought in showed up',
