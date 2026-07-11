@@ -286,7 +286,7 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
     adminGroups: [{ domain: 'marketing', section: 'Campaigns' }], adminNav: { section: 'growth', heading: 'Marketing' } },
   { id: 'marketing-beta', href: '/admin/marketing/beta', label: 'Beta waitlist', desc: 'Triage the waitlist and send invites.', icon: 'Rocket', min: 'host', staffDomain: 'marketing',
     adminGroups: [{ domain: 'marketing', section: 'Audience' }], adminNav: { section: 'growth', heading: 'Marketing' } },
-  // Beta Command Center (docs/BETA-COMMAND-CENTER.md). The operator home for the Beta
+  // Beta Command Center. The operator home for the Beta
   // launch: the phase plan, the task board, admission waves, and the APPROVAL QUEUE where
   // nothing sends without an admin/janitor sign-off. A ?tab= workspace (today · stats ·
   // strategy · phases · timeline · email), like the Vera AI dashboard. The legacy Beta
