@@ -5,12 +5,13 @@ import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 // Event gallery — a clickable thumbnail strip that opens a full-screen lightbox.
-// The poster (the event's cover image) is passed FIRST, so it leads the gallery and
-// is itself clickable, exactly like the rest. Pure presentation: it takes already-
-// resolved public image URLs (the page resolves storage paths → URLs server-side).
+// The event's header/cover is the FIRST gallery image and is already rendered full-width above
+// (the page's hero band), so it is NOT passed here: this strip carries only the REMAINING photos
+// (item 5), each a thumbnail that opens the lightbox. Pure presentation: it takes already-resolved
+// public image URLs (the page resolves storage paths → URLs server-side).
 //
-// Rendered only when there are at least two images to browse (the lone poster already
-// shows as the hero, so a one-item gallery would just repeat it).
+// Rendered only when there is at least one extra photo to browse; self-hides otherwise (a cover-only
+// event has nothing left to show once the header band owns the cover).
 export function EventGallery({ images }: { images: string[] }) {
   // null = closed; otherwise the index of the open image.
   const [open, setOpen] = useState<number | null>(null)
@@ -37,7 +38,7 @@ export function EventGallery({ images }: { images: string[] }) {
     }
   }, [open, count, close])
 
-  if (count < 2) return null
+  if (count < 1) return null
 
   return (
     <section aria-label="Event photos" className="mb-6">
@@ -60,12 +61,6 @@ export function EventGallery({ images }: { images: string[] }) {
                 unoptimized
                 className="object-cover transition-transform duration-200 group-hover:scale-105"
               />
-              {/* First tile is the poster — label it so its role is clear. */}
-              {i === 0 && (
-                <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-white">
-                  Poster
-                </span>
-              )}
             </button>
           </li>
         ))}

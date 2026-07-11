@@ -28,6 +28,7 @@ import { EventRewardStrip } from '@/components/events/event-reward-strip'
 import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
+import { HostHovercard } from '@/components/events/host-hovercard'
 import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
@@ -838,6 +839,20 @@ export default async function EventDetailPage({
         }),
       )
 
+  // Header location line — the VENUE name first, then the street/city/region address (Event page
+// overhaul, items 1 + 4). Composed from the same structured fields the location picker saves
+// (venue_name / street / city / region), so the header stays in sync with the pin the moment the
+// picker writes them. Falls back to the free-text `location` line when no structured address is set.
+  const venueName = extra?.venue_name?.trim() || null
+  const addressLine = [extra?.street, extra?.city, extra?.region]
+    .map((p) => p?.trim())
+    .filter(Boolean)
+    .join(', ')
+  const headerLocation =
+    venueName && addressLine
+      ? `${venueName} · ${addressLine}`
+      : venueName || addressLine || (event.location?.trim() || null)
+
   const mode = MODE_CHIP[attendanceMode]
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
@@ -1236,11 +1251,11 @@ export default async function EventDetailPage({
               <span>{whenLine}</span>
             </div>
 
-            {event.location && !isOnline && (
+            {headerLocation && !isOnline && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-subtle shrink-0" />
-                {/* The address deep-links into Maps (native app on a phone, the map
-                    site on desktop) so guests can navigate in one tap. */}
+                {/* Venue name leads, then the address (item 4). The line deep-links into Maps
+                    (native app on a phone, the map site on desktop) so guests navigate in one tap. */}
                 {mapsHref ? (
                   <a
                     href={mapsHref}
@@ -1248,10 +1263,10 @@ export default async function EventDetailPage({
                     rel="noopener noreferrer"
                     className="hover:text-primary-strong hover:underline"
                   >
-                    {event.location}
+                    {headerLocation}
                   </a>
                 ) : (
-                  <span>{event.location}</span>
+                  <span>{headerLocation}</span>
                 )}
               </div>
             )}
@@ -1300,11 +1315,10 @@ export default async function EventDetailPage({
             )}
 
             {event.host ? (
+              // In-network host: bold, clickable, with a hover/focus profile-preview popover
+              // (items 2 + 3). An out-of-network organizer stays plain text below.
               <p>
-                Hosted by{' '}
-                <Link href={`/people/${event.host.handle}`} className="text-primary-strong hover:underline">
-                  {event.host.display_name}
-                </Link>
+                Hosted by <HostHovercard host={event.host} />
               </p>
             ) : isPostedEvent ? (
               <p className="text-subtle">
@@ -1339,11 +1353,13 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* Photo gallery — the header image leads, then any host-uploaded extras, each clickable
-            into a full-screen lightbox. It stays in the page (not a module): it's built from the
-            signed/public hero + gallery URLs the header already resolved, and renders only with 2+
-            images. It leads the interior, above the arrangeable blocks. */}
-        <EventGallery images={galleryUrls} />
+        {/* Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered
+            full-width above at its host-picked hero height (the DetailTemplate `hero` band). So the
+            gallery below shows only the REST of the photos as thumbnails (no duplicate of the
+            header), each clickable into a full-screen lightbox. It stays in the page (not a module):
+            it's built from the gallery URLs the header already resolved, and self-hides with no
+            extras. It leads the interior, above the arrangeable blocks. */}
+        <EventGallery images={galleryUrls.slice(1)} />
 
         {/* ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
             two-column grid. The '/events/*' layout owns the arrangement — its default Main + side

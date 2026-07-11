@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   createListing, updateListing, setListingStatus, deleteListing, listingAuthorId,
@@ -16,6 +16,15 @@ async function assertOwner(id: string): Promise<string | null> {
   if (!profileId) return null
   const author = await listingAuthorId(id)
   return author && author === profileId ? profileId : null
+}
+
+// Delete is the one action platform staff (admin/janitor) may take on ANOTHER member's
+// listing — moderation. Every other action stays owner-only.
+async function assertOwnerOrStaff(id: string): Promise<boolean> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return false
+  if ((await listingAuthorId(id)) === profileId) return true
+  return await isPlatformStaff()
 }
 
 export async function createListingAction(input: ListingInput): Promise<ActionResult<{ id: string }>> {
@@ -53,12 +62,13 @@ export async function setListingStatusAction(id: string, status: ListingStatus):
 }
 
 export async function deleteListingAction(id: string): Promise<ActionResult> {
-  if (!(await assertOwner(id))) return fail('Not allowed.')
+  if (!(await assertOwnerOrStaff(id))) return fail('Not allowed.')
   try {
     await deleteListing(id)
   } catch (e) {
     return fail(e instanceof Error ? e.message : 'Could not delete the listing.')
   }
   revalidatePath('/classifieds')
+  revalidatePath(`/classifieds/${id}`)
   return ok()
 }

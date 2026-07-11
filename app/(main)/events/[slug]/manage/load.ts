@@ -238,6 +238,188 @@ export async function loadSentDispatches(eventId: string): Promise<SentDispatch[
   }))
 }
 
+// ── Section A: page views ─────────────────────────────────────────────────────
+
+export interface PageViewStats {
+  /** Lifetime page views for this event's public page. */
+  total: number
+  /** Page views in the last 7 days. */
+  last7: number
+}
+
+/** Lifetime + 7-day views of this event's public page. Counted from the durable
+ *  engagement ledger (engagement_events, event_type 'nav.page_view'), NOT
+ *  interaction_events: the latter carries a first-class `path` column but is
+ *  retention-purged, so it can never give a true lifetime figure. The viewed path
+ *  lives in the context jsonb (context->>'path'), so this ONE read widens to an
+ *  untyped client to filter on the jsonb arrow operator (the genuinely-untyped
+ *  case ADR-246 allows). */
+export async function loadPageViews(slug: string): Promise<PageViewStats> {
+  // eslint-disable-next-line no-restricted-syntax -- jsonb arrow filter (context->>path) isn't expressible on the typed client (ADR-246 exception)
+  const admin = createAdminClient() as unknown as SupabaseClient
+  const path = `/events/${slug}`
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [totalRes, weekRes] = await Promise.all([
+    admin
+      .from('engagement_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_type', 'nav.page_view')
+      .eq('context->>path', path),
+    admin
+      .from('engagement_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('event_type', 'nav.page_view')
+      .eq('context->>path', path)
+      .gt('created_at', sevenDaysAgo),
+  ])
+
+  return { total: totalRes.count ?? 0, last7: weekRes.count ?? 0 }
+}
+
+// ── Section B: RSVP-status breakdown ──────────────────────────────────────────
+
+export interface RsvpBreakdown {
+  going: number
+  /** status='maybe' — surfaced as "Interested" to match the roster/canon label. */
+  interested: number
+  waitlist: number
+  notGoing: number
+  /** approval_status='pending' — a request still waiting on the host. */
+  pendingApproval: number
+  /** Total RSVP rows (any status). */
+  total: number
+}
+
+/** RSVP-status counts for the breakdown tiles. One cheap read over event_rsvps. */
+export async function loadRsvpBreakdown(eventId: string): Promise<RsvpBreakdown> {
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('event_rsvps')
+    .select('status, approval_status')
+    .eq('event_id', eventId)
+
+  const rows = (data ?? []) as unknown as {
+    status: string | null
+    approval_status: string | null
+  }[]
+
+  const breakdown: RsvpBreakdown = {
+    going: 0,
+    interested: 0,
+    waitlist: 0,
+    notGoing: 0,
+    pendingApproval: 0,
+    total: rows.length,
+  }
+  for (const r of rows) {
+    if (r.status === 'going') breakdown.going += 1
+    else if (r.status === 'maybe') breakdown.interested += 1
+    else if (r.status === 'waitlist') breakdown.waitlist += 1
+    else if (r.status === 'not_going') breakdown.notGoing += 1
+    if (r.approval_status === 'pending') breakdown.pendingApproval += 1
+  }
+  return breakdown
+}
+
+// ── Section C: buying-intent follow-up ────────────────────────────────────────
+
+export interface FollowUpCandidate {
+  profileId: string
+  displayName: string
+  handle: string
+  avatarUrl: string | null
+  /** started_checkout = a pending ticket; rsvp_no_purchase = RSVP'd, never bought. */
+  signal: 'started_checkout' | 'rsvp_no_purchase'
+}
+
+/** Members who signalled buying intent but didn't complete, so the host can reach
+ *  out. Two buckets, deduped (a started checkout is the stronger signal and wins):
+ *    1. Abandoned checkout: a `pending` event_tickets row (checkout started, not
+ *       succeeded).
+ *    2. RSVP'd (going/maybe) with no `succeeded` ticket — only on events that
+ *       actually sell paid tickets (a free event has nothing to buy, so it's
+ *       skipped). Anyone who already has a succeeded ticket is never listed.
+ *  Untyped admin for the whole read (event_tickets/event_ticket_types carry newer
+ *  columns than the generated types; ADR-246 exception). */
+export async function loadFollowUps(eventId: string): Promise<FollowUpCandidate[]> {
+  // eslint-disable-next-line no-restricted-syntax -- ticketing tables carry columns newer than the generated types (ADR-246 exception)
+  const admin = createAdminClient() as unknown as SupabaseClient
+
+  // Does this event sell paid tickets? The RSVP'd-but-didn't-buy bucket is
+  // meaningless on a free event, so gate it on a chargeable ticket tier (any tier
+  // whose pricing mode is not 'free').
+  const { count: pricedCount } = await admin
+    .from('event_ticket_types')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId)
+    .neq('pricing_mode', 'free')
+  const priced = (pricedCount ?? 0) > 0
+
+  const [pendingRes, succeededRes] = await Promise.all([
+    // Bucket 1 source — intent: checkout started, not succeeded. Newest first.
+    admin
+      .from('event_tickets')
+      .select('buyer_profile_id, created_at')
+      .eq('event_id', eventId)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false }),
+    // Anyone with a succeeded ticket already bought — never a follow-up.
+    admin
+      .from('event_tickets')
+      .select('buyer_profile_id')
+      .eq('event_id', eventId)
+      .eq('status', 'succeeded'),
+  ])
+
+  const bought = new Set<string>()
+  for (const t of (succeededRes.data ?? []) as { buyer_profile_id: string | null }[]) {
+    if (t.buyer_profile_id) bought.add(t.buyer_profile_id)
+  }
+
+  const order: { id: string; signal: FollowUpCandidate['signal'] }[] = []
+  const seen = new Set<string>()
+  for (const t of (pendingRes.data ?? []) as { buyer_profile_id: string | null }[]) {
+    const id = t.buyer_profile_id
+    if (!id || bought.has(id) || seen.has(id)) continue
+    seen.add(id)
+    order.push({ id, signal: 'started_checkout' })
+  }
+
+  // Bucket 2 — RSVP'd (going/maybe) with no succeeded ticket, priced events only.
+  if (priced) {
+    const { data: rsvps } = await admin
+      .from('event_rsvps')
+      .select('profile_id, status, created_at')
+      .eq('event_id', eventId)
+      .in('status', ['going', 'maybe'])
+      .order('created_at', { ascending: false })
+    for (const r of (rsvps ?? []) as { profile_id: string | null }[]) {
+      const id = r.profile_id
+      if (!id || bought.has(id) || seen.has(id)) continue
+      seen.add(id)
+      order.push({ id, signal: 'rsvp_no_purchase' })
+    }
+  }
+
+  if (order.length === 0) return []
+
+  const profiles = await profileMap(order.map((o) => o.id))
+  return order
+    .map((o) => {
+      const prof = profiles.get(o.id)
+      if (!prof) return null
+      return {
+        profileId: o.id,
+        displayName: prof.displayName,
+        handle: prof.handle,
+        avatarUrl: prof.avatarUrl,
+        signal: o.signal,
+      } satisfies FollowUpCandidate
+    })
+    .filter((c): c is FollowUpCandidate => c != null)
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 interface ProfileLite {

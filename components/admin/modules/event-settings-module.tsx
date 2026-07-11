@@ -10,21 +10,23 @@ import { useRailAutosave, isInstant, isTextLike } from '@/components/admin/rail/
 import { createClient } from '@/lib/supabase/client'
 import {
   getEventAdminData,
-  getEventEngageData,
+  getEventCoreStats,
   updateEventSettings,
   updateEventPermalink,
   removeEventPoster,
   setEventGalleryImages,
   uploadEventGalleryImage,
-  type EventEngageData,
   // Aliased: it's a server action, not a React hook — the `use*` name would trip the
   // rules-of-hooks lint when called inside a callback.
   useEventPosterAsCover as promotePosterToCover,
 } from '@/app/(main)/events/admin-actions'
+import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import type { EventCoreStats } from '@/lib/events/event-stats'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
+import { EventCohostChooser } from '@/components/admin/modules/event-cohost-chooser'
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -46,7 +48,8 @@ import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 // fills the hidden address inputs, a dragged map pin) call saveNow(). Images + hero height self-save
 // through their own actions; the permalink keeps its own action (a rename redirects the page).
 //
-// Flow (top to bottom): Stats box (Sold | Revenue | Checked in) · Images · Title · Capacity · Ticket
+// Flow (top to bottom): shared core-stats row (Sold · Revenue · Going · Interested · Waitlist ·
+// Checked in · Capacity) · Images · Title · Capacity · Ticket
 // price · Description · Starts / Ends / Who / Format / What kind / Energy (+ time zone / repeats) ·
 // RSVP window · Location (one live venue search + one map; the street/city/region/postal/country ride
 // as hidden derived inputs) · Permalink · Placement.
@@ -80,16 +83,6 @@ function isoToDateInput(iso: string | null): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
 }
 
-function formatMoney(cents: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(
-      cents / 100,
-    )
-  } catch {
-    return `$${(cents / 100).toFixed(2)}`
-  }
-}
-
 /** A human one-line location string composed from a venue pick, so the public page's location line
  *  and the Maps deep link still have text even though the structured fields are hidden. */
 function composeLocation(p: PlaceResult): string {
@@ -106,7 +99,7 @@ export function EventSettingsModule() {
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
 
   const [data, setData] = useState<EventData | null>(null)
-  const [engage, setEngage] = useState<EventEngageData | null>(null)
+  const [engage, setEngage] = useState<EventCoreStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -186,8 +179,9 @@ export function EventSettingsModule() {
       .catch(() => {
         if (active) setLoading(false)
       })
-    // Stats (Sold | Revenue | Checked in) — its own read; failure just hides the box.
-    getEventEngageData(slug)
+    // Core stats — its own read; failure just hides the box. Same shape the Manage
+    // dashboard leads with (lib/events/event-stats), rendered via the shared component.
+    getEventCoreStats(slug)
       .then((e) => {
         if (active) setEngage(e)
       })
@@ -206,15 +200,16 @@ export function EventSettingsModule() {
   // The venue autocomplete biases to the event's pin, else the viewer's home (local-first search).
   const bias = lat != null && lng != null ? { lat, lng } : (data.viewerHome ?? null)
 
-  // A venue pick fills every hidden address field it has, sets the one-line location, drops the pin,
-  // then commits.
+  // A venue pick fills the FULL address, sets the one-line location, drops the pin, then commits.
+  // Every field is written UNCONDITIONALLY (null → '') so a fresh pick fully replaces the prior
+  // address rather than leaving a stale part behind. The manual Venue name is left alone — the host
+  // sets that label independently of the map pick.
   function handleVenuePick(p: PlaceResult) {
-    setVenueName(p.name ?? p.label)
-    if (p.street) setStreet(p.street)
-    if (p.city) setCity(p.city)
-    if (p.region) setRegion(p.region)
-    if (p.postalCode) setPostalCode(p.postalCode)
-    if (p.country) setCountry(p.country)
+    setStreet(p.street ?? '')
+    setCity(p.city ?? '')
+    setRegion(p.region ?? '')
+    setPostalCode(p.postalCode ?? '')
+    setCountry(p.country ?? '')
     setLat(p.lat)
     setLng(p.lng)
     setLocation(composeLocation(p))
@@ -282,21 +277,9 @@ export function EventSettingsModule() {
 
   return (
     <div className="space-y-4">
-      {/* STATS — Sold | Revenue | Checked in, pinned at the very top. */}
-      {engage && (
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Sold', value: String(engage.ticketsSold) },
-            { label: 'Revenue', value: formatMoney(engage.revenueCents, engage.currency) },
-            { label: 'Checked in', value: `${engage.checkedIn}/${engage.going}` },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
-              <div className="truncate text-base font-bold text-text">{s.value}</div>
-              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* STATS — the shared core-stats row (item 13), pinned at the very top. Same read +
+          component the Manage dashboard leads with, in the rail's compact panel variant. */}
+      {engage && <EventCoreStatsCards stats={engage} variant="panel" />}
 
       {/* IMAGES — ONE ordered gallery leads the area: the FIRST photo IS the header. Then the
           "Select from Loom" picker, the scanned-poster shortcut, and the hero-height / focus controls. */}
@@ -531,18 +514,50 @@ export function EventSettingsModule() {
           </div>
         </div>
 
-        {/* LOCATION — ONE live venue search + ONE map (in person / hybrid). Picking a venue or dragging
-            the pin sets the address; the street/city/region/postal/country ride as hidden derived
-            inputs, so there is no duplicate address block. Kept inside the non-online guard so that
-            switching to Online submits them empty → the stored address clears (as before). */}
+        {/* LOCATION — a manual Venue name on top, then a live venue search that fills the address and
+            drops the pin, then the editable address fields, then the map. Picking a venue or dragging
+            the pin sets the address; the host can also type any field by hand. Kept inside the
+            non-online guard so that switching to Online submits them empty → the stored address
+            clears (as before). */}
         {mode !== 'online' && (
           <div className="space-y-3">
-            <div className="space-y-1.5 rounded-xl border border-border bg-surface-elevated/40 p-3">
-              <span className={fieldLabel}>
-                Location <span className="font-normal text-subtle">(search a venue to set the address and drop the pin)</span>
-              </span>
-              <VenueAutocomplete value={venueName} onPick={handleVenuePick} bias={bias} />
+            <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+              <span className={fieldLabel}>Location</span>
+
+              {/* Venue name — the host's own label for the place (e.g. "Torus Co."), set by hand and
+                  independent of the map pick. */}
+              <label className="block space-y-1.5">
+                <span className={fieldLabel}>Venue name</span>
+                <input
+                  name="venue_name"
+                  value={venueName}
+                  onChange={(e) => setVenueName(e.target.value)}
+                  placeholder="e.g. Torus Co."
+                  className={input}
+                />
+              </label>
+
+              {/* Live venue search — pick a result to fill the address below and drop the pin. */}
+              <div className="space-y-1.5">
+                <span className={fieldLabel}>
+                  Search a venue{' '}
+                  <span className="font-normal text-subtle">(fills the address and drops the pin)</span>
+                </span>
+                <VenueAutocomplete onPick={handleVenuePick} bias={bias} />
+              </div>
+
+              {/* The full address — filled by a pick, editable by hand. */}
+              <input name="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" className={input} />
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className={`${input} min-w-0`} />
+                <input name="region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="State or province" className={`${input} min-w-0`} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className={`${input} min-w-0`} />
+                <input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className={`${input} min-w-0`} />
+              </div>
             </div>
+
             <div className="space-y-1.5">
               <span className={fieldLabel}>Pin the exact spot</span>
               <EventLocationPicker
@@ -560,14 +575,8 @@ export function EventSettingsModule() {
               </p>
             </div>
 
-            {/* Hidden derived location inputs — set by the venue pick / map pin, submitted with the form. */}
+            {/* Hidden derived inputs — the composed one-line location + the pin coordinates. */}
             <input type="hidden" name="location" value={location} />
-            <input type="hidden" name="venue_name" value={venueName} />
-            <input type="hidden" name="street" value={street} />
-            <input type="hidden" name="city" value={city} />
-            <input type="hidden" name="region" value={region} />
-            <input type="hidden" name="postal_code" value={postalCode} />
-            <input type="hidden" name="country" value={country} />
             <input type="hidden" name="lat" value={lat ?? ''} />
             <input type="hidden" name="lng" value={lng ?? ''} />
           </div>
@@ -603,7 +612,11 @@ export function EventSettingsModule() {
         {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
       </div>
 
-      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved). Its own actions. */}
+      {/* COHOSTS — invite someone to help host, straight from the editor. Its own action. */}
+      <EventCohostChooser eventId={data.id} slug={data.slug} />
+
+      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved), plus Transfer host.
+          Its own actions. */}
       <EventPlacementField eventId={data.id} slug={data.slug} />
     </div>
   )

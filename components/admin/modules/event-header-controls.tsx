@@ -5,11 +5,7 @@ import { labelClasses } from '@/components/ui/field'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
-import {
-  EVENT_HERO_HEIGHTS,
-  eventHeroHeightClass,
-  type EventHeroHeight,
-} from '@/lib/events/hero-height'
+import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
 // image sits inside its cropped hero window) with the hero HEIGHT (Short / Standard / Tall). Both
@@ -72,8 +68,10 @@ export function EventHeaderControls({
     <div className="space-y-1.5">
       <span className={labelClasses}>Header</span>
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-start">
-        {/* LEFT — cover focus (the crop preview + sliders). Constrained by the grid column, so the
-            preview reads as a compact header crop rather than a full-width band. */}
+        {/* LEFT — cover focus (the draggable crop preview). Constrained by the grid column, so the
+            preview reads as a compact header crop rather than a full-width band. The Vertical +
+            Horizontal sliders are hidden here (showSliders={false}) — the draggable marker, with
+            arrow-key nudging, is the only control, which keeps the rail panel tidy. */}
         {imageUrl ? (
           <ImageFocalPicker
             imageUrl={imageUrl}
@@ -81,6 +79,7 @@ export function EventHeaderControls({
             onChange={onFocusChange}
             label="Cover focus"
             hint="Drag to choose which part of the cover stays in frame. Vertical matters most."
+            showSliders={false}
           />
         ) : (
           <p className="text-2xs text-subtle">
@@ -116,34 +115,8 @@ export function EventHeaderControls({
         </div>
       </div>
 
-      {/* LIVE HEADER PREVIEW — the real hero band, at the chosen height with the chosen focus, so a
-          change to either control updates this the moment it happens. Mirrors the event page hero
-          (eventHeroHeightClass + object-cover + objectPosition); the no-cover gradient matches the
-          page's placeholder fill. */}
-      <div className="space-y-1.5 pt-1">
-        <span className={labelClasses}>Header preview</span>
-        {imageUrl ? (
-          <div
-            className={`relative w-full overflow-hidden rounded-2xl border border-border bg-surface-elevated ${eventHeroHeightClass(height)}`}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
-              draggable={false}
-              style={{ objectPosition: focus }}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </div>
-        ) : (
-          <div
-            className={`flex w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg ${eventHeroHeightClass(height)}`}
-          >
-            <span className="text-2xs font-medium text-subtle">No header photo yet</span>
-          </div>
-        )}
-        <p className="text-2xs text-subtle">How the header looks at the top of the event page.</p>
-      </div>
+      {/* The standalone Header Preview band was removed: the header is previewed at the top of the
+          gallery (the first photo IS the header), so a second preview in the rail was redundant. */}
 
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
     </div>

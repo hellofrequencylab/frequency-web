@@ -2,16 +2,19 @@
 
 import { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { MapPin, Check, Clock, Building2, Users } from 'lucide-react'
+import { MapPin, Check, Clock, Building2, Users, Crown, X } from 'lucide-react'
 import {
   loadEventPlacement,
   requestEventPlacement,
   clearEventPlacement,
 } from '@/app/(main)/events/placement-actions'
+import { transferEventHost } from '@/app/(main)/events/[slug]/social-actions'
 import { isError } from '@/lib/action-result'
 import { labelClasses } from '@/components/ui/field'
 import { getInitials } from '@/lib/utils'
 import type { PlacementView, PlacementTargetType } from '@/lib/events/placement'
+
+type HandleHit = { id: string; handle: string; display_name: string; avatar_url: string | null }
 
 type ScopeHit = { id: string; name: string; slug: string; image_url: string | null }
 
@@ -89,6 +92,159 @@ export function EventPlacementField({ eventId, slug }: { eventId: string; slug: 
       )}
 
       {error && <p className="text-xs text-danger">{error}</p>}
+
+      {/* Transfer host — hand the event to another member. Kept in this box because "where the event
+          lives" and "who owns it" are the same stewardship decision. Reuses the transferEventHost
+          action; the outgoing host stays on as a cohost. */}
+      <div className="border-t border-border pt-2">
+        <TransferHostControl eventId={eventId} slug={slug} />
+      </div>
+    </div>
+  )
+}
+
+// Hand the event to another member. The current host picks the new host, confirms, and stays on as
+// a cohost (the server action keeps them on so nobody loses access). Results render IN FLOW (not an
+// absolute dropdown) for the same reason ScopeSearch does — the module's `@container` wrapper clips
+// a `top-full` overlay.
+function TransferHostControl({ eventId, slug }: { eventId: string; slug: string }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [hits, setHits] = useState<HandleHit[]>([])
+  const [choice, setChoice] = useState<HandleHit | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const search = useCallback((q: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      if (!q.trim()) {
+        setHits([])
+        return
+      }
+      try {
+        const res = await fetch(`/api/search-handles?q=${encodeURIComponent(q.trim())}`)
+        const json = await res.json()
+        setHits(json.profiles ?? [])
+      } catch {
+        setHits([])
+      }
+    }, 150)
+  }, [])
+
+  function confirm() {
+    if (!choice) return
+    setError(null)
+    startTransition(async () => {
+      const res = await transferEventHost(eventId, slug, choice.handle)
+      if (isError(res)) {
+        setError(res.error)
+        return
+      }
+      setOpen(false)
+      setChoice(null)
+      setQuery('')
+      setHits([])
+    })
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-subtle transition-colors hover:text-text"
+      >
+        <Crown className="h-3.5 w-3.5" /> Transfer host role
+      </button>
+    )
+  }
+
+  return (
+    <div className="rounded-lg bg-surface p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-text">Transfer host role</p>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false)
+            setChoice(null)
+            setError(null)
+          }}
+          aria-label="Cancel transfer"
+          className="text-subtle transition-colors hover:text-text"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {choice ? (
+        <div className="mt-2">
+          <p className="text-xs text-muted">
+            Make <span className="font-semibold text-text">@{choice.handle}</span> the host? You will
+            stay on as a cohost.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={pending}
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-40"
+            >
+              {pending ? 'Transferring…' : 'Confirm transfer'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setChoice(null)}
+              disabled={pending}
+              className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-40"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              search(e.target.value)
+            }}
+            placeholder="New host by name or @handle"
+            disabled={pending}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text placeholder:text-subtle outline-none focus:border-border-strong disabled:opacity-60"
+          />
+          {hits.length > 0 && (
+            <div className="mt-1 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-xl shadow-black/5">
+              {hits.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setChoice(p)}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface-elevated"
+                >
+                  {p.avatar_url ? (
+                    <Image src={p.avatar_url} alt={p.display_name} width={24} height={24} className="h-6 w-6 shrink-0 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-bg text-3xs font-bold text-primary-strong">
+                      {getInitials(p.display_name)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-text">{p.display_name}</p>
+                    <p className="truncate text-2xs text-subtle">@{p.handle}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
     </div>
   )
 }

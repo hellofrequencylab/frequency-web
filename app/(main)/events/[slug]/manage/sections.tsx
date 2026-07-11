@@ -1,17 +1,34 @@
 import Link from 'next/link'
-import { Check, Star, Clock, Users, Megaphone, Radio, MessageSquare, Zap } from 'lucide-react'
+import {
+  Check,
+  Star,
+  Clock,
+  Users,
+  Megaphone,
+  Radio,
+  MessageSquare,
+  Zap,
+  Eye,
+  Hourglass,
+} from 'lucide-react'
 import { SectionHeader } from '@/components/ui/section-header'
 import { EmptyState } from '@/components/ui/empty-state'
+import { StatCard } from '@/components/ui/stat-card'
+import { PersonCard } from '@/components/cards/person-card'
 import {
   loadRoster,
   loadPendingApprovals,
   loadQuestionnaire,
   loadSentDispatches,
+  loadPageViews,
+  loadRsvpBreakdown,
+  loadFollowUps,
   type ManageGuest,
 } from './load'
 import { ApproveButton } from './approve-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
+import { FollowUpButton } from './follow-up-button'
 
 // The Manage Dashboard's body sections (EVENTS-REWORK A2). Each is an async Server
 // Component that fetches its own slice, so the page can stream them behind their
@@ -230,6 +247,96 @@ export async function QuestionnaireSection({
         </div>
       )}
     </div>
+  )
+}
+
+// ── Section A: page views ─────────────────────────────────────────────────────
+
+export async function EngagementSection({ slug }: { slug: string }) {
+  const views = await loadPageViews(slug)
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatCard
+        bordered
+        icon={Eye}
+        label="Page views"
+        value={views.total.toLocaleString()}
+        detail={
+          views.last7 > 0
+            ? `${views.last7.toLocaleString()} in the last 7 days`
+            : 'None in the last 7 days'
+        }
+      />
+    </div>
+  )
+}
+
+// ── Section B: RSVP-status breakdown ──────────────────────────────────────────
+
+export async function RsvpBreakdownSection({ eventId }: { eventId: string }) {
+  const b = await loadRsvpBreakdown(eventId)
+
+  if (b.total === 0 && b.pendingApproval === 0) {
+    return (
+      <EmptyState
+        variant="first-use"
+        title="No RSVPs yet"
+        description="Once people respond, the count for each status shows up here."
+      />
+    )
+  }
+
+  const tiles: { label: string; value: number; icon: typeof Check }[] = [
+    { label: 'Going', value: b.going, icon: Check },
+    { label: 'Interested', value: b.interested, icon: Star },
+    { label: 'Waitlist', value: b.waitlist, icon: Clock },
+    { label: "Can't go", value: b.notGoing, icon: Users },
+    { label: 'Pending approval', value: b.pendingApproval, icon: Hourglass },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {tiles.map((t) => (
+        <StatCard key={t.label} bordered icon={t.icon} label={t.label} value={t.value} />
+      ))}
+    </div>
+  )
+}
+
+// ── Section C: buying-intent follow-up ────────────────────────────────────────
+
+const FOLLOW_UP_SIGNAL: Record<'started_checkout' | 'rsvp_no_purchase', string> = {
+  started_checkout: 'Started checkout',
+  rsvp_no_purchase: "RSVP'd, hasn't bought",
+}
+
+export async function FollowUpSection({ eventId }: { eventId: string }) {
+  const candidates = await loadFollowUps(eventId)
+
+  if (candidates.length === 0) {
+    return (
+      <EmptyState
+        variant="cleared"
+        title="No one to follow up with yet"
+        description="When someone starts a checkout or RSVPs to a paid event without buying, they show up here to reach out to."
+      />
+    )
+  }
+
+  return (
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {candidates.map((c) => (
+        <li key={c.profileId}>
+          <PersonCard
+            handle={c.handle}
+            displayName={c.displayName}
+            avatarUrl={c.avatarUrl}
+            context={FOLLOW_UP_SIGNAL[c.signal]}
+            action={<FollowUpButton eventId={eventId} memberProfileId={c.profileId} />}
+          />
+        </li>
+      ))}
+    </ul>
   )
 }
 
