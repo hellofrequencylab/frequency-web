@@ -13425,3 +13425,73 @@ and any bug must fail OPEN for existing members. It builds on the Beta Command C
 **Consequences.** No behavior change until an operator flips a flag: `beta_invite_only` false, `beta_ends_at`
 unset, `billing_live` false. The wave engine's thin server-action entrypoints belong to the Command Center; the
 graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (untyped-admin idiom, ADR-246).
+
+---
+
+## ADR-601: Etsy-Grade commerce — product variants + the seller-quality phase ladder
+
+**Status:** Accepted (2026-07-11) · builds on ADR-596 (one commerce spine) · Phases 0-2 shipped, 3-7 planned · full spec `docs/ETSY-GRADE-PLAN.md`.
+
+**Context.** ADR-596 unified commerce onto `commerce_products` with tiered sellers and a shared Market, but the listing itself was thin: one price, one stock, one photo, no buyer-facing taxonomy, and no way to sell "Small / Blue" as a distinct SKU. To be a place people actually shop (not a bulletin board), the listing + buy flow needed to climb toward marketplace-grade: real photos, tags/taxonomy, variants with their own price + inventory, and later shipping, discovery, cart, and fulfillment. The owner directed a phased "Etsy-Grade" ladder, Business-account gated for payments, that raises listing quality without forking the spine.
+
+**Decision.**
+1. **A phased quality ladder on the ONE spine (P0-P7).** Each phase is additive schema + UI over `commerce_products`, never a parallel engine. P0 monetization gate + New/Used condition; P1 listing editor + multi-photo gallery + category taxonomy + free-form tags; **P2 product variants + per-variant inventory** (this ADR's build); P3 shipping/delivery; P4 discovery/search ranking; P5 cart + multi-seller checkout; P6 orders/fulfillment + buyer-seller messaging; P7 trust/growth/tax. Status + specs in `docs/ETSY-GRADE-PLAN.md`.
+2. **Variants are a child table, opt-in, inert when absent.** `commerce_variants` (FK → `commerce_products` cascade; `name`, `options` jsonb, `price_cents` null=inherit product price, `stock` null=untracked, `sku`, `sort_order`, `active`). A product with zero variants behaves EXACTLY as before (single price, single stock). RLS mirrors `commerce_products` (public reads active; no client writes). Migration `20261132000000_commerce_variants.sql` (write-only, not applied).
+3. **Two pure resolvers, unit-tested.** `effectiveVariantPriceCents(product, variant) = variant.priceCents ?? product.priceCents` (an explicit 0 is a real free override); `effectiveVariantStock(variant) = variant.stock` — the variant GOVERNS its own stock (null=untracked) and never falls back to product stock (unlike price).
+4. **Inventory decrements atomically, per variant.** `decrement_commerce_stock_atomic` is superseded by a two-pass version under the same per-order lock + `metadata.inventory_decremented` idempotency marker: pass 1 decrements variant stock for variant-selected items, pass 2 decrements product stock for plain items. Untracked (null) rows are skipped; still raises `out_of_stock` (P0001), still idempotent.
+5. **Order history survives variant retirement.** `commerce_order_items.variant_id` is re-added `ON DELETE SET NULL`, and checkout snapshots the variant NAME onto the order-item title, so retiring a variant never destroys or mis-labels paid history.
+
+**Alternatives.** A generic EAV attribute system (rejected: over-built for 1-2 option dimensions). Variant stock inheriting from the product (rejected: a variant must sell out independently; inheritance kept for price only, as a convenience). A separate variants engine outside `commerce_products` (rejected: violates the one-spine rule of ADR-596).
+
+**Consequences.** Payments stay behind `payoutsLive()` (ADR-178). Regenerate `lib/database.types.ts` after the migration applies (ADR-246); until then `commerce_variants` reads/writes use the untyped admin idiom. The buyer sees a VariantPicker + "From <min>" price only when active variants exist; the Shop item form gains an optional Variants editor (cleared when a product becomes a service). P3-P7 remain to build.
+
+---
+
+## ADR-602: Business Spaces directory — category taxonomy + Index refinements
+
+**Status:** Accepted (2026-07-11) · `lib/spaces/categories.ts`, `components/spaces/spaces-toolbar.tsx`, `components/spaces/space-card.tsx`, `app/(main)/spaces/[slug]/(profile)/layout.tsx`.
+
+**Context.** The public Business Spaces directory (`/spaces/directory`) filtered by the public TYPE chip (Business / Non Profit), which is a legal designator (NAMING.md forbids a third public type), not a way to browse by what a Space DOES. A member looking for a yoga studio or an acupuncturist could not narrow to that. The owner directed an Index redesign: a self-selected browse category, a search-led toolbar, and category-forward cards.
+
+**Decision.**
+1. **A six-category browse FACET, distinct from the type chip.** `SPACE_CATEGORIES` = business (catch-all default), practitioner, coach, studio ("Studios"), maker ("Shops"), venue ("Event Space"). A closed, data-only, pure taxonomy (no React/Supabase imports, trivially testable) persisted on `spaces.preferences.profileData.category` (no new column). It is DISTINCT from both the public Business / Non Profit type chip and the internal `mode_variant` layout focus. Per NAMING.md these words are valid as self-selected FRAMING, never as the profile's type chip.
+2. **The category is the only directory filter.** The Business / Non Profit type filter is removed from the toolbar entirely. Row 1 is search (grows to fill) + Sort + Following as equal-height siblings directly under the hero; row 2 is the category filter, rendered from `SPACE_CATEGORIES` so a relabel flows through with no render edit.
+3. **Cards + profile headers lead with category, not type.** The directory card's top-left cover pill shows the category (subcategory); the duplicate body pill is dropped. The primary action on both the card and the Space profile header becomes a text link (legible over any cover), not a filled button, and the standalone Business / Non Profit type pill is removed from the profile header content.
+
+**Alternatives.** A new `spaces.category` column (rejected: `preferences.profileData` already carries owner-picked framing, no migration needed). Keeping the type filter alongside category (rejected: the owner wanted one filter, and type is a legal fact not a browse axis). A larger taxonomy (rejected: six categories cover the field; `business` absorbs the tail).
+
+**Consequences.** `normalizeSpaceCategory` is total (unknown/forged value → `business`), so a stale value never breaks the directory. Labels live in one place; the drift-free menu reads All | Business | Practitioner | Coach & Guide | Studios | Shops | Event Space. No schema change, no migration.
+
+---
+
+## ADR-603: Profile share-link + QR referral attribution — extend ADR-091 to `/people`
+
+**Status:** Accepted (2026-07-11) · extends ADR-091 (per-member codes + referral attribution) · `lib/qr/public-url.ts`, `components/qr/share-ref-context.tsx`, `proxy.ts`.
+
+**Context.** ADR-091 attributes a referral when someone scans a member's `/q/<slug>` code: the route handler drops an `fq_ref` cookie, and onboarding's `applyReferralAttribution` credits the owner. But a member's profile "QR & Share" panel emitted a BARE `/people/<handle>` with no `fq_ref` seam, so a person who joined via the copied link or its QR credited NOBODY. The owner reported copying their own share link and getting an unattributed URL.
+
+**Decision.**
+1. **The share-URL seam carries an optional ref, person-scoped.** `publicShareUrl(origin, pathname, opts?)` appends `?ref=<ownerId>` to the copied link + QR encode ONLY when the ref is a valid UUID AND the target is a `/people/<handle>` page. The returned PATH stays canonical (`/people/<handle>`) so QR-folder grouping and the "open" link are unchanged; only the shared `url` carries the ref. A tiny `ShareRefProvider` supplies the profile owner id on person pages only (default null).
+2. **The middleware drops `fq_ref` for the share link exactly as `/q` does.** In `proxy.ts`, for an anonymous visitor whose URL carries `?ref`, when the ref passes a UUID shape-check, no `fq_ref` already exists, and referrals are enabled, it sets `fq_ref` with the SAME attributes as the `/q` resolver (httpOnly, sameSite lax, path /, 30-day max-age). Set BEFORE the protected-path redirect so the cookie survives the `/people`→`/sign-in` bounce. First-touch wins; the ref is UUID-validated so junk cannot poison the cookie; `applyReferralAttribution` remains the real gate (referrer exists, not self, credited once).
+
+**Alternatives.** Resolve the ref to `referred_by_profile_id` in the page (rejected: the visitor is anonymous and bounces to sign-in; the cookie is the only durable carrier across the bounce). A distinct cookie for share vs `/q` (rejected: one `fq_ref` + one onboarding gate is simpler and first-touch-correct). Attribute at the share-link click server-side (rejected: no server hit until the protected-page request the proxy already handles).
+
+**Consequences.** QR scan and copied link attribute IDENTICALLY (both encode the same `?ref` url). No hot-path DB read (the flag is consulted only when `?ref` is present, and the read is try/catch fail-open so a non-render context never throws the proxy). `referred_by_profile_id` remains the reusable growth signal of ADR-091/099.
+
+---
+
+## ADR-604: Housing matching v2 — Resonance-led blend, Fair-Housing gating, roommate-to-roommate
+
+**Status:** Accepted (2026-07-11) · builds on the marketplace foundation + housing matching (ADR-392/394) · `supabase/migrations/20261133000000_housing_matching_v2.sql`, `lib/listings/housing.ts`.
+
+**Context.** The housing vertical had a listing-vs-seeker match RPC (`housing_match_candidates`) but the blend was coarse and captured no lifestyle signal, and there was no roommate-to-roommate match at all. The owner directed a stronger, honest match: Resonance-led, with real lifestyle inputs and strict Fair-Housing discipline (protected traits never filter anyone out), plus symmetric roommate matching.
+
+**Decision.**
+1. **A re-blended, clamped candidate score.** `housing_match_candidates` is replaced in place (same signature/return, so the roommates page is untouched): Resonance 0.35 · budget 0.20 · location 0.15 · timing 0.10 · lifestyle 0.15 · astrology 0.05. Timing = `available_from` vs `move_in_from` proximity (60-day falloff); astrology contributes 0 unless BOTH parties opt in (reusing `member_match_prefs`, the sun-sign-quiet posture of the romance matcher).
+2. **Lifestyle capture, Fair-Housing gated at the source.** The seeker form captures tidiness, social energy, rhythm, diet, pets, smoking, cannabis, and arrangement. A PURE `sanitizeSeekerPreferences` enforces the gate server-side: controlled vocab only, gender preference kept ONLY for shared-living arrangements (the shared-housing exemption), age stored as a soft ranking hint never a hard filter. Persisted to `housing_seeker_profiles.preferences` (jsonb).
+3. **Symmetric roommate-to-roommate matching, consent-gated.** New `housing_roommate_matches` blends the same weights over the cosine `resonance_neighbors`, returning only COARSE city + score band, never coordinates. Because seeker profiles are private (owner-only RLS), it additionally requires the OTHER seeker's own opt-in (and not-opted-out-as-target) before surfacing them — stricter than `housing_match_candidates`, whose listing owners are already public.
+4. **Facet UI over the same read.** `/marketplace/housing` becomes a URL-driven GET form (property type, min/max rent, amenity chips) reading through `listHousingListings(facets)`, shareable and back-button safe, keeping the instant text search + column density on top.
+
+**Alternatives.** A single flat match number (rejected: not explainable, and trust is contextual per ADR-247). Revealing roommate coordinates or identity by default (rejected: private profiles need the member's own consent). Astrology as a default-on factor (rejected: quiet 5%, opt-in both sides).
+
+**Consequences.** All SQL helpers are fail-safe (NULL-tolerant date/int parsing, neutral 0.5 when nothing shared; astrology NULL unless both dates parse). Migration is write-only (not applied); regenerate `lib/database.types.ts` after apply (ADR-246). Lifestyle prefill on `roommates/page.tsx` is a one-line follow-up (`getSeekerProfile` now returns `preferences`).
