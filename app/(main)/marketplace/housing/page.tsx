@@ -11,6 +11,7 @@ import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -36,6 +37,14 @@ type HousingSearchParams = {
 const FIELD =
   'w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary'
 const FILTER_LABEL = 'mb-1 block text-xs font-medium text-muted'
+
+// Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
+// Both these tabs and the advanced filter form drive `?type=`, so the two stay in sync via the URL.
+const HOUSING_TABS: { href: string; label: string }[] = [
+  { href: '/marketplace/housing', label: 'All' },
+  ...PROPERTY_TYPES.map((p) => ({ href: `/marketplace/housing?type=${p.slug}`, label: p.label })),
+  { href: '/marketplace/housing/roommates', label: 'Roommates' },
+]
 
 /** A positive integer of dollars from a raw query value, else null. */
 function dollarsToCents(v: string | undefined): number | null {
@@ -77,7 +86,7 @@ export default async function HousingPage({
   if (!viewerProfileId) {
     return (
       <MarketSearchProvider>
-        <div className="space-y-8">
+        <div className="space-y-6">
           {hero}
           <EmptyState
             icon={Home}
@@ -112,12 +121,12 @@ export default async function HousingPage({
 
   return (
     <MarketSearchProvider>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {hero}
 
         <MarketplaceHiddenBanner area="housing" />
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <MarketplaceBar
             active="housing"
             stats={[
@@ -126,111 +135,120 @@ export default async function HousingPage({
             ]}
           />
 
-          {/* Facet band — a URL-driven GET form (no client JS). Submitting rebuilds the query. */}
-          <form
-            method="get"
-            className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm"
-            aria-label="Filter housing"
-          >
-            <div className="flex items-center gap-2 text-sm font-medium text-text">
-              <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden /> Filters
+          {/* One column-density context spans the sub-menu density control and the grid it drives. */}
+          <MarketplaceColumnsProvider>
+            {/* Canonical sub-menu: quick category browse (property types + Roommates), density folded right. */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <UnderlineTabs
+                tabs={HOUSING_TABS}
+                activeHref={
+                  selectedType ? `/marketplace/housing?type=${selectedType}` : '/marketplace/housing'
+                }
+              />
+              <MarketplaceColumns />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label htmlFor="type" className={FILTER_LABEL}>
-                  Property type
-                </label>
-                <select id="type" name="type" defaultValue={selectedType} className={FIELD}>
-                  <option value="">Any type</option>
-                  {PROPERTY_TYPES.map((p) => (
-                    <option key={p.slug} value={p.slug}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
+            {/* Advanced filters — a URL-driven GET form (no client JS). Submitting rebuilds the query. */}
+            <form
+              method="get"
+              className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-sm"
+              aria-label="Filter housing"
+            >
+              <div className="flex items-center gap-2 text-sm font-medium text-text">
+                <SlidersHorizontal className="h-4 w-4 text-muted" aria-hidden /> Filters
               </div>
-              <div>
-                <label htmlFor="min" className={FILTER_LABEL}>
-                  Min rent (per month)
-                </label>
-                <input
-                  id="min"
-                  name="min"
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  defaultValue={sp.min ?? ''}
-                  className={FIELD}
-                  placeholder="Any"
-                />
-              </div>
-              <div>
-                <label htmlFor="max" className={FILTER_LABEL}>
-                  Max rent (per month)
-                </label>
-                <input
-                  id="max"
-                  name="max"
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  defaultValue={sp.max ?? ''}
-                  className={FIELD}
-                  placeholder="Any"
-                />
-              </div>
-            </div>
 
-            <fieldset>
-              <legend className={FILTER_LABEL}>Amenities</legend>
-              <div className="flex flex-wrap gap-2">
-                {AMENITIES.map((a) => (
-                  <label
-                    key={a.slug}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
-                  >
-                    <input
-                      type="checkbox"
-                      name="amenity"
-                      value={a.slug}
-                      defaultChecked={selectedAmenities.has(a.slug)}
-                      className="sr-only"
-                    />
-                    {a.label}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="type" className={FILTER_LABEL}>
+                    Property type
                   </label>
-                ))}
+                  <select id="type" name="type" defaultValue={selectedType} className={FIELD}>
+                    <option value="">Any type</option>
+                    {PROPERTY_TYPES.map((p) => (
+                      <option key={p.slug} value={p.slug}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="min" className={FILTER_LABEL}>
+                    Min rent (per month)
+                  </label>
+                  <input
+                    id="min"
+                    name="min"
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    defaultValue={sp.min ?? ''}
+                    className={FIELD}
+                    placeholder="Any"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="max" className={FILTER_LABEL}>
+                    Max rent (per month)
+                  </label>
+                  <input
+                    id="max"
+                    name="max"
+                    type="number"
+                    min="0"
+                    inputMode="numeric"
+                    defaultValue={sp.max ?? ''}
+                    className={FIELD}
+                    placeholder="Any"
+                  />
+                </div>
               </div>
-            </fieldset>
 
-            <div className="flex items-center justify-end gap-2">
-              {hasFacets && (
-                <Link href="/marketplace/housing" className={buttonClasses('ghost', 'sm')}>
-                  Clear
-                </Link>
-              )}
-              <button type="submit" className={buttonClasses('primary', 'sm')}>
-                Apply filters
-              </button>
-            </div>
-          </form>
+              <fieldset>
+                <legend className={FILTER_LABEL}>Amenities</legend>
+                <div className="flex flex-wrap gap-2">
+                  {AMENITIES.map((a) => (
+                    <label
+                      key={a.slug}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary-bg has-[:checked]:text-primary-strong"
+                    >
+                      <input
+                        type="checkbox"
+                        name="amenity"
+                        value={a.slug}
+                        defaultChecked={selectedAmenities.has(a.slug)}
+                        className="sr-only"
+                      />
+                      {a.label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
 
-          {listings.length === 0 ? (
-            <EmptyState
-              icon={Home}
-              variant={hasFacets ? 'no-results' : 'first-use'}
-              title={hasFacets ? 'Nothing matches those filters.' : 'No housing listed near you yet.'}
-              description={
-                hasFacets
-                  ? 'Try widening the price range or clearing an amenity.'
-                  : 'List a room, a rental, or a sublet. Roommate listings will match to members you\'d actually get along with.'
-              }
-            />
-          ) : (
-            <MarketplaceColumnsProvider>
-              <div className="mb-4 flex justify-end">
-                <MarketplaceColumns />
+              <div className="flex items-center justify-end gap-2">
+                {hasFacets && (
+                  <Link href="/marketplace/housing" className={buttonClasses('ghost', 'sm')}>
+                    Clear
+                  </Link>
+                )}
+                <button type="submit" className={buttonClasses('primary', 'sm')}>
+                  Apply filters
+                </button>
               </div>
+            </form>
+
+            {listings.length === 0 ? (
+              <EmptyState
+                icon={Home}
+                variant={hasFacets ? 'no-results' : 'first-use'}
+                title={hasFacets ? 'Nothing matches those filters.' : 'No housing listed near you yet.'}
+                description={
+                  hasFacets
+                    ? 'Try widening the price range or clearing an amenity.'
+                    : 'List a room, a rental, or a sublet. Roommate listings will match to members you\'d actually get along with.'
+                }
+              />
+            ) : (
               <div className="@container">
                 <InstantGrid
                   items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
@@ -241,8 +259,8 @@ export default async function HousingPage({
                   ))}
                 </InstantGrid>
               </div>
-            </MarketplaceColumnsProvider>
-          )}
+            )}
+          </MarketplaceColumnsProvider>
         </div>
 
         <MarketplaceGuide />

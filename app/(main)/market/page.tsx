@@ -14,6 +14,7 @@ import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -31,33 +32,6 @@ const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', service
 
 const GRID_CLASS = 'mp-grid gap-6'
 const searchText = (p: MarketItem) => `${p.title} ${p.description ?? ''}`
-
-function GroupRail({ active }: { active: MarketGroup | null }) {
-  const tabs: { key: MarketGroup | null; label: string }[] = [
-    { key: null, label: 'All' },
-    ...MARKET_GROUPS.map((g) => ({ key: g, label: GROUP_LABEL[g] })),
-  ]
-  return (
-    <nav aria-label="Market groups" className="flex flex-wrap gap-1 rounded-2xl border border-border bg-surface p-1 shadow-sm">
-      {tabs.map((t) => {
-        const on = t.key === active
-        const href = t.key ? `/market?group=${t.key}` : '/market'
-        return (
-          <Link
-            key={t.label}
-            href={href}
-            aria-current={on ? 'page' : undefined}
-            className={`rounded-xl px-3 py-1.5 text-sm font-semibold transition-colors ${
-              on ? 'bg-primary text-on-primary' : 'text-muted hover:bg-surface-elevated hover:text-text'
-            }`}
-          >
-            {t.label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
-}
 
 export default async function MarketPage({
   searchParams,
@@ -96,7 +70,7 @@ export default async function MarketPage({
 
   return (
     <MarketSearchProvider>
-    <div className="space-y-8">
+    <div className="space-y-6">
       <MarketHero
         image={HERO_IMAGE}
         eyebrow="The Market"
@@ -119,7 +93,7 @@ export default async function MarketPage({
 
       <MarketplaceHiddenBanner area="makers" />
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         <MarketplaceBar
           active="makers"
           stats={[
@@ -132,7 +106,13 @@ export default async function MarketPage({
 
         <MarketplaceColumnsProvider className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <GroupRail active={group} />
+            <UnderlineTabs
+              tabs={[
+                { href: '/market', label: 'All', count: counts.total },
+                ...MARKET_GROUPS.map((g) => ({ href: `/market?group=${g}`, label: GROUP_LABEL[g], count: counts[g] })),
+              ]}
+              activeHref={group ? `/market?group=${group}` : '/market'}
+            />
             <MarketplaceColumns />
           </div>
 

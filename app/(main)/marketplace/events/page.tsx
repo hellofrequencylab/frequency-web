@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { EventCard } from '@/components/events/event-card'
 import { EventsFilterBar } from '@/app/(main)/events/events-filter-bar'
 import { MarketHero } from '@/components/marketplace/market-hero'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import {
   MarketplaceColumnsProvider,
@@ -18,7 +18,9 @@ import { getEventsIndexData } from '@/app/(main)/events/index-data'
 // (getEventsIndexData + EventCard), just reframed in the commerce chrome so it reads as one
 // of the five marketplace areas. Both paid and free events list here; the price stat comes
 // from the loader's "Free" / "$X" / "From $X" label (cheapest active ticket tier). No business
-// logic is duplicated. No em or en dashes.
+// logic is duplicated. Opens the marketplace way: a hero search bar (instant client filter over
+// the loaded list) + the shared MarketplaceBar, matching Classifieds / Housing / Market. No em
+// or en dashes.
 
 export const metadata = {
   title: 'Events',
@@ -62,78 +64,79 @@ export default async function MarketplaceEventsPage({
       eyebrow="Events"
       title="Find your next gathering"
       subtitle="Paid and free events near you, from community circles and hosts. Filter by what fits, then RSVP or grab a ticket."
+      search={<MarketSearchBar placeholder="Search events" />}
     />
   )
 
   return (
-    <div className="space-y-8">
-      {hero}
-
+    <MarketSearchProvider>
       <div className="space-y-6">
-        <MarketplaceFacets active="events" />
+        {hero}
 
-        <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-          <StatCard size="sm" label="Upcoming" value={sortedEvents.length} icon={CalendarDays} />
+        <div className="space-y-5">
+          <MarketplaceBar
+            active="events"
+            stats={[{ label: 'Upcoming', value: sortedEvents.length, icon: CalendarDays }]}
+          />
+
+          {/* The Catalog toolbar, reused verbatim: URL-driven facets + sort, so the view stays
+              shareable and does the SAME server-side filtering as the /events Catalog. The hero's
+              instant search replaces the toolbar's own box (showSearch={false}), so there's one
+              search, not two. */}
+          <EventsFilterBar facets={facets} sortOptions={sortOptions} showSearch={false} />
+
+          {sortedEvents.length === 0 ? (
+            filtering ? (
+              <EmptyState
+                icon={CalendarDays}
+                title="No events match these filters"
+                description="Try a wider date or clear a filter to see everything coming up."
+                action={
+                  <Link
+                    href="/marketplace/events"
+                    className="text-sm font-semibold text-primary-strong hover:underline"
+                  >
+                    Clear filters
+                  </Link>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={CalendarDays}
+                variant="first-use"
+                title="Nothing on the calendar yet"
+                description="When your circles or hosts nearby plan something, paid or free, it shows up here."
+              />
+            )
+          ) : (
+            <MarketplaceColumnsProvider>
+              <div className="mb-4 flex justify-end">
+                <MarketplaceColumns />
+              </div>
+              <div className="@container">
+                <InstantGrid
+                  items={sortedEvents.map((e) => ({ text: `${e.title} ${e.location ?? ''}` }))}
+                  className="mp-grid gap-4"
+                >
+                  {sortedEvents.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      circleName={circleNames[event.scope_id]}
+                      coverUrl={coverUrls[event.id]}
+                      going={rsvpCounts[event.id] ?? 0}
+                      priceLabel={priceLabels[event.id] ?? 'Free'}
+                      now={nowDate}
+                    />
+                  ))}
+                </InstantGrid>
+              </div>
+            </MarketplaceColumnsProvider>
+          )}
         </div>
 
-        {/* Honest one-liner (voice canon): what this surface is, plainly. */}
-        <p className="max-w-2xl text-sm text-muted">
-          Every upcoming event in one place, paid and free. Sort by soonest, most going, or nearest,
-          and filter by category, date, or price.
-        </p>
-
-        {/* The Catalog toolbar, reused verbatim: URL-driven search + facets + sort, so the view
-            stays shareable and does the SAME filtering as the /events Catalog. */}
-        <EventsFilterBar facets={facets} sortOptions={sortOptions} />
-
-        {sortedEvents.length === 0 ? (
-          filtering ? (
-            <EmptyState
-              icon={CalendarDays}
-              title="No events match these filters"
-              description="Try a wider date or clear a filter to see everything coming up."
-              action={
-                <Link
-                  href="/marketplace/events"
-                  className="text-sm font-semibold text-primary-strong hover:underline"
-                >
-                  Clear filters
-                </Link>
-              }
-            />
-          ) : (
-            <EmptyState
-              icon={CalendarDays}
-              variant="first-use"
-              title="Nothing on the calendar yet"
-              description="When your circles or hosts nearby plan something, paid or free, it shows up here."
-            />
-          )
-        ) : (
-          <MarketplaceColumnsProvider>
-            <div className="mb-4 flex justify-end">
-              <MarketplaceColumns />
-            </div>
-            <div className="@container">
-              <div className="mp-grid gap-4">
-                {sortedEvents.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    circleName={circleNames[event.scope_id]}
-                    coverUrl={coverUrls[event.id]}
-                    going={rsvpCounts[event.id] ?? 0}
-                    priceLabel={priceLabels[event.id] ?? 'Free'}
-                    now={nowDate}
-                  />
-                ))}
-              </div>
-            </div>
-          </MarketplaceColumnsProvider>
-        )}
+        <MarketplaceGuide />
       </div>
-
-      <MarketplaceGuide />
-    </div>
+    </MarketSearchProvider>
   )
 }
