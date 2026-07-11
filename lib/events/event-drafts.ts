@@ -22,6 +22,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { recordStreakActivity, processGamificationEvent } from '@/lib/achievements'
 import { scaledPostReward } from './poster-quality'
 import { isValidClaim } from './claim-trust'
+import { resolveProfileLoomSpaceId, copyImageToLoom } from '@/lib/library/event-loom'
 import type { DomainSlug, EventDetails } from './types'
 
 const db = () => createAdminClient()
@@ -558,6 +559,42 @@ export interface ClaimResult {
 }
 
 /**
+ * Copy an event's public images (cover + gallery, all event-media paths) into the CLAIMER's Loom, so
+ * the organizer who just took the event over can reuse them. Best-effort + idempotent (copyImageToLoom
+ * skips a path already in the space's Loom) — a Loom miss never fails the claim, and a claimer who runs
+ * no space is a silent no-op.
+ */
+async function copyEventImagesToLoom(eventId: string, claimerProfileId: string): Promise<void> {
+  try {
+    const spaceId = await resolveProfileLoomSpaceId(claimerProfileId)
+    if (!spaceId) return
+    const admin = db()
+    const { data } = await admin
+      .from('events')
+      .select('title, cover_image_path, gallery_image_paths')
+      .eq('id', eventId)
+      .maybeSingle()
+    const row = data as { title?: string | null; cover_image_path?: string | null; gallery_image_paths?: string[] | null } | null
+    if (!row) return
+    // Unified gallery: cover == gallery[0], so the gallery already covers the header. Dedupe defensively.
+    const paths = [...new Set([...(row.gallery_image_paths ?? []), ...(row.cover_image_path ? [row.cover_image_path] : [])])]
+    for (const path of paths) {
+      if (!path) continue
+      const { data: pub } = admin.storage.from('event-media').getPublicUrl(path)
+      await copyImageToLoom({
+        spaceId,
+        storageBucket: 'event-media',
+        storagePath: path,
+        url: pub.publicUrl,
+        title: row.title ?? null,
+      })
+    }
+  } catch {
+    /* best-effort: bringing the images into the Loom must never break the claim */
+  }
+}
+
+/**
  * An organizer claims a posted, unclaimed event with its one-time token. They
  * become the host; the token is cleared. The POSTER (posted_by_profile_id), not
  * the claimer, gets the event_claim_bonus, exactly-once on event_claim_bonus:<id>.
@@ -644,6 +681,10 @@ export async function claimEvent(
       /* bonus is best-effort */
     }
   }
+
+  // The claimer now owns this event, so bring its images into THEIR Loom to reuse later. Best-effort
+  // + idempotent (copyImageToLoom skips a path already filed); a Loom miss never fails the claim.
+  await copyEventImagesToLoom(eventId, claimerProfileId)
 
   // Tell the poster the handshake landed (skip self-claims: no news to deliver).
   // Best-effort + idempotent inside the helper; a notify failure never fails the

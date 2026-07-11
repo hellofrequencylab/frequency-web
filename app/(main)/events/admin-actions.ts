@@ -24,6 +24,12 @@ import { writeEventCoverFocus } from '@/lib/events/cover-focus'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvp } from '@/lib/events/rsvp-depth'
 import {
+  copyEventMediaToProfileLoom,
+  resolveProfileLoomSpaceId,
+  getPickableLoomImage,
+} from '@/lib/library/event-loom'
+import { searchSpaceLibraryImages, type LibraryImagePick } from '@/lib/library/store'
+import {
   loadRoster,
   loadAnalytics,
   loadPendingApprovals,
@@ -106,7 +112,15 @@ export async function getEventAdminData(slug: string) {
   // The original scanned poster lives in the PRIVATE poster bucket → short-lived signed
   // URL for the Photos manager to preview. Uploaded gallery images are public.
   const posterUrl = await posterSignedUrl(event.poster_path)
-  const galleryPaths = event.gallery_image_paths ?? []
+  // Unified gallery (event image editor rework): the FIRST gallery image IS the header/cover. Seed
+  // the editor's gallery so the cover LEADS it — for events created before the unification (a cover
+  // set separately from the gallery), the cover surfaces as the first tile with no migration. The
+  // next gallery save normalises the row (setEventGalleryImages keeps cover_image_path = gallery[0]).
+  const rawGallery = event.gallery_image_paths ?? []
+  const galleryPaths =
+    event.cover_image_path && !rawGallery.includes(event.cover_image_path)
+      ? [event.cover_image_path, ...rawGallery]
+      : rawGallery
   const galleryItems = galleryPaths.map((p) => ({
     path: p,
     url: admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
@@ -323,12 +337,16 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
 export async function useEventPosterAsCover(
   id: string,
   slug: string,
-): Promise<{ url: string } | { error: string }> {
+): Promise<{ url: string; paths: string[] } | { error: string }> {
   const caps = await getEventCapabilities(id)
   if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
 
   const admin = createAdminClient()
-  const { data: ev } = await admin.from('events').select('poster_path').eq('id', id).maybeSingle()
+  const { data: ev } = await admin
+    .from('events')
+    .select('poster_path, gallery_image_paths')
+    .eq('id', id)
+    .maybeSingle()
   const posterPath = (ev as { poster_path?: string | null } | null)?.poster_path ?? null
   if (!posterPath) return { error: 'There is no poster to use.' }
 
@@ -344,9 +362,15 @@ export async function useEventPosterAsCover(
     .upload(path, bytes, { contentType: blob.type || 'image/jpeg', upsert: false })
   if (upErr) return { error: upErr.message }
 
+  // Unified gallery: the poster becomes the HEADER by leading the one gallery. Prepend its new
+  // event-media path and keep cover_image_path = gallery[0], so it is a normal reorderable tile from
+  // here on (no separate cover control).
+  const before = ((ev as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
+  const paths = [path, ...before.filter((p) => p !== path)].slice(0, MAX_GALLERY_IMAGES)
+
   const { error: dbErr } = await (admin as unknown as UntypedUpdate)
     .from('events')
-    .update({ cover_image_path: path })
+    .update({ cover_image_path: path, gallery_image_paths: paths })
     .eq('id', id)
   if (dbErr) return { error: dbErr.message }
 
@@ -355,7 +379,7 @@ export async function useEventPosterAsCover(
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
   revalidatePath('/feed')
-  return { url: data.publicUrl }
+  return { url: data.publicUrl, paths }
 }
 
 // Field-level patch for the inline tuning layer (ADR-138). Allowlisted; re-checks
@@ -425,6 +449,18 @@ export async function uploadEventCover(
   if (dbErr) return { error: dbErr.message }
 
   const { data } = admin.storage.from('event-media').getPublicUrl(path)
+
+  // The cover ALSO lands in the uploader's Loom (best-effort), so it is reusable later — same as the
+  // gallery upload. A Loom miss never fails the cover upload.
+  const coverUploaderId = await getMyProfileId().catch(() => null)
+  await copyEventMediaToProfileLoom({
+    profileId: coverUploaderId,
+    storagePath: path,
+    url: data.publicUrl,
+    title: file.name.replace(/\.[^.]+$/, '') || null,
+    mime: file.type || null,
+    bytes: file.size,
+  })
 
   revalidatePath(`/events/${slug}`)
   revalidatePath('/events')
@@ -554,6 +590,19 @@ export async function uploadEventGalleryImage(
     .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
   if (upErr) return { error: upErr.message }
 
+  // Every event upload ALSO lands in the uploader's Loom, so the photo is reusable later. Best-effort:
+  // a Loom miss (or a member who runs no space) never fails the event upload.
+  const { data: pub } = admin.storage.from('event-media').getPublicUrl(path)
+  const uploaderId = await getMyProfileId().catch(() => null)
+  await copyEventMediaToProfileLoom({
+    profileId: uploaderId,
+    storagePath: path,
+    url: pub.publicUrl,
+    title: file.name.replace(/\.[^.]+$/, '') || null,
+    mime: file.type || null,
+    bytes: file.size,
+  })
+
   return { path }
 }
 
@@ -581,9 +630,15 @@ export async function setEventGalleryImages(
   const { data: prev } = await admin.from('events').select('gallery_image_paths').eq('id', id).maybeSingle()
   const before = ((prev as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
 
+  // Unified gallery: the FIRST image IS the header/cover, so keep cover_image_path = gallery[0]
+  // (null when the gallery is emptied). The event page's hero reads cover_image_path, so this is
+  // what makes reordering a photo to the front re-crown the header. Poster-derived covers stay
+  // event-media paths, so cover and gallery are the same address space — no bucket mismatch.
+  const nextCover = clean[0] ?? null
+
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
-    .update({ gallery_image_paths: clean })
+    .update({ gallery_image_paths: clean, cover_image_path: nextCover })
     .eq('id', id)
   if (error) return { error: error.message }
 
@@ -598,6 +653,88 @@ export async function setEventGalleryImages(
   revalidatePath('/events')
   revalidatePath('/feed')
   return { ok: true }
+}
+
+/** The caller's own Loom images (their space's assets UNIONED with the shared/public library),
+ *  for the "Select from Loom" picker in the event image editor. Resolves the caller's Loom space
+ *  server-side (a space they own); a member with no space sees only the shared/public library.
+ *  FAIL-SAFE to [] (no profile, no space, or any error). */
+export async function listMyLoomImages(query?: string): Promise<LibraryImagePick[]> {
+  const profileId = await getMyProfileId().catch(() => null)
+  const spaceId = await resolveProfileLoomSpaceId(profileId)
+  if (!spaceId) return []
+  return searchSpaceLibraryImages(spaceId, query)
+}
+
+/**
+ * Add a picked Loom image to the event gallery. The gallery stores event-media PATHS (so cover and
+ * gallery share one address space), so this COPIES the Loom asset's bytes into event-media under the
+ * event's prefix, appends the new path to the gallery, and keeps cover_image_path = gallery[0].
+ * Gated on event.editSettings AND on the caller's authority to reuse that asset (their own Loom space
+ * or a public shared-library asset). Returns the new full gallery array for the client to apply.
+ */
+export async function addEventImageFromLoom(
+  id: string,
+  slug: string,
+  loomAssetId: string,
+): Promise<{ paths: string[] } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const profileId = await getMyProfileId().catch(() => null)
+  const spaceId = await resolveProfileLoomSpaceId(profileId)
+  const asset = await getPickableLoomImage(spaceId, loomAssetId)
+  if (!asset) return { error: 'That image is not in your Loom.' }
+
+  const admin = createAdminClient()
+
+  // Read the bytes: prefer the source storage object (bucket + path); fall back to fetching the URL.
+  let bytes: Uint8Array | null = null
+  let contentType = asset.mime || 'image/jpeg'
+  if (asset.storageBucket && asset.storagePath) {
+    const { data: blob } = await admin.storage.from(asset.storageBucket).download(asset.storagePath)
+    if (blob) {
+      bytes = new Uint8Array(await blob.arrayBuffer())
+      contentType = blob.type || contentType
+    }
+  }
+  if (!bytes) {
+    try {
+      const res = await fetch(asset.url)
+      if (res.ok) {
+        bytes = new Uint8Array(await res.arrayBuffer())
+        contentType = res.headers.get('content-type') || contentType
+      }
+    } catch {
+      /* fall through to the error below */
+    }
+  }
+  if (!bytes) return { error: 'Could not read that image. Try again.' }
+
+  const ext = (asset.storagePath?.split('.').pop() || contentType.split('/').pop() || 'jpg')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${id}/gallery-${crypto.randomUUID()}.${ext}`
+  const { error: upErr } = await admin.storage
+    .from('event-media')
+    .upload(path, bytes, { contentType, upsert: false })
+  if (upErr) return { error: upErr.message }
+
+  const { data: cur } = await admin.from('events').select('gallery_image_paths').eq('id', id).maybeSingle()
+  const before = ((cur as { gallery_image_paths?: string[] | null } | null)?.gallery_image_paths ?? []) as string[]
+  const paths = [...before, path].slice(0, MAX_GALLERY_IMAGES)
+  const nextCover = paths[0] ?? null
+
+  const { error: dbErr } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ gallery_image_paths: paths, cover_image_path: nextCover })
+    .eq('id', id)
+  if (dbErr) return { error: dbErr.message }
+
+  revalidatePath(`/events/${slug}`)
+  revalidatePath('/events')
+  revalidatePath('/feed')
+  return { paths }
 }
 
 /** Rename an event's permalink. Slugifies the input, rejects empty, and ensures the

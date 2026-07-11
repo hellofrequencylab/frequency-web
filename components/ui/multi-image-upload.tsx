@@ -241,10 +241,10 @@ export function MultiImageUpload({
               unoptimized
               className="h-full w-full object-cover"
             />
-            {/* When there is no pinned key image, the first gallery photo leads the strip. */}
+            {/* The first gallery photo IS the header/cover, so mark it plainly. */}
             {reorderable && !leading && i === 0 && (
               <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-3xs font-semibold uppercase tracking-wide text-white">
-                Shown first
+                Header
               </span>
             )}
             <button
