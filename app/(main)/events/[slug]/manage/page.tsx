@@ -1,14 +1,14 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Users, Check, Star, Gauge, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEventCapabilities } from '@/lib/core/load-capabilities'
 import { DashboardTemplate } from '@/components/templates'
-import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Skeleton } from '@/components/ui/skeleton'
-import { loadRoster, loadAnalytics } from './load'
+import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { loadEventCoreStats } from '@/lib/events/event-stats'
+import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import {
   RosterSection,
   ApprovalsSection,
@@ -56,15 +56,9 @@ export default async function ManageEventPage({
   const caps = await getEventCapabilities(event.id)
   if (!caps.has('event.editSettings')) notFound()
 
-  // Cheap roster read drives the analytics StatCards; the heavier per-section reads
-  // stream behind Suspense below.
-  const roster = await loadRoster(event.id)
-  const analytics = await loadAnalytics(event.id, roster)
-
-  const capacityValue =
-    analytics.capacity.capacity == null ? 'Unlimited' : String(analytics.capacity.capacity)
-  const utilizationLabel =
-    analytics.utilization == null ? '—' : `${analytics.utilization}%`
+  // One cheap core-stats read drives the headline row (the same shared read + row the
+  // settings rail uses); the heavier per-section reads stream behind Suspense below.
+  const coreStats = await loadEventCoreStats(event.id)
 
   return (
     <DashboardTemplate
@@ -74,42 +68,19 @@ export default async function ManageEventPage({
       back={{ href: `/events/${event.slug}`, label: 'Back to event' }}
       width="default"
       actions={
-        <Link
-          href={`/events/${event.slug}/edit`}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text transition-colors hover:bg-surface-elevated"
-        >
-          <Pencil className="h-4 w-4" /> Edit details
-        </Link>
+        // Edit details opens the event settings editor as the in-place admin rail
+        // slide-over (openAdminBar, pointed at this event scope) instead of navigating
+        // away to /edit — the same trigger the entity "Edit" buttons use elsewhere.
+        // The rail is present here because the Manage dashboard keeps the global rail
+        // column (railFor → 'global'); the AdminBar listens for OPEN_ADMIN_BAR shell-wide.
+        <OpenAdminBarButton
+          scope={{ kind: 'event', id: event.slug }}
+          caps={Array.from(caps)}
+          label="Edit details"
+          icon={<Pencil className="h-4 w-4" />}
+        />
       }
-      stats={
-        <>
-          <StatCard
-            label="Going"
-            value={analytics.going}
-            icon={Check}
-            detail={
-              analytics.checkedIn > 0
-                ? `${analytics.checkedIn} checked in`
-                : analytics.headcount > analytics.going
-                  ? `${analytics.headcount} with guests`
-                  : undefined
-            }
-          />
-          <StatCard label="Interested" value={analytics.maybe} icon={Star} />
-          <StatCard
-            label="Waitlist"
-            value={analytics.waitlist}
-            icon={Users}
-            detail={analytics.waitlist > 0 ? 'waiting for a spot' : undefined}
-          />
-          <StatCard
-            label="Capacity filled"
-            value={utilizationLabel}
-            icon={Gauge}
-            detail={`${analytics.capacity.going} of ${capacityValue}`}
-          />
-        </>
-      }
+      stats={<EventCoreStatsCards stats={coreStats} />}
     >
       <section>
         <SectionHeader title="Roster" />
