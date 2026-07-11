@@ -25,7 +25,6 @@ import {
   normalizeSpaceSort,
   type SpaceSort,
 } from '@/lib/spaces/discovery'
-import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { spaceCategoryLabel } from '@/lib/spaces/categories'
 import { SpaceCard } from '@/components/spaces/space-card'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
@@ -33,7 +32,7 @@ import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
 // The Spaces DIRECTORY — the in-app surface where a member browses the networked entity Spaces
 // (practitioners, businesses, organizations, coaching academies, event spaces) and opens one's
 // profile (ENTITY-SPACES-BUILD §A/§B, Phase 1 / Epic 1.8). Composed, not authored: the Index
-// template provides the header grammar, a toolbar carries the search + type/category filters, and each
+// template provides the header grammar, a toolbar carries the search + category filter, and each
 // Space renders through the shared SpaceCard -> EntityCard so the directory reads like every other
 // browse grid. The grid is its own <Suspense> so the shell + header paint instantly and never block on
 // the discovery read (D5 / PAGE-FRAMEWORK §5). The result set is PAGED (12/24/48 per page) via
@@ -76,11 +75,10 @@ function GridSkeleton() {
 // Build a directory URL that keeps the current filters and overrides only the given params. A null
 // value drops the param (a clean canonical URL). Used by the pager + page-size selector.
 function buildHref(
-  base: { type?: string; q?: string; category?: string; following?: string; sort?: string; per?: number; page?: number },
+  base: { q?: string; category?: string; following?: string; sort?: string; per?: number; page?: number },
   overrides: { per?: number | null; page?: number | null },
 ): string {
   const sp = new URLSearchParams()
-  if (base.type) sp.set('type', base.type)
   if (base.q) sp.set('q', base.q)
   if (base.category) sp.set('category', base.category)
   if (base.following) sp.set('following', base.following)
@@ -211,7 +209,6 @@ function StartBusinessCTA() {
 }
 
 async function SpacesGrid({
-  type,
   q,
   category,
   following,
@@ -221,7 +218,6 @@ async function SpacesGrid({
   viewerProfileId,
   urlBase,
 }: {
-  type?: string
   q?: string
   category?: string
   following: boolean
@@ -232,13 +228,12 @@ async function SpacesGrid({
   urlBase: Parameters<typeof buildHref>[0]
 }) {
   const { spaces, total } = await listNetworkedSpacesPage(
-    { type, q, category, followerProfileId: viewerProfileId, onlyFollowed: following, sort },
+    { q, category, followerProfileId: viewerProfileId, onlyFollowed: following, sort },
     { limit: per, offset: (page - 1) * per },
   )
 
   if (total === 0) {
-    const filtering = !!((type ?? '').trim() || (q ?? '').trim() || (category ?? '').trim() || following)
-    const typeLabel = type ? spaceTypeLabel(type) : null
+    const filtering = !!((q ?? '').trim() || (category ?? '').trim() || following)
     const categoryLabel = category ? spaceCategoryLabel(category) : null
     return (
       <>
@@ -258,9 +253,7 @@ async function SpacesGrid({
               : filtering
                 ? categoryLabel
                   ? `No ${categoryLabel} Spaces matched. Try a different category or a wider search.`
-                  : typeLabel
-                    ? `No ${typeLabel} Spaces matched. Try a different type or a wider search.`
-                    : 'Try a different filter or a wider search.'
+                  : 'Try a different filter or a wider search.'
                 : 'This is where practitioners, businesses, and organizations in the network will live. Check back soon.'
           }
         />
@@ -290,7 +283,6 @@ export default async function SpacesDirectoryPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    type?: string
     q?: string
     category?: string
     following?: string
@@ -300,7 +292,6 @@ export default async function SpacesDirectoryPage({
   }>
 }) {
   const {
-    type,
     q,
     category,
     following: followingParam,
@@ -318,7 +309,7 @@ export default async function SpacesDirectoryPage({
   const viewerProfileId = await getMyProfileId()
 
   // The shared base for every pager/size link — the current filters, so paging preserves them.
-  const urlBase = { type, q, category, following: followingParam, sort: sortParam, per, page }
+  const urlBase = { q, category, following: followingParam, sort: sortParam, per, page }
 
   return (
     <IndexTemplate
@@ -345,11 +336,10 @@ export default async function SpacesDirectoryPage({
       {/* Keyed on the filters + sort + page window so a new query remounts the boundary and shows the
           skeleton while the next result set streams in. */}
       <Suspense
-        key={`${type ?? ''}:${q ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
+        key={`${q ?? ''}:${category ?? ''}:${following ? '1' : ''}:${sort}:${per}:${page}`}
         fallback={<GridSkeleton />}
       >
         <SpacesGrid
-          type={type}
           q={q}
           category={category}
           following={following}

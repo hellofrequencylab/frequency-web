@@ -3,26 +3,24 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { LayoutGrid, Check } from 'lucide-react'
 import { DirectorySearch } from '@/components/ui/directory-search'
-import { DIRECTORY_TYPES } from './space-type'
 import { SpacesSort } from './spaces-sort'
 import { SPACE_CATEGORIES } from '@/lib/spaces/categories'
 
-// The command bar for the Spaces directory — the same standard the Circles/People directories use:
-// a debounced free-text search (DirectorySearch), a low-cardinality TYPE filter (Business / Non
-// Profit), the "business style" CATEGORY filter (the six SPACE_CATEGORIES + All), and a "Following"
-// pill that narrows to the Spaces the viewer follows. Everything is URL-driven (writes the `q` /
-// `type` / `category` / `following` / `sort` params, preserves the rest), so the page stays a Server
-// Component and a filtered view is shareable. URL state IS the filter; no local state.
+// The command bar for the Spaces directory — the same standard the Circles/People directories use.
+// Everything is URL-driven (writes the `q` / `category` / `following` / `sort` params, preserves the
+// rest), so the page stays a Server Component and a filtered view is shareable. URL state IS the
+// filter; no local state.
 //
-// Layout: the SORT control sits on its own row ABOVE the search box (item 6). Keeping it out of the
-// horizontally-scrolling facet rows also fixes the dropdown that used to be clipped by an
-// `overflow-x-auto` ancestor (item 5) — its menu now opens over the grid, not behind it.
+// Layout: ROW 1 is the search box (flex-1) with the SORT control and the "Following" toggle as
+// matched-height siblings to its right; the search is the first thing under the hero. ROW 2 is the
+// single CATEGORY filter — the SPACE_CATEGORIES labels (rendered from the source of truth) plus All,
+// wired to `?category=`. The type filter (Business / Non Profit) was retired here (ADR-552); Spaces
+// are browsed by category, not by public type.
 export function SpacesToolbar() {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
 
-  const type = params.get('type') ?? ''
   const category = params.get('category') ?? ''
   const following = params.get('following') === '1'
 
@@ -47,49 +45,40 @@ export function SpacesToolbar() {
 
   return (
     <div className="space-y-3">
-      {/* SORT — its own row above the search box (item 6). Not inside an overflow-clipping container,
-          so the open menu sits above the grid + hero (item 5). Right-aligned as the ordering control. */}
-      <div className="flex justify-end">
-        <SpacesSort />
-      </div>
-
-      <DirectorySearch placeholder="Search Spaces by name…" />
-
-      {/* Facet row 1: the low-cardinality TYPE pills (Business / Non Profit) plus a standalone
-          "Following" pill. The row scrolls horizontally on a narrow screen rather than wrapping. */}
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1">
-        <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
-          <button type="button" onClick={() => setParam('type', null)} className={pill(!type)}>
-            <LayoutGrid className="h-3.5 w-3.5" /> All
-          </button>
-          {DIRECTORY_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setParam('type', t.value)}
-              className={pill(type === t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
+      {/* ROW 1 — search first under the hero, with Sort + Following as matched-height siblings. The
+          search grows (flex-1); Sort and Following are fixed-height boxes. `items-stretch` + `h-full`
+          on the box children equalizes their height to the search input. The Sort menu opens over the
+          grid (row 1 has no overflow clip), fixing the old clipped-dropdown case. */}
+      <div className="flex items-stretch gap-2">
+        <div className="min-w-0 flex-1">
+          <DirectorySearch placeholder="Search Spaces by name…" />
         </div>
 
-        {/* "Following" narrows to the Spaces the viewer follows (URL `?following=1`). A separate
-            facet from type, so it sits in its own pill group. */}
-        <div className="flex w-max items-center rounded-lg bg-surface-elevated p-0.5">
-          <button
-            type="button"
-            onClick={toggleFollowing}
-            aria-pressed={following}
-            className={pill(following)}
-          >
-            <Check className="h-3.5 w-3.5" /> Following
-          </button>
+        {/* Sort — the ordering control. Its inner trigger button is stretched to the row height. */}
+        <div className="shrink-0 [&>div]:h-full [&_button]:h-full">
+          <SpacesSort />
         </div>
+
+        {/* Following — narrows to the Spaces the viewer follows (URL `?following=1`). Styled as a
+            bordered box to match the Sort control on the row. */}
+        <button
+          type="button"
+          onClick={toggleFollowing}
+          aria-pressed={following}
+          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
+            following
+              ? 'border-primary bg-primary-bg text-primary-strong'
+              : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
+          }`}
+        >
+          <Check className="h-3.5 w-3.5 shrink-0" />
+          Following
+        </button>
       </div>
 
-      {/* Facet row 2: the CATEGORY filter — the six "business style" browse categories plus All
-          (URL `?category=`), matching the type-pill idiom. Combines with type + Following. */}
+      {/* ROW 2 — the single CATEGORY filter (URL `?category=`): the SPACE_CATEGORIES plus All. Labels
+          come from the SPACE_CATEGORIES source of truth, never hardcoded. The row scrolls horizontally
+          on a narrow screen rather than wrapping. Combines with search + Following + sort. */}
       <div className="-mx-1 flex items-center overflow-x-auto px-1">
         <div className="flex w-max items-center gap-0.5 rounded-lg bg-surface-elevated p-0.5">
           <button type="button" onClick={() => setParam('category', null)} className={pill(!category)}>
