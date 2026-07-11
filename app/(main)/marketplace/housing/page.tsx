@@ -11,7 +11,7 @@ import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
-import { UnderlineTabs } from '@/components/admin/underline-tabs'
+import { HousingCategoryNav } from '@/components/marketplace/housing-category-nav'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -40,12 +40,6 @@ const FILTER_LABEL = 'mb-1 block text-xs font-medium text-muted'
 
 // Canonical quick-browse sub-menu: All + one tab per property type, then Roommates (its own route).
 // Both these tabs and the advanced filter form drive `?type=`, so the two stay in sync via the URL.
-const HOUSING_TABS: { href: string; label: string }[] = [
-  { href: '/marketplace/housing', label: 'All' },
-  ...PROPERTY_TYPES.map((p) => ({ href: `/marketplace/housing?type=${p.slug}`, label: p.label })),
-  { href: '/marketplace/housing/roommates', label: 'Roommates' },
-]
-
 /** A positive integer of dollars from a raw query value, else null. */
 function dollarsToCents(v: string | undefined): number | null {
   if (!v) return null
@@ -100,7 +94,7 @@ export default async function HousingPage({
   }
 
   // Facet state, straight from the URL (validated against the controlled vocab in the read helper).
-  const selectedType = PROPERTY_TYPES.some((p) => p.slug === sp.type) ? sp.type : ''
+  const selectedType = PROPERTY_TYPES.some((p) => p.slug === sp.type) ? sp.type ?? '' : ''
   const rawAmenities = Array.isArray(sp.amenity) ? sp.amenity : sp.amenity ? [sp.amenity] : []
   const selectedAmenities = new Set(rawAmenities)
   const minCents = dollarsToCents(sp.min)
@@ -137,14 +131,10 @@ export default async function HousingPage({
 
           {/* One column-density context spans the sub-menu density control and the grid it drives. */}
           <MarketplaceColumnsProvider className="space-y-6">
-            {/* Canonical sub-menu: quick category browse (property types + Roommates), density folded right. */}
+            {/* Canonical sub-menu: quick category browse (All | House | Room | Apartment | Studio | Other
+                dropdown | Roommates), with the density control folded to the right of the menu. */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <UnderlineTabs
-                tabs={HOUSING_TABS}
-                activeHref={
-                  selectedType ? `/marketplace/housing?type=${selectedType}` : '/marketplace/housing'
-                }
-              />
+              <HousingCategoryNav selectedType={selectedType} />
               <MarketplaceColumns />
             </div>
 
