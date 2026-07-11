@@ -34,6 +34,7 @@ export function MultiImageUpload({
   bucket = 'event-media',
   max = 12,
   disabled = false,
+  upload,
 }: {
   /** Ordered storage paths in `bucket`. */
   value: string[]
@@ -48,6 +49,14 @@ export function MultiImageUpload({
   /** Cap on how many images the gallery holds. */
   max?: number
   disabled?: boolean
+  /**
+   * Optional SERVER upload action. When supplied, each file is uploaded through it (a server
+   * action using the admin client) instead of the browser Storage client, and the returned PATH
+   * is used. This is how the event gallery avoids the event-media INSERT RLS (writes gated to
+   * `split_part(name,'/',1) = auth.uid()`), matching the cover upload. Absent = browser upload
+   * under the signer's own uid prefix (the pre-creation new-event form, which owns its uid path).
+   */
+  upload?: (formData: FormData) => Promise<{ path: string } | { error: string }>
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -72,13 +81,19 @@ export function MultiImageUpload({
     }
 
     setBusy(true)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Sign in to upload photos.')
-      setBusy(false)
-      return
+    // The browser path needs the signer's uid for its owner-scoped storage prefix; the SERVER
+    // path (upload action) doesn't — the action derives + gates the path itself.
+    let userId: string | null = null
+    if (!upload) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setError('Sign in to upload photos.')
+        setBusy(false)
+        return
+      }
+      userId = user.id
     }
 
     const added: string[] = []
@@ -98,10 +113,25 @@ export function MultiImageUpload({
         setError(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 10 MB.`)
         continue
       }
+
+      // SERVER upload (admin client, bypasses the bucket INSERT RLS) — the event gallery path.
+      if (upload) {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await upload(fd)
+        if ('error' in res) {
+          setError(`Upload failed: ${res.error}`)
+          continue
+        }
+        added.push(res.path)
+        continue
+      }
+
+      // BROWSER upload under the signer's own uid prefix (owner-scoped RLS).
       const ext = (file.name.split('.').pop() ?? 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg'
       // A random id per file keeps several picked at once collision-free (and keeps this
       // out of the react-hooks/purity rule, which forbids Date.now()/Math.random()).
-      const path = `${user.id}/${folder}/${crypto.randomUUID()}.${ext}`
+      const path = `${userId}/${folder}/${crypto.randomUUID()}.${ext}`
       const { error: upErr } = await supabase.storage
         .from(bucket)
         .upload(path, file, { contentType: file.type, upsert: true })

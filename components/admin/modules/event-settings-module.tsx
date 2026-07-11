@@ -16,6 +16,7 @@ import {
   removeEventCover,
   removeEventPoster,
   setEventGalleryImages,
+  uploadEventGalleryImage,
   // Aliased: it's a server action, not a React hook — the `use*` name would trip the
   // rules-of-hooks lint when called inside a callback.
   useEventPosterAsCover as promotePosterToCover,
@@ -257,6 +258,7 @@ export function EventSettingsModule() {
             folder="event-gallery"
             hint="Extra photos shown in the gallery on the event page. Add or remove anytime."
             disabled={pending}
+            upload={uploadEventGalleryImage.bind(null, data.id, data.slug)}
           />
         </div>
         {imgErr && <p className="text-xs font-medium text-danger">{imgErr}</p>}
