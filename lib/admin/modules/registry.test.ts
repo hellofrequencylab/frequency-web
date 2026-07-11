@@ -69,11 +69,11 @@ describe('admin module registry', () => {
 
   it('surfaces the event spine only on an event scope, only with event.editSettings', () => {
     const caps = new Set<Capability>(['event.editSettings'])
+    // event.placeAndTime + event.engage folded into event.settings (Event page overhaul): the host
+    // edits the whole event in one flow, so only Settings + People remain as event modules.
     expect(modulesFor(eventScope, caps).map((m) => m.id)).toEqual([
       'event.settings',
-      'event.placeAndTime',
       'event.people',
-      'event.engage',
     ])
     expect(modulesFor(eventScope, new Set<Capability>())).toHaveLength(0)
     expect(modulesFor(circleScope, caps)).toHaveLength(0)
@@ -237,9 +237,7 @@ describe('admin module registry', () => {
     ])
     expect(modulesForScopeKind('event', 'sidebar').map((m) => m.id)).toEqual([
       'event.settings',
-      'event.placeAndTime',
       'event.people',
-      'event.engage',
     ])
     expect(modulesForScopeKind('practice', 'sidebar').map((m) => m.id)).toEqual([
       'practice.settings',

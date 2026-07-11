@@ -14,7 +14,7 @@
 // render each module's Component. The catalog + filter are the durable seam.
 
 import type { LucideIcon } from 'lucide-react'
-import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Clock, Users, Ticket, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid } from 'lucide-react'
+import { Settings, Building2, Network, CalendarDays, Hash, Type, Sparkles, Users, MapPin, Trophy, BarChart3, Archive, Palette, UserCircle, Bell, Radar, ShieldCheck, CreditCard, LayoutGrid } from 'lucide-react'
 import type { Capability, Scope } from '@/lib/core/capabilities'
 
 /** The Scope union's discriminant — where a module can attach. */
@@ -384,20 +384,11 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     tier: 'standard',
     priority: 10,
   },
-  {
-    id: 'event.placeAndTime',
-    label: 'Place & Time',
-    desc: 'When and where: start and end, time zone, repeats, the venue and map, and the booking window.',
-    Icon: Clock,
-    scopes: ['event'],
-    requiredCapability: 'event.editSettings',
-    slot: 'place',
-    surface: 'sidebar',
-    render: 'inline',
-    order: 10,
-    tier: 'primary',
-    priority: 20,
-  },
+  // NOTE (Event page overhaul): the former event.placeAndTime and event.engage EDITOR modules were
+  // folded into event.settings — the host now edits the whole event (images, title, capacity, ticket
+  // price, description, when/who/format, time zone, repeats, RSVP window, and ONE venue+map location)
+  // in a single top-to-bottom flow, with no duplicated Address / Map / time boxes. People stays its
+  // own module (the guest roster). The Manage dashboard stays the rail bank link.
   {
     id: 'event.people',
     label: 'People',
@@ -411,20 +402,6 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     order: 10,
     tier: 'primary',
     priority: 30,
-  },
-  {
-    id: 'event.engage',
-    label: 'Engage',
-    desc: 'Tickets, sales, and check-in.',
-    Icon: Ticket,
-    scopes: ['event'],
-    requiredCapability: 'event.editSettings',
-    slot: 'engage',
-    surface: 'sidebar',
-    render: 'inline',
-    order: 10,
-    tier: 'primary',
-    priority: 40,
   },
   {
     id: 'practice.settings',

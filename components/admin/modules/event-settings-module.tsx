@@ -10,6 +10,7 @@ import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
 import { useRailAutosave, isInstant, isTextLike } from '@/components/admin/rail/use-rail-autosave'
 import {
   getEventAdminData,
+  getEventEngageData,
   updateEventSettings,
   updateEventPermalink,
   uploadEventCover,
@@ -17,12 +18,16 @@ import {
   removeEventPoster,
   setEventGalleryImages,
   uploadEventGalleryImage,
+  type EventEngageData,
   // Aliased: it's a server action, not a React hook — the `use*` name would trip the
   // rules-of-hooks lint when called inside a callback.
   useEventPosterAsCover as promotePosterToCover,
 } from '@/app/(main)/events/admin-actions'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
+import { EventHeroHeightControl } from '@/components/admin/modules/event-hero-height-control'
+import { EventPlacementField } from '@/components/events/event-placement-field'
+import { readEventHeroHeight } from '@/lib/events/hero-height'
 import type { PlaceResult } from '@/lib/geocode'
 import {
   CATEGORY_OPTIONS,
@@ -31,12 +36,20 @@ import {
   ATTENDANCE_OPTIONS,
 } from '@/lib/events/options'
 import { isoToWallClockInput } from '@/lib/events/datetime'
+import { COMMON_TIME_ZONES } from './event-shared-fields-module'
 
-// In-place "Event settings" (EMBEDDED-ADMIN.md / ADR-133) on /events/[slug]. The rail section header is
-// the single title. Every field autosaves and reflects on the page live (useRailAutosave): text on blur,
-// selects instantly. Programmatic changes (a venue pick that fills several fields, a dragged map pin) call
-// saveNow(). Images self-save through their own actions; the permalink keeps its own action (a rename
-// redirects the page). This removes the old Save button + the confusing "some fields auto-save, some don't".
+// In-place "Event settings" (EMBEDDED-ADMIN.md / ADR-133) on /events/[slug]. This is now the SINGLE
+// host field editor for the event: the old Place & Time and Engage editor modules folded in here
+// (Event page overhaul) so there is ONE top-to-bottom flow with no duplicated Address / Map / time
+// boxes. The rail section header is the single title. Every field autosaves and reflects on the page
+// live (useRailAutosave): text on blur, selects instantly. Programmatic changes (a venue pick that
+// fills the hidden address inputs, a dragged map pin) call saveNow(). Images + hero height self-save
+// through their own actions; the permalink keeps its own action (a rename redirects the page).
+//
+// Flow (top to bottom): Stats box (Sold | Revenue | Checked in) · Images · Title · Capacity · Ticket
+// price · Description · Starts / Ends / Who / Format / What kind / Energy (+ time zone / repeats) ·
+// RSVP window · Location (one live venue search + one map; the street/city/region/postal/country ride
+// as hidden derived inputs) · Permalink · Placement.
 
 // maplibre must never run on the server → dynamically imported, client-only.
 const EventLocationPicker = dynamic(() => import('@/components/events/event-location-picker'), {
@@ -51,12 +64,49 @@ type EventData = NonNullable<Awaited<ReturnType<typeof getEventAdminData>>>
 const input = fieldClasses
 const fieldLabel = labelClasses
 
+const RECURRENCE_OPTIONS = [
+  { value: 'none', label: 'Does not repeat' },
+  { value: 'daily', label: 'Repeats daily' },
+  { value: 'weekly', label: 'Repeats weekly' },
+  { value: 'monthly', label: 'Repeats monthly' },
+]
+
+/** A stored ISO instant → the `YYYY-MM-DD` a `<input type="date">` wants (UTC parts). */
+function isoToDateInput(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`
+}
+
+function formatMoney(cents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency: currency.toUpperCase() }).format(
+      cents / 100,
+    )
+  } catch {
+    return `$${(cents / 100).toFixed(2)}`
+  }
+}
+
+/** A human one-line location string composed from a venue pick, so the public page's location line
+ *  and the Maps deep link still have text even though the structured fields are hidden. */
+function composeLocation(p: PlaceResult): string {
+  const head = p.name ?? p.street
+  const parts = [head, p.city, p.region].filter(Boolean) as string[]
+  const seen = new Set<string>()
+  const line = parts.filter((x) => (seen.has(x) ? false : (seen.add(x), true))).join(', ')
+  return line || p.label
+}
+
 export function EventSettingsModule() {
   const pathname = usePathname()
   const router = useRouter()
   const slug = pathname.match(/^\/events\/([^/]+)/)?.[1] ?? null
 
   const [data, setData] = useState<EventData | null>(null)
+  const [engage, setEngage] = useState<EventEngageData | null>(null)
   const [loading, setLoading] = useState(true)
   const [imgErr, setImgErr] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -65,9 +115,11 @@ export function EventSettingsModule() {
   const [permaErr, setPermaErr] = useState<string | null>(null)
   const [permaPending, startPerma] = useTransition()
   const [mode, setMode] = useState('in_person')
+  const [recurrence, setRecurrence] = useState('none')
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [galleryPaths, setGalleryPaths] = useState<string[]>([])
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [location, setLocation] = useState('')
   const [venueName, setVenueName] = useState('')
   const [street, setStreet] = useState('')
   const [city, setCity] = useState('')
@@ -108,9 +160,11 @@ export function EventSettingsModule() {
           if (d) {
             setPermalink(d.slug)
             setMode(d.attendance_mode ?? 'in_person')
+            setRecurrence(d.recurrence_type ?? 'none')
             setPosterUrl(d.posterUrl ?? null)
             setGalleryPaths(d.galleryPaths ?? [])
             setCoverUrl(d.coverUrl ?? null)
+            setLocation(d.location ?? '')
             setVenueName(d.venue_name ?? '')
             setStreet(d.street ?? '')
             setCity(d.city ?? '')
@@ -126,6 +180,12 @@ export function EventSettingsModule() {
       .catch(() => {
         if (active) setLoading(false)
       })
+    // Stats (Sold | Revenue | Checked in) — its own read; failure just hides the box.
+    getEventEngageData(slug)
+      .then((e) => {
+        if (active) setEngage(e)
+      })
+      .catch(() => {})
     return () => {
       active = false
     }
@@ -137,7 +197,11 @@ export function EventSettingsModule() {
   }
   if (!data) return null
 
-  // A venue pick fills every address field it has AND drops the pin, then commits.
+  // The venue autocomplete biases to the event's pin, else the viewer's home (local-first search).
+  const bias = lat != null && lng != null ? { lat, lng } : (data.viewerHome ?? null)
+
+  // A venue pick fills every hidden address field it has, sets the one-line location, drops the pin,
+  // then commits.
   function handleVenuePick(p: PlaceResult) {
     setVenueName(p.name ?? p.label)
     if (p.street) setStreet(p.street)
@@ -147,6 +211,7 @@ export function EventSettingsModule() {
     if (p.country) setCountry(p.country)
     setLat(p.lat)
     setLng(p.lng)
+    setLocation(composeLocation(p))
     // Wait for the controlled inputs to flush the new values into the form before snapshotting.
     requestAnimationFrame(saveNow)
   }
@@ -192,9 +257,31 @@ export function EventSettingsModule() {
     })
   }
 
+  // Prepend the event's own saved zone when it falls outside the curated list.
+  const zone = data.time_zone ?? 'America/Los_Angeles'
+  const zones = COMMON_TIME_ZONES.some((z) => z.value === zone)
+    ? COMMON_TIME_ZONES
+    : [{ value: zone, label: zone }, ...COMMON_TIME_ZONES]
+
   return (
     <div className="space-y-4">
-      {/* IMAGES — cover on top, gallery below. Each self-saves through its own action. */}
+      {/* STATS — Sold | Revenue | Checked in, pinned at the very top. */}
+      {engage && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Sold', value: String(engage.ticketsSold) },
+            { label: 'Revenue', value: formatMoney(engage.revenueCents, engage.currency) },
+            { label: 'Checked in', value: `${engage.checkedIn}/${engage.going}` },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-border bg-surface p-3">
+              <div className="truncate text-base font-bold text-text">{s.value}</div>
+              <div className="text-2xs font-medium uppercase tracking-wide text-subtle">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* IMAGES — cover, gallery, then the hero-height picker. Each self-saves. */}
       <div className="space-y-4">
         <div className="space-y-1.5">
           <span className={fieldLabel}>Cover image</span>
@@ -261,6 +348,12 @@ export function EventSettingsModule() {
             upload={uploadEventGalleryImage.bind(null, data.id, data.slug)}
           />
         </div>
+
+        <EventHeroHeightControl
+          eventId={data.id}
+          slug={data.slug}
+          initial={readEventHeroHeight(data.theme)}
+        />
         {imgErr && <p className="text-xs font-medium text-danger">{imgErr}</p>}
       </div>
 
@@ -276,11 +369,7 @@ export function EventSettingsModule() {
         }}
         className="space-y-4"
       >
-        <label className="block space-y-1.5">
-          <span className={fieldLabel}>Description</span>
-          <textarea name="description" defaultValue={data.description ?? ''} rows={4} className={`${input} resize-none`} />
-        </label>
-
+        {/* TITLE + CAPACITY */}
         <div className="grid grid-cols-3 gap-3">
           <label className="col-span-2 block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Title</span>
@@ -292,11 +381,31 @@ export function EventSettingsModule() {
           </label>
         </div>
 
+        {/* TICKET PRICE — blank keeps the event a free RSVP. */}
         <label className="block space-y-1.5">
-          <span className={fieldLabel}>Location</span>
-          <input name="location" defaultValue={data.location ?? ''} className={input} />
+          <span className={fieldLabel}>Ticket price</span>
+          <span className="flex items-center rounded-lg border border-border bg-surface px-3 text-sm text-subtle">
+            <span className="shrink-0 uppercase">{data.currency ?? 'usd'}</span>
+            <input
+              name="price"
+              type="number"
+              min={0}
+              step="0.01"
+              defaultValue={data.price_cents != null && data.price_cents > 0 ? (data.price_cents / 100).toString() : ''}
+              placeholder="Free"
+              className="min-w-0 flex-1 bg-transparent px-2 py-2 text-text outline-none"
+            />
+          </span>
+          <span className="text-2xs text-subtle">Leave blank for a free RSVP event. Set a price to sell tickets.</span>
         </label>
 
+        {/* DESCRIPTION */}
+        <label className="block space-y-1.5">
+          <span className={fieldLabel}>Description</span>
+          <textarea name="description" defaultValue={data.description ?? ''} rows={4} className={`${input} resize-none`} />
+        </label>
+
+        {/* WHEN + WHO — starts / ends / who can see. */}
         <div className="grid grid-cols-3 gap-2">
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Starts</span>
@@ -318,6 +427,7 @@ export function EventSettingsModule() {
           </label>
         </div>
 
+        {/* FORMAT / WHAT KIND / ENERGY */}
         <div className="grid grid-cols-3 gap-2">
           <label className="block min-w-0 space-y-1.5">
             <span className={fieldLabel}>Format</span>
@@ -351,6 +461,39 @@ export function EventSettingsModule() {
           </label>
         </div>
 
+        {/* TIME ZONE + REPEATS */}
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block min-w-0 space-y-1.5">
+            <span className={fieldLabel}>Time zone</span>
+            <select name="time_zone" defaultValue={zone} className={`${input} min-w-0 px-2`}>
+              {zones.map((z) => (
+                <option key={z.value} value={z.value}>
+                  {z.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block min-w-0 space-y-1.5">
+            <span className={fieldLabel}>Repeats</span>
+            <select name="recurrence_type" value={recurrence} onChange={(e) => setRecurrence(e.target.value)} className={`${input} min-w-0 px-2`}>
+              {RECURRENCE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {recurrence !== 'none' && (
+          <label className="block space-y-1.5">
+            <span className={fieldLabel}>
+              Repeat until <span className="font-normal text-subtle">(leave blank to repeat indefinitely)</span>
+            </span>
+            <input name="recurrence_until" type="date" defaultValue={isoToDateInput(data.recurrence_until)} className={`${input} px-2`} />
+          </label>
+        )}
+
         {/* Join link (online / hybrid only), toggled by Format. */}
         {mode !== 'in_person' && (
           <label className="block space-y-1.5">
@@ -359,47 +502,60 @@ export function EventSettingsModule() {
           </label>
         )}
 
-        {/* Address box (in person / hybrid). A venue pick fills every field and drops the pin. */}
-        {mode !== 'online' && (
-          <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
-            <span className={fieldLabel}>
-              Address <span className="font-normal text-subtle">(search a venue to fill it in and drop the pin)</span>
-            </span>
-            <VenueAutocomplete
-              value={venueName}
-              onPick={handleVenuePick}
-              bias={lat != null && lng != null ? { lat, lng } : null}
-            />
-            <input type="hidden" name="venue_name" value={venueName} />
-            <input name="street" value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Street address" className={input} />
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className={`${input} min-w-0`} />
-              <input name="region" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="State or province" className={`${input} min-w-0`} />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input name="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className={`${input} min-w-0`} />
-              <input name="country" value={country} onChange={(e) => setCountry(e.target.value)} placeholder="Country" className={`${input} min-w-0`} />
-            </div>
+        {/* RSVP WINDOW — when people can RSVP. */}
+        <div className="space-y-3 rounded-xl border border-border bg-surface-elevated/40 p-3">
+          <span className={fieldLabel}>
+            RSVP window <span className="font-normal text-subtle">(when people can RSVP)</span>
+          </span>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>RSVPs open</span>
+              <input name="rsvp_opens_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpOpensAt)} className={`${input} min-w-0 px-2`} />
+            </label>
+            <label className="block min-w-0 space-y-1.5">
+              <span className={fieldLabel}>RSVPs close</span>
+              <input name="rsvp_closes_at" type="datetime-local" defaultValue={isoToWallClockInput(data.rsvpClosesAt)} className={`${input} min-w-0 px-2`} />
+            </label>
           </div>
-        )}
+        </div>
 
-        {/* Map (in person / hybrid). The pin's lat/lng ride in hidden inputs; a drag commits via saveNow. */}
+        {/* LOCATION — ONE live venue search + ONE map (in person / hybrid). Picking a venue or dragging
+            the pin sets the address; the street/city/region/postal/country ride as hidden derived
+            inputs, so there is no duplicate address block. Kept inside the non-online guard so that
+            switching to Online submits them empty → the stored address clears (as before). */}
         {mode !== 'online' && (
-          <div className="space-y-1.5">
-            <span className={fieldLabel}>Pin the exact spot</span>
-            <EventLocationPicker
-              lat={lat}
-              lng={lng}
-              onChange={(nLat, nLng) => {
-                setLat(nLat)
-                setLng(nLng)
-                requestAnimationFrame(saveNow)
-              }}
-            />
-            <p className="text-2xs text-subtle">
-              Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
-              city-level area shown to people browsing.
-            </p>
+          <div className="space-y-3">
+            <div className="space-y-1.5 rounded-xl border border-border bg-surface-elevated/40 p-3">
+              <span className={fieldLabel}>
+                Location <span className="font-normal text-subtle">(search a venue to set the address and drop the pin)</span>
+              </span>
+              <VenueAutocomplete value={venueName} onPick={handleVenuePick} bias={bias} />
+            </div>
+            <div className="space-y-1.5">
+              <span className={fieldLabel}>Pin the exact spot</span>
+              <EventLocationPicker
+                lat={lat}
+                lng={lng}
+                onChange={(nLat, nLng) => {
+                  setLat(nLat)
+                  setLng(nLng)
+                  requestAnimationFrame(saveNow)
+                }}
+              />
+              <p className="text-2xs text-subtle">
+                Drag the pin or tap the map to set the exact spot. This is the precise venue, not the
+                city-level area shown to people browsing.
+              </p>
+            </div>
+
+            {/* Hidden derived location inputs — set by the venue pick / map pin, submitted with the form. */}
+            <input type="hidden" name="location" value={location} />
+            <input type="hidden" name="venue_name" value={venueName} />
+            <input type="hidden" name="street" value={street} />
+            <input type="hidden" name="city" value={city} />
+            <input type="hidden" name="region" value={region} />
+            <input type="hidden" name="postal_code" value={postalCode} />
+            <input type="hidden" name="country" value={country} />
             <input type="hidden" name="lat" value={lat ?? ''} />
             <input type="hidden" name="lng" value={lng ?? ''} />
           </div>
@@ -434,6 +590,9 @@ export function EventSettingsModule() {
         </div>
         {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
       </div>
+
+      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved). Its own actions. */}
+      <EventPlacementField eventId={data.id} slug={data.slug} />
     </div>
   )
 }

@@ -34,6 +34,7 @@ import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
 import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/cohosts'
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
+import { eventHeroHeightClass, readEventHeroHeight } from '@/lib/events/hero-height'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
@@ -252,6 +253,8 @@ export default async function EventDetailPage({
     // Event's IANA zone (newer than the generated types → untyped read). Drives every
     // is-past / check-in gate and the when-line abbrev via lib/time/zone.
     time_zone: string | null
+    // Presentation bag (jsonb). Carries the host-picked hero height (heroHeight key).
+    theme: unknown
     // PostgREST returns a PostGIS `geography` as an EWKB hex string (or, in some setups, a
     // GeoJSON object) — decode it with pointFromGeog, never read `.coordinates` directly.
     geog: unknown
@@ -263,7 +266,7 @@ export default async function EventDetailPage({
     (admin)
       .from('events')
       .select(
-        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, venmo_handle, time_zone, geog',
+        'posted_by_profile_id, claimed_at, organizer_name, details, poster_path, cover_image_path, gallery_image_paths, attendance_mode, online_url, status, venue_name, street, city, region, postal_code, venmo_handle, time_zone, theme, geog',
       )
       .eq('id', event.id)
       .maybeSingle(),
@@ -332,6 +335,9 @@ export default async function EventDetailPage({
   const posterFullUrl = extra?.poster_path ? posterCropUrls[extra.poster_path] ?? null : null
   const coverCropUrl = posterMedia?.coverPath ? posterCropUrls[posterMedia.coverPath] ?? null : null
   const heroUrl = coverUrl ?? posterFullUrl ?? coverCropUrl
+  // Host-picked hero height (Short / Standard / Tall), stored on events.theme; mirrors the
+  // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
+  const heroHeightCls = eventHeroHeightClass(readEventHeroHeight(extra?.theme))
 
   // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
   // extras. The scanner's crops are intentionally excluded: the original poster is the
@@ -1091,7 +1097,7 @@ export default async function EventDetailPage({
         // poster's cropped cover / full flyer (heroUrl); token placeholder when none.
         hero={
           heroUrl ? (
-            <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
+            <div className={`relative ${heroHeightCls} w-full overflow-hidden rounded-2xl bg-surface-elevated`}>
               {/* The uploaded cover is a PUBLIC URL the optimizer is configured for; a
                   scanned poster's hero is a SIGNED URL from the private bucket (path
                   `/object/sign/...`, outside next.config remotePatterns), so it must
@@ -1110,7 +1116,7 @@ export default async function EventDetailPage({
             // No cover: a designed placeholder, not a blank box. Mirrors the
             // circle-card no-cover fill (soft DAWN gradient + centered icon) and
             // leads with the event's date so the slot still says something.
-            <div className="relative flex aspect-[16/6] w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
+            <div className={`relative flex ${heroHeightCls} w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong`}>
               <div className="flex flex-col items-center gap-1 text-center">
                 <CalendarDays className="h-7 w-7 opacity-80" />
                 <span className="text-3xl font-bold leading-none sm:text-4xl">

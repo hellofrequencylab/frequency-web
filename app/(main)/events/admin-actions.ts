@@ -19,6 +19,7 @@ import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
 import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recurrence'
 import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
+import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvp } from '@/lib/events/rsvp-depth'
 import {
@@ -85,7 +86,7 @@ export async function getEventAdminData(slug: string) {
   })
     .from('events')
     .select(
-      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, geog',
+      'id, slug, title, description, location, starts_at, ends_at, is_cancelled, cover_image_path, poster_path, gallery_image_paths, capacity, attendance_mode, online_url, venue_name, street, city, region, country, postal_code, category, visibility, energy_tag, theme, price_cents, currency, time_zone, recurrence_type, recurrence_until, details, geog',
     )
     .eq('slug', slug)
     .maybeSingle()
@@ -117,8 +118,21 @@ export async function getEventAdminData(slug: string) {
   // The viewer's home, to DEFAULT the venue autocomplete bias when this event has no pin yet
   // (local-first address search). Null for a viewer with no saved home.
   const viewerHome = await getViewerHome()
+  // Booking window rides in events.details.rsvpWindow (no dedicated column).
+  const window = readRsvpWindow(event.details)
 
-  return { ...event, coverUrl, posterUrl, galleryPaths, galleryItems, lat: point?.lat ?? null, lng: point?.lng ?? null, viewerHome }
+  return {
+    ...event,
+    coverUrl,
+    posterUrl,
+    galleryPaths,
+    galleryItems,
+    lat: point?.lat ?? null,
+    lng: point?.lng ?? null,
+    viewerHome,
+    rsvpOpensAt: window.opensAt,
+    rsvpClosesAt: window.closesAt,
+  }
 }
 
 type EventAdminRow = {
@@ -145,6 +159,13 @@ type EventAdminRow = {
   category: string | null
   visibility: string | null
   energy_tag: string | null
+  theme: unknown
+  price_cents: number | null
+  currency: string | null
+  time_zone: string | null
+  recurrence_type: string | null
+  recurrence_until: string | null
+  details: Record<string, unknown> | null
   geog: unknown
 }
 
@@ -196,6 +217,39 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
   const visibility = VISIBILITY_VALUES.has(visibilityRaw) ? visibilityRaw : undefined
   const energyTag = coerceEnergyTag(fd.get('energy_tag'))
 
+  // Ticket price (folded in from the retired Engage module): whole currency units → cents; blank /
+  // non-positive clears back to a free RSVP event. Purchases still move only through the
+  // service-role checkout — this only sets the price column.
+  const priceRaw = ((fd.get('price') as string) ?? '').trim()
+  const priceAmount = priceRaw ? Number(priceRaw) : NaN
+  const priceCents = Number.isFinite(priceAmount) && priceAmount > 0 ? Math.round(priceAmount * 100) : null
+
+  // Time zone (folded in from Place & Time): only a valid IANA zone is written, else left unchanged.
+  const zoneRaw = ((fd.get('time_zone') as string) ?? '').trim()
+  const timeZone = isValidTimeZone(zoneRaw) ? zoneRaw : undefined
+
+  // Recurrence (folded in from Place & Time): only a recognised cadence is written (CHECK-constrained
+  // column); the repeat-until is validated against the start so a zero-occurrence series can't save.
+  const recurrenceRaw = ((fd.get('recurrence_type') as string) ?? '').trim()
+  const recurrence = RECURRENCE_VALUES.has(recurrenceRaw) ? (recurrenceRaw as RecurrenceType) : 'none'
+  const startIsoForRec = startsAt ? wallClockToIso(startsAt) : null
+  const untilIso = recurrence === 'none' ? null : dateToWallClockIso(fd.get('recurrence_until') as string)
+  const recurrenceError = validateRecurrenceUntil(recurrence, startIsoForRec, untilIso)
+  if (recurrenceError) throw new Error(recurrenceError)
+
+  // Booking window (folded in from Place & Time; no dedicated column): read-merge-write into
+  // events.details.rsvpWindow so the poster-harvest keys survive. Both blank clears the window.
+  const opensAt = wallClockToIso(fd.get('rsvp_opens_at') as string)
+  const closesAt = wallClockToIso(fd.get('rsvp_closes_at') as string)
+  const { data: currentDetails } = await admin.from('events').select('details').eq('id', id).maybeSingle()
+  const baseDetails = ((currentDetails as { details?: Record<string, unknown> | null } | null)?.details ?? {}) as Record<
+    string,
+    unknown
+  >
+  const nextDetails: Record<string, unknown> = { ...baseDetails }
+  if (opensAt || closesAt) nextDetails.rsvpWindow = { opensAt, closesAt }
+  else delete nextDetails.rsvpWindow
+
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
     .update({
@@ -207,6 +261,11 @@ export async function updateEventSettings(id: string, slug: string, fd: FormData
       ends_at: endsAt ? wallClockToIso(endsAt) : null,
       capacity,
       energy_tag: energyTag,
+      price_cents: priceCents,
+      recurrence_type: recurrence,
+      recurrence_until: untilIso,
+      details: nextDetails,
+      ...(timeZone ? { time_zone: timeZone } : {}),
       ...(category ? { category } : {}),
       ...(visibility ? { visibility } : {}),
     })
@@ -370,6 +429,31 @@ export async function uploadEventCover(
   revalidatePath('/events')
   revalidatePath('/feed')
   return { url: data.publicUrl }
+}
+
+/** Set the event page's hero HEIGHT (Short / Standard / Tall). Stored on the events.theme jsonb
+ *  bag under `heroHeight` (read-merge-write so other theme keys survive; the default is dropped so
+ *  a plain event keeps an empty theme). Same event.editSettings gate. */
+export async function updateEventHeroHeight(
+  id: string,
+  slug: string,
+  height: EventHeroHeight,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
+  const nextTheme = writeEventHeroHeight((current as { theme?: unknown } | null)?.theme, height)
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ theme: nextTheme })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/events/${slug}`)
+  return { ok: true }
 }
 
 export async function removeEventCover(id: string, slug: string) {
