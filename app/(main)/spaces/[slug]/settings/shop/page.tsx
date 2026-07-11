@@ -5,7 +5,8 @@ import { DashboardTemplate } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { spaceEarningsSummary } from '@/lib/commerce/orders'
 import { ShopTabs, toShopTab, type ShopTab } from '@/components/spaces/shop/shop-tabs'
@@ -48,6 +49,10 @@ export default async function SpaceShopConsolePage({
   if (!canManage && !staffViewing) notFound()
   // The Shop is a Business-account surface (business / nonprofit types), like the /manage console.
   if (!isConsoleSpaceType(space.type)) notFound()
+  // Shop is now a gateable function: a real manager who fails the `shop` gate (turned off, or their space
+  // role is below the min-role) is denied. A staff previewer keeps read-only access (writes re-gate below).
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  if (!staffViewing && !spaceFunctionAccess(space, 'shop', caps.role)) notFound()
 
   const brandName = space.brandName ?? space.name
   const consoleHref = `/spaces/${slug}/settings/shop`

@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { getCallerProfile } from '@/lib/auth'
 import { getVisibleSpaceBySlug } from '@/lib/spaces/store'
-import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
+import { resolveSpaceManageAccess, getSpaceCapabilities } from '@/lib/spaces/entitlements'
+import { spaceFunctionAccess } from '@/lib/spaces/functions'
 import { isConsoleSpaceType } from '@/lib/spaces/types'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -34,6 +35,10 @@ async function gateSpaceWrite(slug: string): Promise<{ spaceId: string } | null>
   // The Shop is a Business-account feature; enforce the same space-type gate as the page here too, since
   // server actions are addressable independently of the page render (defense in depth, ADR-596).
   if (!isConsoleSpaceType(space.type)) return null
+  // Shop is a gateable function: enforce the same `shop` on/off + role gate the console page applies, so a
+  // write can never bypass a disabled or role-locked Shop (server actions are addressable on their own).
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!spaceFunctionAccess(space, 'shop', caps.role)) return null
   return { spaceId: space.id }
 }
 
@@ -124,6 +129,8 @@ export async function saveStorefrontSettingsAction(slug: string, formData: FormD
   const { canManage } = await resolveSpaceManageAccess(space, caller?.id ?? null, caller?.webRole)
   if (!canManage) return
   if (!isConsoleSpaceType(space.type)) return
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!spaceFunctionAccess(space, 'shop', caps.role)) return
 
   const current = readStorefrontConfig(space.preferences)
   const tabLabel = String(formData.get('tabLabel') ?? '').trim().slice(0, 40) || current.tabLabel

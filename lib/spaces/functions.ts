@@ -52,6 +52,7 @@ export type SpaceFunctionKey =
   | 'enroll'
   | 'tickets'
   | 'checkin'
+  | 'shop'
   | 'billing'
   | 'profile'
 
@@ -162,6 +163,14 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Show the door code and see who checked in.',
     entitlement: null,
     defaultMinRole: 'moderator',
+    types: ['*'],
+  },
+  {
+    key: 'shop',
+    label: 'Shop',
+    description: 'Your catalog, orders, and storefront.',
+    entitlement: 'storefront',
+    defaultMinRole: 'editor',
     types: ['*'],
   },
   {

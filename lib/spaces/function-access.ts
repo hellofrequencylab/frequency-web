@@ -32,12 +32,13 @@ import { asSpacePlan } from '@/lib/pricing/plans'
 import { billingLive } from '@/lib/pricing/settings'
 
 /** The plan-gated Space function entitlement key → the pricing feature-gate key. Only functions that
- *  carry an entitlement (CRM, email) map here; a universal function (entitlement === null) is never
- *  plan-gated and resolves entirely on the pure path. Kept in lock-step with FEATURE_GATES
- *  (lib/pricing/gates.ts) §5 space features. */
+ *  carry an entitlement (CRM, email, shop's 'storefront') map here; a universal function
+ *  (entitlement === null) is never plan-gated and resolves entirely on the pure path. Kept in lock-step
+ *  with FEATURE_GATES (lib/pricing/gates.ts) §5 space features. */
 const FUNCTION_FEATURE_KEY: Record<string, string> = {
   crm: 'space_crm',
   email: 'space_email',
+  storefront: 'space_storefront',
 }
 
 /** The pricing feature-gate key for a Space function, or null when the function is universal (no

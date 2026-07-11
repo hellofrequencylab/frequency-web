@@ -3,6 +3,7 @@ import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { isConsoleSpaceType, spaceManageHref, type Space } from '@/lib/spaces/types'
 import { readProfilePages, resolveSpacePageDoc, HOME_SLUG } from '@/lib/spaces/profile-pages'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
+import { spaceFunctionDef, spaceFunctionEnabled } from '@/lib/spaces/functions'
 import { deriveSectionNav } from '@/lib/spaces/section-anchors'
 import { getSpaceSectionPresence } from '@/lib/spaces/content-data'
 import type { SpaceProfileTab } from '@/components/spaces/space-profile-tabs'
@@ -45,8 +46,12 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const sections = deriveSectionNav(homeDoc, presence)
   // The public Shop tab (ADR-596): shown only when the owner has published their storefront, with the
   // owner's chosen (renameable) label. The catalog is gated status='active' and the route double-gates on
-  // `published`, so this surfaces only a real, opted-in storefront.
+  // `published`, so this surfaces only a real, opted-in storefront. Shop is now a gateable function, so the
+  // tab also requires the `shop` function to be ENABLED for the space (on/off only — a public tab is never
+  // role-gated). A shop def always exists; the fallback keeps the tab if the registry ever lacks it.
   const storefront = readStorefrontConfig(space.preferences)
+  const shopDef = spaceFunctionDef('shop')
+  const shopEnabled = !shopDef || spaceFunctionEnabled(space, shopDef)
 
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
@@ -57,7 +62,7 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
     // member (not the owner) leaves one review they can revise.
     { href: `${base}/reviews`, label: 'Reviews' },
-    ...(storefront.published && isConsoleSpaceType(space.type)
+    ...(storefront.published && isConsoleSpaceType(space.type) && shopEnabled
       ? [{ href: `${base}/shop`, label: storefront.tabLabel }]
       : []),
     ...pages
