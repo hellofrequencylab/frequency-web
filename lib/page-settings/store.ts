@@ -28,12 +28,15 @@ export interface PageSettingsRow {
   og_image_url: string | null
   /** Wide page header / banner image. */
   header_image_url: string | null
+  /** Focal point for the header image as a CSS object-position string ("x% y%"). NULL = centered.
+   *  Not in the generated DB types yet (added by 20261116000000) — reached via the untyped read. */
+  header_image_focal: string | null
   status: string
   visibility_role: string | null
   layout: unknown
 }
 
-const SELECT = 'route, seo_title, seo_description, og_image_url, header_image_url, status, visibility_role, layout'
+const SELECT = 'route, seo_title, seo_description, og_image_url, header_image_url, header_image_focal, status, visibility_role, layout'
 
 /** Resolve the effective tenant for a read: the explicit spaceId, else the root space. */
 async function resolveSpaceId(spaceId?: string | null): Promise<string | null> {
@@ -77,6 +80,14 @@ export async function loadPageSettings(route: string, spaceId?: string | null): 
 export async function getPageHeaderImage(route: string, spaceId?: string | null): Promise<string | null> {
   const row = await loadPageSettings(route, spaceId)
   return row?.header_image_url?.trim() || null
+}
+
+/** The operator-set FOCAL POINT for the header image, a CSS object-position string ("x% y%"), or
+ *  null when unset (the render defaults to a centered crop). Cached via loadPageSettings. Only
+ *  meaningful alongside getPageHeaderImage — a focal point without a header image does nothing. */
+export async function getPageHeaderFocus(route: string, spaceId?: string | null): Promise<string | null> {
+  const row = await loadPageSettings(route, spaceId)
+  return row?.header_image_focal?.trim() || null
 }
 
 // The cascade core, keyed by (spaceId, route). One service-role `.eq(space_id).in(route, chain)`

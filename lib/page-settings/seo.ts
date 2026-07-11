@@ -1,3 +1,5 @@
+import { normalizeObjectPosition } from '@/lib/images/focal-point'
+
 // Pure validation + normalization for per-route SEO fields (lib/page-settings). Kept
 // dependency-free so it is unit-tested and shared by the save action. Bounds the text and
 // rejects an unsafe share-image URL (no javascript:, no plain http) before anything is stored.
@@ -9,6 +11,8 @@ export interface SeoInput {
   ogImage?: string | null
   /** Wide page header / banner image. */
   headerImage?: string | null
+  /** Focal point for the header image, a CSS object-position string ("x% y%"). */
+  headerFocal?: string | null
 }
 
 export interface SeoFields {
@@ -16,6 +20,8 @@ export interface SeoFields {
   seo_description: string | null
   og_image_url: string | null
   header_image_url: string | null
+  /** Focal point for the header image ("x% y%"); NULL = centered crop. */
+  header_image_focal: string | null
 }
 
 const TITLE_MAX = 120
@@ -39,7 +45,10 @@ export function isSafeOgUrl(v: string | null | undefined): boolean {
   }
 }
 
-/** Normalize + bound the SEO input into storable fields, or null if either image URL is unsafe. */
+/** Normalize + bound the SEO input into storable fields, or null if either image URL is unsafe.
+ *  The header focal point is normalized through the focal-point helper (centered/empty → null), so
+ *  only a deliberately-moved focal point is ever stored, and a focal point with no header image is
+ *  dropped so it never lingers. */
 export function normalizeSeo(input: SeoInput): SeoFields | null {
   if (!isSafeOgUrl(input.ogImage) || !isSafeOgUrl(input.headerImage)) return null
   const og = (input.ogImage ?? '').trim()
@@ -49,6 +58,7 @@ export function normalizeSeo(input: SeoInput): SeoFields | null {
     seo_description: clamp(input.description, DESC_MAX),
     og_image_url: og || null,
     header_image_url: header || null,
+    header_image_focal: header ? normalizeObjectPosition(input.headerFocal) : null,
   }
 }
 
@@ -61,7 +71,7 @@ export type SeoPane = 'basics' | 'meta'
 /** The storable field KEYS each pane owns. The save path normalizes the full input, then
  *  writes back ONLY these keys (merged over the existing row), so the other pane is untouched. */
 export const SEO_PANE_FIELDS: Record<SeoPane, readonly (keyof SeoFields)[]> = {
-  basics: ['seo_title', 'header_image_url'],
+  basics: ['seo_title', 'header_image_url', 'header_image_focal'],
   meta: ['seo_description', 'og_image_url'],
 }
 

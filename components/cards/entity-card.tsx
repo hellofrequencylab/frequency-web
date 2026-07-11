@@ -79,6 +79,10 @@ export function EntityCard({
     >
       <Link href={href} className="flex flex-1 flex-col outline-none">
         {cover && (
+          // focal-point: the `cover` node is caller-supplied, so a focal point is applied where the
+          // caller builds it — pass `style={{ objectPosition }}` on the <Image>/<img> inside `cover`,
+          // sourced from ImageFocalPicker (components/ui/image-focal-picker). Defaults to a centered
+          // crop until the entity stores a focal point. See lib/images/focal-point.ts.
           <div className={`relative ${coverAspectClass} w-full shrink-0 overflow-hidden bg-surface-elevated`}>
             {cover}
           </div>

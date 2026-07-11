@@ -66,7 +66,7 @@ function db() {
  *  full set is written (the legacy single-form behavior). */
 export async function savePageSeo(
   route: string,
-  input: { title?: string; description?: string; ogImage?: string; headerImage?: string },
+  input: { title?: string; description?: string; ogImage?: string; headerImage?: string; headerFocal?: string },
   spaceId?: string | null,
   pane?: SeoPane,
 ): Promise<ActionResult> {
@@ -86,6 +86,7 @@ export async function savePageSeo(
     seo_description: current?.seo_description ?? null,
     og_image_url: current?.og_image_url ?? null,
     header_image_url: current?.header_image_url ?? null,
+    header_image_focal: current?.header_image_focal ?? null,
     ...fields,
   }
 
@@ -104,7 +105,7 @@ export async function savePageSeo(
 /** The current SEO for the editor (space-gated read; default root). Defaults to empty fields. */
 export async function getPageSeoForEditor(route: string, spaceId?: string | null): Promise<SeoFields> {
   const ctx = await gateForSpace(spaceId)
-  const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null }
+  const empty: SeoFields = { seo_title: null, seo_description: null, og_image_url: null, header_image_url: null, header_image_focal: null }
   if (!ctx || !isSafeRoute(route)) return empty
   const { loadPageSettings } = await import('./store')
   const row = await loadPageSettings(route, ctx.spaceId)
@@ -114,6 +115,7 @@ export async function getPageSeoForEditor(route: string, spaceId?: string | null
         seo_description: row.seo_description,
         og_image_url: row.og_image_url,
         header_image_url: row.header_image_url,
+        header_image_focal: row.header_image_focal,
       }
     : empty
 }
