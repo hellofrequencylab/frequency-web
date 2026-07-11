@@ -1,9 +1,12 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
 import { isEventCohost } from '@/lib/events/cohosts'
+import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import {
   createQuestion,
   updateQuestion,
@@ -129,4 +132,28 @@ export async function approveEventRsvpFromManage(
   if (!(await authorizeManager(eventId))) return
   await approveRsvp(eventId, guestProfileId)
   revalidateManage(slug)
+}
+
+// ── Follow up (buying-intent) ─────────────────────────────────────────────────
+
+/** Open (or start) a direct thread from the host to a follow-up member, then land
+ *  in it. Uses the UNGATED findOrCreateDirectConversation — NOT startConversation,
+ *  which is friendship-gated and would refuse a host reaching a buyer they aren't
+ *  friends with. Authorizes the caller as host/cohost first; the returned id is the
+ *  host's own profile id, which is our side of the DM. */
+export async function openFollowUpDm(eventId: string, memberProfileId: string) {
+  const hostProfileId = await authorizeManager(eventId)
+  if (!hostProfileId || hostProfileId === memberProfileId) return
+
+  const admin = createAdminClient()
+  const conversationId = await findOrCreateDirectConversation(
+    // findOrCreateDirectConversation takes a plain SupabaseClient (it reads/writes
+    // conversations + conversation_participants); widen this ONE arg (ADR-246 exception).
+    // eslint-disable-next-line no-restricted-syntax -- helper takes an untyped SupabaseClient (ADR-246 exception)
+    admin as unknown as SupabaseClient,
+    hostProfileId,
+    memberProfileId,
+  )
+  // redirect throws, so it sits outside any try/catch (Next server-action rule).
+  redirect(`/messages/${conversationId}`)
 }

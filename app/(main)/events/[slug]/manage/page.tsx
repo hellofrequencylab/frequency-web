@@ -10,8 +10,11 @@ import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
 import {
+  EngagementSection,
+  RsvpBreakdownSection,
   RosterSection,
   ApprovalsSection,
+  FollowUpSection,
   QuestionnaireSection,
   DispatchesSection,
 } from './sections'
@@ -83,6 +86,20 @@ export default async function ManageEventPage({
       stats={<EventCoreStatsCards stats={coreStats} />}
     >
       <section>
+        <SectionHeader title="Reach" />
+        <Suspense fallback={<SectionFallback />}>
+          <EngagementSection slug={event.slug} />
+        </Suspense>
+      </section>
+
+      <section>
+        <SectionHeader title="RSVP status" />
+        <Suspense fallback={<SectionFallback />}>
+          <RsvpBreakdownSection eventId={event.id} />
+        </Suspense>
+      </section>
+
+      <section>
         <SectionHeader title="Roster" />
         <Suspense fallback={<SectionFallback />}>
           <RosterSection eventId={event.id} />
@@ -93,6 +110,13 @@ export default async function ManageEventPage({
         <SectionHeader title="Approval queue" />
         <Suspense fallback={<SectionFallback />}>
           <ApprovalsSection eventId={event.id} slug={event.slug} />
+        </Suspense>
+      </section>
+
+      <section>
+        <SectionHeader title="Follow up" />
+        <Suspense fallback={<SectionFallback />}>
+          <FollowUpSection eventId={event.id} />
         </Suspense>
       </section>
 
