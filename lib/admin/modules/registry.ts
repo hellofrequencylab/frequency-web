@@ -400,8 +400,10 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
     surface: 'sidebar',
     render: 'inline',
     order: 10,
-    tier: 'primary',
-    priority: 30,
+    // People leads the event rail: standard band (inline, top) with a priority below
+    // event.settings (10), so the guest list sits above Images and the settings form.
+    tier: 'standard',
+    priority: 5,
   },
   {
     id: 'practice.settings',

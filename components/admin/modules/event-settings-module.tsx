@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { X, ImagePlus } from 'lucide-react'
+import { ImagePlus } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
 import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
@@ -320,33 +320,21 @@ export function EventSettingsModule() {
 
         <div className="space-y-2">
           <span className={fieldLabel}>Photos</span>
-          {posterUrl && (
-            <div className="relative inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={posterUrl}
-                alt="Original event poster"
-                className="h-28 w-28 rounded-xl border border-border object-cover"
-              />
-              <button
-                type="button"
-                onClick={handleRemovePoster}
-                disabled={pending}
-                aria-label="Remove the original poster"
-                className="absolute -right-1.5 -top-1.5 rounded-full border border-border bg-surface p-1 text-subtle shadow-sm transition-colors hover:text-danger disabled:opacity-50"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-              <p className="mt-1 text-2xs text-subtle">The original poster</p>
-            </div>
-          )}
+          {/* One ordered gallery. The key image (the original poster, when there is one) leads as the
+              first tile; the rest follow in display order. Drag or use the arrows to reorder. */}
           <MultiImageUpload
             label="Gallery photos"
             value={galleryPaths}
             onChange={handleGalleryChange}
             folder="event-gallery"
-            hint="Extra photos shown in the gallery on the event page. Add or remove anytime."
+            hint="These show as the gallery on the event page, in this order. The first photo leads. Drag a photo, or use the arrows, to reorder."
             disabled={pending}
+            reorderable
+            leading={
+              posterUrl
+                ? { url: posterUrl, label: 'Key image', alt: data.title, onRemove: handleRemovePoster }
+                : null
+            }
             upload={uploadEventGalleryImage.bind(null, data.id, data.slug)}
           />
         </div>
