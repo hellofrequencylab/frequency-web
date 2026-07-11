@@ -241,6 +241,7 @@ export const LAYOUT_MODULES: readonly LayoutModuleMeta[] = [
   { id: 'event-location', label: 'Location & map', description: 'The venue line and the map: the exact spot when the event is geocoded, or the hosting circle’s city-level pin.' },
   { id: 'event-venue-map', label: 'Venue map', description: 'A full-width map of the venue, pinned at the bottom of the main column. Hidden when the event is online or has no location.' },
   { id: 'event-description', label: 'Description', description: "The event's description; host-editable inline." },
+  { id: 'event-gallery', label: 'Photo gallery', description: 'The event photo strip with a full-screen lightbox. The header photo leads. Hidden until there are two or more photos.' },
   // Each poster-harvest section is its OWN movable block (no lumped "poster details"): an operator
   // moves or hides any one of them independently. Each renders only when the poster carried it.
   { id: 'event-lineup', label: 'Host', description: "The host's profile with a Message Host button. Hidden when the event has no host." },
@@ -602,6 +603,9 @@ const CIRCLE_DETAIL_MODULE_IDS = [
 const EVENT_DETAIL_MODULE_IDS = [
   // Post area (defaults to MAIN) — every poster section is its own movable block (no lumping).
   'event-description',
+  // Photo gallery — offered as an arrangeable content box (an operator places it from the Layout
+  // editor). Self-hides under two photos.
+  'event-gallery',
   'event-lineup',
   'event-schedule',
   'event-good-to-know',
