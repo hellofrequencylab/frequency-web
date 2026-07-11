@@ -50,6 +50,9 @@ export interface ProductInput {
   /** Opt this listing into the global Market on create (the maker path sets true; Space listings
    *  default false and opt in per-listing from the Shop console). */
   marketPublished?: boolean
+  /** Service quote + policy for a service/booking listing (priceModel, duration, deposit,
+   *  cancellationWindowHours, noShowFeePct). Persisted under metadata.service; ignored for non-services. */
+  service?: ServiceConfig | null
 }
 
 export interface CheckoutInput {
@@ -100,6 +103,13 @@ export function kindsForGroup(group: MarketGroup): ProductKind[] {
 export function asMarketGroup(raw: string | string[] | undefined): MarketGroup | null {
   const v = Array.isArray(raw) ? raw[0] : raw
   return v === 'products' || v === 'services' || v === 'tickets' ? v : null
+}
+
+/** Whether a product_kind is a bookable service. `'booking'` is an ALIAS of `'service'` for
+ *  rendering + the booking path: both take the calendar picker (never a Buy button), so a
+ *  product_kind='booking' row can never mis-render as a plain product (F11). PURE. */
+export function isBookableServiceKind(kind: ProductKind): boolean {
+  return kind === 'service' || kind === 'booking'
 }
 
 /** The pricing model a service quotes at (mirrors the retiring SpaceOffering.priceModel so the

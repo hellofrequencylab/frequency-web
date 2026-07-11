@@ -26,6 +26,8 @@ export function EntityCard({
   href,
   anchor,
   cover,
+  coverOverlay,
+  coverAction,
   title,
   badge,
   context,
@@ -45,6 +47,14 @@ export function EntityCard({
    *  `<Image fill>` or a placeholder; it fills a relative, clipped box (its ratio
    *  set by `coverAspect`). */
   cover?: React.ReactNode
+  /** DECORATIVE overlay painted ON the cover (pills, a logo chip, a legibility scrim). Sits INSIDE
+   *  the profile link and is `pointer-events-none`, so it never intercepts a click or nests an
+   *  interactive control in the anchor — it purely decorates the banner. Only rendered with `cover`. */
+  coverOverlay?: React.ReactNode
+  /** A real interactive control overlaid at the BOTTOM-RIGHT of the cover (e.g. a Space's action
+   *  Link). Rendered as a SIBLING of the profile link (outside it), so it is a separate tab stop and
+   *  never nests an anchor inside the card's main anchor. Only rendered with `cover`. */
+  coverAction?: React.ReactNode
   title: React.ReactNode
   /** Small pill shown next to the title (e.g. a Beta-demo marker). */
   badge?: React.ReactNode
@@ -85,6 +95,9 @@ export function EntityCard({
           // crop until the entity stores a focal point. See lib/images/focal-point.ts.
           <div className={`relative ${coverAspectClass} w-full shrink-0 overflow-hidden bg-surface-elevated`}>
             {cover}
+            {/* Decorative only: inside the link, but non-interactive, so the whole cover still
+                navigates and no control is nested in the anchor. */}
+            {coverOverlay && <div className="pointer-events-none absolute inset-0">{coverOverlay}</div>}
           </div>
         )}
         <div className="flex flex-1 flex-col p-5">
@@ -114,6 +127,15 @@ export function EntityCard({
       </Link>
       {footer && <div className="border-t border-border p-3">{footer}</div>}
       {action && <div className={`absolute ${cover ? 'right-3 top-3' : 'right-4 top-4'}`}>{action}</div>}
+      {/* The cover action is a SIBLING of the profile link (never nested). Its wrapper mirrors the
+          cover box exactly (same top-anchored aspect ratio) and is pointer-events-none, so it
+          overlays the cover's bottom-right while the rest of the banner stays clickable-through to
+          the profile link beneath. The control itself re-enables pointer events. */}
+      {cover && coverAction && (
+        <div className={`pointer-events-none absolute inset-x-0 top-0 ${coverAspectClass}`} aria-hidden={false}>
+          <div className="pointer-events-auto absolute bottom-3 right-3">{coverAction}</div>
+        </div>
+      )}
     </div>
   )
 }

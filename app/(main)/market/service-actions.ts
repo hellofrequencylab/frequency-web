@@ -11,6 +11,7 @@ import { isBlockedBetween } from '@/lib/blocking'
 import { rateLimitOk } from '@/lib/rate-limit'
 import { findOrCreateDirectConversation } from '@/lib/messages/direct-conversation'
 import { isError } from '@/lib/action-result'
+import { isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
 
 // Bookable-services checkout (Phase 4, ADR-596). Joins the two existing engines with no new charge
@@ -38,7 +39,8 @@ export async function bookServiceAction(
   if (!buyerProfileId) return { error: 'Sign in to book.' }
 
   const product = await getProduct(productId)
-  if (!product || product.productKind !== 'service' || product.status !== 'active') {
+  // 'booking' is an alias of 'service' for the booking path (F11), so accept both kinds here.
+  if (!product || !isBookableServiceKind(product.productKind) || product.status !== 'active') {
     return { error: 'This service is not available.' }
   }
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
@@ -85,7 +87,7 @@ export async function sendServiceEnquiry(productId: string): Promise<ServiceEnqu
   if (!buyerProfileId) return { error: 'Sign in to send an enquiry.' }
 
   const product = await getProduct(productId)
-  if (!product || product.productKind !== 'service' || product.status !== 'active') {
+  if (!product || !isBookableServiceKind(product.productKind) || product.status !== 'active') {
     return { error: 'This service is not available.' }
   }
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig

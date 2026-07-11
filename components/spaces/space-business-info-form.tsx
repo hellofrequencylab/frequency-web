@@ -12,6 +12,7 @@ import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { draftSpaceBioAction } from '@/app/(main)/spaces/copilot-actions'
 import type { SpaceProfileData, SpaceSocialLink } from '@/lib/spaces/profile-data'
+import { SPACE_CATEGORIES, normalizeSpaceCategory, type SpaceCategory } from '@/lib/spaces/categories'
 
 // THE INFO & CONNECT FORM (Space rail Section 2 — the standardized rail, ADR-535). The ONE place an
 // operator writes the forward-facing marketing + connect content a Spotlight/profile shows: About (a short
@@ -59,6 +60,7 @@ export function SpaceInfoConnectForm({
   const socialMap: Record<string, string> = {}
   for (const s of business.socials ?? []) socialMap[s.platform] = s.url
   const [biz, setBiz] = useState({
+    category: normalizeSpaceCategory(business.category),
     story: business.about ?? '',
     address: business.address ?? '',
     hours: business.hours ?? '',
@@ -67,9 +69,16 @@ export function SpaceInfoConnectForm({
     website: business.website ?? '',
     socials: socialMap,
   })
-  const setBizField = (key: keyof typeof biz, value: string) => setBiz((f) => ({ ...f, [key]: value }))
+  const setBizField = (key: Exclude<keyof typeof biz, 'category' | 'socials'>, value: string) =>
+    setBiz((f) => ({ ...f, [key]: value }))
   const setSocial = (key: string, value: string) =>
     setBiz((f) => ({ ...f, socials: { ...f.socials, [key]: value } }))
+  // Picking a category is a deliberate choice, so persist it right away (a state change fires no blur to
+  // autosave on — commit on the next frame with the updated value, mirroring the Vera-draft path).
+  const pickCategory = (category: SpaceCategory) => {
+    setBiz((f) => ({ ...f, category }))
+    requestAnimationFrame(() => saveRef.current())
+  }
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -102,6 +111,7 @@ export function SpaceInfoConnectForm({
       const [colResult, bizResult] = await Promise.all([
         updateSpaceProfile(spaceId, { about: about.trim() || null }),
         setSpaceBusinessInfo(slug, {
+          category: biz.category,
           about: biz.story.trim(),
           address: biz.address.trim(),
           hours: biz.hours.trim(),
@@ -138,6 +148,41 @@ export function SpaceInfoConnectForm({
       onBlur={onFieldBlur}
     >
       <fieldset disabled={readOnly} className="contents">
+        {/* CATEGORY — how this Space shows up in the directory (a browse facet, not the profile chip). */}
+        <section className="space-y-3">
+          <SectionHeader title="Category" />
+          <p className="text-xs text-subtle">
+            Pick the one that fits best. It groups you in the directory so the right people find you.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {SPACE_CATEGORIES.map((c) => {
+              const selected = biz.category === c.key
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => pickCategory(c.key)}
+                  aria-pressed={selected}
+                  className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+                    selected
+                      ? 'border-primary bg-primary-bg'
+                      : 'border-border bg-surface hover:border-primary/40'
+                  }`}
+                >
+                  <c.Icon
+                    className={`mt-0.5 h-5 w-5 shrink-0 ${selected ? 'text-primary-strong' : 'text-subtle'}`}
+                    aria-hidden
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{c.label}</span>
+                    <span className="block text-xs text-subtle">{c.blurb}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
         {/* ABOUT + STORY — the words a visitor reads. */}
         <section className="space-y-5">
           <SectionHeader title="About & story" />

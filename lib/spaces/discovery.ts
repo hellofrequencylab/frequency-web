@@ -17,23 +17,46 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { listFollowedSpaceIds } from './follows'
 import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
+import { spaceCategory } from './profile-data'
+import { isSpaceCategory, type SpaceCategory } from './categories'
+import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
+import { defaultPrimaryCtaLabel } from './profile-config'
 
-/** One networked Space as the directory consumes it — the brand anchor, the type, and a couple of
- *  cheap stats. Camel-cased; only the fields a directory card needs. */
+/** The one resolved action a directory card paints (the operator-configured header CTA, resolved to a
+ *  real surface label + href off the Space base path). */
+export interface NetworkedSpaceAction {
+  label: string
+  href: string
+}
+
+/** One networked Space as the directory consumes it — the brand anchor, the type + category, the
+ *  resolved action, and a few cheap stats. Camel-cased; only the fields a directory card needs. */
 export interface NetworkedSpace {
   id: string
   slug: string
   /** Display brand name when set, else the plain Space name (resolved here so cards stay dumb). */
   name: string
   type: SpaceType
+  /** The PUBLIC directory category (the "business style" browse facet). Read from
+   *  preferences.profileData.category; a null / unknown value reads as 'business'. */
+  category: SpaceCategory
   /** One-line positioning. Null when the Space hasn't set one. */
   tagline: string | null
   /** Operator-supplied logo URL, or null. Rendered via a plain <img> (an arbitrary URL). */
   logoUrl: string | null
   /** Operator-supplied cover/banner image URL (spaces.cover_image_url), or null. Leads the card. */
   coverUrl: string | null
+  /** The card's action button: the operator-configured header CTA resolved to a label + href off the
+   *  Space base path (`/spaces/<slug>`). Total (always resolves to at least the per-type default), so
+   *  never null in practice; typed nullable so a card can defend against it. */
+  action: NetworkedSpaceAction | null
   /** Count of ACTIVE members of this Space (space_members), or null when omitted/unavailable. */
   memberCount: number | null
+  /** Count of members who FOLLOW this Space (space_follows), or null when unavailable. */
+  followerCount: number | null
+  /** Count of this Space's UPCOMING, non-cancelled, published events (events.starts_at > now), or null
+   *  when unavailable. */
+  upcomingEventCount: number | null
 }
 
 /** How the catalog is ordered. `name` (A–Z) is the default; `newest` is most-recently created
@@ -52,8 +75,20 @@ export interface DiscoveryFilters {
   /** Narrow the result to the Spaces `followerProfileId` follows (the "Following" pill). Ignored
    *  when no `followerProfileId` is given (a signed-out viewer follows nothing). */
   onlyFollowed?: boolean
+  /** Narrow to one directory category (business / practitioner / coach / studio / maker / venue).
+   *  Absent, 'all', or an unknown value = no category filter. A null-or-missing stored category reads
+   *  as 'business', so the 'business' filter also matches Spaces that never picked one. */
+  category?: SpaceCategory | 'all' | string
   /** Catalog ordering: name (A–Z, default) / newest (created_at desc) / members (member count desc). */
   sort?: SpaceSort
+}
+
+/** Optional pagination window for the paged directory read. Absent = the whole (bounded) set. */
+export interface DiscoveryPage {
+  /** Max rows in the returned page. Absent = no slice (return from `offset` to the end). */
+  limit?: number
+  /** Rows to skip before the page (0-based). Absent = 0. */
+  offset?: number
 }
 
 /** Coerce an arbitrary `?sort=` value to a known SpaceSort, defaulting to 'name'. Kept here so the
@@ -65,7 +100,14 @@ export function normalizeSpaceSort(value: string | null | undefined): SpaceSort 
 // The columns the directory projects. `visibility` is selected too (it's the discovery filter) but
 // is reached through the untyped client below, so it never hits the typed-row overload. `created_at`
 // backs the "Newest" sort.
-const COLS = 'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at'
+// `preferences` is projected so each row can resolve its directory category + its operator-configured
+// header CTA action in app code (both live in the jsonb blob).
+const COLS =
+  'id, slug, name, type, status, brand_name, brand_logo_url, cover_image_url, tagline, created_at, preferences'
+
+/** The jsonb path to a Space's stored directory category (preferences.profileData.category), used to
+ *  filter in the DB. A missing path reads as NULL, which the 'business' filter treats as 'business'. */
+const CATEGORY_PATH = 'preferences->profileData->>category'
 
 // `spaces.visibility` / `spaces.brand_*` aren't fully in the generated DB types, so reach the table
 // through an untyped `from` accessor (ADR-246) and type the builder loosely here — the same shape
@@ -81,6 +123,7 @@ type SpaceDiscoveryRow = {
   cover_image_url: string | null
   tagline: string | null
   created_at: string | null
+  preferences: unknown
 }
 
 type SpacesQuery = {
@@ -95,14 +138,32 @@ type SpacesQuery = {
   ) => Promise<unknown>
 }
 
-type MemberCountRow = { space_id: string }
+type CountRow = { space_id: string }
 
 type MembersCountQuery = {
   select: (cols: string) => MembersCountQuery
   eq: (col: string, val: string) => MembersCountQuery
   in: (col: string, vals: string[]) => MembersCountQuery
   then: (
-    resolve: (r: { data: MemberCountRow[] | null; error: unknown }) => unknown,
+    resolve: (r: { data: CountRow[] | null; error: unknown }) => unknown,
+  ) => Promise<unknown>
+}
+
+type FollowsCountQuery = {
+  select: (cols: string) => FollowsCountQuery
+  in: (col: string, vals: string[]) => FollowsCountQuery
+  then: (
+    resolve: (r: { data: CountRow[] | null; error: unknown }) => unknown,
+  ) => Promise<unknown>
+}
+
+type EventsCountQuery = {
+  select: (cols: string) => EventsCountQuery
+  eq: (col: string, val: string | boolean) => EventsCountQuery
+  gt: (col: string, val: string) => EventsCountQuery
+  in: (col: string, vals: string[]) => EventsCountQuery
+  then: (
+    resolve: (r: { data: CountRow[] | null; error: unknown }) => unknown,
   ) => Promise<unknown>
 }
 
@@ -116,6 +177,18 @@ function spacesTable(): SpacesQuery {
 function membersTable(): MembersCountQuery {
   const db = createAdminClient() as unknown as { from: (table: string) => MembersCountQuery }
   return db.from('space_members')
+}
+
+/** The untyped `space_follows` builder (the table isn't in the generated types yet, ADR-246). */
+function followsCountTable(): FollowsCountQuery {
+  const db = createAdminClient() as unknown as { from: (table: string) => FollowsCountQuery }
+  return db.from('space_follows')
+}
+
+/** The `events` builder, reached loosely so the not-yet-projected filter columns type cleanly. */
+function eventsTable(): EventsCountQuery {
+  const db = createAdminClient() as unknown as { from: (table: string) => EventsCountQuery }
+  return db.from('events')
 }
 
 // A defensive ceiling so the query can never scan an unbounded table; filtering rides over this set.
@@ -139,9 +212,51 @@ async function memberCountsFor(spaceIds: string[]): Promise<Map<string, number>>
     const result = (await membersTable()
       .select('space_id')
       .eq('status', 'active')
-      .in('space_id', spaceIds)) as { data: MemberCountRow[] | null; error: unknown }
+      .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
     if (result.error || !result.data) return counts
     for (const row of result.data) {
+      counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
+    }
+    return counts
+  } catch {
+    return counts
+  }
+}
+
+/** Count FOLLOWERS per Space across a set of ids — one grouped read over space_follows, fail-safe to an
+ *  empty map (a missing table or any error just omits counts). Batched over the matched ids only, the
+ *  SAME shape as memberCountsFor (no N+1). */
+async function followerCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  if (spaceIds.length === 0) return counts
+  try {
+    const result = (await followsCountTable()
+      .select('space_id')
+      .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
+    if (result.error || !result.data) return counts
+    for (const row of result.data) counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
+    return counts
+  } catch {
+    return counts
+  }
+}
+
+/** Count UPCOMING events per Space across a set of ids — one grouped read over `events` for the
+ *  non-cancelled, published rows starting after now, fail-safe to an empty map. Batched over the matched
+ *  ids only (no N+1), mirroring memberCountsFor. */
+async function upcomingEventCountsFor(spaceIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  if (spaceIds.length === 0) return counts
+  try {
+    const result = (await eventsTable()
+      .select('space_id')
+      .eq('is_cancelled', false)
+      .eq('status', 'published')
+      .gt('starts_at', new Date().toISOString())
+      .in('space_id', spaceIds)) as { data: CountRow[] | null; error: unknown }
+    if (result.error || !result.data) return counts
+    for (const row of result.data) {
+      if (!row.space_id) continue
       counts.set(row.space_id, (counts.get(row.space_id) ?? 0) + 1)
     }
     return counts
@@ -159,7 +274,7 @@ async function memberCountsFor(spaceIds: string[]): Promise<Map<string, number>>
  * that ordering is applied in app code). FAIL-SAFE: `[]` on any error. REQUEST-CACHED.
  */
 export const listNetworkedSpaces = cache(
-  async ({ type, q, followerProfileId, onlyFollowed, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
+  async ({ type, q, followerProfileId, onlyFollowed, category, sort }: DiscoveryFilters = {}): Promise<NetworkedSpace[]> => {
     try {
       // The "Following" filter: resolve the viewer's followed Space ids up front. A signed-out viewer
       // (no profile) follows nothing, so the filtered directory is correctly empty. Fail-safe to an
@@ -176,6 +291,17 @@ export const listNetworkedSpaces = cache(
       // Narrow to one type only when a known, non-empty value is passed (a stray param is ignored).
       const wantType = (type ?? '').trim()
       if (wantType) query = query.eq('type', wantType)
+
+      // Narrow to one directory category when a KNOWN key is passed ('all' / absent / unknown = no
+      // filter). The category lives in the preferences jsonb (CATEGORY_PATH); a null / missing value
+      // reads as 'business', so the 'business' filter ALSO matches Spaces that never picked one (match
+      // the literal 'business' OR a null path). Any other category matches the literal only.
+      if (isSpaceCategory(category)) {
+        query =
+          category === 'business'
+            ? query.or(`${CATEGORY_PATH}.eq.business,${CATEGORY_PATH}.is.null`)
+            : query.eq(CATEGORY_PATH, category)
+      }
 
       // Free-text: case-insensitive substring over name, brand name, and slug.
       const needle = sanitizeQuery(q ?? '')
@@ -202,19 +328,40 @@ export const listNetworkedSpaces = cache(
       // above). When it's off, `followedIds` is null and every networked row passes.
       const rows = followedIds ? result.data.filter((r) => followedIds.has(r.id)) : result.data
 
-      // One grouped member-count read over just the matched ids (cheap; fail-safe to no counts).
-      const counts = await memberCountsFor(rows.map((r) => r.id))
+      // The cheap per-Space stats: three grouped reads over just the matched ids (each fail-safe to no
+      // counts, each batched the SAME way — one query per stat, no N+1). Run together.
+      const ids = rows.map((r) => r.id)
+      const [memberCounts, followerCounts, upcomingCounts] = await Promise.all([
+        memberCountsFor(ids),
+        followerCountsFor(ids),
+        upcomingEventCountsFor(ids),
+      ])
 
-      const spaces = rows.map((r) => ({
-        id: r.id,
-        slug: r.slug,
-        name: r.brand_name?.trim() || r.name,
-        type: normalizeSpaceType(r.type),
-        tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
-        logoUrl: r.brand_logo_url,
-        coverUrl: r.cover_image_url,
-        memberCount: counts.get(r.id) ?? null,
-      }))
+      const spaces = rows.map((r) => {
+        const type = normalizeSpaceType(r.type)
+        const base = `/spaces/${r.slug}`
+        // The card action = the operator-configured header CTA, resolved to a real surface off the base
+        // path (falls back to the per-type default label + /book when unset). resolveHeaderCta is total.
+        const resolved = resolveHeaderCta(
+          readHeaderCtaPreference(r.preferences),
+          base,
+          defaultPrimaryCtaLabel(type),
+        )
+        return {
+          id: r.id,
+          slug: r.slug,
+          name: r.brand_name?.trim() || r.name,
+          type,
+          category: spaceCategory({ preferences: r.preferences }),
+          tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
+          logoUrl: r.brand_logo_url,
+          coverUrl: r.cover_image_url,
+          action: { label: resolved.label, href: resolved.href },
+          memberCount: memberCounts.get(r.id) ?? null,
+          followerCount: followerCounts.get(r.id) ?? null,
+          upcomingEventCount: upcomingCounts.get(r.id) ?? null,
+        }
+      })
 
       // "Most members" orders by the resolved active-member count (desc); a Space with no count
       // sinks to the bottom, ties fall back to name so the order stays stable. Name/Newest keep the
@@ -227,5 +374,31 @@ export const listNetworkedSpaces = cache(
     } catch {
       return []
     }
+  },
+)
+
+/** A page of the directory: the sliced rows + the TOTAL matching the filters (so the UI can render a
+ *  pager for 12 / 24 / 48 per page). */
+export interface NetworkedSpacePage {
+  spaces: NetworkedSpace[]
+  /** Total networked Spaces matching the filters, BEFORE the page slice. */
+  total: number
+}
+
+/**
+ * A PAGINATED view of the directory. Resolves the full filtered + sorted set once (via the request-cached
+ * listNetworkedSpaces, so no extra DB work), then slices to the requested window and returns the total.
+ * Slicing happens in app code because the "Following" filter + the "members" sort already run there, so a
+ * DB-level offset could not see the final order. Absent `limit` / `offset` returns the whole set (total
+ * unchanged). FAIL-SAFE: an empty page + 0 total on any error. REQUEST-CACHED (keyed on filters + window).
+ */
+export const listNetworkedSpacesPage = cache(
+  async (filters: DiscoveryFilters = {}, page: DiscoveryPage = {}): Promise<NetworkedSpacePage> => {
+    const all = await listNetworkedSpaces(filters)
+    const total = all.length
+    const start = Math.max(0, page.offset ?? 0)
+    const spaces =
+      page.limit === undefined ? all.slice(start) : all.slice(start, start + Math.max(0, page.limit))
+    return { spaces, total }
   },
 )

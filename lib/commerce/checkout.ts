@@ -16,7 +16,8 @@ import { confirmBookingByOrder, cancelBookingByOrder } from '@/lib/spaces/bookin
 import { spaceIsPaying } from '@/lib/billing/space-subscription-items'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { recordFinancialTransaction } from '@/lib/finance/record'
-import type { CheckoutInput } from './types'
+import { computeBookingRefundCents } from './cancellation'
+import type { CheckoutInput, ServiceConfig } from './types'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -261,24 +262,89 @@ export async function abandonCommerceOrderFromSession(session: Stripe.Checkout.S
   }
 }
 
+/**
+ * The Stripe `amount` (cents) to refund for a booking-backed service order whose ServiceConfig
+ * carries a cancellation/no-show policy, or `undefined` for a FULL refund (a normal product order,
+ * a service with no policy, or any read miss). PURE money math lives in ./cancellation.ts; this is
+ * the thin IO that resolves the booking's start time + the product's policy and clamps to a genuine
+ * partial. FAIL-SOFT: any read error returns undefined so the caller issues the full refund rather
+ * than blocking the cancel (ADR-596, finding #4).
+ */
+async function bookingPartialRefundCents(order: { id: string; amount_cents: number }): Promise<number | undefined> {
+  if (!(order.amount_cents > 0)) return undefined
+  try {
+    // space_bookings is not in the generated DB types (ADR-246); read it through an untyped cast,
+    // the same seam lib/spaces/booking.ts uses. order_id ↔ booking is 1:1.
+    const admin = createAdminClient() as unknown as {
+      from: (t: string) => {
+        select: (c: string) => {
+          eq: (col: string, val: string) => {
+            maybeSingle: () => Promise<{ data: { starts_at: string | null; product_id: string | null } | null }>
+          }
+        }
+      }
+    }
+    const { data: bk } = await admin
+      .from('space_bookings')
+      .select('starts_at, product_id')
+      .eq('order_id', order.id)
+      .maybeSingle()
+    const booking = bk ?? null
+    if (!booking?.product_id || !booking.starts_at) return undefined // not booking-backed
+
+    const { data: prod } = await db()
+      .from('commerce_products')
+      .select('product_kind, metadata')
+      .eq('id', booking.product_id)
+      .maybeSingle()
+    const product = prod as { product_kind: string; metadata: Record<string, unknown> | null } | null
+    if (!product || (product.product_kind !== 'service' && product.product_kind !== 'booking')) return undefined
+
+    const svc = ((product.metadata?.service ?? {}) as ServiceConfig) || {}
+    // No enforceable policy → full refund (undefined). computeBookingRefundCents also guards this,
+    // but short-circuiting keeps the common (policy-less) path a no-op.
+    if (!svc.noShowFeePct || svc.cancellationWindowHours == null) return undefined
+
+    const { refundCents } = computeBookingRefundCents({
+      paidCents: order.amount_cents,
+      startsAt: booking.starts_at,
+      now: new Date(),
+      cancellationWindowHours: svc.cancellationWindowHours,
+      noShowFeePct: svc.noShowFeePct,
+    })
+    // Only pass an explicit amount for a genuine partial; a full refund stays undefined (unchanged behavior).
+    return refundCents < order.amount_cents ? refundCents : undefined
+  } catch {
+    return undefined // fail-soft: fall back to a full refund, never block the cancel
+  }
+}
+
 /** Refund a paid order. Destination charges unwind with reverse_transfer +
- *  refund_application_fee; platform charges refund normally. */
+ *  refund_application_fee; platform charges refund normally. A booking-backed service order with a
+ *  cancellation/no-show policy refunds the COMPUTED (partial) amount; everything else refunds fully. */
 export async function refundCommerceOrder(orderId: string): Promise<{ ok?: true; error?: string }> {
   if (!stripe) return { error: 'Payments aren’t turned on yet.' }
   const { data } = await db()
     .from('commerce_orders')
-    .select('id, owner_kind, status, stripe_payment_intent_id')
+    .select('id, owner_kind, status, amount_cents, stripe_payment_intent_id')
     .eq('id', orderId)
     .maybeSingle()
-  const order = data as { id: string; owner_kind: string; status: string; stripe_payment_intent_id: string | null } | null
+  const order = data as
+    | { id: string; owner_kind: string; status: string; amount_cents: number; stripe_payment_intent_id: string | null }
+    | null
   if (!order) return { error: 'Order not found.' }
   if (order.status === 'refunded') return { ok: true }
   if (order.status !== 'paid' && order.status !== 'fulfilled') return { error: 'Only a paid order can be refunded.' }
   if (!order.stripe_payment_intent_id) return { error: 'This order has no charge to refund.' }
 
+  // Cancellation/no-show ENFORCEMENT (ADR-596, finding #4): a booking-backed service order with a
+  // policy refunds only the computed amount (the seller keeps the fee). undefined ⇒ full refund.
+  const partialAmount = await bookingPartialRefundCents({ id: order.id, amount_cents: order.amount_cents })
+
   try {
     await stripe.refunds.create({
       payment_intent: order.stripe_payment_intent_id,
+      ...(partialAmount != null ? { amount: partialAmount } : {}),
       ...(order.owner_kind === 'platform' ? {} : { reverse_transfer: true, refund_application_fee: true }),
       metadata: { kind: 'commerce_order', order_id: order.id },
     })

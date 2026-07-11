@@ -17,6 +17,8 @@
 // PURE + total: no server/Next imports, tolerant of malformed blobs.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { isSpaceCategory, normalizeSpaceCategory, type SpaceCategory } from './categories'
+
 /** One social / business-presence link (branded chip). `platform` keys the icon + label. */
 export interface SpaceSocialLink {
   platform: string
@@ -67,6 +69,10 @@ export interface SpaceOffering {
 /** The central, single-source Space profile data. All optional + fail-safe. Business facts first,
  *  then the editorial story. Offerings / callout / section copy join here in a later phase. */
 export interface SpaceProfileData {
+  /** The PUBLIC directory category (the "business style" browse facet, lib/spaces/categories.ts). Absent
+   *  reads as the default 'business'. Distinct from the profile TYPE chip and the internal mode_variant
+   *  Focus. */
+  category?: SpaceCategory
   /** Street address (also powers the map link on the Contact card). */
   address?: string
   /** Opening hours, free text (one per line). */
@@ -182,6 +188,9 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
     })
     .filter((o): o is SpaceOffering => o !== null)
   const out: SpaceProfileData = {}
+  // The directory category: kept only when it is a KNOWN key (an unknown / absent value is dropped, so
+  // the reader default of 'business' applies rather than persisting a junk value).
+  if (isSpaceCategory(p.category)) out.category = p.category
   const address = str(p.address)
   const hours = str(p.hours)
   const phone = str(p.phone)
@@ -201,6 +210,14 @@ export function readProfileData(preferences: unknown): SpaceProfileData {
   if (about) out.about = about
   if (offerings.length > 0) out.offerings = offerings
   return out
+}
+
+/** The Space's PUBLIC directory category, normalized. Reads `preferences.profileData.category` off a
+ *  Space (or any preferences-bearing object) and coerces it to a known key, defaulting to 'business'
+ *  when unset / unknown. PURE + total (fail-safe on any malformed blob). The directory groups + filters
+ *  by this. */
+export function spaceCategory(space: { preferences?: unknown } | null | undefined): SpaceCategory {
+  return normalizeSpaceCategory(readProfileData(space?.preferences).category)
 }
 
 /** The fields a Business Info form can submit (the writable central data). Same shape as the read
