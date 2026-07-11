@@ -57,7 +57,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
 
   return (
     <MarketSearchProvider>
-    <div className="space-y-8">
+    <div className="space-y-6">
       <MarketHero
         image={HERO_IMAGE}
         eyebrow="Classifieds"

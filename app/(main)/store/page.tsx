@@ -24,7 +24,7 @@ export default async function ShopPage() {
   const products = await listShopProducts()
   return (
     <MarketSearchProvider>
-      <div className="space-y-8">
+      <div className="space-y-6">
         <MarketHero
           image={HERO_IMAGE}
           eyebrow="Frequency Store"
@@ -35,7 +35,7 @@ export default async function ShopPage() {
 
         <MarketplaceHiddenBanner area="shop" />
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <MarketplaceBar
             active="shop"
             stats={[
