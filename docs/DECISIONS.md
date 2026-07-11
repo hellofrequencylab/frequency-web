@@ -13352,3 +13352,51 @@ refund, which a report cannot).
 `payoutsLive()`, one new operator surface registered in `lib/nav/studio.ts` (not a new `*_MODULES` catalog, so
 the MENU-CONTRACT guard stays green). Regenerate `lib/database.types.ts` after apply (ADR-246), then the data
 layer's untyped casts can tighten.
+
+---
+
+## ADR-599: Beta access foundation — invite gate, admission waves, metered clock, graduation scaffold
+
+**Status:** Accepted (2026-07-10) · everything ships FLAG-GATED and INERT by default (touches auth + billing).
+
+**Context.** The public beta needed a way to (a) close signup to invited waitlist contacts in waves, (b) show
+a metered "Summer of Frequency ends Sept 1" clock, and (c) graduate to live billing. This touches auth and
+billing, so the absolute invariant is: nothing gates signups or charges anyone until an operator flips a flag,
+and any bug must fail OPEN for existing members. It builds on the Beta Command Center spine (ADR: Wave 1 —
+`lib/beta/{guard,approvals,audit,db}.ts`, `beta_admission_waves`, the approval-status vocabulary).
+
+**Decision.**
+
+1. **Two data flags, defaults preserve today.** `platform_flags.beta_invite_only` (boolean, DEFAULT FALSE =
+   open signup) and the metered clock. The clock is a **timestamp**, and `platform_flags.value` is boolean-only,
+   so it lives in `platform_settings.beta_ends_at` (ISO text, DEFAULT UNSET) instead. Readers in
+   `lib/platform-flags.ts` (`betaInviteOnly()`, `betaEndsAt()`) both **fail safe** (invite-only → FALSE, clock →
+   null) so a DB hiccup can never wall off signup or render a broken banner. Seed migration
+   `20261121000000_beta_access_flags.sql` is write-only (not applied).
+
+2. **Invite gate enforced at the two account-creation points, structured to never block members.** A profile is
+   created by the `handle_new_auth_user` trigger the instant an `auth.users` row appears, so the gate lives where
+   that row is (or isn't) created: (a) **OTP** (`app/sign-in/actions.ts`) passes `shouldCreateUser: false` for a
+   blocked new email — GoTrue then skips provisioning while an EXISTING member still gets their login link (that
+   option only affects unknown emails); the resulting "unknown email" error routes a non-admitted new email to
+   `/beta`. (b) **OAuth** provisions during `exchangeCodeForSession`, so `app/auth/callback/route.ts` enforces
+   AFTER: only an account created **in this exchange** (`created_at` within 60s) that is non-admitted while
+   invite-only is ON is rolled back (`signOut` + `admin.deleteUser`, cascading the profile) → `/beta`. Admitted =
+   an invited beta contact (`contacts.source='beta_waitlist'` + `meta.beta_status='invited'`); the lookup
+   **fails OPEN**. Existing members are recognized structurally (old `created_at` / existing auth user), never by
+   a fallible check, so a gate error can never lock them out.
+
+3. **Admission waves run on the existing approval spine.** `lib/beta/admission.ts`:
+   `proposeAdmissionWave(segment, phaseId, label)` (writer-gated) drafts a wave snapshotting the confirmed,
+   not-yet-invited pool as `proposed_count`; `admitAdmissionWave(waveId)` (approver-gated) clears
+   `assertApproved()` — the send gate that refuses anything not `approved` — then flips each confirmed contact to
+   `invited`, sends the invite email (reusing `sendBetaInviteEmail`), marks the wave `sent`, and audits the count.
+
+4. **Graduation is a guarded scaffold.** `graduateBeta(confirm)` flips `billing_live` ON via `setPlatformFlag`
+   (self-auditing) and records a `graduate_beta` trail row. Guarded against accidental firing by the approver
+   gate + an explicit `GRADUATE` confirm phrase + clean `ActionResult` failure. Founding-status grants and
+   referral awards are deliberately **out of scope**, left as labeled hooks for the founding + referral agents.
+
+**Consequences.** No behavior change until an operator flips a flag: `beta_invite_only` false, `beta_ends_at`
+unset, `billing_live` false. The wave engine's thin server-action entrypoints belong to the Command Center; the
+graduation hooks belong to other agents. `contacts` + `beta_*` stay untyped (untyped-admin idiom, ADR-246).
