@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { MapPin, Users, Globe, Calendar, Repeat } from 'lucide-react'
+import { MapPin, Users, Globe, Calendar, Repeat, Ticket, Navigation } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
 import { DemoBadge } from '@/components/ui/demo-badge'
 import { FeaturedBadge } from '@/components/ui/featured-badge'
@@ -55,8 +55,17 @@ function WarmBadge({ capacity, going }: { capacity: number | null; going: number
   return null
 }
 
+// Distance stat from the viewer's fuzzed home to the event, when the nearby
+// union measured one (standalone public events). "800 m" / "3.2 km" / "12 km".
+function distanceLabel(distanceM: number | null | undefined): string | null {
+  if (typeof distanceM !== 'number') return null
+  if (distanceM < 1000) return `${Math.round(distanceM)} m`
+  const km = distanceM / 1000
+  return `${km.toFixed(km < 10 ? 1 : 0)} km`
+}
+
 export function EventCard({
-  event, circleName, coverUrl, going, isGoing, now, canRsvp, blurb,
+  event, circleName, coverUrl, going, isGoing, now, canRsvp, priceLabel, blurb,
 }: {
   event: EventRow
   circleName?: string
@@ -66,6 +75,8 @@ export function EventCard({
   isGoing: boolean
   now: Date
   canRsvp: boolean
+  /** Price stat resolved by the index loader — "Free" / "$X" / "From $X". */
+  priceLabel: string
   /** Optional AI "why you'd vibe" line — only set on the "For you" lane. */
   blurb?: string
 }) {
@@ -81,6 +92,15 @@ export function EventCard({
   // At capacity → the one-tap RSVP joins the waitlist (framed as care, not scarcity).
   // RsvpButton already supports this; the index just needs to pass it.
   const isFull = event.capacity != null && going >= event.capacity
+  // Compact stat row: who's coming (capacity-aware, never a FOMO countdown —
+  // EVENTS-SYSTEM §4), and how far. Price rides the row via the priceLabel prop.
+  const attendanceLabel =
+    event.capacity != null
+      ? `${going} of ${event.capacity} going`
+      : going > 0
+        ? `${going} going`
+        : 'Be the first'
+  const distance = distanceLabel(event.distance_m)
   // Standalone public events carry a calm `Public` provenance chip + the
   // organizer name; circle events carry the {Circle} pill (ADR-254).
   const provenance = event.is_public_standalone ? (
@@ -131,6 +151,19 @@ export function EventCard({
       context={formatWhen(event.starts_at, now)}
       meta={
         <>
+          {/* Stat row — the at-a-glance signals lead: who's coming, what it costs,
+              how far. Provenance + place follow as quieter context. */}
+          <span className="flex items-center gap-1 font-medium text-muted">
+            <Users className="h-3 w-3" />{attendanceLabel}
+          </span>
+          <span className="flex items-center gap-1 font-semibold text-text">
+            <Ticket className="h-3 w-3" />{priceLabel}
+          </span>
+          {distance && (
+            <span className="flex items-center gap-1">
+              <Navigation className="h-3 w-3" />{distance}
+            </span>
+          )}
           {provenance}
           {repeatLabel && (
             <span className="flex items-center gap-0.5">
@@ -142,12 +175,6 @@ export function EventCard({
               <MapPin className="h-3 w-3" />{event.location}
             </span>
           )}
-          {going > 0 && (
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />{going} going
-            </span>
-          )}
-          {event.host && <span>Hosted by {event.host.display_name}</span>}
         </>
       }
       action={canRsvp ? <RsvpButton eventId={event.id} isGoing={isGoing} isFull={isFull} /> : undefined}

@@ -57,6 +57,7 @@ export default async function EventsPage({
     circleNames,
     coverUrls,
     rsvpCounts,
+    priceLabels,
     myRsvps,
     filtering,
     hasAnyScope,
@@ -171,6 +172,7 @@ export default async function EventsPage({
               circleNames={circleNames}
               coverUrls={coverUrls}
               rsvpCounts={rsvpCounts}
+              priceLabels={priceLabels}
               myRsvps={myRsvps}
               now={nowDate}
             />
@@ -199,6 +201,7 @@ export default async function EventsPage({
                   circleName={circleNames[event.scope_id]}
                   coverUrl={coverUrls[event.id]}
                   going={rsvpCounts[event.id] ?? 0}
+                  priceLabel={priceLabels[event.id] ?? 'Free'}
                   isGoing
                   now={nowDate}
                   canRsvp={!!myProfileId}
@@ -274,6 +277,7 @@ export default async function EventsPage({
                     circleName={circleNames[event.scope_id]}
                     coverUrl={coverUrls[event.id]}
                     going={rsvpCounts[event.id] ?? 0}
+                    priceLabel={priceLabels[event.id] ?? 'Free'}
                     isGoing={myRsvps.has(event.id)}
                     now={nowDate}
                     canRsvp={!!myProfileId}
@@ -296,13 +300,14 @@ export default async function EventsPage({
 // is personalized by real interest (embedding) or social proof (people they know
 // going). Otherwise it renders nothing and soonest-first carries the page.
 async function ForYouLane({
-  profileId, events, circleNames, coverUrls, rsvpCounts, myRsvps, now,
+  profileId, events, circleNames, coverUrls, rsvpCounts, priceLabels, myRsvps, now,
 }: {
   profileId: string
   events: EventRow[]
   circleNames: Record<string, string>
   coverUrls: Record<string, string>
   rsvpCounts: Record<string, number>
+  priceLabels: Record<string, string>
   myRsvps: Set<string>
   now: Date
 }) {
@@ -350,6 +355,7 @@ async function ForYouLane({
             circleName={circleNames[event.scope_id]}
             coverUrl={coverUrls[event.id]}
             going={rsvpCounts[event.id] ?? 0}
+            priceLabel={priceLabels[event.id] ?? 'Free'}
             isGoing={myRsvps.has(event.id)}
             now={now}
             canRsvp
