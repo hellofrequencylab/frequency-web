@@ -368,17 +368,17 @@ export default async function SpaceProfileChromeLayout({
           {heroEyebrow}
         </p>
       )}
-      {/* Tight vertical rhythm so the type badge sits close to the name and tagline (gap-y-1), keeping the
-          lockup balanced rather than spread out. */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <h1
-          className={cn(
-            'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
-            onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
-          )}
-        >
-          {heroHeading}
-        </h1>
+      {/* The name is the single <h1>; the type badge sits on its own line directly BELOW it (mt-1) so the
+          designation reads as a caption under the Space name rather than crowding it inline. */}
+      <h1
+        className={cn(
+          'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
+          onInk ? 'text-on-ink [text-shadow:0_1px_3px_rgb(0_0_0/0.35)]' : 'text-text',
+        )}
+      >
+        {heroHeading}
+      </h1>
+      <div className="mt-1 flex flex-wrap items-center gap-2">
         <span
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold',

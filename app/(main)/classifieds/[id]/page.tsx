@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MapPin, MessageCircle, CalendarDays, Pencil } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getListing, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { relativeTime } from '@/lib/utils'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
@@ -14,12 +14,12 @@ const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [profileId, listing] = await Promise.all([getMyProfileId(), getListing(id)])
+  const [profileId, isStaff, listing] = await Promise.all([getMyProfileId(), isPlatformStaff(), getListing(id)])
   if (!listing) notFound()
 
   const isOwner = !!profileId && listing.author_id === profileId
-  // Non-active listings are visible only to their author.
-  if (!isOwner && listing.status !== 'active') notFound()
+  // Non-active listings are visible only to their author, and to platform staff (so they can moderate).
+  if (!isOwner && !isStaff && listing.status !== 'active') notFound()
 
   const place = [listing.neighborhood, listing.city].filter(Boolean).join(', ')
 
@@ -98,7 +98,7 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
         <p className="mt-3 px-1 text-xs text-subtle">No payment happens in the app. Message {listing.author?.display_name.split(' ')[0] ?? 'the poster'} to arrange it offline.</p>
       )}
 
-      {isOwner && (
+      {(isOwner || isStaff) && (
         <div className="mt-4">
           <ListingOwnerControls id={listing.id} status={listing.status} />
         </div>

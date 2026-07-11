@@ -138,19 +138,6 @@ type HeaderTriggerSeed = {
 const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
   { id: 'home', label: 'Home', href: '/' },
   {
-    id: 'the-community',
-    label: 'The Community',
-    href: '/the-community',
-    items: [
-      { label: 'The Community', href: '/the-community', desc: "Who's here and how it works" },
-      { label: 'Discover', href: '/discover', desc: 'Everything happening near you' },
-      { label: 'Circles', href: '/discover/circles', desc: 'Small groups around an interest' },
-      { label: 'Events', href: '/discover/events', desc: 'Gatherings you can show up to' },
-      { label: 'Classifieds', href: '/classifieds', desc: 'Trade, housing, and local shops nearby' },
-      { label: 'Partners', href: '/discover/partners', desc: 'The studios and hosts we work with' },
-    ],
-  },
-  {
     id: 'the-quest',
     label: 'The Quest',
     href: '/the-quest',
@@ -162,17 +149,6 @@ const HEADER_TRIGGER_SEEDS: readonly HeaderTriggerSeed[] = [
     ],
   },
   { id: 'the-lab', label: 'The Lab', href: '/the-lab' },
-  {
-    id: 'spaces',
-    label: 'Community Spaces',
-    href: '/spaces/directory',
-    items: [
-      { label: 'All Spaces', href: '/spaces/directory', desc: 'Browse every space in the network' },
-      { label: 'About Spaces', href: '/spaces', desc: 'Bring your people. They join free' },
-      { label: 'Pricing', href: '/pricing', desc: 'One honest price, never per seat' },
-      { label: 'For coaches and healers', href: '/for/coaches', desc: 'Booking, payments, and your people, held' },
-    ],
-  },
   {
     id: 'about',
     label: 'About',
