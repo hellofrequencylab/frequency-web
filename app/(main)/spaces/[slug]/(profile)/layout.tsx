@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { QrCode, SlidersHorizontal } from 'lucide-react'
+import { QrCode, SlidersHorizontal, ArrowUpRight } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
@@ -20,7 +20,6 @@ import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
 import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
-import { spaceTypeLabel } from '@/components/spaces/space-type'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { readModuleMenuPrefs } from '@/lib/spaces/module-menu'
@@ -72,16 +71,17 @@ const onInkSecondaryClasses = cn(
   'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
 )
 
-// The ONE dominant primary CTA (best practice: a single, visually superior primary action). It stays a
-// touch taller/bolder than the secondary affordances beside it and carries `shadow-pop`, so it reads as
-// the clear hero action while Connect / Customize stay subordinate. The accent stays the same over a
-// photo (Hero) or in flow (Header); only the secondary chips swap to on-ink. Tokens only, no hex.
-const primaryCtaClasses = cn(
-  'inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition-colors',
-  // The accent-filled dominant action, with only a soft shadow (not the heavy shadow-pop, which read
-  // as a raised cream chip rather than a clean accent button).
-  'bg-primary text-on-primary shadow-sm hover:bg-primary-hover',
-)
+// The ONE dominant primary action, now a TEXT LINK rather than a filled button (D-refine #6): an
+// unfilled accent-colored label that underlines on hover, so the header reads calmer while Connect /
+// Customize stay beside it. Over a Hero photo (shade scrim) it uses the on-ink token that the rest of
+// the overlaid identity uses; in flow / on a blend cover it uses the accent text token. Tokens only, no
+// hex. The trailing ArrowUpRight marks it as a link.
+function primaryCtaTextLink(onInk: boolean): string {
+  return cn(
+    'inline-flex items-center gap-1.5 text-sm font-bold underline-offset-4 transition-colors hover:underline',
+    onInk ? 'text-on-ink hover:text-white' : 'text-primary-strong hover:text-primary',
+  )
+}
 
 function ownerToolClasses(onInk: boolean): string {
   return onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm')
@@ -114,7 +114,6 @@ export default async function SpaceProfileChromeLayout({
   void trackSpaceProfileViewOnce(space.id, viewerProfileId)
 
   const brandName = space.brandName ?? space.name
-  const typeLabel = spaceTypeLabel(space.type)
 
   // The brand accent override (§1 KEYSTONE): the Space's own validated `brand_accent` token wins, else
   // the per-type default (profile-config, re-homed off the retired blueprint). Only tokens, never a hex.
@@ -260,9 +259,10 @@ export default async function SpaceProfileChromeLayout({
   // primary CTA keeps its accent everywhere.
   // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit Space line up as one even
   // row (the mobile band renders its own separate buttons, untouched).
-  const primaryCta = () => (
-    <Link href={ctaHref} className={cn(primaryCtaClasses, 'h-9 shrink-0')} {...ctaLinkProps}>
+  const primaryCta = (onInk = false) => (
+    <Link href={ctaHref} className={cn(primaryCtaTextLink(onInk), 'h-9 shrink-0')} {...ctaLinkProps}>
       {ctaLabel}
+      <ArrowUpRight className="h-4 w-4" aria-hidden />
     </Link>
   )
   // The Connect affordance shows the "QR" label IN FRONT of the QR glyph (owner ask), so it reads as a
@@ -286,7 +286,7 @@ export default async function SpaceProfileChromeLayout({
   // the primary CTA stays the same accent. Hidden on mobile — the buttons move to `mobileActionBand`.
   const identityActions = (onInk = false) => (
     <div className={cn('flex gap-2', actionOrientationClass)}>
-      {primaryCta()}
+      {primaryCta(onInk)}
       {connectLink(onInk)}
       {ownerTools(onInk)}
     </div>
@@ -298,8 +298,9 @@ export default async function SpaceProfileChromeLayout({
   // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
     <div className="mt-4 flex items-center gap-2 sm:hidden">
-      <Link href={ctaHref} className={cn(primaryCtaClasses, 'flex-1')} {...ctaLinkProps}>
+      <Link href={ctaHref} className={cn(primaryCtaTextLink(false), 'flex-1')} {...ctaLinkProps}>
         {ctaLabel}
+        <ArrowUpRight className="h-4 w-4" aria-hidden />
       </Link>
       <Link href="/codes" aria-label={`Connect with ${brandName}`} title="QR code" className={ghostIconClasses}>
         <QrCode className="h-5 w-5" aria-hidden />
@@ -368,8 +369,9 @@ export default async function SpaceProfileChromeLayout({
           {heroEyebrow}
         </p>
       )}
-      {/* The name is the single <h1>; the type badge sits on its own line directly BELOW it (mt-1) so the
-          designation reads as a caption under the Space name rather than crowding it inline. */}
+      {/* The name is the single <h1>. The Business / Non Profit type pill was removed from the header
+          content (D-refine #8): the designation is carried by the directory + naming context, so the
+          identity reads as name -> tagline without a redundant type chip. */}
       <h1
         className={cn(
           'min-w-0 break-words text-2xl font-bold leading-tight sm:text-3xl',
@@ -378,16 +380,6 @@ export default async function SpaceProfileChromeLayout({
       >
         {heroHeading}
       </h1>
-      <div className="mt-1 flex flex-wrap items-center gap-2">
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-2xs font-semibold',
-            onInk ? 'bg-white/15 text-on-ink backdrop-blur-sm' : 'bg-primary-bg text-primary-strong',
-          )}
-        >
-          {typeLabel}
-        </span>
-      </div>
       {/* The tagline reads as part of the identity, not fine print. On the Hero cover it stays inline
           under the name only at WIDE widths (lg+); below lg (narrow desktop + mobile) it is relocated to
           its own full-width row below the buttons (taglineHiddenOnMobile), so the identity block stays a

@@ -34,8 +34,8 @@ describe('SPACE_CATEGORIES', () => {
       business: 'Business',
       practitioner: 'Practitioner',
       coach: 'Coach & Guide',
-      studio: 'Studio & Classes',
-      maker: 'Maker & Shop',
+      studio: 'Studios',
+      maker: 'Shops',
       venue: 'Event Space',
     })
   })
@@ -88,7 +88,7 @@ describe('normalizeSpaceCategory', () => {
 describe('spaceCategoryLabel', () => {
   it('maps a known key to its label', () => {
     expect(spaceCategoryLabel('coach')).toBe('Coach & Guide')
-    expect(spaceCategoryLabel('maker')).toBe('Maker & Shop')
+    expect(spaceCategoryLabel('maker')).toBe('Shops')
   })
 
   it('falls back to the default label for an unknown key', () => {
