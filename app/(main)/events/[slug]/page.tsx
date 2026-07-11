@@ -859,7 +859,27 @@ export default async function EventDetailPage({
               ) : !myProfileId ? (
                 <p className="text-sm text-muted">Sign in to get your ticket.</p>
               ) : isHost ? (
-                <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+                hostPayoutReady ? (
+                  <p className="text-sm text-muted">You&rsquo;re hosting. No ticket needed.</p>
+                ) : (
+                  /* The buy path is gated on the HOST's Stripe Connect account being
+                     charges + payouts ready (getConnectStatus.ready). When it isn't, the
+                     old copy read "Tickets aren't available for this event yet" to
+                     everyone with no way forward. Tell the host the real prerequisite and
+                     link them straight to payout setup. */
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted">
+                      Connect payouts to start selling tickets for this event.
+                    </p>
+                    <Link
+                      href="/settings/billing"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      Set up payouts
+                    </Link>
+                  </div>
+                )
               ) : hostPayoutReady ? (
                 <TicketButton
                   eventId={event.id}
@@ -867,7 +887,9 @@ export default async function EventDetailPage({
                   tiers={hasTiers ? tiers : undefined}
                 />
               ) : (
-                <p className="text-sm text-muted">Tickets aren&rsquo;t available for this event yet.</p>
+                /* Host hasn't finished payout setup, so there is no one to pay yet.
+                   Honest to the buyer, no dead "not available" phrasing. */
+                <p className="text-sm text-muted">The host hasn&rsquo;t opened ticket sales yet.</p>
               )}
             </div>
           )}
