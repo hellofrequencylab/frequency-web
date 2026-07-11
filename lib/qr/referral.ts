@@ -9,6 +9,7 @@ import { recordEngagementEvent } from '@/lib/engagement/events'
 import { awardZapsForAction } from '@/lib/zaps'
 import { track } from '@/lib/analytics/track'
 import { recordEntryPointConversion } from '@/lib/entry-points/ab'
+import { recordReferralActivation } from '@/lib/beta/referral-contest'
 
 const REF_COOKIE = 'fq_ref'
 const VAR_COOKIE = 'fq_var'
@@ -111,6 +112,12 @@ export async function releaseReferralReward(referredProfileId: string): Promise<
       .eq('actor_profile_id', referredProfileId)
       .in('event_type', ACTIVATION_EVENTS)
     if (!count) return false
+
+    // Beta referral + Circle-starter contest (phase P3): record this activated
+    // referral toward the contest tally + pay contest Zaps. No-op unless the contest
+    // flag is on; idempotent + deduped per invitee. Rides the SAME activation moment
+    // as the base payout, so there is no second detection path. Best-effort.
+    void recordReferralActivation(referredProfileId).catch(() => {})
 
     // Rate cap (anti-farming): skip if the referrer has already hit the 24h payout
     // cap. No grant is written, so it retries on a later run once payouts age out.

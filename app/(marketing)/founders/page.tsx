@@ -218,6 +218,12 @@ export default function FoundersPage() {
           When the doors open, you were here first, and it shows.
         </p>
         <Button href="/founders/offer">Become a Founder</Button>
+        <p className="mt-6 text-base text-on-ink-muted leading-relaxed">
+          Run a business?{' '}
+          <Link href="/founders/business" className="font-semibold text-primary underline-offset-4 hover:underline">
+            Founding Businesses get the lowest fee on the platform.
+          </Link>
+        </p>
       </Section>
 
       {/* ── The rally ────────────────────────────────────────────────────────── */}

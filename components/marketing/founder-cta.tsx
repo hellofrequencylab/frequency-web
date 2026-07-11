@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { billingLive } from '@/lib/pricing/settings'
 import { FoundersReserveForm } from '@/components/marketing/founders-reserve-form'
+import { FoundingBusinessReserveForm } from '@/components/marketing/founding-business-reserve-form'
 import type { FounderTier } from '@/app/(marketing)/founders/actions'
 
 // ── The single flag-gated founding CTA (the whole point of the page) ──────────
@@ -76,5 +77,38 @@ export async function FounderCtaButton({
     >
       Become a Founder, $250 <ArrowRight className="w-5 h-5" />
     </Link>
+  )
+}
+
+// ── The Founding BUSINESS CTA (the fee-buydown cohort, ADR-599) ───────────────
+//
+// Same flag-gate as the member CTA above, business variant:
+//
+//   • billingLive() === false  (TODAY)  -> the WAITLIST path: the business
+//     reservation form. Reserving writes a lead + queues a confirm email. NOTHING
+//     charges (no card field, no payment step).
+//
+//   • billingLive() === true   (LATER)  -> a placeholder "reserved, we'll be in
+//     touch" note. There is no live business-checkout route yet; the founding
+//     business rate is charged at graduation, not from this surface. Only the flag
+//     changes behavior.
+export async function FoundingBusinessCta() {
+  const live = await billingLive()
+
+  if (!live) {
+    // WAITLIST MODE (today): reserve a spot, no charge.
+    return <FoundingBusinessReserveForm />
+  }
+
+  // LIVE MODE (later): reservations are held; the founding business rate is applied
+  // at graduation. This surface never charges.
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-7 sm:p-8 shadow-sm text-center">
+      <p className="text-base font-bold text-text">Your founding business spot is held.</p>
+      <p className="mt-3 text-sm text-subtle leading-relaxed">
+        We&apos;ll be in touch to complete your founding business membership at the locked founder
+        rate. Founding memberships are a membership, not an investment.
+      </p>
+    </div>
   )
 }
