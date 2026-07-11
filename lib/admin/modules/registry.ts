@@ -372,7 +372,7 @@ export const ADMIN_MODULES: readonly AdminModule[] = [
   },
   {
     id: 'event.settings',
-    label: 'Event settings',
+    label: 'Event Admin',
     desc: 'Title, description, location, and time. Edited in place.',
     Icon: CalendarDays,
     scopes: ['event'],

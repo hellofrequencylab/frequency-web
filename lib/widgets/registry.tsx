@@ -141,6 +141,7 @@ import { EventSales } from '@/components/widgets/events/event-sales'
 import { EventDispatch } from '@/components/widgets/events/event-dispatch'
 import { EventActivityBlock } from '@/components/widgets/events/event-activity-block'
 import { EventRecap } from '@/components/widgets/events/event-recap'
+import { EventGalleryBlock } from '@/components/widgets/events/event-gallery-block'
 import { EventJoin } from '@/components/widgets/events/event-join'
 import { EventWarmProof } from '@/components/widgets/events/event-warm-proof'
 import { EventFacts } from '@/components/widgets/events/event-facts'
@@ -345,6 +346,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-dispatch': EventDispatch,
   'event-activity': EventActivityBlock,
   'event-recap': EventRecap,
+  'event-gallery': EventGalleryBlock,
   // Gamification (/admin/gamification) — achievements, challenges, and engagement, plus the
   // janitor-only reward-economy editor (self-gating, renders null for a non-janitor).
   'gamification-season': GamificationSeason,
