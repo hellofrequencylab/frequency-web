@@ -198,7 +198,7 @@ export async function setSpaceServices(slug: string, services: SpaceOffering[]):
 
   // Services show on the public storefront (every profile route) + the manage surfaces.
   revalidatePath(`/spaces/${slug}`, 'layout')
-  revalidatePath(`/spaces/${slug}/settings/services`)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

@@ -38,10 +38,6 @@ import { billingLive } from '@/lib/pricing/settings'
 const FUNCTION_FEATURE_KEY: Record<string, string> = {
   crm: 'space_crm',
   email: 'space_email',
-  automation: 'space_automation',
-  team: 'space_team',
-  multi_pipeline: 'space_multi_pipeline',
-  whitelabel: 'space_whitelabel',
 }
 
 /** The pricing feature-gate key for a Space function, or null when the function is universal (no

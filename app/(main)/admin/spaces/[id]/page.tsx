@@ -24,12 +24,11 @@ export const dynamic = 'force-dynamic'
 // themes registry — and hands them to the client editor. If the Space is missing, 404.
 //
 // It ALSO renders a "Preview owner back-end" section: a janitor (Executive Admin) can open any
-// Space's owner surfaces read-only, to see exactly what the owner sees. This MIRRORS the live owner
-// settings hub (app/(main)/spaces/[slug]/settings/page.tsx) one-for-one so the preview never drifts
-// from it: the same per-type surfaces (practitioner -> Availability; business -> Memberships;
-// organization -> Donations; coaching -> Enrollment; event_space -> Check in AND Tickets) plus the
-// universal four every type gets (Members, QR codes, CRM, Email). Those surfaces gate their render on
-// canManage || staffViewing and keep every write on canEditProfile, so the preview is view-only.
+// Space's owner surfaces read-only, to see exactly what the owner sees. It mirrors the owner CONSOLE
+// (app/(main)/spaces/[slug]/manage/page.tsx) — the live /spaces/[slug]/settings hub is now just a bare
+// redirect to /manage — so the preview reflects the per-type surfaces the owner actually manages plus
+// the universal four every type gets (Members, QR codes, CRM, Email). Those surfaces gate their render
+// on canManage || staffViewing and keep every write on canEditProfile, so the preview is view-only.
 
 /** One preview link into a Space's owner back-end (icon tile + label + one-line note). */
 function PreviewLink({
