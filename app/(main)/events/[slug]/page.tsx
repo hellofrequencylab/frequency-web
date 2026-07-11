@@ -347,12 +347,16 @@ export default async function EventDetailPage({
   // extras. The scanner's crops are intentionally excluded: the original poster is the
   // header, and the lineup/region crops already render under "From the poster". So a
   // plain scanned event shows just its original poster, with no duplicate crops.
-  const galleryUrls: string[] = [
-    heroUrl,
-    ...(extra?.gallery_image_paths ?? []).map(
-      (p) => admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
-    ),
-  ].filter((u): u is string => !!u)
+  // Unified gallery: cover_image_path == gallery_image_paths[0], so the hero and the first gallery
+  // path resolve to the SAME url. Dedupe by url so the header photo shows once, not twice.
+  const galleryUrls: string[] = [...new Set(
+    [
+      heroUrl,
+      ...(extra?.gallery_image_paths ?? []).map(
+        (p) => admin.storage.from('event-media').getPublicUrl(p).data.publicUrl,
+      ),
+    ].filter((u): u is string => !!u),
+  )]
 
   // Visibility gate (ADR-202). This page reads through the admin client, which
   // bypasses RLS — so the same rules the RLS policy enforces are re-applied here:

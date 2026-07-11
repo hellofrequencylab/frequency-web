@@ -5,16 +5,14 @@ import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { ImagePlus } from 'lucide-react'
 import { fieldClasses, labelClasses } from '@/components/ui/field'
-import { InlineCover } from '@/components/admin/inline/inline-cover'
 import { RailSaveRow } from '@/components/admin/rail/rail-autosave-form'
 import { useRailAutosave, isInstant, isTextLike } from '@/components/admin/rail/use-rail-autosave'
+import { createClient } from '@/lib/supabase/client'
 import {
   getEventAdminData,
   getEventEngageData,
   updateEventSettings,
   updateEventPermalink,
-  uploadEventCover,
-  removeEventCover,
   removeEventPoster,
   setEventGalleryImages,
   uploadEventGalleryImage,
@@ -24,6 +22,7 @@ import {
   useEventPosterAsCover as promotePosterToCover,
 } from '@/app/(main)/events/admin-actions'
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeroHeightControl } from '@/components/admin/modules/event-hero-height-control'
 import { EventCoverFocusControl } from '@/components/admin/modules/event-cover-focus-control'
@@ -218,13 +217,28 @@ export function EventSettingsModule() {
     requestAnimationFrame(saveNow)
   }
 
+  // Resolve an event-media gallery PATH to its public URL (the header preview for the focus control).
+  const eventMediaUrl = useCallback(
+    (path: string) => createClient().storage.from('event-media').getPublicUrl(path).data.publicUrl,
+    [],
+  )
+
   function handleUsePosterAsCover() {
     if (!data || pending) return
     startTransition(async () => {
       const res = await promotePosterToCover(data!.id, data!.slug)
-      if ('url' in res) setCoverUrl(res.url)
-      else setImgErr(res.error)
+      if ('url' in res) {
+        // The poster is now the FIRST gallery tile (the header). Reflect both live.
+        setCoverUrl(res.url)
+        setGalleryPaths(res.paths)
+      } else setImgErr(res.error)
     })
+  }
+
+  // A picked Loom image was copied into the gallery server-side; apply the returned order + header.
+  function handleAddedFromLoom(paths: string[]) {
+    setGalleryPaths(paths)
+    setCoverUrl(paths[0] ? eventMediaUrl(paths[0]) : null)
   }
 
   function handleRemovePoster() {
@@ -241,6 +255,8 @@ export function EventSettingsModule() {
 
   function handleGalleryChange(next: string[]) {
     setGalleryPaths(next)
+    // The FIRST photo is the header/cover — keep the focus-control preview in sync with gallery[0].
+    setCoverUrl(next[0] ? eventMediaUrl(next[0]) : null)
     if (!data) return
     startTransition(async () => {
       await setEventGalleryImages(data!.id, data!.slug, next)
@@ -283,60 +299,65 @@ export function EventSettingsModule() {
         </div>
       )}
 
-      {/* IMAGES — cover, gallery, then the hero-height picker. Each self-saves. */}
+      {/* IMAGES — ONE ordered gallery leads the area: the FIRST photo IS the header. Then the
+          "Select from Loom" picker, the scanned-poster shortcut, and the hero-height / focus controls. */}
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <span className={fieldLabel}>Cover image</span>
-          {coverUrl || !posterUrl ? (
-            <InlineCover
-              value={coverUrl}
-              alt={data.title}
-              canEdit
-              forceEdit
-              upload={uploadEventCover.bind(null, data.id, data.slug)}
-              remove={removeEventCover.bind(null, data.id, data.slug)}
-              onChange={setCoverUrl}
-            />
-          ) : (
-            <div className="space-y-2">
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-elevated">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={posterUrl} alt={data.title} className="h-40 w-full object-cover sm:h-52" />
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleUsePosterAsCover}
-                  disabled={pending}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
-                >
-                  <ImagePlus className="h-3.5 w-3.5" /> Use the poster as the cover
-                </button>
-                <span className="text-2xs text-subtle">Or upload your own below once set.</span>
-              </div>
-            </div>
-          )}
-        </div>
-
         <div className="space-y-2">
           <span className={fieldLabel}>Photos</span>
-          {/* One ordered gallery. The key image (the original poster, when there is one) leads as the
-              first tile; the rest follow in display order. Drag or use the arrows to reorder. */}
+          {/* One ordered gallery. The first tile is the header/cover; the rest follow in display order.
+              Drag a photo, or use the arrows, to reorder — moving a photo to the front makes it the header. */}
           <MultiImageUpload
             label="Gallery photos"
             value={galleryPaths}
             onChange={handleGalleryChange}
             folder="event-gallery"
-            hint="These show as the gallery on the event page, in this order. The first photo leads. Drag a photo, or use the arrows, to reorder."
+            hint="These show on the event page in this order. The first photo is the header. Drag a photo, or use the arrows, to reorder."
             disabled={pending}
             reorderable
-            leading={
-              posterUrl
-                ? { url: posterUrl, label: 'Key image', alt: data.title, onRemove: handleRemovePoster }
-                : null
-            }
             upload={uploadEventGalleryImage.bind(null, data.id, data.slug)}
           />
+          <div className="flex flex-wrap items-center gap-2">
+            <EventLoomPicker
+              eventId={data.id}
+              slug={data.slug}
+              disabled={pending}
+              onAdded={handleAddedFromLoom}
+            />
+          </div>
+
+          {/* Scanned-poster shortcut: when this event was captured from a poster and has no photos yet,
+              one tap makes the original flyer the header. It becomes a normal reorderable tile after. */}
+          {posterUrl && galleryPaths.length === 0 && (
+            <div className="space-y-2 rounded-xl border border-border bg-surface-elevated/40 p-3">
+              <div className="flex items-start gap-3">
+                <div className="relative shrink-0 overflow-hidden rounded-xl border border-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={posterUrl} alt={data.title} className="h-24 w-24 object-cover" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs text-subtle">This event was captured from a scanned poster.</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleUsePosterAsCover}
+                      disabled={pending}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text transition-colors hover:border-border-strong disabled:opacity-50"
+                    >
+                      <ImagePlus className="h-3.5 w-3.5" /> Use it as the header photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRemovePoster}
+                      disabled={pending}
+                      className="text-2xs font-medium text-subtle underline underline-offset-2 transition-colors hover:text-danger disabled:opacity-50"
+                    >
+                      Remove the scanned poster
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <EventHeroHeightControl
