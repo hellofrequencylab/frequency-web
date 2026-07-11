@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -614,6 +615,64 @@ async function eventOpenForRsvp(eventId: string): Promise<boolean> {
   return !!data && !(data as { is_cancelled: boolean | null }).is_cancelled
 }
 
+// Drop / update / remove the "<Name> RSVP'd" entry in the event's activity feed
+// (event_posts) when someone RSVPs going (EVENTS activity loop). One entry per
+// (event, profile) — the partial unique index (kind='rsvp') keeps a changed RSVP
+// from spamming the feed, so this UPSERTS rather than appends. A member's optional
+// note (item: leave a comment when you RSVP) rides as the entry's body.
+//
+//   • going = true  → ensure the entry exists; when `note` is provided, set the body.
+//                     A plain re-RSVP (note undefined) never wipes an earlier note.
+//   • going = false → remove the entry (they moved to maybe / waitlist / not_going).
+//
+// Best-effort by construction: wrapped so a feed hiccup never blocks or breaks the
+// RSVP itself. `event_posts.kind` is newer than the generated DB types, so this
+// reaches it through the untyped-client cast (repo convention; the column ships in
+// migration 20261125000000, not yet applied — until then this quietly no-ops).
+const MAX_RSVP_NOTE = 500
+
+async function syncRsvpActivityPost(
+  eventId: string,
+  profileId: string,
+  going: boolean,
+  note?: string | null,
+): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    // eslint-disable-next-line no-restricted-syntax -- event_posts.kind not in generated types yet (ADR-246 exception)
+    const db = admin as unknown as SupabaseClient
+
+    const { data: existing } = await db
+      .from('event_posts')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('profile_id', profileId)
+      .eq('kind', 'rsvp')
+      .maybeSingle()
+    const existingId = (existing as { id: string } | null)?.id ?? null
+
+    if (!going) {
+      if (existingId) await db.from('event_posts').delete().eq('id', existingId)
+      return
+    }
+
+    const body = (note ?? '').trim().slice(0, MAX_RSVP_NOTE)
+    if (existingId) {
+      // Only rewrite the body when a note was explicitly supplied — a plain Going
+      // tap (note undefined) leaves any earlier note intact.
+      if (note !== undefined) {
+        await db.from('event_posts').update({ body }).eq('id', existingId)
+      }
+      return
+    }
+    await db
+      .from('event_posts')
+      .insert({ event_id: eventId, profile_id: profileId, body, kind: 'rsvp' })
+  } catch (e) {
+    console.error('[events rsvp activity post]', e)
+  }
+}
+
 export async function toggleRSVP(eventId: string) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -655,6 +714,8 @@ export async function toggleRSVP(eventId: string) {
       // Withdraw. If we freed a confirmed seat, pull the next person off the
       // waitlist (warm proof of momentum, never fake scarcity).
       await supabase.from('event_rsvps').update({ status: 'not_going' }).eq('id', existing.id)
+      // Withdrawing pulls their "RSVP'd" entry out of the activity feed.
+      await syncRsvpActivityPost(eventId, myProfileId, false)
       if (existing.status === 'going') {
         await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })
       }
@@ -671,6 +732,8 @@ export async function toggleRSVP(eventId: string) {
       // On a read failure (null) fall back to the intent; otherwise trust the row.
       const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
       if (effective === 'going') onGoing(false)
+      // Post the "RSVP'd" activity entry only for a confirmed seat (never waitlist).
+      await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
       // Fire-and-forget confirmation — never blocks/breaks the RSVP (best-effort,
       // self-contained try-catch + pref/suppression gating inside the helper).
       sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
@@ -689,6 +752,7 @@ export async function toggleRSVP(eventId: string) {
     const stored = await readRsvpStatus(eventId, myProfileId)
     const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
     if (effective === 'going') onGoing(true)
+    await syncRsvpActivityPost(eventId, myProfileId, effective === 'going')
     sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
       console.error('[events rsvp confirmation email]', e)
     )
@@ -717,11 +781,13 @@ export async function toggleRSVP(eventId: string) {
 //
 // `opts.slug` (when the caller knows it — the detail control passes it) revalidates
 // the specific /events/[slug] page so the RSVP reflects immediately, not only via
-// the broader /events layout sweep.
+// the broader /events layout sweep. `opts.message` is the member's optional note,
+// which rides along as the body of their "RSVP'd" activity-feed entry (a Going
+// RSVP posts / updates that entry; anything else removes it).
 export async function setRsvpStatus(
   eventId: string,
   intent: 'going' | 'maybe' | 'not_going',
-  opts?: { slug?: string },
+  opts?: { slug?: string; message?: string },
 ) {
   const myProfileId = await getMyProfileId()
   if (!myProfileId) return
@@ -780,9 +846,16 @@ export async function setRsvpStatus(
       const stored = await readRsvpStatus(eventId, myProfileId)
       const effective: 'going' | 'waitlist' = (stored ?? next) === 'going' ? 'going' : 'waitlist'
       if (effective === 'going') onGoing(!existing)
+      // Post the "RSVP'd" entry (with the note) only for a confirmed seat.
+      await syncRsvpActivityPost(eventId, myProfileId, effective === 'going', opts?.message)
       sendRsvpConfirmation(eventId, myProfileId, effective).catch((e) =>
         console.error('[events rsvp confirmation email]', e)
       )
+    } else if (opts?.message !== undefined) {
+      // Already confirmed (going/waitlist) and just adding or editing the note — no
+      // status transition, so skip the email/gems above but still sync the feed entry.
+      // A waitlisted member has no going entry, so this only writes when truly going.
+      await syncRsvpActivityPost(eventId, myProfileId, prevStatus === 'going', opts.message)
     }
   } else {
     // maybe / not_going: a soft state, no email, no capacity consumed.
@@ -805,6 +878,8 @@ export async function setRsvpStatus(
         plus_ones: 0,
       })
     }
+    // Moving to maybe / not_going is no longer "going" → pull their feed entry.
+    await syncRsvpActivityPost(eventId, myProfileId, false)
     // Freed a confirmed seat → pull the next person off the waitlist.
     if (heldSeat) {
       await promoteFromWaitlist(eventId).catch((e) => { console.error('[events waitlist]', e); return null })

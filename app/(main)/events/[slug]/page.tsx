@@ -644,6 +644,9 @@ export default async function EventDetailPage({
     body: string | null
     image_url: string | null
     created_at: string
+    // 'rsvp' = a system "<Name> RSVP'd" entry; anything else = a guest comment.
+    // Newer than the generated types → read via the untyped client below.
+    kind: string | null
     author: { id: string; display_name: string; handle: string; avatar_url: string | null } | null
   }
   // Host Event Dispatches (ADR-255) — page updates the host posted. They render in
@@ -689,9 +692,11 @@ export default async function EventDetailPage({
       isHost ? listCohostInvites(event.id) : Promise.resolve([]),
       // The viewer's own pending invite, if any — drives the Accept/Decline banner.
       myProfileId ? getMyCohostInvite(event.id, myProfileId) : Promise.resolve(null),
-      (admin)
+      // Untyped client: event_posts.kind is newer than the generated types (migration
+      // 20261125000000). The map below casts the rows to RawActivityPost.
+      adminUntyped
         .from('event_posts')
-        .select('id, body, image_url, created_at, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
+        .select('id, body, image_url, created_at, kind, author:profiles!profile_id ( id, display_name, handle, avatar_url )')
         .eq('event_id', event.id)
         .order('created_at', { ascending: false })
         .limit(100),
@@ -729,6 +734,7 @@ export default async function EventDetailPage({
     body: p.body ?? '',
     imageUrl: p.image_url,
     createdAt: p.created_at,
+    kind: p.kind === 'rsvp' ? 'rsvp' : 'comment',
     author: p.author
       ? { id: p.author.id, displayName: p.author.display_name, handle: p.author.handle, avatarUrl: p.author.avatar_url }
       : null,

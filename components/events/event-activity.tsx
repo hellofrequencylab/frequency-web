@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ImagePlus, X, Trash2, Film, Radio, Smile } from 'lucide-react'
+import { ImagePlus, X, Trash2, Film, Radio, Smile, Check } from 'lucide-react'
 import { createEventPost, deleteEventPost, postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 import { getEventPostReactions, toggleEventPostReaction } from '@/lib/events/reactions'
 import type { BoopKind, PostReactions } from '@/lib/events/reactions'
@@ -38,6 +38,9 @@ export type ActivityPost = {
   isDispatch?: boolean
   /** Optional title on a Dispatch update. */
   title?: string | null
+  /** 'rsvp' = a system "<Name> RSVP'd" entry (body carries the member's optional
+   *  note). Anything else / undefined = an ordinary guest comment. */
+  kind?: 'comment' | 'rsvp'
 }
 
 function timeAgo(iso: string): string {
@@ -423,6 +426,9 @@ export function EventActivity({
         <ul className="space-y-3">
           {posts.map((post) => {
             const a = post.author
+            // A system "RSVP'd" entry reads as an activity line (name + a going badge),
+            // not a comment — no image, no boops.
+            const isRsvp = post.kind === 'rsvp'
             // Dispatch entries are event_dispatches rows, not event_posts, so the
             // event_posts delete action doesn't apply — no trash on them here.
             const canDelete =
@@ -456,6 +462,12 @@ export function EventActivity({
                           Event Dispatch
                         </span>
                       )}
+                      {isRsvp && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-3xs font-semibold text-success">
+                          <Check className="h-3 w-3" />
+                          RSVP&rsquo;d
+                        </span>
+                      )}
                       <span className="text-2xs text-subtle">{timeAgo(post.createdAt)}</span>
                     </div>
                     {canDelete && (
@@ -468,7 +480,7 @@ export function EventActivity({
                   {post.body && (
                     <p className="mt-0.5 whitespace-pre-wrap text-sm leading-relaxed text-text/90">{post.body}</p>
                   )}
-                  {post.imageUrl && (
+                  {post.imageUrl && !isRsvp && (
                     <Image
                       src={post.imageUrl}
                       alt="Shared photo"
@@ -479,9 +491,9 @@ export function EventActivity({
                     />
                   )}
                   {/* Boops — tap a face to react. Real persisted counts; only on
-                      comment posts (Dispatch entries have no reaction row). Disabled
-                      (with a sign-in nudge on hover) for signed-out viewers. */}
-                  {!post.isDispatch && (
+                      comment posts (Dispatch + RSVP entries have no reaction row).
+                      Disabled (with a sign-in nudge on hover) for signed-out viewers. */}
+                  {!post.isDispatch && !isRsvp && (
                     <BoopBar
                       postId={post.id}
                       reactions={reactions[post.id]}
