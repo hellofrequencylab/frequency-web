@@ -15,6 +15,10 @@ export const TRAIT_SEGMENT_PREFIX = 'seg:'
 export const BUILTIN_SEGMENTS: { key: SegmentKey; label: string }[] = [
   { key: 'members', label: 'All members (not unsubscribed)' },
   { key: 'subscribed_members', label: 'Subscribed members only' },
+  // Beta Command Center audience (additive). Confirmed beta_waitlist contacts that
+  // already hold a Frequency profile, so the profile-based unsubscribe still works.
+  // Pre-account waitlist folks (no profile_id) are reached transactionally, not here.
+  { key: 'beta_waitlist', label: 'Beta waitlist (confirmed, has account)' },
 ]
 
 /** Pure: classify an audience key. Unit-tested. */
@@ -65,6 +69,9 @@ export async function resolveSegment(segment: SegmentKey): Promise<Recipient[]> 
     .not('profile_id', 'is', null)
     .neq('consent_state', 'unsubscribed')
   if (parsed.slug === 'subscribed_members') q = q.eq('consent_state', 'subscribed')
+  // Beta waitlist: the same profile-bearing, not-unsubscribed rule, narrowed to the
+  // contacts that came in through the Beta waitlist capture (source = 'beta_waitlist').
+  if (parsed.slug === 'beta_waitlist') q = q.eq('source', 'beta_waitlist')
 
   const { data } = await q
   return (data ?? [])
