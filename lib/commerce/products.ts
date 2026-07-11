@@ -9,12 +9,19 @@ import type { CommerceProduct, OwnerKind, ProductInput, ProductStatus, MarketGro
 import { kindsForGroup } from './types'
 
 /** Drop undefined keys from a ServiceConfig so a partial edit never writes `undefined` into the JSON
- *  (and an all-undefined config collapses to null, meaning "no policy"). */
+ *  (and an all-undefined config collapses to null, meaning "no policy"). Copies only the KNOWN
+ *  ServiceConfig fields by name (never a dynamic key from the input) so an attacker-supplied key on a
+ *  client-provided patch can't be written into the stored object (no property injection / prototype
+ *  pollution). Add a field here when ServiceConfig gains one. */
 function pruneServiceConfig(svc: ServiceConfig): ServiceConfig | null {
   const out: ServiceConfig = {}
-  for (const [k, v] of Object.entries(svc)) {
-    if (v !== undefined && v !== null) (out as Record<string, unknown>)[k] = v
-  }
+  if (svc.priceModel != null) out.priceModel = svc.priceModel
+  if (svc.durationMin != null) out.durationMin = svc.durationMin
+  if (svc.depositCents != null) out.depositCents = svc.depositCents
+  if (svc.recurrence != null) out.recurrence = svc.recurrence
+  if (svc.cancellationWindowHours != null) out.cancellationWindowHours = svc.cancellationWindowHours
+  if (svc.noShowFeePct != null) out.noShowFeePct = svc.noShowFeePct
+  if (svc.slidingScale != null) out.slidingScale = svc.slidingScale
   return Object.keys(out).length ? out : null
 }
 
