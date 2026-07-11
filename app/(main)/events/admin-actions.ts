@@ -20,6 +20,7 @@ import { validateRecurrenceUntil, type RecurrenceType } from '@/lib/events/recur
 import { isValidTimeZone } from '@/lib/time/zone'
 import { posterSignedUrl } from '@/lib/events/poster-media'
 import { writeEventHeroHeight, type EventHeroHeight } from '@/lib/events/hero-height'
+import { writeEventCoverFocus } from '@/lib/events/cover-focus'
 import { pointFromGeog } from '@/lib/events/geo'
 import { approveRsvp } from '@/lib/events/rsvp-depth'
 import {
@@ -445,6 +446,32 @@ export async function updateEventHeroHeight(
   const admin = createAdminClient()
   const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
   const nextTheme = writeEventHeroHeight((current as { theme?: unknown } | null)?.theme, height)
+
+  const { error } = await (admin as unknown as UntypedUpdate)
+    .from('events')
+    .update({ theme: nextTheme })
+    .eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/events/${slug}`)
+  return { ok: true }
+}
+
+/** Set the event cover FOCAL POINT (where the cover sits in its cropped hero), a CSS
+ *  `object-position` string. Stored on events.theme.coverFocus (read-merge-write so other theme
+ *  keys survive; the centered default is dropped so a plain event keeps a sparse theme). Same
+ *  event.editSettings gate. */
+export async function updateEventCoverFocus(
+  id: string,
+  slug: string,
+  focus: string,
+): Promise<{ ok: true } | { error: string }> {
+  const caps = await getEventCapabilities(id)
+  if (!caps.has('event.editSettings')) return { error: 'Unauthorized' }
+
+  const admin = createAdminClient()
+  const { data: current } = await admin.from('events').select('theme').eq('id', id).maybeSingle()
+  const nextTheme = writeEventCoverFocus((current as { theme?: unknown } | null)?.theme, focus)
 
   const { error } = await (admin as unknown as UntypedUpdate)
     .from('events')
