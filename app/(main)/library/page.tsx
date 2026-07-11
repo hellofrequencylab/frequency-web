@@ -7,7 +7,7 @@ import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getLibrary, getMyRatings, typeLabel, hrefFor, type ContentType, type LibraryItem } from '@/lib/library'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
-import { getPageHeaderImage } from '@/lib/page-settings/store'
+import { getPageHeaderImage, getPageHeaderFocus } from '@/lib/page-settings/store'
 import { RateButton, CreateMenu } from './interactive'
 
 export const dynamic = 'force-dynamic'
@@ -61,7 +61,10 @@ export default async function LibraryPage({
   const { title, description, heroImage: contentHero, ctaLabel, ctaHref } = await resolvePageContent('/library', CONTENT_FALLBACK)
   // The uniform overlay Hero Header (the Business Spaces grammar): operator image wins, else a calm
   // section default so the hero band always renders.
-  const heroImage = (await getPageHeaderImage('/library')) ?? contentHero ?? '/images/site/community-1.jpg'
+  const operatorHero = await getPageHeaderImage('/library')
+  const heroImage = operatorHero ?? contentHero ?? '/images/site/community-1.jpg'
+  // The focal point applies only to the operator's own header image (the fallbacks crop centered).
+  const heroFocus = operatorHero ? await getPageHeaderFocus('/library') : null
 
   return (
     <IndexTemplate
@@ -72,6 +75,7 @@ export default async function LibraryPage({
         { href: '/library', label: 'Library' },
       ]}
       heroImage={heroImage}
+      heroFocus={heroFocus}
       heroOverlay
       action={
         <div className="flex items-center gap-2">

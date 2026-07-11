@@ -35,6 +35,7 @@ import { listCohosts, listCohostInvites, getMyCohostInvite } from '@/lib/events/
 import { posterSignedUrlMap } from '@/lib/events/poster-media'
 import { pointFromGeog } from '@/lib/events/geo'
 import { eventHeroHeightClass, readEventHeroHeight } from '@/lib/events/hero-height'
+import { readEventCoverFocus } from '@/lib/events/cover-focus'
 import { detailsMediaPaths, type EventDetailsWithMedia } from '@/lib/events/details-media'
 import type { EventMapPin } from '@/components/events/events-map'
 import { ZAP_AMOUNTS } from '@/lib/zaps'
@@ -338,6 +339,9 @@ export default async function EventDetailPage({
   // Host-picked hero height (Short / Standard / Tall), stored on events.theme; mirrors the
   // Business Space cover hero. Applied to both the cover and the no-cover placeholder.
   const heroHeightCls = eventHeroHeightClass(readEventHeroHeight(extra?.theme))
+  // Host-picked cover FOCAL POINT (object-position), stored on events.theme.coverFocus. Applied to
+  // the cover <img> so the important part of the photo survives the crop; defaults centered.
+  const coverFocus = readEventCoverFocus(extra?.theme)
 
   // Gallery: the header image leads (clickable → full-screen), then any host-UPLOADED
   // extras. The scanner's crops are intentionally excluded: the original poster is the
@@ -1108,6 +1112,7 @@ export default async function EventDetailPage({
                 fill
                 sizes="(max-width: 1024px) 100vw, 1024px"
                 className="object-cover"
+                style={{ objectPosition: coverFocus }}
                 preload
                 unoptimized={heroUrl !== coverUrl}
               />

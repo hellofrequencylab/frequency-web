@@ -18,11 +18,17 @@ describe('page-settings SEO validation', () => {
 
   it('normalizes + bounds the fields, trimming and emptying to null', () => {
     const f = normalizeSeo({ title: '  Hello  ', description: '  ', ogImage: ' /og.png ', headerImage: ' /header.png ' })
-    expect(f).toEqual({ seo_title: 'Hello', seo_description: null, og_image_url: '/og.png', header_image_url: '/header.png' })
+    expect(f).toEqual({ seo_title: 'Hello', seo_description: null, og_image_url: '/og.png', header_image_url: '/header.png', header_image_focal: null })
   })
 
   it('rejects the save when the header image URL is unsafe', () => {
     expect(normalizeSeo({ title: 'ok', headerImage: 'http://x' })).toBeNull()
+  })
+
+  it('stores a moved header focal point, drops the centered default, and never keeps a focal with no image', () => {
+    expect(normalizeSeo({ headerImage: '/h.png', headerFocal: '50% 30%' })?.header_image_focal).toBe('50% 30%')
+    expect(normalizeSeo({ headerImage: '/h.png', headerFocal: '50% 50%' })?.header_image_focal).toBeNull()
+    expect(normalizeSeo({ headerFocal: '50% 30%' })?.header_image_focal).toBeNull()
   })
 
   it('clamps an over-long title + description', () => {

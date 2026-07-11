@@ -55,6 +55,10 @@ export function ProductCard({
   const duration = group === 'services' ? serviceDuration(product) : null
 
   const cover = product.images[0] ? (
+    // focal-point: apply objectPosition here once products store a focal point. Add ImageFocalPicker
+    // (components/ui/image-focal-picker) to the product editor, store the value, then pass it as
+    // `style={{ objectPosition }}` on this <Image> — the reusable pattern from the event cover wiring
+    // (lib/images/focal-point.ts). Defaults to a centered crop until then.
     <Image fill src={product.images[0]} alt="" className="object-cover" sizes="(min-width:1024px) 25vw, 100vw" />
   ) : (
     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-bg/40 via-surface-elevated to-surface-elevated">

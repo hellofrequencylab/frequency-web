@@ -1,8 +1,41 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, Loader2, MapPin, X } from 'lucide-react'
 import { searchAddresses, type PlaceResult } from '@/lib/geocode'
+import { getBrowserPosition } from '@/lib/geo-browser'
+
+// Device location, requested at most ONCE per page load and shared across every autocomplete on
+// the page (a member usually only sees one, but a remount must not re-prompt). The browser's own
+// permission dialog is the gate; we cache the resolved promise so later focuses reuse it.
+let devicePositionPromise: Promise<{ lat: number; lng: number } | null> | null = null
+function requestDevicePosition(): Promise<{ lat: number; lng: number } | null> {
+  if (!devicePositionPromise) devicePositionPromise = getBrowserPosition()
+  return devicePositionPromise
+}
+
+/** Lazily geolocate the device. `request()` is idempotent and fire-and-forget — call it on focus /
+ *  first keystroke; it NEVER blocks typing (the permission prompt resolves in its own time, and if
+ *  denied/unavailable the value just stays null). `location` fills in once/if the device resolves. */
+function useDeviceLocation(): { location: { lat: number; lng: number } | null; request: () => void } {
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const asked = useRef(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+  const request = useCallback(() => {
+    if (asked.current) return
+    asked.current = true
+    void requestDevicePosition().then((p) => {
+      if (p && mounted.current) setLocation(p)
+    })
+  }, [])
+  return { location, request }
+}
 
 // Venue / address typeahead (Event settings overhaul §1). Sibling of
 // LocationAutocomplete, but it searches addresses + venues + POIs (not just cities)
@@ -35,12 +68,16 @@ export function VenueAutocomplete({
   const [results, setResults] = useState<PlaceResult[]>([])
   const boxRef = useRef<HTMLDivElement>(null)
   const touched = useRef(false) // true once the user types — gates the search
-  // Hold the latest bias in a ref so a fresh object reference each render never re-arms the
-  // debounce (the search effect only depends on the typed query).
-  const biasRef = useRef(bias)
+  const { location: deviceLocation, request: requestLocation } = useDeviceLocation()
+  // Effective bias, best-first: the device's own location (closest to where the member actually is)
+  // → the event's current pin (`bias`) → unbiased. `searchAddresses` draws the local bbox and the
+  // closest-first sort from whichever wins. Held in a ref so a fresh object each render never
+  // re-arms the debounce (the search effect only depends on the typed query).
+  const effectiveBias = deviceLocation ?? bias ?? null
+  const biasRef = useRef(effectiveBias)
   useEffect(() => {
-    biasRef.current = bias
-  }, [bias])
+    biasRef.current = effectiveBias
+  }, [effectiveBias])
 
   useEffect(() => {
     if (!touched.current) return // don't auto-search the pre-filled venue name
@@ -80,9 +117,13 @@ export function VenueAutocomplete({
         value={q}
         onChange={(e) => {
           touched.current = true
+          requestLocation() // lazy geolocate on first keystroke; never blocks typing
           setQ(e.target.value)
         }}
-        onFocus={() => results.length > 0 && setOpen(true)}
+        onFocus={() => {
+          requestLocation() // start the (async) permission prompt as soon as they engage
+          if (results.length > 0) setOpen(true)
+        }}
         placeholder={placeholder}
         aria-label="Search a venue or address"
         disabled={disabled}
