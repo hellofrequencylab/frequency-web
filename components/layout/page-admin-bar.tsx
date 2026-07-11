@@ -96,7 +96,10 @@ export function PageAdminBar({ asDivider = false }: { asDivider?: boolean } = {}
   // "Edit X" button), member profiles (the profile rail), and Space profiles (the Customize button) —
   // so a page never shows two settings triggers; the "You" section is reached from that button there.
   // (Space profiles already returned null above, so they need no guard here.)
-  const settingsTrigger = authed && !isEntityDetail && !isProfile ? (
+  // Also suppressed on SHAREABLE pages: those carry the "QR & Share" control (and their own
+  // "Edit details" / Manage button), so the generic Settings link sitting beside it was redundant.
+  // It stays on non-shareable pages, which have no other way into the "You" settings menu.
+  const settingsTrigger = authed && !shareable && !isEntityDetail && !isProfile ? (
     <button
       type="button"
       onClick={() => openAdminBar()}
