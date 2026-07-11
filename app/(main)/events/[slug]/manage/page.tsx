@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
 import { loadEventCoreStats } from '@/lib/events/event-stats'
 import { EventCoreStatsCards } from '@/components/events/event-core-stats'
+import { TICKETING_ENABLED } from '@/lib/events/ticketing'
 import {
   EngagementSection,
   RsvpBreakdownSection,
@@ -16,6 +17,7 @@ import {
   ApprovalsSection,
   FollowUpSection,
   QuestionnaireSection,
+  TicketTiersSection,
   DispatchesSection,
 } from './sections'
 
@@ -126,6 +128,15 @@ export default async function ManageEventPage({
           <QuestionnaireSection eventId={event.id} slug={event.slug} eventTitle={event.title} />
         </Suspense>
       </section>
+
+      {TICKETING_ENABLED && (
+        <section>
+          <SectionHeader title="Ticket tiers" />
+          <Suspense fallback={<SectionFallback />}>
+            <TicketTiersSection eventId={event.id} slug={event.slug} />
+          </Suspense>
+        </section>
+      )}
 
       <section>
         <SectionHeader title="Sent Dispatches" />

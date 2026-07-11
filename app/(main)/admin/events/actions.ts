@@ -12,6 +12,11 @@ import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { saveEventLocation, type EventAddress, type AttendanceMode } from '@/lib/events/geocode'
 import { nominatimGeocoder } from '@/lib/events/geocode-provider'
 import { cancelAudit, reinstateAudit } from '@/lib/events/event-lifecycle'
+import {
+  createEventTicketTier,
+  updateEventTicketTier,
+  setEventTicketTierActive,
+} from '@/lib/events/ticket-tiers'
 
 // Operator curation: stamp (or clear) an event's featured marker. Gated on the platform
 // `admin.access` capability so only operators hand-pick the events that surface first.
@@ -234,59 +239,15 @@ export async function reinstateEvent(id: string) {
 }
 
 // ── Ticket tiers (EVENTS-SYSTEM §2.2) ────────────────────────────────────────────
-// Named tiers with richer pricing modes + inventory. Written ONLY through the
-// service role (admin client) behind the event-editor authz gate; the `sold` count
-// is owned by the billing webhook and is never set here. `event_ticket_types` isn't
-// in the generated types yet → untyped-client cast (repo convention).
-
-type PricingMode = 'fixed' | 'free' | 'pwyc' | 'sliding_scale' | 'donation'
-const PRICING_MODES: PricingMode[] = ['fixed', 'free', 'pwyc', 'sliding_scale', 'donation']
-
-/** Dollars string from a form field → integer cents, or null when blank. */
-function dollarsToCents(raw: FormDataEntryValue | null): number | null {
-  const s = (raw as string | null)?.trim()
-  if (!s) return null
-  const n = Number(s)
-  if (!Number.isFinite(n) || n < 0) return null
-  return Math.round(n * 100)
-}
+// Named tiers with richer pricing modes + inventory. The validation + service-role
+// writes live in the shared lib/events/ticket-tiers module (the host-facing surface
+// reuses the exact same logic); these actions add the admin authz gate + the admin
+// revalidation. The `sold` count is billing-owned and never set here.
 
 /** Create a ticket tier on an event. The caller must be able to edit the event. */
 export async function createTicketTier(eventId: string, slug: string, fd: FormData) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient()
-
-  const name = (fd.get('name') as string)?.trim()
-  if (!name) throw new Error('A tier name is required.')
-  const mode = (fd.get('pricing_mode') as string)?.trim() as PricingMode
-  if (!PRICING_MODES.includes(mode)) throw new Error('Invalid pricing mode.')
-
-  const priceCents = dollarsToCents(fd.get('price'))
-  const minCents = dollarsToCents(fd.get('min'))
-  const suggestedCents = dollarsToCents(fd.get('suggested'))
-  const qtyRaw = (fd.get('quantity') as string)?.trim()
-  const quantity = qtyRaw ? Math.max(0, Math.floor(Number(qtyRaw))) : null
-
-  // A fixed tier must carry a price; buyer-chosen modes lean on min/suggested.
-  if (mode === 'fixed' && (priceCents == null || priceCents <= 0)) {
-    throw new Error('A fixed-price tier needs a price.')
-  }
-
-  const { error } = await admin.from('event_ticket_types').insert({
-    event_id: eventId,
-    name,
-    description: (fd.get('description') as string)?.trim() || null,
-    pricing_mode: mode,
-    price_cents: mode === 'fixed' ? priceCents : null,
-    min_cents: mode === 'free' || mode === 'fixed' ? null : minCents,
-    suggested_cents: mode === 'free' || mode === 'fixed' ? null : suggestedCents,
-    quantity,
-    member_only: fd.get('member_only') === 'on',
-    sort_order: Number((fd.get('sort_order') as string) || 0) || 0,
-    active: true,
-  })
-  if (error) throw new Error(error.message)
-
+  await createEventTicketTier(eventId, fd)
   revalidatePath(`/admin/events/${eventId}`)
   revalidatePath(`/events/${slug}`)
 }
@@ -294,37 +255,7 @@ export async function createTicketTier(eventId: string, slug: string, fd: FormDa
 /** Edit a tier's catalog fields. Never touches `sold` (billing-owned). */
 export async function updateTicketTier(tierId: string, eventId: string, slug: string, fd: FormData) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient()
-
-  const name = (fd.get('name') as string)?.trim()
-  if (!name) throw new Error('A tier name is required.')
-  const mode = (fd.get('pricing_mode') as string)?.trim() as PricingMode
-  if (!PRICING_MODES.includes(mode)) throw new Error('Invalid pricing mode.')
-
-  const priceCents = dollarsToCents(fd.get('price'))
-  if (mode === 'fixed' && (priceCents == null || priceCents <= 0)) {
-    throw new Error('A fixed-price tier needs a price.')
-  }
-  const qtyRaw = (fd.get('quantity') as string)?.trim()
-  const quantity = qtyRaw ? Math.max(0, Math.floor(Number(qtyRaw))) : null
-
-  const { error } = await admin
-    .from('event_ticket_types')
-    .update({
-      name,
-      description: (fd.get('description') as string)?.trim() || null,
-      pricing_mode: mode,
-      price_cents: mode === 'fixed' ? priceCents : null,
-      min_cents: mode === 'free' || mode === 'fixed' ? null : dollarsToCents(fd.get('min')),
-      suggested_cents: mode === 'free' || mode === 'fixed' ? null : dollarsToCents(fd.get('suggested')),
-      quantity,
-      member_only: fd.get('member_only') === 'on',
-      sort_order: Number((fd.get('sort_order') as string) || 0) || 0,
-    })
-    .eq('id', tierId)
-    .eq('event_id', eventId)
-  if (error) throw new Error(error.message)
-
+  await updateEventTicketTier(tierId, eventId, fd)
   revalidatePath(`/admin/events/${eventId}`)
   revalidatePath(`/events/${slug}`)
 }
@@ -338,14 +269,7 @@ export async function setTicketTierActive(
   active: boolean,
 ) {
   await requireEventEditor(eventId)
-  const admin = createAdminClient()
-  const { error } = await admin
-    .from('event_ticket_types')
-    .update({ active })
-    .eq('id', tierId)
-    .eq('event_id', eventId)
-  if (error) throw new Error(error.message)
-
+  await setEventTicketTierActive(tierId, eventId, active)
   revalidatePath(`/admin/events/${eventId}`)
   revalidatePath(`/events/${slug}`)
 }

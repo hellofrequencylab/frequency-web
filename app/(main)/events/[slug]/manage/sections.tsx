@@ -29,6 +29,8 @@ import { ApproveButton } from './approve-button'
 import { CsvExportButton } from './csv-export-button'
 import { QuestionEditor } from './question-editor'
 import { FollowUpButton } from './follow-up-button'
+import { TicketTiersPanel } from './ticket-tiers-panel'
+import { listEventTicketTiers } from '@/lib/events/ticket-tiers'
 
 // The Manage Dashboard's body sections (EVENTS-REWORK A2). Each is an async Server
 // Component that fetches its own slice, so the page can stream them behind their
@@ -338,6 +340,17 @@ export async function FollowUpSection({ eventId }: { eventId: string }) {
       ))}
     </ul>
   )
+}
+
+// ── Ticket tiers (audit finding #9) ───────────────────────────────────────────
+// Lets the host build named tiers with the full pricing-mode range (fixed / free /
+// pay-what-you-can / sliding-scale / donation) themselves, instead of only the flat
+// event price. The page already authorized the caller (event.editSettings); the
+// host actions re-check that same capability on every write.
+
+export async function TicketTiersSection({ eventId, slug }: { eventId: string; slug: string }) {
+  const tiers = await listEventTicketTiers(eventId)
+  return <TicketTiersPanel eventId={eventId} slug={slug} tiers={tiers} />
 }
 
 // ── Sent Event Dispatches ─────────────────────────────────────────────────────
