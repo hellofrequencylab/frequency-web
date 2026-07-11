@@ -25,6 +25,7 @@ import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
 import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
+import { EventCohostChooser } from '@/components/admin/modules/event-cohost-chooser'
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -630,7 +631,11 @@ export function EventSettingsModule() {
         {permaErr && <span className="text-xs font-medium text-danger">{permaErr}</span>}
       </div>
 
-      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved). Its own actions. */}
+      {/* COHOSTS — invite someone to help host, straight from the editor. Its own action. */}
+      <EventCohostChooser eventId={data.id} slug={data.slug} />
+
+      {/* WHERE IT LIVES — placement under a Space or Circle (steward-approved), plus Transfer host.
+          Its own actions. */}
       <EventPlacementField eventId={data.id} slug={data.slug} />
     </div>
   )
