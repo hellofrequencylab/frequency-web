@@ -2,28 +2,34 @@ import Image from 'next/image'
 import { Package, CalendarClock, Ticket, Star } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
 import { VerifiedBadge, CharterBadge } from '@/components/ui/verified-badge'
-import { marketGroupForKind, type CommerceProduct, type MarketGroup } from '@/lib/commerce/types'
+import { marketGroupForKind, type MarketItem, type MarketGroup } from '@/lib/commerce/types'
 import type { ProductRating } from '@/lib/commerce/reviews'
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
 }
 
-/** The card's price label. A service honors its priceModel (From / Free / Enquire); a product shows its
- *  flat price. Keeps a raw '$0' Buy from rendering on an enquire-only service (ADR-596). */
-function priceLabel(product: CommerceProduct): string {
+/** The card's price label. A service honors its priceModel (From / Free / Enquire); a projected
+ *  ticketed event shows a "from" floor across its tiers (or Free); a product shows its flat price. A
+ *  null price (a free projection) reads as "Free", never a raw '$0' (ADR-596). */
+function priceLabel(product: MarketItem): string {
   const svc = (product.metadata as Record<string, unknown>)?.service as { priceModel?: string } | undefined
   if (product.productKind === 'service' && svc?.priceModel) {
     if (svc.priceModel === 'free') return 'Free'
     if (svc.priceModel === 'contact') return 'Enquire'
-    const base = usd(product.priceCents, product.currency)
+    const base = usd(product.priceCents ?? 0, product.currency)
     return svc.priceModel === 'from' ? `From ${base}` : base
   }
-  return usd(product.priceCents, product.currency)
+  // A projected ticketed event quotes a "from" floor across its active tiers (mirrors the event
+  // catalog), so the cheapest tier reads as "From $X" and an all-free event reads as "Free".
+  if (product.projected && product.productKind === 'ticket') {
+    return product.priceCents && product.priceCents > 0 ? `From ${usd(product.priceCents, product.currency)}` : 'Free'
+  }
+  return product.priceCents == null ? 'Free' : usd(product.priceCents, product.currency)
 }
 
 /** A bookable service's duration, when set, for the card's stat row. */
-function serviceDuration(product: CommerceProduct): string | null {
+function serviceDuration(product: MarketItem): string | null {
   const svc = (product.metadata as Record<string, unknown>)?.service as { durationMin?: number } | undefined
   return svc?.durationMin ? `${svc.durationMin} min` : null
 }
@@ -45,13 +51,17 @@ export function ProductCard({
   verified = false,
   founding = false,
 }: {
-  product: CommerceProduct
-  href: string
+  product: MarketItem
+  /** Explicit destination. Optional: when absent, the card honors the item's own `href` override (a
+   *  projected event ticket → /events/<slug>), then falls back to /market/<id>. */
+  href?: string
   rating?: ProductRating | null
   verified?: boolean
   /** The seller is an active Founder (charter badge, ADR-599). Resolved read-only by the caller. */
   founding?: boolean
 }) {
+  // A projected event ticket has no /market/<id> row (it would 404), so honor its explicit href.
+  const linkHref = href ?? product.href ?? `/market/${product.id}`
   const soldOut = product.status === 'sold_out' || product.stock === 0
   const group = marketGroupForKind(product.productKind)
   const { label: groupLabel, Icon } = GROUP_META[group]
@@ -71,7 +81,7 @@ export function ProductCard({
 
   return (
     <EntityCard
-      href={href}
+      href={linkHref}
       cover={cover}
       title={product.title}
       badge={

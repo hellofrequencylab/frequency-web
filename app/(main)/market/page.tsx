@@ -5,10 +5,11 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
-import { productRatingsFor, type ProductRating } from '@/lib/commerce/reviews'
+import { productRatingsFor } from '@/lib/commerce/reviews'
 import { sellerVerifiedFor } from '@/lib/commerce/seller-verification'
 import { foundingSellersFor } from '@/lib/founding/status'
-import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup } from '@/lib/commerce/types'
+import { MARKET_GROUPS, asMarketGroup, marketGroupForKind, type MarketGroup, type MarketItem } from '@/lib/commerce/types'
+import { listTicketedEventProjections } from '@/lib/commerce/ticket-projection'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
@@ -27,7 +28,6 @@ export const metadata = {
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
-type MarketItem = Awaited<ReturnType<typeof listMarketListings>>[number]
 const GRID_CLASS = 'grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3'
 const searchText = (p: MarketItem) => `${p.title} ${p.description ?? ''}`
 
@@ -70,16 +70,21 @@ export default async function MarketPage({
   // One read powers the stats band, the rails, and the grid (grouped in-process). The hero search bar
   // filters every rail instantly on the client (InstantGrid / InstantSection read the shared query).
   const all = await listMarketListings({ limit: 100 })
-  // Trust & Safety (Phase 8): aggregate ratings + seller verification for every card, in batch reads.
-  // Plus the Founding charter mark (ADR-599), resolved read-only from active founding_members rows.
+  // Read-only projection (ADR-596 / audit #2): ticketed events surface in the Tickets rail and deep-link
+  // to the event ticket flow. Events stay the source of truth (no commerce_products row). Fail-soft to [].
+  const ticketProjections = await listTicketedEventProjections({ limit: 60 })
+  // Trust & Safety (Phase 8): aggregate ratings + seller verification for every commerce card, in batch
+  // reads. Plus the Founding charter mark (ADR-599). Projections carry none of these (they are events).
   const [ratings, verified, founding] = await Promise.all([
     productRatingsFor(all.map((p) => p.id)),
     sellerVerifiedFor(all),
     foundingSellersFor(all),
   ])
-  const byGroup = (g: MarketGroup) => all.filter((p) => marketGroupForKind(p.productKind) === g)
+  // Commerce listings + ticketed-event projections, unified as MarketItem[] for grouping + display.
+  const items: MarketItem[] = [...all, ...ticketProjections]
+  const byGroup = (g: MarketGroup) => items.filter((p) => marketGroupForKind(p.productKind) === g)
   const counts = {
-    total: all.length,
+    total: items.length,
     products: byGroup('products').length,
     services: byGroup('services').length,
     tickets: byGroup('tickets').length,
@@ -133,7 +138,6 @@ export default async function MarketPage({
                   <ProductCard
                     key={p.id}
                     product={p}
-                    href={`/market/${p.id}`}
                     rating={ratings.get(p.id) ?? null}
                     verified={verified.get(p.id) ?? false}
                     founding={founding.get(p.id) ?? false}
@@ -162,7 +166,6 @@ export default async function MarketPage({
                     <ProductCard
                       key={p.id}
                       product={p}
-                      href={`/market/${p.id}`}
                       rating={ratings.get(p.id) ?? null}
                       verified={verified.get(p.id) ?? false}
                       founding={founding.get(p.id) ?? false}
