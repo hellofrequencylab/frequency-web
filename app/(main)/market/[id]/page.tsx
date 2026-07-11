@@ -16,6 +16,7 @@ import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
+import { EventGallery } from '@/components/events/event-gallery'
 import { BuyButton } from '../../marketplace/buy-button'
 import { isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
@@ -110,17 +111,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
         }
       >
         <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+          {/* Photo gallery: a thumbnail strip that opens a full-screen lightbox (keyboard + arrows),
+              reusing the events gallery. Images are already resolved to public URLs by the reader. */}
           {product.images.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {product.images.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={src}
-                  alt={`${product.title}, photo ${i + 1}`}
-                  className="aspect-square w-full rounded-xl border border-border object-cover"
-                />
-              ))}
+            <div className="mb-4">
+              <EventGallery images={product.images} />
             </div>
           )}
 

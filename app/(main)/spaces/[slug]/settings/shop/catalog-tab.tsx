@@ -9,6 +9,7 @@ import {
   setSpaceProductStatusAction,
   deleteSpaceProductAction,
   setSpaceListingMarketPublishedAction,
+  duplicateSpaceProductAction,
 } from './shop-actions'
 
 // The Catalog tab of the Shop console (ADR-596). Lists THIS space's commerce_products (owner_space_id
@@ -130,6 +131,11 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                           </button>
                         </form>
                       )}
+                      <form action={duplicateSpaceProductAction.bind(null, slug, p.id)}>
+                        <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                          Duplicate
+                        </button>
+                      </form>
                       <form action={deleteSpaceProductAction.bind(null, slug, p.id)}>
                         <ConfirmSubmitButton confirm="Delete this item? This cannot be undone." label="Delete" />
                       </form>
@@ -150,6 +156,9 @@ export async function CatalogTab({ slug, spaceId, readOnly }: { slug: string; sp
                         productKind: p.productKind,
                         condition: p.condition,
                         service: svc,
+                        images: p.images,
+                        category: p.category,
+                        tags: p.tags,
                       }}
                     />
                   </details>

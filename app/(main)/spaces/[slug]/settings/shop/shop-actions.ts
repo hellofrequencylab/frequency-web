@@ -12,10 +12,12 @@ import {
   setProductStatus,
   deleteProduct,
   updateProduct,
+  duplicateProduct,
   productOwnerSpaceId,
   setProductMarketPublished,
   type ProductPatch,
 } from '@/lib/commerce/products'
+import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
 import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
@@ -50,6 +52,18 @@ function kindToCommerce(kind: string): { productKind: ProductKind; vertical: Com
   if (kind === 'service') return { productKind: 'service', vertical: 'service' }
   if (kind === 'ticket') return { productKind: 'ticket', vertical: 'shop' }
   return { productKind: 'physical', vertical: 'shop' }
+}
+
+/** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
+ *  malformed value by returning []. Every element is coerced to a trimmed string. */
+function parseStringArray(raw: FormDataEntryValue | null): string[] {
+  if (typeof raw !== 'string' || !raw.trim()) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.map((v) => String(v).trim()).filter(Boolean) : []
+  } catch {
+    return []
+  }
 }
 
 /** Narrow a raw form value to a ServicePriceModel, or undefined (default-deny). */
@@ -108,7 +122,9 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     vertical,
     title,
     description: (formData.get('description') as string) || null,
-    category: (formData.get('category') as string) || null,
+    category: normalizeCategory(formData.get('category') as string | null),
+    images: parseStringArray(formData.get('images')),
+    tags: normalizeTags(parseStringArray(formData.get('tags'))),
     priceCents: Math.round(priceDollars * 100),
     condition,
     // A service books against the Space's own availability calendar (Phase 4, ADR-596).
@@ -147,7 +163,21 @@ export async function deleteSpaceProductAction(slug: string, id: string): Promis
  *  subtree is deep-merged, so a partial edit never clobbers untouched fields. */
 export async function updateProductAction(slug: string, id: string, patch: ProductPatch): Promise<void> {
   if (!(await gateSpaceItem(slug, id))) return
-  await updateProduct(id, patch)
+  // Re-sanitize the client-supplied taxonomy + tags server-side (defense in depth); images and tag
+  // counts are also capped in the writer.
+  const safe: ProductPatch = { ...patch }
+  if (patch.category !== undefined) safe.category = normalizeCategory(patch.category)
+  if (patch.tags !== undefined) safe.tags = normalizeTags(patch.tags)
+  await updateProduct(id, safe)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Duplicate a catalog item into a new private draft (Phase 1). Owner-gated to this Space's item; the
+ *  copy is created with status='draft' and market_published=false, so it never auto-publishes -- the
+ *  owner reviews it (photos, price, tags all carried over) and publishes when ready. */
+export async function duplicateSpaceProductAction(slug: string, id: string): Promise<void> {
+  if (!(await gateSpaceItem(slug, id))) return
+  await duplicateProduct(id)
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 

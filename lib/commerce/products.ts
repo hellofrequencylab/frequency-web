@@ -29,8 +29,22 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
+// Listing photos live in the PUBLIC event-media bucket under the uploader's own uid prefix (the same
+// owner-scoped storage RLS the events uploader uses). commerce_products.images stores storage PATHS;
+// rowToProduct resolves each to a public URL below, so every display consumer (product cards, the
+// detail gallery) keeps rendering plain URLs. See migration 20261128000000_commerce_media_tags.sql.
+const COMMERCE_MEDIA_BUCKET = 'event-media'
+
+/** Resolve a stored image reference to a public URL. A value already looking like a URL (a legacy row,
+ *  or a ticket projection's event-media URL) passes through untouched; a storage path is resolved via
+ *  getPublicUrl. Keeps the maker/Shop uploader on PATHS while cards + the detail page get URLs. */
+function resolveImage(ref: string): string {
+  if (/^https?:\/\//i.test(ref)) return ref
+  return db().storage.from(COMMERCE_MEDIA_BUCKET).getPublicUrl(ref).data.publicUrl
+}
+
 const PRODUCT_COLS =
-  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, condition, market_published, metadata, is_demo, created_at, updated_at'
+  'id, owner_kind, owner_profile_id, owner_space_id, entity_id, product_kind, vertical, title, description, images, price_cents, currency, stock, category, status, booking_space_id, condition, market_published, tags, metadata, is_demo, created_at, updated_at'
 
 function rowToProduct(r: Record<string, unknown>): CommerceProduct {
   return {
@@ -43,7 +57,8 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     vertical: r.vertical as CommerceProduct['vertical'],
     title: r.title as string,
     description: (r.description as string) ?? null,
-    images: (r.images as string[]) ?? [],
+    // Stored as storage paths (or legacy URLs); resolved to public URLs for display.
+    images: ((r.images as string[]) ?? []).map(resolveImage),
     priceCents: r.price_cents as number,
     currency: r.currency as string,
     stock: (r.stock as number) ?? null,
@@ -52,6 +67,7 @@ function rowToProduct(r: Record<string, unknown>): CommerceProduct {
     bookingSpaceId: (r.booking_space_id as string) ?? null,
     condition: (r.condition as CommerceProduct['condition']) ?? null,
     marketPublished: !!r.market_published,
+    tags: (r.tags as string[]) ?? [],
     metadata: (r.metadata as Record<string, unknown>) ?? {},
     isDemo: !!r.is_demo,
     createdAt: r.created_at as string,
@@ -111,6 +127,9 @@ export async function createProduct(input: ProductInput): Promise<CommerceProduc
       booking_space_id: input.bookingSpaceId ?? null,
       condition: input.condition ?? null,
       market_published: input.marketPublished ?? false,
+      // Discovery tags (Etsy-Grade Phase 1). `tags` is not in the generated DB types; db() is the
+      // untyped admin client (ADR-246), so this writes without editing lib/database.types.ts.
+      tags: (input.tags ?? []).slice(0, 12),
       // Persist the full service quote + policy (priceModel, cancellation/no-show fields, duration,
       // deposit) under metadata.service when present, so a service can be authored in one write.
       ...(input.service ? { metadata: { service: pruneServiceConfig(input.service) ?? {} } } : {}),
@@ -222,6 +241,8 @@ export interface ProductPatch {
   category?: string | null
   stock?: number | null
   images?: string[]
+  /** Discovery tags (Etsy-Grade Phase 1). Replaces the whole list when present; [] clears it. */
+  tags?: string[]
   /** The adaptive editor may change the item type (product | service | ticket → product_kind). */
   productKind?: CommerceProduct['productKind']
   /** New or Used (Phase 0). null clears it (e.g. an item switched to a service). */
@@ -246,6 +267,7 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.category !== undefined) update.category = patch.category ?? null
   if (patch.stock !== undefined) update.stock = patch.stock ?? null
   if (patch.images !== undefined) update.images = (patch.images ?? []).slice(0, 8)
+  if (patch.tags !== undefined) update.tags = (patch.tags ?? []).slice(0, 12)
   if (patch.productKind !== undefined) update.product_kind = patch.productKind
   if (patch.condition !== undefined) update.condition = patch.condition ?? null
   if (patch.metadata !== undefined || patch.service !== undefined) {
@@ -269,6 +291,44 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
 export async function deleteProduct(id: string): Promise<void> {
   const { error } = await db().from('commerce_products').delete().eq('id', id)
   if (error) throw new Error(error.message)
+}
+
+/** Copy an existing product into a NEW draft (the Catalog "Duplicate" action, Phase 1). Carries over
+ *  every authored field (photos, tags, category, condition, price, service policy) but resets to a
+ *  private draft: status='draft' and market_published=false, so the copy never auto-publishes to the
+ *  Shop tab or the global Market until the owner reviews and publishes it. Caller (server action) has
+ *  authorized the owner. Copies raw image PATHS (never the resolved URLs), so the duplicate keeps
+ *  pointing at the same stored photos. */
+export async function duplicateProduct(id: string): Promise<CommerceProduct | null> {
+  const { data: src } = await db().from('commerce_products').select(PRODUCT_COLS).eq('id', id).maybeSingle()
+  if (!src) return null
+  const r = src as Record<string, unknown>
+  const { data, error } = await db()
+    .from('commerce_products')
+    .insert({
+      owner_kind: r.owner_kind,
+      owner_profile_id: r.owner_profile_id ?? null,
+      owner_space_id: r.owner_space_id ?? null,
+      entity_id: r.entity_id,
+      product_kind: r.product_kind,
+      vertical: r.vertical,
+      title: `Copy of ${(r.title as string) ?? 'Untitled'}`.slice(0, 200),
+      description: r.description ?? null,
+      images: (r.images as string[]) ?? [],
+      price_cents: r.price_cents,
+      stock: r.stock ?? null,
+      category: r.category ?? null,
+      condition: r.condition ?? null,
+      booking_space_id: r.booking_space_id ?? null,
+      tags: (r.tags as string[]) ?? [],
+      metadata: r.metadata ?? {},
+      market_published: false,
+      status: 'draft',
+    })
+    .select(PRODUCT_COLS)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data ? rowToProduct(data as Record<string, unknown>) : null
 }
 
 /** The public contact card (handle + display name) for a profile-owned listing's seller — for the

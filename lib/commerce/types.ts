@@ -33,6 +33,9 @@ export interface CommerceProduct {
   /** Opt-in to appear in the global Market umbrella (ADR-596). status='active' shows a listing in the
    *  Space's own Shop; this flag additionally publishes it to the cross-space Market. */
   marketPublished: boolean
+  /** Buyer-facing discovery tags (Etsy-Grade Phase 1), stored in commerce_products.tags. The free-form
+   *  complement to the controlled `category` taxonomy (lib/commerce/categories.ts). */
+  tags: string[]
   metadata: Record<string, unknown>
   isDemo: boolean
   createdAt: string
@@ -58,6 +61,8 @@ export interface ProductInput {
   /** Opt this listing into the global Market on create (the maker path sets true; Space listings
    *  default false and opt in per-listing from the Shop console). */
   marketPublished?: boolean
+  /** Buyer-facing discovery tags (Etsy-Grade Phase 1). Capped + stored in commerce_products.tags. */
+  tags?: string[]
   /** Service quote + policy for a service/booking listing (priceModel, duration, deposit,
    *  cancellationWindowHours, noShowFeePct). Persisted under metadata.service; ignored for non-services. */
   service?: ServiceConfig | null

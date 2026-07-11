@@ -177,6 +177,7 @@ export async function listTicketedEventProjections(
         bookingSpaceId: null,
         condition: null,
         marketPublished: true,
+        tags: [],
         metadata: {},
         isDemo: !!e.is_demo,
         createdAt: e.starts_at,

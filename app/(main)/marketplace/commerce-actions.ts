@@ -7,7 +7,20 @@ import { isPaid } from '@/lib/core/entitlement'
 import { createProduct, setProductStatus, deleteProduct, productOwnerProfileId } from '@/lib/commerce/products'
 import { createCommerceCheckout } from '@/lib/commerce/checkout'
 import { canListNew } from '@/lib/commerce/selling'
+import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import type { ProductStatus } from '@/lib/commerce/types'
+
+/** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
+ *  malformed value by returning []. Every element is coerced to a trimmed string. */
+function parseStringArray(raw: FormDataEntryValue | null): string[] {
+  if (typeof raw !== 'string' || !raw.trim()) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.map((v) => String(v).trim()).filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
 
 // Commerce actions (Makers + Shop, ADR-39X). Selling = createProduct on the commerce
 // core (owner_kind='profile' for a maker); buying = createCommerceCheckout, which mirrors
@@ -38,7 +51,10 @@ export async function createMakerProductAction(formData: FormData): Promise<void
     vertical: 'maker',
     title,
     description: (formData.get('description') as string) || null,
-    category: (formData.get('category') as string) || null,
+    category: normalizeCategory(formData.get('category') as string | null),
+    // Ordered storage paths from the gallery uploader (cap enforced in createProduct).
+    images: parseStringArray(formData.get('images')),
+    tags: normalizeTags(parseStringArray(formData.get('tags'))),
     priceCents: Math.round(priceDollars * 100),
     // Individuals list used items (R3); New is a Business feature, rejected above.
     condition: 'used',

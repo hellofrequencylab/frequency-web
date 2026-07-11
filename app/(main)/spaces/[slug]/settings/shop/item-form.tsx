@@ -1,10 +1,21 @@
 'use client'
 
-import { useRef, useState, useTransition, type FormEvent } from 'react'
-import { Sparkles } from 'lucide-react'
+import { useRef, useState, useTransition, type FormEvent, type KeyboardEvent } from 'react'
+import { Sparkles, X } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
+import { MultiImageUpload } from '@/components/ui/multi-image-upload'
+import { COMMERCE_CATEGORIES, normalizeTags } from '@/lib/commerce/categories'
 import type { ProductCondition, ProductKind, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
 import { createSpaceProductAction, updateProductAction, draftListingCopyAction } from './shop-actions'
+
+// Gallery photos are stored as event-media storage PATHS but read back as resolved public URLs
+// (lib/commerce/products.ts). On edit we reverse a public URL to its path so the uploader can re-seed
+// its tiles; a value that is already a path (or an unexpected shape) passes through unchanged.
+const PUBLIC_MARKER = '/object/public/event-media/'
+function urlToStoragePath(ref: string): string {
+  const i = ref.indexOf(PUBLIC_MARKER)
+  return i === -1 ? ref : ref.slice(i + PUBLIC_MARKER.length)
+}
 
 // The Catalog item authoring form (ADR-596, findings #3/#5/F5). One client form serves both create and
 // edit: it carries the price-model + policy inputs, reveals the cancellation/no-show pair only when a
@@ -26,6 +37,10 @@ export interface ItemFormProduct {
   productKind: ProductKind
   condition: ProductCondition | null
   service: ServiceConfig | null
+  /** Resolved public image URLs (the reader resolves stored paths); reversed to paths for the uploader. */
+  images: string[]
+  category: string | null
+  tags: string[]
 }
 
 const PRICE_MODEL_LABEL: Record<ServicePriceModel, string> = {
@@ -70,8 +85,26 @@ export function ItemForm({
   const [condition, setCondition] = useState<ProductCondition>(product?.condition ?? 'used')
   const [title, setTitle] = useState(product?.title ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
+  const [images, setImages] = useState<string[]>(() => (product?.images ?? []).map(urlToStoragePath))
+  const [category, setCategory] = useState(product?.category ?? '')
+  const [tags, setTags] = useState<string[]>(product?.tags ?? [])
+  const [tagDraft, setTagDraft] = useState('')
   const [pending, startTransition] = useTransition()
   const [drafting, setDrafting] = useState(false)
+
+  function commitTags(next: string) {
+    setTags(normalizeTags([...tags, ...next.split(',')]))
+    setTagDraft('')
+  }
+
+  function onTagKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      if (tagDraft.trim()) commitTags(tagDraft)
+    } else if (e.key === 'Backspace' && !tagDraft && tags.length) {
+      setTags(tags.slice(0, -1))
+    }
+  }
 
   const isService = kind === 'service'
   // Cancellation + no-show only make sense when there is a charge to protect.
@@ -94,6 +127,9 @@ export function ItemForm({
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    // Gallery paths + tags are React state (not native inputs), so attach them for the create action.
+    fd.set('images', JSON.stringify(images))
+    fd.set('tags', JSON.stringify(tags))
     startTransition(async () => {
       if (mode === 'create') {
         await createSpaceProductAction(slug, fd)
@@ -102,6 +138,9 @@ export function ItemForm({
         setDescription('')
         setKind('product')
         setPriceModel('fixed')
+        setImages([])
+        setCategory('')
+        setTags([])
       } else if (product) {
         const priceDollars = Number(fd.get('price'))
         await updateProductAction(slug, product.id, {
@@ -111,6 +150,9 @@ export function ItemForm({
           productKind: toProductKind(kind),
           // Condition applies to a product; clear it when the item is a service or ticket.
           condition: kind === 'product' ? condition : null,
+          category: category || null,
+          images,
+          tags,
           service: isService ? buildServiceConfig(fd) : undefined,
         })
       }
@@ -244,6 +286,74 @@ export function ItemForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+      </div>
+
+      {/* Photos — the cover is the first tile; drag or use the arrows to reorder. */}
+      <MultiImageUpload
+        label="Photos"
+        value={images}
+        onChange={setImages}
+        folder="commerce-gallery"
+        max={8}
+        reorderable
+        hint="Add up to 8. The first photo is the cover buyers see first."
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor={`category-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+            Category
+          </label>
+          <select
+            id={`category-${mode}-${product?.id ?? 'new'}`}
+            name="category"
+            className={FIELD}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Choose a category</option>
+            {COMMERCE_CATEGORIES.map((c) => (
+              <optgroup key={c.value} label={c.label}>
+                <option value={c.value}>{c.label} (general)</option>
+                {c.subcategories.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor={`tag-input-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+            Tags
+          </label>
+          <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+            {tags.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-text">
+                {t}
+                <button
+                  type="button"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}
+                  aria-label={`Remove tag ${t}`}
+                  className="text-muted transition-colors hover:text-text"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            <input
+              id={`tag-input-${mode}-${product?.id ?? 'new'}`}
+              value={tagDraft}
+              onChange={(e) => setTagDraft(e.target.value)}
+              onKeyDown={onTagKeyDown}
+              onBlur={() => tagDraft.trim() && commitTags(tagDraft)}
+              className="min-w-[6rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-text outline-none"
+              placeholder={tags.length ? 'Add another' : 'e.g. ceramic, handmade'}
+            />
+          </div>
+          <p className="mt-1 text-xs text-subtle">Enter or comma to add. Up to 12.</p>
+        </div>
       </div>
 
       {isService && (
