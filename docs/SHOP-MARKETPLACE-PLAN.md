@@ -20,6 +20,12 @@
 > **Remaining follow-ons (non-blocking):** partial-deposit charging for services (v1 charges full price);
 > re-point / retire the legacy JSON offerings profile widget + drop the JSON node; once payments flip, GATE
 > review creation on a real settled order (`hasPurchasedProduct`, `verified_purchase`).
+>
+> **Etsy-Grade ladder (quality follow-on, ADR-601):** the phased raise of the listing + buy flow toward
+> marketplace-grade lives in [`ETSY-GRADE-PLAN.md`](ETSY-GRADE-PLAN.md). P0 condition + P1 gallery/taxonomy
+> + **P2 product variants with per-variant inventory** (`commerce_variants`,
+> `20261132000000_commerce_variants.sql`, write-only) are shipped; P3-P7 (shipping, discovery, cart,
+> fulfillment, trust/tax) are planned. Still one spine, still `payoutsLive()`-gated.
 
 Lead: turn the fragmented set of marketplace surfaces (a JSON-only per-Space "Store",
 an individual-only Makers vertical, a first-party Shop, a peer board, and a dormant
