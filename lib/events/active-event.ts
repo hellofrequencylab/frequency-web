@@ -30,6 +30,15 @@ export interface EventLite {
   is_cancelled: boolean
 }
 
+/** The event host's public identity, for the `event-lineup` Host profile module. Null when the
+ *  event has no resolvable host (an unclaimed import), so that module self-hides. */
+export interface HostLite {
+  id: string
+  display_name: string
+  handle: string
+  avatar_url: string | null
+}
+
 /** A succeeded ticket sale, for the host Sales module. */
 export interface SoldTicket {
   id: string
@@ -76,6 +85,8 @@ export interface EventFactsData {
 
 export interface EventDetailContext {
   event: EventLite
+  /** The event host's public profile, for the `event-lineup` Host profile module (null → self-hide). */
+  host: HostLite | null
   myProfileId: string | null
   /** Holds event.editSettings — host, cohost-with-manage, circle manager, or admin. */
   canManage: boolean

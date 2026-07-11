@@ -974,6 +974,15 @@ export default async function EventDetailPage({
       description: event.description,
       is_cancelled: event.is_cancelled,
     },
+    // The host's public profile for the `event-lineup` Host profile box (null → the module self-hides).
+    host: event.host
+      ? {
+          id: event.host.id,
+          display_name: event.host.display_name,
+          handle: event.host.handle,
+          avatar_url: event.host.avatar_url,
+        }
+      : null,
     myProfileId,
     canManage,
     isHost,
