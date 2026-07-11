@@ -815,6 +815,20 @@ export default async function EventDetailPage({
         }),
       )
 
+  // Header location line — the VENUE name first, then the street/city/region address (Event page
+// overhaul, items 1 + 4). Composed from the same structured fields the location picker saves
+// (venue_name / street / city / region), so the header stays in sync with the pin the moment the
+// picker writes them. Falls back to the free-text `location` line when no structured address is set.
+  const venueName = extra?.venue_name?.trim() || null
+  const addressLine = [extra?.street, extra?.city, extra?.region]
+    .map((p) => p?.trim())
+    .filter(Boolean)
+    .join(', ')
+  const headerLocation =
+    venueName && addressLine
+      ? `${venueName} · ${addressLine}`
+      : venueName || addressLine || (event.location?.trim() || null)
+
   const mode = MODE_CHIP[attendanceMode]
 
   // The Join column's primary action — reused in the aside AND the mobile sheet.
@@ -1191,11 +1205,11 @@ export default async function EventDetailPage({
               <span>{whenLine}</span>
             </div>
 
-            {event.location && !isOnline && (
+            {headerLocation && !isOnline && (
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-subtle shrink-0" />
-                {/* The address deep-links into Maps (native app on a phone, the map
-                    site on desktop) so guests can navigate in one tap. */}
+                {/* Venue name leads, then the address (item 4). The line deep-links into Maps
+                    (native app on a phone, the map site on desktop) so guests navigate in one tap. */}
                 {mapsHref ? (
                   <a
                     href={mapsHref}
@@ -1203,10 +1217,10 @@ export default async function EventDetailPage({
                     rel="noopener noreferrer"
                     className="hover:text-primary-strong hover:underline"
                   >
-                    {event.location}
+                    {headerLocation}
                   </a>
                 ) : (
-                  <span>{event.location}</span>
+                  <span>{headerLocation}</span>
                 )}
               </div>
             )}
