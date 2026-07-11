@@ -3,8 +3,12 @@
 // straight from the browser and matches our key-free MapLibre/OpenFreeMap stack.
 // We restrict results to populated places (city/locality/district) so "start
 // typing your city and it autocompletes" returns places, not street addresses.
-
-import { distanceKm } from '@/lib/distance'
+//
+// The VENUE / ADDRESS typeahead is deliberately NOT here: it goes through our own
+// server route (/api/geocode/venues → lib/events/venue-search), because Photon
+// ignores a hard local filter and misses US house numbers, so a local street
+// returned fuzzy GLOBAL matches. Server-side Nominatim honours a hard viewbox and
+// has real US house numbers; `searchVenues` below is just the browser fetch to it.
 
 export type PlaceSuggestion = {
   /** Human label, e.g. "Encinitas, California, United States". */
@@ -68,144 +72,47 @@ export async function searchPlaces(
   return out
 }
 
-// A street-and-house number line from Photon's parts: "12 Main Street" / "Main
-// Street". OSM splits the number (housenumber) from the way (street).
-function joinStreet(p: Record<string, string | undefined>): string | null {
-  const line = [p.housenumber, p.street].filter(Boolean).join(' ').trim()
-  return line || null
-}
-
-// A human label for a structured result: the feature's NAME or, for a plain address with no
-// name, its street line (so "8950 Villa La Jolla Dr" shows instead of collapsing to just the
-// city) — then the bits that disambiguate it (city, state, country). Dedupes repeats.
-function structuredLabel(p: Record<string, string | undefined>): string {
-  const head = p.name ?? joinStreet(p) ?? undefined
-  const parts = [head, p.city, p.state, p.country].filter(Boolean) as string[]
-  const seen = new Set<string>()
-  return parts.filter((x) => (seen.has(x) ? false : (seen.add(x), true))).join(', ')
-}
-
-/** Parse Photon's GeoJSON features into our structured PlaceResult list, deduped by label. */
-function parseAddressFeatures(data: {
-  features?: Array<{
-    geometry: { coordinates: [number, number] }
-    properties: Record<string, string | undefined>
-  }>
-}): PlaceResult[] {
-  const seen = new Set<string>()
-  const out: PlaceResult[] = []
-  for (const f of data.features ?? []) {
-    const p = f.properties ?? {}
-    const label = structuredLabel(p)
-    if (!label || seen.has(label)) continue
-    seen.add(label)
-    const [lng, lat] = f.geometry.coordinates
-    out.push({
-      label,
-      lat,
-      lng,
-      name: p.name ?? null,
-      street: joinStreet(p),
-      city: p.city ?? null,
-      region: p.state ?? null,
-      country: p.country ?? null,
-      postalCode: p.postcode ?? null,
-    })
-  }
-  return out
-}
-
-/** One Photon address pass. `box` (west,south,east,north) restricts results to that window;
- *  omit it for a worldwide query. Fails quiet (network/abort/!ok → []). */
-async function photonAddressPass(
-  q: string,
-  bias: { lat: number; lng: number } | null,
-  box: [number, number, number, number] | null,
-  signal?: AbortSignal,
-): Promise<PlaceResult[]> {
-  // No `layer` filter — we WANT venues / streets / POIs, not just cities. A larger limit gives the
-  // local-bias re-ranking more candidates to pull the right venue up from.
-  const params = new URLSearchParams({ q, limit: '10', lang: 'en' })
-  if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
-    params.set('lat', String(bias.lat))
-    params.set('lon', String(bias.lng))
-  }
-  if (box) params.set('bbox', box.join(','))
-
-  let res: Response
-  try {
-    res = await fetch(`${PHOTON_URL}?${params.toString()}`, { signal })
-  } catch {
-    return [] // network/abort — fail quietly, the UI just shows no suggestions
-  }
-  if (!res.ok) return []
-  return parseAddressFeatures(
-    (await res.json()) as {
-      features?: Array<{
-        geometry: { coordinates: [number, number] }
-        properties: Record<string, string | undefined>
-      }>
-    },
-  )
-}
-
-/** Half-width, in degrees, of the LOCAL bounding box drawn around the bias for the first pass.
- *  ~0.9° ≈ 60 mi at mid-latitudes — a metro-sized window, wide enough for a suburb's venues,
- *  tight enough to keep a far-flung same-named street out of the local pass. */
-const LOCAL_BOX_HALF_DEG = 0.9
-
-/** Closest-first: order results by great-circle distance from the bias (ascending). Photon's own
- *  ranking is a soft blend of text match + proximity, so a nearer address can still land below a
- *  better-spelled far one — this makes "the closest result is first" a hard guarantee. Returns a
- *  new array; leaves the input untouched when there is no bias. */
-function sortByProximity(list: PlaceResult[], bias: { lat: number; lng: number } | null): PlaceResult[] {
-  if (!bias) return list
-  return [...list].sort(
-    (a, b) => distanceKm(bias.lat, bias.lng, a.lat, a.lng) - distanceKm(bias.lat, bias.lng, b.lat, b.lng),
-  )
-}
-
 /**
- * Address / venue typeahead. Unlike searchPlaces (populated places only), this lets
- * Photon return venues, POIs, and street addresses too, and surfaces the structured
- * address parts so a pick can fill venue + street + city + region + country + postal
- * code AND drop the map pin. Same keyless Photon endpoint, same fail-quiet contract.
+ * Venue / address typeahead. Unlike searchPlaces (populated places only), this returns
+ * businesses, POIs, and street addresses, with the structured parts so a pick can fill
+ * venue + street + city + region + country + postal code AND drop the map pin.
  *
- * LOCAL-FIRST (Event settings overhaul): people almost always post local events, so when we
- * have a bias (the device's location, the event's pin, else the viewer's home) we run a
- * LOCAL-bounded pass first — a bbox drawn around the bias — so a typed local street
- * ("6882 Embarcadero Ln, Carlsbad") returns the nearby address instead of a same-named street in
- * France or India. Only if the local pass finds nothing do we fall back to a worldwide (unbounded)
- * pass, keeping the bias so results still rank near home. Either way, a present bias re-sorts the
- * results CLOSEST-first (Photon's soft ranking alone can bury a nearer address). With no bias at
- * all it's a single worldwide pass in Photon's order (unchanged behaviour).
+ * Runs entirely SERVER-SIDE via /api/geocode/venues (OpenStreetMap Nominatim with a
+ * hard local-first cascade — see lib/events/venue-search). This browser function is
+ * just the fetch: it forwards the typed query and an optional location `bias` (the
+ * device's location, the event's pin, else the viewer's home) so a local street
+ * ("6882 Embarcadero Ln, Carlsbad") surfaces the NEARBY address first and never a
+ * same-named place in France or India. Same fail-quiet contract as searchPlaces:
+ * network error / abort / non-OK / bad payload all resolve to [].
  */
-export async function searchAddresses(
+export async function searchVenues(
   query: string,
   signal?: AbortSignal,
-  /** Optional location bias — the event's current pin, or the viewer's home location. Drives both
-   *  the local bounding box (first pass) and Photon's near-point ranking. */
   bias?: { lat: number; lng: number } | null,
 ): Promise<PlaceResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
-  const b = bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng) ? bias : null
-
-  // LOCAL pass: a bounding box around the bias so nearby addresses win. Guard the box to valid
-  // lat/lng ranges so a bias near a pole / the antimeridian still yields a sane window.
-  if (b) {
-    const west = Math.max(-180, b.lng - LOCAL_BOX_HALF_DEG)
-    const east = Math.min(180, b.lng + LOCAL_BOX_HALF_DEG)
-    const south = Math.max(-90, b.lat - LOCAL_BOX_HALF_DEG)
-    const north = Math.min(90, b.lat + LOCAL_BOX_HALF_DEG)
-    const local = await photonAddressPass(q, b, [west, south, east, north], signal)
-    if (local.length > 0) return sortByProximity(local, b)
+  const params = new URLSearchParams({ q })
+  if (bias && Number.isFinite(bias.lat) && Number.isFinite(bias.lng)) {
+    params.set('lat', String(bias.lat))
+    params.set('lng', String(bias.lng))
   }
 
-  // WORLDWIDE fallback (or the only pass when there is no bias). Bias, when present, still ranks
-  // near-home results first — and we re-sort closest-first so the nearest match leads.
-  return sortByProximity(await photonAddressPass(q, b, null, signal), b)
+  let res: Response
+  try {
+    res = await fetch(`/api/geocode/venues?${params.toString()}`, { signal })
+  } catch {
+    return [] // network/abort — fail quietly, the UI just shows no suggestions
+  }
+  if (!res.ok) return []
+
+  try {
+    const data = await res.json()
+    return Array.isArray(data) ? (data as PlaceResult[]) : []
+  } catch {
+    return []
+  }
 }
 
 // Metres → a friendly distance string for circle results.
