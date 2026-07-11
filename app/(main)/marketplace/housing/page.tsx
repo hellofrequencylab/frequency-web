@@ -136,7 +136,7 @@ export default async function HousingPage({
           />
 
           {/* One column-density context spans the sub-menu density control and the grid it drives. */}
-          <MarketplaceColumnsProvider>
+          <MarketplaceColumnsProvider className="space-y-6">
             {/* Canonical sub-menu: quick category browse (property types + Roommates), density folded right. */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <UnderlineTabs

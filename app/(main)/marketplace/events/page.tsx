@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { CalendarDays } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
 import { EventCard } from '@/components/events/event-card'
-import { EventsFilterBar } from '@/app/(main)/events/events-filter-bar'
+import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
@@ -15,12 +15,11 @@ import { getEventsIndexData } from '@/app/(main)/events/index-data'
 
 // EVENTS — the Marketplace's events surface (Classifieds · Housing · Market · Events ·
 // Frequency Store, ADR-596). It reuses the SAME data + card the /events Catalog runs on
-// (getEventsIndexData + EventCard), just reframed in the commerce chrome so it reads as one
-// of the five marketplace areas. Both paid and free events list here; the price stat comes
-// from the loader's "Free" / "$X" / "From $X" label (cheapest active ticket tier). No business
-// logic is duplicated. Opens the marketplace way: a hero search bar (instant client filter over
-// the loaded list) + the shared MarketplaceBar, matching Classifieds / Housing / Market. No em
-// or en dashes.
+// (getEventsIndexData + EventCard), reframed in the shared marketplace chrome so it reads
+// exactly like the other four areas: a hero search bar (instant client filter over the loaded
+// list), the uncarded MarketplaceBar, and one UnderlineTabs sub-menu (All + event categories)
+// with the density control folded into its right side. Both paid and free events list here.
+// No business logic is duplicated. No em or en dashes.
 
 export const metadata = {
   title: 'Events',
@@ -45,6 +44,7 @@ export default async function MarketplaceEventsPage({
     sort?: string
   }>
 }) {
+  const sp = await searchParams
   const {
     content,
     nowDate,
@@ -55,15 +55,29 @@ export default async function MarketplaceEventsPage({
     priceLabels,
     filtering,
     facets,
-    sortOptions,
-  } = await getEventsIndexData(await searchParams)
+  } = await getEventsIndexData(sp)
+
+  // Canonical sub-menu: All + one tab per event category, the SAME UnderlineTabs row the other
+  // marketplace surfaces use (Classifieds kinds, Market groups, Housing property types). Built from
+  // the category facet; if no categories are present it degrades to just "All".
+  const categoryFacet = facets.find((f) => f.paramKey === 'category')
+  const categoryTabs = [
+    { href: '/marketplace/events', label: 'All' },
+    ...(categoryFacet?.options ?? []).map((o) => ({
+      href: `/marketplace/events?category=${encodeURIComponent(o.value)}`,
+      label: o.label,
+    })),
+  ]
+  const activeCategoryHref = sp.category
+    ? `/marketplace/events?category=${encodeURIComponent(sp.category)}`
+    : '/marketplace/events'
 
   const hero = (
     <MarketHero
       image={content.heroImage ?? HERO_FALLBACK}
       eyebrow="Events"
       title="Find your next gathering"
-      subtitle="Paid and free events near you, from community circles and hosts. Filter by what fits, then RSVP or grab a ticket."
+      subtitle="Paid and free events near you, from community circles and hosts. Search, browse by category, then RSVP or grab a ticket."
       search={<MarketSearchBar placeholder="Search events" />}
     />
   )
@@ -79,41 +93,37 @@ export default async function MarketplaceEventsPage({
             stats={[{ label: 'Upcoming', value: sortedEvents.length, icon: CalendarDays }]}
           />
 
-          {/* The Catalog toolbar, reused verbatim: URL-driven facets + sort, so the view stays
-              shareable and does the SAME server-side filtering as the /events Catalog. The hero's
-              instant search replaces the toolbar's own box (showSearch={false}), so there's one
-              search, not two. */}
-          <EventsFilterBar facets={facets} sortOptions={sortOptions} showSearch={false} />
+          <MarketplaceColumnsProvider className="space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <UnderlineTabs tabs={categoryTabs} activeHref={activeCategoryHref} />
+              <MarketplaceColumns />
+            </div>
 
-          {sortedEvents.length === 0 ? (
-            filtering ? (
-              <EmptyState
-                icon={CalendarDays}
-                title="No events match these filters"
-                description="Try a wider date or clear a filter to see everything coming up."
-                action={
-                  <Link
-                    href="/marketplace/events"
-                    className="text-sm font-semibold text-primary-strong hover:underline"
-                  >
-                    Clear filters
-                  </Link>
-                }
-              />
-            ) : (
-              <EmptyState
-                icon={CalendarDays}
-                variant="first-use"
-                title="Nothing on the calendar yet"
-                description="When your circles or hosts nearby plan something, paid or free, it shows up here."
-              />
-            )
-          ) : (
-            <MarketplaceColumnsProvider>
-              <div className="mb-4 flex justify-end">
-                <MarketplaceColumns />
-              </div>
-              <div className="@container">
+            <div className="@container">
+              {sortedEvents.length === 0 ? (
+                filtering ? (
+                  <EmptyState
+                    icon={CalendarDays}
+                    title="No events match these filters"
+                    description="Try another category or clear the filter to see everything coming up."
+                    action={
+                      <Link
+                        href="/marketplace/events"
+                        className="text-sm font-semibold text-primary-strong hover:underline"
+                      >
+                        Clear filters
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <EmptyState
+                    icon={CalendarDays}
+                    variant="first-use"
+                    title="Nothing on the calendar yet"
+                    description="When your circles or hosts nearby plan something, paid or free, it shows up here."
+                  />
+                )
+              ) : (
                 <InstantGrid
                   items={sortedEvents.map((e) => ({ text: `${e.title} ${e.location ?? ''}` }))}
                   className="mp-grid gap-4"
@@ -130,9 +140,9 @@ export default async function MarketplaceEventsPage({
                     />
                   ))}
                 </InstantGrid>
-              </div>
-            </MarketplaceColumnsProvider>
-          )}
+              )}
+            </div>
+          </MarketplaceColumnsProvider>
         </div>
 
         <MarketplaceGuide />
