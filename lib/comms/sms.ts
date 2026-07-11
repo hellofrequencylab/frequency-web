@@ -15,11 +15,15 @@
 //   4. The brand/campaign env flags are set — i.e. a registered A2P 10DLC brand
 //      and campaign exist and the provider is wired (see ENV below). They are
 //      NOT set today, so this guard ALWAYS no-ops for now.
+//   5. The platform `sms_enabled` operator switch is ON (platform_flags, flipped
+//      at /admin/sms). This is the app-configurable kill-switch, ADDITIVE to the
+//      env lock: both must be true. Defaults OFF.
 //
 // Like the unified send-gate, the policy is one PURE decision (`evaluateSmsGate`)
 // over explicit state, plus a thin async resolver (`sendSms`) that gathers the
-// state and runs it. Precedence (most fundamental first): registration -> consent
-// -> preference -> quiet hours. Fail-closed: any read error refuses the send.
+// state and runs it. Precedence (most fundamental first): registration (the legal
+// lock, overrides everything) -> platform switch -> consent -> preference -> quiet
+// hours. Fail-closed: any read error refuses the send.
 //
 // ───────────────────────────────────────────────────────────────────────────
 // REQUIRED ENV FLAGS (none set today -> always gated):
@@ -37,6 +41,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NotificationCategory } from '@/lib/notification-preferences'
 import { isSmsEnabled, smsQuietHours } from '@/lib/notification-preferences'
+import { smsEnabledFlag } from '@/lib/platform-flags'
 
 // sms_consent is a genuinely-new table, not in database.types yet — route reads
 // through an untyped admin client (same helper-function pattern as
@@ -53,6 +58,7 @@ export type SmsCategory = Extract<NotificationCategory, 'dispatches' | 'events'>
 export type SmsGateReason =
   | 'ok' // every gate passed — only reachable once the legal track is live
   | 'not_provisioned' // A2P 10DLC brand/campaign env flags are not set (the default today)
+  | 'platform_disabled' // the operator sms_enabled platform flag is OFF (the default)
   | 'no_consent' // member is not `opted_in` in the sms_consent ledger
   | 'pref_off' // member has SMS disabled (master switch or this category)
   | 'quiet_hours' // current local time is outside the allowed 8am-9pm window
@@ -60,6 +66,8 @@ export type SmsGateReason =
 export interface SmsGateState {
   /** A registered A2P 10DLC brand + campaign exist and the provider is wired (env). */
   provisioned: boolean
+  /** The operator `sms_enabled` platform flag is ON (platform_flags; app-configurable). */
+  platformEnabled: boolean
   /** The member is `opted_in` in the sms_consent ledger (verified + express consent). */
   consentOptedIn: boolean
   /** `notification_preferences.sms_enabled` AND the per-category SMS toggle are on. */
@@ -78,12 +86,14 @@ export interface SmsGateDecision {
 
 /**
  * The whole SMS policy as one pure function. Precedence (most fundamental first):
- * provisioning (legal registration — overrides everything) -> consent -> preference
- * -> quiet hours. Deterministic and unit-testable. Today `provisioned` is false, so
- * this returns `not_provisioned` for every real call.
+ * provisioning (legal registration — the hard lock, overrides everything) -> platform
+ * switch (the operator sms_enabled flag) -> consent -> preference -> quiet hours.
+ * Deterministic and unit-testable. Today `provisioned` is false, so this returns
+ * `not_provisioned` for every real call.
  */
 export function evaluateSmsGate(state: SmsGateState): SmsGateDecision {
   if (!state.provisioned) return { allowed: false, reason: 'not_provisioned', gated: true }
+  if (!state.platformEnabled) return { allowed: false, reason: 'platform_disabled', gated: true }
   if (!state.consentOptedIn) return { allowed: false, reason: 'no_consent', gated: true }
   if (!state.prefEnabled) return { allowed: false, reason: 'pref_off', gated: true }
   if (!state.insideQuietHours) return { allowed: false, reason: 'quiet_hours', gated: true }
@@ -212,12 +222,24 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsGateDecision> {
     const provisioned = isSmsProvisioned()
 
     // Short-circuit the per-member reads while we are not provisioned (the common
-    // case today) — there is nothing to look up and nothing to send.
+    // case today) — there is nothing to look up and nothing to send. The env lock is
+    // the hardest gate, so it is checked first and overrides the platform switch.
     if (!provisioned) {
       console.info(
         `[sms] send requested for profile ${args.profileId} (${args.category}) — SMS is gated (ADR-256: A2P 10DLC not provisioned), not sent`,
       )
       return { allowed: false, reason: 'not_provisioned', gated: true }
+    }
+
+    // The operator kill-switch (platform_flags.sms_enabled). Additive to the env lock:
+    // even once the legal track is live, an operator can hold the channel closed. Also
+    // short-circuits the per-member reads — nothing to send while it is OFF.
+    const platformEnabled = await smsEnabledFlag()
+    if (!platformEnabled) {
+      console.info(
+        `[sms] send requested for profile ${args.profileId} (${args.category}) — SMS is gated (platform sms_enabled flag OFF), not sent`,
+      )
+      return { allowed: false, reason: 'platform_disabled', gated: true }
     }
 
     const [consentOptedIn, prefEnabled, quiet] = await Promise.all([
@@ -232,7 +254,13 @@ export async function sendSms(args: SendSmsArgs): Promise<SmsGateDecision> {
       quiet.endHour,
     )
 
-    const decision = evaluateSmsGate({ provisioned, consentOptedIn, prefEnabled, insideQuietHours })
+    const decision = evaluateSmsGate({
+      provisioned,
+      platformEnabled,
+      consentOptedIn,
+      prefEnabled,
+      insideQuietHours,
+    })
 
     // The send path lives here, BELOW the gate, and only when allowed. It runs only
     // once the legal track is live (env flags set) AND every per-member gate passed.

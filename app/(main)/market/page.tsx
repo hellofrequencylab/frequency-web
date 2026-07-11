@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Plus, ShoppingBag, Package, CalendarClock, Ticket } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
 import { productRatingsFor } from '@/lib/commerce/reviews'
@@ -13,7 +12,8 @@ import { listTicketedEventProjections } from '@/lib/commerce/ticket-projection'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -29,7 +29,7 @@ export const metadata = {
 const HERO_IMAGE = 'https://picsum.photos/seed/frequency-market/1600/600'
 const GROUP_LABEL: Record<MarketGroup, string> = { products: 'Products', services: 'Services', tickets: 'Tickets' }
 
-const GRID_CLASS = 'grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3'
+const GRID_CLASS = 'mp-grid gap-6'
 const searchText = (p: MarketItem) => `${p.title} ${p.description ?? ''}`
 
 function GroupRail({ active }: { active: MarketGroup | null }) {
@@ -120,18 +120,23 @@ export default async function MarketPage({
       <MarketplaceHiddenBanner area="makers" />
 
       <div className="space-y-6">
-        <MarketplaceFacets active="makers" />
+        <MarketplaceBar
+          active="makers"
+          stats={[
+            { label: 'Listings', value: counts.total, icon: ShoppingBag },
+            { label: 'Products', value: counts.products, icon: Package },
+            { label: 'Services', value: counts.services, icon: CalendarClock },
+            { label: 'Tickets', value: counts.tickets, icon: Ticket },
+          ]}
+        />
 
-        <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-          <StatCard size="sm" label="Listings" value={counts.total} icon={ShoppingBag} />
-          <StatCard size="sm" label="Products" value={counts.products} icon={Package} />
-          <StatCard size="sm" label="Services" value={counts.services} icon={CalendarClock} />
-          <StatCard size="sm" label="Tickets" value={counts.tickets} icon={Ticket} />
-        </div>
+        <MarketplaceColumnsProvider className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <GroupRail active={group} />
+            <MarketplaceColumns />
+          </div>
 
-        <GroupRail active={group} />
-
-        <div className="@container">
+          <div className="@container">
           {shown ? (
             shown.length > 0 ? (
               <InstantGrid items={shown.map((p) => ({ text: searchText(p) }))} className={GRID_CLASS}>
@@ -183,7 +188,8 @@ export default async function MarketPage({
               description="This is where the community sells. Publish a product, service, or ticket and it shows up here."
             />
           )}
-        </div>
+          </div>
+        </MarketplaceColumnsProvider>
       </div>
 
       <MarketplaceGuide />

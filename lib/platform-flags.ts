@@ -78,6 +78,27 @@ export const hostPayoutsEnabledFlag = cache(async (): Promise<boolean> => {
   }
 })
 
+// Platform SMS switch (platform_flags.sms_enabled) — the operator kill-switch on the
+// SMS channel ("text the group", ADR-256). Defaults FALSE on any read failure (and when
+// the row is absent): SMS stays OFF until an operator turns it on at /admin/sms. This is
+// ADDITIVE to the legal lock — the live gate (lib/comms/sms.ts) requires this flag ON AND
+// the A2P 10DLC env provisioning set, and the env lock always overrides this switch.
+// Defaults FALSE so a transient DB hiccup never opens the hardest-gated channel by
+// accident. Cached per request.
+export const smsEnabledFlag = cache(async (): Promise<boolean> => {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('platform_flags')
+      .select('value')
+      .eq('key', 'sms_enabled')
+      .maybeSingle()
+    return data?.value ?? false
+  } catch {
+    return false
+  }
+})
+
 // Referral program master switch (platform_flags.referrals_enabled) — gates whether
 // an owner-owned /q scan drops the `fq_ref` attribution cookie, so turning it off
 // cleanly stops new referral credit (existing rewards are untouched). The reward

@@ -1,5 +1,6 @@
 import { EventDispatchCompose } from '@/components/events/event-dispatch-compose'
 import { getEventContext } from '@/lib/events/active-event'
+import { isSmsProvisioned } from '@/lib/comms/sms'
 
 // The event "post an update" body module (the `event-dispatch` layout block): a self-fetching,
 // zero-prop RSC the page-settings engine drops into the event detail page's arrangeable body.
@@ -14,5 +15,13 @@ export const EventDispatch = async () => {
   const { event, canDispatch } = ctx
   if (!canDispatch || event.is_cancelled) return null
 
-  return <EventDispatchCompose eventId={event.id} slug={event.slug} />
+  // isSmsProvisioned() is a server-only env check — resolve it here (RSC) and pass a
+  // plain boolean to the client composer, which never touches server env itself.
+  return (
+    <EventDispatchCompose
+      eventId={event.id}
+      slug={event.slug}
+      smsProvisioned={isSmsProvisioned()}
+    />
+  )
 }

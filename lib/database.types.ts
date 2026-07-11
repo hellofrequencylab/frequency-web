@@ -1506,6 +1506,7 @@ export type Database = {
         Row: {
           booking_space_id: string | null
           category: string | null
+          condition: string | null
           created_at: string
           currency: string
           description: string | null
@@ -1529,6 +1530,7 @@ export type Database = {
         Insert: {
           booking_space_id?: string | null
           category?: string | null
+          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1552,6 +1554,7 @@ export type Database = {
         Update: {
           booking_space_id?: string | null
           category?: string | null
+          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null

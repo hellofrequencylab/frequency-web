@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { Home, Plus, Users, DoorOpen } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -74,12 +74,13 @@ export default async function HousingPage() {
         <MarketplaceHiddenBanner area="housing" />
 
         <div className="space-y-6">
-          <MarketplaceFacets active="housing" />
-
-          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-            <StatCard size="sm" label="Listings" value={listings.length} icon={Home} />
-            <StatCard size="sm" label="Roommates" value="Matched" icon={DoorOpen} />
-          </div>
+          <MarketplaceBar
+            active="housing"
+            stats={[
+              { label: 'Listings', value: listings.length, icon: Home },
+              { label: 'Roommates', value: 'Matched', icon: DoorOpen },
+            ]}
+          />
 
           {listings.length === 0 ? (
             <EmptyState
@@ -89,16 +90,21 @@ export default async function HousingPage() {
               description="List a room, a rental, or a sublet. Roommate listings will match to members you'd actually get along with."
             />
           ) : (
-            <div className="@container">
-              <InstantGrid
-                items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
-                className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3"
-              >
-                {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </InstantGrid>
-            </div>
+            <MarketplaceColumnsProvider>
+              <div className="mb-4 flex justify-end">
+                <MarketplaceColumns />
+              </div>
+              <div className="@container">
+                <InstantGrid
+                  items={listings.map((l) => ({ text: `${l.title} ${l.description ?? ''}` }))}
+                  className="mp-grid gap-6"
+                >
+                  {listings.map((l) => (
+                    <ListingCard key={l.id} listing={l} />
+                  ))}
+                </InstantGrid>
+              </div>
+            </MarketplaceColumnsProvider>
           )}
         </div>
 

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getMyProfileId } from '@/lib/auth'
 import { createListing, setListingStatus, deleteListing, listingOwnerId } from '@/lib/listings'
-import { upsertHousingDetail, upsertSeekerProfile } from '@/lib/listings/housing'
+import { toAmenities, toPropertyType, upsertHousingDetail, upsertSeekerProfile } from '@/lib/listings/housing'
 import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 
 // Housing actions (connect-only, ADR-39Y/148). General goods live on /market
@@ -12,12 +12,35 @@ import type { HousingType, ListingStatus, RoomType } from '@/lib/listings/types'
 // extension. Auth via getMyProfileId(); writes go through lib/listings (admin
 // client behind app-code authz: only the owner edits their own listing).
 
-const HOUSING_TYPES: readonly HousingType[] = ['rental', 'roommate', 'sublet']
+const HOUSING_TYPES: readonly HousingType[] = [
+  'rental',
+  'roommate',
+  'sublet',
+  'roommate_wanted',
+  'housing_wanted',
+]
 const ROOM_TYPES: readonly RoomType[] = ['private_room', 'shared_room', 'entire_place']
 
 function posNum(v: FormDataEntryValue | null): number | null {
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** A checkbox toggle: present in the form (checked) → true, else false. */
+function checkbox(formData: FormData, key: string): boolean {
+  return formData.get(key) !== null
+}
+
+/** Parse the client gallery's hidden JSON field into a clean string[] of paths. */
+function parseImages(v: FormDataEntryValue | null): string[] {
+  if (typeof v !== 'string' || !v) return []
+  try {
+    const parsed: unknown = JSON.parse(v)
+    // createListing caps at 6; mirror it so the count the member sees is what persists.
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string').slice(0, 6) : []
+  } catch {
+    return []
+  }
 }
 
 export async function createHousingListingAction(formData: FormData): Promise<void> {
@@ -34,6 +57,13 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
   const roomType = (ROOM_TYPES as readonly string[]).includes(roomTypeRaw) ? (roomTypeRaw as RoomType) : null
 
   const rentDollars = posNum(formData.get('rent'))
+  const depositDollars = posNum(formData.get('deposit'))
+  const bathroomsRaw = Number(formData.get('bathrooms'))
+  const bathrooms = Number.isFinite(bathroomsRaw) && bathroomsRaw > 0 ? bathroomsRaw : null
+  // lease_months allows 0 (month-to-month), so accept >= 0, empty → null.
+  const leaseRaw = formData.get('lease_months')
+  const leaseNum = Number(leaseRaw)
+  const leaseMonths = leaseRaw !== null && leaseRaw !== '' && Number.isFinite(leaseNum) && leaseNum >= 0 ? Math.round(leaseNum) : null
 
   const listing = await createListing(profileId, {
     vertical: 'housing',
@@ -42,14 +72,28 @@ export async function createHousingListingAction(formData: FormData): Promise<vo
     city: (formData.get('city') as string) || null,
     neighborhood: (formData.get('neighborhood') as string) || null,
     priceNote: rentDollars ? `$${rentDollars}/mo` : null,
+    images: parseImages(formData.get('images')),
   })
   if (!listing) return
 
   await upsertHousingDetail(listing.id, {
     listingType,
     rentCents: rentDollars ? Math.round(rentDollars * 100) : null,
+    depositCents: depositDollars ? Math.round(depositDollars * 100) : null,
     bedrooms: posNum(formData.get('bedrooms')),
+    bathrooms,
     roomType,
+    leaseMonths,
+    availableFrom: (formData.get('available_from') as string) || null,
+    furnished: checkbox(formData, 'furnished'),
+    utilitiesIncluded: checkbox(formData, 'utilities_included'),
+    petsOk: checkbox(formData, 'pets_ok'),
+    householdSize: posNum(formData.get('household_size')),
+    propertyType: toPropertyType(formData.get('property_type')),
+    sqft: posNum(formData.get('sqft')),
+    amenities: toAmenities(formData.getAll('amenities').map(String)),
+    smokingOk: checkbox(formData, 'smoking_ok'),
+    cannabisOk: checkbox(formData, 'cannabis_ok'),
   })
 
   revalidatePath('/marketplace/housing')
@@ -83,12 +127,29 @@ export async function saveSeekerProfileAction(formData: FormData): Promise<void>
     return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null
   }
 
+  const coord = (k: string): number | null => {
+    const raw = formData.get(k)
+    if (raw === null || raw === '') return null
+    const n = Number(raw)
+    return Number.isFinite(n) ? n : null
+  }
+
+  // Radius arrives in miles from the slider; store metres. Clamp to a sane band.
+  const radiusMiles = Number(formData.get('radius_miles'))
+  const radiusM =
+    Number.isFinite(radiusMiles) && radiusMiles > 0
+      ? Math.round(Math.min(Math.max(radiusMiles, 1), 100) * 1609.344)
+      : 25000
+
   await upsertSeekerProfile(profileId, {
     active: formData.get('active') !== null,
     budgetMinCents: dollarsToCents('budget_min'),
     budgetMaxCents: dollarsToCents('budget_max'),
     searchCity: (formData.get('city') as string)?.trim() || null,
     moveInFrom: (formData.get('move_in') as string) || null,
+    searchLat: coord('search_lat'),
+    searchLng: coord('search_lng'),
+    searchRadiusM: radiusM,
   })
   revalidatePath('/marketplace/housing/roommates')
 }

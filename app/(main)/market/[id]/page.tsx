@@ -1,6 +1,10 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { MessageCircle } from 'lucide-react'
 import { getCallerProfile, isPlatformStaff } from '@/lib/auth'
-import { getProduct } from '@/lib/commerce/products'
+import { getProduct, getSellerContact } from '@/lib/commerce/products'
+import { canTakePayments } from '@/lib/commerce/selling'
+import { buttonClasses } from '@/components/ui/button'
 import { getSpaceById, getVisibleSpaceBySlug } from '@/lib/spaces/store'
 import { resolveSpaceManageAccess } from '@/lib/spaces/entitlements'
 import { readStorefrontConfig } from '@/lib/spaces/storefront'
@@ -12,6 +16,7 @@ import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
+import { EventGallery } from '@/components/events/event-gallery'
 import { BuyButton } from '../../marketplace/buy-button'
 import { isBookableServiceKind } from '@/lib/commerce/types'
 import type { ServiceConfig } from '@/lib/commerce/types'
@@ -66,6 +71,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
   const svc = ((product.metadata as Record<string, unknown>)?.service ?? {}) as ServiceConfig
   const soldOut = product.status === 'sold_out' || product.stock === 0
 
+  // R2 (Phase 0): only a Business Space Shop or the Frequency Store may take in-app payments. An
+  // individual maker listing is CONNECT-ONLY — the buyer messages the seller instead of a Buy button.
+  const connectOnly = !canTakePayments(product.ownerKind)
+  const sellerContact = connectOnly ? await getSellerContact(product.ownerProfileId) : null
+
   // A service pulls its open slots from the Space's availability calendar (booking_space_id).
   const [slots, tz] =
     isService && product.bookingSpaceId
@@ -101,17 +111,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
         }
       >
         <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+          {/* Photo gallery: a thumbnail strip that opens a full-screen lightbox (keyboard + arrows),
+              reusing the events gallery. Images are already resolved to public URLs by the reader. */}
           {product.images.length > 0 && (
-            <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {product.images.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={src}
-                  alt={`${product.title}, photo ${i + 1}`}
-                  className="aspect-square w-full rounded-xl border border-border object-cover"
-                />
-              ))}
+            <div className="mb-4">
+              <EventGallery images={product.images} />
             </div>
           )}
 
@@ -142,7 +146,20 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
             ) : soldOut ? (
               <p className="text-sm font-medium text-subtle">Sold out.</p>
             ) : isOwner ? (
-              <p className="text-sm text-subtle">This is your listing. Buyers see a Buy button here.</p>
+              <p className="text-sm text-subtle">
+                {connectOnly
+                  ? 'This is your listing. Buyers see a Contact seller button here.'
+                  : 'This is your listing. Buyers see a Buy button here.'}
+              </p>
+            ) : connectOnly ? (
+              sellerContact ? (
+                <Link href={`/people/${sellerContact.handle}`} className={buttonClasses('primary', 'md')}>
+                  <MessageCircle className="h-4 w-4" aria-hidden />
+                  Contact seller
+                </Link>
+              ) : (
+                <p className="text-sm text-subtle">Message the seller to arrange this.</p>
+              )
             ) : (
               <BuyButton productId={product.id} />
             )}
@@ -156,7 +173,9 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
                 ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
                 : soldOut
                   ? 'This one is sold out.'
-                  : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
+                  : connectOnly
+                    ? 'No checkout on this listing. Message the seller to arrange payment and pickup.'
+                    : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
             </p>
             <ReportButton targetKind="product" targetId={product.id} />
           </div>

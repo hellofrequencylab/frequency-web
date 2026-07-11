@@ -3,6 +3,9 @@
 
 export type OwnerKind = 'platform' | 'profile' | 'space'
 export type ProductKind = 'physical' | 'digital' | 'service' | 'booking' | 'ticket'
+/** A physical listing's condition (Phase 0). null = unset (services/bookings/tickets have none).
+ *  Role gate (R3): individuals may list 'used' only; Business Spaces + the Store may list either. */
+export type ProductCondition = 'new' | 'used'
 export type CommerceVertical = 'shop' | 'maker' | 'service'
 export type ProductStatus = 'draft' | 'active' | 'sold_out' | 'archived'
 export type OrderStatus = 'pending' | 'paid' | 'fulfilled' | 'cancelled' | 'refunded' | 'failed'
@@ -25,9 +28,14 @@ export interface CommerceProduct {
   category: string | null
   status: ProductStatus
   bookingSpaceId: string | null
+  /** New or Used (Phase 0). null when condition does not apply (services/bookings/tickets). */
+  condition: ProductCondition | null
   /** Opt-in to appear in the global Market umbrella (ADR-596). status='active' shows a listing in the
    *  Space's own Shop; this flag additionally publishes it to the cross-space Market. */
   marketPublished: boolean
+  /** Buyer-facing discovery tags (Etsy-Grade Phase 1), stored in commerce_products.tags. The free-form
+   *  complement to the controlled `category` taxonomy (lib/commerce/categories.ts). */
+  tags: string[]
   metadata: Record<string, unknown>
   isDemo: boolean
   createdAt: string
@@ -47,9 +55,14 @@ export interface ProductInput {
   stock?: number | null
   category?: string | null
   bookingSpaceId?: string | null
+  /** New or Used (Phase 0). Omit/null when condition does not apply. The create action enforces the
+   *  role gate (R3): a 'profile' seller may only pass 'used'. */
+  condition?: ProductCondition | null
   /** Opt this listing into the global Market on create (the maker path sets true; Space listings
    *  default false and opt in per-listing from the Shop console). */
   marketPublished?: boolean
+  /** Buyer-facing discovery tags (Etsy-Grade Phase 1). Capped + stored in commerce_products.tags. */
+  tags?: string[]
   /** Service quote + policy for a service/booking listing (priceModel, duration, deposit,
    *  cancellationWindowHours, noShowFeePct). Persisted under metadata.service; ignored for non-services. */
   service?: ServiceConfig | null

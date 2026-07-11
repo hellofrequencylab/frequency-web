@@ -7,6 +7,7 @@ import { evaluateSmsGate, isInsideQuietHours, isSmsProvisioned, type SmsGateStat
 
 const allClear: SmsGateState = {
   provisioned: true,
+  platformEnabled: true,
   consentOptedIn: true,
   prefEnabled: true,
   insideQuietHours: true,
@@ -19,13 +20,37 @@ describe('evaluateSmsGate — the one path to allowed', () => {
 })
 
 describe('evaluateSmsGate — each gate denies independently, in precedence order', () => {
-  it('not provisioned blocks first (overrides everything)', () => {
+  it('not provisioned blocks first (the legal lock overrides everything)', () => {
     expect(
-      evaluateSmsGate({ provisioned: false, consentOptedIn: false, prefEnabled: false, insideQuietHours: false }),
+      evaluateSmsGate({
+        provisioned: false,
+        platformEnabled: false,
+        consentOptedIn: false,
+        prefEnabled: false,
+        insideQuietHours: false,
+      }),
     ).toEqual({ allowed: false, reason: 'not_provisioned', gated: true })
   })
 
-  it('missing consent blocks (provisioned, but not opted in)', () => {
+  it('platform switch off blocks (provisioned, but the operator flag is OFF)', () => {
+    // The env lock is satisfied, yet the operator sms_enabled flag holds the channel
+    // closed — a distinct reason so the pure gate stays testable, ahead of consent/pref.
+    expect(evaluateSmsGate({ ...allClear, platformEnabled: false })).toEqual({
+      allowed: false,
+      reason: 'platform_disabled',
+      gated: true,
+    })
+  })
+
+  it('provisioning still wins over the platform switch (both off → not_provisioned)', () => {
+    expect(evaluateSmsGate({ ...allClear, provisioned: false, platformEnabled: false })).toEqual({
+      allowed: false,
+      reason: 'not_provisioned',
+      gated: true,
+    })
+  })
+
+  it('missing consent blocks (provisioned + platform on, but not opted in)', () => {
     expect(evaluateSmsGate({ ...allClear, consentOptedIn: false })).toEqual({
       allowed: false,
       reason: 'no_consent',

@@ -12,13 +12,15 @@ import {
   setProductStatus,
   deleteProduct,
   updateProduct,
+  duplicateProduct,
   productOwnerSpaceId,
   setProductMarketPublished,
   type ProductPatch,
 } from '@/lib/commerce/products'
+import { normalizeCategory, normalizeTags } from '@/lib/commerce/categories'
 import { readStorefrontConfig, withStorefrontConfig } from '@/lib/spaces/storefront'
 import { draftListingCopy, type ListingCopy } from '@/lib/ai/listing-copy'
-import type { ProductStatus, ProductKind, CommerceVertical, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
+import type { ProductStatus, ProductKind, CommerceVertical, ProductCondition, ServiceConfig, ServicePriceModel } from '@/lib/commerce/types'
 
 // Space Shop console write actions (ADR-596). Every action gates on resolveSpaceManageAccess (owner /
 // admin / editor — NOT the profile-only productOwnerProfileId, which is null for a Space), and each
@@ -52,10 +54,29 @@ function kindToCommerce(kind: string): { productKind: ProductKind; vertical: Com
   return { productKind: 'physical', vertical: 'shop' }
 }
 
+/** Parse a JSON string[] posted in a hidden form field (image paths, tags), tolerating a blank or
+ *  malformed value by returning []. Every element is coerced to a trimmed string. */
+function parseStringArray(raw: FormDataEntryValue | null): string[] {
+  if (typeof raw !== 'string' || !raw.trim()) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.map((v) => String(v).trim()).filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
+
 /** Narrow a raw form value to a ServicePriceModel, or undefined (default-deny). */
 function asPriceModel(raw: unknown): ServicePriceModel | undefined {
   const v = String(raw ?? '')
   return v === 'fixed' || v === 'from' || v === 'free' || v === 'contact' ? v : undefined
+}
+
+/** Narrow a raw form value to a ProductCondition, or null (default-deny). A Business Space may list
+ *  New or Used (R3), so both pass. */
+function asCondition(raw: unknown): ProductCondition | null {
+  const v = String(raw ?? '')
+  return v === 'new' || v === 'used' ? v : null
 }
 
 /** Build the metadata.service ServiceConfig from the form (service items only): the price model,
@@ -90,6 +111,8 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
   const kind = String(formData.get('kind') ?? 'product')
   const { productKind, vertical } = kindToCommerce(kind)
   const service = productKind === 'service' ? serviceConfigFromForm(formData) : null
+  // Condition applies to a product only (R3); a service/ticket carries none.
+  const condition = productKind === 'physical' ? asCondition(formData.get('condition')) : null
 
   const product = await createProduct({
     ownerKind: 'space',
@@ -99,8 +122,11 @@ export async function createSpaceProductAction(slug: string, formData: FormData)
     vertical,
     title,
     description: (formData.get('description') as string) || null,
-    category: (formData.get('category') as string) || null,
+    category: normalizeCategory(formData.get('category') as string | null),
+    images: parseStringArray(formData.get('images')),
+    tags: normalizeTags(parseStringArray(formData.get('tags'))),
     priceCents: Math.round(priceDollars * 100),
+    condition,
     // A service books against the Space's own availability calendar (Phase 4, ADR-596).
     bookingSpaceId: productKind === 'service' ? gate.spaceId : undefined,
     // The full quote + policy (price model, duration, deposit, cancellation, no-show) in one write.
@@ -137,7 +163,21 @@ export async function deleteSpaceProductAction(slug: string, id: string): Promis
  *  subtree is deep-merged, so a partial edit never clobbers untouched fields. */
 export async function updateProductAction(slug: string, id: string, patch: ProductPatch): Promise<void> {
   if (!(await gateSpaceItem(slug, id))) return
-  await updateProduct(id, patch)
+  // Re-sanitize the client-supplied taxonomy + tags server-side (defense in depth); images and tag
+  // counts are also capped in the writer.
+  const safe: ProductPatch = { ...patch }
+  if (patch.category !== undefined) safe.category = normalizeCategory(patch.category)
+  if (patch.tags !== undefined) safe.tags = normalizeTags(patch.tags)
+  await updateProduct(id, safe)
+  revalidatePath(`/spaces/${slug}/settings/shop`)
+}
+
+/** Duplicate a catalog item into a new private draft (Phase 1). Owner-gated to this Space's item; the
+ *  copy is created with status='draft' and market_published=false, so it never auto-publishes -- the
+ *  owner reviews it (photos, price, tags all carried over) and publishes when ready. */
+export async function duplicateSpaceProductAction(slug: string, id: string): Promise<void> {
+  if (!(await gateSpaceItem(slug, id))) return
+  await duplicateProduct(id)
   revalidatePath(`/spaces/${slug}/settings/shop`)
 }
 

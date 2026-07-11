@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Radio, MessageSquare, Smartphone, Megaphone, Lock } from 'lucide-react'
+import { Radio, MessageSquare, Smartphone, Megaphone } from 'lucide-react'
 import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 
 // EventDispatchCompose (ADR-255 / EVENTS-DESIGN B2) — the host's "post an update"
@@ -9,19 +9,28 @@ import { postEventDispatch } from '@/app/(main)/events/[slug]/social-actions'
 // may also send it as a Dispatch (rides the existing rail with an event badge +
 // push fan-out) and/or text the group (SMS).
 //
-// SMS is present but gated (ADR-256): the host can mark "text the group" so the
-// intent is recorded on the Event Dispatch, but the send is held behind the legal
-// gate. The server action records the flag and routes it through sendSms(), which
-// refuses every send until SMS is enabled (A2P 10DLC + member consent + quiet
-// hours). So choosing it queues nothing illegal — it just notes that this update
-// should also go out by text once the channel is live. The toggle says so plainly.
+// SMS is gated on provisioning (ADR-256). Until the owner completes the A2P 10DLC +
+// Twilio track, isSmsProvisioned() is false and nothing can text. So the "text the
+// group" toggle only renders as a real control when `smsProvisioned` is true; until
+// then it shows a disabled "Coming soon" chip so a host is never offered a toggle
+// that silently does nothing. When provisioned, the host can mark "text the group"
+// to record the intent on the Event Dispatch; the send still rides sendSms(), which
+// re-checks member consent + quiet hours. The parent RSC resolves the boolean.
 //
 // Host/cohost only — the page gates whether this renders at all; the server action
 // re-checks authorization.
 
 const MAX_BODY = 2000
 
-export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug: string }) {
+export function EventDispatchCompose({
+  eventId,
+  slug,
+  smsProvisioned,
+}: {
+  eventId: string
+  slug: string
+  smsProvisioned: boolean
+}) {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [toDispatch, setToDispatch] = useState(false)
@@ -107,25 +116,37 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
           Send as a Dispatch
         </button>
 
-        {/* SMS — selectable, but the send is gated behind sendSms() (ADR-256). The
-            host can mark "text the group" to record the intent; the lock signals
-            the channel is not live yet. Copy below states it plainly. */}
-        <button
-          type="button"
-          onClick={() => setToSms((v) => !v)}
-          disabled={pending}
-          aria-pressed={toSms}
-          title="Marks this update to also go out by text once SMS is turned on."
-          className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
-            toSms
-              ? 'bg-primary-bg text-primary-strong'
-              : 'border border-dashed border-border text-muted hover:border-border-strong hover:text-text'
-          }`}
-        >
-          <Smartphone className="h-3.5 w-3.5" />
-          Text the group
-          <Lock className="h-3 w-3" />
-        </button>
+        {/* SMS — only a real toggle once the channel is provisioned (ADR-256). Until
+            then, a disabled "Coming soon" chip: never offer a toggle that does nothing. */}
+        {smsProvisioned ? (
+          <button
+            type="button"
+            onClick={() => setToSms((v) => !v)}
+            disabled={pending}
+            aria-pressed={toSms}
+            title="Marks this update to also go out by text."
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-2xs font-medium transition-colors disabled:opacity-50 ${
+              toSms
+                ? 'bg-primary-bg text-primary-strong'
+                : 'border border-dashed border-border text-muted hover:border-border-strong hover:text-text'
+            }`}
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            Text the group
+          </button>
+        ) : (
+          <span
+            aria-disabled="true"
+            title="Text messages are coming soon."
+            className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-border px-2.5 py-1.5 text-2xs font-medium text-subtle"
+          >
+            <Smartphone className="h-3.5 w-3.5" />
+            Text the group
+            <span className="rounded bg-surface-elevated px-1.5 py-0.5 font-medium text-muted">
+              Coming soon
+            </span>
+          </span>
+        )}
 
         <button
           type="button"
@@ -147,8 +168,7 @@ export function EventDispatchCompose({ eventId, slug }: { eventId: string; slug:
 
       {toSms && (
         <p className="mt-2 text-2xs text-subtle">
-          Texting isn&rsquo;t on yet. We&rsquo;ll mark this update to go out by text too, and it
-          sends once SMS is turned on and a guest has opted in.
+          Goes out by text to guests who opted in, within their quiet hours.
         </p>
       )}
     </div>

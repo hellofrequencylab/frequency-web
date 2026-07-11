@@ -203,6 +203,10 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'support', href: '/admin/support', label: 'Support', desc: 'Member support tickets and help requests.', icon: 'LifeBuoy', min: 'host', staffDomain: 'members',
     world: 'community', worldLabel: 'Support', worldOrder: 10,
     adminGroups: [{ domain: 'community', section: 'Trust & safety' }], adminNav: { section: 'operations', heading: 'Platform' } },
+  { id: 'sms', href: '/admin/sms', label: 'Text messages', desc: 'SMS provisioning status and the operator on/off switch.', icon: 'MessageSquare', min: 'janitor', staffDomain: 'members',
+    adminNav: { section: 'operations', heading: 'Platform' } },
+  { id: 'nonprofit-verifications', href: '/admin/nonprofit-verifications', label: 'Non Profit verification', desc: 'Review and approve 501(c)(3) verification requests.', icon: 'BadgeCheck', min: 'janitor', staffDomain: 'profiles',
+    adminNav: { section: 'operations', heading: 'Platform' } },
 
   // ═══════════════ CONTENT ═══════════════
   // §5b: Seasons · Journeys · Practices · Challenges · Training · Tips · Gamification ·
