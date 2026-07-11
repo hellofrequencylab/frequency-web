@@ -398,7 +398,12 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
   // `isModuleRoute` guard stays (the page must render <PageModules> for its blocks to be real).
   const showCircleLayout = isCircle && isModuleRoute(pathname) && viewer.caps.has('circle.editSettings')
   const isEvent = manager && /^\/events\/[^/]+/.test(pathname)
-  const showEventLayout = isEvent && isModuleRoute(pathname) && viewer.caps.has('event.editSettings')
+  // The event page LAYOUT editor (block / row-template customizer) is an OPERATOR tool, not a host
+  // one: a regular event host keeps the field editors but must NOT see the layout builder. So unlike
+  // circle/practice above, the event Layout is ALSO gated on the staff `isOperator` (web_role
+  // admin/janitor) axis, on top of the owner edit capability. (savePageLayout re-checks server-side.)
+  const showEventLayout =
+    isEvent && isOperator && isModuleRoute(pathname) && viewer.caps.has('event.editSettings')
   // The practice detail page IS <PageModules>-driven (ADR-116: stats · intro · guide · tags · used-in),
   // shared across every /practices/<id> via the '/practices/*' scope — so a REAL LayoutEditor applies, just
   // like circle/event. De-operatorized the same way (ADR-515 Phase 5): owner-visible, gated on the ENTITY
