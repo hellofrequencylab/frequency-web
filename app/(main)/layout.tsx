@@ -7,6 +7,7 @@ import { hasOperatedSpaces } from '@/lib/spaces/operated'
 import { VERTICALS } from '@/lib/verticals'
 import AppShell from '@/components/layout/app-shell'
 import { ImpersonationBanner } from '@/components/layout/impersonation-banner'
+import { BetaCountdownBanner } from '@/components/layout/beta-countdown-banner'
 import type { Metadata } from 'next'
 import { loadChromeOverrides, isSafeRoute, adminScopeFor } from '@/lib/layout/page-chrome'
 import { loadAppOverrides, scopeKeyFor, type AppOverrides } from '@/lib/apps/overrides'
@@ -542,6 +543,11 @@ export default async function MainLayout({
     >
       <GaConsentGate disabled={!analyticsConsent} />
       <ImpersonationBanner />
+      {/* Beta countdown (platform_settings.beta_ends_at) — renders nothing until an operator sets a
+          date; its one cached read sits behind Suspense so it never blocks the shell. */}
+      <Suspense fallback={null}>
+        <BetaCountdownBanner />
+      </Suspense>
       {children}
       <AchievementToastContainer />
       <ZapToastContainer />
