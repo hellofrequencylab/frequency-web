@@ -15,6 +15,7 @@ import { FeatureMeterRange } from '@/components/pricing/feature-meter-range'
 import { FEATURE_METERS } from '@/lib/pricing/feature-meters'
 import { monthlyTakeRateSavingsCents } from '@/lib/billing/pricing-keys'
 import { spaceTrailingProcessedCents } from '@/lib/commerce/orders'
+import { getSpaceVerification } from '@/lib/spaces/nonprofit-verification'
 import { GoBusinessCta } from './go-business'
 
 // BILLING BODY — the chrome-free plan-and-usage hub, lifted out of the standalone /settings/billing page
@@ -74,12 +75,13 @@ export async function BillingBody({ slug }: { slug: string }) {
 
   // The Business checkout gate (billingLive AND the per-plan switch — both false while billing is OFF, so
   // the CTA renders as a disabled "Available soon" preview), plus the seat usage + billing-live flag.
-  const [values, businessSellable, seatUsage, billingIsLive, trailingVolumeCents] = await Promise.all([
+  const [values, businessSellable, seatUsage, billingIsLive, trailingVolumeCents, verification] = await Promise.all([
     getPricingValues(),
     spaceLoadoutSellable('business'),
     getSeatUsage(space.id),
     billingLive(),
     spaceTrailingProcessedCents(space.id),
+    getSpaceVerification(space.id),
   ])
 
   const isPaid = currentPlan !== 'free'
@@ -142,18 +144,34 @@ export async function BillingBody({ slug }: { slug: string }) {
           </fieldset>
         )}
 
-        {/* Non Profit is the verified-501c3 sibling of Business (same depth, discounted). It is a small
-            separate verified surface: today a plain "contact us to verify" link, not a self-serve flow.
-            TODO(ADR-552): build the 501(c)(3) verification flow (a later phase). */}
+        {/* Non Profit is the verified-501(c)(3) sibling of Business (same depth, discounted per seat). The
+            self-serve verification flow (ADR-552, AUDIT #6) lives at settings/billing/verify: the owner
+            submits their EIN + legal name, an operator reviews it, and approval grants the Non Profit plan.
+            We show the current request status if one exists, otherwise the "get verified" invite. */}
         <div className="rounded-2xl border border-border bg-surface px-5 py-4">
           <p className="text-sm font-semibold text-text">Non Profit</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">
-            Verified 501(c)(3) organizations get the full Business depth, discounted, per licensed seat.{' '}
-            <a href={`/spaces/${space.slug}/settings/billing`} className="font-semibold text-primary-strong underline">
-              Non Profit, contact us to verify
-            </a>
-            .
-          </p>
+          {verification?.status === 'verified' ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+              Verified 501(c)(3). This space is eligible for the Non Profit plan: the full Business depth,
+              discounted per licensed seat.
+            </p>
+          ) : verification?.status === 'pending' ? (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+              Your 501(c)(3) verification is in review.{' '}
+              <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
+                Check status
+              </a>
+              .
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+              Verified 501(c)(3) organizations get the full Business depth, discounted, per licensed seat.{' '}
+              <a href={`/spaces/${space.slug}/settings/billing/verify`} className="font-semibold text-primary-strong underline">
+                {verification?.status === 'rejected' ? 'Submit a new request' : 'Get verified'}
+              </a>
+              .
+            </p>
+          )}
         </div>
       </div>
     </>
