@@ -40,10 +40,12 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
   // Events (/events/<slug>): the FULL interior is arrangeable, but this is the ONE canonical layout
   // every event shares unless an operator deliberately rearranges it (per-event saved layouts were
   // cleared so every event reads the same — same boxes, same order). MAIN carries the content the
-  // host wrote + the conversation (description → activity → the poster sections → recap); SIDE is the
-  // at-a-glance + action column: RSVP first, then when/where facts, the venue MAP (a tall 4:6 card),
-  // cohosts, and host-only ticket sales. The host "Post an update" composer is folded into activity
-  // (one role-based composer); the poster "Details" block stays re-addable from Settings → Layout.
+  // host wrote + the conversation (description → activity → the poster sections → recap), capped by the
+  // venue MAP pinned at the bottom. SIDE is the at-a-glance + action column: RSVP first, then when/where
+  // facts, cohosts, and host-only ticket sales. The address (with its Maps deep-link) lives in the page
+  // header, and the map is the bottom-of-main block, so the old side `event-location` card is dropped
+  // here to avoid a second map (it stays re-addable from Settings → Layout). The host "Post an update"
+  // composer is folded into activity (one role-based composer); "Details" stays re-addable too.
   '/events/*': {
     template: 'main-side',
     slots: {
@@ -68,7 +70,6 @@ const ROUTE_DEFAULT_LAYOUTS: Record<string, LayoutConfig> = {
           'event-join',
           'event-schedule',
           'event-facts',
-          'event-location',
           'event-warm-proof',
           'event-cohosts',
           'event-sales',
