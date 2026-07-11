@@ -420,6 +420,11 @@ export const MANAGED_ROUTES: readonly ManagedRoute[] = [
   { route: '/broadcast', label: 'Broadcast', area: 'Member' },
   { route: '/crew', label: 'Crew', area: 'Member' },
   { route: '/outreach', label: 'Outreach', area: 'Member' },
+  // The Beta referral + Circle-starter contest hub (phase P3). A member browse/dashboard
+  // surface that keeps the GLOBAL community rail (falls through to 'global' in railFor);
+  // this catalog entry registers it as an explicitly managed surface. The route 404s while
+  // platform_flags.beta_referral_contest is off, so the rail decision is moot until it is live.
+  { route: '/referral', label: 'Referral contest', area: 'Member' },
   { route: '/lead', label: 'Leadership', area: 'Member' },
   { route: '/lead/training-library', label: 'Leader Training', area: 'Member' },
   // Settings + the centered single-task surfaces now keep the GLOBAL community rail too

@@ -19,6 +19,7 @@ automation_rules
 beta_admission_waves
 beta_audit_log
 beta_phases
+beta_referrals
 beta_tasks
 business_intake
 campaigns
