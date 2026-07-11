@@ -46,6 +46,7 @@ import { ProfileCover } from '@/components/profile/profile-cover'
 import { ProfileAvatar } from '@/components/profile/profile-avatar'
 import { ProfileSpotlightBlocks } from '@/components/profile/profile-spotlight-blocks'
 import { OwnerProfileLayoutPreview } from '@/components/profile/owner-profile-layout-preview'
+import { ShareRefProvider } from '@/components/qr/share-ref-context'
 
 export default async function ProfilePage({
   params,
@@ -414,6 +415,11 @@ export default async function ProfilePage({
         </div>
       )}
 
+      {/* ShareRefProvider threads the profile owner's id to the framework "QR & Share"
+          control (inside DetailTemplate's PageAdminBar), so the copied link AND the QR for
+          this profile become `/people/<handle>?ref=<ownerId>` — a new signup via either is
+          credited to this owner (proxy drops fq_ref → applyReferralAttribution). */}
+      <ShareRefProvider profileId={profileId}>
       <DetailTemplate
         hero={<ProfileCover imageUrl={headerImageUrl} dimmed={isDemo} />}
         title={
@@ -582,6 +588,7 @@ export default async function ProfilePage({
         </aside>
       </div>
       </DetailTemplate>
+      </ShareRefProvider>
     </>
   )
 }

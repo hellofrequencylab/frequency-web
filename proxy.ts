@@ -7,6 +7,14 @@ import {
   buildFirstTouch,
   encodeFirstTouch,
 } from '@/lib/attribution/first-touch'
+import { isProfileRef } from '@/lib/qr/public-url'
+import { referralsEnabled } from '@/lib/platform-flags'
+
+// The referral attribution cookie — the referrer's profile id, consumed once at
+// onboarding by applyReferralAttribution (lib/qr/referral.ts). Name + attributes MUST
+// match the /q resolver (app/q/[slug]/route.ts) so both entry points feed one consumer.
+const REF_COOKIE = 'fq_ref'
+const REF_COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 const PROTECTED_PATHS = [
   '/feed',
@@ -82,6 +90,38 @@ export async function proxy(request: NextRequest) {
   // arrived — campaign, referrer, landing page — once, immutably, so it survives
   // the sign-in round-trip and is never lost. Best practice is capture-on-arrival.
   if (!user) {
+    // Profile SHARE-LINK referral (the bug fix): a person's share link/QR carries
+    // `?ref=<ownerProfileId>` (see publicShareUrl). A Server Component page can't set
+    // cookies, so — exactly as the /q resolver does for an owner-owned scan — we drop the
+    // `fq_ref` attribution cookie HERE for an anonymous visitor, and the eventual signup is
+    // credited to that owner at onboarding (applyReferralAttribution). Gated identically to
+    // /q: anonymous only, referrals master switch on. Set BEFORE the protected-path redirect
+    // below so the cookie is copied onto the /sign-in redirect (profiles are protected).
+    //
+    // Not a hot-path DB read: the flag is only consulted when the `?ref` param is actually
+    // present (share-link traffic), which is rare. First-touch wins — never overwrite an
+    // existing fq_ref. The ref is UUID-validated so a junk value can't poison the cookie;
+    // applyReferralAttribution still checks the referrer exists + isn't self before crediting.
+    const ref = request.nextUrl.searchParams.get('ref')
+    if (isProfileRef(ref) && !request.cookies.get(REF_COOKIE)) {
+      // Master switch (defaults on, like the /q resolver). Read defensively: the flag
+      // reader is React-cache wrapped, so a non-render context must never throw the proxy.
+      let enabled = true
+      try {
+        enabled = await referralsEnabled()
+      } catch {
+        enabled = true
+      }
+      if (enabled) {
+        supabaseResponse.cookies.set(REF_COOKIE, ref, {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: REF_COOKIE_MAX_AGE,
+        })
+      }
+    }
+
     if (!request.cookies.get(FIRST_TOUCH_COOKIE)) {
       const touch = buildFirstTouch(request.nextUrl.searchParams, pathname, request.headers.get('referer'))
       supabaseResponse.cookies.set(FIRST_TOUCH_COOKIE, encodeFirstTouch(touch), {
