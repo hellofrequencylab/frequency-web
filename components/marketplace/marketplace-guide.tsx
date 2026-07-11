@@ -10,11 +10,11 @@ import { SectionHeader } from '@/components/ui/section-header'
 // and the Frequency Store.
 
 const SURFACES = [
-  { icon: Tag, name: 'Classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
-  { icon: Home, name: 'Housing', blurb: 'Rooms, rentals, and roommate matching.' },
-  { icon: ShoppingBag, name: 'Market', blurb: 'Products, services, and tickets from members and businesses.' },
-  { icon: CalendarDays, name: 'Events', blurb: 'Find paid and free events near you.' },
-  { icon: Store, name: 'Frequency Store', blurb: 'First-party Frequency goods.' },
+  { icon: Tag, name: 'Classifieds', href: '/classifieds', blurb: 'Swap, lend, give, and find things locally, no fees.' },
+  { icon: Home, name: 'Housing', href: '/marketplace/housing', blurb: 'Rooms, rentals, and roommate matching.' },
+  { icon: ShoppingBag, name: 'Market', href: '/market', blurb: 'Products, services, and tickets from members and businesses.' },
+  { icon: CalendarDays, name: 'Events', href: '/marketplace/events', blurb: 'Find paid and free events near you.' },
+  { icon: Store, name: 'Frequency Store', href: '/store', blurb: 'First-party Frequency goods.' },
 ] as const
 
 export function MarketplaceGuide() {
@@ -32,7 +32,9 @@ export function MarketplaceGuide() {
               <s.icon className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-text">{s.name}</p>
+              <Link href={s.href} className="text-sm font-semibold text-text hover:text-primary-strong hover:underline">
+                {s.name}
+              </Link>
               <p className="text-sm leading-snug text-muted">{s.blurb}</p>
             </div>
           </li>
