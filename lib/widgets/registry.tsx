@@ -128,7 +128,6 @@ import { CircleJourneyRun } from '@/components/widgets/circles/circle-journey-ru
 import { CircleText } from '@/components/widgets/circles/circle-text'
 import { EventDescription } from '@/components/widgets/events/event-description'
 import {
-  EventLineup,
   EventSchedule,
   EventGoodToKnow,
   EventPricing,
@@ -136,6 +135,7 @@ import {
   EventSponsors,
   EventDetailsBlock,
 } from '@/components/widgets/events/event-poster-sections'
+import { EventHost } from '@/components/widgets/events/event-host'
 import { EventCohosts } from '@/components/widgets/events/event-cohosts'
 import { EventSales } from '@/components/widgets/events/event-sales'
 import { EventDispatch } from '@/components/widgets/events/event-dispatch'
@@ -333,7 +333,7 @@ const COMPONENTS: Record<string, ModuleComponent> = {
   'event-attendees': EventAttendees,
   'event-checkin': EventCheckin,
   'event-description': EventDescription,
-  'event-lineup': EventLineup,
+  'event-lineup': EventHost,
   'event-schedule': EventSchedule,
   'event-good-to-know': EventGoodToKnow,
   'event-pricing': EventPricing,
