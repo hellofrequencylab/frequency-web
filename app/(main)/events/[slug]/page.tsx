@@ -1308,11 +1308,13 @@ export default async function EventDetailPage({
           </div>
         }
       >
-        {/* Photo gallery — the header image leads, then any host-uploaded extras, each clickable
-            into a full-screen lightbox. It stays in the page (not a module): it's built from the
-            signed/public hero + gallery URLs the header already resolved, and renders only with 2+
-            images. It leads the interior, above the arrangeable blocks. */}
-        <EventGallery images={galleryUrls} />
+        {/* Photo gallery (item 5) — the FIRST gallery image is the header/cover, already rendered
+            full-width above at its host-picked hero height (the DetailTemplate `hero` band). So the
+            gallery below shows only the REST of the photos as thumbnails (no duplicate of the
+            header), each clickable into a full-screen lightbox. It stays in the page (not a module):
+            it's built from the gallery URLs the header already resolved, and self-hides with no
+            extras. It leads the interior, above the arrangeable blocks. */}
+        <EventGallery images={galleryUrls.slice(1)} />
 
         {/* ── The FULL interior is one templated <PageModules> now: no hardcoded aside, no bespoke
             two-column grid. The '/events/*' layout owns the arrangement — its default Main + side
