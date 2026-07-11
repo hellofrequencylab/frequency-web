@@ -102,11 +102,12 @@ framework. **No orphaned exports.**
 
 ## 4. Integration verification ✅
 
-`embedEvent` ← `createEvent` · `awardCircleFieldForCheckin` ← `checkInEvent` ·
-`scoreEventsForViewer`/`eventBlurb` ← "For You" lane · `getCircleFieldStanding` ← circle page ·
+`embedEvent` ← `createEvent` · `scoreEventsForViewer`/`eventBlurb` ← "For You" lane ·
 ticket actions ← admin editor + event page · both crons registered in `vercel.json` with auth
-guards. Everything built is reachable; the only dormant items are the `plus_ones` column and the
-`maybe` status (schema-ahead-of-UI, not dead code).
+guards. Check-in awards no reward: Circle Field / Circle Current is RETIRED as a mechanic
+(ADR-305), so there is intentionally NO award code on `checkInEvent`. Everything built is reachable;
+the only dormant items are the `plus_ones` column and the `maybe` status (schema-ahead-of-UI, not
+dead code).
 
 ---
 
@@ -160,8 +161,9 @@ guards. Everything built is reachable; the only dormant items are the `plus_ones
 
 The §3 gap list is largely closed. Shipped via PRs #498/#499/#500:
 - **#1 confirmation-on-RSVP, #7 maybe/plus-ones:** closed by interim work before this batch.
-- **#2 cancel → bulk-refund → notify:** ✅ (PR #499): `cancelEvent` refunds all succeeded tickets
-  and emails guests.
+- **#2 cancel → bulk-refund → notify:** ⏳ Being addressed separately: `cancelEvent` emails guests,
+  but the host-cancel bulk-refund path is still being finished in its own change, so do not treat it
+  as fully closed.
 - **#4 activity feed / recap album / cohosts:** ✅ (PR #498).
 - **#6 discovery polish** (ICS subscription, organizer profiles, map, connectors): ✅ (PR #500).
 - Host **blast composer** + **Manage screen** + **host-marked check-in:** ✅ (PR #499).

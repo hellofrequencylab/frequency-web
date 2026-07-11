@@ -19,8 +19,8 @@ import { SpaceManageBoard } from './manage-board'
 // The Space OWNER CONSOLE (ADR-441 EM1-3, the Spaces harmonization slice). The unified
 // `/{entity}/[id]/manage` Dashboard surface, brought to Spaces: an owner / admin / editor (or a
 // platform janitor previewing) manages their Space here, organized by the SAME 9-category spine the
-// circle console uses. As of Space Modes M3 (ADR-461/464) the console serves EVERY provisionable type
-// (practitioner, organization, business, coaching, event_space, lab, partner); only root stays on the
+// circle console uses. Post the ADR-552 type collapse the provisionable set is just `business` and
+// `nonprofit` (plus the hidden `root`), and the console serves BOTH; only `root` stays on the
 // existing /spaces/[slug]/settings cockpit. No feature is rebuilt: each section LINKS to the existing
 // settings sub-page that already serves it. The console also reads the Space's MODE preset to order the
 // sections (module emphasis) and surfaces a Mode and focus settings page.
@@ -59,10 +59,10 @@ export default async function SpaceManagePage({
   )
   if (!canManage && !staffViewing) notFound()
 
-  // The console serves every provisionable type except coaching (isConsoleSpaceType, the single
-  // source of truth shared with spaceManageHref). A type with no console spine keeps using the legacy
-  // /spaces/[slug]/settings cockpit, so notFound() routes the owner back to the working cockpit
-  // without revealing a half-built surface.
+  // The console serves both provisionable types, `business` and `nonprofit` (isConsoleSpaceType, the
+  // single source of truth shared with spaceManageHref). The hidden `root` type has no console spine and
+  // keeps using the legacy /spaces/[slug]/settings cockpit, so notFound() routes it back to the working
+  // cockpit without revealing a half-built surface.
   if (!isConsoleSpaceType(space.type)) notFound()
 
   const brandName = space.brandName ?? space.name

@@ -16,6 +16,7 @@ import { generateOccurrencesForAnchor, type RecurrenceType } from '@/lib/event-r
 import { validateRecurrenceUntil } from '@/lib/events/recurrence'
 import { resolveRegionScopeId } from '@/lib/events/event-drafts'
 import { cancelAudit } from '@/lib/events/event-lifecycle'
+import { refundAndNotifyForCancelledEvent } from '@/lib/events/cancellation'
 import { getCapacityInfo, promoteFromWaitlist } from '@/lib/events/capacity'
 import { stampEventSpaceId } from '@/lib/events/store'
 import { wallClockToIso, dateToWallClockIso } from '@/lib/events/datetime'
@@ -1003,13 +1004,29 @@ export async function cancelEvent(eventId: string) {
   if (!myProfileId) return
 
   const supabase = await createClient()
-  await supabase
+  // AUTHORIZATION + IDEMPOTENCY in one write: the `.eq('host_id', myProfileId)`
+  // guard means only the host can flip the flag, and `.eq('is_cancelled', false)`
+  // means a re-cancel affects zero rows. `.select('id')` returns the affected row,
+  // so `firstCancel` is true ONLY when THIS caller (the host) transitioned the event
+  // from live → cancelled — the sole condition under which we fan out refunds.
+  const { data: flipped } = await supabase
     .from('events')
     .update(cancelAudit(myProfileId, null))
     .eq('id', eventId)
     .eq('host_id', myProfileId)
+    .eq('is_cancelled', false)
+    .select('id')
+
+  const firstCancel = (flipped ?? []).length > 0
 
   revalidatePath('/events')
   revalidatePath('/feed')
   revalidatePath('/circles', 'layout')
+
+  // Only refund paid tickets + notify attendees on the host-driven live → cancelled
+  // transition. Mirrors the admin path (refundAndNotifyForCancelledEvent is idempotent
+  // per-charge, and this guard prevents a double-refund on repeated cancels).
+  if (firstCancel) {
+    await refundAndNotifyForCancelledEvent(eventId)
+  }
 }

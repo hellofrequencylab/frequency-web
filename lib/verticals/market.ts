@@ -1,10 +1,11 @@
 import type { Vertical } from './registry'
 
-// Marketplace — the first vertical migrated onto the descriptor (ADR-248/250). A local
-// goods/services marketplace on the for-profit (Labs) rail. This descriptor is now the
-// single source of the vertical's nav: lib/nav-areas.ts composes it into NAV_AREAS at the
+// Classifieds — the first vertical migrated onto the descriptor (ADR-248/250). The id `market`
+// backs the member-facing Classifieds peer board at /classifieds (backed by lib/marketplace.ts),
+// NOT the Maker umbrella (that is the separate `maker` vertical at /market). This descriptor is now
+// the single source of the vertical's nav: lib/nav-areas.ts composes it into NAV_AREAS at the
 // anchored position (`after: 'events'`), so the area sits in its exact spot in the Community
-// section. The marketplace UI (lib/marketplace.ts, app/(main)/market) still owns the pages.
+// section. The Classifieds UI (lib/marketplace.ts, route /classifieds) still owns the pages.
 export const market: Vertical = {
   id: 'market',
   entity: 'labs',
