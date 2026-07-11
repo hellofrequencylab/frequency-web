@@ -116,6 +116,24 @@ already shipped (this PR) — it just needs #1606 to merge to reach production.
 - ⏳ **Pricing page four-tier rebuild** (`TODO(ADR-472)`, `app/(marketing)/pricing/page.tsx`). Blocks
   on the owner supplying the tier names / prices / what each unlocks.
 
+## Marketplace — future phases (deferred by owner, 2026-07-11)
+
+The commerce/housing work merged in #1698 shipped the near-term slice; these are the planned follow-on
+phases, parked here until the owner greenlights them. Specs: [`ETSY-GRADE-PLAN.md`](ETSY-GRADE-PLAN.md)
+(ADR-601), housing matching in ADR-604. All build on the one commerce spine (ADR-596), Business-account
+gated for payments. Migrations for the shipped slice (`commerce_variants`, `housing_matching_v2`) are
+**applied to prod + types regenerated** (2026-07-11); payments are live (`payoutsLive()` on).
+
+| # | Phase | Shape | Notes |
+|---|---|---|---|
+| ⏳ | **Etsy-Grade P3 — Shipping & delivery** | code + migration | Seller shipping profiles (flat / weight / zone), buyer address + shipping selection at checkout, digital-delivery for `digital` products. Adds a shipping line to order totals; charge model unchanged. |
+| ⏳ | **Etsy-Grade P4 — Discovery & search** | code | Faceted Market search (category / tags / condition / price / seller type) + relevance/recency/trust ranking + curated collections. Reads the existing products + ticket-projection union, no new store of truth. |
+| ⏳ | **Etsy-Grade P5 — Cart + multi-seller checkout** | code + migration | A persistent cart spanning sellers, split into per-seller destination charges in one buyer flow (one intent, N transfers), each seller's take rate preserved. |
+| ⏳ | **Etsy-Grade P6 — Orders, fulfillment & messaging** | code + migration | Buyer/seller order timelines, fulfillment states (shipped / delivered / completed), tracking capture, order-scoped buyer↔seller messaging (reuse the messaging spine). |
+| ⏳ | **Etsy-Grade P7 — Trust, growth & tax** | code + migration | Promotions / discount codes, seller payout + earnings reporting, tax posture (collection config + 1099 thresholds). Extends the T&S of ADR-598. |
+| ⏳ | **Housing — natal-chart matching** | code + migration | Beyond the shipped sun-sign quiet-5% (ADR-604): full natal-chart compatibility as an opt-in, both-sides factor. Needs an ephemeris/compute decision before build. |
+| ⏳ | **Housing — Resonance match alerts** | code | Notify a seeker when a strong new listing or roommate match appears (the matching RPCs exist; this is the alerting layer on top). |
+
 ## Already done (do not re-open)
 - ✅ Modular admin menu on one contract, every scope, CI-locked (`MODULAR-MENU.md` P0–P5).
 - ✅ Editor / rail-arranger overhaul (ADR-565→573).
