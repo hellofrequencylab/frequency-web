@@ -3,13 +3,12 @@ import { getMyProfileId } from '@/lib/auth'
 import { listListings, LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { UnderlineTabs } from '@/components/admin/underline-tabs'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { NewListingButton } from '@/components/studio/market/new-listing-button'
 import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
@@ -47,7 +46,6 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
     id: l.id,
     title: l.title,
     kind: l.kind,
-    price_note: l.price_note,
     description: l.description,
     neighborhood: l.neighborhood,
     city: l.city,
@@ -83,41 +81,41 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
         }
       />
 
+      {/* One compact bar under the hero: the area picker + this surface's headline stats (C1). */}
+      <MarketplaceBar
+        active="all"
+        stats={[
+          { label: 'Listings', value: allListings.length, icon: Tag },
+          { label: 'Free', value: kindCount('free'), icon: Gift },
+          { label: 'To lend', value: kindCount('lend'), icon: Hand },
+          { label: 'Looking for', value: kindCount('request'), icon: Search },
+        ]}
+      />
+
       <MarketplaceHiddenBanner area="market" />
 
-      <div className="space-y-6">
-        <MarketplaceFacets active="all" />
-
-        <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-          <StatCard size="sm" label="Listings" value={allListings.length} icon={Tag} />
-          <StatCard size="sm" label="Free" value={kindCount('free')} icon={Gift} />
-          <StatCard size="sm" label="To lend" value={kindCount('lend')} icon={Hand} />
-          <StatCard size="sm" label="Looking for" value={kindCount('request')} icon={Search} />
-        </div>
-
-        <UnderlineTabs
-          activeHref={activeKind ? `/classifieds?kind=${activeKind}` : '/classifieds'}
-          tabs={[
-            { href: '/classifieds', label: 'All' },
-            ...LISTING_KINDS.map((k) => ({ href: `/classifieds?kind=${k.key}`, label: k.label })),
-          ]}
+      <MarketplaceColumnsProvider>
+        <MarketGrid
+          listings={grid}
+          filters={
+            <UnderlineTabs
+              activeHref={activeKind ? `/classifieds?kind=${activeKind}` : '/classifieds'}
+              tabs={[
+                { href: '/classifieds', label: 'All' },
+                ...LISTING_KINDS.map((k) => ({ href: `/classifieds?kind=${k.key}`, label: k.label })),
+              ]}
+            />
+          }
+          columns={<MarketplaceColumns />}
+          emptyState={
+            <EmptyState
+              icon={Store}
+              title={activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}
+              description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
+            />
+          }
         />
-
-        {grid.length === 0 ? (
-          <EmptyState
-            icon={Store}
-            title={activeKind ? 'Nothing here yet' : 'Classifieds is just getting started'}
-            description={profileId ? 'Post the first listing. Offer something, give it away, or ask for what you need.' : 'Sign in to post and respond to listings.'}
-          />
-        ) : (
-          <MarketplaceColumnsProvider>
-            <div className="mb-4 flex justify-end">
-              <MarketplaceColumns />
-            </div>
-            <MarketGrid listings={grid} />
-          </MarketplaceColumnsProvider>
-        )}
-      </div>
+      </MarketplaceColumnsProvider>
 
       <MarketplaceGuide />
     </div>
