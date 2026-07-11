@@ -14,6 +14,7 @@ import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
 // Market — the community commerce umbrella (ADR-596). Hero-led (the site PhotoHero grammar), a stats
@@ -184,6 +185,8 @@ export default async function MarketPage({
           )}
         </div>
       </div>
+
+      <MarketplaceGuide />
     </div>
     </MarketSearchProvider>
   )

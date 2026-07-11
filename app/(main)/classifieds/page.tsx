@@ -9,6 +9,7 @@ import { MarketGrid, type GridListing } from '@/components/market/market-grid'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 import { resolvePageContent, pageContentMetadata } from '@/lib/page-content'
 
@@ -111,6 +112,8 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
           <MarketGrid listings={grid} />
         )}
       </div>
+
+      <MarketplaceGuide />
     </div>
     </MarketSearchProvider>
   )

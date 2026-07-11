@@ -9,6 +9,7 @@ import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
 // Housing — rentals + roommates (connect-only, member-only). Hero-led (the site PhotoHero grammar) to
@@ -100,6 +101,8 @@ export default async function HousingPage() {
             </div>
           )}
         </div>
+
+        <MarketplaceGuide />
       </div>
     </MarketSearchProvider>
   )

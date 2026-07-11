@@ -6,6 +6,7 @@ import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
 // Frequency Store — first-party Frequency retail (commerce core, owner_kind='platform'). Frequency is the
@@ -62,6 +63,8 @@ export default async function ShopPage() {
             </div>
           )}
         </div>
+
+        <MarketplaceGuide />
       </div>
     </MarketSearchProvider>
   )
