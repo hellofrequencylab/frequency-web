@@ -150,6 +150,12 @@ export function EventSettingsModule() {
     [commit],
   )
   const saveNow = useCallback(() => snapshot(true), [snapshot])
+  // Resolve an event-media gallery PATH to its public URL (the header preview for the focus control).
+  // Declared with the other hooks (before any early return) so it runs unconditionally every render.
+  const eventMediaUrl = useCallback(
+    (path: string) => createClient().storage.from('event-media').getPublicUrl(path).data.publicUrl,
+    [],
+  )
 
   useEffect(() => {
     if (!slug) return
@@ -216,12 +222,6 @@ export function EventSettingsModule() {
     // Wait for the controlled inputs to flush the new values into the form before snapshotting.
     requestAnimationFrame(saveNow)
   }
-
-  // Resolve an event-media gallery PATH to its public URL (the header preview for the focus control).
-  const eventMediaUrl = useCallback(
-    (path: string) => createClient().storage.from('event-media').getPublicUrl(path).data.publicUrl,
-    [],
-  )
 
   function handleUsePosterAsCover() {
     if (!data || pending) return
