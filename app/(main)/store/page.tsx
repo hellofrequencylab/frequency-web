@@ -1,12 +1,11 @@
 import { Store, ShoppingBag } from 'lucide-react'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { listShopProducts } from '@/lib/commerce/products'
 import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -37,12 +36,13 @@ export default async function ShopPage() {
         <MarketplaceHiddenBanner area="shop" />
 
         <div className="space-y-6">
-          <MarketplaceFacets active="shop" />
-
-          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-            <StatCard size="sm" label="In stock" value={products.length} icon={ShoppingBag} />
-            <StatCard size="sm" label="Shipping" value="Flat" icon={Store} />
-          </div>
+          <MarketplaceBar
+            active="shop"
+            stats={[
+              { label: 'In stock', value: products.length, icon: ShoppingBag },
+              { label: 'Shipping', value: 'Flat', icon: Store },
+            ]}
+          />
 
           {products.length === 0 ? (
             <EmptyState

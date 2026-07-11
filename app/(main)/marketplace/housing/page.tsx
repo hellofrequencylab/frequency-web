@@ -2,14 +2,13 @@ import Link from 'next/link'
 import { Home, Plus, Users, DoorOpen } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listListings } from '@/lib/listings'
 import { ListingCard } from '@/components/marketplace/listing-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -75,12 +74,13 @@ export default async function HousingPage() {
         <MarketplaceHiddenBanner area="housing" />
 
         <div className="space-y-6">
-          <MarketplaceFacets active="housing" />
-
-          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
-            <StatCard size="sm" label="Listings" value={listings.length} icon={Home} />
-            <StatCard size="sm" label="Roommates" value="Matched" icon={DoorOpen} />
-          </div>
+          <MarketplaceBar
+            active="housing"
+            stats={[
+              { label: 'Listings', value: listings.length, icon: Home },
+              { label: 'Roommates', value: 'Matched', icon: DoorOpen },
+            ]}
+          />
 
           {listings.length === 0 ? (
             <EmptyState

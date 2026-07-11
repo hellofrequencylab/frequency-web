@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Plus, ShoppingBag, Package, CalendarClock, Ticket } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
-import { StatCard } from '@/components/ui/stat-card'
 import { getMyProfileId } from '@/lib/auth'
 import { listMarketListings } from '@/lib/commerce/products'
 import { productRatingsFor } from '@/lib/commerce/reviews'
@@ -14,7 +13,7 @@ import { ProductCard } from '@/components/marketplace/product-card'
 import { MarketHero } from '@/components/marketplace/market-hero'
 import { MarketSearchProvider, MarketSearchBar, InstantGrid, InstantSection } from '@/components/marketplace/market-search'
 import { MarketplaceColumnsProvider, MarketplaceColumns } from '@/components/marketplace/column-selector'
-import { MarketplaceFacets } from '@/components/marketplace/facet-nav'
+import { MarketplaceBar } from '@/components/marketplace/marketplace-bar'
 import { MarketplaceGuide } from '@/components/marketplace/marketplace-guide'
 import { MarketplaceHiddenBanner } from '@/components/marketplace/hidden-banner'
 
@@ -121,14 +120,15 @@ export default async function MarketPage({
       <MarketplaceHiddenBanner area="makers" />
 
       <div className="space-y-6">
-        <MarketplaceFacets active="makers" />
-
-        <div className="grid grid-cols-2 gap-3 @2xl:grid-cols-4">
-          <StatCard size="sm" label="Listings" value={counts.total} icon={ShoppingBag} />
-          <StatCard size="sm" label="Products" value={counts.products} icon={Package} />
-          <StatCard size="sm" label="Services" value={counts.services} icon={CalendarClock} />
-          <StatCard size="sm" label="Tickets" value={counts.tickets} icon={Ticket} />
-        </div>
+        <MarketplaceBar
+          active="makers"
+          stats={[
+            { label: 'Listings', value: counts.total, icon: ShoppingBag },
+            { label: 'Products', value: counts.products, icon: Package },
+            { label: 'Services', value: counts.services, icon: CalendarClock },
+            { label: 'Tickets', value: counts.tickets, icon: Ticket },
+          ]}
+        />
 
         <MarketplaceColumnsProvider className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
