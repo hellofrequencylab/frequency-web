@@ -5,7 +5,11 @@ import { labelClasses } from '@/components/ui/field'
 import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
 import { updateEventCoverFocus, updateEventHeroHeight } from '@/app/(main)/events/admin-actions'
 import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
-import { EVENT_HERO_HEIGHTS, type EventHeroHeight } from '@/lib/events/hero-height'
+import {
+  EVENT_HERO_HEIGHTS,
+  eventHeroHeightClass,
+  type EventHeroHeight,
+} from '@/lib/events/hero-height'
 
 // The event HEADER controls — one tidy section that pairs the cover FOCAL POINT (where the cover
 // image sits inside its cropped hero window) with the hero HEIGHT (Short / Standard / Tall). Both
@@ -110,6 +114,35 @@ export function EventHeaderControls({
           </div>
           <p className="text-2xs text-subtle">How tall the cover shows at the top of the event page.</p>
         </div>
+      </div>
+
+      {/* LIVE HEADER PREVIEW — the real hero band, at the chosen height with the chosen focus, so a
+          change to either control updates this the moment it happens. Mirrors the event page hero
+          (eventHeroHeightClass + object-cover + objectPosition); the no-cover gradient matches the
+          page's placeholder fill. */}
+      <div className="space-y-1.5 pt-1">
+        <span className={labelClasses}>Header preview</span>
+        {imageUrl ? (
+          <div
+            className={`relative w-full overflow-hidden rounded-2xl border border-border bg-surface-elevated ${eventHeroHeightClass(height)}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt=""
+              draggable={false}
+              style={{ objectPosition: focus }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+        ) : (
+          <div
+            className={`flex w-full items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg ${eventHeroHeightClass(height)}`}
+          >
+            <span className="text-2xs font-medium text-subtle">No header photo yet</span>
+          </div>
+        )}
+        <p className="text-2xs text-subtle">How the header looks at the top of the event page.</p>
       </div>
 
       {error && <p className="text-xs font-medium text-danger">{error}</p>}
