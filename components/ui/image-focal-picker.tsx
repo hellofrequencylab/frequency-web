@@ -158,18 +158,9 @@ export function ImageFocalPicker({
           style={{ objectPosition }}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
-        {/* Vertical guide + marker. The guide emphasizes the primary (vertical) axis; the marker is
-            a high-contrast ring that reads over any photo. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 w-px bg-white/60 mix-blend-difference"
-          style={{ left: `${x}%` }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 h-px bg-white/40 mix-blend-difference"
-          style={{ top: `${y}%` }}
-        />
+        {/* Marker only — a high-contrast ring that reads over any photo. The crosshair guide lines
+            were removed to declutter the preview; the marker alone shows the focal point clearly, and
+            the sliders below give precise, accessible control. */}
         <div
           aria-hidden
           className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-primary/80 shadow-md ring-2 ring-black/30"

@@ -24,8 +24,7 @@ import {
 import { MultiImageUpload } from '@/components/ui/multi-image-upload'
 import { EventLoomPicker } from '@/components/admin/modules/event-loom-picker'
 import { VenueAutocomplete } from '@/components/admin/venue-autocomplete'
-import { EventHeroHeightControl } from '@/components/admin/modules/event-hero-height-control'
-import { EventCoverFocusControl } from '@/components/admin/modules/event-cover-focus-control'
+import { EventHeaderControls } from '@/components/admin/modules/event-header-controls'
 import { EventPlacementField } from '@/components/events/event-placement-field'
 import { readEventHeroHeight } from '@/lib/events/hero-height'
 import { readEventCoverFocus } from '@/lib/events/cover-focus'
@@ -360,19 +359,13 @@ export function EventSettingsModule() {
           )}
         </div>
 
-        <EventHeroHeightControl
+        <EventHeaderControls
           eventId={data.id}
           slug={data.slug}
-          initial={readEventHeroHeight(data.theme)}
+          imageUrl={coverUrl}
+          initialFocus={readEventCoverFocus(data.theme)}
+          initialHeight={readEventHeroHeight(data.theme)}
         />
-        {coverUrl && (
-          <EventCoverFocusControl
-            eventId={data.id}
-            slug={data.slug}
-            imageUrl={coverUrl}
-            initial={readEventCoverFocus(data.theme)}
-          />
-        )}
         {imgErr && <p className="text-xs font-medium text-danger">{imgErr}</p>}
       </div>
 
