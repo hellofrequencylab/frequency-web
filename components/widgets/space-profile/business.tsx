@@ -19,7 +19,7 @@ export function BusinessBlock({
   if (links.length === 0) return null
   return (
     <ModuleSection anchor="business">
-      <SpaceBusinessBlock heading={header?.heading ?? 'Find us online'} links={links} />
+      <SpaceBusinessBlock eyebrow={header?.eyebrow ?? 'Online'} heading={header?.heading ?? 'Find us online'} links={links} />
     </ModuleSection>
   )
 }
