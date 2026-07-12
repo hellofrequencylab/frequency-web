@@ -396,6 +396,15 @@ export const STUDIO_LEAVES: readonly StudioLeaf[] = [
   { id: 'business-seeder', href: '/admin/business-seeder', label: 'Business Seeder', desc: 'Paste a business’s URLs and get a reviewed, seeded Space.', icon: 'Building2', min: 'janitor',
     world: 'platform', worldLabel: 'Business Seeder', worldOrder: 11,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
+  // Listing Seeder (docs: Classifieds & Housing Seeder). A sibling of the Business Seeder: an operator
+  // pastes copied classifieds / housing listing copy + photos, the AI extracts the fields, and after
+  // review it publishes a listing held by the Frequency seed account until the poster claims it. A
+  // janitor operator tool that WRITES public content, so it sits beside Business Seeder in the
+  // platform/System world. Registered here (STUDIO_LEAVES), not in ADMIN_MODULES — a top-level /admin
+  // operator PAGE is a Studio leaf. Its page gates structure:write (requireStaffCap).
+  { id: 'listing-seeder', href: '/admin/listing-seeder', label: 'Listing Seeder', desc: 'Paste a classifieds or housing listing and get a reviewed, published listing to claim.', icon: 'ClipboardPaste', min: 'janitor',
+    world: 'platform', worldLabel: 'Listing Seeder', worldOrder: 12,
+    adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Configuration' } },
   { id: 'audit', href: '/admin/audit', label: 'Audit log', desc: 'Sensitive admin actions. The security trail.', icon: 'ScrollText', min: 'admin',
     world: 'platform', worldLabel: 'Audit', worldOrder: 11,
     adminGroups: [{ domain: 'operations', section: 'System' }], adminNav: { section: 'operations', heading: 'Platform' } },
@@ -561,7 +570,7 @@ export const ADMIN_GROUP_SPECS: readonly AdminGroupSpec[] = [
     links: [
       { leaf: 'menu' }, { leaf: 'pages' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'appearance' }, { leaf: 'spaces' }, { leaf: 'page-layout' },
       { leaf: 'marketplace' }, { leaf: 'marketplace-orders' }, { leaf: 'marketplace-reports' }, { leaf: 'marketplace-disputes' },
-      { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'audit' },
+      { leaf: 'demo' }, { leaf: 'business-seeder' }, { leaf: 'listing-seeder' }, { leaf: 'audit' },
     ],
   },
 ] as const
@@ -625,7 +634,7 @@ export const ADMIN_NAV_SPECS: readonly AdminNavSectionSpec[] = [
     href: '/admin/operations', label: 'Operations', min: 'janitor', staffDomain: 'platform',
     groups: [
       { heading: 'Platform', leaves: [{ leaf: 'audit', label: 'Audit' }, { leaf: 'payments' }, { leaf: 'pricing' }, { leaf: 'roles', label: 'Roles' }, { leaf: 'support' }] },
-      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }] },
+      { heading: 'Configuration', leaves: [{ leaf: 'onboarding-controls', label: 'Onboarding' }, { leaf: 'walkthroughs' }, { leaf: 'page-layout' }, { leaf: 'menu', label: 'Menu' }, { leaf: 'appearance', label: 'Appearance' }, { leaf: 'demo', label: 'Demo' }, { leaf: 'business-seeder', label: 'Business Seeder' }, { leaf: 'listing-seeder', label: 'Listing Seeder' }] },
     ],
   },
   {
