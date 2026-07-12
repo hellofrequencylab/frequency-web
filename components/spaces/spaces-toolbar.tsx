@@ -16,7 +16,7 @@ import { SPACE_CATEGORIES } from '@/lib/spaces/categories'
 // single CATEGORY filter — the SPACE_CATEGORIES labels (rendered from the source of truth) plus All,
 // wired to `?category=`. The type filter (Business / Non Profit) was retired here (ADR-552); Spaces
 // are browsed by category, not by public type.
-export function SpacesToolbar() {
+export function SpacesToolbar({ showFollowing = true }: { showFollowing?: boolean } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -60,20 +60,23 @@ export function SpacesToolbar() {
         </div>
 
         {/* Following — narrows to the Spaces the viewer follows (URL `?following=1`). Styled as a
-            bordered box to match the Sort control on the row. */}
-        <button
-          type="button"
-          onClick={toggleFollowing}
-          aria-pressed={following}
-          className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
-            following
-              ? 'border-primary bg-primary-bg text-primary-strong'
-              : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
-          }`}
-        >
-          <Check className="h-3.5 w-3.5 shrink-0" />
-          Following
-        </button>
+            bordered box to match the Sort control on the row. Hidden on the PUBLIC directory, where a
+            logged-out visitor follows nothing (showFollowing=false). */}
+        {showFollowing && (
+          <button
+            type="button"
+            onClick={toggleFollowing}
+            aria-pressed={following}
+            className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-sm font-medium transition-colors ${
+              following
+                ? 'border-primary bg-primary-bg text-primary-strong'
+                : 'border-border bg-surface text-muted hover:border-primary hover:text-text'
+            }`}
+          >
+            <Check className="h-3.5 w-3.5 shrink-0" />
+            Following
+          </button>
+        )}
       </div>
 
       {/* ROW 2 — the single CATEGORY filter (URL `?category=`): the SPACE_CATEGORIES plus All. Labels
