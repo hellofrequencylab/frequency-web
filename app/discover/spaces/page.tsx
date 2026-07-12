@@ -74,10 +74,10 @@ export default async function PublicSpacesDirectoryPage({
   const urlBase = { q, category, sort: sortParam, per, page }
 
   return (
-    // Shared page width with the public Space profiles (~88rem, set in the (main) public chrome), so moving
-    // between the directory and a Space reads as one product. The /discover layout already clears the fixed
-    // header, so the top padding here stays small (no double gap above the hero).
-    <div className="mx-auto max-w-[88rem] px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
+    // FULL WIDTH, matching the public Space profiles (105rem, set in the (main) public chrome), so the
+    // directory and a Space read at one full width. The /discover layout already clears the fixed header, so
+    // the top padding here stays small (no double gap above the hero).
+    <div className="mx-auto max-w-[105rem] px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
       <JsonLd
         data={[
           spaceListSchema(spaces, TITLE),
