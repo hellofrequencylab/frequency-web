@@ -24,7 +24,7 @@ describe('unified entity-block registry', () => {
   it('every block supports at least one kind, and only known kinds', () => {
     for (const b of ENTITY_BLOCKS) {
       expect(b.kinds.length).toBeGreaterThan(0)
-      for (const k of b.kinds) expect(['member', 'space']).toContain(k)
+      for (const k of b.kinds) expect(['member', 'space', 'email']).toContain(k)
     }
   })
 

@@ -10,8 +10,12 @@ import type { SpaceFunctionKey } from '@/lib/spaces/functions'
 // the new source of truth the U2 editor + U3 cutover build on; the live Spotlight (Puck) and Space
 // (S1-S3) renders are untouched until U3.
 
-/** Which kind of entity a profile belongs to. The block context is discriminated on this. */
-export type EntityKind = 'member' | 'space'
+/** Which kind of entity a profile belongs to. The block context is discriminated on this.
+ *  `email` (Email Studio, 2026) is NOT a live profile: it reuses the SAME block model + renderer spine
+ *  as member / space, but its layout renders to an inline-styled email document (lib/email-studio) instead
+ *  of a web page. It is single-column only (MAX_COLUMNS_BY_KIND.email === 1) and carries its own curated
+ *  palette (EMAIL_PALETTE_BLOCK_IDS) of the blocks that port cleanly to email. */
+export type EntityKind = 'member' | 'space' | 'email'
 
 /** How a block gets its content:
  *  - `data`    — bound to the entity's LIVE data (offerings, stats, reviews). The block renders a
@@ -64,16 +68,19 @@ const DATA_BLOCKS: readonly EntityBlockDef[] = [
 const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // The SPACE free-form blocks (ADR-542): a Callout and a Features section (space-only, interleaved with the
   // legacy authored blocks in ascending order). The Image Gallery reuses the existing `gallery` block below.
-  { id: 'heading', label: 'Heading', description: 'A section heading you write.', category: 'content', kinds: ['member', 'space'], order: 200 },
-  { id: 'callout', label: 'Callout', description: 'A highlighted message with a button and an image.', category: 'content', kinds: ['space'], order: 205 },
-  { id: 'text', label: 'Text', description: 'A paragraph of your own words.', category: 'content', kinds: ['member', 'space'], order: 210 },
+  { id: 'heading', label: 'Heading', description: 'A section heading you write.', category: 'content', kinds: ['member', 'space', 'email'], order: 200 },
+  { id: 'callout', label: 'Callout', description: 'A highlighted message with a button and an image.', category: 'content', kinds: ['space', 'email'], order: 205 },
+  { id: 'text', label: 'Text', description: 'A paragraph of your own words.', category: 'content', kinds: ['member', 'space', 'email'], order: 210 },
   { id: 'links', label: 'Links', description: 'A row of links (the bio-link list).', category: 'content', kinds: ['member', 'space'], order: 220 },
-  { id: 'image', label: 'Image', description: 'A single image.', category: 'content', kinds: ['member', 'space'], order: 230 },
-  { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space'], order: 235 },
+  { id: 'image', label: 'Image', description: 'A single image.', category: 'content', kinds: ['member', 'space', 'email'], order: 230 },
+  { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space', 'email'], order: 235 },
   { id: 'gallery', label: 'Image gallery', description: 'One or many images you upload or link.', category: 'content', kinds: ['member', 'space'], order: 240 },
-  { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space'], order: 250 },
+  { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space', 'email'], order: 250 },
   { id: 'embed', label: 'Music and video', description: 'Embed a YouTube, Spotify, SoundCloud, or Vimeo player, or link an Insight Timer track. Paste a link.', category: 'content', kinds: ['member', 'space'], order: 260 },
-  { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space'], order: 270 },
+  { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space', 'email'], order: 270 },
+  // A first-class call-to-action BUTTON (Email Studio, 2026): a labeled link with an optional alignment.
+  // Shared by web (member / space) AND email so a CTA is a real block everywhere, not a callout side effect.
+  { id: 'button', label: 'Button', description: 'A labeled call-to-action button.', category: 'content', kinds: ['member', 'space', 'email'], order: 275 },
   // The five reusable DESIGN blocks (2026), now offered in the ON-PAGE rail arranger too (they previously
   // lived only in the Puck editor at /spaces/[slug]/edit-page, which is not where operators actually edit).
   // Space-only authored content, rendered by their existing design components
@@ -81,16 +88,16 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // `photoHero` is the CONTENT banner (the in-page hero). The STORED id stays `photoHero` for back-compat
   // (existing pages keep rendering), but the operator-facing name is now "Banner" so it never reads like the
   // profile "Top Page hero" (the cover). See ADR-571.
-  { id: 'photoHero', label: 'Banner', description: 'A bold in-page banner with a headline and an optional photo.', category: 'content', kinds: ['space'], order: 280 },
-  { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space'], order: 282 },
-  { id: 'cardGrid', label: 'Card grid', description: 'A heading over a row of cards.', category: 'content', kinds: ['space'], order: 284 },
+  { id: 'photoHero', label: 'Banner', description: 'A bold in-page banner with a headline and an optional photo.', category: 'content', kinds: ['space', 'email'], order: 280 },
+  { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space', 'email'], order: 282 },
+  { id: 'cardGrid', label: 'Card grid', description: 'A heading over a row of cards.', category: 'content', kinds: ['space', 'email'], order: 284 },
   { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
   { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
   // Two focused TEXT design blocks (ADR-571): a big Display heading and a Prose paragraph, each with its own
   // text-style controls (size / weight / color / shadow) and explanatory demo copy. They give an operator a
   // deliberate "big title" and "body text" block distinct from the plain member Heading / Text content blocks.
-  { id: 'displayHeading', label: 'Display heading', description: 'A large display title in your chosen style.', category: 'content', kinds: ['space'], order: 290 },
-  { id: 'prose', label: 'Text Block', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space'], order: 292 },
+  { id: 'displayHeading', label: 'Display heading', description: 'A large display title in your chosen style.', category: 'content', kinds: ['space', 'email'], order: 290 },
+  { id: 'prose', label: 'Text Block', description: 'A styled paragraph of body text.', category: 'content', kinds: ['space', 'email'], order: 292 },
 ]
 
 /** The reusable design-block ids in the unified entity-block vocabulary (registry ids, NOT the Puck
@@ -189,11 +196,46 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
 const KIND_PALETTE_EXCLUSIONS: Record<EntityKind, ReadonlySet<string>> = {
   space: new Set(['links', 'heading', 'text', 'image']),
   member: new Set(['gallery']),
+  // Email uses its own curated set (EMAIL_PALETTE_BLOCK_IDS), so it needs no CORE-set exclusions.
+  email: new Set(),
 }
 
+/** The curated EMAIL palette (Email Studio, 2026): the CONTENT + DESIGN blocks that port cleanly to an
+ *  inline-styled email document. Headings + text (Display heading / Heading, Text block / Text), a single
+ *  Image, the Banner (photoHero), Editorial, Card grid, Callout, Quote, Divider, Features, and the dedicated
+ *  Button. It deliberately EXCLUDES every `data` block (they bind to live web data), the web-only `embed`
+ *  iframe, the scroll / masonry `gallery`, and the layout-heavy `zigzag` / `accentBeat` design blocks (which
+ *  lean on side-by-side columns email cannot lay out safely). The email renderer (lib/email-studio/render.ts)
+ *  covers exactly these ids. A block here MUST also declare `email` in its `kinds` so the renderer keeps it. */
+export const EMAIL_PALETTE_BLOCK_IDS: ReadonlySet<string> = new Set([
+  'displayHeading',
+  'heading',
+  'photoHero',
+  'editorial',
+  'prose',
+  'text',
+  'image',
+  'cardGrid',
+  'features',
+  'callout',
+  'button',
+  'quote',
+  'divider',
+])
+
 /** The curated, best-practice palette for a profile builder: `blocksForKind` narrowed to the core set, minus
- *  the per-kind exclusions. */
+ *  the per-kind exclusions. Email uses its own dedicated EMAIL_PALETTE_BLOCK_IDS set (still a `blocksForKind`
+ *  narrowing, so the offer and the renderer never drift). */
 export function profilePaletteForKind(kind: EntityKind): EntityBlockDef[] {
+  if (kind === 'email') {
+    return blocksForKind('email').filter((b) => EMAIL_PALETTE_BLOCK_IDS.has(b.id))
+  }
   const excluded = KIND_PALETTE_EXCLUSIONS[kind]
   return blocksForKind(kind).filter((b) => CORE_PROFILE_BLOCK_IDS.has(b.id) && !excluded.has(b.id))
+}
+
+/** The curated EMAIL palette blocks, in default order. Convenience wrapper over profilePaletteForKind for
+ *  the Email Studio UI + tests, so a caller does not repeat the kind literal. */
+export function emailPalette(): EntityBlockDef[] {
+  return profilePaletteForKind('email')
 }

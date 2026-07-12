@@ -849,11 +849,14 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           audience_filter: Json | null
+          block_json: Json | null
           body: string
+          compiled_html: string | null
           created_at: string
           created_by: string | null
           id: string
           phase_id: string | null
+          preheader: string | null
           recipient_count: number
           scheduled_for: string | null
           segment: string
@@ -868,11 +871,14 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           audience_filter?: Json | null
+          block_json?: Json | null
           body: string
+          compiled_html?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           phase_id?: string | null
+          preheader?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -887,11 +893,14 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           audience_filter?: Json | null
+          block_json?: Json | null
           body?: string
+          compiled_html?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           phase_id?: string | null
+          preheader?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -3023,6 +3032,53 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          block_json: Json
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          preheader: string | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          block_json: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          preheader?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          block_json?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          preheader?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

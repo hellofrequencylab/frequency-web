@@ -133,6 +133,10 @@ const MAX_STACK = 12
 export const MAX_COLUMNS_BY_KIND: Record<EntityKind, RowColumns> = {
   member: 1,
   space: 2,
+  // Email (Email Studio, 2026) stacks a single vertical column of sections. One column is the safe, universal
+  // email layout that renders identically across every mail client (multi-column can come later); the email
+  // renderer never emits a side-by-side grid.
+  email: 1,
 }
 
 /** The max columns for a kind (see MAX_COLUMNS_BY_KIND). */
@@ -597,10 +601,21 @@ const SPACE_STARTERS: Record<StarterId, readonly RowDef[]> = {
   minimal: [r('r0', 1, ['about']), r('r1', 1, ['offerings']), r('r2', 1, ['contact'])],
 }
 
+// A fresh EMAIL starts as a single vertical column of authored blocks (single-column by construction). The
+// starter seeds a friendly skeleton the operator fills in: a Banner headline, a paragraph, and a Button
+// (`showcase`), a leaner heading + text + button (`basic`), or just a heading + text (`minimal`). All ids are
+// real email-palette blocks; their authored content is supplied by the editor (blank blocks render nothing).
+const EMAIL_STARTERS: Record<StarterId, readonly RowDef[]> = {
+  basic: [r('r0', 1, ['heading']), r('r1', 1, ['text']), r('r2', 1, ['button'])],
+  showcase: [r('r0', 1, ['photoHero']), r('r1', 1, ['text']), r('r2', 1, ['button'])],
+  minimal: [r('r0', 1, ['heading']), r('r1', 1, ['text'])],
+}
+
 /** The starter seeds by kind. Values are read-only templates; use starterRows to get a fresh, mutable copy. */
 export const STARTER_LAYOUTS: Record<EntityKind, Record<StarterId, readonly RowDef[]>> = {
   member: MEMBER_STARTERS,
   space: SPACE_STARTERS,
+  email: EMAIL_STARTERS,
 }
 
 /** A fresh, deep-copied RowDef[] for a starter seed (safe to hand to a mutable editor / renderer). */
