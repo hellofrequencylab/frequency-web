@@ -6,6 +6,7 @@
 // `supabase gen types` is re-run (repo convention — see lib/journey-plans.ts).
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 function db(): SupabaseClient {
@@ -38,6 +39,10 @@ export interface MarketListing {
   longitude: number | null
   circle_id: string | null
   is_demo: boolean
+  /** True when this listing is still held by the Frequency seed owner AND unclaimed (a live claim
+   *  token, no claimed_at). Drives the "Unclaimed" browse-card badge. Fail-soft false when the seed
+   *  owner can't be resolved. */
+  seededUnclaimed: boolean
   created_at: string
   updated_at: string
 }
@@ -48,10 +53,21 @@ export interface MarketListingWithAuthor extends MarketListing {
 
 const COLS =
   'id, author_id, title, description, kind, category, price_note, status, images, ' +
-  'neighborhood, city, latitude, longitude, circle_id, is_demo, created_at, updated_at'
+  'neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at'
 const AUTHOR = 'author:profiles!author_id(id, display_name, handle, avatar_url)'
 
 const touch = () => ({ updated_at: new Date().toISOString() })
+
+/** Whether a raw row is a seeded, still-unclaimed listing (owned by the seed owner, live claim token,
+ *  no claimed_at). Fail-soft false when the seed owner is unknown. PURE. */
+function computeSeededUnclaimed(row: Record<string, unknown>, seedOwnerId: string | null): boolean {
+  if (!seedOwnerId) return false
+  return (
+    (row.author_id as string | null) === seedOwnerId &&
+    (row.claim_token as string | null) != null &&
+    (row.claimed_at as string | null) == null
+  )
+}
 
 // --- Reads ----------------------------------------------------------------
 
@@ -76,14 +92,21 @@ export async function listListings(opts: ListOpts = {}): Promise<MarketListingWi
     const needle = opts.q.trim().replace(/[%,()]/g, ' ').slice(0, 80)
     if (needle.trim()) query = query.or(`title.ilike.%${needle}%,description.ilike.%${needle}%,category.ilike.%${needle}%`)
   }
-  const { data } = await query
-  return (data as MarketListingWithAuthor[] | null) ?? []
+  // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.
+  const [{ data }, seedOwnerId] = await Promise.all([query, resolveSeedOwnerProfileId()])
+  const rows = (data as Record<string, unknown>[] | null) ?? []
+  return rows.map((r) => ({ ...(r as unknown as MarketListingWithAuthor), seededUnclaimed: computeSeededUnclaimed(r, seedOwnerId) }))
 }
 
 /** A single listing with its author. Null if not found. */
 export async function getListing(id: string): Promise<MarketListingWithAuthor | null> {
-  const { data } = await db().from('market_listings').select(`${COLS}, ${AUTHOR}`).eq('id', id).maybeSingle()
-  return (data as MarketListingWithAuthor | null) ?? null
+  const [{ data }, seedOwnerId] = await Promise.all([
+    db().from('market_listings').select(`${COLS}, ${AUTHOR}`).eq('id', id).maybeSingle(),
+    resolveSeedOwnerProfileId(),
+  ])
+  if (!data) return null
+  const r = data as Record<string, unknown>
+  return { ...(r as unknown as MarketListingWithAuthor), seededUnclaimed: computeSeededUnclaimed(r, seedOwnerId) }
 }
 
 export async function listingAuthorId(id: string): Promise<string | null> {
@@ -131,7 +154,10 @@ export async function createListing(authorId: string, input: ListingInput): Prom
     })
     .select(COLS)
     .maybeSingle()
-  return (data as MarketListing | null) ?? null
+  if (!data) return null
+  // A freshly created row is never a "seeded, unclaimed" browse state yet (the seeder mints its claim
+  // token in a separate step right after); reads recompute it. Default false keeps the shape honest.
+  return { ...(data as unknown as MarketListing), seededUnclaimed: false }
 }
 
 export interface ListingPatch {

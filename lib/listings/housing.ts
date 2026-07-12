@@ -4,6 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import { rowToListing } from './index'
 import { AMENITIES, PROPERTY_TYPES } from './types'
 import type {
@@ -186,7 +187,7 @@ export async function listHousingListings(facets: HousingFacets = {}): Promise<L
   let query = db()
     .from('listings')
     .select(
-      'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, created_at, updated_at, housing:housing_listings!inner(property_type, rent_cents, amenities)',
+      'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at, housing:housing_listings!inner(property_type, rent_cents, amenities)',
     )
     .eq('vertical', 'housing')
     .eq('status', 'active')
@@ -199,8 +200,9 @@ export async function listHousingListings(facets: HousingFacets = {}): Promise<L
   const wanted = toAmenities(facets.amenities ?? [])
   if (wanted.length) query = query.contains('housing.amenities', wanted)
 
-  const { data } = await query
-  return ((data ?? []) as Record<string, unknown>[]).map(rowToListing)
+  // Resolve the seed owner once per query (process-memoized) so each row can carry seededUnclaimed.
+  const [{ data }, seedOwnerId] = await Promise.all([query, resolveSeedOwnerProfileId()])
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => rowToListing(r, seedOwnerId))
 }
 
 // ── Seeker lifestyle preferences (Phase 3) ───────────────────────────────────

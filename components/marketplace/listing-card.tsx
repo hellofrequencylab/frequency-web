@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { EntityCard } from '@/components/cards/entity-card'
+import { UnclaimedBadge } from '@/components/ui/unclaimed-badge'
 import type { Listing } from '@/lib/listings/types'
 
 // Browse card for a connect-only listing (Housing). Wraps the shared EntityCard so
@@ -15,6 +16,7 @@ export function ListingCard({ listing, basePath = '/marketplace/housing' }: { li
         ) : undefined
       }
       title={listing.title}
+      badge={listing.seededUnclaimed ? <UnclaimedBadge /> : undefined}
       context={[listing.category, listing.city].filter(Boolean).join(' · ') || undefined}
       description={listing.description ?? undefined}
       meta={<span className="font-medium text-text">{listing.priceNote?.trim() || 'Free'}</span>}
