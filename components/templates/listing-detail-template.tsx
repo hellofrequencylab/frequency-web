@@ -84,6 +84,9 @@ export function ListingDetailTemplate({
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
   const sellerFirst = view.seller?.displayName.split(/\s+/)[0] || 'the seller'
+  // The top gallery shows EVERY photo with the main image first, so a single-photo listing still gets
+  // a gallery row (owner directive), not just the hero.
+  const galleryAll = view.primaryImage ? [view.primaryImage, ...view.galleryImages] : view.galleryImages
   // A non-owner with a resolvable seller may open the Contact dialog (message + optional offer).
   const showContact = !view.isOwner && !!view.sellerProfileId
   const jsonLd = listingJsonLd(view)
@@ -127,11 +130,11 @@ export function ListingDetailTemplate({
 
       <hr className="my-6 border-border" />
 
-      {/* HEADER — the gallery, full width (it sits where the description used to). Self-hides with no
-          extra photos beyond the hero image. */}
-      {view.galleryImages.length > 0 && (
+      {/* HEADER — the gallery, full width (it sits where the description used to). Shows every photo
+          with the main image first, so a listing with a single photo still gets a gallery row. */}
+      {galleryAll.length > 0 && (
         <div className="mb-6">
-          <EventGallery images={view.galleryImages} />
+          <EventGallery images={galleryAll} />
         </div>
       )}
 
