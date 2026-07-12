@@ -2201,7 +2201,9 @@ export async function logPractice(input: {
   // The daily practice streak (the headline streak members feel) — advances the
   // consecutive-day count, spends a freeze to bridge a slip, and pays milestone
   // rewards. Owns profiles.current_streak / longest_streak (lib/practice-streak.ts).
-  await recordPracticeStreak(profileId).catch(() => {})
+  // Pass the client tz so the streak's "today" resolves to the SAME member-local day
+  // this log was written under (home_timezone wins; the client tz only fills a gap).
+  await recordPracticeStreak(profileId, clientTimezone).catch(() => {})
   // Daily-streak achievement badges (practice_streak criteria) evaluate AFTER the
   // streak advances so today's log counts. Best-effort — a badge check must never
   // break the log (processGamificationEvent already swallows internally too).
@@ -2363,7 +2365,7 @@ export async function unlogPractice(input: {
 
   // 4. Re-derive the streak from the remaining logs (dedicated recompute, never the
   //    monotonic forward writer). Today-only scope keeps freezes + milestones intact.
-  await recomputePracticeStreakAfterUnlog(profileId).catch(() => {})
+  await recomputePracticeStreakAfterUnlog(profileId, clientTimezone).catch(() => {})
 
   // 5. Best-effort: undo the one-shot bonus grants THIS log unlocked, so a re-log can
   //    re-roll them. Welcome Back is keyed by the return DAY; Spark by member+day. We
