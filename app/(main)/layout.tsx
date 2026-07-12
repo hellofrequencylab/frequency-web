@@ -188,6 +188,10 @@ export default async function MainLayout({
 
   if (!user) {
     if (isPublicView) return publicChrome()
+    // The in-app Business Spaces directory (/spaces/directory) has a PUBLIC twin at /discover/spaces.
+    // Send a logged-out visitor who lands on the member URL (e.g. a shared link) to the public browse
+    // instead of the generic home, so the directory is reachable without an account.
+    if (currentPath === '/spaces/directory') redirect('/discover/spaces')
     redirect('/')
   }
 
