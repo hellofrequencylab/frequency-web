@@ -7,7 +7,8 @@ import { listPhases } from '@/lib/beta/phases'
 import { listSegmentOptions } from '@/lib/studio/campaigns'
 import { getEmailStats } from '@/lib/studio/analytics'
 import { listEmailCampaigns } from '@/app/(main)/admin/email-studio/actions'
-import { EmailStudioWorkspace } from '@/components/admin/email-studio/workspace'
+import { listEmailTemplates } from '@/lib/email-studio/templates'
+import { EmailStudioMount } from '@/components/admin/email-studio/email-studio-mount'
 import { CampaignsPanel, type CampaignCardData, type PhaseOption, type SegmentOption } from './email/campaigns-panel'
 import { FunnelsPanel } from './email/funnels-panel'
 import { TemplatesPanel } from './email/templates-panel'
@@ -26,13 +27,14 @@ import { VeraEditor } from './email/vera-editor'
 // Mounted by the page switch only when tab === 'email', so a plain async component
 // (matching the sibling sections) keeps the rest of the workspace off its await.
 export async function BetaEmailSection() {
-  const [campaigns, funnels, phases, segments, stats, emailStudioCampaigns] = await Promise.all([
+  const [campaigns, funnels, phases, segments, stats, emailStudioCampaigns, emailTemplates] = await Promise.all([
     listBetaCampaigns(),
     listBetaFunnels(),
     listPhases(),
     listSegmentOptions(),
     getEmailStats(30),
     listEmailCampaigns(),
+    listEmailTemplates(),
   ])
 
   const phaseTitle = new Map(phases.map((p) => [p.id, `${p.key} · ${p.title}`]))
@@ -67,7 +69,11 @@ export async function BetaEmailSection() {
         title="Email Studio"
         description="Design campaigns block by block, preview the inbox, and send yourself a test. The same arranger as the page builder, tuned for email."
       >
-        <EmailStudioWorkspace initialCampaigns={emailStudioCampaigns} />
+        <EmailStudioMount
+          initialCampaigns={emailStudioCampaigns}
+          templates={emailTemplates}
+          segments={segments}
+        />
       </AdminSection>
 
       <AdminSection

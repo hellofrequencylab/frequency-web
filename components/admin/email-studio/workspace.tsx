@@ -39,15 +39,15 @@ function formatWhen(iso: string): string {
 
 export function EmailStudioWorkspace({
   initialCampaigns,
-  templateGallery = null,
+  templateGallery,
   sendPanel,
   analyticsPanel,
 }: {
   initialCampaigns: EmailCampaignCard[]
-  /** Phase 3: a starter-template gallery, rendered above the editor. */
-  templateGallery?: ReactNode
-  /** Phase 4: the send / schedule / approval panel for the selected campaign. */
-  sendPanel?: (campaignId: string) => ReactNode
+  /** Phase 3: a starter-template gallery. Receives an `onUse(id)` that adds + selects the new draft. */
+  templateGallery?: (onUse: (campaignId: string) => void) => ReactNode
+  /** Phase 4: the send / schedule / approval panel for the selected campaign (id + current status). */
+  sendPanel?: (campaignId: string, status: string) => ReactNode
   /** Phase 6: the per-campaign analytics panel for the selected campaign. */
   analyticsPanel?: (campaignId: string) => ReactNode
 }) {
@@ -87,6 +87,15 @@ export function EmailStudioWorkspace({
     setCards(next)
     return next
   }, [])
+
+  // A draft created outside the list (e.g. from the template gallery): refresh the rail and open it.
+  const handleExternalSelect = useCallback(
+    async (id: string) => {
+      await refreshList()
+      setSelectedId(id)
+    },
+    [refreshList],
+  )
 
   function onNew() {
     setError(null)
@@ -206,11 +215,11 @@ export function EmailStudioWorkspace({
           <div className="space-y-4">
             {(sendPanel || analyticsPanel) && (
               <div className="flex flex-wrap items-start gap-3">
-                {sendPanel?.(loaded.id)}
+                {sendPanel?.(loaded.id, cards.find((c) => c.id === loaded.id)?.status ?? 'draft')}
                 {analyticsPanel?.(loaded.id)}
               </div>
             )}
-            {templateGallery}
+            {templateGallery?.(handleExternalSelect)}
             <EmailEditorPane key={loaded.id} campaign={loaded} onSubjectChange={onSubjectChange} />
           </div>
         )}

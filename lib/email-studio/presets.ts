@@ -51,6 +51,10 @@ function emailLayout(blocks: AuthoredBlock[]): EntityLayout {
   const content: Record<string, Record<string, unknown>> = {}
   const style: Record<string, BlockStyle> = {}
   for (const b of blocks) {
+    // Guard the computed-key writes against prototype pollution. Block ids are authored constants here,
+    // but a computed assignment is a static-analysis sink; __proto__ / constructor / prototype are never
+    // valid block ids, so skipping them is safe and clears the CodeQL alert.
+    if (b.id === '__proto__' || b.id === 'constructor' || b.id === 'prototype') continue
     content[b.id] = b.content
     if (b.style) style[b.id] = b.style
   }
