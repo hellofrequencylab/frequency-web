@@ -3,7 +3,7 @@ title: QR codes & checking in
 description: Scan a Frequency code to earn, and share your own code to connect.
 category: the-quest
 order: 3
-updated: 2026-06-10
+updated: 2026-07-12
 audience: member
 featureKeys: [codes]
 status: published
@@ -46,6 +46,15 @@ personal code, and it does double duty.
   they scan you, and it saves a vCard to their phone. You choose exactly what it
   shares (your photo, and optionally an email, phone, title, or website); nothing
   you don't fill in is included.
+
+## Space and page codes
+
+People are not the only thing with a code. A Space, event, journey, and other
+pages each have their own. Open the page and use its **QR** action to share that
+page's code: whoever scans it lands on that page, the code carries the page's own
+image, and anyone who joins Frequency through your share is credited to you. A
+business Space can also offer a **Save contact** card, so a scan saves the
+business to your phone.
 
 ## Partner codes
 
