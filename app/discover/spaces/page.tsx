@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Plus, Search } from 'lucide-react'
-import { IndexTemplate } from '@/components/templates'
+import { Plus, ArrowDown } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { JsonLd } from '@/components/json-ld'
 import { spaceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { DirectorySearch } from '@/components/ui/directory-search'
 import { SITE_NAME } from '@/lib/site'
 import { listNetworkedSpacesPage, normalizeSpaceSort } from '@/lib/spaces/discovery'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
@@ -87,46 +88,49 @@ export default async function PublicSpacesDirectoryPage({
         ]}
       />
 
-      {/* Public SEO surface: no operator admin bar (that is a member-app control). Same hero grammar as the
-          in-app directory so the two read as one product. The header is an invitation with TWO co-equal CTAs:
-          Browse (jump to the listings) and List your business (create). */}
-      <IndexTemplate
-        title={TITLE}
-        description={HERO_INVITE}
-        adminBar={false}
-        heroImage="/images/site/business-directory-hero.jpg"
-        heroOverlay
-        heroSize="large"
+      {/* A Market-style marketing hero (components/marketplace/market-hero): full-bleed photo + scrim + amber
+          glow, a bold display headline, an in-hero SEARCH (writes ?q=, so the grid below filters live), and
+          two buttons: List your business (create) and Browse all (jump to the listings). */}
+      <MarketHero
+        image="/images/site/business-directory-hero.jpg"
+        eyebrow="Business Spaces"
+        title="Find a business near you"
+        subtitle={HERO_INVITE}
+        search={<DirectorySearch placeholder="Search businesses by name" />}
         action={
-          <div className="flex flex-wrap gap-3">
-            <Link href="#directory" className={buttonClasses('primary', 'md')}>
-              <Search className="h-4 w-4" aria-hidden />
-              Browse businesses
-            </Link>
-            <Link href="/spaces/new" className={buttonClasses('secondary', 'md')}>
+          <>
+            <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
               <Plus className="h-4 w-4" aria-hidden />
               List your business
             </Link>
-          </div>
+            <Link href="#directory" className={buttonClasses('secondary', 'md')}>
+              <ArrowDown className="h-4 w-4" aria-hidden />
+              Browse all
+            </Link>
+          </>
         }
-        toolbar={<SpacesToolbar showFollowing={false} />}
-      >
-        {/* Anchor target for the hero's Browse CTA; scroll-mt clears the fixed site header. */}
-        <div id="directory" className="scroll-mt-24">
-          <SpacesResults
-            basePath={PUBLIC_BASE}
-            spaces={spaces}
-            total={total}
-            q={q}
-            category={category}
-            following={false}
-            page={page}
-            per={per}
-            urlBase={urlBase}
-            gridClassName={DIRECTORY_GRID_WIDE}
-          />
-        </div>
-      </IndexTemplate>
+      />
+
+      {/* The category filter + sort (search lives in the hero above). */}
+      <div className="mt-6">
+        <SpacesToolbar showFollowing={false} showSearch={false} />
+      </div>
+
+      {/* Anchor target for the hero's Browse CTA; scroll-mt clears the fixed site header. */}
+      <div id="directory" className="mt-6 scroll-mt-24">
+        <SpacesResults
+          basePath={PUBLIC_BASE}
+          spaces={spaces}
+          total={total}
+          q={q}
+          category={category}
+          following={false}
+          page={page}
+          per={per}
+          urlBase={urlBase}
+          gridClassName={DIRECTORY_GRID_WIDE}
+        />
+      </div>
 
       <div className="mt-16">
         <BetaCTA
