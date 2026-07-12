@@ -211,6 +211,13 @@ export function StartBusinessCTA() {
 // state + sell. Split from the fetch so the PUBLIC page can fetch once (feeding both its JSON-LD list schema
 // and this body) while the in-app page streams via the SpacesGrid fetch wrapper below. `basePath` threads
 // the pager.
+/** The default browse grid: up to 3 across, sized for the in-app directory (both rails eat width). */
+export const DIRECTORY_GRID_DEFAULT = 'grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3'
+/** The wide browse grid for the no-rail PUBLIC directory: dynamic columns up to 5 across on the widest
+ *  containers (@lg 2, @3xl 3, @5xl 4, @7xl 5) — the rows re-flow with the available width. */
+export const DIRECTORY_GRID_WIDE =
+  'grid grid-cols-1 gap-5 @lg:grid-cols-2 @3xl:grid-cols-3 @5xl:grid-cols-4 @7xl:grid-cols-5'
+
 export function SpacesResults({
   basePath,
   spaces,
@@ -221,6 +228,7 @@ export function SpacesResults({
   page,
   per,
   urlBase,
+  gridClassName = DIRECTORY_GRID_DEFAULT,
 }: {
   basePath: string
   spaces: readonly NetworkedSpace[]
@@ -231,6 +239,9 @@ export function SpacesResults({
   page: number
   per: number
   urlBase: DirectoryUrlBase
+  /** The responsive grid class (column counts). Defaults to the 3-up in-app grid; the public directory
+   *  passes DIRECTORY_GRID_WIDE for up to 5 across. */
+  gridClassName?: string
 }) {
   if (total === 0) {
     const filtering = !!((q ?? '').trim() || (category ?? '').trim() || following)
@@ -268,7 +279,7 @@ export function SpacesResults({
   // clamped "Page X of Y" points the way back.
   return (
     <div className="@container">
-      <div className="grid grid-cols-1 gap-6 @lg:grid-cols-2 @2xl:grid-cols-3">
+      <div className={gridClassName}>
         {spaces.map((space) => (
           <SpaceCard key={space.id} space={space} />
         ))}
