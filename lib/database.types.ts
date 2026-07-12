@@ -7351,6 +7351,7 @@ export type Database = {
       }
       nurture_steps: {
         Row: {
+          block_json: Json | null
           body: string
           created_at: string
           delay_hours: number
@@ -7362,6 +7363,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          block_json?: Json | null
           body: string
           created_at?: string
           delay_hours?: number
@@ -7373,6 +7375,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          block_json?: Json | null
           body?: string
           created_at?: string
           delay_hours?: number

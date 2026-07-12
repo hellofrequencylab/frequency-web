@@ -14,6 +14,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { isPersonaId, getPersona } from '@/lib/onboarding/personas'
 import { validateStepInput } from '@/lib/nurture/schedule'
+import {
+  sanitizeEntityLayout,
+  starterRows,
+  type EntityLayout,
+} from '@/lib/entity-blocks/layout'
+import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 
 async function requireMarketer(): Promise<{ id: string } | string> {
   const me = await getCallerProfile()
@@ -120,6 +126,31 @@ export async function updateStep(
   if (error) return fail('Could not save the step.')
   revalidatePath('/admin/marketing/nurture')
   return ok()
+}
+
+/**
+ * Persist a step's BLOCK-EDITOR body (Email Studio Phase 5). The nurture arranger reuses the SAME
+ * entity-block editor an Email Studio campaign uses (kind 'email'); this is its injected `save`, so the
+ * shared store owns the debounce and hands the freshest BuilderLayout here. Marketing-gated (same axis as
+ * every other write in this file). The layout is re-sanitized server-side (kind 'email'), never trusted from
+ * the wire, and written to nurture_steps.block_json (the source of truth for that step's body when present).
+ * Returns `{ error?: string }` — the shape the store's debounced flush expects.
+ */
+export async function updateStepBlockJson(
+  id: string,
+  layout: BuilderLayout | EntityLayout,
+): Promise<{ error?: string }> {
+  const who = await requireMarketer()
+  if (typeof who === 'string') return { error: who }
+
+  const clean = sanitizeEntityLayout(layout as EntityLayout, 'email') ?? { rows: starterRows('email', 'basic') }
+  const { error } = await db()
+    .from('nurture_steps')
+    .update({ block_json: clean as unknown as never })
+    .eq('id', id)
+  if (error) return { error: 'Could not save the email design.' }
+  revalidatePath('/admin/marketing/nurture')
+  return {}
 }
 
 export async function deleteStep(id: string): Promise<ActionResult> {

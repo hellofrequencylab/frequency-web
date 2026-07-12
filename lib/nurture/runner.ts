@@ -8,6 +8,10 @@ import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
 import { resolveSendGate } from '@/lib/comms/send-gate'
 import { buildLeadUnsubUrl } from '@/lib/connections/lead-unsub'
 import { nextStepAfter, runAtFrom, type NurtureStep } from '@/lib/nurture/schedule'
+import { parseEntityLayout, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { compileEmailDoc } from '@/lib/email-studio/shell'
+import { applyMergeTags } from '@/lib/email-studio/render'
+import { MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 
 interface EnrRow {
   id: string
@@ -19,7 +23,7 @@ interface EnrRow {
 }
 interface StepRow {
   id: string; sequence_id: string; step_order: number; delay_hours: number
-  subject: string; body: string; enabled: boolean
+  subject: string; body: string; enabled: boolean; block_json: unknown
 }
 
 export interface NurtureRunResult {
@@ -37,6 +41,37 @@ function renderEmail(body: string, unsubscribeUrl: string): string {
 
 function toStep(r: StepRow): NurtureStep {
   return { id: r.id, sequenceId: r.sequence_id, order: r.step_order, delayHours: r.delay_hours, subject: r.subject, body: r.body, enabled: r.enabled }
+}
+
+// Split a lead's display name into first / rest, mirroring the campaign send (lib/email-studio/send.ts).
+function splitName(displayName: string | null): { firstName: string; lastName: string } {
+  const trimmed = (displayName ?? '').trim()
+  if (!trimmed) return { firstName: '', lastName: '' }
+  const parts = trimmed.split(/\s+/)
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
+// The per-recipient {{contact.*}} bag; applyMergeTags HTML-escapes values so a name cannot inject.
+function mergeVarsFor(displayName: string | null, email: string): Record<string, string> {
+  const { firstName, lastName } = splitName(displayName)
+  return { 'contact.first_name': firstName, 'contact.last_name': lastName, 'contact.email': email }
+}
+
+/** Render a block-editor step body (EntityLayout, kind 'email') to send-ready html/text/subject the SAME way
+ *  the Phase-4 campaign send does: compileEmailDoc for the themed shell + footer unsubscribe, then per-recipient
+ *  merge tags (HTML escaped in the body, raw in text + subject). */
+function renderBlockStep(
+  layout: EntityLayout,
+  subject: string,
+  vars: Record<string, string>,
+  unsubscribeUrl: string,
+): { html: string; text: string; subject: string } {
+  const compiled = compileEmailDoc({ layout, subject, preheader: '' }, { unsubscribeUrl })
+  return {
+    html: applyMergeTags(compiled.html, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS }),
+    text: applyMergeTags(compiled.text, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false }),
+    subject: applyMergeTags(subject, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false }),
+  }
 }
 
 export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
@@ -57,19 +92,22 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
   const contactIds = [...new Set(due.map((d) => d.contact_id))]
   const [{ data: seqRows }, { data: stepRows }, { data: contactRows }] = await Promise.all([
     db.from('nurture_sequences').select('id, enabled').in('id', seqIds),
-    db.from('nurture_steps').select('id, sequence_id, step_order, delay_hours, subject, body, enabled').in('sequence_id', seqIds),
-    db.from('contacts').select('id, consent_state, profile_id').in('id', contactIds),
+    db.from('nurture_steps').select('id, sequence_id, step_order, delay_hours, subject, body, enabled, block_json').in('sequence_id', seqIds),
+    db.from('contacts').select('id, consent_state, profile_id, display_name').in('id', contactIds),
   ])
 
   const seqEnabled = new Map((seqRows as { id: string; enabled: boolean }[] | null ?? []).map((s) => [s.id, s.enabled]))
   const stepsBySeq = new Map<string, NurtureStep[]>()
+  // Parsed block-editor body per step id (null → the step uses its legacy plain `body`).
+  const blockByStepId = new Map<string, EntityLayout | null>()
   for (const r of (stepRows as StepRow[] | null) ?? []) {
     const list = stepsBySeq.get(r.sequence_id) ?? []
     list.push(toStep(r))
     stepsBySeq.set(r.sequence_id, list)
+    blockByStepId.set(r.id, r.block_json == null ? null : parseEntityLayout(r.block_json))
   }
   const contactById = new Map(
-    (contactRows as { id: string; consent_state: string | null; profile_id: string | null }[] | null ?? []).map((c) => [c.id, c]),
+    (contactRows as { id: string; consent_state: string | null; profile_id: string | null; display_name: string | null }[] | null ?? []).map((c) => [c.id, c]),
   )
 
   let sent = 0
@@ -101,11 +139,21 @@ export async function runDueNurture(limit = 200): Promise<NurtureRunResult> {
     }
 
     const unsubscribeUrl = buildLeadUnsubUrl(e.contact_id)
+    // A step with a block-editor body renders through Email Studio (themed shell + per-recipient merge tags),
+    // exactly like the Phase-4 campaign send; a legacy plain-body step keeps the existing lightweight render.
+    const block = blockByStepId.get(step.id) ?? null
+    const message = block
+      ? renderBlockStep(block, step.subject, mergeVarsFor(contact.display_name, e.email), unsubscribeUrl)
+      : {
+          subject: step.subject,
+          html: renderEmail(step.body, unsubscribeUrl),
+          text: `${step.body}\n\nUnsubscribe: ${unsubscribeUrl}`,
+        }
     await enqueueEmail({
       to: e.email,
-      subject: step.subject,
-      html: renderEmail(step.body, unsubscribeUrl),
-      text: `${step.body}\n\nUnsubscribe: ${unsubscribeUrl}`,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
       headers: listUnsubscribeHeaders(unsubscribeUrl),
     })
     sent++

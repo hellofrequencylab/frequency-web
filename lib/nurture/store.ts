@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { NurtureSequence, NurtureStep } from '@/lib/nurture/schedule'
+import { parseEntityLayout } from '@/lib/entity-blocks/layout'
 
 function db(): SupabaseClient {
   return createAdminClient()
@@ -14,7 +15,7 @@ function db(): SupabaseClient {
 interface SeqRow { id: string; persona: string; name: string; enabled: boolean; created_at: string | null }
 interface StepRow {
   id: string; sequence_id: string; step_order: number; delay_hours: number
-  subject: string; body: string; enabled: boolean
+  subject: string; body: string; enabled: boolean; block_json: unknown
 }
 
 function toSequence(r: SeqRow): NurtureSequence {
@@ -29,6 +30,7 @@ function toStep(r: StepRow): NurtureStep {
     subject: r.subject,
     body: r.body,
     enabled: r.enabled,
+    blockJson: r.block_json == null ? null : parseEntityLayout(r.block_json),
   }
 }
 
@@ -51,7 +53,7 @@ export async function listSequencesWithStats(): Promise<SequenceWithStats[]> {
 
   const ids = sequences.map((s) => s.id)
   const [{ data: stepRows }, { data: enrRows }] = await Promise.all([
-    db().from('nurture_steps').select('id, sequence_id, step_order, delay_hours, subject, body, enabled').in('sequence_id', ids),
+    db().from('nurture_steps').select('id, sequence_id, step_order, delay_hours, subject, body, enabled, block_json').in('sequence_id', ids),
     db().from('nurture_enrollments').select('sequence_id, status').in('sequence_id', ids),
   ])
 
@@ -83,7 +85,7 @@ export async function getSequenceByPersona(persona: string): Promise<{ sequence:
   if (!seq) return null
   const { data: stepRows } = await db()
     .from('nurture_steps')
-    .select('id, sequence_id, step_order, delay_hours, subject, body, enabled')
+    .select('id, sequence_id, step_order, delay_hours, subject, body, enabled, block_json')
     .eq('sequence_id', seq.id)
   const steps = ((stepRows as StepRow[] | null) ?? []).map(toStep)
   return { sequence: toSequence(seq), steps }

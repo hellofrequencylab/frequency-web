@@ -35,6 +35,7 @@ export default async function NurturePage() {
               subject: st.subject,
               body: st.body,
               enabled: st.enabled,
+              blockJson: st.blockJson ?? null,
             })),
           }
         : null,
