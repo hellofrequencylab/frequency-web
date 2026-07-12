@@ -29,6 +29,7 @@ import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
 import { SpaceShareButton } from '@/components/spaces/space-share-button'
+import { SpacePrivateNotice } from '@/components/spaces/space-private-notice'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
@@ -540,6 +541,9 @@ export default async function SpaceProfileChromeLayout({
         />
       )}
       <DetailTemplate title={brandName} hero={coverNode} band={infoBand} stickyNav={stickyNav}>
+        {/* Owner guardrail: a private Space is hidden from the directory, search, and shared links, so a
+            manager viewing their own private page gets a one-click Make public assist (server re-gates). */}
+        {manage.canManage && !isNetwork && <SpacePrivateNotice spaceId={space.id} />}
         {children}
       </DetailTemplate>
       {/* The owner Customize rail is now the STANDARDIZED admin bar (mounted site-wide by the shell), opened

@@ -9,7 +9,12 @@ import { BetaCTA } from '@/components/marketing/marketing-ui'
 import { SITE_NAME } from '@/lib/site'
 import { listNetworkedSpacesPage, normalizeSpaceSort } from '@/lib/spaces/discovery'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
-import { SpacesResults, normalizePerPage, normalizePage } from '@/components/spaces/directory-view'
+import {
+  SpacesResults,
+  normalizePerPage,
+  normalizePage,
+  DIRECTORY_GRID_WIDE,
+} from '@/components/spaces/directory-view'
 
 // PUBLIC Business Spaces directory (/discover/spaces) — the indexable, no-rail twin of the in-app directory
 // (/spaces/directory). It renders inside the shared /discover chrome (SiteHeader + footer, no left menu, no
@@ -64,7 +69,7 @@ export default async function PublicSpacesDirectoryPage({
   const urlBase = { q, category, sort: sortParam, per, page }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+    <div className="mx-auto max-w-[104rem] px-6 py-16 sm:py-20">
       <JsonLd
         data={[
           spaceListSchema(spaces, TITLE),
@@ -102,6 +107,7 @@ export default async function PublicSpacesDirectoryPage({
           page={page}
           per={per}
           urlBase={urlBase}
+          gridClassName={DIRECTORY_GRID_WIDE}
         />
       </IndexTemplate>
 
