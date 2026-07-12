@@ -101,6 +101,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/discover/topics`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/partners`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/discover/practices`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // Public Business Spaces directory — the indexable, no-rail twin of the in-app /spaces/directory (the
+    // per-type hubs /discover/spaces/[type] are dynamic, below).
+    { url: `${SITE_URL}/discover/spaces`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     // Browse-by-place hub — the local-intent landing index (per-city pages are dynamic, below).
     { url: `${SITE_URL}/discover/places`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     // Density-gated city landing hub (GE11-2) — only cities above the density
