@@ -92,18 +92,8 @@ export function ListingDetailTemplate({
     <div className="w-full pb-4">
       {jsonLd.length > 0 && <JsonLd data={jsonLd} />}
 
-      {/* Top breadcrumb (kept). The old back chevron is gone (owner directive). */}
-      <nav className="mb-3 flex items-center gap-1.5 text-xs text-muted" aria-label="Breadcrumb">
-        <Link href={view.back.href} className="hover:text-text">
-          {view.back.label}
-        </Link>
-        <span aria-hidden className="text-subtle">
-          /
-        </span>
-        <span className="text-subtle">Detail</span>
-      </nav>
-
-      {/* HERO — price top-left, category top-right, title + owner Edit overlaid on the bottom. */}
+      {/* HERO — price top-left, category top-right, title + owner Edit overlaid on the bottom.
+          (The breadcrumb is rendered once by the page chrome above this; we don't repeat it here.) */}
       <ListingHero
         title={view.title}
         image={view.primaryImage}
@@ -137,24 +127,28 @@ export function ListingDetailTemplate({
 
       <hr className="my-6 border-border" />
 
-      {/* HEADER — gallery + description, full width. */}
+      {/* HEADER — the gallery, full width (it sits where the description used to). Self-hides with no
+          extra photos beyond the hero image. */}
       {view.galleryImages.length > 0 && (
-        <div className="mb-4">
+        <div className="mb-6">
           <EventGallery images={view.galleryImages} />
         </div>
       )}
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-        {children}
-        {view.description && (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{view.description}</p>
-        )}
-      </div>
 
-      {footer}
-
-      {/* BODY — MAIN (Q&A + map) beside the RIGHT rail (contact, details, manage). */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* BODY — MAIN (description + Q&A + map) beside the RIGHT rail (contact, details, manage). */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
+          {/* Description, moved above the Questions feed. Vertical extras (housing facts, market buy)
+              lead inside the same card; the market purchase panel (footer) follows it. */}
+          <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
+            {children}
+            {view.description && (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{view.description}</p>
+            )}
+          </div>
+
+          {footer}
+
           <ListingQna
             targetKind={view.commentTargetKind}
             targetId={view.id}
