@@ -46,6 +46,7 @@ library_collection_items
 library_collections
 library_styles
 library_versions
+listing_intake
 nodes
 notification_queue
 nurture_enrollments

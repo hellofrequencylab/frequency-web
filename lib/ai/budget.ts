@@ -69,6 +69,8 @@ export const FEATURE_DAILY_CAP_USD: Record<string, number> = {
   'business-import-reframe': 3,  // reframe the verified draft in the Frequency voice (Sonnet; P2)
   'seed-compose': 5,             // compose the seeded page into named, grouped sections (Sonnet; one call per seed/re-seed)
   'seed-image-plan': 4,          // vision: read the uploaded photos, pick the hero + categorize (Sonnet vision; per import)
+  // ── Classifieds & Housing Seeder (operator-facing, low-volume, per-paste) ─────────────────────
+  'listing-seed-extract': 5,     // extract a structured listing from one pasted block (Sonnet; forced tool, per paste)
 }
 
 export function dailyCapFor(feature: string, fallbackUsd = 1): number {
