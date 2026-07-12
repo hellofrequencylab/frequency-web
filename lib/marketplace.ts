@@ -136,8 +136,9 @@ function cleanImages(images: string[] | undefined): string[] {
 }
 
 /** Normalize item-detail chips: trim both parts, drop any row missing a label or value, cap at 20.
- *  Order is preserved (the chips render in the given order on the detail rail). */
-function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
+ *  Order is preserved (the chips render in the given order on the detail rail). ListingDetail and the
+ *  detail-view ListingDetailField are the same {label, value} shape, so both write paths share this. */
+export function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
   return (details ?? [])
     .map((d) => ({ label: (d?.label ?? '').trim().slice(0, 40), value: (d?.value ?? '').trim().slice(0, 160) }))
     .filter((d) => d.label && d.value)
@@ -203,14 +204,6 @@ export interface ListingPatch {
   details?: ListingDetailField[]
   pickupAddress?: string | null
   pickupPrecision?: 'area' | 'exact'
-}
-
-/** Keep only well-formed {label, value} detail chips, trimmed and capped (defensive against junk). */
-export function cleanDetails(details: ListingDetailField[] | undefined): ListingDetailField[] {
-  return (details ?? [])
-    .map((d) => ({ label: (d?.label ?? '').trim().slice(0, 40), value: (d?.value ?? '').trim().slice(0, 120) }))
-    .filter((d) => d.label && d.value)
-    .slice(0, 12)
 }
 
 export async function updateListing(id: string, patch: ListingPatch): Promise<void> {
