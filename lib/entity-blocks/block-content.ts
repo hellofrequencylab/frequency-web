@@ -621,6 +621,136 @@ export function safeUrl(raw: unknown): string {
   return ''
 }
 
+// ── Inline rich text (Email Studio canvas, Slice A) ─────────────────────────────────────────────────────
+// A `textarea` content field edited on the WYSIWYG email canvas (Tiptap) now stores LIMITED inline HTML, not
+// plain text. This is the ONE sanitizer both the SAVE path and the email RENDERER run, so the stored value
+// and the rendered value are always the same allowlisted string (defence in depth: sanitize on write AND
+// re-sanitize on read, since a stored blob is user-originated and never trusted — mirrors the fail-safe care
+// in sanitizeBlockContent / layout.ts). ALLOWLIST: <b> <strong> <i> <em> and <a href> (safe href only) and
+// <br>. EVERYTHING else is escaped as text; every disallowed tag is dropped (its inner text survives, so a
+// <script> becomes inert visible text); every attribute except a safe <a href> is stripped; every href runs
+// through safeUrl (so javascript: / data: never reach an href). Unclosed marks are auto-closed. Pure + total.
+
+/** Escape a string for a safe HTML text/attribute context (local copy — block-content stays framework-free). */
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** The inline formatting marks the rich editor may store (canonicalised, attribute-free on output). */
+const RICH_INLINE_TAGS: ReadonlySet<string> = new Set(['b', 'strong', 'i', 'em'])
+
+/** Pull a raw href value out of an `<a ...>` tag's attribute blob (quoted or bare). */
+function extractHref(attrs: string): string {
+  const m = /href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(attrs)
+  if (!m) return ''
+  return m[1] ?? m[2] ?? m[3] ?? ''
+}
+
+/**
+ * Sanitize a rich inline value to the safe allowlist HTML string (see the module note above). Idempotent, so
+ * it is safe to run on save AND on every render. Bounds to MAX_TEXT. Pure + total: never throws, and a
+ * non-string yields ''.
+ */
+export function sanitizeInlineHtml(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  const input = raw.slice(0, MAX_TEXT)
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^"'>])*)>/g
+  const open: string[] = []
+  let out = ''
+  let last = 0
+  const text = (s: string) => {
+    if (s) out += escapeHtmlText(s).replace(/\r?\n/g, '<br>')
+  }
+  let m: RegExpExecArray | null
+  while ((m = tagRe.exec(input)) !== null) {
+    text(input.slice(last, m.index))
+    last = tagRe.lastIndex
+    const closing = m[1] === '/'
+    const name = m[2].toLowerCase()
+    const attrs = m[3] ?? ''
+    if (name === 'br') {
+      if (!closing) out += '<br>'
+      continue
+    }
+    if (name === 'a') {
+      if (closing) {
+        const idx = open.lastIndexOf('a')
+        if (idx !== -1) {
+          out += '</a>'
+          open.splice(idx, 1)
+        }
+      } else {
+        const href = safeUrl(extractHref(attrs))
+        if (href) {
+          out += `<a href="${escapeHtmlText(href)}" rel="noopener noreferrer">`
+          open.push('a')
+        }
+        // An unsafe / missing href drops the tag; the link's inner text still survives.
+      }
+      continue
+    }
+    if (RICH_INLINE_TAGS.has(name)) {
+      if (closing) {
+        const idx = open.lastIndexOf(name)
+        if (idx !== -1) {
+          out += `</${name}>`
+          open.splice(idx, 1)
+        }
+      } else {
+        out += `<${name}>`
+        open.push(name)
+      }
+      continue
+    }
+    // Any other tag (script, div, span, img, on*-carrying element, ...) is dropped; its inner text is escaped
+    // as ordinary text on the next iteration.
+  }
+  text(input.slice(last))
+  // Auto-close any marks left open so a stray `<b>` never bleeds into the rest of the document.
+  for (let i = open.length - 1; i >= 0; i--) out += `</${open[i]}>`
+  return out.trim()
+}
+
+/** Decode the 5 entities escapeHtmlText emits, back to their characters. `&amp;` LAST so an escaped `&lt;`
+ *  (stored as `&amp;lt;`) round-trips to the literal `&lt;` rather than being over-decoded to `<`. */
+function decodeInlineEntities(s: string): string {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+}
+
+/**
+ * The PLAIN-TEXT projection of an inline rich value (the text/plain alternative for the email). Uses the SAME
+ * tag TOKENIZER as sanitizeInlineHtml and emits ONLY the text nodes: every tag is dropped, `<br>` becomes a
+ * newline, and the escaped entities are decoded. Because it reconstructs from tokenized text runs rather than
+ * stripping tags with a catch-all `replace(/<[^>]+>/g, '')`, malformed or nested markup can never leak a tag
+ * (or a `<script`) into the output — the projection is complete by construction. Pure + total; non-string → ''.
+ */
+export function inlineHtmlToText(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  const input = raw.slice(0, MAX_TEXT)
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^"'>])*)>/g
+  let out = ''
+  let last = 0
+  let m: RegExpExecArray | null
+  while ((m = tagRe.exec(input)) !== null) {
+    out += input.slice(last, m.index)
+    last = tagRe.lastIndex
+    // A self-closing / opening <br> becomes a newline; every other tag contributes no text.
+    if (m[2].toLowerCase() === 'br' && m[1] !== '/') out += '\n'
+  }
+  out += input.slice(last)
+  return decodeInlineEntities(out).trim()
+}
+
 // ── Content sanitize ──────────────────────────────────────────────────────────────────────────────────
 
 const MAX_TEXT = 2000
@@ -760,7 +890,7 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
 // makes the written property name a fixed, safe value (mirrors lib/entity-blocks/layout.ts KNOWN_SLOT_IDS)
 // — a bad key like `__proto__` is never a registry id, so it can never reach an object property (CodeQL
 // js/remote-property-injection). A membership Set is the pattern the analysis recognises as a sanitizer.
-const KNOWN_BLOCK_IDS: ReadonlySet<string> = new Set(ENTITY_BLOCKS.map((b) => b.id))
+export const KNOWN_BLOCK_IDS: ReadonlySet<string> = new Set(ENTITY_BLOCKS.map((b) => b.id))
 
 /** Validate the whole per-block content map. Iterates the ALLOWLIST (not the raw object), so every written
  *  key is a fixed registry id — a user key can only be READ, never used as a write property name (no
