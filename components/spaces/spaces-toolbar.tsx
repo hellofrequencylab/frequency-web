@@ -16,7 +16,10 @@ import { SPACE_CATEGORIES } from '@/lib/spaces/categories'
 // single CATEGORY filter — the SPACE_CATEGORIES labels (rendered from the source of truth) plus All,
 // wired to `?category=`. The type filter (Business / Non Profit) was retired here (ADR-552); Spaces
 // are browsed by category, not by public type.
-export function SpacesToolbar({ showFollowing = true }: { showFollowing?: boolean } = {}) {
+export function SpacesToolbar({
+  showFollowing = true,
+  showSearch = true,
+}: { showFollowing?: boolean; showSearch?: boolean } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -50,9 +53,14 @@ export function SpacesToolbar({ showFollowing = true }: { showFollowing?: boolea
           on the box children equalizes their height to the search input. The Sort menu opens over the
           grid (row 1 has no overflow clip), fixing the old clipped-dropdown case. */}
       <div className="flex items-stretch gap-2">
-        <div className="min-w-0 flex-1">
-          <DirectorySearch placeholder="Search Spaces by name…" />
-        </div>
+        {showSearch ? (
+          <div className="min-w-0 flex-1">
+            <DirectorySearch placeholder="Search Spaces by name…" />
+          </div>
+        ) : (
+          // Search lives elsewhere (e.g. in the hero on the public directory); keep Sort pushed right.
+          <div className="min-w-0 flex-1" aria-hidden />
+        )}
 
         {/* Sort — the ordering control. Its inner trigger button is stretched to the row height. */}
         <div className="shrink-0 [&>div]:h-full [&_button]:h-full">

@@ -80,7 +80,7 @@ export function DetailTemplate({
           {coverImage ? (
             <div className="relative aspect-[16/6] w-full overflow-hidden rounded-2xl bg-surface-elevated">
               {/* Above the fold -> preload for LCP (this fork uses `preload`, not `priority`). */}
-              <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" preload className="object-cover" />
+              <Image src={coverImage} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload className="object-cover" />
             </div>
           ) : (
             <div className="flex aspect-[16/6] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">

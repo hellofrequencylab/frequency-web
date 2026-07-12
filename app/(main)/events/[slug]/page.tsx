@@ -1183,7 +1183,7 @@ export default async function EventDetailPage({
                 src={heroUrl}
                 alt=""
                 fill
-                sizes="(max-width: 1024px) 100vw, 1024px"
+                sizes="(max-width: 1024px) 100vw, 1344px"
                 className="object-cover"
                 style={{ objectPosition: coverFocus }}
                 preload

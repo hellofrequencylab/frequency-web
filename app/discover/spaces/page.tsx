@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
-import { IndexTemplate } from '@/components/templates'
+import { Plus, ArrowDown } from 'lucide-react'
 import { buttonClasses } from '@/components/ui/button'
 import { JsonLd } from '@/components/json-ld'
 import { spaceListSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { BetaCTA } from '@/components/marketing/marketing-ui'
+import { MarketHero } from '@/components/marketplace/market-hero'
+import { DirectorySearch } from '@/components/ui/directory-search'
 import { SITE_NAME } from '@/lib/site'
 import { listNetworkedSpacesPage, normalizeSpaceSort } from '@/lib/spaces/discovery'
 import { SpacesToolbar } from '@/components/spaces/spaces-toolbar'
@@ -27,6 +28,10 @@ import {
 const TITLE = 'Business Spaces'
 const DESCRIPTION =
   'Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect.'
+// The marketing header invitation: a plain, two-part welcome (browse what is here, or add your own), sized
+// for the on-photo hero. Voice canon: plain, no em dashes, never narrate the reader's feelings.
+const HERO_INVITE =
+  'Find a practitioner, business, studio, or shop near you. Or list your own and get discovered by everyone browsing the network.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -69,7 +74,10 @@ export default async function PublicSpacesDirectoryPage({
   const urlBase = { q, category, sort: sortParam, per, page }
 
   return (
-    <div className="mx-auto max-w-[104rem] px-6 py-16 sm:py-20">
+    // Shared page width with the public Space profiles (~88rem, set in the (main) public chrome), so moving
+    // between the directory and a Space reads as one product. The /discover layout already clears the fixed
+    // header, so the top padding here stays small (no double gap above the hero).
+    <div className="mx-auto max-w-[88rem] px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
       <JsonLd
         data={[
           spaceListSchema(spaces, TITLE),
@@ -80,23 +88,36 @@ export default async function PublicSpacesDirectoryPage({
         ]}
       />
 
-      {/* Public SEO surface: no operator admin bar (that is a member-app control). Same hero grammar as the
-          in-app directory so the two read as one product. */}
-      <IndexTemplate
-        title={TITLE}
-        description={DESCRIPTION}
-        adminBar={false}
-        heroImage="/images/site/business-directory-hero.jpg"
-        heroOverlay
-        heroSize="large"
+      {/* A Market-style marketing hero (components/marketplace/market-hero): full-bleed photo + scrim + amber
+          glow, a bold display headline, an in-hero SEARCH (writes ?q=, so the grid below filters live), and
+          two buttons: List your business (create) and Browse all (jump to the listings). */}
+      <MarketHero
+        image="/images/site/business-directory-hero.jpg"
+        eyebrow="Business Spaces"
+        title="Find a business near you"
+        subtitle={HERO_INVITE}
+        search={<DirectorySearch placeholder="Search businesses by name" />}
         action={
-          <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
-            <Plus className="h-4 w-4" aria-hidden />
-            List your business
-          </Link>
+          <>
+            <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
+              <Plus className="h-4 w-4" aria-hidden />
+              List your business
+            </Link>
+            <Link href="#directory" className={buttonClasses('secondary', 'md')}>
+              <ArrowDown className="h-4 w-4" aria-hidden />
+              Browse all
+            </Link>
+          </>
         }
-        toolbar={<SpacesToolbar showFollowing={false} />}
-      >
+      />
+
+      {/* The category filter + sort (search lives in the hero above). */}
+      <div className="mt-6">
+        <SpacesToolbar showFollowing={false} showSearch={false} />
+      </div>
+
+      {/* Anchor target for the hero's Browse CTA; scroll-mt clears the fixed site header. */}
+      <div id="directory" className="mt-6 scroll-mt-24">
         <SpacesResults
           basePath={PUBLIC_BASE}
           spaces={spaces}
@@ -109,7 +130,7 @@ export default async function PublicSpacesDirectoryPage({
           urlBase={urlBase}
           gridClassName={DIRECTORY_GRID_WIDE}
         />
-      </IndexTemplate>
+      </div>
 
       <div className="mt-16">
         <BetaCTA

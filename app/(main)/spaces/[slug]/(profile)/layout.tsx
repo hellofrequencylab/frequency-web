@@ -339,7 +339,7 @@ export default async function SpaceProfileChromeLayout({
       src={coverSrc}
       alt=""
       fill
-      sizes="(max-width: 1024px) 100vw, 1024px"
+      sizes="(max-width: 1024px) 100vw, 1344px"
       preload
       className="object-cover"
       style={{ objectPosition: coverFocus }}

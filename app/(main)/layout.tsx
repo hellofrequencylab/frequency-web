@@ -167,19 +167,12 @@ export default async function MainLayout({
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* Mirror the member shell's centered three-column grid (app-shell.tsx) so a public
-              page reads at the SAME width as it does signed in: the page content sits in the
-              centered column flanked by the rail gutters. A public viewer has no nav/community
-              rail, so the side columns stay EMPTY (not removed) — the content never sprawls
-              edge-to-edge, it lines up exactly where the member shell puts it. */}
-          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
-            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
-            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
-            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's <main>. */}
-            <div className="min-w-0 flex-1 py-6">{children}</div>
-            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
-            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
-          </div>
+          {/* A public page (a networked Space profile, a public event) reads in a single CENTERED column at
+              the shared ~88rem width — the same width the public /discover/spaces directory uses, so moving
+              between the directory and a Space reads as one product. A public viewer has no nav/community
+              rail, so there are no gutters to mirror; the content is simply centered and never sprawls
+              edge to edge. (The SIGNED-IN view still uses the member shell's three-column grid.) */}
+          <div className="mx-auto w-full max-w-[88rem] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
         <MarketingFooter menu={footerMenu} />
       </>
