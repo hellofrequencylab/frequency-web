@@ -52,13 +52,24 @@ reach the person and arrange the rest offline.
 - The **Frequency Store** is Frequency's own store for merch, event passes, and retreats.
 - Anything you buy shows up under **My orders** in your account menu.
 
+## On a listing
+
+- **Contact the seller** opens a message and, if you want, lets you **make an offer**. The seller
+  sees it in their messages. The highest offer so far shows on the listing so everyone knows where
+  things stand. No payment happens in the app; you arrange that offline.
+- **Item details** on the right spell out the specifics the seller added, like condition, brand, or
+  size.
+- **Pickup area** shows the general spot on a map. The exact address stays private until the seller
+  shares it with you, so a listing never puts someone's front door on a public page.
+- **QR & Link** gives you a code and a link that open the listing directly, handy for sharing it.
+
 ## Making contact
 
 - A Classifieds or Housing listing links to the poster's profile, where you can reach out and
   arrange the details.
-- Every listing has a **Questions** box at the bottom. Ask in the open and the answer helps the
-  next person too. The poster can reply there and add anything the listing left out. Keep it kind
-  and local. This is mutual support first.
+- Every listing has a **Questions** box. Ask in the open and the answer helps the next person too.
+  The poster can reply there and add anything the listing left out. Keep it kind and local. This is
+  mutual support first.
 
 ## Claiming a listing
 

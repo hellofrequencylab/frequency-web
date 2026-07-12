@@ -48,6 +48,7 @@ import type { TourState } from '@/lib/onboarding/select'
 import { getOnboardingStatus, nextStepsEnabled } from '@/lib/onboarding/status'
 import { autoPopupsEnabled } from '@/lib/onboarding/flags'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
+import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import { ChoresOverlay } from '@/components/onboarding/chores-overlay'
 import { CaptureLauncher } from '@/components/feed/capture-launcher'
 import { TimezoneSync } from '@/components/layout/timezone-sync'
@@ -212,8 +213,18 @@ export default async function MainLayout({
   // loop) forwards to /onboarding/beta. Flipping BETA_INDUCTION_ACTIVE off at
   // launch reverts to the non-blocking model (ADR-047). A public page is exempt so a
   // not-yet-onboarded session can still read it.
-  const meta = profile.meta as { onboarding_completed?: boolean } | null
-  if (BETA_INDUCTION_ACTIVE && !meta?.onboarding_completed) {
+  //
+  // Robust gate (not just meta.onboarding_completed): an EXISTING active member who
+  // has clearly used the app — one seeded before the induction gate, or whose
+  // completion write predates the flag — must never be re-forced through beta-launch
+  // onboarding on every sign-in. hasEffectivelyOnboarded treats prior app use (a
+  // completed induction, seen tour cues, earned Zaps/Gems) as onboarded, while a
+  // genuinely-new member still gets the full induction.
+  if (BETA_INDUCTION_ACTIVE && !hasEffectivelyOnboarded({
+    meta: profile.meta,
+    currentSeasonZaps: profile.current_season_zaps,
+    lifetimeGems: profile.lifetime_gems,
+  })) {
     if (isPublicView) return publicChrome()
     redirect('/onboarding')
   }

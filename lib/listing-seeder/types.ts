@@ -23,6 +23,20 @@ export type ListingSeedKind = 'classifieds' | 'housing'
 
 export const LISTING_SEED_KINDS: readonly ListingSeedKind[] = ['classifieds', 'housing']
 
+// ── Item-detail chips + pickup precision (market_listings) ────────────────────────
+
+/** One item-detail chip on a classifieds listing: a short label + its value (e.g.
+ *  { label: 'Condition', value: 'Like new' }). Ordered; rendered compactly on the detail rail. */
+export interface ListingDetail {
+  label: string
+  value: string
+}
+
+/** How precisely a classifieds pickup location is shown: 'area' (approximate only, the default) or
+ *  'exact' (reveal the exact pickup_address). The seeder never publishes a scraped exact address, so a
+ *  seeded listing is always 'area'. */
+export type ListingPickupPrecision = 'area' | 'exact'
+
 // ── The raw (untrusted) model shape ──────────────────────────────────────────────
 
 /** One field the model extracted, with the citation it claims. Every value is a string as the model
@@ -38,6 +52,12 @@ export interface RawCitedField {
   confidence?: number
 }
 
+/** One item-detail chip as the model emits it (untrusted, both parts optional; coerced + trimmed). */
+export interface RawListingDetail {
+  label?: string
+  value?: string
+}
+
 /** The untrusted Classifieds extraction the forced tool returns. Every field optional + cited. */
 export interface ClassifiedsExtraction {
   kind: 'classifieds'
@@ -47,6 +67,9 @@ export interface ClassifiedsExtraction {
   listingKind?: RawCitedField
   category?: RawCitedField
   priceNote?: RawCitedField
+  /** Ordered item-detail chips the model found stated in the paste (Condition, Brand, Dimensions, …).
+   *  Not cited per-chip: the operator confirms them on the review board. */
+  details?: RawListingDetail[]
   neighborhood?: RawCitedField
   city?: RawCitedField
   contact?: RawCitedField
@@ -92,6 +115,10 @@ export interface ClassifiedsDraft {
   listingKind: ListingKind
   category: string | null
   priceNote: string | null
+  /** Ordered item-detail chips ({label, value}) for the detail rail. Defaults to []. */
+  details: ListingDetail[]
+  /** Pickup precision; a seeded listing is always 'area' (never a scraped exact address). */
+  pickupPrecision: ListingPickupPrecision
   neighborhood: string | null
   city: string | null
   contact: string | null

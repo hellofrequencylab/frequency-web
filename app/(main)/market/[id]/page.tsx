@@ -21,6 +21,7 @@ import { ListingDetailTemplate } from '@/components/templates/listing-detail-tem
 import { listingDetailFromProduct, type ListingAction } from '@/lib/listings-shared/detail-view'
 import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
+import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 import { BuyButton } from '../../marketplace/buy-button'
 import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind } from '@/lib/commerce/types'
@@ -121,12 +122,13 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
 
   // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
   // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
-  const [sellerVerified, reviews, myReview, operator, comments] = await Promise.all([
+  const [sellerVerified, reviews, myReview, operator, comments, highestOfferCents] = await Promise.all([
     sellerVerifiedForProduct(product),
     getProductReviews(product.id),
     getMyProductReview(product.id, profileId),
     isPlatformStaff(),
     getListingComments('product', product.id),
+    getHighestOfferCents('product', product.id),
   ])
 
   // The hero action: only the connect-only "Contact seller" path is a plain link. The Buy button,
@@ -141,6 +143,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
     priceLabel,
     seller: null,
     action: heroAction,
+    highestOfferCents,
   })
 
   return (

@@ -77,6 +77,9 @@ async function publishClassifieds(
     kind: draft.listingKind,
     category: draft.category,
     priceNote: draft.priceNote,
+    details: draft.details ?? [],
+    // A seeded listing never reveals a scraped exact address: publish area-only.
+    pickupPrecision: draft.pickupPrecision ?? 'area',
     neighborhood: draft.neighborhood,
     city: draft.city,
     images,

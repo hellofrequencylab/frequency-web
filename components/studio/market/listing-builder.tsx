@@ -2,13 +2,13 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Store, Eye, MapPin, Check, Loader2 } from 'lucide-react'
+import { Store, Eye, MapPin, Check, Loader2, Plus, X } from 'lucide-react'
 import { StudioWindow } from '../studio-window'
 import { useStudioDraft } from '../kit/use-studio-draft'
 import { StudioField } from '../kit/studio-field'
 import { SaveStatus, StudioFooter } from '../kit/studio-footer'
 import { getBrowserPosition } from '@/lib/geo-browser'
-import { LISTING_KINDS, type ListingKind, type ListingPatch } from '@/lib/marketplace'
+import { LISTING_KINDS, type ListingDetailField, type ListingKind, type ListingPatch } from '@/lib/marketplace'
 import { updateListingAction } from '@/app/(main)/classifieds/actions'
 
 const FIELD = 'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-subtle focus:border-border-strong focus:outline-none'
@@ -24,6 +24,9 @@ export interface ListingBuilderProps {
   city: string | null
   images: string[]
   hasGeo: boolean
+  details: ListingDetailField[]
+  pickupAddress: string | null
+  pickupPrecision: 'area' | 'exact'
 }
 
 // Edit a listing on the Studio shell (entity #4 to ride the kit) — autosaves each
@@ -46,6 +49,9 @@ export function ListingBuilder(props: ListingBuilderProps) {
   const [images, setImages] = useState((props.images ?? []).join('\n'))
   const [hasGeo, setHasGeo] = useState(props.hasGeo)
   const [locating, setLocating] = useState(false)
+  const [details, setDetails] = useState<ListingDetailField[]>(props.details ?? [])
+  const [pickupAddress, setPickupAddress] = useState(props.pickupAddress ?? '')
+  const [showExact, setShowExact] = useState(props.pickupPrecision === 'exact')
 
   const useMyLocation = async () => {
     setLocating(true)
@@ -54,6 +60,13 @@ export function ListingBuilder(props: ListingBuilderProps) {
     if (pos) { setHasGeo(true); queueSave({ latitude: pos.lat, longitude: pos.lng }) }
   }
   const clearLocation = () => { setHasGeo(false); queueSave({ latitude: null, longitude: null }) }
+
+  // Detail chips (Condition, Brand, Dimensions, ...) — repeatable label/value rows, autosaved.
+  const commitDetails = (next: ListingDetailField[]) => { setDetails(next); queueSave({ details: next }) }
+  const setDetail = (i: number, patch: Partial<ListingDetailField>) =>
+    commitDetails(details.map((d, j) => (j === i ? { ...d, ...patch } : d)))
+  const addDetail = () => commitDetails([...details, { label: '', value: '' }])
+  const removeDetail = (i: number) => commitDetails(details.filter((_, j) => j !== i))
 
   const footer = (
     <StudioFooter left={<SaveStatus state={saveState} error={error} />}>
@@ -113,6 +126,61 @@ export function ListingBuilder(props: ListingBuilderProps) {
           {hasGeo ? 'Location pinned' : 'Use my location'}
         </button>
         {hasGeo && <button type="button" onClick={clearLocation} className="text-xs text-subtle hover:text-text">Clear</button>}
+      </div>
+
+      {/* Pickup address (private by default). The map shows only the approximate area unless the seller
+          chooses to reveal the exact address. */}
+      <div className="mt-4">
+        <StudioField label="Pickup address (private)">
+          <input
+            value={pickupAddress}
+            onChange={(e) => { setPickupAddress(e.target.value); queueSave({ pickupAddress: e.target.value || null }) }}
+            maxLength={200}
+            placeholder="Where a buyer picks up. Not shown until you choose to reveal it."
+            className={FIELD}
+          />
+        </StudioField>
+        <label className="mt-2 flex items-center gap-2 text-sm text-muted">
+          <input
+            type="checkbox"
+            checked={showExact}
+            onChange={(e) => { setShowExact(e.target.checked); queueSave({ pickupPrecision: e.target.checked ? 'exact' : 'area' }) }}
+            className="h-4 w-4 rounded border-border"
+          />
+          Show the exact address on the listing (off shows only the approximate area)
+        </label>
+      </div>
+
+      {/* Item details — compact label/value chips shown in the listing right rail. */}
+      <div className="mt-4">
+        <StudioField label="Item details">
+          <div className="space-y-2">
+            {details.map((d, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input
+                  value={d.label}
+                  onChange={(e) => setDetail(i, { label: e.target.value })}
+                  maxLength={40}
+                  placeholder="Condition"
+                  className={`${FIELD} w-1/3`}
+                />
+                <input
+                  value={d.value}
+                  onChange={(e) => setDetail(i, { value: e.target.value })}
+                  maxLength={120}
+                  placeholder="Like new"
+                  className={`${FIELD} flex-1`}
+                />
+                <button type="button" onClick={() => removeDetail(i)} aria-label="Remove detail" className="shrink-0 rounded-lg border border-border p-2 text-subtle transition-colors hover:bg-surface-elevated hover:text-text">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <button type="button" onClick={addDetail} className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text transition-colors hover:bg-surface-elevated">
+              <Plus className="h-4 w-4" /> Add detail
+            </button>
+          </div>
+        </StudioField>
       </div>
 
       <div className="mt-4">

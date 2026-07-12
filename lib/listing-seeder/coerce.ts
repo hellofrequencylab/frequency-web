@@ -25,10 +25,32 @@ import type {
   HousingDraft,
   HousingExtraction,
   ListingCoercion,
+  ListingDetail,
   ListingExtraction,
   ListingSeedKind,
   RawCitedField,
+  RawListingDetail,
 } from './types'
+
+/** Max item-detail chips + per-part length kept on a coerced classifieds draft (guards a runaway model). */
+const MAX_DETAILS = 20
+const DETAIL_LABEL_MAX = 40
+const DETAIL_VALUE_MAX = 160
+
+/** Coerce the model's raw detail chips into clean, ordered {label, value} pairs: trim both parts, drop any
+ *  row missing a label OR a value, bound the length + count. Order is preserved. PURE + total. */
+export function coerceDetails(raw: RawListingDetail[] | undefined): ListingDetail[] {
+  if (!Array.isArray(raw)) return []
+  const out: ListingDetail[] = []
+  for (const item of raw) {
+    const label = (item?.label ?? '').trim().slice(0, DETAIL_LABEL_MAX)
+    const value = (item?.value ?? '').trim().slice(0, DETAIL_VALUE_MAX)
+    if (!label || !value) continue
+    out.push({ label, value })
+    if (out.length >= MAX_DETAILS) break
+  }
+  return out
+}
 
 const LISTING_KIND_SET = new Set<string>(LISTING_KINDS.map((k) => k.key))
 
@@ -79,6 +101,9 @@ function coerceClassifieds(raw: ClassifiedsExtraction, put: Put): ClassifiedsDra
     listingKind: clampListingKind(raw.listingKind?.value),
     category: put('category', raw.category) ?? null,
     priceNote: put('priceNote', raw.priceNote) ?? null,
+    details: coerceDetails(raw.details),
+    // The seeder never publishes a scraped exact address: a seeded listing is always area-only.
+    pickupPrecision: 'area',
     neighborhood: put('neighborhood', raw.neighborhood) ?? null,
     city: put('city', raw.city) ?? null,
     contact: put('contact', raw.contact) ?? null,

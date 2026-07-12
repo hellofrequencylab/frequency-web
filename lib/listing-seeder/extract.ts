@@ -65,6 +65,19 @@ const CLASSIFIEDS_TOOL: Anthropic.Tool = {
       },
       category: CITED_FIELD,
       priceNote: CITED_FIELD,
+      details: {
+        type: 'array',
+        description:
+          'Ordered item-detail chips stated in the paste: concrete facts about the item like Condition, Brand, Model, Dimensions, Color, Material, Age, Quantity. Include ONLY facts the paste actually states. Keep each label to one or two words. Omit anything not stated. No dashes in labels or values.',
+        items: {
+          type: 'object' as const,
+          properties: {
+            label: { type: 'string', description: 'A short field name, e.g. "Condition" or "Brand".' },
+            value: { type: 'string', description: 'The value as stated, e.g. "Like new" or "West Elm".' },
+          },
+          required: ['label', 'value'],
+        },
+      },
       neighborhood: CITED_FIELD,
       city: CITED_FIELD,
       contact: CITED_FIELD,
@@ -123,6 +136,7 @@ Hard rules:
 - The PRICE / RENT / DEPOSIT and the CONTACT are the facts that matter most: only mark them "fact" with a real verbatim snippet, otherwise omit them.
 - title and description may be lightly cleaned prose (mark them "generated" or "inferred"), but keep them grounded in what the paste says. Do not add features, guarantees, or claims the paste does not make.
 - Preserve the poster's own contact details exactly as written (do not normalize a phone or email into a new format).
+- For a classifieds item, fill details with the concrete facts the paste states (Condition, Brand, Model, Dimensions, Color, Material, Age, Quantity, and the like). Only facts actually in the paste. Short labels, no dashes. Leave details empty when the paste states none.
 
 Call save_listing once with everything the paste supports.`
 

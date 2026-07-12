@@ -16,7 +16,7 @@
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { LISTING_KINDS } from '@/lib/marketplace'
 import { PROPERTY_TYPES, AMENITIES } from '@/lib/listings/types'
-import type { ListingDraft, ListingSeedKind } from '@/lib/listing-seeder/types'
+import type { ListingDetail, ListingDraft, ListingSeedKind } from '@/lib/listing-seeder/types'
 
 /** The provenance badge painted on a row: the ledger entry's kind, or null when a field
  *  has no ledger entry (hand-supplied / empty). */
@@ -37,7 +37,7 @@ export const PROVENANCE_LABEL: Record<ProvenanceKind, string> = {
 }
 
 /** The editor a field renders in the board. */
-export type FieldInput = 'text' | 'textarea' | 'number' | 'bool' | 'select' | 'amenities'
+export type FieldInput = 'text' | 'textarea' | 'number' | 'bool' | 'select' | 'amenities' | 'details'
 
 /** The board sections (order = render order). */
 export type ListingReviewSectionKey = 'basics' | 'details' | 'price' | 'location' | 'contact'
@@ -55,8 +55,8 @@ export interface ListingReviewField {
   /** The value rendered in the read view (empty string when unset). */
   display: string
   /** The raw value the editor binds to (string for text/select, number|null for number,
-   *  boolean|null for bool, string[] for amenities). */
-  raw: string | number | boolean | string[] | null
+   *  boolean|null for bool, string[] for amenities, ListingDetail[] for details). */
+  raw: string | number | boolean | string[] | ListingDetail[] | null
   /** The provenance badge from the ledger, or null when the field has no entry. */
   provenanceKind: ProvenanceKind | null
   /** The cited snippet from the paste, if the ledger recorded one. */
@@ -109,6 +109,7 @@ const CLASSIFIEDS_SPECS: readonly FieldSpec[] = [
   { path: 'description', label: 'Description', section: 'basics', input: 'textarea' },
   { path: 'listingKind', label: 'Listing kind', section: 'basics', input: 'select', options: LISTING_KIND_OPTIONS },
   { path: 'category', label: 'Category', section: 'basics', input: 'text' },
+  { path: 'details', label: 'Item details', section: 'details', input: 'details' },
   { path: 'priceNote', label: 'Price note', section: 'price', input: 'text' },
   { path: 'neighborhood', label: 'Neighborhood', section: 'location', input: 'text' },
   { path: 'city', label: 'City', section: 'location', input: 'text' },
@@ -161,6 +162,10 @@ function displayOf(input: FieldInput, raw: unknown): string {
     const list = Array.isArray(raw) ? raw : []
     return list.map((s) => AMENITY_LABEL.get(s as never) ?? String(s)).join(', ')
   }
+  if (input === 'details') {
+    const list = Array.isArray(raw) ? (raw as ListingDetail[]) : []
+    return list.map((d) => `${d.label}: ${d.value}`).join(' · ')
+  }
   if (raw === null || raw === undefined) return ''
   if (input === 'select') {
     return String(raw)
@@ -173,6 +178,7 @@ function rawOf(input: FieldInput, value: unknown): ListingReviewField['raw'] {
   if (input === 'bool') return typeof value === 'boolean' ? value : null
   if (input === 'number') return typeof value === 'number' && Number.isFinite(value) ? value : null
   if (input === 'amenities') return Array.isArray(value) ? (value as string[]) : []
+  if (input === 'details') return Array.isArray(value) ? (value as ListingDetail[]) : []
   if (value === null || value === undefined) return ''
   return String(value)
 }
@@ -203,7 +209,7 @@ function amenityProvenance(ledger: ProvenanceLedger): LedgerEntry | undefined {
 function isSet(input: FieldInput, raw: ListingReviewField['raw']): boolean {
   if (input === 'bool') return raw !== null
   if (input === 'number') return raw !== null
-  if (input === 'amenities') return Array.isArray(raw) && raw.length > 0
+  if (input === 'amenities' || input === 'details') return Array.isArray(raw) && raw.length > 0
   return typeof raw === 'string' && raw.trim().length > 0
 }
 

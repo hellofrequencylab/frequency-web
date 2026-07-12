@@ -26,6 +26,9 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
       city={listing.city}
       images={listing.images ?? []}
       hasGeo={listing.latitude != null && listing.longitude != null}
+      details={listing.details ?? []}
+      pickupAddress={listing.pickup_address}
+      pickupPrecision={listing.pickup_precision}
     />
   )
 }

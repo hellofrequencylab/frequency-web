@@ -8,12 +8,10 @@
 // to a thin client board. A missing / unreadable seed shows a clear state, never a crash.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { redirect } from 'next/navigation'
 import { ClipboardPaste } from 'lucide-react'
 import { AdminTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getStaffMember } from '@/lib/staff'
-import { staffCan } from '@/lib/core/staff-roles'
+import { requireAdmin } from '@/lib/admin/guard'
 import { getListingIntakeReview } from '../actions'
 import { LISTING_STATUS_META } from '../intake-list'
 import { ReviewBoard } from './review-board'
@@ -21,8 +19,7 @@ import { ReviewBoard } from './review-board'
 export const dynamic = 'force-dynamic'
 
 export default async function ListingSeedReviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const member = await getStaffMember().catch(() => null)
-  if (!member || !staffCan(member.role, 'structure', 'write')) redirect('/')
+  await requireAdmin('admin', { staff: 'structure', staffLevel: 'write' })
 
   const { id } = await params
   const review = await getListingIntakeReview(id)

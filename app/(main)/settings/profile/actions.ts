@@ -175,5 +175,6 @@ export async function updateProfile(data: {
   revalidatePath('/settings/profile')
   revalidatePath('/feed')
   revalidatePath('/people')
+  revalidatePath(`/people/${handle}`) // the member's own public profile, so a new avatar/header shows at once
   revalidatePath('/admin/growth') // contact edits reflect in the CRM tab
 }

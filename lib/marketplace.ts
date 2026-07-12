@@ -7,6 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
+import type { ListingDetail, ListingPickupPrecision } from '@/lib/listing-seeder/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 function db(): SupabaseClient {
@@ -23,6 +24,12 @@ export const LISTING_KINDS: { key: ListingKind; label: string; blurb: string }[]
   { key: 'request', label: 'Looking for', blurb: 'Something you need' },
 ]
 
+/** One compact item-detail chip (Condition, Brand, Dimensions, ...) shown in the listing right rail. */
+export interface ListingDetailField {
+  label: string
+  value: string
+}
+
 export interface MarketListing {
   id: string
   author_id: string | null
@@ -37,6 +44,12 @@ export interface MarketListing {
   city: string | null
   latitude: number | null
   longitude: number | null
+  /** Ordered [{label, value}] item detail chips (jsonb; defaults to []). */
+  details: ListingDetailField[]
+  /** The seller's exact pickup address. Private unless pickup_precision === 'exact'. */
+  pickup_address: string | null
+  /** 'area' (default) shows only the approximate location; 'exact' reveals pickup_address. */
+  pickup_precision: 'area' | 'exact'
   circle_id: string | null
   is_demo: boolean
   /** True when this listing is still held by the Frequency seed owner AND unclaimed (a live claim
@@ -53,7 +66,8 @@ export interface MarketListingWithAuthor extends MarketListing {
 
 const COLS =
   'id, author_id, title, description, kind, category, price_note, status, images, ' +
-  'neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at'
+  'neighborhood, city, latitude, longitude, details, pickup_address, pickup_precision, ' +
+  'circle_id, is_demo, claim_token, claimed_at, created_at, updated_at'
 const AUTHOR = 'author:profiles!author_id(id, display_name, handle, avatar_url)'
 
 const touch = () => ({ updated_at: new Date().toISOString() })
@@ -121,12 +135,26 @@ function cleanImages(images: string[] | undefined): string[] {
   return (images ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
 }
 
+/** Normalize item-detail chips: trim both parts, drop any row missing a label or value, cap at 20.
+ *  Order is preserved (the chips render in the given order on the detail rail). ListingDetail and the
+ *  detail-view ListingDetailField are the same {label, value} shape, so both write paths share this. */
+export function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
+  return (details ?? [])
+    .map((d) => ({ label: (d?.label ?? '').trim().slice(0, 40), value: (d?.value ?? '').trim().slice(0, 160) }))
+    .filter((d) => d.label && d.value)
+    .slice(0, 20)
+}
+
 export interface ListingInput {
   title: string
   description?: string | null
   kind?: ListingKind
   category?: string | null
   priceNote?: string | null
+  /** Ordered item-detail chips ({label, value}) for the detail rail. Defaults to []. */
+  details?: ListingDetail[]
+  /** Pickup precision: 'area' (approximate, default) or 'exact' (reveal pickup_address). */
+  pickupPrecision?: ListingPickupPrecision
   neighborhood?: string | null
   city?: string | null
   circleId?: string | null
@@ -145,6 +173,8 @@ export async function createListing(authorId: string, input: ListingInput): Prom
       kind: input.kind ?? 'offer',
       category: input.category?.trim() || null,
       price_note: input.priceNote?.trim().slice(0, 80) || null,
+      details: cleanDetails(input.details),
+      pickup_precision: input.pickupPrecision ?? 'area',
       neighborhood: input.neighborhood?.trim() || null,
       city: input.city?.trim() || null,
       circle_id: input.circleId || null,
@@ -171,6 +201,9 @@ export interface ListingPatch {
   images?: string[]
   latitude?: number | null
   longitude?: number | null
+  details?: ListingDetailField[]
+  pickupAddress?: string | null
+  pickupPrecision?: 'area' | 'exact'
 }
 
 export async function updateListing(id: string, patch: ListingPatch): Promise<void> {
@@ -185,6 +218,9 @@ export async function updateListing(id: string, patch: ListingPatch): Promise<vo
   if (patch.images !== undefined) update.images = cleanImages(patch.images)
   if (patch.latitude !== undefined) update.latitude = patch.latitude
   if (patch.longitude !== undefined) update.longitude = patch.longitude
+  if (patch.details !== undefined) update.details = cleanDetails(patch.details)
+  if (patch.pickupAddress !== undefined) update.pickup_address = patch.pickupAddress?.trim() || null
+  if (patch.pickupPrecision !== undefined) update.pickup_precision = patch.pickupPrecision === 'exact' ? 'exact' : 'area'
   if (Object.keys(update).length === 0) return
   const { error } = await db().from('market_listings').update({ ...update, ...touch() }).eq('id', id)
   if (error) throw new Error(`Could not update the listing: ${error.message}`)

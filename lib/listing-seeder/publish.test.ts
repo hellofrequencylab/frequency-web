@@ -98,6 +98,8 @@ const REVIEW_CLASSIFIEDS = {
     listingKind: 'free',
     category: null,
     priceNote: null,
+    details: [],
+    pickupPrecision: 'area',
     neighborhood: null,
     city: null,
     contact: null,
