@@ -2,8 +2,8 @@
 
 import { useRef, useState } from 'react'
 import { PenLine, Megaphone, NotebookPen, UserPlus, Camera } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { updateMyAvatar } from '@/app/(main)/feed/actions'
+import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { Composer } from './composer'
 import { ContactCaptureForm } from './contact-capture-form'
 
@@ -118,14 +118,14 @@ function TakeProfilePic() {
     if (!file) return
     setState('saving')
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('not signed in')
-      const ext = file.name.split('.').pop() || 'jpg'
-      const path = `${user.id}/avatar.${ext}`
-      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-      if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      // Upload through the SERVER action (service-role write), not the browser Supabase
+      // client: under SSR-cookie auth the browser client often has no session, so a
+      // direct storage.upload() runs as `anon` and fails the owner-INSERT RLS policy —
+      // the photo silently never lands. The action resolves auth from the session.
+      const fd = new FormData()
+      fd.append('file', file, file.name || 'avatar.jpg')
+      fd.append('kind', 'avatar')
+      const publicUrl = await uploadProfileImageAction(fd)
       await updateMyAvatar(publicUrl)
       setState('done')
     } catch {

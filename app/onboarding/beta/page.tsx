@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveSequence } from '@/lib/onboarding/resolve-sequence'
 import { isPersonaId, type PersonaId } from '@/lib/onboarding/personas'
 import { getReferrer } from '@/lib/qr/referral'
+import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import BetaInduction from './induction'
 
 export default async function BetaInductionPage({
@@ -41,12 +42,17 @@ export default async function BetaInductionPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('handle, meta')
+    .select('handle, meta, current_season_zaps, lifetime_gems')
     .eq('auth_user_id', user.id)
     .single()
 
-  const meta = profile?.meta as { onboarding_completed?: boolean } | null
-  if (meta?.onboarding_completed) redirect('/feed')
+  // Already onboarded, or an existing active member who has plainly used the app but
+  // never got the completion flag (seeded / pre-gate account) — don't re-induct them.
+  if (hasEffectivelyOnboarded({
+    meta: profile?.meta,
+    currentSeasonZaps: profile?.current_season_zaps,
+    lifetimeGems: profile?.lifetime_gems,
+  })) redirect('/feed')
 
   const { data: regions } = await supabase
     .from('nexus_regions')

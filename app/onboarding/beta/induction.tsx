@@ -8,13 +8,13 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils'
 import { downscaleImageFile } from '@/lib/images/downscale-image'
 import { searchPlaces, type PlaceSuggestion } from '@/lib/geocode'
 import { BETA_OATHS as DEFAULT_OATHS, VERA as DEFAULT_VERA, type OathId, type VeraCopy } from '@/lib/onboarding/beta-script'
 import { getPersona, listPersonas, isPersonaId, DEFAULT_PERSONA, type PersonaId } from '@/lib/onboarding/personas'
 import { acceptBetaOath, completeBetaInduction, stashPendingInduction } from './actions'
+import { uploadProfileImageAction } from '@/app/(main)/settings/profile/actions'
 import { signInWithMagicLink, signInWithGoogle } from '@/app/sign-in/actions'
 
 // Avatar can't ride the auth-redirect in a cookie, so the deferred (signed-out)
@@ -309,19 +309,24 @@ export default function BetaInduction({ userId = '', userEmail = '', initialHand
     if (!avatarFile) return ''
     setUploading(true)
     setUploadError('')
-    const supabase = createClient()
-    const ext = avatarFile.name.split('.').pop() ?? 'jpg'
-    const path = `${userId}/avatar.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true })
-    if (error) {
+    // Upload through the SERVER action (service-role write), not the browser Supabase
+    // client: under SSR-cookie auth the browser client often has no session, so a
+    // direct storage.upload() runs as `anon` and fails the owner-INSERT RLS policy —
+    // the avatar silently never lands and the profile keeps a null avatar_url. The
+    // server action resolves the auth user from the verified session, so it authorizes.
+    try {
+      const fd = new FormData()
+      fd.append('file', avatarFile, avatarFile.name || 'avatar.jpg')
+      fd.append('kind', 'avatar')
+      const url = await uploadProfileImageAction(fd)
+      setAvatarUrl(url)
+      return url
+    } catch {
       setUploadError('Upload failed. You can add a photo later from your profile.')
-      setUploading(false)
       return ''
+    } finally {
+      setUploading(false)
     }
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
-    setAvatarUrl(publicUrl)
-    setUploading(false)
-    return publicUrl
   }
 
   async function passOath() {

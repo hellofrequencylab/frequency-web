@@ -267,23 +267,25 @@ function ProfileStep({ content, draft, patch, report, ctx }: StepViewProps) {
     if (!file) return draft.avatarUrl
     setUploading(true)
     setUploadError('')
-    // Dynamic import keeps this module's load pure (React only) for unit-testing the registry.
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    const ext = file.name.split('.').pop() ?? 'jpg'
-    const path = `${ctx.userId}/avatar.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-    if (error) {
+    // Upload through the SERVER action (service-role write), not the browser Supabase
+    // client: under SSR-cookie auth the browser client often has no session, so a direct
+    // storage.upload() runs as `anon` and fails the owner-INSERT RLS policy — the avatar
+    // silently never lands. Dynamic import keeps this module's load pure (React only) for
+    // unit-testing the registry.
+    try {
+      const { uploadProfileImageAction } = await import('@/app/(main)/settings/profile/actions')
+      const fd = new FormData()
+      fd.append('file', file, file.name || 'avatar.jpg')
+      fd.append('kind', 'avatar')
+      const url = await uploadProfileImageAction(fd)
+      patch({ avatarUrl: url })
+      return url
+    } catch {
       setUploadError('Upload failed. You can add a photo later from your profile.')
-      setUploading(false)
       return ''
+    } finally {
+      setUploading(false)
     }
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(path)
-    patch({ avatarUrl: publicUrl })
-    setUploading(false)
-    return publicUrl
   }
 
   // Push footer state up: busy while uploading, and upload-on-advance if a file is pending.

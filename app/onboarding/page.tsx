@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { BETA_INDUCTION_ACTIVE } from '@/lib/onboarding/beta-script'
+import { hasEffectivelyOnboarded } from '@/lib/onboarding/onboarded'
 import OnboardingForm from './form'
 
 export default async function OnboardingPage() {
@@ -17,13 +18,18 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('handle, meta')
+    .select('handle, meta, current_season_zaps, lifetime_gems')
     .eq('auth_user_id', user.id)
     .single()
 
-  // Returning user who already finished onboarding.
-  const meta = profile?.meta as { onboarding_completed?: boolean } | null
-  if (meta?.onboarding_completed) redirect('/feed')
+  // Returning user who already finished onboarding — or an existing active member who
+  // has clearly used the app but never got the completion flag (seeded / pre-gate
+  // account). Either way, don't re-run onboarding; send them to the app.
+  if (hasEffectivelyOnboarded({
+    meta: profile?.meta,
+    currentSeasonZaps: profile?.current_season_zaps,
+    lifetimeGems: profile?.lifetime_gems,
+  })) redirect('/feed')
 
   // Only fetch top-level regions (depth = 0) for the region picker.
   const { data: regions } = await supabase
