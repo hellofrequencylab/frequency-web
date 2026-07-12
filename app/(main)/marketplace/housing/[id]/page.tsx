@@ -1,35 +1,20 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MapPin, MessageCircle, CalendarDays, Home, BedDouble } from 'lucide-react'
-import { getMyProfileId } from '@/lib/auth'
+import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getListingWithOwner } from '@/lib/listings'
 import { amenityLabel, getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { relativeTime } from '@/lib/utils'
-import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
-import { EventGallery } from '@/components/events/event-gallery'
 import { ReportButton } from '@/components/marketplace/report-button'
+import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
+import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
+import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { setListingStatusAction, deleteListingAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
 
-const TYPE_LABEL: Record<string, string> = {
-  rental: 'Rental',
-  roommate: 'Roommate',
-  sublet: 'Sublet',
-  roommate_wanted: 'Roommate wanted',
-  housing_wanted: 'Housing wanted',
-}
 const ROOM_LABEL: Record<string, string> = {
   private_room: 'Private room',
   shared_room: 'Shared room',
   entire_place: 'Entire place',
-}
-
-function rent(cents: number | null): string | null {
-  if (cents == null) return null
-  return `$${(cents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}/mo`
 }
 
 function money(cents: number | null): string | null {
@@ -50,27 +35,21 @@ function longDate(iso: string | null): string | null {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
-/** Resolve a stored gallery entry to a public URL. New listings store event-media
- *  bucket PATHS (via MultiImageUpload); anything already absolute is passed through. */
-function resolveImage(admin: ReturnType<typeof createAdminClient>, entry: string): string {
-  if (/^https?:\/\//.test(entry)) return entry
-  return admin.storage.from('event-media').getPublicUrl(entry).data.publicUrl
-}
-
 export default async function HousingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [profileId, listing] = await Promise.all([getMyProfileId(), getListingWithOwner(id)])
+  const [profileId, isStaff, listing] = await Promise.all([
+    getMyProfileId(),
+    isPlatformStaff(),
+    getListingWithOwner(id),
+  ])
   if (!listing || listing.vertical !== 'housing') notFound()
 
   const isOwner = !!profileId && listing.ownerProfileId === profileId
-  if (!isOwner && listing.status !== 'active') notFound()
+  if (!isOwner && !isStaff && listing.status !== 'active') notFound()
 
-  const detail = await getHousingDetail(id)
-  const place = [listing.neighborhood, listing.city].filter(Boolean).join(', ')
+  const [detail, comments] = await Promise.all([getHousingDetail(id), getListingComments('listing', id)])
+  const view = listingDetailFromHousing(listing, detail, { isOwner })
   const firstName = listing.owner?.displayName.split(' ')[0] ?? 'the host'
-
-  const admin = createAdminClient()
-  const imageUrls = listing.images.map((entry) => resolveImage(admin, entry))
 
   // Structured facts, rendered as a compact spec grid when present.
   const facts: { label: string; value: string }[] = []
@@ -93,130 +72,25 @@ export default async function HousingDetailPage({ params }: { params: Promise<{ 
   if (detail?.cannabisOk) rules.push('Cannabis friendly')
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <DetailTemplate
-        back={{ href: '/marketplace/housing', label: 'Housing' }}
-        title={listing.title}
-        subtitle={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {detail && rent(detail.rentCents) && (
-              <span className="font-semibold text-text">{rent(detail.rentCents)}</span>
-            )}
-            {place && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {place}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-3 w-3" />
-              {relativeTime(listing.createdAt)}
-            </span>
-          </span>
-        }
-        badges={
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary-bg px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-strong">
-              <Home className="h-3 w-3" />
-              {detail ? TYPE_LABEL[detail.listingType] ?? detail.listingType : 'Housing'}
-            </span>
-            {detail?.roomType && (
-              <span className="inline-flex items-center gap-1 text-xs text-subtle">
-                <BedDouble className="h-3 w-3" />
-                {ROOM_LABEL[detail.roomType] ?? detail.roomType}
-              </span>
-            )}
-            {detail?.bedrooms != null && <span className="text-xs text-subtle">{detail.bedrooms} bed</span>}
-            {listing.status !== 'active' && (
-              <span className="inline-flex items-center rounded-full bg-surface-elevated px-2 py-0.5 text-2xs font-semibold uppercase tracking-wide text-muted">
-                {listing.status}
-              </span>
-            )}
-          </span>
-        }
-      >
-        {imageUrls.length > 0 && (
-          <div className="mb-4 overflow-hidden rounded-3xl border border-border bg-surface-elevated">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrls[0]}
-              alt={`${listing.title}, cover photo`}
-              className="max-h-[28rem] w-full object-cover"
-            />
-          </div>
-        )}
-        {imageUrls.length > 1 && <EventGallery images={imageUrls.slice(1)} />}
-
-        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-          {facts.length > 0 && (
-            <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-              {facts.map((f) => (
-                <div key={f.label}>
-                  <dt className="text-2xs font-semibold uppercase tracking-wide text-subtle">{f.label}</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-text">{f.value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-
-          {detail && detail.amenities.length > 0 && (
-            <div className="mb-5">
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Amenities</p>
-              <ul className="flex flex-wrap gap-2">
-                {detail.amenities.map((a) => (
-                  <li
-                    key={a}
-                    className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text"
-                  >
-                    {amenityLabel(a)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {rules.length > 0 && (
-            <div className="mb-5">
-              <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Good to know</p>
-              <ul className="flex flex-wrap gap-2">
-                {rules.map((r) => (
-                  <li key={r} className="rounded-full bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">
-                    {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {listing.description && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{listing.description}</p>
-          )}
-
-          {listing.owner && (
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-              <Link href={`/people/${listing.owner.handle}`} className="text-sm text-muted hover:text-text">
-                Listed by <span className="font-semibold text-text">{listing.owner.displayName}</span>
-              </Link>
-              {!isOwner && (
-                <Link href={`/people/${listing.owner.handle}`} className={buttonClasses('primary', 'md')}>
-                  <MessageCircle className="h-4 w-4" /> Message {firstName}
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
-
-        {!isOwner && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+    <ListingDetailTemplate
+      view={view}
+      comments={comments}
+      canComment={!!profileId}
+      canModerate={isOwner || isStaff}
+      myProfileId={profileId}
+      contactNote={
+        !isOwner ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-subtle">
               No payment happens in the app. Message {firstName} to arrange a viewing and the rest offline.
             </p>
             <ReportButton targetKind="listing" targetId={listing.id} />
           </div>
-        )}
-
-        {isOwner && (
-          <div className="mt-4 flex flex-wrap gap-2">
+        ) : undefined
+      }
+      ownerControls={
+        isOwner ? (
+          <div className="flex flex-wrap gap-2">
             {listing.status === 'active' ? (
               <form action={setListingStatusAction.bind(null, listing.id, 'closed')}>
                 <button type="submit" className={buttonClasses('ghost', 'sm')}>
@@ -236,8 +110,45 @@ export default async function HousingDetailPage({ params }: { params: Promise<{ 
               </button>
             </form>
           </div>
-        )}
-      </DetailTemplate>
-    </div>
+        ) : undefined
+      }
+    >
+      {facts.length > 0 && (
+        <dl className="mb-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+          {facts.map((f) => (
+            <div key={f.label}>
+              <dt className="text-2xs font-semibold uppercase tracking-wide text-subtle">{f.label}</dt>
+              <dd className="mt-0.5 text-sm font-medium text-text">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {detail && detail.amenities.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Amenities</p>
+          <ul className="flex flex-wrap gap-2">
+            {detail.amenities.map((a) => (
+              <li key={a} className="rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs font-medium text-text">
+                {amenityLabel(a)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {rules.length > 0 && (
+        <div className="mb-5">
+          <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-subtle">Good to know</p>
+          <ul className="flex flex-wrap gap-2">
+            {rules.map((r) => (
+              <li key={r} className="rounded-full bg-primary-bg px-2.5 py-0.5 text-xs font-medium text-primary-strong">
+                {r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </ListingDetailTemplate>
   )
 }

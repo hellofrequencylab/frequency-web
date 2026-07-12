@@ -11,13 +11,14 @@ import { readStorefrontConfig } from '@/lib/spaces/storefront'
 import { listOpenSlots, getSpaceBookingTimezone } from '@/lib/spaces/booking'
 import { getProductReviews, getMyProductReview } from '@/lib/commerce/reviews'
 import { sellerVerifiedForProduct } from '@/lib/commerce/seller-verification'
-import { DetailTemplate } from '@/components/templates'
 import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
 import { VariantPicker } from '@/components/marketplace/variant-picker'
-import { EventGallery } from '@/components/events/event-gallery'
+import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
+import { listingDetailFromProduct, type ListingAction } from '@/lib/listings-shared/detail-view'
+import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { BuyButton } from '../../marketplace/buy-button'
 import { listActiveVariants } from '@/lib/commerce/variants'
 import { effectiveVariantPriceCents, effectiveVariantStock, isBookableServiceKind } from '@/lib/commerce/types'
@@ -99,7 +100,7 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
       ? await Promise.all([listOpenSlots(product.bookingSpaceId), getSpaceBookingTimezone(product.bookingSpaceId)])
       : [[], 'UTC']
 
-  const subtitle = isService
+  const priceLabel = isService
     ? servicePriceLabel(product.priceCents, product.currency, svc)
     : hasVariants
       ? `From ${usd(minVariantPrice, product.currency)}`
@@ -107,50 +108,54 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
 
   // Trust & Safety (Phase 8): the seller verification badge, the reviews block, and the viewer's own
   // review (to prefill). A signed-in non-owner may review; a platform operator may moderate.
-  const [sellerVerified, reviews, myReview, operator] = await Promise.all([
+  const [sellerVerified, reviews, myReview, operator, comments] = await Promise.all([
     sellerVerifiedForProduct(product),
     getProductReviews(product.id),
     getMyProductReview(product.id, profileId),
     isPlatformStaff(),
+    getListingComments('product', product.id),
   ])
 
+  // The hero action: only the connect-only "Contact seller" path is a plain link. The Buy button,
+  // variant picker, and booking calendar are interactive, so they render in the footer purchase panel.
+  const heroAction: ListingAction | null =
+    connectOnly && sellerContact && !isOwner
+      ? { kind: 'contact', label: 'Contact seller', href: `/people/${sellerContact.handle}` }
+      : { kind: 'none', label: '', href: '' }
+
+  const view = listingDetailFromProduct(product, {
+    isOwner,
+    priceLabel,
+    seller: null,
+    action: heroAction,
+  })
+
   return (
-    <div className="mx-auto w-full max-w-2xl">
-      <DetailTemplate
-        back={{ href: '/market', label: 'Market' }}
-        title={product.title}
-        subtitle={<span className="font-semibold text-text">{subtitle}</span>}
-        badges={
-          product.category || sellerVerified ? (
-            <span className="flex items-center gap-2">
-              {product.category && <span className="text-xs text-subtle">{product.category}</span>}
-              <VerifiedBadge verified={sellerVerified} withLabel />
-            </span>
-          ) : undefined
-        }
-      >
-        <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
-          {/* Photo gallery: a thumbnail strip that opens a full-screen lightbox (keyboard + arrows),
-              reusing the events gallery. Images are already resolved to public URLs by the reader. */}
-          {product.images.length > 0 && (
-            <div className="mb-4">
-              <EventGallery images={product.images} />
-            </div>
-          )}
-
-          {isService && (svc.durationMin || svc.cancellationWindowHours) && (
-            <p className="mb-3 text-xs text-subtle">
-              {svc.durationMin ? `${svc.durationMin} minutes` : null}
-              {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
-              {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
+    <ListingDetailTemplate
+      view={view}
+      comments={comments}
+      canComment={!!profileId}
+      canModerate={isOwner || operator}
+      myProfileId={profileId}
+      contactNote={
+        !isOwner ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-subtle">
+              {isService
+                ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
+                : soldOut
+                  ? 'This one is sold out.'
+                  : connectOnly
+                    ? 'No checkout on this listing. Message the seller to arrange payment and pickup.'
+                    : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
             </p>
-          )}
-
-          {product.description && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">{product.description}</p>
-          )}
-
-          <div className="mt-5 border-t border-border pt-4">
+            <ReportButton targetKind="product" targetId={product.id} />
+          </div>
+        ) : undefined
+      }
+      footer={
+        <>
+          <div className="mt-3 rounded-3xl border border-border bg-surface p-5 shadow-sm">
             {isService ? (
               isOwner ? (
                 <p className="text-sm text-subtle">This is your service. Members pick a time here to book.</p>
@@ -190,33 +195,31 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
               <BuyButton productId={product.id} />
             )}
           </div>
+
+          <ProductReviews
+            productId={product.id}
+            productTitle={product.title}
+            reviews={reviews}
+            myReview={myReview}
+            signedIn={!!profileId}
+            canReview={!!profileId && !isOwner}
+            canModerate={operator}
+          />
+        </>
+      }
+    >
+      {(sellerVerified || (isService && (svc.durationMin || svc.cancellationWindowHours))) && (
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-subtle">
+          {sellerVerified && <VerifiedBadge verified withLabel />}
+          {isService && (svc.durationMin || svc.cancellationWindowHours) && (
+            <span>
+              {svc.durationMin ? `${svc.durationMin} minutes` : null}
+              {svc.durationMin && svc.cancellationWindowHours ? ' · ' : null}
+              {svc.cancellationWindowHours ? `Free cancellation up to ${svc.cancellationWindowHours}h before` : null}
+            </span>
+          )}
         </div>
-
-        {!isOwner && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
-            <p className="text-xs text-subtle">
-              {isService
-                ? 'Booking holds your slot; payment is secure on Stripe. The space gets paid directly, the fee stays low.'
-                : soldOut
-                  ? 'This one is sold out.'
-                  : connectOnly
-                    ? 'No checkout on this listing. Message the seller to arrange payment and pickup.'
-                    : 'Checkout is secure on Stripe. The seller gets paid directly; the platform fee stays low.'}
-            </p>
-            <ReportButton targetKind="product" targetId={product.id} />
-          </div>
-        )}
-
-        <ProductReviews
-          productId={product.id}
-          productTitle={product.title}
-          reviews={reviews}
-          myReview={myReview}
-          signedIn={!!profileId}
-          canReview={!!profileId && !isOwner}
-          canModerate={operator}
-        />
-      </DetailTemplate>
-    </div>
+      )}
+    </ListingDetailTemplate>
   )
 }
