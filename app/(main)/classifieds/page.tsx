@@ -53,6 +53,7 @@ export default async function ClassifiedsPage({ searchParams }: { searchParams: 
     latitude: l.latitude,
     longitude: l.longitude,
     author: l.author ? { display_name: l.author.display_name } : null,
+    seededUnclaimed: l.seededUnclaimed,
   }))
 
   return (

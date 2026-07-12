@@ -76,6 +76,10 @@ export interface Listing {
   longitude: number | null
   circleId: string | null
   isDemo: boolean
+  /** True when this listing is still held by the Frequency seed owner AND unclaimed (a live claim
+   *  token, no claimed_at). Drives the "Unclaimed" browse-card badge. Fail-soft false when the seed
+   *  owner can't be resolved. */
+  seededUnclaimed: boolean
   createdAt: string
   updatedAt: string
 }

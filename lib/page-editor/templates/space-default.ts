@@ -134,7 +134,7 @@ function faq(): Block {
 function business(): Block {
   return {
     type: 'SpaceBusiness',
-    props: { id: `${P}-business`, heading: 'Find us online', rating: '', ratingCount: '', links: [] },
+    props: { id: `${P}-business`, eyebrow: 'Online', heading: 'Find us online', rating: '', ratingCount: '', links: [] },
   }
 }
 

@@ -29,6 +29,7 @@ import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { extractListing } from '@/lib/listing-seeder/extract'
 import { coerceListingExtraction } from '@/lib/listing-seeder/coerce'
 import { publishListingIntake } from '@/lib/listing-seeder/publish'
+import { findSimilarSeededListings, type SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
 import type {
   ClassifiedsExtraction,
   HousingExtraction,
@@ -259,6 +260,25 @@ export async function getListingIntakeReview(intakeId: string): Promise<ListingI
     images,
     appliedListingId: row.appliedListingId,
   }
+}
+
+// ── Soft dedupe (a warning, never a block) ─────────────────────────────────────────────
+
+/**
+ * Check whether a SIMILAR seeded listing already exists (same kind, same city, fuzzy-similar title)
+ * BEFORE the operator publishes. Staff-gated, bound to the intake id; delegates to the pure/query
+ * helper in lib/listing-seeder/dedupe. Fail-safe to [] — this is advisory only and must never block a
+ * publish. Excludes the intake's own already-published listing so a re-visited applied seed never
+ * flags itself.
+ */
+export async function checkListingDuplicatesAction(intakeId: string): Promise<SimilarSeededListing[]> {
+  await requireStaffCap('structure', 'write')
+  const row = await getRow(intakeId)
+  if (!row || !isListingDraft(row.draft)) return []
+  const title = (row.draft.title ?? '').trim()
+  if (!title) return []
+  const hits = await findSimilarSeededListings({ kind: row.kind, title, city: row.draft.city ?? null })
+  return row.appliedListingId ? hits.filter((h) => h.id !== row.appliedListingId) : hits
 }
 
 // ── Per-field edit ───────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_ID } from '@/lib/finance/record'
+import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
 import type { Listing, ListingStatus, ListingVertical } from './types'
 
 function db(): SupabaseClient {
@@ -12,9 +13,20 @@ function db(): SupabaseClient {
 }
 
 const LISTING_COLS =
-  'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, created_at, updated_at'
+  'id, vertical, owner_profile_id, entity_id, title, description, status, images, price_note, category, neighborhood, city, latitude, longitude, circle_id, is_demo, claim_token, claimed_at, created_at, updated_at'
 
-export function rowToListing(r: Record<string, unknown>): Listing {
+/** Whether a row is a seeded, still-unclaimed listing: owned by the seed owner, carrying a live claim
+ *  token, with no claimed_at. Fail-soft false when the seed owner is unknown. PURE. */
+function isSeededUnclaimed(r: Record<string, unknown>, seedOwnerId: string | null): boolean {
+  if (!seedOwnerId) return false
+  return (
+    (r.owner_profile_id as string | null) === seedOwnerId &&
+    (r.claim_token as string | null) != null &&
+    (r.claimed_at as string | null) == null
+  )
+}
+
+export function rowToListing(r: Record<string, unknown>, seedOwnerId: string | null = null): Listing {
   return {
     id: r.id as string,
     vertical: r.vertical as ListingVertical,
@@ -32,6 +44,7 @@ export function rowToListing(r: Record<string, unknown>): Listing {
     longitude: (r.longitude as number) ?? null,
     circleId: (r.circle_id as string) ?? null,
     isDemo: !!r.is_demo,
+    seededUnclaimed: isSeededUnclaimed(r, seedOwnerId),
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string,
   }
@@ -54,13 +67,16 @@ export async function listListings(opts: ListListingsOpts = {}): Promise<Listing
     .limit(Math.min(Math.max(opts.limit ?? 40, 1), 100))
   if (opts.vertical) query = query.eq('vertical', opts.vertical)
   if (opts.q?.trim()) query = query.ilike('title', `%${opts.q.trim()}%`)
-  const { data } = await query
-  return ((data ?? []) as Record<string, unknown>[]).map(rowToListing)
+  const [{ data }, seedOwnerId] = await Promise.all([query, resolveSeedOwnerProfileId()])
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => rowToListing(r, seedOwnerId))
 }
 
 export async function getListing(id: string): Promise<Listing | null> {
-  const { data } = await db().from('listings').select(LISTING_COLS).eq('id', id).maybeSingle()
-  return data ? rowToListing(data as Record<string, unknown>) : null
+  const [{ data }, seedOwnerId] = await Promise.all([
+    db().from('listings').select(LISTING_COLS).eq('id', id).maybeSingle(),
+    resolveSeedOwnerProfileId(),
+  ])
+  return data ? rowToListing(data as Record<string, unknown>, seedOwnerId) : null
 }
 
 export interface ListingOwner {

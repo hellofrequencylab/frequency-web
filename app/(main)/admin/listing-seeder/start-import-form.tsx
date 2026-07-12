@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Banner } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { startListingIntake, uploadListingImages } from './actions'
+import { detectListingKind } from '@/lib/listing-seeder/detect'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
 
 const field =
@@ -34,6 +35,10 @@ export function StartImportForm() {
   const [error, setError] = useState<string | null>(null)
 
   const [kind, setKind] = useState<ListingSeedKind>('classifieds')
+  // The kind the paste heuristic detected with high confidence (for the "Detected: …" hint), and
+  // whether the operator has picked a vertical by hand (which locks out auto-select from then on).
+  const [detectedKind, setDetectedKind] = useState<ListingSeedKind | null>(null)
+  const [pickedByHand, setPickedByHand] = useState(false)
   const [pastedText, setPastedText] = useState('')
   const [city, setCity] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
@@ -46,6 +51,24 @@ export function StartImportForm() {
     const images = files.filter((f) => f.type.startsWith('image/'))
     setPhotos((prev) => [...prev, ...images].slice(0, 12))
   }
+
+  // As the operator pastes, run the pure heuristic. On a HIGH-confidence read, pre-select that
+  // vertical (until the operator overrides by hand). Never auto-submits; the hint stays visible so
+  // the pick is transparent and reversible.
+  function onPasteChange(value: string) {
+    setPastedText(value)
+    const detection = detectListingKind(value)
+    const hit = detection.confidence === 'high' ? detection.kind : null
+    setDetectedKind(hit)
+    if (hit && !pickedByHand) setKind(hit)
+  }
+
+  function pickKind(next: ListingSeedKind) {
+    setPickedByHand(true)
+    setKind(next)
+  }
+
+  const detectedLabel = detectedKind ? KINDS.find((k) => k.key === detectedKind)?.label : null
 
   function submit() {
     setError(null)
@@ -102,7 +125,12 @@ export function StartImportForm() {
       )}
 
       {/* Vertical picker */}
-      <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Vertical</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Vertical</p>
+        {detectedLabel && (
+          <p className="text-2xs font-medium text-primary-strong">Detected: {detectedLabel}</p>
+        )}
+      </div>
       <div className="mt-2 grid gap-2 sm:grid-cols-2">
         {KINDS.map((k) => {
           const active = k.key === kind
@@ -111,7 +139,7 @@ export function StartImportForm() {
             <button
               key={k.key}
               type="button"
-              onClick={() => setKind(k.key)}
+              onClick={() => pickKind(k.key)}
               aria-pressed={active}
               className={cn(
                 'flex items-start gap-3 rounded-xl border p-3 text-left transition-colors',
@@ -139,7 +167,7 @@ export function StartImportForm() {
           className={`${field} min-h-40 resize-y`}
           placeholder="Paste the copied listing here: the title, the description, the price or rent, and how to reach the poster."
           value={pastedText}
-          onChange={(e) => setPastedText(e.target.value)}
+          onChange={(e) => onPasteChange(e.target.value)}
         />
       </label>
 

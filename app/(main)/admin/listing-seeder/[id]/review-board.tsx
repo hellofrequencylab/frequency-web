@@ -12,7 +12,7 @@
 // sends to the original poster.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star } from 'lucide-react'
@@ -21,12 +21,14 @@ import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { AMENITIES } from '@/lib/listings/types'
 import type { ListingSeedKind } from '@/lib/listing-seeder/types'
+import type { SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
 import {
   updateListingDraft,
   publishListingIntakeAction,
   uploadListingImages,
   removeListingImage,
   setPrimaryListingImage,
+  checkListingDuplicatesAction,
   type ListingDraftPatch,
 } from '../actions'
 import {
@@ -69,6 +71,24 @@ export function ReviewBoard({
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [publishing, startPublish] = useTransition()
+  const [duplicates, setDuplicates] = useState<SimilarSeededListing[]>([])
+
+  // Soft dedupe: on load (while still unpublished) check for a similar seeded listing and surface a
+  // warning banner. Advisory only — it never blocks Publish. Fail-safe: any error leaves it empty.
+  useEffect(() => {
+    if (published) return
+    let active = true
+    checkListingDuplicatesAction(intakeId)
+      .then((hits) => {
+        if (active) setDuplicates(hits)
+      })
+      .catch(() => {
+        if (active) setDuplicates([])
+      })
+    return () => {
+      active = false
+    }
+  }, [intakeId, published])
 
   const s = model.summary
 
@@ -123,6 +143,22 @@ export function ReviewBoard({
           </Button>
         )}
       </div>
+
+      {!published && duplicates.length > 0 && (
+        <Banner tone="warning" title="A similar seeded listing may already exist">
+          <span>
+            Check before you publish so you do not double-seed:
+          </span>
+          <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
+            {duplicates.map((d) => (
+              <li key={d.id}>
+                {d.title}
+                <span className="text-muted"> · {d.claimed ? 'already claimed' : 'still unclaimed'}</span>
+              </li>
+            ))}
+          </ul>
+        </Banner>
+      )}
 
       {error && (
         <Banner tone="critical" title="Could not publish the listing">

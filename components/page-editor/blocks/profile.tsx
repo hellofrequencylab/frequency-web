@@ -1321,6 +1321,7 @@ const BUSINESS_PLATFORM_META: Record<string, { label: string; icon: React.Compon
 }
 
 export function SpaceBusinessBlock({
+  eyebrow,
   heading,
   rating,
   ratingCount,
@@ -1328,6 +1329,7 @@ export function SpaceBusinessBlock({
   ink,
   editing,
 }: {
+  eyebrow?: string
   heading?: string
   rating?: string
   ratingCount?: string
@@ -1344,7 +1346,7 @@ export function SpaceBusinessBlock({
     if (!editing) return null
     return (
       <div>
-        <CardTitle heading={heading} ink={ink} />
+        <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
         <EditorStub label="Business presence" hint="Add your social links and an optional rating" />
       </div>
     )
@@ -1352,7 +1354,7 @@ export function SpaceBusinessBlock({
   const filled = Math.round(Math.min(5, Math.max(0, ratingNum)))
   return (
     <InfoCard ink={ink}>
-      <CardTitle heading={heading} ink={ink} />
+      <CardTitle eyebrow={eyebrow} heading={heading} ink={ink} />
       {hasRating && (
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <span className={`text-3xl font-bold tracking-tight ${ink ? 'text-on-ink' : 'text-text'}`}>
@@ -2334,18 +2336,20 @@ export const profileComponents: Record<string, ComponentConfig> = {
   SpaceBusiness: {
     label: 'Business presence',
     fields: {
+      eyebrow: { type: 'text', label: 'Eyebrow (optional)' },
       heading: { type: 'text', label: 'Heading (optional)' },
       rating: { type: 'text', label: 'Rating (optional, e.g. 4.8)' },
       ratingCount: { type: 'text', label: 'Rating count (optional, e.g. 126 reviews)' },
       links: businessLinkArrayField,
     },
     defaultProps: {
+      eyebrow: 'Online',
       heading: 'Find us online',
       rating: '',
       ratingCount: '',
       links: [],
     },
-    render: ({ heading, rating, ratingCount, links, puck }) => {
+    render: ({ eyebrow, heading, rating, ratingCount, links, puck }) => {
       // Central business presence wins (single source): the rating + the social links come from the
       // Business Info form, falling back to this block's own inline props only when central is empty.
       const central = profileFrom(puck)
@@ -2354,6 +2358,7 @@ export const profileComponents: Record<string, ComponentConfig> = {
         centralSocials && centralSocials.length > 0 ? centralSocials : ((links as BusinessLink[]) ?? [])
       return (
         <SpaceBusinessBlock
+          eyebrow={(eyebrow as string) || undefined}
           heading={(heading as string) || undefined}
           rating={mergeField(rating as string, central?.rating)}
           ratingCount={mergeField(ratingCount as string, central?.ratingCount)}

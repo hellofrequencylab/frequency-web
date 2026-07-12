@@ -8,6 +8,7 @@ import { distanceKm } from '@/lib/distance'
 import { getBrowserPosition } from '@/lib/geo-browser'
 import { LISTING_KINDS, type ListingKind } from '@/lib/marketplace'
 import { useMarketQuery, marketMatch } from '@/components/marketplace/market-search'
+import { UnclaimedBadge } from '@/components/ui/unclaimed-badge'
 
 const KIND_LABEL: Record<ListingKind, string> = Object.fromEntries(LISTING_KINDS.map((k) => [k.key, k.label])) as Record<ListingKind, string>
 
@@ -22,6 +23,8 @@ export interface GridListing {
   latitude: number | null
   longitude: number | null
   author: { display_name: string } | null
+  /** Seeded by Frequency and still unclaimed — shows the "Unclaimed" pill on the card. */
+  seededUnclaimed?: boolean
 }
 
 function Card({ l, distance }: { l: GridListing; distance: number | null }) {
@@ -55,7 +58,10 @@ function Card({ l, distance }: { l: GridListing; distance: number | null }) {
         </span>
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="text-sm font-bold text-text">{l.title}</h3>
+        <div className="flex items-start gap-1.5">
+          <h3 className="min-w-0 flex-1 text-sm font-bold text-text">{l.title}</h3>
+          {l.seededUnclaimed && <UnclaimedBadge className="mt-0.5" />}
+        </div>
         {l.description && <p className="mt-1 line-clamp-2 text-sm text-muted">{l.description}</p>}
         {/* Location, then the poster's name on the row below (C5). */}
         <div className="mt-3 space-y-1 text-xs text-subtle">
