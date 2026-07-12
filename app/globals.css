@@ -977,8 +977,17 @@ h1, h2, h3, h4, h5, h6 {
 /* Global focus ring. Load-bearing accessibility default. Brand amber lights up
    actionable chrome (buttons, links, tabbable controls); text fields get a
    calmer, neutral ring so typing never glows orange. Keyboard users still get a
-   clearly visible indicator either way (WCAG 2.4.7). */
-:where(button, a, select, [tabindex]):focus-visible {
+   clearly visible indicator either way (WCAG 2.4.7).
+
+   `[tabindex="-1"]` is EXCLUDED on purpose: those elements are never in the keyboard
+   tab order (they are focus targets for SCRIPT only — the `<main id="main">` content
+   region the router focuses on navigation, modal / panel wrappers, scroll catchers).
+   A fresh tab or a pasted URL loads with NO prior pointer interaction, so when the app
+   programmatically focuses such a container Chrome's :focus-visible heuristic matches
+   and used to paint the amber ring around the WHOLE content column. Ringing a
+   programmatic-only focus target is never wanted, so it is dropped here; genuinely
+   tabbable custom controls (`tabindex="0"`) keep their ring. */
+:where(button, a, select, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-focus-ring) 45%, transparent);
 }
