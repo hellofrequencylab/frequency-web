@@ -27,18 +27,20 @@ import { getMyProfileId } from '@/lib/auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { LedgerEntry, ProvenanceLedger } from '@/lib/importer/schema'
 import { extractListing } from '@/lib/listing-seeder/extract'
-import { coerceListingExtraction } from '@/lib/listing-seeder/coerce'
+import { coerceListingExtraction, coerceDetails } from '@/lib/listing-seeder/coerce'
 import { publishListingIntake } from '@/lib/listing-seeder/publish'
 import { findSimilarSeededListings, type SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
 import type {
   ClassifiedsExtraction,
   HousingExtraction,
+  ListingDetail,
   ListingDraft,
   ListingIntake,
   ListingIntakeInputs,
   ListingIntakeStatus,
   ListingHints,
   ListingSeedKind,
+  RawListingDetail,
 } from '@/lib/listing-seeder/types'
 import { LISTING_SEED_KINDS } from '@/lib/listing-seeder/types'
 import { buildListingReviewModel, listingDraftTitle, type ListingReviewModel } from './review-model'
@@ -285,13 +287,13 @@ export async function checkListingDuplicatesAction(intakeId: string): Promise<Si
 
 /** A shallow patch of draft field values the operator edited. Values are already typed by the
  *  board (string for text/select, number|null for number, boolean|null for bool, string[] for
- *  amenities). Only KNOWN per-kind keys are applied; the rest are ignored. */
-export type ListingDraftPatch = Record<string, string | number | boolean | string[] | null>
+ *  amenities, ListingDetail[] for details). Only KNOWN per-kind keys are applied; the rest are ignored. */
+export type ListingDraftPatch = Record<string, string | number | boolean | string[] | ListingDetail[] | null>
 
 export type UpdateListingDraftResult = { ok: true; model: ListingReviewModel } | { ok: false; error: string }
 
 const CLASSIFIEDS_KEYS = new Set([
-  'title', 'description', 'listingKind', 'category', 'priceNote', 'neighborhood', 'city', 'contact',
+  'title', 'description', 'listingKind', 'category', 'details', 'priceNote', 'neighborhood', 'city', 'contact',
 ])
 const HOUSING_KEYS = new Set([
   'title', 'description', 'propertyType', 'amenities', 'rentDollars', 'depositDollars', 'bedrooms',
@@ -325,11 +327,12 @@ export async function updateListingDraft(intakeId: string, patch: ListingDraftPa
 
   for (const [key, value] of Object.entries(patch)) {
     if (!allowed.has(key)) continue
-    draft[key] = value
+    // Item-detail chips are sanitized (trim, drop blank rows, bound count) before they land on the draft.
+    draft[key] = key === 'details' ? coerceDetails(value as unknown as RawListingDetail[]) : value
 
     // Refresh provenance for scalar edits (arrays keep their per-index grounding). An operator edit
     // is a human-verified fact; clearing a field drops its entry.
-    if (key === 'amenities' || key === 'images') continue
+    if (key === 'amenities' || key === 'images' || key === 'details') continue
     const lk = ledgerKeyFor(key)
     const text = value === null || value === undefined ? '' : String(value)
     if (text.trim().length === 0) {

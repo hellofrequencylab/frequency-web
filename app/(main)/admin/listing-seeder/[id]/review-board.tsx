@@ -15,12 +15,12 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star } from 'lucide-react'
+import { Loader2, Check, X, Pencil, Send, CheckCircle2, Copy, ImagePlus, Star, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Banner, StatusChip } from '@/components/admin/status'
 import { cn } from '@/lib/utils'
 import { AMENITIES } from '@/lib/listings/types'
-import type { ListingSeedKind } from '@/lib/listing-seeder/types'
+import type { ListingDetail, ListingSeedKind } from '@/lib/listing-seeder/types'
 import type { SimilarSeededListing } from '@/lib/listing-seeder/dedupe'
 import {
   updateListingDraft,
@@ -235,17 +235,25 @@ function FieldRow({
   const [rowError, setRowError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
+  // The array raw for amenities (string[]) vs details (ListingDetail[]) is disambiguated by field.input.
+  const rawStrings = (): string[] =>
+    field.input === 'amenities' && Array.isArray(field.raw) ? (field.raw as string[]) : []
+  const rawDetails = (): ListingDetail[] =>
+    field.input === 'details' && Array.isArray(field.raw) ? (field.raw as ListingDetail[]) : []
+
   // Editor draft state, typed per input.
   const [text, setText] = useState(typeof field.raw === 'string' ? field.raw : '')
   const [num, setNum] = useState(typeof field.raw === 'number' ? String(field.raw) : '')
   const [bool, setBool] = useState<'yes' | 'no' | 'unset'>(field.raw === true ? 'yes' : field.raw === false ? 'no' : 'unset')
-  const [amenities, setAmenities] = useState<string[]>(Array.isArray(field.raw) ? field.raw : [])
+  const [amenities, setAmenities] = useState<string[]>(rawStrings())
+  const [details, setDetails] = useState<ListingDetail[]>(rawDetails())
 
   function beginEdit() {
     setText(typeof field.raw === 'string' ? field.raw : '')
     setNum(typeof field.raw === 'number' ? String(field.raw) : '')
     setBool(field.raw === true ? 'yes' : field.raw === false ? 'no' : 'unset')
-    setAmenities(Array.isArray(field.raw) ? field.raw : [])
+    setAmenities(rawStrings())
+    setDetails(rawDetails())
     setEditing(true)
   }
 
@@ -258,6 +266,8 @@ function FieldRow({
     }
     if (field.input === 'bool') return bool === 'yes' ? true : bool === 'no' ? false : null
     if (field.input === 'amenities') return amenities
+    // Drop blank rows on save; the server sanitizer bounds + re-trims.
+    if (field.input === 'details') return details.filter((d) => d.label.trim() && d.value.trim())
     return text.trim()
   }
 
@@ -307,6 +317,8 @@ function FieldRow({
                 setBool={setBool}
                 amenities={amenities}
                 setAmenities={setAmenities}
+                details={details}
+                setDetails={setDetails}
               />
             </div>
           ) : (
@@ -362,6 +374,8 @@ function FieldEditor({
   setBool,
   amenities,
   setAmenities,
+  details,
+  setDetails,
 }: {
   field: ListingReviewField
   text: string
@@ -372,6 +386,8 @@ function FieldEditor({
   setBool: (v: 'yes' | 'no' | 'unset') => void
   amenities: string[]
   setAmenities: (v: string[]) => void
+  details: ListingDetail[]
+  setDetails: (v: ListingDetail[]) => void
 }) {
   if (field.input === 'textarea') {
     return <textarea className={cn(inputCls, 'min-h-24 resize-y')} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
@@ -423,7 +439,62 @@ function FieldEditor({
       </div>
     )
   }
+  if (field.input === 'details') {
+    return <DetailsEditor details={details} setDetails={setDetails} />
+  }
   return <input className={inputCls} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
+}
+
+// ── The item-detail chips editor (a repeater of {label, value} rows) ───────────────────
+
+/** Edit the ordered item-detail chips: add / edit / remove label + value rows. Blank rows are kept while
+ *  typing (so "Add detail" opens a fresh row) and pruned on save (patchValue + the server sanitizer). */
+function DetailsEditor({
+  details,
+  setDetails,
+}: {
+  details: ListingDetail[]
+  setDetails: (v: ListingDetail[]) => void
+}) {
+  const update = (i: number, patch: Partial<ListingDetail>) =>
+    setDetails(details.map((d, j) => (j === i ? { ...d, ...patch } : d)))
+  return (
+    <div className="space-y-1.5">
+      {details.map((d, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <input
+            value={d.label}
+            placeholder="Label"
+            aria-label={`Detail ${i + 1} label`}
+            onChange={(e) => update(i, { label: e.target.value })}
+            className={cn(inputCls, 'w-32 shrink-0')}
+          />
+          <input
+            value={d.value}
+            placeholder="Value"
+            aria-label={`Detail ${i + 1} value`}
+            onChange={(e) => update(i, { value: e.target.value })}
+            className={inputCls}
+          />
+          <button
+            type="button"
+            aria-label={`Remove detail ${i + 1}`}
+            onClick={() => setDetails(details.filter((_, j) => j !== i))}
+            className="shrink-0 rounded-lg p-2 text-subtle hover:bg-danger-bg hover:text-danger"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setDetails([...details, { label: '', value: '' }])}
+        className="inline-flex items-center gap-1 text-2xs font-semibold text-primary-strong hover:underline"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden /> Add detail
+      </button>
+    </div>
+  )
 }
 
 // ── The photo strip ──────────────────────────────────────────────────────────────────

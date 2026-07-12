@@ -7,6 +7,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { resolveSeedOwnerProfileId } from '@/lib/listing-seeder/seed-owner'
+import type { ListingDetail, ListingPickupPrecision } from '@/lib/listing-seeder/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 function db(): SupabaseClient {
@@ -134,12 +135,25 @@ function cleanImages(images: string[] | undefined): string[] {
   return (images ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
 }
 
+/** Normalize item-detail chips: trim both parts, drop any row missing a label or value, cap at 20.
+ *  Order is preserved (the chips render in the given order on the detail rail). */
+function cleanDetails(details: ListingDetail[] | undefined): ListingDetail[] {
+  return (details ?? [])
+    .map((d) => ({ label: (d?.label ?? '').trim().slice(0, 40), value: (d?.value ?? '').trim().slice(0, 160) }))
+    .filter((d) => d.label && d.value)
+    .slice(0, 20)
+}
+
 export interface ListingInput {
   title: string
   description?: string | null
   kind?: ListingKind
   category?: string | null
   priceNote?: string | null
+  /** Ordered item-detail chips ({label, value}) for the detail rail. Defaults to []. */
+  details?: ListingDetail[]
+  /** Pickup precision: 'area' (approximate, default) or 'exact' (reveal pickup_address). */
+  pickupPrecision?: ListingPickupPrecision
   neighborhood?: string | null
   city?: string | null
   circleId?: string | null
@@ -158,6 +172,8 @@ export async function createListing(authorId: string, input: ListingInput): Prom
       kind: input.kind ?? 'offer',
       category: input.category?.trim() || null,
       price_note: input.priceNote?.trim().slice(0, 80) || null,
+      details: cleanDetails(input.details),
+      pickup_precision: input.pickupPrecision ?? 'area',
       neighborhood: input.neighborhood?.trim() || null,
       city: input.city?.trim() || null,
       circle_id: input.circleId || null,

@@ -15,6 +15,8 @@ function classifiedsDraft(over: Partial<ClassifiedsDraft> = {}): ClassifiedsDraf
     listingKind: 'offer',
     category: 'Furniture',
     priceNote: '$120 obo',
+    details: [{ label: 'Condition', value: 'Like new' }],
+    pickupPrecision: 'area',
     neighborhood: 'Leucadia',
     city: 'Encinitas',
     contact: 'text 555-0100',

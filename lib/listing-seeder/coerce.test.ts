@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   coerceListingExtraction,
+  coerceDetails,
   clampListingKind,
   parseDollars,
   parseCount,
@@ -82,6 +83,25 @@ describe('coerceListingExtraction — classifieds', () => {
     expect(ledger['contact'][0].kind).toBe('fact')
   })
 
+  it('coerces item-detail chips and defaults pickup precision to area', () => {
+    const withDetails: ClassifiedsExtraction = {
+      ...raw,
+      details: [
+        { label: 'Condition', value: 'Like new' },
+        { label: ' Brand ', value: ' West Elm ' },
+        { label: 'Missing value', value: '' }, // dropped
+        { value: 'no label' }, // dropped
+      ],
+    }
+    const { draft } = coerceListingExtraction(withDetails, 'classifieds', PASTE_CLS)
+    if (draft.kind !== 'classifieds') throw new Error('kind')
+    expect(draft.details).toEqual([
+      { label: 'Condition', value: 'Like new' },
+      { label: 'Brand', value: 'West Elm' },
+    ])
+    expect(draft.pickupPrecision).toBe('area')
+  })
+
   it('DOWNGRADES an un-cited price fact to inferred (grounding gate)', () => {
     const bad: ClassifiedsExtraction = {
       kind: 'classifieds',
@@ -91,6 +111,21 @@ describe('coerceListingExtraction — classifieds', () => {
     const { ledger } = coerceListingExtraction(bad, 'classifieds', PASTE_CLS)
     expect(ledger['priceNote'][0].kind).toBe('inferred')
     expect(ledger['priceNote'][0].confidence).toBeLessThanOrEqual(0.4)
+  })
+})
+
+describe('coerceDetails', () => {
+  it('trims, drops rows missing a label or value, and caps the count', () => {
+    expect(coerceDetails(undefined)).toEqual([])
+    expect(
+      coerceDetails([
+        { label: ' Color ', value: ' Walnut ' },
+        { label: 'Empty', value: '  ' },
+        { label: '', value: 'no label' },
+      ]),
+    ).toEqual([{ label: 'Color', value: 'Walnut' }])
+    const many = Array.from({ length: 30 }, (_, i) => ({ label: `L${i}`, value: `V${i}` }))
+    expect(coerceDetails(many)).toHaveLength(20)
   })
 })
 
