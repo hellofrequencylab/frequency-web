@@ -167,12 +167,11 @@ export default async function MainLayout({
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* A public page (a networked Space profile, a public event) reads in a single CENTERED column at
-              the shared ~88rem width — the same width the public /discover/spaces directory uses, so moving
-              between the directory and a Space reads as one product. A public viewer has no nav/community
-              rail, so there are no gutters to mirror; the content is simply centered and never sprawls
-              edge to edge. (The SIGNED-IN view still uses the member shell's three-column grid.) */}
-          <div className="mx-auto w-full max-w-[88rem] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+          {/* A public page (a networked Space profile, a public event) reads FULL WIDTH: a single centered
+              column at the site's max content width (105rem, the same the signed-in shell uses), with no
+              rail gutters. The public /discover/spaces directory uses the SAME 105rem, so the directory and a
+              Space profile line up at one full width. (The SIGNED-IN view still uses the three-column grid.) */}
+          <div className="mx-auto w-full max-w-[105rem] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
         </main>
         <MarketingFooter menu={footerMenu} />
       </>
