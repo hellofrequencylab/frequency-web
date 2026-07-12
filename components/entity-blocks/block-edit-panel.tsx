@@ -610,7 +610,8 @@ function ImagesEditor({
 }
 
 /** The Features editor (ADR-542): a repeater of {icon, title, text} items with add / remove / reorder. The
- *  icon is a short token (an emoji or a word); title + text are free text. Empty items are pruned on write. */
+ *  icon is a short token (an emoji or a word); title + text are free text. Blank rows are kept while editing
+ *  (so "+ Add feature" actually opens a new row to type into) and pruned by the server sanitizer on save. */
 function FeaturesEditor({
   label,
   value,
@@ -627,8 +628,9 @@ function FeaturesEditor({
         text: typeof it.text === 'string' ? it.text : '',
       }))
     : []
-  const update = (next: Array<{ icon: string; title: string; text: string }>) =>
-    onChange(next.filter((it) => it.icon || it.title || it.text))
+  // Do NOT prune here: pruning empty rows swallowed the freshly-added blank row (bug), so adding a feature did
+  // nothing. Keep every row while the operator types; sanitizeFeature drops the still-blank ones on save.
+  const update = (next: Array<{ icon: string; title: string; text: string }>) => onChange(next)
   const move = (i: number, delta: -1 | 1) => {
     const j = i + delta
     if (j < 0 || j >= items.length) return
@@ -813,8 +815,9 @@ function LinksEditor({
         url: typeof it.url === 'string' ? it.url : '',
       }))
     : []
-  const update = (next: Array<{ label: string; url: string }>) =>
-    onChange(next.filter((it) => it.url || it.label))
+  // Keep blank rows while editing so "+ Add link" opens a row to type into (pruning here swallowed the new
+  // row); the server sanitizer drops links with no safe url on save.
+  const update = (next: Array<{ label: string; url: string }>) => onChange(next)
   return (
     <div className="space-y-1.5">
       <span className={labelCls}>{label}</span>

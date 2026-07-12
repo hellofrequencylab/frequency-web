@@ -136,23 +136,33 @@ export function ImageCropper({
     }
   }, [src, initialRect])
 
-  const beginDrag = useCallback(
-    (e: React.PointerEvent, mode: DragMode) => {
-      if (!rect) return
-      e.preventDefault()
-      e.stopPropagation()
-      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-      dragRef.current = { mode, startX: e.clientX, startY: e.clientY, startRect: rect }
-    },
-    [rect],
-  )
+  // The window-level drag listeners, kept in refs so endDrag removes EXACTLY what beginDrag added. Driving the
+  // drag off window listeners (not element pointer-capture) is the fix for issue #4: a fast release off the
+  // tiny handle could miss the element's pointerup, leaving dragRef set so the box kept following the cursor
+  // until an unrelated re-render. A window pointerup / pointercancel always ends the drag.
+  const moveListener = useRef<((e: PointerEvent) => void) | null>(null)
+  const endListener = useRef<((e: PointerEvent) => void) | null>(null)
 
-  const onPointerMove = useCallback(
-    (e: React.PointerEvent) => {
+  const endDrag = useCallback(() => {
+    dragRef.current = null
+    if (moveListener.current) window.removeEventListener('pointermove', moveListener.current)
+    if (endListener.current) {
+      window.removeEventListener('pointerup', endListener.current)
+      window.removeEventListener('pointercancel', endListener.current)
+    }
+    moveListener.current = null
+    endListener.current = null
+  }, [])
+
+  // Map a pointer position to the next crop rect for the active drag. Reads the (frozen) start state from the
+  // drag ref plus the current display/aspect; never reads `rect`, so a burst of moves never captures a stale
+  // rectangle. Called by the window pointermove listener.
+  const applyMove = useCallback(
+    (clientX: number, clientY: number) => {
       const drag = dragRef.current
       if (!drag || !display) return
-      const dx = e.clientX - drag.startX
-      const dy = e.clientY - drag.startY
+      const dx = clientX - drag.startX
+      const dy = clientY - drag.startY
       const { w: dw, h: dh } = display
       const start = drag.startRect
 
@@ -215,14 +225,27 @@ export function ImageCropper({
     [display, aspect],
   )
 
-  const endDrag = useCallback((e: React.PointerEvent) => {
-    dragRef.current = null
-    try {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-    } catch {
-      /* pointer may already be released */
-    }
-  }, [])
+  const beginDrag = useCallback(
+    (e: React.PointerEvent, mode: DragMode) => {
+      if (!rect) return
+      e.preventDefault()
+      e.stopPropagation()
+      dragRef.current = { mode, startX: e.clientX, startY: e.clientY, startRect: rect }
+      // Add window listeners for THIS drag and remember them so endDrag removes exactly these. A release
+      // anywhere (window pointerup / pointercancel) ends the drag, so a click-drag-release is always clean.
+      const move = (ev: PointerEvent) => applyMove(ev.clientX, ev.clientY)
+      const end = () => endDrag()
+      moveListener.current = move
+      endListener.current = end
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', end)
+      window.addEventListener('pointercancel', end)
+    },
+    [rect, applyMove, endDrag],
+  )
+
+  // Safety net: drop any live drag listeners if the cropper unmounts mid-drag.
+  useEffect(() => endDrag, [endDrag])
 
   // Apply — map the preview rect to natural pixels, draw that region to an offscreen canvas at full
   // resolution, and hand back a File. Guards a tainted canvas / null blob by cancelling cleanly.
@@ -335,9 +358,6 @@ export function ImageCropper({
                 role="group"
                 aria-label="Crop selection. Drag to move, drag a corner to resize."
                 onPointerDown={(e) => beginDrag(e, { kind: 'move' })}
-                onPointerMove={onPointerMove}
-                onPointerUp={endDrag}
-                onPointerCancel={endDrag}
                 className="absolute cursor-move border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
                 style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
               >
@@ -352,9 +372,6 @@ export function ImageCropper({
                     <div
                       key={handle}
                       onPointerDown={(e) => beginDrag(e, { kind: 'resize', handle })}
-                      onPointerMove={onPointerMove}
-                      onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
                       className={cn(
                         'absolute h-3 w-3 rounded-full border-2 border-white bg-primary shadow ring-1 ring-black/30',
                         pos[handle],

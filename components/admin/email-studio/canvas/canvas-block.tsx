@@ -21,7 +21,7 @@ import { EditableSlot } from './editable-slot'
 const FONT = `-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif`
 
 /** The role a field plays on the canvas, or null when it belongs in the LEFT rail (structural) instead. */
-type Role = 'eyebrow' | 'heading' | 'quote' | 'attribution' | 'body' | 'button' | 'image' | null
+type Role = 'eyebrow' | 'heading' | 'quote' | 'attribution' | 'body' | 'button' | 'image' | 'features' | null
 
 const IMAGE_KEYS = new Set(['image', 'src', 'images'])
 const BUTTON_LABEL_KEYS = new Set(['label', 'buttonLabel', 'browseLabel'])
@@ -36,8 +36,11 @@ function roleFor(blockId: string, f: FieldDef): Role {
   // slot, so it never double-renders.
   if (f.key === 'alt') return null
   if (isImageField(f)) return 'image'
-  // features / links / embedUrl / picker are edited in the LEFT rail (structural), not on the canvas.
-  if (f.type === 'features' || f.type === 'links') return null
+  // A FEATURES list (the Features block's items, the Card grid's cards) renders a PREVIEW on the canvas so the
+  // block is never invisible; its rows are edited in the LEFT-rail settings tile. links / embedUrl / picker have
+  // no canvas surface, so they stay rail-only.
+  if (f.type === 'features') return 'features'
+  if (f.type === 'links') return null
   if (f.key === 'eyebrow') return 'eyebrow'
   if (BUTTON_LABEL_KEYS.has(f.key)) return 'button'
   if (f.key === 'by') return 'attribution'
@@ -100,6 +103,37 @@ function ImageSlot({
         onSelect={onChange}
       />
     </>
+  )
+}
+
+/** A read-only PREVIEW of a features list on the canvas (the Features block's items, the Card grid's cards).
+ *  The rows themselves are authored in the LEFT-rail settings tile (the shared FeaturesEditor); this keeps the
+ *  block visible on the canvas instead of rendering nothing. Empty === a hint pointing at the settings. */
+function FeaturesSlot({ label, value }: { label: string; value: unknown }) {
+  const items: Array<{ icon: string; title: string; text: string }> = Array.isArray(value)
+    ? (value as Array<Record<string, unknown>>).map((it) => ({
+        icon: typeof it.icon === 'string' ? it.icon : '',
+        title: typeof it.title === 'string' ? it.title : '',
+        text: typeof it.text === 'string' ? it.text : '',
+      }))
+    : []
+  if (items.length === 0) {
+    return (
+      <p className="text-sm italic" style={{ color: C.subtle }}>
+        Add {label.toLowerCase()} in this block&rsquo;s settings.
+      </p>
+    )
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {items.map((it, i) => (
+        <div key={i} style={{ border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+          {it.icon && <div style={{ fontSize: 22, lineHeight: 1 }}>{it.icon}</div>}
+          {it.title && <div className="mt-1 text-base font-bold" style={{ color: C.text }}>{it.title}</div>}
+          {it.text && <div className="mt-0.5 text-sm leading-relaxed" style={{ color: C.muted }}>{it.text}</div>}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -195,6 +229,8 @@ export function CanvasBlock({
             </span>
           </div>
         )
+      case 'features':
+        return <FeaturesSlot key={key} label={f.label} value={props[f.key]} />
       case 'body':
       default:
         return (
