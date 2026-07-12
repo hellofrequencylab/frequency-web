@@ -167,11 +167,18 @@ export default async function MainLayout({
         {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top). min-h-dvh
             (not screen) tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
         <main className="min-h-dvh bg-canvas" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
-          {/* A public page (a networked Space profile, a public event) reads FULL WIDTH: a single centered
-              column at the site's max content width (105rem, the same the signed-in shell uses), with no
-              rail gutters. The public /discover/spaces directory uses the SAME 105rem, so the directory and a
-              Space profile line up at one full width. (The SIGNED-IN view still uses the three-column grid.) */}
-          <div className="mx-auto w-full max-w-[105rem] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
+          {/* A public page rides in the SAME centered CONTENT COLUMN as the signed-in shell: the member
+              three-column grid (empty left/right rail gutters flanking a flex-1 center column inside
+              max-w-[105rem]), so a public Space profile is the exact width it is signed in. The public
+              /discover/spaces directory rides in an identical column, so the two line up. NOT full width. */}
+          <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
+            {/* Empty left gutter — the left-nav column's width (w-48), held blank. */}
+            <div className="hidden w-48 shrink-0 md:block" aria-hidden />
+            {/* Center content column — same flex-1 min-w-0 py-6 as the shell's main. */}
+            <div className="min-w-0 flex-1 py-6">{children}</div>
+            {/* Empty right gutter — the community rail's width (w-72), held blank. */}
+            <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
+          </div>
         </main>
         <MarketingFooter menu={footerMenu} />
       </>

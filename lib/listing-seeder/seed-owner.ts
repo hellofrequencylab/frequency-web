@@ -31,14 +31,28 @@ export async function resolveSeedOwnerProfileId(): Promise<string | null> {
   if (cached) return cached
   try {
     const admin = createAdminClient()
-    const { data } = await admin
+    // Seeded listings are attributed to the dedicated brand account @frequency (display "Frequency"),
+    // NOT the platform SYSTEM profile — the system profile also posts the quiet Vera notices, so seeded
+    // rows would otherwise read "Posted by Vera". Prefer the @frequency handle; fall back to the system
+    // profile so a mis-seeded environment still authors under a stable platform identity rather than nobody.
+    const byHandle = await admin
       .from('profiles')
       .select('id')
-      .eq('is_system', true)
+      .eq('handle', 'frequency')
       .eq('is_active', true)
       .limit(1)
       .maybeSingle()
-    const id = (data as { id?: string } | null)?.id ?? null
+    let id = (byHandle.data as { id?: string } | null)?.id ?? null
+    if (!id) {
+      const bySystem = await admin
+        .from('profiles')
+        .select('id')
+        .eq('is_system', true)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+      id = (bySystem.data as { id?: string } | null)?.id ?? null
+    }
     if (id) cached = id
     return id
   } catch {

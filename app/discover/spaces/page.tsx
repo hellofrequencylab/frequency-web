@@ -74,10 +74,13 @@ export default async function PublicSpacesDirectoryPage({
   const urlBase = { q, category, sort: sortParam, per, page }
 
   return (
-    // FULL WIDTH, matching the public Space profiles (105rem, set in the (main) public chrome), so the
-    // directory and a Space read at one full width. The /discover layout already clears the fixed header, so
-    // the top padding here stays small (no double gap above the hero).
-    <div className="mx-auto max-w-[105rem] px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
+    // Ride in the SAME centered content column as the public Space profiles: the member three-column grid
+    // (empty rail gutters flanking a flex-1 center column inside max-w-[105rem]), so the directory and a
+    // Space profile are the exact same width. NOT full width. The /discover layout already clears the fixed
+    // header, so the center column's top padding stays small (no double gap above the hero).
+    <div className="mx-auto flex w-full max-w-[105rem] items-stretch gap-8 px-4 sm:px-6 lg:gap-10 lg:px-8">
+      <div className="hidden w-48 shrink-0 md:block" aria-hidden />
+      <div className="min-w-0 flex-1 pb-16 pt-4 sm:pb-20 sm:pt-6">
       <JsonLd
         data={[
           spaceListSchema(spaces, TITLE),
@@ -138,6 +141,8 @@ export default async function PublicSpacesDirectoryPage({
           body="Your own branded page, a shop, bookings, memberships, events, and a CRM for your people. Getting listed is getting discovered. Free to start."
         />
       </div>
+      </div>
+      <div className="hidden w-72 shrink-0 lg:block" aria-hidden />
     </div>
   )
 }

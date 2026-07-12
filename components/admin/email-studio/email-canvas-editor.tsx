@@ -189,20 +189,19 @@ export function EmailCanvasEditor() {
             </p>
           ) : (
             <div className="space-y-6">
-              {blocks.map((id) => {
-                const active = id === selectedId
-                return (
-                  <div
-                    key={id}
-                    role="group"
-                    onMouseDown={() => setSelectedId(id)}
-                    className="rounded-lg p-2 transition-shadow"
-                    style={active ? { boxShadow: `0 0 0 2px ${C.primary}` } : undefined}
-                  >
-                    <CanvasBlock id={id} props={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
-                  </div>
-                )
-              })}
+              {blocks.map((id) => (
+                // Selecting a block (mousedown) surfaces its settings in the LEFT rail, which is the selection
+                // affordance. No ring is painted on the canvas: clicking into a text slot must not draw an amber
+                // box around the field (owner directive), so the block wrapper stays outline-free.
+                <div
+                  key={id}
+                  role="group"
+                  onMouseDown={() => setSelectedId(id)}
+                  className="rounded-lg p-2"
+                >
+                  <CanvasBlock id={id} props={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+                </div>
+              ))}
             </div>
           )}
         </div>
