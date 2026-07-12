@@ -78,10 +78,10 @@ export function BetaCampaignWorkspace({
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  // PROTOTYPE FLAG (kept off by default): `?canvas=1` opens the on-canvas WYSIWYG editor instead of the
-  // working trio editor. Everything else (save / compile / preview / test-send) is shared, so the flag only
-  // swaps the editing surface. Drop the param (or set anything else) to keep the current editor.
-  const canvasFlag = useSearchParams().get('canvas') === '1'
+  // The on-canvas WYSIWYG editor is now the DEFAULT. The old three-region "trio" editor stays available as a
+  // fallback at `?classic=1` (everything else — save / compile / preview / test-send — is shared, so the flag
+  // only swaps the editing surface). Drop the param for the canvas editor.
+  const useCanvas = useSearchParams().get('classic') !== '1'
 
   const reqRef = useRef(0)
   const editorRef = useRef<HTMLElement | null>(null)
@@ -303,7 +303,7 @@ export function BetaCampaignWorkspace({
               key={loaded.id}
               campaign={loaded}
               onSubjectChange={onSubjectChange}
-              arrangement={canvasFlag ? 'canvas' : 'trio'}
+              arrangement={useCanvas ? 'canvas' : 'trio'}
               sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} layout="row" />}
             />
           )}

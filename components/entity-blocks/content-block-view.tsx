@@ -155,7 +155,12 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
     }
     case 'text': {
       const text = s(props, 'text')
-      return text ? <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{text}</p> : null
+      // Cap the line length at a readable measure (max-w-prose ~65ch) so long-form copy never runs edge to
+      // edge in a wide single-column row. A no-op in a narrow / multi-column row (the column is already
+      // shorter than the cap).
+      return text ? (
+        <p className="max-w-prose whitespace-pre-wrap text-base leading-relaxed text-muted">{text}</p>
+      ) : null
     }
     case 'links': {
       const items = Array.isArray(props.items) ? (props.items as Array<{ label?: unknown; url?: unknown }>) : []
@@ -250,7 +255,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       if (!text) return null
       const by = s(props, 'by')
       return (
-        <figure className="border-l-2 border-primary pl-4">
+        <figure className="max-w-prose border-l-2 border-primary pl-4">
           <blockquote className="text-lg font-medium italic text-text">{text}</blockquote>
           {by && <figcaption className="mt-2 text-sm text-muted">{by}</figcaption>}
         </figure>

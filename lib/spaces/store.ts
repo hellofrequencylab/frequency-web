@@ -157,6 +157,13 @@ export async function getVisibleSpaceBySlug(
   if (visibility !== 'private') return space
   // Private: only the owner or an active member sees it. Resolve membership without importing the
   // entitlements seam (kept dependency-light): owner check + an active-member lookup.
+  // First, a PLATFORM STAFF override: a web_role admin / janitor may view ANY Space regardless of
+  // visibility. This mirrors resolveSpaceManageAccess.staffViewing so the visibility gate and the owner
+  // -surface gate agree, and it is what makes "View as <space>" (which keeps the real staff web_role) and a
+  // staffer's direct navigation resolve a private Space instead of 404ing. Dynamic import matches the
+  // dependency-light pattern below (getSpaceMembership); lib/auth never imports this module, so no cycle.
+  const { isPlatformStaff } = await import('@/lib/auth')
+  if (await isPlatformStaff()) return space
   if (!viewerProfileId) return null
   if (space.ownerProfileId && space.ownerProfileId === viewerProfileId) return space
   const { getSpaceMembership } = await import('./membership')
