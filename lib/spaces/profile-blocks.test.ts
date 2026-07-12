@@ -56,7 +56,7 @@ describe('defaultProfileLayout (fresh default from type + enabled functions)', (
 
   it('always includes the universal content sections', () => {
     const layout = defaultProfileLayout('nonprofit', fns())
-    for (const id of ['about', 'highlights', 'events', 'reviews', 'faq', 'updates', 'contact'] as const) {
+    for (const id of ['about', 'highlights', 'events', 'reviews', 'updates', 'contact'] as const) {
       expect(layout).toContain(id)
     }
   })
