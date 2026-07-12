@@ -59,9 +59,13 @@ export interface SendPanelProps {
   segment?: string
   /** Audience options for the picker. Defaults to the built-in audiences. */
   segments?: SegmentOption[]
+  /** 'stack' (default): controls stacked in a narrow rail. 'row': audience / preview / schedule / actions
+   *  laid out across a full-width bar (the Beta Campaign send box at the foot of the editor). */
+  layout?: 'stack' | 'row'
 }
 
-export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGMENTS }: SendPanelProps) {
+export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGMENTS, layout = 'stack' }: SendPanelProps) {
+  const row = layout === 'row'
   const [current, setCurrent] = useState<CampaignStatus>(status)
   const [selected, setSelected] = useState(segment ?? segments[0]?.key ?? 'members')
   const [scheduleAt, setScheduleAt] = useState('')
@@ -150,8 +154,8 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
       {isTerminal ? (
         <Banner tone={current === 'sent' ? 'info' : 'warning'} title={current === 'sent' ? 'This campaign has been sent.' : 'This campaign was cancelled.'} />
       ) : (
-        <>
-          <label className="block space-y-1">
+        <div className={row ? 'flex flex-wrap items-end gap-x-6 gap-y-4' : 'space-y-4'}>
+          <label className={row ? 'block min-w-[220px] flex-1 space-y-1' : 'block space-y-1'}>
             <span className="text-xs font-medium text-subtle">Audience</span>
             <select
               value={selected}
@@ -182,7 +186,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
             )}
           </div>
 
-          <div className="space-y-1 border-t border-border pt-3">
+          <div className={row ? 'space-y-1' : 'space-y-1 border-t border-border pt-3'}>
             <span className="text-xs font-medium text-subtle">Schedule (optional)</span>
             <div className="flex flex-wrap items-center gap-2">
               <input
@@ -199,7 +203,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <div className={row ? 'flex flex-wrap items-center gap-2' : 'flex flex-wrap items-center gap-2 border-t border-border pt-3'}>
             <Button size="sm" disabled={pending || !canSend} onClick={sendNow}>
               <Send className="h-3.5 w-3.5" /> Send now
             </Button>
@@ -227,7 +231,7 @@ export function SendPanel({ campaignId, status, segment, segments = DEFAULT_SEGM
               </Button>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {error && (

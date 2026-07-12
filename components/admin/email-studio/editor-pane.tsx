@@ -147,22 +147,19 @@ export function EmailEditorPane({
       <EntityLayoutProvider kind="email" save={save}>
         <LayoutSeeder layout={campaign.layout} />
         <div className="space-y-4">
-          {/* TOP — the compose fields + the send panel, two columns above the editor. */}
-          <div className="grid gap-4 lg:grid-cols-2">
-            <ComposeToolbar
-              campaignId={id}
-              subject={subject}
-              preheader={preheader}
-              onSubject={onSubject}
-              onPreheader={onPreheader}
-              previewOpen
-              onTogglePreview={() => {}}
-              showPreviewToggle={false}
-            />
-            <div className="min-w-0">{sidebar}</div>
-          </div>
-          {/* EDITOR — block settings (Your page) LEFT, the live preview expanded RIGHT. */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
+          {/* TOP — the subject + preheader compose fields, FULL WIDTH above Your page and preview. */}
+          <ComposeToolbar
+            campaignId={id}
+            subject={subject}
+            preheader={preheader}
+            onSubject={onSubject}
+            onPreheader={onPreheader}
+            previewOpen
+            onTogglePreview={() => {}}
+            showPreviewToggle={false}
+          />
+          {/* MIDDLE — the editor: block settings (Your page) LEFT, the live preview expanded RIGHT. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
             <div className="min-w-0">
               <EntityPageBuilder pageId={id} kind="email" loadRailData={loadRailData} seed={seed} />
             </div>
@@ -170,6 +167,8 @@ export function EmailEditorPane({
               <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} />
             </div>
           </div>
+          {/* BOTTOM — the send / schedule panel, FULL WIDTH with all its controls in a row. */}
+          {sidebar}
         </div>
       </EntityLayoutProvider>
     )
