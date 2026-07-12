@@ -8,6 +8,7 @@ import { listingDetailFromMarket } from '@/lib/listings-shared/detail-view'
 import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
+import { approxCoordsForArea } from '@/lib/marketplace/area-geocode'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,6 +33,13 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
     getHighestOfferCents('market_listing', id),
   ])
   const view = listingDetailFromMarket(listing, { isOwner, highestOfferCents })
+  // Draw a live AREA map even when the listing has no stored coordinates: geocode its coarse place
+  // label (city/neighborhood) to an approximate center. Still area-only (no pin), so the exact pickup
+  // spot stays private until the seller reveals it.
+  if (view.pickup && view.pickup.lat == null && view.pickup.areaLabel) {
+    const coords = await approxCoordsForArea(view.pickup.areaLabel)
+    if (coords) view.pickup = { ...view.pickup, lat: coords.lat, lng: coords.lng }
+  }
   const firstName = listing.author?.display_name.split(' ')[0] ?? 'the poster'
 
   return (

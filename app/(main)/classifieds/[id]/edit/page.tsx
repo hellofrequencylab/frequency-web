@@ -29,6 +29,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
       details={listing.details ?? []}
       pickupAddress={listing.pickup_address}
       pickupPrecision={listing.pickup_precision}
+      status={listing.status}
     />
   )
 }
