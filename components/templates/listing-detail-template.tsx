@@ -22,6 +22,7 @@ import { ListingDetailsCard } from '@/components/marketplace/listing-details-car
 import { ListingMarketingCTA } from '@/components/marketplace/listing-marketing-cta'
 import { ListingLocationMap } from '@/components/marketplace/listing-location-map'
 import { ListingContactDialog } from '@/components/marketplace/listing-contact-dialog'
+import { ListingClaimBox } from '@/components/marketplace/listing-claim-box'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
 import { listingCanonicalPath } from '@/lib/listings-shared/listing-seo'
 import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
@@ -63,6 +64,7 @@ export function ListingDetailTemplate({
   footer,
   contactNote,
   ownerControls,
+  claimToken,
 }: {
   view: ListingDetailView
   comments: ListingComment[]
@@ -80,6 +82,9 @@ export function ListingDetailTemplate({
   contactNote?: React.ReactNode
   /** Owner-only status controls (close/reopen/delete), shown in the Manage module. */
   ownerControls?: React.ReactNode
+  /** A valid claim token (the visitor arrived via /classifieds/<id>?claim=<token> on a seeded,
+   *  unclaimed listing). When set, a "Claim listing" box REPLACES the Contact module. */
+  claimToken?: string | null
 }) {
   const detailPath = listingCanonicalPath(view)
   const editHref = view.action?.kind === 'edit' ? view.action.href : null
@@ -180,7 +185,17 @@ export function ListingDetailTemplate({
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          {showContact && (
+          {claimToken ? (
+            /* Arrived via a claim link: the Claim box REPLACES Contact the seller. */
+            <section className="rounded-2xl border border-primary/40 bg-primary-bg/40 p-4">
+              <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-primary-strong">Claim this listing</h2>
+              <ListingClaimBox
+                token={claimToken}
+                signedIn={!!myProfileId}
+                signInHref={`/sign-in?next=${encodeURIComponent(`${detailPath}?claim=${claimToken}`)}`}
+              />
+            </section>
+          ) : showContact ? (
             <section className="rounded-2xl border border-border bg-surface p-4">
               <h2 className="mb-3 text-2xs font-semibold uppercase tracking-wide text-subtle">Contact the seller</h2>
               <ListingContactDialog
@@ -196,7 +211,7 @@ export function ListingDetailTemplate({
               />
               {contactNote && <div className="mt-3">{contactNote}</div>}
             </section>
-          )}
+          ) : null}
 
           <ListingDetailsCard details={view.details} />
 

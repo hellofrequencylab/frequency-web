@@ -128,6 +128,20 @@ export async function listingAuthorId(id: string): Promise<string | null> {
   return (data as { author_id: string | null } | null)?.author_id ?? null
 }
 
+/** The one-time claim token for a seeded, still-unclaimed listing (null when claimed or not seeded).
+ *  Reads the secret directly, so the CALLER must gate this to platform staff before surfacing it — it
+ *  builds the shareable "claim this listing" link an operator sends the real poster. */
+export async function getListingClaimToken(id: string): Promise<string | null> {
+  const { data } = await db()
+    .from('market_listings')
+    .select('claim_token, claimed_at')
+    .eq('id', id)
+    .maybeSingle()
+  const row = data as { claim_token: string | null; claimed_at: string | null } | null
+  if (!row || row.claimed_at) return null
+  return row.claim_token ?? null
+}
+
 // --- Mutations (callers enforce: the author owns the listing) ---------------
 
 /** Normalize image URLs: trim, drop empties, cap at 6. */
