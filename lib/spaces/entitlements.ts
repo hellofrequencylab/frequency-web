@@ -304,6 +304,19 @@ const NO_CAPABILITIES: SpaceCapabilities = {
   canInvite: false,
 }
 
+// Platform STAFF (a janitor / admin web_role) may edit + manage ANY Space even without a per-Space role.
+// isOwner stays false (owner-only actions like billing / ownership transfer keep gating on isOwner), but
+// role reads as 'admin' so every profile / member / invite editor opens. Not the owner, just full operator
+// authority over the content.
+const STAFF_CAPABILITIES: SpaceCapabilities = {
+  isOwner: false,
+  isAdmin: true,
+  role: 'admin',
+  canEditProfile: true,
+  canManageMembers: true,
+  canInvite: true,
+}
+
 /** Build the capability set from the resolved owner-ness + an effective space role. Pure (no IO),
  *  so it's unit-testable on its own and reused by getSpaceCapabilities. An owner is treated as
  *  'admin' (the top rung) regardless of any member row. */
@@ -336,8 +349,20 @@ export async function getSpaceCapabilities(
     // Only an ACTIVE membership confers a role (invited/suspended carry none).
     if (membership && membership.status === 'active') memberRole = membership.role
   }
-  // An anonymous-to-this-space caller (not owner, no active membership) gets nothing.
-  if (!isOwner && !memberRole) return NO_CAPABILITIES
+  // Not owner and no active membership: normally nothing — BUT a platform staff caller (janitor / admin
+  // web_role) gets full operator authority over any Space's content. Resolved via a dynamic import so this
+  // module keeps lib/auth (next/headers) out of its static graph — it is only type-imported by clients, so it
+  // stays server-only. Fail-safe to non-staff on any error (e.g. no request context).
+  if (!isOwner && !memberRole) {
+    let staff = false
+    try {
+      const { isPlatformStaff } = await import('@/lib/auth')
+      staff = await isPlatformStaff()
+    } catch {
+      staff = false
+    }
+    return staff ? STAFF_CAPABILITIES : NO_CAPABILITIES
+  }
   return spaceCapabilitiesFor(isOwner, memberRole)
 }
 
