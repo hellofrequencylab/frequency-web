@@ -46,7 +46,7 @@ const HERO = 'https://images.frequencylocal.com/email/placeholder-hero.jpg'
  * keyed by block id, and a sparse `style` map. Block ids are unique per preset by construction, so the rows
  * model's global dedupe never drops one. Pure.
  */
-function emailLayout(blocks: AuthoredBlock[]): EntityLayout {
+export function emailLayout(blocks: AuthoredBlock[]): EntityLayout {
   const rows: RowDef[] = blocks.map((b, i) => ({ id: `r${i}`, columns: 1, cells: [[b.id]] }))
   const content: Record<string, Record<string, unknown>> = {}
   const style: Record<string, BlockStyle> = {}

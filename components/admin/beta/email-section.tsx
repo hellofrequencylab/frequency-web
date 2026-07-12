@@ -1,73 +1,59 @@
 import { Mail, MousePointerClick, Eye, Send } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { AdminSection } from '@/components/templates'
-import { listBetaCampaigns, listBetaFunnels } from '@/lib/beta/email'
-import { betaTemplateLabels } from '@/lib/beta/email-templates'
-import { listPhases } from '@/lib/beta/phases'
+import { listBetaFunnels } from '@/lib/beta/email'
+import { seedBetaLaunchEmails } from '@/lib/beta/email-templates'
 import { listSegmentOptions } from '@/lib/studio/campaigns'
 import { getEmailStats } from '@/lib/studio/analytics'
 import { listEmailCampaigns } from '@/app/(main)/admin/email-studio/actions'
 import { listEmailTemplates } from '@/lib/email-studio/templates'
 import { EmailStudioMount } from '@/components/admin/email-studio/email-studio-mount'
-import { CampaignsPanel, type CampaignCardData, type PhaseOption, type SegmentOption } from './email/campaigns-panel'
 import { FunnelsPanel } from './email/funnels-panel'
-import { TemplatesPanel } from './email/templates-panel'
 import { VeraEditor } from './email/vera-editor'
 
-// WAVE 2: EMAIL — the section that actually SENDS, so it is the strictest consumer of
-// the approval spine. Four blocks, all inside the email tab:
-//   1. Campaigns with the Draft → Ready → Approved → Sent gate (the send path calls
-//      assertApproved FIRST; see lib/beta/email.ts sendApprovedBetaCampaign).
-//   2. Funnels + triggers — arm-once-then-pausable drips + event automations.
-//   3. Pre-loaded best-practice templates WITH content, loaded as DRAFTS.
-//   4. Vera copy editor — drafts/refines through withVoice, linted, never auto-sent.
+// WAVE 2: EMAIL — one clean Email Studio surface, top to bottom:
+//   1. Email Studio — the two-pane editor: the beta launch emails as compact cards on
+//      the LEFT, the themed block editor on the RIGHT. This is the primary surface, and
+//      the send path still calls assertApproved FIRST (lib/beta/email.ts).
+//   2. Email activity — the program-wide stat row (opens/clicks from the webhook).
+//   3. Funnels + triggers — arm-once-then-pausable drips + event automations, folded
+//      below the Studio as the automation helper.
+//   4. Write with Vera — the AI copy editor, folded below the Studio as the compose
+//      helper. Vera drafts/refines through withVoice, is linted, and never auto-sends.
 //
-// Server Component: self-fetches in parallel, hands serializable data to the client
-// islands. Reads gate at the /admin/beta layout; every mutation re-gates in its action.
-// Mounted by the page switch only when tab === 'email', so a plain async component
-// (matching the sibling sections) keeps the rest of the workspace off its await.
+// The seven themed beta launch emails auto-seed into the Studio left rail on first view
+// (seedBetaLaunchEmails, idempotent + writer-gated), so there is no manual template
+// loader and no separate campaigns list to contradict the Studio.
+//
+// Server Component: seeds fail-soft, then self-fetches in parallel and hands serializable
+// data to the client islands. Reads gate at the /admin/beta layout; every mutation
+// re-gates in its action. Mounted by the page switch only when tab === 'email'.
 export async function BetaEmailSection() {
-  const [campaigns, funnels, phases, segments, stats, emailStudioCampaigns, emailTemplates] = await Promise.all([
-    listBetaCampaigns(),
+  // Populate the Studio left rail with the beta launch emails. Idempotent and
+  // writer-gated; fail-soft so a seed hiccup never blocks the page.
+  try {
+    await seedBetaLaunchEmails()
+  } catch {
+    // Ignore: the Studio still renders whatever is already in the campaigns table.
+  }
+
+  const [funnels, segments, stats, emailStudioCampaigns, emailTemplates] = await Promise.all([
     listBetaFunnels(),
-    listPhases(),
     listSegmentOptions(),
     getEmailStats(30),
     listEmailCampaigns(),
     listEmailTemplates(),
   ])
 
-  const phaseTitle = new Map(phases.map((p) => [p.id, `${p.key} · ${p.title}`]))
-  const phaseOptions: PhaseOption[] = phases.map((p) => ({ id: p.id, label: `${p.key} · ${p.title}` }))
-  const segmentOptions: SegmentOption[] = segments.map((s) => ({ key: s.key, label: s.label }))
-
-  const cards: CampaignCardData[] = campaigns.map((c) => ({
-    id: c.id,
-    subject: c.subject,
-    body: c.body,
-    segment: c.segment,
-    approvalStatus: c.approvalStatus,
-    phaseTitle: c.phaseId ? phaseTitle.get(c.phaseId) ?? 'Unfiled' : 'Unfiled',
-    recipientCount: c.recipientCount,
-    testSentAt: c.testSentAt,
-    scheduledFor: c.scheduledFor,
-    sentAt: c.sentAt,
-    // Per-campaign open/click attribution is not tracked; the program-wide activity
-    // row below carries opens/clicks. The card confirms the recipient count.
-    stats: null,
-  }))
-
   const sent = stats.byType.delivered ?? stats.byType.sent ?? 0
   const opens = stats.byType.opened ?? stats.byType.open ?? 0
   const clicks = stats.byType.clicked ?? stats.byType.click ?? 0
-
-  const templatesLoaded = campaigns.length > 0 || funnels.length > 0
 
   return (
     <div className="space-y-8">
       <AdminSection
         title="Email Studio"
-        description="Design campaigns block by block, preview the inbox, and send yourself a test. The same arranger as the page builder, tuned for email."
+        description="The beta launch emails are loaded and ready to edit. Pick one on the left, arrange it block by block on the right, preview the inbox, and send yourself a test. Nothing sends until it is approved."
       >
         <EmailStudioMount
           initialCampaigns={emailStudioCampaigns}
@@ -94,29 +80,15 @@ export async function BetaEmailSection() {
       </AdminSection>
 
       <AdminSection
-        title="Campaigns"
-        description="Draft, preview, test-send to yourself, mark ready, then approve. Nothing sends until it is approved."
-      >
-        <CampaignsPanel campaigns={cards} phases={phaseOptions} segments={segmentOptions} />
-      </AdminSection>
-
-      <AdminSection
         title="Funnels + triggers"
-        description="Timed drips and event triggers for the Beta. Each stays off until an approver arms it, and a pause switch turns it back off."
+        description="Timed drips and event triggers for the Beta, beneath the Studio. Each stays off until an approver arms it, and a pause switch turns it back off."
       >
         <FunnelsPanel funnels={funnels} />
       </AdminSection>
 
       <AdminSection
-        title="Starter templates"
-        description="Pre-written copy for the whole Beta arc. Load it as drafts, then review and edit before approving."
-      >
-        <TemplatesPanel labels={betaTemplateLabels()} loaded={templatesLoaded} />
-      </AdminSection>
-
-      <AdminSection
         title="Write with Vera"
-        description="Draft or refine beta copy in the voice. Vera never sends, and the voice check flags em dashes before anything can go ready."
+        description="Draft or refine beta copy in the voice, then take it into the Studio. Vera never sends, and the voice check flags em dashes before anything can go ready."
       >
         <VeraEditor />
       </AdminSection>
