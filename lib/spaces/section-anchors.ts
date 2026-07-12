@@ -58,10 +58,8 @@ export const SECTION_ANCHORS: Record<string, SectionNavItem> = {
   SpacePractices: { anchor: 'practices', label: 'Practices' },
   SpaceCommunity: { anchor: 'community', label: 'Community' },
   SpaceReviews: { anchor: 'reviews', label: 'Reviews' },
-  SpaceFAQ: { anchor: 'faq', label: 'FAQ' },
   SpaceUpdates: { anchor: 'updates', label: 'Updates' },
   SpaceTeam: { anchor: 'team', label: 'Team' },
-  SpaceAbout: { anchor: 'about', label: 'About' },
   SpaceContact: { anchor: 'contact', label: 'Contact' },
 }
 

@@ -11204,6 +11204,9 @@ export type Database = {
           created_at: string
           id: string
           rating: number
+          response_at: string | null
+          response_author_profile_id: string | null
+          response_body: string | null
           space_id: string
           status: string
         }
@@ -11213,6 +11216,9 @@ export type Database = {
           created_at?: string
           id?: string
           rating: number
+          response_at?: string | null
+          response_author_profile_id?: string | null
+          response_body?: string | null
           space_id: string
           status?: string
         }
@@ -11222,6 +11228,9 @@ export type Database = {
           created_at?: string
           id?: string
           rating?: number
+          response_at?: string | null
+          response_author_profile_id?: string | null
+          response_body?: string | null
           space_id?: string
           status?: string
         }
@@ -11229,6 +11238,13 @@ export type Database = {
           {
             foreignKeyName: "space_reviews_author_profile_id_fkey"
             columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_reviews_response_author_profile_id_fkey"
+            columns: ["response_author_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
