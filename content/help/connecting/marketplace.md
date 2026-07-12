@@ -56,7 +56,9 @@ reach the person and arrange the rest offline.
 
 - A Classifieds or Housing listing links to the poster's profile, where you can reach out and
   arrange the details.
-- Keep it kind and local. This is mutual support first.
+- Every listing has a **Questions** box at the bottom. Ask in the open and the answer helps the
+  next person too. The poster can reply there and add anything the listing left out. Keep it kind
+  and local. This is mutual support first.
 
 ## Claiming a listing
 
