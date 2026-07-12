@@ -81,19 +81,35 @@ export async function suppress(email: string, reason: string, spaceId?: string):
   }
 }
 
-/** Log a Resend delivery/engagement event. */
+/**
+ * Log a Resend delivery/engagement event.
+ *
+ * `campaignId` (optional) is the Email Studio campaign this event belongs to, extracted by the
+ * webhook from the Resend payload (the X-Campaign-Id header / campaign_id tag we stamp at send).
+ * When present it is written to email_events.campaign_id so getCampaignMetrics can attribute the
+ * event EXACTLY. The column is not in the generated types yet, so the row is inserted through an
+ * untyped handle (ADR-246). Additive: an event without a campaign id records exactly as before.
+ */
 export async function recordEmailEvent(input: {
   email: string
   eventType: string
   providerId?: string | null
   payload?: Record<string, unknown>
+  campaignId?: string | null
 }): Promise<void> {
-  await db()
+  const row: Record<string, unknown> = {
+    email: norm(input.email),
+    event_type: input.eventType,
+    provider_id: input.providerId ?? null,
+    payload: input.payload ?? {},
+  }
+  if (input.campaignId) row.campaign_id = input.campaignId
+
+  await (
+    db() as unknown as {
+      from: (t: string) => { insert: (r: Record<string, unknown>) => Promise<{ error: unknown }> }
+    }
+  )
     .from('email_events')
-    .insert({
-      email: norm(input.email),
-      event_type: input.eventType,
-      provider_id: input.providerId ?? null,
-      payload: input.payload ?? {},
-    })
+    .insert(row)
 }

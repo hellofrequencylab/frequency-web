@@ -34,6 +34,19 @@ export function AnalyticsInline({ campaignId }: { campaignId: string }) {
   // Only surface once there is a real send to report on (fail-soft: nothing while loading / unsent).
   if (loading || !metrics || !metrics.hasSent) return null
 
+  // Legacy sends (before per-campaign tracking) have no trustworthy open/click data. Show the real
+  // recipient count and say so plainly, rather than a fabricated engagement number.
+  if (metrics.attributionMode === 'legacy') {
+    return (
+      <div className="rounded-xl border border-border bg-surface px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+          <Metric label="Recipients" value={metrics.attributedRecipients} />
+        </div>
+        <p className="mt-1 text-2xs text-subtle">Open and click tracking starts with your next send.</p>
+      </div>
+    )
+  }
+
   const pct = (n: number) => `${Math.round(n * 100)}%`
   return (
     <div className="rounded-xl border border-border bg-surface px-4 py-2.5">

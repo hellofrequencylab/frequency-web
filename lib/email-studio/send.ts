@@ -333,7 +333,18 @@ export async function sendCampaignNow(campaignId: string): Promise<ActionResult<
       const text = applyMergeTags(compiled.text, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
       const subject = applyMergeTags(subjectTemplate, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
 
-      await enqueueEmail({ to: r.email, subject, html, text, headers: listUnsubscribeHeaders(unsubscribeUrl) })
+      // Tag the campaign id so its delivery/engagement events attribute EXACTLY (not by the old
+      // segment+window heuristic). It rides two channels Resend echoes back on the webhook: a
+      // custom header and a tag. The recorder (lib/suppression.recordEmailEvent) writes whichever
+      // it finds to email_events.campaign_id, and getCampaignMetrics counts by it.
+      await enqueueEmail({
+        to: r.email,
+        subject,
+        html,
+        text,
+        headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': campaignId },
+        tags: [{ name: 'campaign_id', value: campaignId }],
+      })
       count++
     }
   } catch (err) {

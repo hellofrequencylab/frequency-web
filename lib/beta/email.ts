@@ -258,7 +258,16 @@ export async function sendApprovedBetaCampaign(id: string): Promise<ActionResult
       if (!decision.allowed) continue
       const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
       const { html, text } = campaignEmail(body, unsubscribeUrl)
-      await enqueueEmail({ to: r.email, subject, html, text, headers: listUnsubscribeHeaders(unsubscribeUrl) })
+      // Tag the campaign id for EXACT analytics attribution (parity with the studio send path):
+      // a Resend header + tag that the webhook reads back into email_events.campaign_id.
+      await enqueueEmail({
+        to: r.email,
+        subject,
+        html,
+        text,
+        headers: { ...listUnsubscribeHeaders(unsubscribeUrl), 'X-Campaign-Id': id },
+        tags: [{ name: 'campaign_id', value: id }],
+      })
       count++
     }
   } catch (err) {

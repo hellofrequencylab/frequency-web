@@ -1,39 +1,38 @@
 // Email Studio — Phase 6: PER-CAMPAIGN email analytics (server-only).
 //
 // Aggregates the shared `email_events` ledger (recorded by the Resend webhook via
-// lib/suppression.recordEmailEvent) down to ONE campaign. Mirrors the query style of
-// lib/beta/stats.getBetaEmailEngagement, but scoped to a single campaign's send.
+// lib/suppression.recordEmailEvent) down to ONE campaign.
 //
 // ── ATTRIBUTION (read this before trusting the numbers) ───────────────────────────────
-// GAP: `email_events` carries NO campaign_id and NO contact_id — only { email, event_type,
-// provider_id (the Resend id), created_at, payload }. The Phase-4 send loop
-// (app/(main)/admin/marketing/campaigns/actions.sendCampaign) enqueues each email WITHOUT
-// tagging a campaign id into the payload or a header, so there is no direct event → campaign
-// link today. See getCampaignMetrics's doc comment for the smallest recommended fix.
+// EXACT, by campaign id. The send loop (send.sendCampaignNow + beta.sendApprovedBetaCampaign)
+// stamps the campaign id on every recipient email via a Resend `X-Campaign-Id` header AND a
+// `campaign_id` tag. Resend echoes both back on each delivery/engagement webhook, and
+// recordEmailEvent writes the id to `email_events.campaign_id`. getCampaignMetrics then counts
+// ONLY rows carrying this campaign's id — no unrelated transactional mail can leak in.
 //
-// BEST AVAILABLE ATTRIBUTION (implemented here): a campaign event is one whose recipient
-// address is in the campaign's audience AND whose timestamp falls inside the send window.
-//   1. The audience = the campaign's segment resolved to member-contact emails
-//      (lib/studio/campaigns.resolveSegment), lower-cased to match recordEmailEvent's norm.
-//   2. The window = [sent_at, sent_at + ATTRIBUTION_WINDOW_DAYS]. Bounding the window keeps a
-//      LATER campaign to the same people from bleeding into this campaign's totals.
-// Known imperfections (documented, not hidden): (a) the segment is resolved NOW, so a contact
-// who unsubscribed or was added after the send shifts membership slightly; (b) two campaigns
-// to the same address inside the same window can double-count an open/click. Both vanish once
-// the send tags a real campaign_id (the recommended Phase-4 change).
+// This replaces an earlier HEURISTIC (segment audience ∩ a 30-day send window) that badly
+// OVER-COUNTED: every welcome / notification / reminder sent to any segment member inside the
+// window got credited to the campaign, so a 4-recipient send could read as "25 delivered". That
+// heuristic is gone.
 //
-// Open-rate caveat: since Apple Mail Privacy Protection (iOS 15+/MPP) pre-fetches images, an
-// "opened" event fires even when the human never opened the mail. Treat openRate as a soft
-// upper bound and WEIGHT CLICKS as the real engagement signal.
+// LEGACY (untagged) campaigns — sent before exact attribution shipped — have NO campaign-tagged
+// events. For those we do NOT guess. We report the campaign's real send size from its recorded
+// `recipient_count` (as sent / delivered) and mark `attributionMode: 'legacy'`; open / click stay
+// UNAVAILABLE (rates 0). The panel shows the count plus an honest "tracking starts next send" line
+// rather than a fabricated engagement number.
+//
+// Open-rate caveat (exact mode): since Apple Mail Privacy Protection (iOS 15+/MPP) pre-fetches
+// images, an "opened" event fires even when the human never opened the mail. Treat openRate as a
+// soft upper bound and WEIGHT CLICKS as the real engagement signal.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveSegment } from '@/lib/studio/campaigns'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** How long after send we still credit an event to the campaign. Bounds cross-campaign bleed. */
-export const ATTRIBUTION_WINDOW_DAYS = 30
+/** How many days of the send the engagement timeline draws (a display cap, not an attribution rule —
+ *  attribution is now by campaign id, so this only bounds how far the sparkline extends). */
+export const TIMELINE_WINDOW_DAYS = 30
 
 /** The Resend event types we tally, as stored in `email_events.event_type` (the webhook strips
  *  the `email.` prefix). `unsubscribed` is included for forward-compatibility: Resend does not
@@ -70,13 +69,24 @@ export interface CampaignRates {
   bounceRate: number
 }
 
-/** Everything the analytics panel needs for one campaign: raw counts, rates, and two flags
- *  (`hasSent` lets the UI show an empty state; `attributedRecipients` is the audience size the
- *  counts were matched against). Superset of the documented { sent, delivered, ... } shape. */
+/**
+ * How a campaign's numbers were derived, so the UI can be honest about what it shows:
+ *   • 'exact'  — counted from events tagged with this campaign's id. Rates are real.
+ *   • 'legacy' — the campaign sent before exact attribution shipped, so it has no tagged events.
+ *                sent / delivered come from the recorded recipient_count; open / click are
+ *                UNAVAILABLE (0). The panel must NOT present those zeros as engagement.
+ */
+export type AttributionMode = 'exact' | 'legacy'
+
+/** Everything the analytics panel needs for one campaign: raw counts, rates, and flags. Superset
+ *  of the documented { sent, delivered, ... } shape. */
 export interface CampaignMetrics extends EventCounts, CampaignRates {
   /** False when the campaign has no `sent_at` (draft / scheduled). The panel shows an empty state. */
   hasSent: boolean
-  /** Distinct addresses in the attributed audience (the segment resolved to member emails). */
+  /** Whether the counts are exact (campaign-tagged events) or a legacy recipient_count fallback. */
+  attributionMode: AttributionMode
+  /** The send size we can stand behind: distinct tagged recipients in exact mode, or the recorded
+   *  recipient_count in legacy mode. */
   attributedRecipients: number
 }
 
@@ -110,103 +120,134 @@ function db(): SupabaseClient {
   return createAdminClient()
 }
 
-/** The send window + audience a campaign's events are matched against, or null when the campaign
- *  has not sent (no `sent_at`) or resolves to no recipients. */
-interface Attribution {
-  emails: Set<string>
-  windowStartIso: string
-  windowEndIso: string
+/** A campaign's send facts: when it went out and how many it went to. Null when the campaign is
+ *  missing; `sentAt` null means it has not sent (draft / scheduled). */
+interface CampaignSendInfo {
+  sentAt: string | null
+  recipientCount: number
 }
 
-/**
- * Resolve a campaign's attribution seam: its recipient email set (lower-cased) and its send
- * window. Returns null when the campaign is missing, unsent, or has no resolvable recipients —
- * every caller treats null as "no data / not sent yet" and fails soft.
- */
-async function loadAttribution(campaignId: string): Promise<Attribution | null> {
+/** Load a campaign's send facts. FAIL-SOFT to null on any read error so a render never throws. */
+async function loadCampaignSendInfo(campaignId: string): Promise<CampaignSendInfo | null> {
   if (!campaignId) return null
-
-  const { data: campaign, error } = await db()
-    .from('campaigns')
-    .select('sent_at, segment')
-    .eq('id', campaignId)
-    .maybeSingle()
-
-  if (error || !campaign?.sent_at) return null
-
-  const sentAt = new Date(campaign.sent_at)
-  if (Number.isNaN(sentAt.getTime())) return null
-
-  // Resolve the segment to member-contact emails, normalized the SAME way recordEmailEvent
-  // normalizes the ledger (trim + lower-case) so the two sides join.
-  let recipients: { email: string }[] = []
   try {
-    recipients = await resolveSegment(campaign.segment)
+    const { data, error } = await db()
+      .from('campaigns')
+      .select('sent_at, recipient_count')
+      .eq('id', campaignId)
+      .maybeSingle()
+    if (error || !data) return null
+    return {
+      sentAt: (data.sent_at as string | null) ?? null,
+      recipientCount: data.recipient_count == null ? 0 : Number(data.recipient_count),
+    }
   } catch {
-    recipients = []
-  }
-  const emails = new Set(recipients.map((r) => r.email.trim().toLowerCase()).filter(Boolean))
-  if (emails.size === 0) return null
-
-  const windowEnd = new Date(sentAt.getTime() + ATTRIBUTION_WINDOW_DAYS * DAY_MS)
-  return {
-    emails,
-    windowStartIso: sentAt.toISOString(),
-    windowEndIso: windowEnd.toISOString(),
+    return null
   }
 }
 
-/** Fetch the campaign's attributed events (type + address + timestamp) inside the send window,
- *  filtered in memory to the recipient set. Selecting the window at the DB bounds the read; the
- *  Set-membership filter is what scopes it to the campaign. */
-async function fetchAttributedEvents(
-  attr: Attribution,
-): Promise<{ eventType: string; createdAt: string }[]> {
-  const { data, error } = await db()
-    .from('email_events')
-    .select('event_type, email, created_at')
-    .gte('created_at', attr.windowStartIso)
-    .lte('created_at', attr.windowEndIso)
-  if (error || !data) return []
-  return data
-    .filter((r) => r.email && attr.emails.has(r.email.trim().toLowerCase()))
-    .map((r) => ({ eventType: r.event_type, createdAt: r.created_at }))
+/** One campaign-tagged event, the minimal shape the metrics + timeline need. */
+interface TaggedEvent {
+  eventType: string
+  email: string
+  createdAt: string
 }
 
 /**
- * Per-campaign metrics: raw counts + guarded rates for ONE campaign's send.
- *
- * Attribution = recipient-email-set ∩ [sent_at, sent_at + ATTRIBUTION_WINDOW_DAYS] (see the file
- * header). FAIL-SOFT: an unsent / missing / empty-audience campaign returns all-zero metrics with
- * `hasSent: false`, so a render never throws.
- *
- * Open rates are UNRELIABLE post Apple MPP (image pre-fetch fires a false "opened"); treat
- * `openRate` as a ceiling and lead with `clickRate`.
- *
- * RECOMMENDATION FOR PHASE 4 (report only — not changed here): have sendCampaign tag the campaign
- * on each send so events join directly instead of by this window heuristic. Smallest change: pass
- * a Resend header, e.g. `headers: { 'X-Campaign-Id': campaign.id }`, in the enqueueEmail call, and
- * record it on the event (the webhook already receives the full Resend payload). A `campaign_id`
- * column on `email_events` would then make attribution exact and drop the segment re-resolve.
+ * Fetch every `email_events` row tagged with THIS campaign's id. This is the whole of exact
+ * attribution: only events stamped at send carry the id, so nothing unrelated can join.
+ * `campaign_id` is not in the generated types yet, so we read through an untyped handle (ADR-246).
+ * FAIL-SOFT to [] on any error — including the column not existing before the migration applies —
+ * so the caller cleanly falls back to the legacy recipient_count path.
  */
-export async function getCampaignMetrics(campaignId: string): Promise<CampaignMetrics> {
-  const attr = await loadAttribution(campaignId)
-  if (!attr) {
-    return { ...ZERO_COUNTS, ...computeRates(ZERO_COUNTS), hasSent: false, attributedRecipients: 0 }
+async function fetchCampaignEvents(campaignId: string): Promise<TaggedEvent[]> {
+  try {
+    const { data, error } = await (
+      db() as unknown as {
+        from: (t: string) => {
+          select: (c: string) => {
+            eq: (
+              col: string,
+              val: string,
+            ) => Promise<{
+              data: { event_type: string; email: string | null; created_at: string }[] | null
+              error: unknown
+            }>
+          }
+        }
+      }
+    )
+      .from('email_events')
+      .select('event_type, email, created_at')
+      .eq('campaign_id', campaignId)
+    if (error || !data) return []
+    return data.map((r) => ({ eventType: r.event_type, email: r.email ?? '', createdAt: r.created_at }))
+  } catch {
+    return []
   }
+}
 
-  const events = await fetchAttributedEvents(attr)
+/** Tally raw event-type counts from a campaign's tagged events. Pure. */
+function tallyEvents(events: TaggedEvent[]): EventCounts {
   const counts: EventCounts = { ...ZERO_COUNTS }
   const countable = new Set<string>(COUNTED_TYPES)
   for (const e of events) {
     if (countable.has(e.eventType)) counts[e.eventType as keyof EventCounts] += 1
   }
+  return counts
+}
 
+/**
+ * Per-campaign metrics: raw counts + guarded rates for ONE campaign's send.
+ *
+ * EXACT attribution: counts come only from `email_events` rows tagged with this campaign's id
+ * (stamped at send, written by the webhook). If the campaign sent but carries NO tagged events (a
+ * legacy send, from before this shipped), we do NOT guess — we report the real send size from
+ * `recipient_count` and mark `attributionMode: 'legacy'` with engagement unavailable.
+ *
+ * FAIL-SOFT: an unsent / missing campaign returns all-zero metrics with `hasSent: false`, so a
+ * render never throws.
+ *
+ * Open rates are UNRELIABLE post Apple MPP (image pre-fetch fires a false "opened"); treat
+ * `openRate` as a ceiling and lead with `clickRate`.
+ */
+export async function getCampaignMetrics(campaignId: string): Promise<CampaignMetrics> {
+  const info = await loadCampaignSendInfo(campaignId)
+  if (!info || !info.sentAt) {
+    return {
+      ...ZERO_COUNTS,
+      ...computeRates(ZERO_COUNTS),
+      hasSent: false,
+      attributionMode: 'exact',
+      attributedRecipients: 0,
+    }
+  }
+
+  const events = await fetchCampaignEvents(campaignId)
+
+  // EXACT: the campaign's send tagged its events, so count them directly.
+  if (events.length > 0) {
+    const counts = tallyEvents(events)
+    const distinctRecipients = new Set(events.map((e) => e.email).filter(Boolean)).size
+    return {
+      ...counts,
+      ...computeRates(counts),
+      hasSent: true,
+      attributionMode: 'exact',
+      attributedRecipients: distinctRecipients,
+    }
+  }
+
+  // LEGACY: an untagged historical send. Report the honest send size (recipient_count) as
+  // sent / delivered; leave open / click / bounce at zero (UNAVAILABLE, not "zero engagement").
+  const size = Math.max(0, info.recipientCount)
+  const counts: EventCounts = { ...ZERO_COUNTS, sent: size, delivered: size }
   return {
     ...counts,
     ...computeRates(counts),
     hasSent: true,
-    attributedRecipients: attr.emails.size,
+    attributionMode: 'legacy',
+    attributedRecipients: size,
   }
 }
 
@@ -218,7 +259,8 @@ export interface CampaignTimelinePoint {
 }
 
 /** A campaign's engagement over daily buckets, for a small sparkline. `opens` / `clicks` are the
- *  per-day series (oldest → newest) aligned to `days`; empty when the campaign has not sent. */
+ *  per-day series (oldest → newest) aligned to `days`; empty when the campaign has not sent or has
+ *  no tagged engagement (e.g. a legacy send). */
 export interface CampaignTimeline {
   days: string[]
   opens: number[]
@@ -229,28 +271,36 @@ export interface CampaignTimeline {
 const EMPTY_TIMELINE: CampaignTimeline = { days: [], opens: [], clicks: [], points: [] }
 
 /**
- * Daily open/click buckets across the campaign's send window (up to today, capped at the
- * attribution window). Same attribution as getCampaignMetrics. FAIL-SOFT to an empty timeline for
- * an unsent / empty-audience campaign, so a sparkline simply renders nothing.
+ * Daily open/click buckets across the campaign's send window (up to today, capped at
+ * TIMELINE_WINDOW_DAYS). EXACT attribution: only this campaign's tagged events feed the buckets.
+ * FAIL-SOFT to an empty timeline for an unsent campaign or a legacy send with no tagged events, so
+ * a sparkline simply renders nothing.
  */
 export async function getCampaignTimeline(campaignId: string): Promise<CampaignTimeline> {
-  const attr = await loadAttribution(campaignId)
-  if (!attr) return EMPTY_TIMELINE
+  const info = await loadCampaignSendInfo(campaignId)
+  if (!info || !info.sentAt) return EMPTY_TIMELINE
 
-  const start = new Date(attr.windowStartIso)
-  // Cap the visible span at "today" so we do not draw empty future days past the send.
-  const end = new Date(Math.min(Date.now(), new Date(attr.windowEndIso).getTime()))
+  const sentAt = new Date(info.sentAt)
+  if (Number.isNaN(sentAt.getTime())) return EMPTY_TIMELINE
+
+  const events = await fetchCampaignEvents(campaignId)
+  if (events.length === 0) return EMPTY_TIMELINE
+
+  // Cap the visible span at "today" (and at the display window), so we do not draw empty future days.
+  const windowEnd = sentAt.getTime() + TIMELINE_WINDOW_DAYS * DAY_MS
+  const end = new Date(Math.min(Date.now(), windowEnd))
   const dayKey = (d: Date) => d.toISOString().slice(0, 10)
 
   // Seed one bucket per calendar day from send day → today (inclusive), so gaps read as zeros.
   const buckets = new Map<string, { opened: number; clicked: number }>()
-  for (let t = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
-       t <= end.getTime();
-       t += DAY_MS) {
+  for (
+    let t = Date.UTC(sentAt.getUTCFullYear(), sentAt.getUTCMonth(), sentAt.getUTCDate());
+    t <= end.getTime();
+    t += DAY_MS
+  ) {
     buckets.set(dayKey(new Date(t)), { opened: 0, clicked: 0 })
   }
 
-  const events = await fetchAttributedEvents(attr)
   for (const e of events) {
     if (e.eventType !== 'opened' && e.eventType !== 'clicked') continue
     const key = dayKey(new Date(e.createdAt))
