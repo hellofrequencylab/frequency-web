@@ -37,64 +37,72 @@ export async function listEmailLoomImages(query?: string): Promise<LoomImagePick
   }
 }
 
-const MAX_BYTES = 20 * 1024 * 1024 // matches the Loom uploader ceiling
+// Kept UNDER the framework server-action body limit (next.config bodySizeLimit, 10mb) so a single upload
+// request never overflows the boundary (which crashes the request instead of returning an error). The client
+// rejects oversize files up front too; this is the server backstop.
+const MAX_BYTES = 9 * 1024 * 1024
 
 /** Upload an image and FILE IT INTO the ROOT space's own Loom (library_assets, space_id = root,
  *  visibility = 'space'), then return its served public URL. Gated on email WRITE authority. The canvas
  *  stores that URL (the same address the Loom serves it at), so a picked asset + an uploaded asset resolve
  *  identically. Rolls back the stored file if the catalog insert fails, so a failed upload never litters
- *  storage. */
+ *  storage. FAIL-SAFE: any thrown error becomes a returned `{ error }` (never an unhandled rejection that
+ *  would hang the caller with no feedback). */
 export async function uploadEmailLoomImage(
   formData: FormData,
 ): Promise<{ url: string; id: string } | { error: string }> {
-  const gate = await writerGate()
-  if (!gate.ok) return { error: 'You do not have access to add images.' }
+  try {
+    const gate = await writerGate()
+    if (!gate.ok) return { error: 'You do not have access to add images.' }
 
-  const rootSpaceId = await getRootSpaceId()
-  if (!rootSpaceId) return { error: 'The shared library is unavailable. Try again.' }
+    const rootSpaceId = await getRootSpaceId()
+    if (!rootSpaceId) return { error: 'The shared library is unavailable. Try again.' }
 
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0) return { error: 'No image chosen.' }
-  if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
-  if (file.size > MAX_BYTES) {
-    return { error: `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 20 MB.` }
+    const file = formData.get('file')
+    if (!(file instanceof File) || file.size === 0) return { error: 'No image chosen.' }
+    if (!file.type.startsWith('image/')) return { error: 'Choose an image file.' }
+    if (file.size > MAX_BYTES) {
+      return { error: `Image is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is 9 MB.` }
+    }
+
+    const admin = createAdminClient()
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+    const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
+    // Namespace the object under the owning (root) space, so uploads live in the shared library's storage prefix.
+    const path = `${rootSpaceId}/${stamp}.${ext}`
+    const bytes = new Uint8Array(await file.arrayBuffer())
+
+    const { error: upErr } = await admin.storage
+      .from('library-media')
+      .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
+    if (upErr) return { error: upErr.message }
+
+    const { data: pub } = admin.storage.from('library-media').getPublicUrl(path)
+
+    const base = (file.name.replace(/\.[^.]+$/, '') || 'image').slice(0, 120)
+    const slugified = `${base}-${stamp}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+
+    const id = await insertSpaceLibraryImage({
+      spaceId: rootSpaceId,
+      title: base,
+      slug: slugified,
+      storageBucket: 'library-media',
+      storagePath: path,
+      url: pub.publicUrl,
+      mime: file.type || 'image/jpeg',
+      bytes: file.size,
+    })
+    if (!id) {
+      // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
+      await admin.storage.from('library-media').remove([path])
+      return { error: 'Could not save the image to the library. Try again.' }
+    }
+
+    return { url: pub.publicUrl, id }
+  } catch {
+    return { error: 'That upload did not go through. Try again.' }
   }
-
-  const admin = createAdminClient()
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const stamp = `${Date.now()}-${Math.round(Math.random() * 1e6).toString(36)}`
-  // Namespace the object under the owning (root) space, so uploads live in the shared library's storage prefix.
-  const path = `${rootSpaceId}/${stamp}.${ext}`
-  const bytes = new Uint8Array(await file.arrayBuffer())
-
-  const { error: upErr } = await admin.storage
-    .from('library-media')
-    .upload(path, bytes, { contentType: file.type || 'image/jpeg', upsert: false })
-  if (upErr) return { error: upErr.message }
-
-  const { data: pub } = admin.storage.from('library-media').getPublicUrl(path)
-
-  const base = (file.name.replace(/\.[^.]+$/, '') || 'image').slice(0, 120)
-  const slugified = `${base}-${stamp}`
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-
-  const id = await insertSpaceLibraryImage({
-    spaceId: rootSpaceId,
-    title: base,
-    slug: slugified,
-    storageBucket: 'library-media',
-    storagePath: path,
-    url: pub.publicUrl,
-    mime: file.type || 'image/jpeg',
-    bytes: file.size,
-  })
-  if (!id) {
-    // Roll back the orphaned file so a failed insert doesn't leave litter in storage.
-    await admin.storage.from('library-media').remove([path])
-    return { error: 'Could not save the image to the library. Try again.' }
-  }
-
-  return { url: pub.publicUrl, id }
 }

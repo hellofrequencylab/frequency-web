@@ -18,6 +18,11 @@ import {
 // alt string. Writes are gated + scoped server-side (lib/email-studio/loom-actions: writerGate + the root
 // Loom). App-chrome tokens only (this is admin UI, not the email body), no hex; voice canon (no em dashes).
 
+// A per-file ceiling kept safely UNDER the server-action body limit (next.config bodySizeLimit, 10mb), so a
+// single upload request never overflows the framework boundary (which crashes the request instead of returning
+// an error — the photo-upload bug). Larger files are rejected up front with a clear message.
+const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
+
 export function LoomImagePopup({
   open,
   currentUrl,
@@ -85,20 +90,36 @@ export function LoomImagePopup({
   }, [query])
 
   // Upload one file into Loom; on success select it and fold it into the grid. Shared by the bulk file
-  // input and the cropper's output.
+  // input and the cropper's output. Guards were the bug (#5): a normal phone photo over the framework's
+  // server-action body limit (next.config bodySizeLimit, 10mb) never reached the action — the request
+  // overflowed and threw, hanging the upload with no feedback. So we reject oversize files up front and
+  // catch any thrown error, always returning cleanly.
   const uploadFile = useCallback(
     async (file: File): Promise<boolean> => {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await uploadEmailLoomImage(fd)
-      if ('error' in res) {
-        setError(res.error)
+      if (!file.type.startsWith('image/')) {
+        setError('Choose an image file.')
         return false
       }
-      setError(null)
-      setSelectedUrl(res.url)
-      setImages((prev) => [{ id: res.id, title: file.name, url: res.url, alt: null }, ...prev])
-      return true
+      if (file.size > MAX_UPLOAD_BYTES) {
+        setError(`That image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Use one under 9 MB.`)
+        return false
+      }
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await uploadEmailLoomImage(fd)
+        if ('error' in res) {
+          setError(res.error)
+          return false
+        }
+        setError(null)
+        setSelectedUrl(res.url)
+        setImages((prev) => [{ id: res.id, title: file.name, url: res.url, alt: null }, ...prev])
+        return true
+      } catch {
+        setError('That upload did not go through. Try again.')
+        return false
+      }
     },
     [],
   )
@@ -106,13 +127,18 @@ export function LoomImagePopup({
   const onFiles = useCallback(
     async (files: FileList | null) => {
       if (!files || files.length === 0) return
+      // Snapshot the FileList before the input is reset by the caller (a live FileList would empty out).
+      const list = Array.from(files)
       setUploading(true)
       setError(null)
-      // Sequential so the grid grows in a stable order and errors surface one at a time.
-      for (const file of Array.from(files)) {
-        await uploadFile(file)
+      try {
+        // Sequential so the grid grows in a stable order and errors surface one at a time.
+        for (const file of list) {
+          await uploadFile(file)
+        }
+      } finally {
+        setUploading(false)
       }
-      setUploading(false)
     },
     [uploadFile],
   )
