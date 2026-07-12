@@ -3,7 +3,7 @@ title: Marketplace
 description: Swap and share with neighbors, plus housing, the community Market, and the Frequency Store.
 category: connecting
 order: 5
-updated: 2026-07-11
+updated: 2026-07-12
 audience: member
 featureKeys: [marketplace]
 status: published
@@ -57,6 +57,13 @@ reach the person and arrange the rest offline.
 - A Classifieds or Housing listing links to the poster's profile, where you can reach out and
   arrange the details.
 - Keep it kind and local. This is mutual support first.
+
+## Claiming a listing
+
+Sometimes Frequency posts a Classifieds or Housing listing for a neighbor and reaches out so
+they can take it over. If that's you, open the link we send, sign in, and the listing becomes
+yours to edit or close. A listing still waiting for its owner shows an **Unclaimed** tag on its
+card until someone claims it.
 
 ## A note on privacy
 
