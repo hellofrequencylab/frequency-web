@@ -195,16 +195,6 @@ export default async function SpaceProfileChromeLayout({
   const ctaLinkProps = hero.cta.external
     ? { target: '_blank' as const, rel: 'noopener noreferrer' }
     : {}
-  // The action cluster's layout: `row` (default) lays the buttons side by side, pushed to the RIGHT edge of
-  // their row (justify-end); `stacked` lays them in a column. Applied to the desktop identity action row (the
-  // mobile band stays its own fixed 3-up layout). The row NEVER wraps its buttons onto a second line
-  // (flex-nowrap): when a long name crowds the row, the name column (min-w-0) gives way and wraps instead, so
-  // the buttons stay one clean row (owner ask). In the Hero size the actions sit on their own full-width line
-  // under the identity, so justify-end aligns them right; in the Header size the content-width wrapper already
-  // rides the parent's justify-between to the right, so justify-end is a harmless no-op. An operator who wants
-  // them vertical picks `stacked`.
-  const actionOrientationClass = hero.buttonOrientation === 'stacked' ? 'flex-col items-stretch' : 'flex-nowrap items-center justify-end'
-
   // The operator's chosen cover size (Header vs Hero), read off preferences. Default-safe to Header.
   const coverSize = readCoverSize(space.preferences)
   // The Hero scrim treatment (only relevant to the Hero size): 'shade' = a dark ink scrim under the
@@ -284,8 +274,18 @@ export default async function SpaceProfileChromeLayout({
   // row sits RIGHT of the avatar + name lockup on the SAME line (wrapping below only when the row runs out
   // of room). `onInk` swaps the secondary/owner affordances to on-cover styling for the Hero overlay while
   // the primary CTA stays the same accent. Hidden on mobile — the buttons move to `mobileActionBand`.
+  // The action cluster is a bottom-anchored VERTICAL STACK by default (flex-col-reverse, so the primary
+  // CTA sits on the BOTTOM line, aligned with the identity's bottom row) that expands to one horizontal
+  // row once there is room (lg+). So a button row that would be too long stacks instead of crowding the
+  // name, and whichever button is at the bottom stays on the identity's bottom line. An operator who
+  // forces 'stacked' keeps the column at every width.
   const identityActions = (onInk = false) => (
-    <div className={cn('flex gap-2', actionOrientationClass)}>
+    <div
+      className={cn(
+        'flex flex-col-reverse items-end gap-2',
+        hero.buttonOrientation !== 'stacked' && 'lg:flex-row lg:items-center',
+      )}
+    >
       {primaryCta(onInk)}
       {connectLink(onInk)}
       {ownerTools(onInk)}
@@ -407,24 +407,20 @@ export default async function SpaceProfileChromeLayout({
         {/* Mobile only: the Follow chip sits ABOVE the profile pic + title (the operator's ask). On desktop
             Follow lives inside the name lockup, so this is suppressed there. */}
         {viewerProfileId && <div className="mb-3 sm:hidden">{followButton(heroOnInk)}</div>}
-        {/* Item 7: the identity (avatar + title) takes the FULL width of the cover, so a long name reads on
-            one or two lines instead of being crushed into a narrow column beside the buttons. The desktop
-            action row drops BELOW it on its own full-width line, still a single horizontal row (never a
-            stacked column). */}
-        <div className="flex min-w-0 items-end gap-4">
-          <div className="shrink-0">
-            <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+        {/* ONE bottom row (owner ask): the identity (logo + Follow + title + tagline) anchors to the
+            bottom-LEFT and the action buttons to the bottom-RIGHT, both aligned to the SAME bottom line
+            (items-end). The name column (min-w-0) gives way and wraps for a long name; the action cluster
+            stacks vertically when the row would be too long, its bottom button staying on the bottom row.
+            On mobile the actions move to the card below the cover, so the phone hero holds only the identity. */}
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex min-w-0 items-end gap-4">
+            <div className="shrink-0">
+              <BrandAnchor name={brandName} logoUrl={space.brandLogoUrl} />
+            </div>
+            <div className="min-w-0 pb-1">{nameLockup(heroOnInk)}</div>
           </div>
-          <div className="min-w-0 pb-1">{nameLockup(heroOnInk, true)}</div>
+          <div className="hidden shrink-0 items-end sm:flex">{identityActions(heroOnInk)}</div>
         </div>
-        {/* Desktop only: the actions on their own row under the identity. On mobile they move to the white
-            action card under the cover, so the phone hero holds only the identity. */}
-        <div className="mt-4 hidden sm:block">{identityActions(heroOnInk)}</div>
-        {/* Below lg (mobile + narrow desktop): the tagline drops to its OWN full-width row spanning the
-            bottom, below the identity + the right-side action buttons, so it reads as a full line instead
-            of a cramped column beside the profile pic (owner ask). At lg+ it stays inline under the name
-            (nameLockup), so this is suppressed there. */}
-        <div className="mt-3 empty:hidden lg:hidden">{taglineNode(heroOnInk)}</div>
       </div>
     </div>
   )
