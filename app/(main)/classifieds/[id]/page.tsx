@@ -7,6 +7,7 @@ import { ListingDetailTemplate } from '@/components/templates/listing-detail-tem
 import { listingDetailFromMarket } from '@/lib/listings-shared/detail-view'
 import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
+import { getHighestOfferCents } from '@/lib/marketplace/listing-offers'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,8 +27,11 @@ export default async function ListingPage({ params }: { params: Promise<{ id: st
   // Non-active listings are visible only to their author, and to platform staff (so they can moderate).
   if (!isOwner && !isStaff && listing.status !== 'active') notFound()
 
-  const view = listingDetailFromMarket(listing, { isOwner })
-  const comments = await getListingComments('market_listing', id)
+  const [comments, highestOfferCents] = await Promise.all([
+    getListingComments('market_listing', id),
+    getHighestOfferCents('market_listing', id),
+  ])
+  const view = listingDetailFromMarket(listing, { isOwner, highestOfferCents })
   const firstName = listing.author?.display_name.split(' ')[0] ?? 'the poster'
 
   return (

@@ -1,30 +1,29 @@
 // The marketplace listing hero — "hero ad format" (Classifieds / Market / Housing share it).
-// The lead image runs full-bleed with an ink scrim, and the Title (the page h1), a Category pill,
-// the Price, and the primary Action button sit overlaid on it. When there is no image a neutral
-// DAWN gradient placeholder stands in (mirrors the events hero's no-cover fill). Presentational
-// Server Component: it takes already-resolved data + a plain action link, no hooks.
+// The lead image runs full-bleed with an ink scrim. A short PRICE badge sits in the TOP-LEFT corner
+// and the CATEGORY pill in the TOP-RIGHT; the Title (the page h1) and the primary Action sit overlaid
+// along the bottom. When there is no image a neutral DAWN gradient placeholder stands in (mirrors the
+// events hero's no-cover fill). Presentational Server Component: it takes already-resolved data plus an
+// optional `actionSlot` node (the Contact dialog trigger or an Edit link) so the interactive bits stay
+// out of this server component.
 
 import Image from 'next/image'
-import Link from 'next/link'
-import { ImageIcon, MessageCircle, Pencil } from 'lucide-react'
-import type { ListingAction } from '@/lib/listings-shared/detail-view'
+import { ImageIcon } from 'lucide-react'
 
 export function ListingHero({
   title,
   image,
   categoryLabel,
-  priceLabel,
-  action,
+  priceShort,
+  actionSlot,
 }: {
   title: string
   image: string | null
   categoryLabel: string | null
-  priceLabel: string | null
-  action: ListingAction | null
+  /** The SHORT price for the top-left badge, e.g. "$299" (never the long price note). */
+  priceShort: string | null
+  /** Bottom-right CTA node (the Contact dialog trigger, or an Edit link for the owner). */
+  actionSlot?: React.ReactNode
 }) {
-  const hasAction = !!action && action.kind !== 'none'
-  const ActionIcon = action?.kind === 'edit' ? Pencil : MessageCircle
-
   return (
     <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl bg-surface-elevated sm:aspect-[16/7]">
       {image ? (
@@ -32,8 +31,8 @@ export function ListingHero({
           {/* Listing photos live in the public event-media bucket (or are already absolute URLs);
               bypass the optimizer to match the events gallery + cover treatment. */}
           <Image src={image} alt="" fill sizes="(max-width: 1024px) 100vw, 1344px" preload unoptimized className="object-cover" />
-          {/* Ink scrim so the overlaid title/price stay legible over any photo. */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" aria-hidden />
+          {/* Ink scrim so the overlaid title/badges stay legible over any photo. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/25" aria-hidden />
         </>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary-bg via-surface-elevated to-signal-bg text-primary-strong">
@@ -41,43 +40,32 @@ export function ListingHero({
         </div>
       )}
 
-      {/* Overlaid content lockup, bottom-anchored. Over an image it sits on the scrim in white; over
-          the no-image placeholder it reads in the DAWN text tokens. */}
-      <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:p-6 ${image ? 'text-white' : 'text-text'}`}>
-        {categoryLabel && (
-          <span
-            className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-2xs font-semibold uppercase tracking-wide ${
-              image ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
-            }`}
-          >
-            {categoryLabel}
-          </span>
-        )}
+      {/* TOP-LEFT: the short price badge (the hero-ad price tag). */}
+      {priceShort && (
+        <span
+          className={`absolute left-4 top-4 inline-flex items-center rounded-xl px-3 py-1.5 text-lg font-bold shadow-sm sm:text-xl ${
+            image ? 'bg-white text-black' : 'bg-primary text-on-primary'
+          }`}
+        >
+          {priceShort}
+        </span>
+      )}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold leading-tight break-words sm:text-3xl">{title}</h1>
-            {priceLabel && (
-              <p className={`mt-1 text-base font-semibold sm:text-lg ${image ? 'text-white/90' : 'text-text'}`}>
-                {priceLabel}
-              </p>
-            )}
-          </div>
+      {/* TOP-RIGHT: the category pill. */}
+      {categoryLabel && (
+        <span
+          className={`absolute right-4 top-4 inline-flex items-center rounded-full px-3 py-1 text-2xs font-semibold uppercase tracking-wide ${
+            image ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-primary-bg text-primary-strong'
+          }`}
+        >
+          {categoryLabel}
+        </span>
+      )}
 
-          {hasAction && (
-            <Link
-              href={action!.href}
-              className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
-                image
-                  ? 'bg-white text-black hover:bg-white/90'
-                  : 'bg-primary text-on-primary hover:bg-primary-hover'
-              }`}
-            >
-              <ActionIcon className="h-4 w-4" aria-hidden />
-              {action!.label}
-            </Link>
-          )}
-        </div>
+      {/* BOTTOM: the title (h1) + the primary action, anchored to the base of the scrim. */}
+      <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:p-6 ${image ? 'text-white' : 'text-text'}`}>
+        <h1 className="min-w-0 text-2xl font-bold leading-tight break-words sm:text-3xl">{title}</h1>
+        {actionSlot && <div className="shrink-0">{actionSlot}</div>}
       </div>
     </div>
   )
