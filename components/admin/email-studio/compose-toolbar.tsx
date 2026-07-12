@@ -19,6 +19,7 @@ export function ComposeToolbar({
   onPreheader,
   previewOpen,
   onTogglePreview,
+  showPreviewToggle = true,
 }: {
   campaignId: string
   subject: string
@@ -27,6 +28,8 @@ export function ComposeToolbar({
   onPreheader: (value: string) => void
   previewOpen: boolean
   onTogglePreview: () => void
+  /** The trio layout shows the preview permanently on the right, so it hides this toggle. */
+  showPreviewToggle?: boolean
 }) {
   const [pending, startTransition] = useTransition()
   const [note, setNote] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
@@ -78,15 +81,17 @@ export function ComposeToolbar({
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Send className="h-3.5 w-3.5" aria-hidden />}
           Send test to me
         </button>
-        <button
-          type="button"
-          aria-pressed={previewOpen}
-          onClick={onTogglePreview}
-          className="ml-auto flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
-        >
-          {previewOpen ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
-          {previewOpen ? 'Hide preview' : 'Show preview'}
-        </button>
+        {showPreviewToggle && (
+          <button
+            type="button"
+            aria-pressed={previewOpen}
+            onClick={onTogglePreview}
+            className="ml-auto flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-muted transition-colors hover:border-primary hover:text-text"
+          >
+            {previewOpen ? <EyeOff className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}
+            {previewOpen ? 'Hide preview' : 'Show preview'}
+          </button>
+        )}
       </div>
 
       {note && (

@@ -32,6 +32,7 @@ import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
+import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** One campaign card for the left rail. `updatedAt` sources `created_at` (the campaigns table carries no
@@ -260,4 +261,130 @@ export async function deleteEmailDraft(id: string): Promise<ActionResult> {
 
   revalidatePath('/admin/beta')
   return ok()
+}
+
+// ── Beta broadcast sequence (the Campaign tab) ─────────────────────────────────────────────────────────────
+//
+// The Campaign tab is JUST the beta broadcast sequence: the six launch emails in send order, plus any email
+// the operator adds. The seeded launch emails live in `campaigns` (one row per BETA_LAUNCH_EMAILS entry, keyed
+// (phase_id, subject) by seedBetaLaunchEmails). A beta campaign is any campaigns row with a non-null phase_id;
+// a generic Studio draft has phase_id null and never shows here. The P0 waitlist double opt-in confirm is a
+// transactional automation, not a broadcast, so it is excluded from this list.
+
+/** One row of the beta broadcast sequence for the Campaign tab's left rail. */
+export interface BetaSequenceEmail {
+  id: string
+  /** 1-based position in the send order (the numbered sequence). */
+  seq: number
+  subject: string
+  /** The operator-set TARGET send date (campaigns.scheduled_for), ISO, or null when unset. */
+  scheduledFor: string | null
+  status: string
+  approvalStatus: string
+}
+
+/** Subject → launch-order index for the six BROADCAST launch emails (P0 confirm excluded). Drives the 1..N
+ *  numbering: a known launch email sorts to its authored position; an operator-added email sorts after. */
+const BETA_BROADCAST_ORDER: Map<string, number> = new Map(
+  BETA_LAUNCH_EMAILS.filter((e) => e.phaseKey !== 'P0').map((e, i) => [e.subject, i]),
+)
+
+/**
+ * List the beta broadcast sequence in send order (read-gated). Every campaigns row with a non-null phase_id,
+ * minus the P0 transactional confirm, ordered: the six launch emails first (their authored order), then any
+ * operator-added beta email by creation time. Numbered 1..N.
+ */
+export async function listBetaSequenceEmails(): Promise<BetaSequenceEmail[]> {
+  await requireAdmin('admin', { staff: 'marketing', staffLevel: 'read' })
+  const db = createAdminClient()
+
+  // Which phase ids are P0 (the transactional confirm to exclude).
+  const { data: phases } = await db.from('beta_phases').select('id, key')
+  const p0PhaseIds = new Set((phases ?? []).filter((p) => p.key === 'P0').map((p) => p.id))
+
+  const { data, error } = await db
+    .from('campaigns')
+    .select('id, subject, scheduled_for, status, approval_status, phase_id, created_at')
+    .not('phase_id', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(200)
+  if (error || !data) return []
+
+  const rows = data.filter((r) => r.phase_id && !p0PhaseIds.has(r.phase_id))
+  const UNKNOWN = Number.MAX_SAFE_INTEGER
+  rows.sort((a, b) => {
+    const ia = BETA_BROADCAST_ORDER.get(a.subject) ?? UNKNOWN
+    const ib = BETA_BROADCAST_ORDER.get(b.subject) ?? UNKNOWN
+    if (ia !== ib) return ia - ib
+    return a.created_at.localeCompare(b.created_at)
+  })
+
+  return rows.map((r, i) => ({
+    id: r.id,
+    seq: i + 1,
+    subject: r.subject ?? '',
+    scheduledFor: r.scheduled_for,
+    status: r.status ?? 'draft',
+    approvalStatus: r.approval_status ?? 'draft',
+  }))
+}
+
+/**
+ * Set ONLY a campaign's target send date (campaigns.scheduled_for). Writer-gated. This is the operator's own
+ * per-email target for the sequence, NOT an arm/schedule of a real send (that stays in scheduleCampaignAction,
+ * which needs a segment + audience and is approver-gated). Pass null to clear the date back to "unset".
+ */
+export async function setCampaignSendDateAction(
+  campaignId: string,
+  dateIso: string | null,
+): Promise<ActionResult<{ scheduledFor: string | null }>> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+
+  let value: string | null = null
+  if (dateIso) {
+    const d = new Date(dateIso)
+    if (Number.isNaN(d.getTime())) return fail('That is not a valid date.')
+    value = d.toISOString()
+  }
+
+  const db = createAdminClient()
+  const { error } = await db.from('campaigns').update({ scheduled_for: value }).eq('id', campaignId)
+  if (error) return fail('Could not save the target date. Try again.')
+
+  revalidatePath('/admin/beta')
+  return ok({ scheduledFor: value })
+}
+
+/**
+ * Create a new email in the beta broadcast sequence (writer-gated). Same basic-starter draft as
+ * createEmailDraft, but stamped with a beta phase so it JOINS the sequence (a null phase_id would file it as a
+ * generic Studio campaign, invisible to this tab). It is stamped with the first launch phase (P1) and sorts
+ * after the seeded six by creation time. Returns the new id (the workspace selects it).
+ */
+export async function createBetaEmailDraft(): Promise<ActionResult<{ id: string }>> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+
+  const db = createAdminClient()
+  const { data: phase } = await db.from('beta_phases').select('id').eq('key', 'P1').maybeSingle()
+
+  const layout = starterEmailLayout()
+  const { data, error } = await db
+    .from('campaigns')
+    .insert({
+      block_json: layout as unknown as never,
+      body: '',
+      subject: '',
+      preheader: '',
+      status: 'draft',
+      phase_id: phase?.id ?? null,
+      created_by: gate.profileId,
+    })
+    .select('id')
+    .single()
+  if (error || !data) return fail('Could not create a new email. Try again.')
+
+  revalidatePath('/admin/beta')
+  return ok({ id: data.id })
 }
