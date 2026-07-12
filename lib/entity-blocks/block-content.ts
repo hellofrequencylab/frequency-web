@@ -621,6 +621,101 @@ export function safeUrl(raw: unknown): string {
   return ''
 }
 
+// ── Inline rich text (Email Studio canvas, Slice A) ─────────────────────────────────────────────────────
+// A `textarea` content field edited on the WYSIWYG email canvas (Tiptap) now stores LIMITED inline HTML, not
+// plain text. This is the ONE sanitizer both the SAVE path and the email RENDERER run, so the stored value
+// and the rendered value are always the same allowlisted string (defence in depth: sanitize on write AND
+// re-sanitize on read, since a stored blob is user-originated and never trusted — mirrors the fail-safe care
+// in sanitizeBlockContent / layout.ts). ALLOWLIST: <b> <strong> <i> <em> and <a href> (safe href only) and
+// <br>. EVERYTHING else is escaped as text; every disallowed tag is dropped (its inner text survives, so a
+// <script> becomes inert visible text); every attribute except a safe <a href> is stripped; every href runs
+// through safeUrl (so javascript: / data: never reach an href). Unclosed marks are auto-closed. Pure + total.
+
+/** Escape a string for a safe HTML text/attribute context (local copy — block-content stays framework-free). */
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** The inline formatting marks the rich editor may store (canonicalised, attribute-free on output). */
+const RICH_INLINE_TAGS: ReadonlySet<string> = new Set(['b', 'strong', 'i', 'em'])
+
+/** Pull a raw href value out of an `<a ...>` tag's attribute blob (quoted or bare). */
+function extractHref(attrs: string): string {
+  const m = /href\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i.exec(attrs)
+  if (!m) return ''
+  return m[1] ?? m[2] ?? m[3] ?? ''
+}
+
+/**
+ * Sanitize a rich inline value to the safe allowlist HTML string (see the module note above). Idempotent, so
+ * it is safe to run on save AND on every render. Bounds to MAX_TEXT. Pure + total: never throws, and a
+ * non-string yields ''.
+ */
+export function sanitizeInlineHtml(raw: unknown): string {
+  if (typeof raw !== 'string') return ''
+  const input = raw.slice(0, MAX_TEXT)
+  const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:"[^"]*"|'[^']*'|[^"'>])*)>/g
+  const open: string[] = []
+  let out = ''
+  let last = 0
+  const text = (s: string) => {
+    if (s) out += escapeHtmlText(s).replace(/\r?\n/g, '<br>')
+  }
+  let m: RegExpExecArray | null
+  while ((m = tagRe.exec(input)) !== null) {
+    text(input.slice(last, m.index))
+    last = tagRe.lastIndex
+    const closing = m[1] === '/'
+    const name = m[2].toLowerCase()
+    const attrs = m[3] ?? ''
+    if (name === 'br') {
+      if (!closing) out += '<br>'
+      continue
+    }
+    if (name === 'a') {
+      if (closing) {
+        const idx = open.lastIndexOf('a')
+        if (idx !== -1) {
+          out += '</a>'
+          open.splice(idx, 1)
+        }
+      } else {
+        const href = safeUrl(extractHref(attrs))
+        if (href) {
+          out += `<a href="${escapeHtmlText(href)}" rel="noopener noreferrer">`
+          open.push('a')
+        }
+        // An unsafe / missing href drops the tag; the link's inner text still survives.
+      }
+      continue
+    }
+    if (RICH_INLINE_TAGS.has(name)) {
+      if (closing) {
+        const idx = open.lastIndexOf(name)
+        if (idx !== -1) {
+          out += `</${name}>`
+          open.splice(idx, 1)
+        }
+      } else {
+        out += `<${name}>`
+        open.push(name)
+      }
+      continue
+    }
+    // Any other tag (script, div, span, img, on*-carrying element, ...) is dropped; its inner text is escaped
+    // as ordinary text on the next iteration.
+  }
+  text(input.slice(last))
+  // Auto-close any marks left open so a stray `<b>` never bleeds into the rest of the document.
+  for (let i = open.length - 1; i >= 0; i--) out += `</${open[i]}>`
+  return out.trim()
+}
+
 // ── Content sanitize ──────────────────────────────────────────────────────────────────────────────────
 
 const MAX_TEXT = 2000

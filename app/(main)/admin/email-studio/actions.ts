@@ -29,7 +29,7 @@ import {
 } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
-import { applyMergeTags } from '@/lib/email-studio/render'
+import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/render'
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
 import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
@@ -162,8 +162,11 @@ export async function saveEmailCampaign(
   if (typeof patch.preheader === 'string') update.preheader = patch.preheader.slice(0, 300)
 
   if (patch.layout) {
+    // Sanitize the wire layout (kind 'email'), THEN rewrite every rich `textarea` field to allowlist inline
+    // HTML (Email Studio canvas, Slice A) so a stored bold/italic/link is safe and the renderer emits exactly
+    // what was stored. Plain `text` fields are untouched (escaped at render). Never trusts the wire.
     const clean = sanitizeEntityLayout(patch.layout as EntityLayout, 'email')
-    const layout = clean ?? starterEmailLayout()
+    const layout = clean ? sanitizeEmailRichContent(clean) : starterEmailLayout()
     update.block_json = layout as unknown as never
     // Refresh the cached send-ready HTML from the freshest subject/preheader (this patch, else the row).
     try {

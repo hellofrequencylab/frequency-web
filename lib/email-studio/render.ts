@@ -14,6 +14,8 @@ import { resolveRows } from '@/lib/entity-blocks/layout'
 import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import {
   safeUrl,
+  sanitizeInlineHtml,
+  fieldsForBlock,
   type BlockStyle,
   type TextStyle,
   type TextColorToken,
@@ -102,6 +104,28 @@ export function escapeHtml(s: string): string {
 function s(props: Record<string, unknown>, key: string): string {
   const v = props[key]
   return typeof v === 'string' ? v.trim() : ''
+}
+
+/** Render a RICH inline value (a `textarea` field authored on the canvas) to the SAME allowlisted inline HTML
+ *  the save path stored, re-sanitized here so a tampered blob can never inject markup (defence in depth). The
+ *  ONLY place email HTML emits un-escaped content; plain `text` fields stay fully escaped (escapeHtml). */
+export function renderInlineRich(value: unknown): string {
+  return sanitizeInlineHtml(value)
+}
+
+/** The plain-text alternative for a rich field: strip the inline tags, turn <br> back into a newline, and
+ *  decode the escaped entities, so the text/* part of the email reads naturally (no leftover markup). */
+function richToText(raw: string): string {
+  if (!raw) return ''
+  return raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim()
 }
 
 /** A MarginStep → px (mirrors the web utility scale: sm 16 / md 32 / lg 48 / xl 80; none 0). */
@@ -208,20 +232,25 @@ function textStyleParts(style: BlockStyle | undefined, colors: EmailColors, base
   return [`color:${color}`, w ? `font-weight:${w}` : '']
 }
 
-function heading(text: string, style: BlockStyle | undefined, colors: EmailColors, basePx = 22): string {
+/** A heading fragment. `rich` (a `textarea` field authored on the canvas) emits sanitized inline HTML;
+ *  otherwise the text is a plain `text` field and stays fully escaped. */
+function heading(text: string, style: BlockStyle | undefined, colors: EmailColors, basePx = 22, rich = false): string {
   if (!text) return ''
   const px = Math.round(basePx * sizeMultiplier(style))
   const w = weightOf(style?.text) ?? 700
   const color = style?.text?.color ? textColorHex(style.text.color, colors) : colors.text
-  return `<h2${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.25`, `font-weight:${w}`, `color:${color}`])}>${escapeHtml(text)}</h2>`
+  const body = rich ? renderInlineRich(text) : escapeHtml(text)
+  return `<h2${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.25`, `font-weight:${w}`, `color:${color}`])}>${body}</h2>`
 }
 
+/** A paragraph fragment. Every paragraph on an email block is a rich `textarea` field, so it emits sanitized
+ *  inline HTML (bold / italic / link authored on the canvas) with authored line breaks preserved as <br>. */
 function paragraph(text: string, style: BlockStyle | undefined, colors: EmailColors, basePx = 15): string {
   if (!text) return ''
   const px = Math.round(basePx * sizeMultiplier(style))
   const parts = textStyleParts(style, colors, colors.muted)
-  // Preserve authored line breaks (the textarea stores them) as <br>.
-  const body = escapeHtml(text).replace(/\n/g, '<br>')
+  // renderInlineRich escapes non-allowlisted content, keeps <b>/<i>/<a href>, and turns newlines into <br>.
+  const body = renderInlineRich(text)
   return `<p${styleAttr([`margin:0`, `font-family:${FONT_STACK}`, `font-size:${px}px`, `line-height:1.65`, ...parts])}>${body}</p>`
 }
 
@@ -294,7 +323,8 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
     : []
   const browseLabel = props.buttonOn === false ? '' : s(props, 'browseLabel')
   if (!eb && !title && !cards.length && !browseLabel) return { html: '', text: '' }
-  const head = [eyebrow(eb, colors), heading(title, style, colors, 22)].filter(Boolean).join('')
+  // `title` is a rich `textarea` field; `eyebrow` is a plain `text` field.
+  const head = [eyebrow(eb, colors), heading(title, style, colors, 22, true)].filter(Boolean).join('')
   const cardRows = cards
     .map((it) => {
       const icon = it.icon ? `<div${styleAttr([`font-size:20px`, `line-height:1`, `margin:0 0 6px 0`])}>${escapeHtml(it.icon)}</div>` : ''
@@ -306,7 +336,7 @@ function cardGrid(props: Record<string, unknown>, style: BlockStyle | undefined,
   const grid = cardRows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-top:12px;">${cardRows}</table>` : ''
   const browse = browseLabel ? ctaButton(browseLabel, s(props, 'browseUrl'), alignOf(style), colors) : ''
   const html = `${head}${grid}${browse}`
-  const text = [eb, title, ...cards.map((c) => `- ${c.title}${c.title && c.text ? ': ' : ''}${c.text}`), browseLabel && `${browseLabel}: ${safeUrl(s(props, 'browseUrl'))}`]
+  const text = [eb, richToText(title), ...cards.map((c) => `- ${c.title}${c.title && c.text ? ': ' : ''}${c.text}`), browseLabel && `${browseLabel}: ${safeUrl(s(props, 'browseUrl'))}`]
     .filter(Boolean)
     .join('\n')
   return { html, text }
@@ -330,7 +360,8 @@ function callout(props: Record<string, unknown>, style: BlockStyle | undefined, 
   const wrapped = forceFlat
     ? inner
     : `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;"><tr><td${styleAttr([`padding:24px`, `background:${colors.surface}`, `border:1px solid ${colors.border}`, `border-radius:16px`])}>${inner}</td></tr></table>`
-  const text = [title, body, hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
+  // `title` is a plain `text` field; `body` is a rich `textarea` field.
+  const text = [title, richToText(body), hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
   return { html: wrapped, text }
 }
 
@@ -346,10 +377,11 @@ function photoHero(props: Record<string, unknown>, style: BlockStyle | undefined
   // Email cannot safely overlay text on a background image across clients, so the Banner renders as a photo
   // ABOVE the copy (the `below` display), regardless of the authored display mode.
   const imgHtml = img ? `${image(img, s(props, 'alt'), 12)}<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>` : ''
-  const head = [eyebrow(eb, colors), heading(title, style, colors, 26), subtitle ? `<div style="height:8px;line-height:8px;font-size:0;">&nbsp;</div>${paragraph(subtitle, style, colors, 16)}` : ''].filter(Boolean).join('')
+  // `title` + `subtitle` are rich `textarea` fields; `eyebrow` is a plain `text` field.
+  const head = [eyebrow(eb, colors), heading(title, style, colors, 26, true), subtitle ? `<div style="height:8px;line-height:8px;font-size:0;">&nbsp;</div>${paragraph(subtitle, style, colors, 16)}` : ''].filter(Boolean).join('')
   const btn = hasButton ? `<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>${ctaButton(buttonLabel, s(props, 'buttonUrl'), alignOf(style), colors)}` : ''
   const html = `${imgHtml}${head}${btn}`
-  const text = [eb, title, subtitle, hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
+  const text = [eb, richToText(title), richToText(subtitle), hasButton && `${buttonLabel}: ${safeUrl(s(props, 'buttonUrl'))}`].filter(Boolean).join('\n')
   return { html, text }
 }
 
@@ -358,26 +390,29 @@ function editorial(props: Record<string, unknown>, style: BlockStyle | undefined
   const title = s(props, 'title')
   const body = s(props, 'body')
   if (!eb && !title && !body) return { html: '', text: '' }
+  // `title` + `body` are rich `textarea` fields; `eyebrow` is a plain `text` field.
   const html = [
     eyebrow(eb, colors),
-    heading(title, style, colors, 22),
+    heading(title, style, colors, 22, true),
     body ? `<div style="height:10px;line-height:10px;font-size:0;">&nbsp;</div>${paragraph(body, style, colors, 15)}` : '',
   ]
     .filter(Boolean)
     .join('')
-  return { html, text: [eb, title, body].filter(Boolean).join('\n') }
+  return { html, text: [eb, richToText(title), richToText(body)].filter(Boolean).join('\n') }
 }
 
 /** One authored block → { html (inner, pre-frame), text }, or empty when it has nothing to show. */
 function renderBlockInner(id: string, props: Record<string, unknown>, style: BlockStyle | undefined, colors: EmailColors): Rendered {
   switch (id) {
     case 'heading':
+      // The plain Heading block's `text` is a `text` field (fully escaped, not rich).
       return { html: heading(s(props, 'text'), style, colors, 24), text: s(props, 'text') }
     case 'displayHeading':
-      return { html: heading(s(props, 'text'), style, colors, 30), text: s(props, 'text') }
+      // Display heading's `text` is a rich `textarea` field.
+      return { html: heading(s(props, 'text'), style, colors, 30, true), text: richToText(s(props, 'text')) }
     case 'text':
     case 'prose':
-      return { html: paragraph(s(props, 'text'), style, colors, 15), text: s(props, 'text') }
+      return { html: paragraph(s(props, 'text'), style, colors, 15), text: richToText(s(props, 'text')) }
     case 'button': {
       const label = s(props, 'label')
       if (!label) return { html: '', text: '' }
@@ -394,9 +429,11 @@ function renderBlockInner(id: string, props: Record<string, unknown>, style: Blo
       const text = s(props, 'text')
       if (!text) return { html: '', text: '' }
       const by = s(props, 'by')
-      const q = `<blockquote${styleAttr([`margin:0`, `padding:0 0 0 16px`, `border-left:3px solid ${colors.primary}`, `font-family:${FONT_STACK}`, `font-size:18px`, `font-style:italic`, `color:${colors.text}`, `line-height:1.5`])}>${escapeHtml(text).replace(/\n/g, '<br>')}</blockquote>`
+      // The quote body is a rich `textarea` field; the attribution is a plain `text` field.
+      const q = `<blockquote${styleAttr([`margin:0`, `padding:0 0 0 16px`, `border-left:3px solid ${colors.primary}`, `font-family:${FONT_STACK}`, `font-size:18px`, `font-style:italic`, `color:${colors.text}`, `line-height:1.5`])}>${renderInlineRich(text)}</blockquote>`
       const cite = by ? `<p${styleAttr([`margin:8px 0 0 0`, `font-family:${FONT_STACK}`, `font-size:14px`, `color:${colors.muted}`])}>${escapeHtml(by)}</p>` : ''
-      return { html: `${q}${cite}`, text: by ? `"${text}" - ${by}` : `"${text}"` }
+      const plain = richToText(text)
+      return { html: `${q}${cite}`, text: by ? `"${plain}" - ${by}` : `"${plain}"` }
     }
     case 'divider':
       return {
@@ -442,6 +479,32 @@ export function renderEmailLayout(layout: EntityLayout, opts: RenderEmailOptions
     if (rendered.text) textParts.push(rendered.text)
   }
   return { html: htmlParts.join('\n'), text: textParts.join('\n\n') }
+}
+
+// ── Rich-content sanitize on SAVE (Email Studio canvas, Slice A) ────────────────────────────────────────
+// A `textarea` field authored on the WYSIWYG canvas stores LIMITED inline HTML. This rewrites every such
+// field through the ONE allowlist (sanitizeInlineHtml) at save time, so the stored blob is always the safe
+// string (the renderer re-sanitises on read too — defence in depth). Plain `text` fields are left untouched
+// (they are escaped at render). Iterates the block's OWN field schema (fieldsForBlock), so only declared
+// `textarea` keys are rewritten; a tampered/unknown key is never used as a write target. Pure + fail-safe.
+
+/** Return a copy of an email layout with every block's rich `textarea` field sanitised to allowlist HTML. */
+export function sanitizeEmailRichContent(layout: EntityLayout): EntityLayout {
+  if (!layout.content || typeof layout.content !== 'object') return layout
+  const content: Record<string, Record<string, unknown>> = {}
+  for (const [id, props] of Object.entries(layout.content)) {
+    if (!props || typeof props !== 'object') continue
+    const next: Record<string, unknown> = { ...props }
+    for (const field of fieldsForBlock(id)) {
+      if (field.type === 'textarea' && typeof next[field.key] === 'string') {
+        const clean = sanitizeInlineHtml(next[field.key])
+        if (clean) next[field.key] = clean
+        else delete next[field.key]
+      }
+    }
+    content[id] = next
+  }
+  return { ...layout, content }
 }
 
 // ── Merge tags ──────────────────────────────────────────────────────────────────────────────────────────

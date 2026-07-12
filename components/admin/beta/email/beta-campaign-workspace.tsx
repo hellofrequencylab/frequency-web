@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CalendarDays, CheckCircle2, Eye, Loader2, Mail, MousePointerClick, Plus, Send } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -75,6 +76,11 @@ export function BetaCampaignWorkspace({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // PROTOTYPE FLAG (kept off by default): `?canvas=1` opens the on-canvas WYSIWYG editor instead of the
+  // working trio editor. Everything else (save / compile / preview / test-send) is shared, so the flag only
+  // swaps the editing surface. Drop the param (or set anything else) to keep the current editor.
+  const canvasFlag = useSearchParams().get('canvas') === '1'
 
   const reqRef = useRef(0)
   const editorRef = useRef<HTMLElement | null>(null)
@@ -295,7 +301,7 @@ export function BetaCampaignWorkspace({
             key={loaded.id}
             campaign={loaded}
             onSubjectChange={onSubjectChange}
-            arrangement="trio"
+            arrangement={canvasFlag ? 'canvas' : 'trio'}
             sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} layout="row" />}
           />
         )}

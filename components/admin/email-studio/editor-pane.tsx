@@ -16,6 +16,7 @@ import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import type { SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { ComposeToolbar } from './compose-toolbar'
 import { EmailPreview } from './preview'
+import { EmailCanvasEditor } from './email-canvas-editor'
 import { saveEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
 
 // EMAIL EDITOR PANE. The right pane's editor for ONE selected email. It REUSES the entity-blocks arranger
@@ -75,8 +76,10 @@ export function EmailEditorPane({
   /** Bubble a subject edit up so the left rail card relabels live. */
   onSubjectChange?: (id: string, subject: string) => void
   /** 'stacked' (default): toolbar on top, canvas below, preview toggled beside it. 'trio': a full-width
-   *  three-region layout — settings/controls LEFT, the block canvas CENTER, the live preview RIGHT. */
-  arrangement?: 'stacked' | 'trio'
+   *  three-region layout — settings/controls LEFT, the block canvas CENTER, the live preview RIGHT. 'canvas'
+   *  (prototype, flag-gated): the on-canvas WYSIWYG editor — block list + core settings LEFT, a live clickable
+   *  email canvas RIGHT. All three share the SAME provider / seed / save / compile / preview / test-send. */
+  arrangement?: 'stacked' | 'trio' | 'canvas'
   /** Extra controls rendered UNDER the compose fields in the LEFT column of the trio layout (e.g. the send /
    *  schedule panel). Ignored in the stacked layout. */
   sidebar?: ReactNode
@@ -142,6 +145,31 @@ export function EmailEditorPane({
   // and the live inbox preview EXPANDED to fill the rest on the RIGHT. Reuses the SAME provider, seed, save,
   // compile/preview, merge tags, and test-send as the stacked layout; only the frame changes. The preview is
   // always on, so the compose toolbar hides its preview toggle.
+  // CANVAS (prototype, flag-gated): the on-canvas WYSIWYG model. Reuses the SAME provider, seed, save,
+  // compile, and (via the shared store) the live preview / test-send paths as the other arrangements; only the
+  // editing surface changes. The compose fields sit on top; the send / schedule panel (sidebar) sits below.
+  if (arrangement === 'canvas') {
+    return (
+      <EntityLayoutProvider kind="email" save={save}>
+        <LayoutSeeder layout={campaign.layout} />
+        <div className="space-y-4">
+          <ComposeToolbar
+            campaignId={id}
+            subject={subject}
+            preheader={preheader}
+            onSubject={onSubject}
+            onPreheader={onPreheader}
+            previewOpen
+            onTogglePreview={() => {}}
+            showPreviewToggle={false}
+          />
+          <EmailCanvasEditor />
+          {sidebar}
+        </div>
+      </EntityLayoutProvider>
+    )
+  }
+
   if (arrangement === 'trio') {
     return (
       <EntityLayoutProvider kind="email" save={save}>
