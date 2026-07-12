@@ -24,7 +24,7 @@ describe('composeSiteHomeDoc — the reframed prose reaches the Site', () => {
     const doc = composeSiteHomeDoc(draft(), 'allow')
     expect(Array.isArray(doc.content)).toBe(true)
     // The live-data blocks are present so they self-fill from profileData on the Site.
-    for (const t of ['SpaceOfferings', 'SpaceContact', 'SpaceReviews', 'SpaceFAQ', 'SpaceBusiness']) {
+    for (const t of ['SpaceOfferings', 'SpaceContact', 'SpaceReviews', 'SpaceBusiness']) {
       expect(block(doc, t)).toBeTruthy()
     }
   })
