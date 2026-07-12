@@ -23,8 +23,10 @@ import { CanvasBlock } from './canvas/canvas-block'
 // default. Semantic DAWN tokens for the app chrome; the canvas mirrors the email palette (see canvas-block).
 // Voice canon (no em dashes).
 
-/** Field types that belong in the LEFT rail (structural), not on the canvas. A url field with `upload` is a
- *  photo slot (canvas stub, Slice B), so it is excluded here. */
+/** Field types that belong in the LEFT rail (structural / composite), not as inline canvas text. A url field
+ *  with `upload` is a photo slot (edited on the canvas via the Loom popup), so it is excluded here. The
+ *  composite fields (features / links) and the embed URL have no inline canvas editor, so they live here too;
+ *  the alt text of a photo is set inside the Loom popup, never in the rail. */
 const CORE_TYPES: ReadonlySet<FieldDef['type']> = new Set([
   'url',
   'toggle',
@@ -35,10 +37,14 @@ const CORE_TYPES: ReadonlySet<FieldDef['type']> = new Set([
   'color',
   'shadow',
   'margin',
+  'features',
+  'links',
+  'embedUrl',
 ])
 
 function isCoreField(f: FieldDef): boolean {
-  if (f.type === 'url' && f.upload) return false
+  if (f.type === 'url' && f.upload) return false // a photo slot — edited on the canvas via the Loom popup
+  if (f.key === 'alt') return false // photo alt is set inside the Loom popup
   return CORE_TYPES.has(f.type)
 }
 
