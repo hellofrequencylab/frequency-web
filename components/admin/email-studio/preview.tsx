@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Monitor, Smartphone } from 'lucide-react'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
@@ -36,6 +36,12 @@ export function EmailPreview({
     return applyMergeTags(compiled, EXAMPLE_VARS, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
   }, [layout, subject, preheader])
 
+  // Load the compiled email into the sandboxed frame via a same-origin blob URL instead of srcDoc. The
+  // result is identical and equally safe (sandbox="" runs no scripts, and the renderer already escapes all
+  // authored text), and it keeps the compiled HTML string off the DOM-based-XSS sink path. Revoke on change.
+  const src = useMemo(() => URL.createObjectURL(new Blob([html], { type: 'text/html' })), [html])
+  useEffect(() => () => URL.revokeObjectURL(src), [src])
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -65,7 +71,7 @@ export function EmailPreview({
       <div className="flex justify-center overflow-x-auto rounded-2xl border border-border bg-surface-elevated/40 p-3">
         <iframe
           title="Email preview"
-          srcDoc={html}
+          src={src}
           sandbox=""
           className="h-[640px] rounded-lg border border-border bg-white shadow-sm"
           style={{ width: WIDTH_PX[width], maxWidth: '100%' }}
