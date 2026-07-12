@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Monitor, Smartphone } from 'lucide-react'
 import { compileEmailDoc } from '@/lib/email-studio/shell'
 import { applyMergeTags } from '@/lib/email-studio/render'
@@ -9,7 +9,8 @@ import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // LIVE EMAIL PREVIEW. Compiles the working email doc (block layout + subject + preheader) to send-ready HTML
 // IN THE BROWSER (lib/email-studio compile is pure + framework-free, so it is client-safe) and renders it in
-// a sandboxed <iframe> via a same-origin blob URL (see below). A width toggle switches between a desktop (600px) and a mobile (360px) frame
+// a sandboxed <iframe srcDoc> (sandbox="" runs no scripts; the renderer already escapes all authored text).
+// A width toggle switches between a desktop (600px) and a mobile (360px) frame
 // so the operator sees both inbox shapes. Merge tags are filled with EXAMPLE values so `{{ contact.first_name }}`
 // reads naturally. Read-only surface: no writes, repaints instantly from the shared store as the operator edits.
 
@@ -35,12 +36,6 @@ export function EmailPreview({
     const { html: compiled } = compileEmailDoc({ layout, subject, preheader })
     return applyMergeTags(compiled, EXAMPLE_VARS, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
   }, [layout, subject, preheader])
-
-  // Load the compiled email into the sandboxed frame via a same-origin blob URL instead of srcDoc. The
-  // result is identical and equally safe (sandbox="" runs no scripts, and the renderer already escapes all
-  // authored text), and it keeps the compiled HTML string off the DOM-based-XSS sink path. Revoke on change.
-  const src = useMemo(() => URL.createObjectURL(new Blob([html], { type: 'text/html' })), [html])
-  useEffect(() => () => URL.revokeObjectURL(src), [src])
 
   return (
     <div className="space-y-3">
@@ -71,7 +66,7 @@ export function EmailPreview({
       <div className="flex justify-center overflow-x-auto rounded-2xl border border-border bg-surface-elevated/40 p-3">
         <iframe
           title="Email preview"
-          src={src}
+          srcDoc={html}
           sandbox=""
           className="h-[640px] rounded-lg border border-border bg-white shadow-sm"
           style={{ width: WIDTH_PX[width], maxWidth: '100%' }}

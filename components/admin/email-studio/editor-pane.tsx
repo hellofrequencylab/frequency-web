@@ -137,17 +137,18 @@ export function EmailEditorPane({
   )
   const loadRailData = useCallback(async (): Promise<BuilderRailData | null> => seed, [seed])
 
-  // TRIO (Beta Campaign tab): a full-width three-region editor — settings/controls LEFT, the block canvas
-  // CENTER, the live inbox preview RIGHT. Reuses the SAME provider, seed, save, compile/preview, merge tags,
-  // and test-send as the stacked layout; only the frame changes. The preview is always on, so the compose
-  // toolbar hides its preview toggle.
+  // TRIO (Beta Campaign tab): the compose fields and the send / schedule panel sit as TWO COLUMNS across the
+  // top; below them the editor runs full width with the block settings (the "Your page" canvas) on the LEFT
+  // and the live inbox preview EXPANDED to fill the rest on the RIGHT. Reuses the SAME provider, seed, save,
+  // compile/preview, merge tags, and test-send as the stacked layout; only the frame changes. The preview is
+  // always on, so the compose toolbar hides its preview toggle.
   if (arrangement === 'trio') {
     return (
       <EntityLayoutProvider kind="email" save={save}>
         <LayoutSeeder layout={campaign.layout} />
-        <div className="grid gap-4 xl:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_minmax(320px,380px)]">
-          {/* LEFT — settings + controls */}
-          <div className="min-w-0 space-y-4">
+        <div className="space-y-4">
+          {/* TOP — the compose fields + the send panel, two columns above the editor. */}
+          <div className="grid gap-4 lg:grid-cols-2">
             <ComposeToolbar
               campaignId={id}
               subject={subject}
@@ -158,15 +159,16 @@ export function EmailEditorPane({
               onTogglePreview={() => {}}
               showPreviewToggle={false}
             />
-            {sidebar}
+            <div className="min-w-0">{sidebar}</div>
           </div>
-          {/* CENTER — the block canvas */}
-          <div className="min-w-0">
-            <EntityPageBuilder pageId={id} kind="email" loadRailData={loadRailData} seed={seed} />
-          </div>
-          {/* RIGHT — the live inbox preview */}
-          <div className="min-w-0">
-            <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} />
+          {/* EDITOR — block settings (Your page) LEFT, the live preview expanded RIGHT. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
+            <div className="min-w-0">
+              <EntityPageBuilder pageId={id} kind="email" loadRailData={loadRailData} seed={seed} />
+            </div>
+            <div className="min-w-0">
+              <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} />
+            </div>
           </div>
         </div>
       </EntityLayoutProvider>
