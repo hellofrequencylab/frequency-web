@@ -85,3 +85,49 @@ export function buildVcf(profile: VcardProfile, config: VcardConfig): string | n
   lines.push('END:VCARD')
   return lines.join('\r\n')
 }
+
+/** The public facts a Space contributes to its contact card. All optional except the name — a Space
+ *  has no per-member `vcard` opt-in blob, so it always offers a card built from what it already stores
+ *  (brand name, tagline, logo) plus its public profile-data contact fields (phone / email / website).
+ *  No new schema: these map onto existing columns / preferences (lib/spaces/profile-data.ts). */
+export interface SpaceVcardInput {
+  /** The Space's brand / display name (the FN + ORG). */
+  name: string
+  /** The Space's tagline, used as the card NOTE. */
+  tagline?: string | null
+  /** The canonical public profile URL (`/spaces/<slug>`). */
+  profileUrl: string
+  /** The Space's brand logo (embedded as the card PHOTO when https). */
+  logoUrl?: string | null
+  phone?: string | null
+  email?: string | null
+  /** The Space's own website (falls back to the profile URL when unset). */
+  website?: string | null
+}
+
+/** Build a vCard 3.0 for a SPACE (business/org) by mapping its public facts onto the shared buildVcf.
+ *  A Space always has a card (no per-member opt-in), so this never returns null for a named Space. */
+export function buildSpaceVcf(input: SpaceVcardInput): string | null {
+  const name = input.name?.trim()
+  if (!name) return null
+  const profile: VcardProfile = {
+    displayName: name,
+    handle: name,
+    bio: str(input.tagline),
+    avatarUrl: input.logoUrl ?? null,
+    profileUrl: input.profileUrl,
+  }
+  const config: VcardConfig = {
+    enabled: true,
+    email: (() => {
+      const e = str(input.email, 254)
+      return e && EMAIL_RE.test(e) ? e : null
+    })(),
+    phone: str(input.phone, 40),
+    org: name,
+    title: null,
+    website: str(input.website, 300) ?? input.profileUrl,
+    includeAvatar: true,
+  }
+  return buildVcf(profile, config)
+}

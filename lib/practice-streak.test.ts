@@ -7,6 +7,7 @@ import {
   isResting,
   MAX_PAUSE_DAYS,
 } from './practice-streak'
+import { memberDay } from './member-day'
 
 const TODAY = '2026-06-06'
 const set = (...days: string[]) => new Set(days)
@@ -104,6 +105,35 @@ describe('isResting', () => {
     expect(isResting({ from: back(1), through: back(0) }, TODAY)).toBe(true)
     expect(isResting({ from: TODAY, through: shiftDay(TODAY, 3) }, TODAY)).toBe(true)
     expect(isResting(null, TODAY)).toBe(false)
+  })
+})
+
+describe('an evening-Pacific log counts for the local day, not the UTC next day (tz bug)', () => {
+  // 8pm PDT on 2026-07-12 is 2026-07-13T03:00Z — a UTC "today" is already tomorrow.
+  const now = new Date('2026-07-13T03:00:00Z')
+  const pstDay = memberDay('America/Los_Angeles', now)
+  const utcDay = memberDay('UTC', now)
+
+  it('resolves the member-local day (PDT), which differs from UTC in the evening', () => {
+    expect(pstDay).toBe('2026-07-12')
+    expect(utcDay).toBe('2026-07-13')
+  })
+
+  it('reads as logged-today under the member-local day (the fix)', () => {
+    // The log was written under the member-local day (practice_logs.logged_for).
+    const logged = new Set([pstDay])
+    const r = derivePracticeStreak(logged, new Set(), pstDay)
+    expect(r.loggedToday).toBe(true)
+    expect(r.alive).toBe(true)
+    expect(r.current).toBe(1)
+  })
+
+  it('would falsely read as at-risk under a UTC "today" (the bug this fixes)', () => {
+    // Same log, but anchored on the UTC day → the log looks like "yesterday" and today
+    // reads as missed. This is the regression the tz-aware resolver removes.
+    const logged = new Set([pstDay])
+    const r = derivePracticeStreak(logged, new Set(), utcDay)
+    expect(r.loggedToday).toBe(false)
   })
 })
 

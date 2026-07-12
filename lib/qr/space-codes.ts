@@ -305,6 +305,12 @@ export async function createSpaceCode(
           target_url: targetUrl,
           active: true,
           created_by: caller.id,
+          // ATTRIBUTION OWNER (mirrors the personal / marketing codes): stamp the creator as the
+          // owner_profile_id so a scan of this Space code credits their Zaps at signup — the /q resolver
+          // drops fq_ref = owner_profile_id for an anonymous scanner and applyReferralAttribution pays out
+          // on activation (lib/qr/referral.ts). Without it a Space code logged the scan but credited no one.
+          // purpose stays null, so this is NOT a personal connect code (no QR contact capture in /q).
+          owner_profile_id: caller.id,
         },
       ])
       .select(CODE_COLS)

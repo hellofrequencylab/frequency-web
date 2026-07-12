@@ -96,11 +96,25 @@ export default async function CodesPage() {
 async function CrewMarketing({ profileId }: { profileId: string }) {
   const db = createAdminClient()
   const [{ data: rows }, targets] = await Promise.all([
-    db
-      .from('qr_codes')
-      .select('id, slug, title, target_url, scan_count, style')
-      .eq('owner_profile_id', profileId)
-      .is('purpose', null)
+    // Personal crew marketing codes ONLY: owner-owned, purpose-null, and NOT tenant-scoped to a Space.
+    // A Space code now stamps owner_profile_id (for scan attribution) AND space_id, so this list must
+    // exclude space codes or a member who created one for their Space would see it in their personal
+    // funnel list. `space_id` isn't in the generated types yet (ADR-246), so the filter rides an
+    // untyped cast of the builder.
+    (
+      db
+        .from('qr_codes')
+        .select('id, slug, title, target_url, scan_count, style')
+        .eq('owner_profile_id', profileId)
+        .is('purpose', null) as unknown as {
+        is: (col: string, val: null) => {
+          order: (col: string, opts: { ascending: boolean }) => Promise<{
+            data: { id: string; slug: string; title: string; target_url: string | null; scan_count: number; style: unknown }[] | null
+          }>
+        }
+      }
+    )
+      .is('space_id', null)
       .order('created_at', { ascending: false }),
     listMarketingTargets(profileId),
   ])

@@ -12,8 +12,13 @@
 //    express: the banked reserve (freeze tokens), which missed days the reserve
 //    has bridged, an optional member-set rest window, and which milestones have
 //    already paid out (exactly-once rewards).
-//  - A "day" is the UTC date, matching how lib/practices.ts writes
-//    `practice_logs.logged_for` — one shared day boundary across the system.
+//  - A "day" is the member's LOCAL calendar day, resolved from their durable
+//    `profiles.home_timezone` (then an optional client tz, then UTC) via
+//    lib/member-day.resolveMemberDay — the SAME boundary lib/practices.ts keys
+//    `practice_logs.logged_for` under. Computing it in UTC here (the old bug) put
+//    an evening-Pacific log a calendar day ahead of the day it was written for, so
+//    "today" read as missed and the streak never advanced. One shared, tz-aware
+//    day boundary across write (logPractice) and read/record (this module).
 //
 // Bounded forgiveness (the audience-research redesign — never shame a slip):
 //  - The **reserve** is the banked freeze tokens, surfaced as a small safety net
@@ -27,6 +32,7 @@
 //    no migration, no new table.
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { resolveMemberDay } from '@/lib/member-day'
 import { awardZaps } from '@/lib/zaps'
 import { STREAK_MILESTONES, STREAK_FREEZE_CAP, FULL_DAYS_PER_FREEZE, streakProgress } from '@/lib/streak'
 import { postSystemLine } from '@/lib/system-line'
@@ -43,7 +49,9 @@ export const MAX_PAUSE_DAYS = 14
 
 // --- pure date helpers (UTC "YYYY-MM-DD") ---------------------------------
 
-/** Today's UTC date as YYYY-MM-DD (matches practice_logs.logged_for). */
+/** Today's UTC date as YYYY-MM-DD. Retained as a pure UTC primitive; the streak
+ *  day boundary now resolves in the member's local timezone via resolveMemberDay
+ *  (home_timezone → client tz → UTC), so this is no longer the streak "today". */
 export function todayUTC(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -198,10 +206,16 @@ export interface PracticeStreakState {
   toNext: number
 }
 
-/** A member's live daily practice streak. Pure read — never writes. */
-export async function getPracticeStreak(profileId: string): Promise<PracticeStreakState> {
+/** A member's live daily practice streak. Pure read — never writes. "Today" is the
+ *  member's LOCAL day (profiles.home_timezone, then an optional client tz, then UTC) —
+ *  the same boundary logPractice writes `practice_logs.logged_for` under — so an evening
+ *  log in Pacific time reads as "logged today" instead of springing back to at-risk. */
+export async function getPracticeStreak(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<PracticeStreakState> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
 
   const [{ data: prof }, { data: rows }] = await Promise.all([
     admin.from('profiles').select('meta').eq('id', profileId).maybeSingle(),
@@ -281,9 +295,15 @@ export async function getPracticeStreak(profileId: string): Promise<PracticeStre
  * milestone rewards (zaps + banked freezes), and mirrors the result to
  * `profiles.current_streak` / `longest_streak`.
  */
-export async function recordPracticeStreak(profileId: string): Promise<void> {
+export async function recordPracticeStreak(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<void> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  // The member's LOCAL day — the SAME boundary logPractice keyed the just-written
+  // `practice_logs.logged_for` under. Resolving in UTC here (the old bug) advanced the
+  // streak against the wrong calendar day for an evening-Pacific log.
+  const today = await resolveMemberDay(profileId, clientTimezone)
 
   const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
@@ -435,9 +455,12 @@ export async function recordPracticeStreak(profileId: string): Promise<void> {
  * shown had today never been logged, with no economy side effects to reverse.
  * Idempotent — calling it again (today already absent) is a no-op for the count.
  */
-export async function recomputePracticeStreakAfterUnlog(profileId: string): Promise<void> {
+export async function recomputePracticeStreakAfterUnlog(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<void> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
 
   const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
@@ -511,9 +534,12 @@ export interface SaveStreakResult {
  * autonomy slider. Reversible (returns the bridged day for revertStreakSave) and idempotent
  * (a second call once today is covered is a no-op). NEVER touches the member directly.
  */
-export async function saveStreakWithFreeze(profileId: string): Promise<SaveStreakResult> {
+export async function saveStreakWithFreeze(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<SaveStreakResult> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
 
   const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
   const meta = (prof?.meta ?? {}) as Record<string, unknown>
@@ -571,9 +597,13 @@ export async function saveStreakWithFreeze(profileId: string): Promise<SaveStrea
  * longer frozen, it is a no-op and the freeze is not double-refunded). Never raises the
  * reserve above the cap. Service-role path; the call site authorized the operator.
  */
-export async function revertStreakSave(profileId: string, bridgedDay: string): Promise<{ reverted: boolean }> {
+export async function revertStreakSave(
+  profileId: string,
+  bridgedDay: string,
+  clientTimezone?: string | null,
+): Promise<{ reverted: boolean }> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
   const day = String(bridgedDay || '').slice(0, 10)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { reverted: false }
 
@@ -675,9 +705,13 @@ export interface SetPauseResult {
  * alongside the rest of the streak augmentation. Setting a new window replaces
  * any existing one. Idempotent-safe — re-marking just resets the window.
  */
-export async function setStreakPause(profileId: string, days: number): Promise<SetPauseResult> {
+export async function setStreakPause(
+  profileId: string,
+  days: number,
+  clientTimezone?: string | null,
+): Promise<SetPauseResult> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
   const span = Math.max(1, Math.min(MAX_PAUSE_DAYS, Math.floor(days || 0)))
   const rest: RestWindow = { from: today, through: shiftDay(today, span - 1) }
 
@@ -708,9 +742,12 @@ export async function setStreakPause(profileId: string, days: number): Promise<S
  * bridging the streak (they're folded into frozenDates on the next log / read),
  * so ending a rest never costs the member their progress. Service-role path.
  */
-export async function clearStreakPause(profileId: string): Promise<void> {
+export async function clearStreakPause(
+  profileId: string,
+  clientTimezone?: string | null,
+): Promise<void> {
   const admin = createAdminClient()
-  const today = todayUTC()
+  const today = await resolveMemberDay(profileId, clientTimezone)
 
   const { data: prof } = await admin.from('profiles').select('meta').eq('id', profileId).maybeSingle()
   const meta = (prof?.meta ?? {}) as Record<string, unknown>

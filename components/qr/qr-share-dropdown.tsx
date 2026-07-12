@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/dialog'
 import { PageQrManager, PageShareKit } from '@/components/qr/page-qr-manager'
 import { publicShareUrl } from '@/lib/qr/public-url'
 import { useShareRef } from '@/components/qr/share-ref-context'
+import { useShareImage } from '@/components/qr/share-image-context'
 
 // "QR & Share" — the page's share affordance, split out of PageAdminBar (D.1).
 // On any shareable page it is shown to ANY signed-in role: managers get the full
@@ -46,6 +47,10 @@ export function QrShareDropdown({
   // null everywhere else. It rides the share url as `?ref=` so the copied link AND the QR
   // attribute a new signup to the owner (proxy → fq_ref → applyReferralAttribution).
   const shareRef = useShareRef()
+  // The ENTITY's center image (Space logo, Journey cover, ...) for this page's share QR, provided by an
+  // entity page via ShareImageProvider; null on a page that provides none (the code shows no center mark,
+  // never the viewer's avatar).
+  const shareImage = useShareImage()
   // The PUBLIC canonical page for this route — the QR image, the copy link, and any saved
   // code all point here, never at an admin/manage/settings path. `path` stays the clean
   // canonical route; only `url` carries the referral `?ref` (person pages only — the seam
@@ -76,9 +81,9 @@ export function QrShareDropdown({
       >
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-pop sm:p-6">
           {manager ? (
-            <PageQrManager pathname={publicPath} url={url} />
+            <PageQrManager pathname={publicPath} url={url} imageUrl={shareImage} />
           ) : (
-            <PageShareKit pathname={publicPath} url={url} />
+            <PageShareKit pathname={publicPath} url={url} imageUrl={shareImage} />
           )}
         </div>
       </Dialog>

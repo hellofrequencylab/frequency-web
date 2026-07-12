@@ -9,7 +9,7 @@ import {
   getPageQrScanStats,
   type PageQrScanStats,
 } from '@/app/(main)/admin/qr/link-actions'
-import { DEFAULT_STYLE, type QrStyle } from '@/lib/qr/style'
+import { DEFAULT_STYLE, withCenterLogo, type QrStyle } from '@/lib/qr/style'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { isError } from '@/lib/action-result'
 import { relativeTime } from '@/lib/utils'
@@ -20,9 +20,19 @@ import { relativeTime } from '@/lib/utils'
 // scoped to this folder) sit in the right 1/3. Every saved code is a real managed
 // code filed under this page's route; the full list + retired codes live in QR
 // Studio (the "Archived codes" link), so we don't repeat them here.
-export function PageQrManager({ pathname, url }: { pathname: string; url: string }) {
+export function PageQrManager({
+  pathname,
+  url,
+  imageUrl = null,
+}: {
+  pathname: string
+  url: string
+  /** The ENTITY's center image (Space logo, Journey cover, ...); layered onto the live preview + the
+   *  starting design so a non-personal code carries the entity's mark, never the viewer's avatar. */
+  imageUrl?: string | null
+}) {
   const [title, setTitle] = useState('')
-  const [style, setStyle] = useState<QrStyle>({ ...DEFAULT_STYLE })
+  const [style, setStyle] = useState<QrStyle>(withCenterLogo({ ...DEFAULT_STYLE }, imageUrl))
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, start] = useTransition()
@@ -48,7 +58,7 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
         return
       }
       setTitle('')
-      setStyle({ ...DEFAULT_STYLE })
+      setStyle(withCenterLogo({ ...DEFAULT_STYLE }, imageUrl))
       setSaved(true)
       setTimeout(() => setSaved(false), 1800)
       loadStats() // a new code changes the folder's code count
@@ -141,8 +151,21 @@ export function PageQrManager({ pathname, url }: { pathname: string; url: string
 // The member-facing SHARE kit — the page's QR code + share link, nothing editable.
 // What everyone below the page's managers sees when they open "Share" (the
 // designer + scan stats above are host/admin territory).
-export function PageShareKit({ pathname, url }: { pathname: string; url: string }) {
-  const svg = useMemo(() => renderStyledQrSvg(url, DEFAULT_STYLE, 240), [url])
+export function PageShareKit({
+  pathname,
+  url,
+  imageUrl = null,
+}: {
+  pathname: string
+  url: string
+  /** The ENTITY's center image (Space logo, Journey cover, ...), layered onto the code at render only.
+   *  Never the viewer's avatar on a non-personal surface. */
+  imageUrl?: string | null
+}) {
+  const svg = useMemo(
+    () => renderStyledQrSvg(url, withCenterLogo({ ...DEFAULT_STYLE }, imageUrl), 240),
+    [url, imageUrl],
+  )
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
       <div className="shrink-0">

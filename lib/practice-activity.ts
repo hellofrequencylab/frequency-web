@@ -7,6 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMemberPractices } from '@/lib/practices'
 import { getPracticeStreak } from '@/lib/practice-streak'
+import { memberDay } from '@/lib/member-day'
 
 const DAYS_VIEW = 14
 const WEEKS_VIEW = 10
@@ -50,9 +51,22 @@ const isoOf = (d: Date) => d.toISOString().slice(0, 10)
  *  longest window; the three series are bucketed from a single per-day tally. */
 export async function getMemberActivity(profileId: string): Promise<MemberActivity> {
   const admin = createAdminClient()
-  const today = new Date()
+  // The chart's day/week/month buckets must line up with practice_logs.logged_for,
+  // which is written in the member's LOCAL calendar day. Anchoring "today" in UTC put
+  // an evening-Pacific member's log in tomorrow's column. Resolve the member's tz once
+  // and bucket everything (logs + timed sits) by their local day. The anchor is a
+  // member-local calendar date carried as a UTC-midnight Date, so isoOf (UTC) and the
+  // getUTC*/setUTC* math below stay aligned to that local calendar.
+  const { data: profRow } = await admin
+    .from('profiles')
+    .select('home_timezone')
+    .eq('id', profileId)
+    .maybeSingle()
+  const tz = (profRow as { home_timezone: string | null } | null)?.home_timezone ?? null
+  const [ty, tm, td] = memberDay(tz).split('-').map(Number)
+  const today = new Date(Date.UTC(ty, tm - 1, td))
   // The earliest day any view needs: the first of the oldest month shown.
-  const windowStart = new Date(today.getFullYear(), today.getMonth() - (MONTHS_VIEW - 1), 1)
+  const windowStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (MONTHS_VIEW - 1), 1))
   const windowStartISO = isoOf(windowStart)
 
   const [mine, streak, logsRes, sessionsRes] = await Promise.all([
@@ -72,7 +86,9 @@ export async function getMemberActivity(profileId: string): Promise<MemberActivi
   // Per-day minutes (rounded airtime) + whether the day was logged at all.
   const minutesByDay = new Map<string, number>()
   for (const s of sessions) {
-    const day = s.ended_at?.slice(0, 10)
+    // A timed sit's minutes bucket by the member's LOCAL day of ended_at (an instant),
+    // so an evening-Pacific sit counts for the same local day its log does.
+    const day = s.ended_at ? memberDay(tz, new Date(s.ended_at)) : null
     if (day) minutesByDay.set(day, (minutesByDay.get(day) ?? 0) + Math.round((s.seconds ?? 0) / 60))
   }
   const loggedDays = new Set(logs.map((l) => l.logged_for))
@@ -82,39 +98,39 @@ export async function getMemberActivity(profileId: string): Promise<MemberActivi
   // Days — the last 14, oldest left → today right.
   const days: ActivityBar[] = Array.from({ length: DAYS_VIEW }, (_, i) => {
     const d = new Date(today)
-    d.setDate(d.getDate() - (DAYS_VIEW - 1 - i))
+    d.setUTCDate(d.getUTCDate() - (DAYS_VIEW - 1 - i))
     const iso = isoOf(d)
-    return { key: iso, label: DAY_INITIALS[d.getDay()], minutes: dayMinutes(iso), active: dayActive(iso) }
+    return { key: iso, label: DAY_INITIALS[d.getUTCDay()], minutes: dayMinutes(iso), active: dayActive(iso) }
   })
 
   // Weeks — the last 10 rolling 7-day buckets, each labelled by its start date.
   const weeks: ActivityBar[] = Array.from({ length: WEEKS_VIEW }, (_, i) => {
     const end = new Date(today)
-    end.setDate(end.getDate() - 7 * (WEEKS_VIEW - 1 - i))
+    end.setUTCDate(end.getUTCDate() - 7 * (WEEKS_VIEW - 1 - i))
     let minutes = 0
     let active = false
     for (let k = 0; k < 7; k++) {
       const d = new Date(end)
-      d.setDate(d.getDate() - k)
+      d.setUTCDate(d.getUTCDate() - k)
       const iso = isoOf(d)
       minutes += dayMinutes(iso)
       active = active || dayActive(iso)
     }
     const start = new Date(end)
-    start.setDate(start.getDate() - 6)
-    return { key: isoOf(end), label: `${start.getMonth() + 1}/${start.getDate()}`, minutes, active }
+    start.setUTCDate(start.getUTCDate() - 6)
+    return { key: isoOf(end), label: `${start.getUTCMonth() + 1}/${start.getUTCDate()}`, minutes, active }
   })
 
   // Months — the last 6 calendar months.
   const months: ActivityBar[] = Array.from({ length: MONTHS_VIEW }, (_, i) => {
-    const m = new Date(today.getFullYear(), today.getMonth() - (MONTHS_VIEW - 1 - i), 1)
-    const y = m.getFullYear()
-    const mo = m.getMonth()
-    const last = new Date(y, mo + 1, 0).getDate()
+    const m = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (MONTHS_VIEW - 1 - i), 1))
+    const y = m.getUTCFullYear()
+    const mo = m.getUTCMonth()
+    const last = new Date(Date.UTC(y, mo + 1, 0)).getUTCDate()
     let minutes = 0
     let active = false
     for (let day = 1; day <= last; day++) {
-      const iso = isoOf(new Date(y, mo, day))
+      const iso = isoOf(new Date(Date.UTC(y, mo, day)))
       minutes += dayMinutes(iso)
       active = active || dayActive(iso)
     }

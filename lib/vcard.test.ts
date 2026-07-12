@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseVcard, buildVcf, DEFAULT_VCARD, type VcardProfile } from './vcard'
+import { parseVcard, buildVcf, buildSpaceVcf, DEFAULT_VCARD, type VcardProfile } from './vcard'
 
 const PROFILE: VcardProfile = {
   displayName: 'Dana Vista',
@@ -47,5 +47,43 @@ describe('buildVcf', () => {
   it('escapes vCard special characters', () => {
     const vcf = buildVcf({ ...PROFILE, displayName: 'A; B, C' }, { ...DEFAULT_VCARD, enabled: true })!
     expect(vcf).toContain('FN:A\\; B\\, C')
+  })
+})
+
+describe('buildSpaceVcf (business/space contact card)', () => {
+  it('always builds a card for a named Space from its public facts', () => {
+    const vcf = buildSpaceVcf({
+      name: 'Justice Massage',
+      tagline: 'Deep tissue and recovery',
+      profileUrl: 'https://frequencylocal.com/spaces/justice-massage',
+      logoUrl: 'https://x.com/logo.png',
+      phone: '+1 555 000 1111',
+      email: 'hi@justice.com',
+      website: 'https://justice.com',
+    })!
+    expect(vcf).toContain('BEGIN:VCARD')
+    expect(vcf).toContain('FN:Justice Massage')
+    expect(vcf).toContain('ORG:Justice Massage')
+    expect(vcf).toContain('TEL;TYPE=CELL:+1 555 000 1111')
+    expect(vcf).toContain('EMAIL;TYPE=INTERNET:hi@justice.com')
+    expect(vcf).toContain('URL:https://justice.com')
+    expect(vcf).toContain('PHOTO;VALUE=URI:https://x.com/logo.png')
+    expect(vcf).toContain('NOTE:Deep tissue and recovery')
+    expect(vcf).toContain('END:VCARD')
+  })
+
+  it('falls back to the profile URL as the website when none is stored, and needs no contact fields', () => {
+    const vcf = buildSpaceVcf({
+      name: 'Bare Space',
+      profileUrl: 'https://frequencylocal.com/spaces/bare',
+    })!
+    expect(vcf).toContain('FN:Bare Space')
+    expect(vcf).toContain('URL:https://frequencylocal.com/spaces/bare')
+    expect(vcf).not.toContain('TEL')
+    expect(vcf).not.toContain('EMAIL')
+  })
+
+  it('returns null for a nameless Space', () => {
+    expect(buildSpaceVcf({ name: '   ', profileUrl: 'https://x/spaces/x' })).toBeNull()
   })
 })

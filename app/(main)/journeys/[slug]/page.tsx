@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation'
 import { Globe, Lock, Link2, Pencil, Sparkles, Flame, Layers, SlidersHorizontal } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
+import { ShareImageProvider } from '@/components/qr/share-image-context'
 import { getCallerProfile } from '@/lib/auth'
 import { getJourneyCapabilities } from '@/lib/core/load-capabilities'
 import { getJourneyView, getPlan, getPlanAuthor } from '@/lib/journey-plans'
@@ -286,7 +287,9 @@ export default async function JourneyPlanPage({
         </div>
       )}
 
-      {page}
+      {/* The framework "QR & Share" control (DetailTemplate's PageAdminBar) centers THIS Journey's cover
+          in its share QR — the entity's own image, never the viewer's avatar. */}
+      <ShareImageProvider imageUrl={plan.cover_image ?? null}>{page}</ShareImageProvider>
     </>
   )
 }

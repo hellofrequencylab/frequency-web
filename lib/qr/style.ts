@@ -185,9 +185,20 @@ export function isSafeLogoSrc(src: string): boolean {
  *  sets a custom logo via Customize keeps it; a member with no safe avatar keeps the Frequency
  *  mark as the fallback. */
 export function withMemberAvatar(base: QrStyle, avatarUrl: string | null | undefined): QrStyle {
+  return withCenterLogo(base, avatarUrl)
+}
+
+/** Center an ENTITY's image (a Space brand logo, an event cover, ...) in a QR at render time, the
+ *  generic form of withMemberAvatar. Replaces the DEFAULT center mark only (an empty logo or the
+ *  Frequency app icon) with the safe image in a round buffer; a code that deliberately set a custom
+ *  logo keeps it, and an unsafe / missing image keeps the fallback. NEVER pass the viewer's own avatar
+ *  here on a non-personal surface — a Space/entity code must show the ENTITY's image, not the scanner's
+ *  (that mix-up is the visual half of the reported bug). Applied at render only, so a new image needs
+ *  no reprint (the stored style is untouched). */
+export function withCenterLogo(base: QrStyle, imageUrl: string | null | undefined): QrStyle {
   const usingDefaultMark = !base.logo || base.logo === DEFAULT_STYLE.logo
-  return avatarUrl && usingDefaultMark && isSafeLogoSrc(avatarUrl)
-    ? { ...base, logo: avatarUrl.trim(), logoShape: 'circle' }
+  return imageUrl && usingDefaultMark && isSafeLogoSrc(imageUrl)
+    ? { ...base, logo: imageUrl.trim(), logoShape: 'circle' }
     : base
 }
 
