@@ -18,7 +18,7 @@ import { coverPlaceholderFor } from '@/lib/spaces/cover-placeholder'
 import { resolveAccentVars } from '@/lib/spaces/accent'
 import { parseSpaceTheme } from '@/lib/theme/space-themes'
 import { getInitials, cn } from '@/lib/utils'
-import { readCoverSize, readCoverScrim } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
+import { readCoverSize, readCoverScrim, readCoverFocus } from '@/app/(main)/spaces/[slug]/manage/layout/preferences'
 import { readTagline } from '@/lib/spaces/tagline'
 import { FollowSpaceButton } from '@/components/spaces/follow-space-button'
 import { OpenAdminBarButton } from '@/components/admin/open-admin-bar-button'
@@ -202,6 +202,11 @@ export default async function SpaceProfileChromeLayout({
   // canvas and the identity uses the theme's own text tokens. Default-safe to 'shade'.
   const coverScrim = readCoverScrim(space.preferences)
   const heroOnInk = coverScrim === 'shade'
+  // The operator's chosen cover FOCAL POINT (where the cropped cover sits in its window), set with the shared
+  // ImageFocalPicker in the Branding rail. A CSS object-position applied to the cover <Image> below; unset
+  // reads as centered ("50% 50%"), so a Space that never touched it crops exactly as before. Repositions
+  // the photo only — the header height is untouched (coverH is unchanged).
+  const coverFocus = readCoverFocus(space.preferences)
 
   // The ONE owner affordance (Customize): opens the STANDARDIZED admin rail (openAdminBar) pointed at this
   // Space's scope — the SAME rail chrome circles / events / hubs / nexuses use (ENTITY-MANAGEMENT / PR C),
@@ -320,7 +325,15 @@ export default async function SpaceProfileChromeLayout({
   // is kept intact + fail-safe).
   const coverH = isHero ? heroHeightClass(hero.height) : 'h-40 sm:h-52'
   const coverImage = (
-    <Image src={coverSrc} alt="" fill sizes="(max-width: 1024px) 100vw, 1024px" preload className="object-cover" />
+    <Image
+      src={coverSrc}
+      alt=""
+      fill
+      sizes="(max-width: 1024px) 100vw, 1024px"
+      preload
+      className="object-cover"
+      style={{ objectPosition: coverFocus }}
+    />
   )
 
   // The name + type badge + tagline lockup, with FOLLOW sitting ABOVE the name (a compact chip, the

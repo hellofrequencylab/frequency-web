@@ -42,6 +42,7 @@ export function SpaceBrandingModule() {
         coverImageUrl={data.coverImageUrl}
         brandLogoUrl={data.brandLogoUrl}
         coverScrim={data.coverScrim}
+        coverFocus={data.coverFocus}
         accent={data.accent}
         headerCta={data.headerCta}
         defaultCtaLabel={data.defaultCtaLabel}
