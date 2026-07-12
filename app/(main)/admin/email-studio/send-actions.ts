@@ -11,8 +11,9 @@
 // no em dashes in any operator-facing copy.
 
 import { revalidatePath } from 'next/cache'
-import { type ActionResult, fail } from '@/lib/action-result'
+import { type ActionResult, fail, isError } from '@/lib/action-result'
 import { approverGate, writerGate } from '@/lib/beta/guard'
+import { logAdminAction } from '@/lib/admin/audit'
 import type { SegmentKey } from '@/lib/studio/campaigns'
 import {
   scheduleCampaign,
@@ -53,6 +54,18 @@ export async function sendNowAction(campaignId: string): Promise<ActionResult<{ 
   const gate = await approverGate()
   if (!gate.ok) return fail(gate.error)
   const result = await sendCampaignNow(campaignId)
+  // Audit trail: a Studio campaign has no phase spine, so the approver role gate here is its sole
+  // authorization. Record every real send (who sent which campaign, and to how many) so a standalone
+  // Studio send is as traceable as a beta send. Best-effort, on success only, never blocks the send.
+  if (!isError(result)) {
+    await logAdminAction({
+      actorId: gate.profileId,
+      action: 'email.campaign.sent',
+      targetType: 'campaign',
+      targetId: campaignId,
+      detail: { recipientCount: result.data.recipientCount },
+    })
+  }
   revalidatePath(STUDIO_PATH)
   return result
 }

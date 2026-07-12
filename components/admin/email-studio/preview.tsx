@@ -9,7 +9,7 @@ import type { EntityLayout } from '@/lib/entity-blocks/layout'
 
 // LIVE EMAIL PREVIEW. Compiles the working email doc (block layout + subject + preheader) to send-ready HTML
 // IN THE BROWSER (lib/email-studio compile is pure + framework-free, so it is client-safe) and renders it in
-// a sandboxed <iframe srcDoc>. A width toggle switches between a desktop (600px) and a mobile (360px) frame
+// a sandboxed <iframe> via a same-origin blob URL (see below). A width toggle switches between a desktop (600px) and a mobile (360px) frame
 // so the operator sees both inbox shapes. Merge tags are filled with EXAMPLE values so `{{ contact.first_name }}`
 // reads naturally. Read-only surface: no writes, repaints instantly from the shared store as the operator edits.
 

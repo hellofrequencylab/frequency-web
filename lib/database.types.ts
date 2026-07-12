@@ -1837,6 +1837,7 @@ export type Database = {
         Row: {
           booking_space_id: string | null
           category: string | null
+          condition: string | null
           created_at: string
           currency: string
           description: string | null
@@ -1853,6 +1854,7 @@ export type Database = {
           product_kind: string
           status: string
           stock: number | null
+          tags: string[]
           title: string
           updated_at: string
           vertical: string
@@ -1860,6 +1862,7 @@ export type Database = {
         Insert: {
           booking_space_id?: string | null
           category?: string | null
+          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1876,6 +1879,7 @@ export type Database = {
           product_kind?: string
           status?: string
           stock?: number | null
+          tags?: string[]
           title: string
           updated_at?: string
           vertical?: string
@@ -1883,6 +1887,7 @@ export type Database = {
         Update: {
           booking_space_id?: string | null
           category?: string | null
+          condition?: string | null
           created_at?: string
           currency?: string
           description?: string | null
@@ -1899,6 +1904,7 @@ export type Database = {
           product_kind?: string
           status?: string
           stock?: number | null
+          tags?: string[]
           title?: string
           updated_at?: string
           vertical?: string
@@ -4734,10 +4740,13 @@ export type Database = {
       }
       housing_listings: {
         Row: {
+          amenities: string[]
           available_from: string | null
           bathrooms: number | null
           bedrooms: number | null
+          cannabis_ok: boolean | null
           deposit_cents: number | null
+          details: Json
           furnished: boolean | null
           household_size: number | null
           lease_months: number | null
@@ -4745,15 +4754,21 @@ export type Database = {
           listing_type: string
           pets_ok: boolean | null
           preferences: Json
+          property_type: string | null
           rent_cents: number | null
           room_type: string | null
+          smoking_ok: boolean | null
+          sqft: number | null
           utilities_included: boolean | null
         }
         Insert: {
+          amenities?: string[]
           available_from?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          cannabis_ok?: boolean | null
           deposit_cents?: number | null
+          details?: Json
           furnished?: boolean | null
           household_size?: number | null
           lease_months?: number | null
@@ -4761,15 +4776,21 @@ export type Database = {
           listing_type: string
           pets_ok?: boolean | null
           preferences?: Json
+          property_type?: string | null
           rent_cents?: number | null
           room_type?: string | null
+          smoking_ok?: boolean | null
+          sqft?: number | null
           utilities_included?: boolean | null
         }
         Update: {
+          amenities?: string[]
           available_from?: string | null
           bathrooms?: number | null
           bedrooms?: number | null
+          cannabis_ok?: boolean | null
           deposit_cents?: number | null
+          details?: Json
           furnished?: boolean | null
           household_size?: number | null
           lease_months?: number | null
@@ -4777,8 +4798,11 @@ export type Database = {
           listing_type?: string
           pets_ok?: boolean | null
           preferences?: Json
+          property_type?: string | null
           rent_cents?: number | null
           room_type?: string | null
+          smoking_ok?: boolean | null
+          sqft?: number | null
           utilities_included?: boolean | null
         }
         Relationships: [
@@ -11052,6 +11076,70 @@ export type Database = {
             columns: ["tier_id"]
             isOneToOne: false
             referencedRelation: "space_membership_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      space_nonprofit_verifications: {
+        Row: {
+          created_at: string
+          ein: string | null
+          id: string
+          note: string | null
+          org_legal_name: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          space_id: string
+          status: string
+          submitted_at: string
+          submitted_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          ein?: string | null
+          id?: string
+          note?: string | null
+          org_legal_name?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          space_id: string
+          status?: string
+          submitted_at?: string
+          submitted_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          ein?: string | null
+          id?: string
+          note?: string | null
+          org_legal_name?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          space_id?: string
+          status?: string
+          submitted_at?: string
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "space_nonprofit_verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_nonprofit_verifications_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "space_nonprofit_verifications_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

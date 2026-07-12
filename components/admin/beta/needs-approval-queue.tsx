@@ -32,8 +32,10 @@ const TYPE_META = {
 
 function previewHref(item: OutboundItem): string {
   // Interim: no per-item detail page in Wave 1. Campaigns open the campaigns
-  // workspace; waves open the phase board. WAVE 2 replaces this with a real preview.
-  return item.type === 'campaign' ? '/admin/marketing/campaigns' : '/admin/beta?tab=phases'
+  // workspace; waves open the phase board, which now lives under the Strategy tab
+  // (the Command Center restructure folded Phases into Strategy). WAVE 2 replaces
+  // this with a real preview.
+  return item.type === 'campaign' ? '/admin/marketing/campaigns' : '/admin/beta?tab=strategy'
 }
 
 export function NeedsApprovalQueue({ groups }: { groups: ApprovalGroup[] }) {
