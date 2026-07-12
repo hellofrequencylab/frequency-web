@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeInlineHtml } from './block-content'
+import { sanitizeInlineHtml, inlineHtmlToText } from './block-content'
 
 // The rich-inline sanitizer is the injection floor for the Email Studio canvas (Slice A): a `textarea`
 // content field now stores LIMITED inline HTML, and this pure function is the ONE allowlist that both the
@@ -71,5 +71,36 @@ describe('sanitizeInlineHtml — the dangerous parts are stripped', () => {
     expect(sanitizeInlineHtml(null)).toBe('')
     expect(sanitizeInlineHtml(undefined)).toBe('')
     expect(sanitizeInlineHtml(42)).toBe('')
+  })
+})
+
+describe('inlineHtmlToText — the plain-text projection never leaks a tag', () => {
+  it('drops inline marks and keeps the text', () => {
+    expect(inlineHtmlToText('a <b>b</b> <i>c</i>')).toBe('a b c')
+  })
+
+  it('drops an anchor tag but keeps its label', () => {
+    expect(inlineHtmlToText('see <a href="https://x.com" rel="noopener noreferrer">here</a>')).toBe('see here')
+  })
+
+  it('turns <br> into a newline', () => {
+    expect(inlineHtmlToText('one<br>two')).toBe('one\ntwo')
+  })
+
+  it('decodes the escaped entities back to characters', () => {
+    // What sanitizeInlineHtml stores for the literal text `2 < 3 & "ok"`.
+    expect(inlineHtmlToText('2 &lt; 3 &amp; &quot;ok&quot;')).toBe('2 < 3 & "ok"')
+  })
+
+  it('leaks no tag even from tokenized script markup (the text goes inert)', () => {
+    const out = inlineHtmlToText('hi <script>alert(1)</script> bye')
+    expect(out).not.toContain('<script')
+    expect(out).not.toContain('</script>')
+    expect(out).toBe('hi alert(1) bye')
+  })
+
+  it('returns empty string for a non-string', () => {
+    expect(inlineHtmlToText(null)).toBe('')
+    expect(inlineHtmlToText(42)).toBe('')
   })
 })

@@ -15,7 +15,9 @@ import type { EntityLayout } from '@/lib/entity-blocks/layout'
 import {
   safeUrl,
   sanitizeInlineHtml,
+  inlineHtmlToText,
   fieldsForBlock,
+  KNOWN_BLOCK_IDS,
   type BlockStyle,
   type TextStyle,
   type TextColorToken,
@@ -113,19 +115,12 @@ export function renderInlineRich(value: unknown): string {
   return sanitizeInlineHtml(value)
 }
 
-/** The plain-text alternative for a rich field: strip the inline tags, turn <br> back into a newline, and
- *  decode the escaped entities, so the text/* part of the email reads naturally (no leftover markup). */
+/** The plain-text alternative for a rich field: tokenize the inline HTML and emit only its text (tags dropped,
+ *  <br> → newline, entities decoded), so the text/* part of the email reads naturally with no leftover markup.
+ *  Delegates to the shared TOKENIZER (inlineHtmlToText) so no catch-all tag-strip regex is used — a malformed
+ *  or nested tag can never leak into the projection (CodeQL js/incomplete-multi-character-sanitization). */
 function richToText(raw: string): string {
-  if (!raw) return ''
-  return raw
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, '&')
-    .trim()
+  return inlineHtmlToText(raw)
 }
 
 /** A MarginStep → px (mirrors the web utility scale: sm 16 / md 32 / lg 48 / xl 80; none 0). */
@@ -485,14 +480,19 @@ export function renderEmailLayout(layout: EntityLayout, opts: RenderEmailOptions
 // A `textarea` field authored on the WYSIWYG canvas stores LIMITED inline HTML. This rewrites every such
 // field through the ONE allowlist (sanitizeInlineHtml) at save time, so the stored blob is always the safe
 // string (the renderer re-sanitises on read too — defence in depth). Plain `text` fields are left untouched
-// (they are escaped at render). Iterates the block's OWN field schema (fieldsForBlock), so only declared
-// `textarea` keys are rewritten; a tampered/unknown key is never used as a write target. Pure + fail-safe.
+// (they are escaped at render). Iterates the block-id ALLOWLIST (KNOWN_BLOCK_IDS) and, per block, only that
+// block's declared `textarea` keys (fieldsForBlock), so every written property name is a fixed registry value
+// — a tampered/unknown key can only be READ, never used as a write target (CodeQL js/remote-property-injection).
+// Pure + fail-safe.
 
 /** Return a copy of an email layout with every block's rich `textarea` field sanitised to allowlist HTML. */
 export function sanitizeEmailRichContent(layout: EntityLayout): EntityLayout {
-  if (!layout.content || typeof layout.content !== 'object') return layout
+  const src = layout.content
+  if (!src || typeof src !== 'object') return layout
   const content: Record<string, Record<string, unknown>> = {}
-  for (const [id, props] of Object.entries(layout.content)) {
+  for (const id of KNOWN_BLOCK_IDS) {
+    if (!Object.hasOwn(src, id)) continue
+    const props = src[id]
     if (!props || typeof props !== 'object') continue
     const next: Record<string, unknown> = { ...props }
     for (const field of fieldsForBlock(id)) {
