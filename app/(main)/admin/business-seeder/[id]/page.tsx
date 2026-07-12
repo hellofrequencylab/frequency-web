@@ -10,12 +10,10 @@
 // state (EmptyState), never a crash (docs §7 fail-safe).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { redirect } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { AdminTemplate } from '@/components/templates'
 import { EmptyState } from '@/components/ui/empty-state'
-import { getStaffMember } from '@/lib/staff'
-import { staffCan } from '@/lib/core/staff-roles'
+import { requireAdmin } from '@/lib/admin/guard'
 import { getBusinessImportReview } from '../actions'
 import { STATUS_META } from '../intake-list'
 import { ReviewBoard } from './review-board'
@@ -24,8 +22,7 @@ import { ResearchProgress } from './research-progress'
 export const dynamic = 'force-dynamic'
 
 export default async function BusinessImportReviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const member = await getStaffMember().catch(() => null)
-  if (!member || !staffCan(member.role, 'structure', 'write')) redirect('/')
+  await requireAdmin('admin', { staff: 'structure', staffLevel: 'write' })
 
   const { id } = await params
   const review = await getBusinessImportReview(id)

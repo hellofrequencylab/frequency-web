@@ -10,12 +10,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ClipboardPaste } from 'lucide-react'
-import { redirect } from 'next/navigation'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { getMyProfileId } from '@/lib/auth'
-import { getStaffMember } from '@/lib/staff'
-import { staffCan } from '@/lib/core/staff-roles'
+import { requireAdmin } from '@/lib/admin/guard'
 import { listListingIntakes } from './actions'
 import { StartImportForm } from './start-import-form'
 import { IntakeList } from './intake-list'
@@ -23,12 +20,11 @@ import { IntakeList } from './intake-list'
 export const dynamic = 'force-dynamic'
 
 export default async function ListingSeederPage() {
-  // Gate entry: structure:write, matching the business seeder. Redirect home when unauthorized
-  // (never a 404 dead end), mirroring requireStaffCap's posture.
-  const member = await getStaffMember().catch(() => null)
-  if (!member || !staffCan(member.role, 'structure', 'write')) redirect('/')
-  const operatorId = await getMyProfileId()
-  if (!operatorId) redirect('/')
+  // Gate: platform staff (web_role admin/janitor) OR any team staff role with structure:write — the
+  // SAME union the /admin floor + the menu use, so whoever can SEE the menu item can open the page.
+  // (The old getStaffMember-only gate was nulled by an unrelated view-as cookie and ignored web_role,
+  // bouncing platform operators home even though the admin shell had already admitted them.)
+  await requireAdmin('admin', { staff: 'structure', staffLevel: 'write' })
 
   const intakes = await listListingIntakes()
 

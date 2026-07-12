@@ -11,12 +11,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { Building2 } from 'lucide-react'
-import { redirect } from 'next/navigation'
 import { AdminTemplate, AdminSection } from '@/components/templates'
 import { StatCard } from '@/components/ui/stat-card'
-import { getMyProfileId, getCallerProfile } from '@/lib/auth'
-import { getStaffMember } from '@/lib/staff'
-import { staffCan } from '@/lib/core/staff-roles'
+import { getCallerProfile } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin/guard'
 import { listBusinessImports } from './actions'
 import { StartImportForm } from './start-import-form'
 import { IntakeList } from './intake-list'
@@ -25,12 +23,11 @@ import { ReseedSpaceSearch } from './reseed-space-search'
 export const dynamic = 'force-dynamic'
 
 export default async function BusinessSeederPage() {
-  // Gate entry: structure:write (the same capability every action re-checks). Redirect home
-  // when unauthorized (never a 404 dead end), mirroring requireStaffCap's posture.
-  const member = await getStaffMember().catch(() => null)
-  if (!member || !staffCan(member.role, 'structure', 'write')) redirect('/')
-  const operatorId = await getMyProfileId()
-  if (!operatorId) redirect('/')
+  // Gate: platform staff (web_role admin/janitor) OR any team staff role with structure:write — the
+  // SAME union the /admin floor + the menu use, so whoever can SEE the menu item can open the page.
+  // (The old getStaffMember-only gate was nulled by an unrelated view-as cookie and ignored web_role,
+  // bouncing platform operators home even though the admin shell had already admitted them.)
+  await requireAdmin('admin', { staff: 'structure', staffLevel: 'write' })
 
   // Re-seeding ANY active Space is an ADMIN-only power (above the seeder's structure:write); show the
   // Space search only to platform admins (web_role admin / janitor). The action re-checks this too.
