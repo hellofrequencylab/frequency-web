@@ -296,7 +296,7 @@ export function BetaCampaignWorkspace({
             campaign={loaded}
             onSubjectChange={onSubjectChange}
             arrangement="trio"
-            sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} />}
+            sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} layout="row" />}
           />
         )}
       </section>
