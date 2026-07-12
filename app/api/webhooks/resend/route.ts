@@ -30,7 +30,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'stale timestamp' }, { status: 401 })
   }
 
-  let event: { type?: string; data?: { to?: string | string[]; email_id?: string } }
+  let event: {
+    type?: string
+    data?: {
+      to?: string | string[]
+      email_id?: string
+      headers?: unknown
+      tags?: unknown
+    }
+  }
   try {
     event = JSON.parse(body)
   } catch {
@@ -39,6 +47,10 @@ export async function POST(req: Request) {
 
   const type = (event.type ?? '').replace(/^email\./, '') || 'unknown'
   const to = Array.isArray(event.data?.to) ? event.data?.to[0] : event.data?.to
+  // Email Studio stamps the campaign id on send (X-Campaign-Id header + campaign_id tag); Resend
+  // echoes both back here. Read it so recordEmailEvent can attribute the event EXACTLY. Purely
+  // additive: null (transactional mail / an untagged historical send) records exactly as before.
+  const campaignId = extractCampaignId(event.data)
 
   // Unmappable event (no recipient): acknowledge with 200. Retrying won't add
   // the missing field, so a non-2xx would only make Resend redeliver forever.
@@ -79,6 +91,7 @@ export async function POST(req: Request) {
       eventType: type,
       providerId: event.data?.email_id ?? null,
       payload: event as Record<string, unknown>,
+      campaignId,
     })
   } catch (err) {
     errors.push(`recordEmailEvent: ${err instanceof Error ? err.message : String(err)}`)
@@ -106,4 +119,46 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true })
+}
+
+/** A plain uuid shape check, so a malformed value can never poison a campaign's analytics. */
+function isUuid(v: unknown): v is string {
+  return typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
+}
+
+/**
+ * Pull the Email Studio campaign id out of a Resend webhook payload. We stamp it on send in TWO
+ * places Resend echoes back, and read whichever is present (fail-soft, never throws):
+ *   • headers  — an array of { name, value }; we look for `X-Campaign-Id`.
+ *   • tags     — either an array of { name, value } or an object map; we look for `campaign_id`.
+ * Returns a validated uuid or null. Additive: an event with neither yields null.
+ */
+function extractCampaignId(data: { headers?: unknown; tags?: unknown } | undefined): string | null {
+  if (!data) return null
+
+  const headers = data.headers
+  if (Array.isArray(headers)) {
+    for (const h of headers) {
+      const name = (h as { name?: unknown })?.name
+      if (typeof name === 'string' && name.toLowerCase() === 'x-campaign-id') {
+        const value = (h as { value?: unknown })?.value
+        if (isUuid(value)) return value
+      }
+    }
+  }
+
+  const tags = data.tags
+  if (Array.isArray(tags)) {
+    for (const t of tags) {
+      if ((t as { name?: unknown })?.name === 'campaign_id') {
+        const value = (t as { value?: unknown })?.value
+        if (isUuid(value)) return value
+      }
+    }
+  } else if (tags && typeof tags === 'object') {
+    const value = (tags as Record<string, unknown>).campaign_id
+    if (isUuid(value)) return value
+  }
+
+  return null
 }

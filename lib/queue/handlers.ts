@@ -39,6 +39,9 @@ export const queueHandlers: Record<string, JobHandler> = {
         typeof p.replyTo === 'string' || Array.isArray(p.replyTo)
           ? (p.replyTo as string | string[])
           : undefined,
+      // Resend tags (e.g. Email Studio's campaign_id) survive the outbox as serialized JSON;
+      // pass them through so they reach Resend and echo back on the webhook for attribution.
+      tags: Array.isArray(p.tags) ? (p.tags as { name: string; value: string }[]) : undefined,
     })
   },
   // Durable SMS (ADR-256). payload: { to, body, profileId? }. sendRawSms is itself

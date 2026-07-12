@@ -2,6 +2,11 @@
 // 'use server' actions file — a Server Actions file may only export async functions, so a
 // synchronous helper exported there fails the production build). Imported by both the
 // action and its unit test.
+
+import {
+  DEFAULT_OBJECT_POSITION,
+  normalizeObjectPosition,
+} from '@/lib/images/focal-point'
 //
 // The structural-template reader (`readProfileTemplate`) was retired with the template picker (ADR-526):
 // the freeform rows model superseded the fixed templates, so a space profile no longer stores or reads a
@@ -48,4 +53,36 @@ export function nextCoverScrimPreferences(
   scrim: CoverScrim,
 ): Record<string, unknown> {
   return { ...current, coverScrim: scrim }
+}
+
+// ── HERO COVER FOCAL POINT (where the cover sits in its cropped hero window) ─────────────────────
+// The Space cover is rendered with `object-cover`, which crops to center by default, so a face or a
+// horizon often gets cut off. The operator repositions it with the SAME reusable ImageFocalPicker the
+// admin EVENT rail uses (components/ui/image-focal-picker + lib/images/focal-point): the chosen focal
+// point is a CSS `object-position` string ("x% y%"), applied on the hero <Image>. Stored under a new
+// `coverFocus` key on the EXISTING preferences jsonb (mirrors the event's theme.coverFocus) — NO new DB
+// column. The centered default ("50% 50%") is dropped when written, so a plain Space keeps a sparse
+// preferences blob and renders exactly as today (center crop). Backward compatible: unset === center.
+
+/** Read the saved cover focal point off a raw preferences blob, defaulting to centered. PURE. */
+export function readCoverFocus(preferences: unknown): string {
+  if (preferences && typeof preferences === 'object' && !Array.isArray(preferences)) {
+    const v = (preferences as Record<string, unknown>).coverFocus
+    if (typeof v === 'string' && v.trim()) return v.trim()
+  }
+  return DEFAULT_OBJECT_POSITION
+}
+
+/** Compute the next preferences blob for a cover-focus change. Non-destructive: only `coverFocus` is
+ *  written (every other key preserved), and the centered default drops the key so the blob stays
+ *  sparse. PURE. */
+export function nextCoverFocusPreferences(
+  current: Record<string, unknown>,
+  focus: string,
+): Record<string, unknown> {
+  const next = { ...current }
+  const normalized = normalizeObjectPosition(focus)
+  if (normalized) next.coverFocus = normalized
+  else delete next.coverFocus
+  return next
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Users, UserPlus, CalendarDays, Building2, ArrowUpRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { EntityCard } from '@/components/cards/entity-card'
 import { spaceCategoryLabel } from '@/lib/spaces/categories'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
@@ -95,16 +96,16 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       }
       coverAction={
         space.action ? (
-          // A text LINK, not a filled button (D-refine #6): an unfilled label that underlines on hover.
-          // It sits over the cover's ink scrim bottom-right, so it rides a subtle translucent surface chip
-          // (like the top-left pill) to stay legible on ANY operator cover — tokens only, no accent fill.
-          <Link
-            href={space.action.href}
-            className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-2.5 py-1 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm underline-offset-2 hover:underline"
-          >
-            {space.action.label}
-            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-          </Link>
+          // A REAL button (the shared Button primitive, secondary variant), matching how this same action
+          // renders on the Space profile header and everywhere else — not a bare text link. It sits over the
+          // cover's ink scrim bottom-right; the opaque surface fill + backdrop-blur keep it legible on ANY
+          // operator cover. Tokens only, no accent fill. `asChild` keeps it one navigational anchor.
+          <Button asChild variant="secondary" size="sm" className="shadow-sm backdrop-blur-sm">
+            <Link href={space.action.href}>
+              {space.action.label}
+              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </Button>
         ) : undefined
       }
       title={space.name}

@@ -20,6 +20,7 @@ import { logBetaAction } from './audit'
 import { ok, fail, type ActionResult } from '@/lib/action-result'
 import { revalidatePath } from 'next/cache'
 import { BETA_FUNNEL_PERSONA_PREFIX, lintVoice } from './email'
+import { BETA_LAUNCH_EMAILS, flattenLaunchEmailText } from './launch-emails'
 import type { SegmentKey } from '@/lib/studio/campaigns'
 
 /** The persona that identifies the Beta waitlist drip sequence (Beta-scoped). */
@@ -333,4 +334,94 @@ export async function seedBetaEmailTemplates(): Promise<ActionResult<SeedResult>
   })
   revalidatePath('/admin/beta')
   return ok({ campaignsCreated, nurtureStepsCreated, skipped })
+}
+
+/**
+ * Seed the 7 THEMED BETA LAUNCH EMAILS (BETA_LAUNCH_EMAILS) as `campaigns` DRAFTS, each carrying its authored
+ * `block_json` (an email-kind EntityLayout) so it opens fully designed in the Email Studio and shows as a
+ * themed, editable card in the left rail. Content-writer gated (drafting is not sending). Idempotent: an entry
+ * whose `(phase_id, subject)` already exists is skipped (the SAME skip key `seedBetaEmailTemplates` uses), so
+ * re-running never duplicates and the two seeders coexist. Every entry is written with approval_status 'draft'.
+ *
+ * SUPERSEDES the campaign-seeding HALF of `seedBetaEmailTemplates` for the launch arc: it seeds ALL 7 emails
+ * (including the two waitlist nurture ones) as `campaigns` rows so the rail shows the full arc. It does NOT
+ * touch the nurture_sequences / nurture_steps automation seeding, which `seedBetaEmailTemplates` still owns.
+ *
+ * A self-check refuses to seed any email whose subject + flattened block text fails the em-dash lint (defense
+ * in depth over the authored, canon-checked copy).
+ */
+export async function seedBetaLaunchEmails(): Promise<ActionResult<{ created: number; skipped: number }>> {
+  const gate = await writerGate()
+  if (!gate.ok) return fail(gate.error)
+
+  const db = betaDb()
+
+  // Resolve phase keys → ids once.
+  const { data: phaseRows } = await db.from('beta_phases').select('id, key')
+  const phaseIdByKey = new Map<string, string>()
+  for (const p of phaseRows ?? []) {
+    const row = p as Record<string, unknown>
+    phaseIdByKey.set(String(row.key), String(row.id))
+  }
+  if (phaseIdByKey.size === 0) return fail('The Beta phases are not seeded yet. Apply the Beta migration first.')
+
+  // Guard: no launch email may carry an em dash (over subject + preheader + the flattened block text).
+  for (const email of BETA_LAUNCH_EMAILS) {
+    if (lintVoice(flattenLaunchEmailText(email)).hasEmDash) {
+      return fail(`Launch email "${email.label}" contains an em dash. Fix the source copy before seeding.`)
+    }
+  }
+
+  // Existing beta campaigns (skip already-seeded subjects per phase — same key as seedBetaEmailTemplates).
+  const { data: existingCampaigns } = await db
+    .from('campaigns')
+    .select('subject, phase_id')
+    .order('created_at', { ascending: false })
+    .limit(500)
+  const existingKey = new Set(
+    (existingCampaigns ?? []).map((c) => {
+      const row = c as Record<string, unknown>
+      return `${String(row.phase_id ?? '')}::${String(row.subject ?? '')}`
+    }),
+  )
+
+  let created = 0
+  let skipped = 0
+
+  for (const email of BETA_LAUNCH_EMAILS) {
+    const phaseId = phaseIdByKey.get(email.phaseKey)
+    if (!phaseId) {
+      skipped++
+      continue
+    }
+    if (existingKey.has(`${phaseId}::${email.subject}`)) {
+      skipped++
+      continue
+    }
+    const { error } = await db.from('campaigns').insert({
+      subject: email.subject,
+      preheader: email.preheader,
+      // The body column is NOT NULL; the Studio renders from block_json, so a flat text mirror is a fallback
+      // only. Keep it a plain, on-voice one-liner (the real, designed body lives in block_json).
+      body: email.preheader,
+      block_json: email.blockJson,
+      segment: email.segment,
+      status: 'draft',
+      approval_status: 'draft',
+      phase_id: phaseId,
+      created_by: gate.profileId,
+    })
+    if (error) skipped++
+    else created++
+  }
+
+  await logBetaAction({
+    actorProfileId: gate.profileId,
+    action: 'seed_launch_emails',
+    targetType: 'phase',
+    targetId: null,
+    detail: { created, skipped },
+  })
+  revalidatePath('/admin/beta')
+  return ok({ created, skipped })
 }

@@ -52,6 +52,11 @@ export interface EmailPayload {
   from?: string
   /** Optional Reply-To so replies reach the Space's own inbox instead of the platform noreply. */
   replyTo?: string | string[]
+  /** Resend tags. Echoed back verbatim in the delivery/engagement webhook payload, so they are the
+   *  durable way to attribute an event to its origin — Email Studio stamps `{ name:'campaign_id',
+   *  value:<id> }` here so the webhook can write email_events.campaign_id (exact per-campaign
+   *  analytics). Names/values may only contain ASCII letters, numbers, underscores, or dashes. */
+  tags?: { name: string; value: string }[]
 }
 
 // Low-level send, called by the queue's `email` handler. Throws on provider error

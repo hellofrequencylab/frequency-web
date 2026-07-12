@@ -32,6 +32,7 @@ import {
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 import {
   nextCoverScrimPreferences,
+  nextCoverFocusPreferences,
   type CoverScrim,
 } from './preferences'
 import {
@@ -324,6 +325,28 @@ export async function setSpaceCoverScrim(slug: string, scrim: CoverScrim): Promi
   }
 
   revalidatePath(`/spaces/${slug}`)
+  revalidatePath(`/spaces/${slug}/manage/layout`)
+  return ok()
+}
+
+/**
+ * Set the Space HERO cover FOCAL POINT — where the cover image sits inside its cropped hero window, a CSS
+ * `object-position` string ("x% y%") chosen with the shared ImageFocalPicker (the SAME control the admin
+ * event rail uses). Stored on preferences.coverFocus (read-merge-write so every other preference survives;
+ * the centered default is dropped so a plain Space keeps a sparse blob). This is a REPOSITION only — it
+ * never touches the hero height or any layout node. Owner/admin/editor-gated (staff preview fails closed).
+ * Returns ActionResult.
+ */
+export async function setSpaceCoverFocus(slug: string, focus: string): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to edit this page.')
+
+  const next = nextCoverFocusPreferences(auth.preferences, focus)
+  if (!(await writePreferences(auth.spaceId, next))) {
+    return fail('Could not update the cover position. Try again.')
+  }
+
+  revalidatePath(`/spaces/${slug}`, 'layout')
   revalidatePath(`/spaces/${slug}/manage/layout`)
   return ok()
 }

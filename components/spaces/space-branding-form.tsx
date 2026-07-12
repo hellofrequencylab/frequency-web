@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,8 @@ import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Textarea, Label } from '@/components/ui/field'
 import { ImageUpload } from '@/components/ui/image-upload'
+import { ImageFocalPicker } from '@/components/ui/image-focal-picker'
+import { DEFAULT_OBJECT_POSITION } from '@/lib/images/focal-point'
 import { AccentPicker } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { SPACE_THEMES, type SpaceThemeId } from '@/lib/theme/space-themes'
@@ -16,6 +18,7 @@ import {
   setSpaceImages,
   uploadSpaceImage,
   setSpaceCoverScrim,
+  setSpaceCoverFocus,
   setSpaceAccent,
   setSpaceHeaderCta,
   setSpaceHeroLook,
@@ -62,6 +65,7 @@ export function SpaceBrandingForm({
   coverImageUrl = null,
   brandLogoUrl = null,
   coverScrim,
+  coverFocus = DEFAULT_OBJECT_POSITION,
   accent,
   headerCta = null,
   defaultCtaLabel,
@@ -77,6 +81,8 @@ export function SpaceBrandingForm({
   coverImageUrl?: string | null
   brandLogoUrl?: string | null
   coverScrim: CoverScrim
+  /** The saved hero cover FOCAL POINT (CSS object-position "x% y%"). Defaults to centered. */
+  coverFocus?: string
   accent: string
   headerCta?: HeaderCtaPreference | null
   defaultCtaLabel: string
@@ -93,6 +99,23 @@ export function SpaceBrandingForm({
 
   const [coverUrl, setCoverUrl] = useState<string | null>(coverImageUrl)
   const [logoUrl, setLogoUrl] = useState<string | null>(brandLogoUrl)
+
+  // HEADER FOCUS — where the cover sits in its cropped hero window (a CSS object-position). The SAME control
+  // the admin event rail uses (ImageFocalPicker): the marker moves live while a drag DEBOUNCES the write, so a
+  // drag does not fire a save per pixel. This is a reposition only; it never changes the header's height.
+  const [focus, setFocus] = useState(coverFocus)
+  const [, startFocus] = useTransition()
+  const focusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function onFocusChange(next: string) {
+    setFocus(next)
+    if (focusTimer.current) clearTimeout(focusTimer.current)
+    focusTimer.current = setTimeout(() => {
+      startFocus(async () => {
+        const res = await setSpaceCoverFocus(slug, next)
+        if (res && isError(res)) setError(res.error)
+      })
+    }, 400)
+  }
 
   // Name + tagline: local state, saved on BLUR (only when the value actually changed) via the profile
   // columns. Keeps the section button-free — every control here persists on its own.
@@ -253,6 +276,20 @@ export function SpaceBrandingForm({
             return uploadSpaceImage(slug, 'cover', fd)
           }}
         />
+        {/* HEADER FOCUS — reposition the header photo inside its cropped hero, using the SAME reusable
+            control as the admin event rail. Only shows once there is a header photo to reposition. The
+            marker (plus arrow-key nudging) is the control; the sliders are hidden to keep the panel tidy. */}
+        {coverUrl && (
+          <ImageFocalPicker
+            imageUrl={coverUrl}
+            value={focus}
+            onChange={onFocusChange}
+            disabled={readOnly}
+            label="Header focus"
+            hint="Drag to choose which part of your header photo stays in frame. Vertical matters most."
+            showSliders={false}
+          />
+        )}
         <div className="max-w-[12rem]">
           <ImageUpload
             value={logoUrl}
