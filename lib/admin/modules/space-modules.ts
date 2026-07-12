@@ -5,6 +5,7 @@ import {
   SlidersHorizontal,
   LayoutTemplate,
   Users,
+  Star,
   Briefcase,
   CalendarClock,
   BadgeCheck,
@@ -107,6 +108,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // the `crm` feature gate; the surface self-gates on the automation entitlement and shows an upgrade notice
   // when the plan lacks it. A `link` row out to its own Focus route (rules + drip editor); never banked.
   { id: 'space.automation', label: 'Automation', desc: 'Rules and drip sequences over your own contacts.', Icon: Workflow, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'crm' }, featureKey: 'crm', render: 'link', deepLink: (s) => `${base(s)}/settings/automation`, order: 36, tier: 'primary', priority: 16 },
+  // Reviews is a gateable feature keyed on the `reviews` function: the member rating and review wall on the
+  // public profile. Default ON (only an explicit `false` hides it); we recommend keeping it on to build trust.
+  { id: 'space.reviews', label: 'Reviews', desc: 'The member rating and review wall on your profile.', Icon: Star, family: 'audience', slot: 'people', gate: { kind: 'feature', fn: 'reviews' }, featureKey: 'reviews', render: 'link', deepLink: (s) => `${base(s)}/reviews`, order: 37, tier: 'primary', priority: 17 },
 
   // ── Offerings & money (independent modules) ──────────────────────────────────────────────────────────
   { id: 'space.booking', label: 'Booking', desc: 'Set the weekly times members can book, and see the calendar.', Icon: CalendarClock, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'availability' }, featureKey: 'availability', render: 'panel', deepLink: (s) => `${base(s)}/settings/offerings#availability`, order: 40, tier: 'primary', priority: 30 },

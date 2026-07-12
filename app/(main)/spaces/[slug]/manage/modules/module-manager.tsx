@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Eye, EyeOff, Lock } from 'lucide-react'
+import { ChevronUp, ChevronDown, Eye, EyeOff, Lock, Loader2 } from 'lucide-react'
 import { isError } from '@/lib/action-result'
+import { Dialog } from '@/components/ui/dialog'
 import {
   spaceModuleById,
   SPACE_MODULE_FAMILY_ORDER,
@@ -93,6 +94,8 @@ export function ModuleManager({
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
+  // The one module whose OFF direction needs a confirm (reviews): the row we are asking about, or null.
+  const [confirmOff, setConfirmOff] = useState<{ id: string; key: SpaceFunctionKey; label: string } | null>(null)
 
   const rowById = new Map(rows.map((r) => [r.id, r]))
 
@@ -133,21 +136,34 @@ export function ModuleManager({
     persistMenu(ids, next, prev)
   }
 
-  function toggleFeature(id: string, key: SpaceFunctionKey, on: boolean) {
+  // The actual write: optimistic flip, server call, rollback + error on failure. Returns a promise so the
+  // confirm dialog can await it and show pending; the plain Switch path fires it inside a transition.
+  async function runFeatureToggle(id: string, key: SpaceFunctionKey, on: boolean): Promise<void> {
     const prev = enabled[id]
     setEnabled((s) => ({ ...s, [id]: on }))
     setError(null)
     setBusyId(id)
-    startTransition(async () => {
-      try {
-        const res = await setSpaceFeatureEnabled(slug, key, on)
-        if (isError(res)) throw new Error(res.error)
-      } catch (e) {
-        setEnabled((s) => ({ ...s, [id]: prev }))
-        setError(e instanceof Error ? e.message : 'Could not save that change.')
-      } finally {
-        setBusyId(null)
-      }
+    try {
+      const res = await setSpaceFeatureEnabled(slug, key, on)
+      if (isError(res)) throw new Error(res.error)
+    } catch (e) {
+      setEnabled((s) => ({ ...s, [id]: prev }))
+      setError(e instanceof Error ? e.message : 'Could not save that change.')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function toggleFeature(id: string, key: SpaceFunctionKey, on: boolean) {
+    // Turning Reviews OFF is the one destructive-feeling toggle: confirm it first (turning it back ON, and
+    // every other module, stays instant). We intercept only the OFF direction of the reviews row.
+    if (!on && id === 'space.reviews') {
+      const row = rowById.get(id)
+      setConfirmOff({ id, key, label: row?.label ?? 'Reviews' })
+      return
+    }
+    startTransition(() => {
+      void runFeatureToggle(id, key, on)
     })
   }
 
@@ -303,6 +319,76 @@ export function ModuleManager({
           </section>
         )
       })}
+
+      {confirmOff && (
+        <ReviewsOffDialog
+          label={confirmOff.label}
+          onKeepOn={() => setConfirmOff(null)}
+          onConfirm={async () => {
+            await runFeatureToggle(confirmOff.id, confirmOff.key, false)
+            setConfirmOff(null)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+// The confirm shown before Reviews is turned OFF. The primary action keeps reviews on; a quieter secondary
+// action confirms the turn-off with a pending state so a stray double-tap cannot fire it twice. On-voice,
+// no em dashes (CONTENT-VOICE), DAWN tokens only.
+function ReviewsOffDialog({
+  label,
+  onKeepOn,
+  onConfirm,
+}: {
+  label: string
+  onKeepOn: () => void
+  onConfirm: () => Promise<void>
+}) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <Dialog
+      open
+      onClose={pending ? () => {} : onKeepOn}
+      ariaLabel="Are you sure you want to turn reviews off?"
+      className="max-w-sm"
+    >
+      <div className="relative w-full rounded-2xl border border-border bg-surface p-6 shadow-2xl">
+        <h2 className="text-base font-bold leading-tight text-text">Are you sure?</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          Reviews build trust with new members. We recommend keeping them on. Turning {label.toLowerCase()} off
+          hides the rating and review wall from your profile until you turn it back on.
+        </p>
+
+        {/* The primary action keeps reviews on. */}
+        <button
+          type="button"
+          onClick={onKeepOn}
+          disabled={pending}
+          className="mt-5 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-70"
+        >
+          Keep reviews on
+        </button>
+
+        {/* The quieter confirm. Pending state so a stray double-tap cannot fire it twice. */}
+        <button
+          type="button"
+          onClick={() => startTransition(() => void onConfirm())}
+          disabled={pending}
+          aria-busy={pending}
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-4 py-2.5 text-xs font-medium text-subtle transition-colors hover:text-danger disabled:cursor-wait disabled:opacity-70"
+        >
+          {pending ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              Turning reviews off…
+            </>
+          ) : (
+            'Turn reviews off'
+          )}
+        </button>
+      </div>
+    </Dialog>
   )
 }

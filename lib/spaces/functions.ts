@@ -55,6 +55,7 @@ export type SpaceFunctionKey =
   | 'shop'
   | 'billing'
   | 'profile'
+  | 'reviews'
 
 /** A Space type, or the wildcard '*' meaning "every type offers this function". */
 type FunctionTypeScope = SpaceType | '*'
@@ -187,6 +188,14 @@ export const SPACE_FUNCTIONS: readonly SpaceFunctionDef[] = [
     description: 'Edit the space profile, brand, and visibility.',
     entitlement: null,
     defaultMinRole: 'editor',
+    types: ['*'],
+  },
+  {
+    key: 'reviews',
+    label: 'Reviews',
+    description: 'The member rating and review wall. Keeping it on builds trust with new members.',
+    entitlement: null,
+    defaultMinRole: 'admin',
     types: ['*'],
   },
 ] as const

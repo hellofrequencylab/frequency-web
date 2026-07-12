@@ -15,7 +15,7 @@ describe('generateDefaultSpacePage', () => {
     expect(doc.content.some((b) => b.type === 'SpaceLayout')).toBe(false)
   })
 
-  it('arranges a flat importance order: Highlights -> Offerings -> Booking -> About -> Events -> Practices -> Community -> Reviews -> FAQ -> Business -> Contact -> Callout', () => {
+  it('arranges a flat importance order: Highlights -> Offerings -> Booking -> About -> Events -> Practices -> Community -> Reviews -> Business -> Contact -> Callout', () => {
     const doc = generateDefaultSpacePage('Willow Studio')
     expect(doc.content.map((b) => b.type)).toEqual([
       'SpaceHighlights',
@@ -26,7 +26,6 @@ describe('generateDefaultSpacePage', () => {
       'SpacePractices',
       'SpaceCommunity',
       'SpaceReviews',
-      'SpaceFAQ',
       'SpaceBusiness',
       'SpaceContact',
       'SpaceCallout',

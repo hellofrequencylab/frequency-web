@@ -1,6 +1,8 @@
 import { BadgeCheck, CalendarDays, GraduationCap, Users } from 'lucide-react'
 import { getProgramWithSeats, getMyEnrollment } from '@/lib/spaces/enroll'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { EnrollButton } from '@/components/spaces/enroll/enroll-button'
 import { EnrollmentCancelButton } from '@/components/spaces/enroll/enrollment-cancel-button'
 
@@ -36,13 +38,39 @@ function rangeLabel(startsOn: string | null, endsOn: string | null): string | nu
   return null
 }
 
-export async function EnrollMember({ spaceId }: { spaceId: string }) {
+export async function EnrollMember({
+  spaceId,
+  slug,
+  ownerProfileId,
+}: {
+  spaceId: string
+  slug: string
+  ownerProfileId: string | null
+}) {
   const [withSeats, mine] = await Promise.all([
     getProgramWithSeats(spaceId),
     getMyEnrollment(spaceId),
   ])
 
   if (!withSeats) {
+    // OPERATOR (owner / admin / editor): guide them to post a program instead of the member empty state.
+    if (await viewerManagesSpace({ id: spaceId, ownerProfileId })) {
+      return (
+        <AdminSetupPrompt
+          icon={GraduationCap}
+          title="Your button opens enrollment, but no program is posted."
+          description="Add a program members can enroll in. You can also change what your button opens."
+          links={[
+            { href: `/spaces/${slug}/settings/offerings#enroll`, label: 'Set up your program' },
+            {
+              href: `/spaces/${slug}/manage/mode`,
+              label: 'Change what your button opens',
+              tone: 'secondary',
+            },
+          ]}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={GraduationCap}

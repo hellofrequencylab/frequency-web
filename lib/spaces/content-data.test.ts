@@ -93,8 +93,11 @@ describe('getSpaceReviews', () => {
     const out = await getSpaceReviews('space-1')
     expect(out.count).toBe(2)
     expect(out.average).toBe(4.5)
+    expect(out.distribution).toEqual({ 5: 1, 4: 1, 3: 0, 2: 0, 1: 0 })
+    expect(out.all).toHaveLength(2)
     expect(out.latest[0].author?.displayName).toBe('Ana')
     expect(out.latest[1].author).toBeNull()
+    expect(out.all[0].response).toBeNull()
   })
 
   it('rounds the average to one decimal', async () => {
@@ -109,14 +112,59 @@ describe('getSpaceReviews', () => {
     expect(out.average).toBe(4.3) // 13/3 = 4.333 -> 4.3
   })
 
+  it('maps a Space-admin reply (body, timestamp, responder) onto the review', async () => {
+    currentAdmin = makeAdmin({
+      data: [
+        {
+          id: 'r1',
+          rating: 5,
+          body: 'Loved it',
+          created_at: '2026-01-02',
+          response_body: 'Thanks for coming by.',
+          response_at: '2026-01-03',
+          author: { display_name: 'Ana', avatar_url: null },
+          responder: { display_name: 'The Studio', avatar_url: 'https://x/logo.png' },
+        },
+      ],
+    })
+    const out = await getSpaceReviews('space-1')
+    expect(out.all[0].response).toEqual({
+      body: 'Thanks for coming by.',
+      at: '2026-01-03',
+      author: { displayName: 'The Studio', avatarUrl: 'https://x/logo.png' },
+    })
+  })
+
+  it('treats a blank reply body as no response', async () => {
+    currentAdmin = makeAdmin({
+      data: [
+        { id: 'r1', rating: 4, body: '', created_at: '', response_body: '   ', response_at: null, author: null, responder: null },
+      ],
+    })
+    const out = await getSpaceReviews('space-1')
+    expect(out.all[0].response).toBeNull()
+  })
+
   it('fails safe to an empty summary (null average, 0 count) when there are no rows', async () => {
     currentAdmin = makeAdmin({ data: [] })
-    expect(await getSpaceReviews('space-1')).toEqual({ average: null, count: 0, latest: [] })
+    expect(await getSpaceReviews('space-1')).toEqual({
+      average: null,
+      count: 0,
+      latest: [],
+      all: [],
+      distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    })
   })
 
   it('fails safe to an empty summary when the query throws', async () => {
     currentAdmin = makeAdmin({ data: null }, { throws: true })
-    expect(await getSpaceReviews('space-1')).toEqual({ average: null, count: 0, latest: [] })
+    expect(await getSpaceReviews('space-1')).toEqual({
+      average: null,
+      count: 0,
+      latest: [],
+      all: [],
+      distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    })
   })
 })
 
@@ -147,7 +195,13 @@ describe('getSpaceContentData', () => {
     const out = await getSpaceContentData('space-9')
     expect(out.spaceId).toBe('space-9')
     expect(out.updates).toEqual([])
-    expect(out.reviews).toEqual({ average: null, count: 0, latest: [] })
+    expect(out.reviews).toEqual({
+      average: null,
+      count: 0,
+      latest: [],
+      all: [],
+      distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    })
     expect(out.faqs).toEqual([])
   })
 

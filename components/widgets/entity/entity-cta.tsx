@@ -3,10 +3,12 @@ import { CalendarDays } from 'lucide-react'
 import { getActiveSpace } from '@/lib/spaces/active-space'
 import { defaultPrimaryCtaLabel } from '@/lib/spaces/profile-config'
 import { resolveMode, type ModeVariant } from '@/lib/spaces/modes'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { listEventsForSpace } from '@/lib/events/store'
 import { ModuleCard } from '@/components/modules/module-card'
 import { EntityCard } from '@/components/cards/entity-card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { BookingMember } from '@/components/spaces/booking-member'
 import { MembershipJoin } from '@/components/spaces/membership-join'
 import { DonateMember } from '@/components/spaces/donations/donate-member'
@@ -83,7 +85,7 @@ export async function EntityCta() {
     return (
       <ModuleCard title="Book a session" tile>
         <Suspense fallback={<BookingSkeleton />}>
-          <BookingMember spaceId={space.id} />
+          <BookingMember spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
       </ModuleCard>
     )
@@ -94,7 +96,7 @@ export async function EntityCta() {
     return (
       <ModuleCard title="Become a member" tile>
         <Suspense fallback={<MembershipSkeleton />}>
-          <MembershipJoin spaceId={space.id} />
+          <MembershipJoin spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
       </ModuleCard>
     )
@@ -105,7 +107,7 @@ export async function EntityCta() {
     return (
       <ModuleCard title={ctaLabel} tile>
         <Suspense fallback={<MembershipSkeleton />}>
-          <DonateMember spaceId={space.id} />
+          <DonateMember spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
       </ModuleCard>
     )
@@ -116,7 +118,7 @@ export async function EntityCta() {
     return (
       <ModuleCard title="Enroll in the program" tile>
         <Suspense fallback={<MembershipSkeleton />}>
-          <EnrollMember spaceId={space.id} />
+          <EnrollMember spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
       </ModuleCard>
     )
@@ -127,7 +129,7 @@ export async function EntityCta() {
     return (
       <ModuleCard title="Get tickets" tile>
         <Suspense fallback={<MembershipSkeleton />}>
-          <TicketsMember spaceId={space.id} />
+          <TicketsMember spaceId={space.id} slug={space.slug} ownerProfileId={space.ownerProfileId} />
         </Suspense>
       </ModuleCard>
     )
@@ -135,15 +137,29 @@ export async function EntityCta() {
 
   const events = await listEventsForSpace(space.id, { upcomingOnly: true, limit: 8 })
   const live = events.filter((e) => !e.is_cancelled)
+  // Only resolve operator status on the EMPTY path (the rare owner-setup moment), so the happy path
+  // (live sessions) never pays for the lookup.
+  const canManage = live.length === 0 && (await viewerManagesSpace(space))
 
   return (
     <ModuleCard title={`${ctaLabel} a session`} tile>
       {live.length === 0 ? (
-        <EmptyState
-          icon={CalendarDays}
-          title="No open times right now."
-          description="Follow this space to hear the moment new sessions open."
-        />
+        canManage ? (
+          // OPERATOR (owner / admin / editor): nothing is scheduled and this space leads with a plain
+          // sessions list (no Focus surface), so point them at the console to set up what their button does.
+          <AdminSetupPrompt
+            icon={CalendarDays}
+            title="Your button opens sessions, but none are scheduled."
+            description="Set up what your button opens for your space."
+            links={[{ href: `/spaces/${space.slug}/manage`, label: 'Open your console' }]}
+          />
+        ) : (
+          <EmptyState
+            icon={CalendarDays}
+            title="No open times right now."
+            description="Follow this space to hear the moment new sessions open."
+          />
+        )
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-muted">Pick a time that works. You&apos;ll RSVP on the session page.</p>

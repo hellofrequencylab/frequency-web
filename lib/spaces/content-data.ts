@@ -30,6 +30,7 @@ import { listPracticesForSpace } from '@/lib/practices'
 import { listJourneyPlansForSpace } from '@/lib/journey-plans'
 import { listCirclesForSpace } from '@/lib/circles/store'
 import { spaceRoleRank } from '@/lib/spaces/membership'
+import { computeReviewAggregate, type RatingDistribution } from '@/lib/spaces/reviews-aggregate'
 
 // ── Shapes the blocks render (plain data, no server imports leak into the block components) ──────
 
@@ -123,19 +124,34 @@ export type SpaceUpdateItem = {
   postId: string | null
 }
 
+/** A Space-admin reply published under a member review (Reviews redesign). Null on a review with no
+ *  reply. `author` is the operator who wrote it (name + avatar for the response card). */
+export type SpaceReviewResponse = {
+  body: string
+  at: string
+  author: { displayName: string; avatarUrl: string | null } | null
+}
+
 export type SpaceReviewItem = {
   id: string
   rating: number
   body: string
   createdAt: string
   author: { displayName: string; avatarUrl: string | null } | null
+  /** The Space-admin reply under this review, or null when there is none. */
+  response: SpaceReviewResponse | null
 }
 
 export type SpaceReviewsData = {
   /** Rounded-to-one-decimal average of every VISIBLE review, or null when there are none. */
   average: number | null
   count: number
+  /** The latest few visible reviews, newest first (kept for the landing block + AggregateRating read). */
   latest: SpaceReviewItem[]
+  /** The FULL visible review list (up to the cap), newest first, for the Reviews page's client sort. */
+  all: SpaceReviewItem[]
+  /** Per-star tally { 5, 4, 3, 2, 1 } across the visible reviews, for the summary distribution bars. */
+  distribution: RatingDistribution
 }
 
 export type SpaceFaqItem = {
@@ -460,37 +476,54 @@ export async function getSpaceCommunityFeed(
 
 type ReviewRow = Row & {
   author?: { display_name?: unknown; avatar_url?: unknown } | null
+  responder?: { display_name?: unknown; avatar_url?: unknown } | null
   parent_id?: unknown
 }
 
-/** The VISIBLE reviews for a Space: the average, the count, and the latest few (newest first).
- *  Fail-safe to an empty summary (average null, count 0, latest []). ONE query, no N+1: the author
- *  display fields ride the embedded select. */
+/** The VISIBLE reviews for a Space: the average, the count, the full list + the latest few (newest
+ *  first), the per-star distribution, and any Space-admin reply under each review. Fail-safe to an
+ *  empty summary (average null, count 0, empty list, zeroed distribution). ONE query, no N+1: the
+ *  author + responder display fields ride the embedded select, and the aggregate is computed in-app. */
 export async function getSpaceReviews(spaceId: string): Promise<SpaceReviewsData> {
-  const empty: SpaceReviewsData = { average: null, count: 0, latest: [] }
+  const emptyDistribution: RatingDistribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
+  const empty: SpaceReviewsData = { average: null, count: 0, latest: [], all: [], distribution: emptyDistribution }
   try {
     const { data } = await untyped()
       .from('space_reviews')
-      .select('id, rating, body, created_at, author:profiles!author_profile_id ( display_name, avatar_url )')
+      .select(
+        'id, rating, body, created_at, response_body, response_at, ' +
+          'author:profiles!author_profile_id ( display_name, avatar_url ), ' +
+          'responder:profiles!response_author_profile_id ( display_name, avatar_url )',
+      )
       .eq('space_id', spaceId)
       .eq('status', 'visible')
       .order('created_at', { ascending: false })
       .limit(REVIEWS_CAP)
     const rows = (data ?? []) as ReviewRow[]
     if (rows.length === 0) return empty
-    const ratings = rows.map((r) => (typeof r.rating === 'number' ? r.rating : Number(r.rating) || 0))
-    const sum = ratings.reduce((a, b) => a + b, 0)
-    const average = Math.round((sum / rows.length) * 10) / 10
-    const latest: SpaceReviewItem[] = rows.map((r) => ({
-      id: str(r.id),
-      rating: typeof r.rating === 'number' ? r.rating : Number(r.rating) || 0,
-      body: str(r.body),
-      createdAt: str(r.created_at),
-      author: r.author
-        ? { displayName: str(r.author.display_name) || 'Member', avatarUrl: strOrNull(r.author.avatar_url) }
-        : null,
-    }))
-    return { average, count: rows.length, latest }
+    const all: SpaceReviewItem[] = rows.map((r) => {
+      const responseBody = str(r.response_body).trim()
+      return {
+        id: str(r.id),
+        rating: typeof r.rating === 'number' ? r.rating : Number(r.rating) || 0,
+        body: str(r.body),
+        createdAt: str(r.created_at),
+        author: r.author
+          ? { displayName: str(r.author.display_name) || 'Member', avatarUrl: strOrNull(r.author.avatar_url) }
+          : null,
+        response: responseBody
+          ? {
+              body: responseBody,
+              at: str(r.response_at),
+              author: r.responder
+                ? { displayName: str(r.responder.display_name) || 'Member', avatarUrl: strOrNull(r.responder.avatar_url) }
+                : null,
+            }
+          : null,
+      }
+    })
+    const { average, count, distribution } = computeReviewAggregate(all.map((r) => r.rating))
+    return { average, count, latest: all, all, distribution }
   } catch {
     return empty
   }

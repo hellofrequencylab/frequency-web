@@ -1,5 +1,4 @@
 import type { Data } from '@/lib/page-editor/types'
-import { emphasisDefault } from '@/lib/page-editor/fields'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE ONE UNIVERSAL DEFAULT SPACE PAGE (feature-block model, ADR superseding 472/476).
@@ -118,16 +117,9 @@ function community(): Block {
   }
 }
 
-// ── Dynamic REVIEWS + FAQ blocks (live; nothing until real rows).
+// ── Dynamic REVIEWS block (live; nothing until real rows).
 function reviews(): Block {
   return { type: 'SpaceReviews', props: { id: `${P}-reviews`, eyebrow: 'What members say', heading: 'Reviews', limit: '4' } }
-}
-
-function faq(): Block {
-  return {
-    type: 'SpaceFAQ',
-    props: { id: `${P}-faq`, eyebrow: 'FAQ', heading: 'Common questions', titleAccent: '', emphasis: emphasisDefault },
-  }
 }
 
 // ── BUSINESS PRESENCE strip (operator authored; empty by default). Social links + optional rating.
@@ -161,7 +153,7 @@ function callout(name: string): Block {
  * block is individually reorder/hide/remove-able in the minimal layout editor:
  *
  *   Highlights -> Offerings -> Booking -> About -> Events -> Practices -> Community -> Reviews ->
- *   FAQ -> Business -> Contact -> Callout
+ *   Business -> Contact -> Callout
  *
  * Live blocks render nothing until there is real data and authored blocks render nothing until the
  * central Business Info is filled, so the page self-composes to whatever the space has turned on.
@@ -179,7 +171,6 @@ export function generateDefaultSpacePage(name: string): Data {
       practices(),
       community(),
       reviews(),
-      faq(),
       business(),
       contact(),
       callout(brand),

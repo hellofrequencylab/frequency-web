@@ -497,6 +497,35 @@ export async function hideSpaceReview(slug: string, id: string): Promise<ActionR
   return ok()
 }
 
+/** Publish, edit, or clear a Space-admin reply under a member review (Reviews redesign).
+ *  Owner/admin/editor-gated + space-scoped (the write is double-bound to the authorized Space id AND
+ *  the review id, so it can never touch a review on another Space). A non-empty `body` stamps the
+ *  reply + the responder + the timestamp; an EMPTY body clears all three (the "Remove reply" path).
+ *  Fail-soft ActionResult. */
+export async function respondToSpaceReview(slug: string, reviewId: string, body: string): Promise<ActionResult> {
+  const auth = await authorizeEditor(slug)
+  if (!auth) return fail('You do not have access to respond on this page.')
+
+  const trimmed = body.trim().slice(0, 2000)
+  const patch: Row = trimmed
+    ? {
+        response_body: trimmed,
+        response_author_profile_id: auth.profileId,
+        response_at: new Date().toISOString(),
+      }
+    : { response_body: null, response_author_profile_id: null, response_at: null }
+
+  const { error } = await db()
+    .from('space_reviews')
+    .update(patch)
+    .eq('space_id', auth.spaceId)
+    .eq('id', reviewId)
+  if (error) return fail('Could not save your reply. Try again.')
+
+  revalidateLanding(slug)
+  return ok()
+}
+
 // ── Member interaction on a Space Update (owner decision 2026-07-01) ──────────────────────────────
 // ANY signed-in member (free members included) may react + comment on a Space Update. These actions
 // gate ONLY on "a real signed-in profile" (get_my_profile_id present) and on the target post

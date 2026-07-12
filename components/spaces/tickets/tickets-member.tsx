@@ -1,6 +1,8 @@
 import { BadgeCheck, Ticket } from 'lucide-react'
 import { listTicketTiers, getMyRsvp } from '@/lib/spaces/tickets'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { TicketReserveButton } from '@/components/spaces/tickets/ticket-reserve-button'
 import { TicketRsvpCancelButton } from '@/components/spaces/tickets/ticket-rsvp-cancel-button'
 
@@ -16,10 +18,36 @@ import { TicketRsvpCancelButton } from '@/components/spaces/tickets/ticket-rsvp-
 // reserving records the spot, it does not take a charge. The copy says so plainly, with no narrated
 // feelings and no em/en dashes (CONTENT-VOICE §10).
 
-export async function TicketsMember({ spaceId }: { spaceId: string }) {
+export async function TicketsMember({
+  spaceId,
+  slug,
+  ownerProfileId,
+}: {
+  spaceId: string
+  slug: string
+  ownerProfileId: string | null
+}) {
   const [tiers, mine] = await Promise.all([listTicketTiers(spaceId), getMyRsvp(spaceId)])
 
   if (tiers.length === 0) {
+    // OPERATOR (owner / admin / editor): guide them to post a tier instead of the member empty state.
+    if (await viewerManagesSpace({ id: spaceId, ownerProfileId })) {
+      return (
+        <AdminSetupPrompt
+          icon={Ticket}
+          title="Your button opens tickets, but none are posted."
+          description="Set up a free or RSVP tier so members can reserve a spot. You can also change what your button opens."
+          links={[
+            { href: `/spaces/${slug}/settings/offerings#tickets`, label: 'Set up tickets' },
+            {
+              href: `/spaces/${slug}/manage/mode`,
+              label: 'Change what your button opens',
+              tone: 'secondary',
+            },
+          ]}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={Ticket}

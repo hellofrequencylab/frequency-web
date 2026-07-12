@@ -52,6 +52,10 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
   const storefront = readStorefrontConfig(space.preferences)
   const shopDef = spaceFunctionDef('shop')
   const shopEnabled = !shopDef || spaceFunctionEnabled(space, shopDef)
+  // The Reviews tab is gated on the `reviews` function (default ON): the owner may turn the rating +
+  // review wall off in the Module Manager. A missing def keeps the tab (fail-safe to shown).
+  const reviewsDef = spaceFunctionDef('reviews')
+  const reviewsEnabled = !reviewsDef || spaceFunctionEnabled(space, reviewsDef)
 
   const tabs: SpaceProfileTab[] = [
     { href: base, label: pages[0]?.label ?? 'Home' },
@@ -60,8 +64,8 @@ export async function buildSpaceProfileNav(space: Space): Promise<SpaceProfileNa
     // everyone; the page itself gates who can interact. Always present so a business can start posting.
     { href: `${base}/community`, label: 'Community' },
     // Reviews on their own tab (owner decision): the member rating + review wall. Public read; a signed-in
-    // member (not the owner) leaves one review they can revise.
-    { href: `${base}/reviews`, label: 'Reviews' },
+    // member (not the owner) leaves one review they can revise. Gated on the `reviews` function (default ON).
+    ...(reviewsEnabled ? [{ href: `${base}/reviews`, label: 'Reviews' }] : []),
     ...(storefront.published && isConsoleSpaceType(space.type) && shopEnabled
       ? [{ href: `${base}/shop`, label: storefront.tabLabel }]
       : []),

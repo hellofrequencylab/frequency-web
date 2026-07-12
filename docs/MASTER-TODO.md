@@ -134,6 +134,21 @@ gated for payments. Migrations for the shipped slice (`commerce_variants`, `hous
 | ⏳ | **Housing — natal-chart matching** | code + migration | Beyond the shipped sun-sign quiet-5% (ADR-604): full natal-chart compatibility as an opt-in, both-sides factor. Needs an ephemeris/compute decision before build. |
 | ⏳ | **Housing — Resonance match alerts** | code | Notify a seeker when a strong new listing or roommate match appears (the matching RPCs exist; this is the alerting layer on top). |
 
+## Booking — future phases (deferred by owner, 2026-07-12)
+
+Booking v1 (weekly availability -> slot picker -> `space_bookings`) plus the operator setup prompts
+shipped in #1708. These are the Calendly-grade follow-on phases, parked until greenlit. Full spec:
+[`BOOKING-PLAN.md`](BOOKING-PLAN.md) (ADR-605). Every phase is additive over the one booking spine
+(`lib/spaces/booking.ts`); payments build on the commerce spine (ADR-596), Business-gated + dark
+behind `payoutsLive()`.
+
+| # | Phase | Shape | Notes |
+|---|---|---|---|
+| ⏳ | **Booking P1 — Service types + durations** | code + migration | Multiple bookable offerings per Space (e.g. 30 / 60 / 90 min), each its own duration, price hint, description (the Calendly "event type"). `space_service_types`; slot generation respects the chosen service's duration. |
+| ⏳ | **Booking P2 — Availability rules** | code + migration | Named availability schedules with buffers before/after, minimum notice, configurable booking window, date overrides/blackouts, and per-invitee timezone display. `space_availability_schedules` + `_overrides`; buffer-aware conflict checks. |
+| ⏳ | **Booking P3 — Reschedule / cancel + reminders** | code + migration | Member self-serve reschedule/cancel within policy, confirmation + reminder emails (reuse the outbox), booking questions, optional ICS attachment. |
+| ⏳ | **Booking P4 — Payments / deposits** | code + migration | Take a deposit or full payment at booking on the commerce spine (largely the already-written, dormant `bookable_services` hold-first seam). Business-gated + dark behind `payoutsLive()` until launch. |
+
 ## Already done (do not re-open)
 - ✅ Modular admin menu on one contract, every scope, CI-locked (`MODULAR-MENU.md` P0–P5).
 - ✅ Editor / rail-arranger overhaul (ADR-565→573).
