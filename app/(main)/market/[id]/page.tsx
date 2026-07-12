@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
@@ -18,6 +19,7 @@ import { ServiceBookingPicker } from '@/components/marketplace/service-booking-p
 import { VariantPicker } from '@/components/marketplace/variant-picker'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromProduct, type ListingAction } from '@/lib/listings-shared/detail-view'
+import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { BuyButton } from '../../marketplace/buy-button'
 import { listActiveVariants } from '@/lib/commerce/variants'
@@ -28,6 +30,17 @@ export const dynamic = 'force-dynamic'
 
 function usd(cents: number, currency = 'usd') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const product = await getProduct(id)
+  if (!product) return { title: 'Product not found', robots: { index: false, follow: false } }
+  // A lightweight price label is enough for the head (the full service/variant nuance lives in the
+  // page body). Free/contact services read plainly; everything else is the base price.
+  const priceLabel =
+    product.priceCents > 0 ? usd(product.priceCents, product.currency ?? 'usd') : 'Free'
+  return listingMetadata(listingDetailFromProduct(product, { isOwner: false, priceLabel }))
 }
 
 /** The price label for a service, honoring its priceModel (fixed / from / free / contact). */

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getListingWithOwner } from '@/lib/listings'
@@ -6,10 +7,21 @@ import { buttonClasses } from '@/components/ui/button'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
+import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 import { setListingStatusAction, deleteListingAction } from '../../actions'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const listing = await getListingWithOwner(id)
+  if (!listing || listing.vertical !== 'housing') {
+    return { title: 'Listing not found', robots: { index: false, follow: false } }
+  }
+  const detail = await getHousingDetail(id)
+  return listingMetadata(listingDetailFromHousing(listing, detail, { isOwner: false }))
+}
 
 const ROOM_LABEL: Record<string, string> = {
   private_room: 'Private room',

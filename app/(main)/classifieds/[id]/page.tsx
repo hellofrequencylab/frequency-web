@@ -1,12 +1,21 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
 import { getListing } from '@/lib/marketplace'
 import { ListingOwnerControls } from '@/components/market/listing-owner-controls'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromMarket } from '@/lib/listings-shared/detail-view'
+import { listingMetadata } from '@/lib/listings-shared/listing-seo'
 import { getListingComments } from '@/lib/marketplace/listing-comments'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const listing = await getListing(id)
+  if (!listing) return { title: 'Listing not found', robots: { index: false, follow: false } }
+  return listingMetadata(listingDetailFromMarket(listing, { isOwner: false }))
+}
 
 export default async function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

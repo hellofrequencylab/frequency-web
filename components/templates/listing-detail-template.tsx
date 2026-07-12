@@ -11,9 +11,11 @@ import Link from 'next/link'
 import { CalendarDays, MapPin, MessageCircle, Pencil } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates/detail-template'
 import { EventGallery } from '@/components/events/event-gallery'
+import { JsonLd } from '@/components/json-ld'
 import { ListingHero } from '@/components/marketplace/listing-hero'
 import { ListingQna } from '@/components/marketplace/listing-qna'
 import type { ListingDetailView } from '@/lib/listings-shared/detail-view'
+import { listingJsonLd } from '@/lib/listings-shared/listing-seo'
 import type { ListingComment } from '@/lib/marketplace/listing-comments'
 import { relativeTime } from '@/lib/utils'
 
@@ -80,8 +82,13 @@ export function ListingDetailTemplate({
         ? `/market/${view.id}`
         : `/marketplace/housing/${view.id}`
 
+  // Schema.org Product/Accommodation + Offer + breadcrumb for search + answer engines (empty, so
+  // nothing renders, when the listing is non-active). Authored once here for all three verticals.
+  const jsonLd = listingJsonLd(view)
+
   return (
     <div className="mx-auto w-full max-w-2xl">
+      {jsonLd.length > 0 && <JsonLd data={jsonLd} />}
       <DetailTemplate
         back={view.back}
         hero={
