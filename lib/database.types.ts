@@ -849,11 +849,14 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           audience_filter: Json | null
+          block_json: Json | null
           body: string
+          compiled_html: string | null
           created_at: string
           created_by: string | null
           id: string
           phase_id: string | null
+          preheader: string | null
           recipient_count: number
           scheduled_for: string | null
           segment: string
@@ -868,11 +871,14 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           audience_filter?: Json | null
+          block_json?: Json | null
           body: string
+          compiled_html?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           phase_id?: string | null
+          preheader?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -887,11 +893,14 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           audience_filter?: Json | null
+          block_json?: Json | null
           body?: string
+          compiled_html?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           phase_id?: string | null
+          preheader?: string | null
           recipient_count?: number
           scheduled_for?: string | null
           segment?: string
@@ -3023,6 +3032,53 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          block_json: Json
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          preheader: string | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          block_json: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          preheader?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          block_json?: Json
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          preheader?: string | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5880,11 +5936,64 @@ export type Database = {
           },
         ]
       }
+      listing_intake: {
+        Row: {
+          applied_listing_id: string | null
+          created_at: string
+          created_by: string | null
+          draft: Json
+          error: string | null
+          id: string
+          inputs: Json
+          kind: string
+          ledger: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_listing_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          kind: string
+          ledger?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_listing_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft?: Json
+          error?: string | null
+          id?: string
+          inputs?: Json
+          kind?: string
+          ledger?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_intake_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listings: {
         Row: {
           category: string | null
           circle_id: string | null
           city: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           description: string | null
           entity_id: string
@@ -5907,6 +6016,9 @@ export type Database = {
           category?: string | null
           circle_id?: string | null
           city?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           entity_id: string
@@ -5929,6 +6041,9 @@ export type Database = {
           category?: string | null
           circle_id?: string | null
           city?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           entity_id?: string
@@ -5956,6 +6071,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "listings_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listings_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
@@ -5977,6 +6099,9 @@ export type Database = {
           category: string | null
           circle_id: string | null
           city: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           description: string | null
           id: string
@@ -5996,6 +6121,9 @@ export type Database = {
           category?: string | null
           circle_id?: string | null
           city?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -6015,6 +6143,9 @@ export type Database = {
           category?: string | null
           circle_id?: string | null
           city?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -6042,6 +6173,13 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: false
             referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_listings_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -7295,6 +7433,7 @@ export type Database = {
       }
       nurture_steps: {
         Row: {
+          block_json: Json | null
           body: string
           created_at: string
           delay_hours: number
@@ -7306,6 +7445,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          block_json?: Json | null
           body: string
           created_at?: string
           delay_hours?: number
@@ -7317,6 +7457,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          block_json?: Json | null
           body?: string
           created_at?: string
           delay_hours?: number

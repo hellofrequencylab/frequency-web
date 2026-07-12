@@ -288,6 +288,14 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   features: [{ key: 'items', label: 'Features', type: 'features' }],
   heading: [{ key: 'text', label: 'Heading', type: 'text', placeholder: 'Your heading goes here' }],
+  // A first-class CALL-TO-ACTION button (Email Studio, 2026): a label, a link, and an alignment. The `align`
+  // primitive reuses the shared enum sink in sanitizeBlockContent (start | center | end), so no bespoke
+  // sanitize is needed. Shared by web (member / space) and email.
+  button: [
+    { key: 'label', label: 'Button label', type: 'text', placeholder: 'Get started' },
+    { key: 'url', label: 'Button link', type: 'url', placeholder: 'https://' },
+    { key: 'align', label: 'Alignment', type: 'align', defaultValue: 'start' },
+  ],
   text: [{ key: 'text', label: 'Text', type: 'textarea', placeholder: 'Tell your story in plain, honest sentences' }],
   links: [{ key: 'items', label: 'Links', type: 'links' }],
   image: [

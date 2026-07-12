@@ -135,6 +135,24 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const text = s(props, 'text')
       return text ? <h2 className="text-2xl font-bold text-text">{text}</h2> : null
     }
+    case 'button': {
+      // A labeled call-to-action link (shared with Email Studio). A no-link button falls back to '#' until
+      // the operator wires it (matching the callout button); no label means nothing to render.
+      const label = s(props, 'label')
+      if (!label) return null
+      const url = safeUrl(props.url)
+      const justify = props.align === 'center' ? 'justify-center' : props.align === 'end' ? 'justify-end' : 'justify-start'
+      return (
+        <div className={`flex ${justify}`}>
+          <a
+            href={url || '#'}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-hover"
+          >
+            {label}
+          </a>
+        </div>
+      )
+    }
     case 'text': {
       const text = s(props, 'text')
       return text ? <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{text}</p> : null

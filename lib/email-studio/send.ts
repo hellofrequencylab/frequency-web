@@ -1,0 +1,382 @@
+// Email Studio (2026) — the campaign SEND pipeline (Phase 4). Turns a block-based
+// EmailDoc campaign into a real, gated, per-recipient send WITHOUT building a new queue
+// or gate: it reuses the app's proven send infrastructure verbatim.
+//
+//   • resolveSegment (lib/studio/campaigns)      — WHO (segment -> Recipient[])
+//   • resolveSendGate (lib/comms/send-gate)      — the ONE unified consent + suppression
+//                                                  + preference decision per recipient
+//   • enqueueEmail   (lib/email)                 — the durable outbox (never inline send)
+//   • the approval spine (lib/beta/approvals)    — a beta campaign (phase_id set) still
+//                                                  routes through assertApproved before send
+//
+// The ONLY thing new here vs. the marketing composer's sendCampaign loop is that the body
+// is RENDERED from the campaign's `block_json` (EntityLayout) via compileEmailDoc, and per
+// recipient merge tags (contact first name etc.) are applied at send time.
+//
+// Server-only, but NOT a 'use server' module (it exports a pure state machine + a size
+// guard used by the unit test). The thin server-action entrypoints live in
+// app/(main)/admin/email-studio/send-actions.ts. Voice canon: no em dashes in any copy.
+
+import { createAdminClient } from '@/lib/supabase/admin'
+import { ok, fail, type ActionResult } from '@/lib/action-result'
+import { resolveSegment, type SegmentKey } from '@/lib/studio/campaigns'
+import { resolveSendGate } from '@/lib/comms/send-gate'
+import { enqueueEmail, listUnsubscribeHeaders } from '@/lib/email'
+import { buildUnsubscribeUrl } from '@/lib/unsubscribe-tokens'
+import { assertApproved } from '@/lib/beta/approvals'
+import { SITE_URL } from '@/lib/site'
+import { compileEmailDoc } from './shell'
+import { applyMergeTags } from './render'
+import { MERGE_TAG_DEFAULT_FALLBACKS, type EmailDoc } from './types'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
+
+// ── Size guard (Gmail clips a message past ~102 KB) ─────────────────────────────
+// We warn a touch under the clip so an operator can trim before the footer / unsubscribe
+// gets cut off. Measured on the compiled HTML's UTF-8 byte length (what the mailbox sees).
+
+/** Warn when the compiled HTML crosses this many bytes (95 KB, safely under Gmail's 102 KB clip). */
+export const EMAIL_SIZE_WARN_BYTES = 95 * 1024
+
+/** Pure: does this compiled HTML exceed the size guard? Unit-tested. */
+export function exceedsEmailSizeGuard(html: string): boolean {
+  return emailHtmlByteLength(html) > EMAIL_SIZE_WARN_BYTES
+}
+
+/** UTF-8 byte length of the compiled HTML (what a mailbox provider measures). Pure. */
+export function emailHtmlByteLength(html: string): number {
+  return Buffer.byteLength(html, 'utf8')
+}
+
+/** The human warning copy for an oversized email (voice canon: plain, no em dashes). */
+export function emailSizeWarning(bytes: number): string {
+  const kb = Math.round(bytes / 1024)
+  return `This email is ${kb} KB. Gmail clips messages over about 102 KB, so the footer and unsubscribe link may be hidden. Trim the content before you send.`
+}
+
+// ── The pure lifecycle state machine ────────────────────────────────────────────
+// draft -> scheduled -> sending -> sent ; scheduled -> cancelled ; sending -> paused -> sending
+
+/** The send-lifecycle status held on `campaigns.status`. */
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
+
+/** A lifecycle action an operator (or the sender) can take on a campaign. */
+export type CampaignAction = 'schedule' | 'send' | 'complete' | 'pause' | 'resume' | 'cancel'
+
+/** The allowed transitions. Anything not listed is refused (returns null). */
+const TRANSITIONS: Record<CampaignStatus, Partial<Record<CampaignAction, CampaignStatus>>> = {
+  draft: { schedule: 'scheduled', send: 'sending', cancel: 'cancelled' },
+  scheduled: { send: 'sending', schedule: 'scheduled', pause: 'paused', cancel: 'cancelled' },
+  sending: { complete: 'sent', pause: 'paused' },
+  paused: { resume: 'sending', cancel: 'cancelled' },
+  sent: {},
+  cancelled: {},
+}
+
+/**
+ * The whole lifecycle policy as one pure function: given the current status and an action,
+ * return the next status, or null when the transition is not allowed. Deterministic + total;
+ * the truth table lives in the unit test.
+ */
+export function nextCampaignStatus(current: string, action: CampaignAction): CampaignStatus | null {
+  const row = TRANSITIONS[current as CampaignStatus]
+  if (!row) return null
+  return row[action] ?? null
+}
+
+// ── Row loading + the EmailDoc it carries ───────────────────────────────────────
+
+interface CampaignSendRow {
+  id: string
+  subject: string
+  preheader: string | null
+  block_json: EntityLayout | null
+  segment: string
+  status: string
+  phase_id: string | null
+  sent_at: string | null
+  scheduled_for: string | null
+}
+
+const SEND_COLS = 'id, subject, preheader, block_json, segment, status, phase_id, sent_at, scheduled_for'
+
+async function loadCampaign(campaignId: string): Promise<CampaignSendRow | null> {
+  const db = createAdminClient()
+  const { data } = await db.from('campaigns').select(SEND_COLS).eq('id', campaignId).maybeSingle()
+  if (!data) return null
+  return {
+    id: String(data.id),
+    subject: String(data.subject ?? ''),
+    preheader: (data.preheader as string) ?? null,
+    block_json: (data.block_json as EntityLayout | null) ?? null,
+    segment: String(data.segment ?? ''),
+    status: String(data.status ?? 'draft'),
+    phase_id: (data.phase_id as string) ?? null,
+    sent_at: (data.sent_at as string) ?? null,
+    scheduled_for: (data.scheduled_for as string) ?? null,
+  }
+}
+
+/** The EmailDoc a campaign row carries: block_json is the body layout; subject + preheader
+ *  live on their own columns. Fail-safe: a null block_json yields an empty layout. */
+function docFromRow(row: CampaignSendRow): EmailDoc {
+  const layout: EntityLayout = row.block_json ?? { rows: [] }
+  return { layout, subject: row.subject ?? '', preheader: row.preheader ?? '' }
+}
+
+// ── Per-recipient merge variables ────────────────────────────────────────────────
+// The curated safe set (types.ts MERGE_TAG_VARIABLES): a contact's first / last name +
+// email. We derive first / last from the contact's display_name (there is no split name
+// column). All values are HTML-escaped by applyMergeTags, so a merge value cannot inject.
+
+interface ContactVars {
+  firstName: string
+  lastName: string
+  email: string
+}
+
+/** Split a display name into first / rest. Pure. */
+function splitName(displayName: string | null): { firstName: string; lastName: string } {
+  const trimmed = (displayName ?? '').trim()
+  if (!trimmed) return { firstName: '', lastName: '' }
+  const parts = trimmed.split(/\s+/)
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
+/** Build the `{{contact.*}}` variable bag for one recipient. Pure. */
+function mergeVars(c: ContactVars): Record<string, string> {
+  return {
+    'contact.first_name': c.firstName,
+    'contact.last_name': c.lastName,
+    'contact.email': c.email,
+  }
+}
+
+/** Load display_name for a set of contact ids so the send loop can personalize. Fail-safe to {}. */
+async function loadContactNames(contactIds: string[]): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>()
+  if (!contactIds.length) return map
+  const db = createAdminClient()
+  const { data } = await db.from('contacts').select('id, display_name').in('id', contactIds)
+  for (const r of data ?? []) map.set(String(r.id), (r.display_name as string) ?? null)
+  return map
+}
+
+// ── compileCampaign: render block_json -> html/text, persist, size-check ─────────
+
+export interface CompileResult {
+  html: string
+  text: string
+  subject: string
+  preheader: string
+  bytes: number
+  /** Set when the compiled HTML crosses the size guard (Gmail clip risk); null otherwise. */
+  warning: string | null
+}
+
+/**
+ * Compile a campaign's `block_json` into send-ready html/text via compileEmailDoc, persist
+ * `compiled_html` (+ subject / preheader) back on the row, and enforce the size guard. The
+ * persisted HTML keeps merge tags intact (they resolve per recipient at send). Returns the
+ * compiled artifacts + a warning when the HTML risks the Gmail clip.
+ */
+export async function compileCampaign(campaignId: string): Promise<ActionResult<CompileResult>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+
+  const doc = docFromRow(row)
+  const compiled = compileEmailDoc(doc)
+  const bytes = emailHtmlByteLength(compiled.html)
+  const warning = bytes > EMAIL_SIZE_WARN_BYTES ? emailSizeWarning(bytes) : null
+
+  const db = createAdminClient()
+  const { error } = await db
+    .from('campaigns')
+    .update({ compiled_html: compiled.html, subject: compiled.subject, preheader: compiled.preheader })
+    .eq('id', campaignId)
+  if (error) return fail('Could not save the compiled email.')
+
+  return ok({
+    html: compiled.html,
+    text: compiled.text,
+    subject: compiled.subject,
+    preheader: compiled.preheader,
+    bytes,
+    warning,
+  })
+}
+
+// ── resolveCampaignAudience: count only ──────────────────────────────────────────
+
+export interface AudienceResult {
+  segment: string
+  count: number
+}
+
+/** Resolve the campaign's stored segment to a recipient COUNT (pre-gate membership). The
+ *  actual queued count at send can be lower once each recipient passes the send-gate. */
+export async function resolveCampaignAudience(campaignId: string): Promise<ActionResult<AudienceResult>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+  return countAudience(row.segment)
+}
+
+/** Resolve an explicit segment key to a count (used by the send-panel preview). */
+export async function countAudience(segment: SegmentKey): Promise<ActionResult<AudienceResult>> {
+  try {
+    const recipients = await resolveSegment(segment)
+    return ok({ segment, count: recipients.length })
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : 'Could not resolve that audience.')
+  }
+}
+
+// ── scheduleCampaign: validate + arm a future send ───────────────────────────────
+
+/**
+ * Schedule a campaign: validate the doc compiles + has a subject + a non-empty audience,
+ * then set status 'scheduled' and store the chosen segment + send time. Scheduling reuses
+ * the existing `campaigns.scheduled_for` timestamp column (no migration). It deliberately
+ * does NOT touch approval_status: a beta campaign's approval is governed by the spine and
+ * is re-checked at the real send (assertApproved).
+ */
+export async function scheduleCampaign(
+  campaignId: string,
+  input: { segment: SegmentKey; scheduledAt: string },
+): Promise<ActionResult<{ scheduledFor: string; count: number }>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+
+  const next = nextCampaignStatus(row.status, 'schedule')
+  if (!next) return fail(`A ${row.status} campaign cannot be scheduled.`)
+
+  const when = new Date(input.scheduledAt)
+  if (Number.isNaN(when.getTime())) return fail('Pick a valid date and time to send.')
+  if (when.getTime() <= Date.now()) return fail('The send time has to be in the future.')
+
+  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  if (!doc.subject.trim()) return fail('Add a subject line before you schedule.')
+  const compiled = compileEmailDoc(doc)
+  if (!compiled.html) return fail('This email has no content to send.')
+
+  const audience = await countAudience(input.segment)
+  if ('error' in audience) return audience
+  if (audience.data.count === 0) return fail('This audience is empty. Pick a segment with recipients.')
+
+  const db = createAdminClient()
+  const { error } = await db
+    .from('campaigns')
+    .update({ status: next, segment: input.segment, scheduled_for: when.toISOString() })
+    .eq('id', campaignId)
+  if (error) return fail('Could not schedule this campaign.')
+
+  return ok({ scheduledFor: when.toISOString(), count: audience.data.count })
+}
+
+// ── sendCampaignNow: the real, gated, per-recipient send ─────────────────────────
+
+/**
+ * THE SEND. Idempotent (refuses an already-sent campaign). For a beta campaign (phase_id
+ * set) it calls assertApproved FIRST, so nothing sends without approval. It compiles the
+ * body from block_json, resolves the segment, and for each recipient runs the ONE unified
+ * send-gate (suppression + consent + preference) before enqueuing a per-recipient email on
+ * the durable outbox, with merge tags + one-click unsubscribe headers applied. Marks the
+ * row 'sending' up front (so a double click cannot re-enter) then 'sent' with the count.
+ */
+export async function sendCampaignNow(campaignId: string): Promise<ActionResult<{ recipientCount: number }>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+
+  // Idempotency: never double-send.
+  if (row.status === 'sent' || row.sent_at) return fail('This campaign has already been sent.')
+  if (row.status === 'sending') return fail('This campaign is already sending.')
+
+  const next = nextCampaignStatus(row.status, 'send')
+  if (!next) return fail(`A ${row.status} campaign cannot be sent.`)
+
+  // THE GOVERNING RULE for beta campaigns: refuse unless the spine has approved this row.
+  if (row.phase_id) {
+    try {
+      await assertApproved({ type: 'campaign', id: campaignId })
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : 'Refused: this campaign is not approved.')
+    }
+  }
+
+  const doc: EmailDoc = { ...docFromRow(row), subject: row.subject }
+  const subjectTemplate = doc.subject.trim()
+  if (!subjectTemplate) return fail('The campaign has no subject to send.')
+
+  const db = createAdminClient()
+
+  // Mark in-flight before the loop so a concurrent click cannot re-enter and double-send.
+  await db.from('campaigns').update({ status: 'sending' }).eq('id', campaignId)
+
+  let count = 0
+  try {
+    const recipients = await resolveSegment(row.segment)
+    const names = await loadContactNames(recipients.map((r) => r.contactId))
+
+    for (const r of recipients) {
+      // The ONE unified send-gate (suppression + consent + preference) — the same seam the
+      // marketing composer and the beta send ride. Marketing email uses the lifecycle category.
+      const decision = await resolveSendGate(r.profileId, 'email', 'lifecycle', { email: r.email })
+      if (!decision.allowed) continue
+
+      const unsubscribeUrl = buildUnsubscribeUrl({ baseUrl: SITE_URL, profileId: r.profileId, category: 'lifecycle' })
+      const { firstName, lastName } = splitName(names.get(r.contactId) ?? null)
+      const vars = mergeVars({ firstName, lastName, email: r.email })
+
+      // Compile per recipient so the footer carries THIS recipient's unsubscribe link, then
+      // resolve merge tags: HTML gets escaped values (default), text + subject stay raw.
+      const compiled = compileEmailDoc(doc, { unsubscribeUrl })
+      const html = applyMergeTags(compiled.html, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS })
+      const text = applyMergeTags(compiled.text, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
+      const subject = applyMergeTags(subjectTemplate, vars, { fallbacks: MERGE_TAG_DEFAULT_FALLBACKS, escape: false })
+
+      await enqueueEmail({ to: r.email, subject, html, text, headers: listUnsubscribeHeaders(unsubscribeUrl) })
+      count++
+    }
+  } catch (err) {
+    console.error('[email-studio] sendCampaignNow send loop failed:', err)
+    // Leave the row 'sending' so the failure is visible and no partial run is marked 'sent'.
+    return fail('The send did not complete. No status was changed to sent.')
+  }
+
+  await db
+    .from('campaigns')
+    .update({ status: 'sent', recipient_count: count, sent_at: new Date().toISOString() })
+    .eq('id', campaignId)
+
+  return ok({ recipientCount: count })
+}
+
+// ── Lifecycle transitions: pause / cancel ────────────────────────────────────────
+
+/**
+ * Pause a campaign. Best-effort while sending (the in-flight loop is not interrupted, but a
+ * scheduled campaign will not fire and the status reflects the hold). Guarded by the pure
+ * state machine: only a scheduled or sending campaign can pause.
+ */
+export async function pauseCampaign(campaignId: string): Promise<ActionResult<{ status: CampaignStatus }>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+  const next = nextCampaignStatus(row.status, 'pause')
+  if (!next) return fail(`A ${row.status} campaign cannot be paused.`)
+  const db = createAdminClient()
+  const { error } = await db.from('campaigns').update({ status: next }).eq('id', campaignId)
+  if (error) return fail('Could not pause this campaign.')
+  return ok({ status: next })
+}
+
+/** Cancel a campaign (terminal). A scheduled or paused campaign can be cancelled; an
+ *  in-flight send cannot (pause it first). Guarded by the state machine. */
+export async function cancelCampaign(campaignId: string): Promise<ActionResult<{ status: CampaignStatus }>> {
+  const row = await loadCampaign(campaignId)
+  if (!row) return fail('That campaign no longer exists.')
+  const next = nextCampaignStatus(row.status, 'cancel')
+  if (!next) return fail(`A ${row.status} campaign cannot be cancelled.`)
+  const db = createAdminClient()
+  const { error } = await db.from('campaigns').update({ status: next, scheduled_for: null }).eq('id', campaignId)
+  if (error) return fail('Could not cancel this campaign.')
+  return ok({ status: next })
+}

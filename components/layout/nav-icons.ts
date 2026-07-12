@@ -44,6 +44,7 @@ import {
   User,
   Receipt,
   Blocks,
+  ClipboardPaste,
 } from 'lucide-react'
 
 // Maps each NAV_AREAS key (lib/nav-areas.ts — the framework-free source of truth)
@@ -155,6 +156,7 @@ const LUCIDE_BY_NAME: Record<string, ElementType> = {
   User,
   Receipt,
   Blocks,
+  ClipboardPaste,
 }
 
 // Resolve a menu item's stored `icon` string to an icon component, for the DB-backed

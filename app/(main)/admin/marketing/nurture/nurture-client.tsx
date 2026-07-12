@@ -5,9 +5,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, ChevronDown, ChevronRight, Clock } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, Clock, LayoutTemplate } from 'lucide-react'
 import { createSequence, toggleSequence, addStep, updateStep, deleteStep } from './actions'
 import { StatusChip } from '@/components/admin/status'
+import { starterRows, type EntityLayout } from '@/lib/entity-blocks/layout'
+import { StepBlockEditor } from './step-block-editor'
 
 export interface StepRowData {
   id: string
@@ -16,6 +18,8 @@ export interface StepRowData {
   subject: string
   body: string
   enabled: boolean
+  /** The step's block-editor body (kind 'email'), or null when it still uses the plain `body`. */
+  blockJson: EntityLayout | null
 }
 export interface PersonaRow {
   persona: string
@@ -135,11 +139,13 @@ function PersonaCard({ row }: { row: PersonaRow }) {
 function StepEditor({ step, index }: { step: StepRowData; index: number }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
+  const [designing, setDesigning] = useState(false)
   const [delay, setDelay] = useState(String(step.delayHours))
   const [subject, setSubject] = useState(step.subject)
   const [body, setBody] = useState(step.body)
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  const hasBlock = step.blockJson != null
 
   function save() {
     start(async () => {
@@ -194,16 +200,34 @@ function StepEditor({ step, index }: { step: StepRowData; index: number }) {
           <p className="flex items-center gap-1.5 text-2xs font-medium text-subtle">
             <Clock className="h-3 w-3" /> {humanDelay(step.delayHours)}
           </p>
-          <p className="truncate text-sm font-semibold text-text">{step.subject}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs text-muted">{step.body}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-semibold text-text">{step.subject}</p>
+            {hasBlock && <StatusChip tone="info" size="sm">Designed</StatusChip>}
+          </div>
+          <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+            {hasBlock ? 'This step sends a block-designed email. Open the designer to edit it.' : step.body}
+          </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
+          <button onClick={() => setDesigning((d) => !d)} aria-pressed={designing} className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-2xs transition-colors ${designing ? 'border-primary text-primary-strong' : 'border-border text-muted hover:text-text'}`}>
+            <LayoutTemplate className="h-3 w-3" /> Design
+          </button>
           <button onClick={toggle} disabled={pending} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text disabled:opacity-60">{step.enabled ? 'Disable' : 'Enable'}</button>
           <button onClick={() => setEditing(true)} className="rounded-md border border-border px-2 py-1 text-2xs text-muted hover:text-text">Edit</button>
           <button onClick={remove} disabled={pending} className="rounded-md border border-border px-2 py-1 text-muted hover:text-danger disabled:opacity-60" aria-label="Delete step"><Trash2 className="h-3 w-3" /></button>
         </div>
       </div>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
+      {designing && (
+        <div className="rounded-xl border border-border bg-canvas/40 p-3">
+          <StepBlockEditor
+            key={`block-${step.id}`}
+            stepId={step.id}
+            subject={step.subject}
+            initialLayout={step.blockJson ?? { rows: starterRows('email', 'basic') }}
+          />
+        </div>
+      )}
     </div>
   )
 }

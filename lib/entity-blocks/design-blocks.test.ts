@@ -27,7 +27,9 @@ describe('design blocks in the entity-block registry (ADR-565)', () => {
       const block = ENTITY_BLOCKS.find((b) => b.id === id)
       expect(block, id).toBeTruthy()
       expect(block!.category).toBe('content')
-      expect(block!.kinds).toEqual(['space'])
+      // Space content blocks. Several also port to email (Email Studio, 2026), so assert space membership
+      // rather than an exact single-kind array; zigzag / accentBeat stay space-only.
+      expect(block!.kinds).toContain('space')
       expect(block!.requiresFunction).toBeUndefined()
     }
   })

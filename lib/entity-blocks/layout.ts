@@ -1,4 +1,4 @@
-import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
+import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
 import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
   isTemplateId,
@@ -133,6 +133,10 @@ const MAX_STACK = 12
 export const MAX_COLUMNS_BY_KIND: Record<EntityKind, RowColumns> = {
   member: 1,
   space: 2,
+  // Email (Email Studio, 2026) stacks a single vertical column of sections. One column is the safe, universal
+  // email layout that renders identically across every mail client (multi-column can come later); the email
+  // renderer never emits a side-by-side grid.
+  email: 1,
 }
 
 /** The max columns for a kind (see MAX_COLUMNS_BY_KIND). */
@@ -436,20 +440,24 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
     if (clean.length) out.hidden = [...new Set(clean)]
   }
   // Content + style were already validated by parseEntityLayout (block-id allowlist + per-field / enum
-  // sanitize); keep only the entries whose block supports this kind, so a wrong-kind bag is dropped.
+  // sanitize). Iterate the ALLOWLIST of blocks valid for this kind (blocksForKind), NOT the raw user
+  // keys, so every written property name is a fixed registry id — a user-originated key is only ever
+  // READ, never used as a write property name (CodeQL js/remote-property-injection; mirrors the
+  // sanitizeContentMap / KNOWN_SLOT_IDS pattern). A wrong-kind block is absent from the list, so its bag
+  // drops for free.
   if (parsed.content) {
+    const src = parsed.content
     const content: Record<string, Record<string, unknown>> = {}
-    for (const [id, props] of Object.entries(parsed.content)) {
-      const block = entityBlockById(id)
-      if (block && blockSupportsKind(block, kind)) content[id] = props
+    for (const block of blocksForKind(kind)) {
+      if (Object.hasOwn(src, block.id)) content[block.id] = src[block.id]
     }
     if (Object.keys(content).length) out.content = content
   }
   if (parsed.style) {
+    const src = parsed.style
     const style: Record<string, BlockStyle> = {}
-    for (const [id, s] of Object.entries(parsed.style)) {
-      const block = entityBlockById(id)
-      if (block && blockSupportsKind(block, kind)) style[id] = s
+    for (const block of blocksForKind(kind)) {
+      if (Object.hasOwn(src, block.id)) style[block.id] = src[block.id]
     }
     if (Object.keys(style).length) out.style = style
   }
@@ -597,10 +605,21 @@ const SPACE_STARTERS: Record<StarterId, readonly RowDef[]> = {
   minimal: [r('r0', 1, ['about']), r('r1', 1, ['offerings']), r('r2', 1, ['contact'])],
 }
 
+// A fresh EMAIL starts as a single vertical column of authored blocks (single-column by construction). The
+// starter seeds a friendly skeleton the operator fills in: a Banner headline, a paragraph, and a Button
+// (`showcase`), a leaner heading + text + button (`basic`), or just a heading + text (`minimal`). All ids are
+// real email-palette blocks; their authored content is supplied by the editor (blank blocks render nothing).
+const EMAIL_STARTERS: Record<StarterId, readonly RowDef[]> = {
+  basic: [r('r0', 1, ['heading']), r('r1', 1, ['text']), r('r2', 1, ['button'])],
+  showcase: [r('r0', 1, ['photoHero']), r('r1', 1, ['text']), r('r2', 1, ['button'])],
+  minimal: [r('r0', 1, ['heading']), r('r1', 1, ['text'])],
+}
+
 /** The starter seeds by kind. Values are read-only templates; use starterRows to get a fresh, mutable copy. */
 export const STARTER_LAYOUTS: Record<EntityKind, Record<StarterId, readonly RowDef[]>> = {
   member: MEMBER_STARTERS,
   space: SPACE_STARTERS,
+  email: EMAIL_STARTERS,
 }
 
 /** A fresh, deep-copied RowDef[] for a starter seed (safe to hand to a mutable editor / renderer). */

@@ -18,6 +18,10 @@ export interface NurtureStep {
   subject: string
   body: string
   enabled: boolean
+  /** The block-editor body (an entity-blocks EntityLayout, kind 'email') when the step has been designed in
+   *  the arranger; null / undefined means the legacy plain `body` drives the send. Read-only carrier for the
+   *  admin UI; the pure scheduling helpers below never read it. */
+  blockJson?: import('@/lib/entity-blocks/layout').EntityLayout | null
 }
 
 /** Enabled steps, ascending by order — the canonical send order. */

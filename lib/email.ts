@@ -743,6 +743,81 @@ Frequency™ · ${BASE_URL}
 `
 }
 
+// ── Seeded-listing claim invite (to the original Classifieds/Housing poster) ─────
+// Sent once when an operator seeds a listing they found on behalf of the real poster and
+// we have the poster's EMAIL. A non-member transactional message (mirrors the event claim
+// invite): it must not claim membership, carries its own footer, and its CTA is the one-time
+// claim link that transfers ownership to the poster. Voice: plain, sentence case, no em dashes.
+
+export async function sendListingClaimInviteEmail(params: {
+  to: string
+  title: string
+  kind: 'classifieds' | 'housing'
+  claimUrl: string
+  listingUrl: string
+}) {
+  const { to, title } = params
+  await enqueueEmail({
+    to,
+    subject: `Claim your listing on Frequency: ${title}`,
+    html: listingClaimInviteHtml(params),
+    text: listingClaimInviteText(params),
+  })
+}
+
+/** The everyday noun for each seeder vertical, member-facing (NAMING.md §Marketplace). */
+function listingClaimNoun(kind: 'classifieds' | 'housing'): string {
+  return kind === 'housing' ? 'place' : 'listing'
+}
+
+function listingClaimInviteHtml({ title, kind, claimUrl, listingUrl }: {
+  title: string; kind: 'classifieds' | 'housing'; claimUrl: string; listingUrl: string
+}): string {
+  const noun = listingClaimNoun(kind)
+  const safeTitle = escapeHtml(title)
+  const footer = `Someone listed your ${noun} on Frequency, a place to find neighbors, homes, and good stuff nearby. You're getting this once so you can claim it or ignore it. Not yours? No action needed, it stays as a community listing.<br>${orgContactLine()}`
+  return emailShell(`
+    <h1 style="${h1Style}">Is this your ${noun}?</h1>
+    <p style="${pStyle}">Hi there,</p>
+    <p style="${pStyle}">
+      Someone added <strong>${safeTitle}</strong> to Frequency so people nearby can find it.
+    </p>
+    <p style="${pStyle}">
+      If it's yours, claim it to manage it. You can edit the details, hear from people who are interested,
+      and run it from your own account.
+    </p>
+    <a href="${claimUrl}" style="${btnStyle}">Claim your ${noun} &rarr;</a>
+    <hr style="${dividerStyle}">
+    <p style="font-size:13px;color:#8F8675;">
+      Want to see it first? <a href="${listingUrl}" style="color:#9A5E12;text-decoration:none;font-weight:600;">View the listing</a>.
+    </p>
+    <p style="font-size:13px;color:#8F8675;">
+      Or paste this link in your browser:<br>
+      <span style="font-family:monospace;color:#6B6253;">${claimUrl}</span>
+    </p>
+  `, footer)
+}
+
+function listingClaimInviteText({ title, kind, claimUrl, listingUrl }: {
+  title: string; kind: 'classifieds' | 'housing'; claimUrl: string; listingUrl: string
+}): string {
+  const noun = listingClaimNoun(kind)
+  return `Hi there,
+
+Someone added "${title}" to Frequency so people nearby can find it.
+
+If it's yours, claim it to manage it. You can edit the details, hear from people who are interested, and run it from your own account.
+
+Claim your ${noun}:
+${claimUrl}
+
+Want to see it first? View the listing: ${listingUrl}
+
+Someone listed your ${noun} on Frequency, a place to find neighbors, homes, and good stuff nearby. You're getting this once so you can claim it or ignore it. Not yours? No action needed.
+Frequency™ · ${BASE_URL}
+`
+}
+
 // Weekly community digest ──────────────────────────────────────────────────────
 
 function formatDigestDate(iso: string): string {
