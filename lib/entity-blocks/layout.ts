@@ -1,4 +1,4 @@
-import { entityBlockById, blockSupportsKind, type EntityKind } from './registry'
+import { entityBlockById, blockSupportsKind, blocksForKind, type EntityKind } from './registry'
 import { sanitizeContentMap, sanitizeStyleMap, type BlockStyle, type MarginStep } from './block-content'
 import {
   isTemplateId,
@@ -440,20 +440,24 @@ export function sanitizeEntityLayout(raw: unknown, kind: EntityKind): EntityLayo
     if (clean.length) out.hidden = [...new Set(clean)]
   }
   // Content + style were already validated by parseEntityLayout (block-id allowlist + per-field / enum
-  // sanitize); keep only the entries whose block supports this kind, so a wrong-kind bag is dropped.
+  // sanitize). Iterate the ALLOWLIST of blocks valid for this kind (blocksForKind), NOT the raw user
+  // keys, so every written property name is a fixed registry id — a user-originated key is only ever
+  // READ, never used as a write property name (CodeQL js/remote-property-injection; mirrors the
+  // sanitizeContentMap / KNOWN_SLOT_IDS pattern). A wrong-kind block is absent from the list, so its bag
+  // drops for free.
   if (parsed.content) {
+    const src = parsed.content
     const content: Record<string, Record<string, unknown>> = {}
-    for (const [id, props] of Object.entries(parsed.content)) {
-      const block = entityBlockById(id)
-      if (block && blockSupportsKind(block, kind)) content[id] = props
+    for (const block of blocksForKind(kind)) {
+      if (Object.hasOwn(src, block.id)) content[block.id] = src[block.id]
     }
     if (Object.keys(content).length) out.content = content
   }
   if (parsed.style) {
+    const src = parsed.style
     const style: Record<string, BlockStyle> = {}
-    for (const [id, s] of Object.entries(parsed.style)) {
-      const block = entityBlockById(id)
-      if (block && blockSupportsKind(block, kind)) style[id] = s
+    for (const block of blocksForKind(kind)) {
+      if (Object.hasOwn(src, block.id)) style[block.id] = src[block.id]
     }
     if (Object.keys(style).length) out.style = style
   }
