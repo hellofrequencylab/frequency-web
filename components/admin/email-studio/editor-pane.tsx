@@ -158,8 +158,10 @@ export function EmailEditorPane({
             onTogglePreview={() => {}}
             showPreviewToggle={false}
           />
-          {/* MIDDLE — the editor: block settings (Your page) LEFT, the live preview expanded RIGHT. */}
-          <div className="grid gap-4 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+          {/* MIDDLE — the editor: a narrow Your page rail (~30%, min 220px) on the LEFT, the live preview
+              taking the rest on the RIGHT. The preview auto-scales the fixed-width email to fit, so the whole
+              email always shows with no scroll however wide this column ends up. */}
+          <div className="grid gap-4 lg:grid-cols-[minmax(220px,30%)_minmax(0,1fr)]">
             <div className="min-w-0">
               <EntityPageBuilder pageId={id} kind="email" loadRailData={loadRailData} seed={seed} />
             </div>
