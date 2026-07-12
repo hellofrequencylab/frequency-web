@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { QrCode, SlidersHorizontal, ArrowUpRight } from 'lucide-react'
+import { SlidersHorizontal, ArrowUpRight } from 'lucide-react'
 import { DetailTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { getMyProfileId, getCallerProfile } from '@/lib/auth'
@@ -28,6 +28,7 @@ import { SpaceManageBoard } from '@/app/(main)/spaces/[slug]/manage/manage-board
 import { SpaceCrmSnapshot } from '@/app/(main)/spaces/[slug]/crm/crm-snapshot'
 import { isFollowing } from '@/lib/spaces/follows'
 import { AccentScope } from '@/components/spaces/accent-scope'
+import { SpaceShareButton } from '@/components/spaces/space-share-button'
 import { JsonLd } from '@/components/json-ld'
 import { spaceSchema, breadcrumbSchema } from '@/lib/jsonld'
 import { getSpaceReviews } from '@/lib/spaces/content-data'
@@ -71,16 +72,12 @@ const onInkSecondaryClasses = cn(
   'border border-white/40 bg-white/10 text-on-ink backdrop-blur-sm hover:bg-white/20',
 )
 
-// The ONE dominant primary action, now a TEXT LINK rather than a filled button (D-refine #6): an
-// unfilled accent-colored label that underlines on hover, so the header reads calmer while Connect /
-// Customize stay beside it. Over a Hero photo (shade scrim) it uses the on-ink token that the rest of
-// the overlaid identity uses; in flow / on a blend cover it uses the accent text token. Tokens only, no
-// hex. The trailing ArrowUpRight marks it as a link.
-function primaryCtaTextLink(onInk: boolean): string {
-  return cn(
-    'inline-flex items-center gap-1.5 text-sm font-bold underline-offset-4 transition-colors hover:underline',
-    onInk ? 'text-on-ink hover:text-white' : 'text-primary-strong hover:text-primary',
-  )
+// The ONE dominant primary action: a real filled primary BUTTON on the Space header (owner ask — the
+// header CTA is a BUTTON, while the Space INDEX card uses a text link). It keeps its accent fill in flow
+// and over a Hero photo alike; on a cover photo it gains a soft shadow so it lifts off the image. Tokens
+// only, no hex.
+function primaryCtaButton(onInk: boolean): string {
+  return buttonClasses('primary', 'sm', onInk ? 'shadow-md' : undefined)
 }
 
 function ownerToolClasses(onInk: boolean): string {
@@ -255,23 +252,29 @@ export default async function SpaceProfileChromeLayout({
   // Desktop hero buttons share a fixed h-9 and never shrink, so Book / QR / Edit Space line up as one even
   // row (the mobile band renders its own separate buttons, untouched).
   const primaryCta = (onInk = false) => (
-    <Link href={ctaHref} className={cn(primaryCtaTextLink(onInk), 'h-9 shrink-0')} {...ctaLinkProps}>
+    <Link href={ctaHref} className={cn(primaryCtaButton(onInk), 'h-9 shrink-0')} {...ctaLinkProps}>
       {ctaLabel}
       <ArrowUpRight className="h-4 w-4" aria-hidden />
     </Link>
   )
   // The Connect affordance shows the "QR" label IN FRONT of the QR glyph (owner ask), so it reads as a
-  // labelled button, not a bare icon.
+  // labelled button, not a bare icon. ROOT-CAUSE FIX: this used to be a bare `<Link href="/codes">`,
+  // which opened the VIEWER's OWN personal code hub (their code + their avatar) — so a scan of a business
+  // Space showed the scanner's personal code, not the Space's. It now opens SpaceShareButton, which
+  // encodes THIS Space's public page + centers the Space's brand logo (and carries the sharer's ref for
+  // attribution + a "Save contact" vCard link).
   const connectLink = (onInk = false) => (
-    <Link
-      href="/codes"
-      aria-label={`Connect with ${brandName}`}
-      title="Connect"
-      className={cn(onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm'), 'h-9 shrink-0 gap-1.5')}
-    >
-      QR
-      <QrCode className="h-4 w-4" aria-hidden />
-    </Link>
+    <SpaceShareButton
+      slug={space.slug}
+      brandName={brandName}
+      brandLogoUrl={space.brandLogoUrl}
+      sharerProfileId={viewerProfileId}
+      hasContactCard
+      className={cn(
+        onInk ? onInkSecondaryClasses : buttonClasses('secondary', 'sm'),
+        'inline-flex items-center h-9 shrink-0 gap-1.5',
+      )}
+    />
   )
 
   // The identity ACTION ROW (desktop, ≥sm): the emphasized primary CTA, then Connect, then the single
@@ -303,13 +306,19 @@ export default async function SpaceProfileChromeLayout({
   // above the identity on the cover. `sm:hidden` — desktop keeps the overlaid row.
   const mobileActionBand = (
     <div className="mt-4 flex items-center gap-2 sm:hidden">
-      <Link href={ctaHref} className={cn(primaryCtaTextLink(false), 'flex-1')} {...ctaLinkProps}>
+      <Link href={ctaHref} className={cn(primaryCtaButton(false), 'flex-1')} {...ctaLinkProps}>
         {ctaLabel}
         <ArrowUpRight className="h-4 w-4" aria-hidden />
       </Link>
-      <Link href="/codes" aria-label={`Connect with ${brandName}`} title="QR code" className={ghostIconClasses}>
-        <QrCode className="h-5 w-5" aria-hidden />
-      </Link>
+      <SpaceShareButton
+        slug={space.slug}
+        brandName={brandName}
+        brandLogoUrl={space.brandLogoUrl}
+        sharerProfileId={viewerProfileId}
+        hasContactCard
+        iconOnly
+        className={ghostIconClasses}
+      />
       {ownerTools(false, '', true)}
     </div>
   )

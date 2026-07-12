@@ -210,7 +210,7 @@ function Splash({
   footerMenu,
   menuTimings,
 }: {
-  referrer: { displayName: string; handle: string; avatarUrl: string | null } | null
+  referrer: { displayName: string; handle: string; avatarUrl: string | null; vcardEnabled: boolean } | null
   isAuth?: boolean
   headerMenu?: ResolvedMenu
   footerMenu?: ResolvedMenu
@@ -280,6 +280,17 @@ function Splash({
                 <span className="font-semibold">{referrer.displayName}</span> invited you to Frequency
               </span>
             </div>
+          )}
+          {/* A scanned personal code lands here (the splash) for a not-yet-member scanner. When the
+              inviter published a contact card, offer "Save contact" so the scan can reach it — the
+              personal code's whole point in person. Links to the public vCard route (attachment .vcf). */}
+          {referrer?.vcardEnabled && (
+            <a
+              href={`/people/${referrer.handle}/vcard`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-white/15"
+            >
+              Save {referrer.displayName.trim().split(/\s+/)[0]}&rsquo;s contact
+            </a>
           )}
           <div className="flex flex-col items-center gap-3 sm:flex-row">
             <Button href="/start">

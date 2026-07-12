@@ -91,13 +91,31 @@ describe('publicShareUrl', () => {
       )
     })
 
-    it('never attaches a ref on a NON-person page (circle/space/event)', () => {
-      expect(publicShareUrl('https://freq.app', '/circles/skaters', { ref: REF })).toEqual({
-        path: '/circles/skaters',
-        url: 'https://freq.app/circles/skaters',
+    it('attaches the SHARER ref on a non-person entity page (space/event/circle)', () => {
+      // The sharer's own id rides an entity share so a new signup is credited to whoever shared it
+      // (mirrors the person path; the proxy drops fq_ref → applyReferralAttribution).
+      expect(publicShareUrl('https://freq.app', '/spaces/the-lab', { ref: REF })).toEqual({
+        path: '/spaces/the-lab',
+        url: `https://freq.app/spaces/the-lab?ref=${REF}`,
       })
+      expect(publicShareUrl('https://freq.app', '/circles/skaters', { ref: REF }).url).toBe(
+        `https://freq.app/circles/skaters?ref=${REF}`,
+      )
       expect(publicShareUrl('https://freq.app', '/events/sunset-jam', { ref: REF }).url).toBe(
-        'https://freq.app/events/sunset-jam',
+        `https://freq.app/events/sunset-jam?ref=${REF}`,
+      )
+    })
+
+    it('carries the sharer ref through a space owner sub-route back to the public page', () => {
+      // /spaces/<slug>/settings/qr resolves to /spaces/<slug>; the ref still attaches to the url.
+      expect(publicShareUrl('https://freq.app', '/spaces/the-lab/settings/qr', { ref: REF }).url).toBe(
+        `https://freq.app/spaces/the-lab?ref=${REF}`,
+      )
+    })
+
+    it('still never attaches a ref that collapsed to the safe fallback (admin surface)', () => {
+      expect(publicShareUrl('https://freq.app', '/admin/qr', { ref: REF }).url).toBe(
+        `https://freq.app${SAFE_FALLBACK}`,
       )
     })
 

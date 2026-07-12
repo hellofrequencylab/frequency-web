@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Users, UserPlus, CalendarDays, Building2, ArrowUpRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { EntityCard } from '@/components/cards/entity-card'
 import { spaceCategoryLabel } from '@/lib/spaces/categories'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
@@ -96,16 +95,16 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
       }
       coverAction={
         space.action ? (
-          // A REAL button (the shared Button primitive, secondary variant), matching how this same action
-          // renders on the Space profile header and everywhere else — not a bare text link. It sits over the
-          // cover's ink scrim bottom-right; the opaque surface fill + backdrop-blur keep it legible on ANY
-          // operator cover. Tokens only, no accent fill. `asChild` keeps it one navigational anchor.
-          <Button asChild variant="secondary" size="sm" className="shadow-sm backdrop-blur-sm">
-            <Link href={space.action.href}>
-              {space.action.label}
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </Button>
+          // A text LINK on the index card (the button treatment lives on the Space profile HEADER, not here).
+          // It sits over the cover's ink scrim bottom-right; the backdrop-blur keeps it legible on any operator
+          // cover. Rendered as a sibling anchor of the card's profile link, so the two are never nested.
+          <Link
+            href={space.action.href}
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-semibold text-on-ink underline decoration-1 underline-offset-2 backdrop-blur-sm hover:decoration-2"
+          >
+            {space.action.label}
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
         ) : undefined
       }
       title={space.name}

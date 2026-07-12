@@ -91,6 +91,7 @@ export function VcardEditor({
         {config.enabled && (
           <a
             href={`/people/${handle}/vcard`}
+            download={`${handle}.vcf`}
             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-surface-elevated hover:text-text"
           >
             <Download className="h-3.5 w-3.5" /> Download .vcf

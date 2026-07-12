@@ -10,6 +10,7 @@ import { awardZapsForAction } from '@/lib/zaps'
 import { track } from '@/lib/analytics/track'
 import { recordEntryPointConversion } from '@/lib/entry-points/ab'
 import { recordReferralActivation } from '@/lib/beta/referral-contest'
+import { parseVcard } from '@/lib/vcard'
 
 const REF_COOKIE = 'fq_ref'
 const VAR_COOKIE = 'fq_var'
@@ -205,8 +206,16 @@ export async function runReferralRelease(): Promise<{ released: number; checked:
 
 /** The referrer behind the current visitor's `fq_ref` cookie, for the personalized
  *  splash ("[Name] invited you"). Read-only — does NOT clear the cookie (that happens
- *  at signup in applyReferralAttribution). Null when there's no valid live referral. */
-export async function getReferrer(): Promise<{ displayName: string; handle: string; avatarUrl: string | null } | null> {
+ *  at signup in applyReferralAttribution). Null when there's no valid live referral.
+ *  `vcardEnabled` reports whether this referrer has published a contact card, so a
+ *  scanned personal code (which lands on the splash for an anonymous scanner) can offer
+ *  a "Save contact" path to `/people/<handle>/vcard` — otherwise a scan never reaches it. */
+export async function getReferrer(): Promise<{
+  displayName: string
+  handle: string
+  avatarUrl: string | null
+  vcardEnabled: boolean
+} | null> {
   try {
     const jar = await cookies()
     const ref = jar.get(REF_COOKIE)?.value
@@ -214,14 +223,26 @@ export async function getReferrer(): Promise<{ displayName: string; handle: stri
     const db = createAdminClient()
     const { data } = await db
       .from('profiles')
-      .select('display_name, handle, avatar_url, is_active, is_system')
+      .select('display_name, handle, avatar_url, is_active, is_system, vcard')
       .eq('id', ref)
       .maybeSingle()
     const p = data as
-      | { display_name: string; handle: string; avatar_url: string | null; is_active: boolean; is_system: boolean }
+      | {
+          display_name: string
+          handle: string
+          avatar_url: string | null
+          is_active: boolean
+          is_system: boolean
+          vcard: unknown
+        }
       | null
     if (!p || p.is_active === false || p.is_system) return null
-    return { displayName: p.display_name, handle: p.handle, avatarUrl: p.avatar_url }
+    return {
+      displayName: p.display_name,
+      handle: p.handle,
+      avatarUrl: p.avatar_url,
+      vcardEnabled: parseVcard(p.vcard).enabled,
+    }
   } catch {
     return null
   }

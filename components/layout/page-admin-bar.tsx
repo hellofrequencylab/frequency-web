@@ -29,6 +29,15 @@ const SHAREABLE_PREFIXES = [
   'people',
   'hubs',
   'nexuses',
+  // Entity detail pages that should share their OWN public code (their entity's image is supplied via
+  // ShareImageProvider where the page wires it). Spaces are intentionally NOT here: a Space profile
+  // carries its own dedicated "Connect" control in the header (SpaceShareButton — the entity's code +
+  // brand logo + attribution + Save contact), so the generic divider control would be a redundant
+  // second share affordance and would reintroduce a line under the space menu the owner removed.
+  'practices',
+  'journeys',
+  'programs',
+  'partners',
 ] as const
 
 function isShareable(pathname: string): boolean {

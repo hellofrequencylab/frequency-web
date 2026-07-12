@@ -304,6 +304,16 @@ describe('createSpaceCode (gating + cap + validation)', () => {
     expect(db.inserts[0]!.target_url).toBe('https://x.com')
   })
 
+  it('stamps the creator as the attribution owner (so a scan credits their Zaps)', async () => {
+    const r = await createSpaceCode('space-a', { title: 'Poster', targetUrl: 'https://x.com' })
+    expect('error' in r).toBe(false)
+    // owner_profile_id = created_by = the caller, so /q drops fq_ref for an anonymous scanner and
+    // applyReferralAttribution credits the creator (mirrors the personal-code path). purpose stays null.
+    expect(db.inserts[0]!.owner_profile_id).toBe('editor-0000-4000-a000-0000000editr')
+    expect(db.inserts[0]!.created_by).toBe('editor-0000-4000-a000-0000000editr')
+    expect(db.inserts[0]!.purpose ?? null).toBeNull()
+  })
+
   it('honors a valid custom slug', async () => {
     const r = await createSpaceCode('space-a', {
       title: 'Poster',

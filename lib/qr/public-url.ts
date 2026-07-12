@@ -62,11 +62,14 @@ export function isProfileRef(value: string | null | undefined): value is string 
   return typeof value === 'string' && UUID_RE.test(value)
 }
 
-/** True for a PERSON detail page (`/people/<handle>`) — the only surface whose share
- *  link/QR carries a profile `?ref`. A circle/space/event share never gets a person ref. */
-function isPersonPath(path: string): boolean {
+/** True for ANY public entity detail page (`/<prefix>/<slug>`, prefix in PUBLIC_ENTITY_PREFIXES —
+ *  people, spaces, events, circles, practices, journeys, ...). These are the surfaces whose share
+ *  link/QR may carry a `?ref` for attribution: a PERSON share carries the profile owner's id; every
+ *  OTHER entity share carries the SHARER's own id (credited on join, mirroring the person path). The
+ *  seam only attaches a ref the caller passes — a caller that supplies none is unchanged. */
+function isEntitySharePath(path: string): boolean {
   const segs = path.split('/').filter(Boolean)
-  return segs.length === 2 && segs[0] === 'people'
+  return segs.length === 2 && PUBLIC_ENTITY_PREFIXES.has(segs[0]!)
 }
 
 /** Extract the root-relative pathname from a pathname or an absolute URL. */
@@ -119,12 +122,15 @@ export function publicUrlFor(input: string): string {
  * the QR image, the copy link, and the saved code target all agree on one public
  * destination.
  *
- * REFERRAL ATTRIBUTION: pass `opts.ref` (the PROFILE OWNER's id) on a person page so
- * BOTH the copied link and the QR (which encodes the same url) attribute a new signup
- * to that owner. The ref rides only the `url` (the shareable/QR/saved-code target),
- * never the returned `path` — so the page's QR folder + "open" link stay the clean
- * canonical `/people/<handle>`. It is attached only when the ref is a valid UUID AND
- * the resolved target is a `/people/<handle>` page; every non-person share is unchanged.
+ * REFERRAL ATTRIBUTION: pass `opts.ref` so BOTH the copied link and the QR (which encodes
+ * the same url) attribute a new signup to a profile. On a PERSON page the ref is the profile
+ * OWNER's id (credit the person shared); on any OTHER public entity page (space, event, ...)
+ * the ref is the SHARER's own id (credit whoever shared it). Either way the proxy drops
+ * `fq_ref` on an anonymous visit and applyReferralAttribution credits at onboarding. The ref
+ * rides only the `url` (the shareable/QR/saved-code target), never the returned `path` — so the
+ * page's QR folder + "open" link stay the clean canonical entity route. It is attached only when
+ * the ref is a valid UUID AND the resolved target is a public entity detail page; a caller that
+ * passes no ref (most non-person shares) is unchanged.
  */
 export function publicShareUrl(
   origin: string,
@@ -132,7 +138,7 @@ export function publicShareUrl(
   opts?: { ref?: string | null },
 ): { path: string; url: string } {
   const path = publicUrlFor(pathname)
-  const attachRef = isProfileRef(opts?.ref) && isPersonPath(path)
+  const attachRef = isProfileRef(opts?.ref) && isEntitySharePath(path)
   const url = attachRef ? `${origin}${path}?ref=${opts!.ref}` : `${origin}${path}`
   return { path, url }
 }
