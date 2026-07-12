@@ -1,7 +1,9 @@
 import { BadgeCheck, Users } from 'lucide-react'
 import { listMembershipTiers, getMyMembership } from '@/lib/spaces/memberships'
 import { billingLive } from '@/lib/pricing/settings'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { MembershipJoinCard } from '@/components/spaces/membership-join-card'
 import { MembershipCancelButton } from '@/components/spaces/membership-cancel-button'
 
@@ -16,7 +18,15 @@ import { MembershipCancelButton } from '@/components/spaces/membership-cancel-bu
 // joining registers the member now and paid billing comes later. The copy here and in the join card
 // says so plainly, with no narrated feelings and no em/en dashes (CONTENT-VOICE §10).
 
-export async function MembershipJoin({ spaceId }: { spaceId: string }) {
+export async function MembershipJoin({
+  spaceId,
+  slug,
+  ownerProfileId,
+}: {
+  spaceId: string
+  slug: string
+  ownerProfileId: string | null
+}) {
   const [tiers, mine, billingOn] = await Promise.all([
     listMembershipTiers(spaceId),
     getMyMembership(spaceId),
@@ -47,6 +57,26 @@ export async function MembershipJoin({ spaceId }: { spaceId: string }) {
   }
 
   if (tiers.length === 0) {
+    // OPERATOR (owner / admin / editor): this is the reported dead end (a membership Focus with no tiers,
+    // e.g. a massage business whose "Book Now" opens an empty Join). Point them straight to the tier
+    // config, and offer to change what their button opens if memberships is not what they meant.
+    if (await viewerManagesSpace({ id: spaceId, ownerProfileId })) {
+      return (
+        <AdminSetupPrompt
+          icon={Users}
+          title="Your button opens memberships, but none are set up."
+          description="Add a tier members can join. You can also change what your button opens."
+          links={[
+            { href: `/spaces/${slug}/settings/offerings#memberships`, label: 'Set up memberships' },
+            {
+              href: `/spaces/${slug}/manage/mode`,
+              label: 'Change what your button opens',
+              tone: 'secondary',
+            },
+          ]}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={Users}

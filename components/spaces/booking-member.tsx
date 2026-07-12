@@ -1,6 +1,8 @@
 import { CalendarDays } from 'lucide-react'
 import { listOpenSlots, getSpaceBookingTimezone, type OpenSlot } from '@/lib/spaces/booking'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { BookingPicker } from '@/components/spaces/booking-picker'
 
 // MEMBER BOOKING SURFACE (ENTITY-SPACES-SYSTEM section 2.4, booking v1). The self-fetching server
@@ -78,10 +80,37 @@ function timezoneLabel(timezone: string): string {
   }
 }
 
-export async function BookingMember({ spaceId }: { spaceId: string }) {
+export async function BookingMember({
+  spaceId,
+  slug,
+  ownerProfileId,
+}: {
+  spaceId: string
+  slug: string
+  ownerProfileId: string | null
+}) {
   const slots = await listOpenSlots(spaceId)
 
   if (slots.length === 0) {
+    // OPERATOR (owner / admin / editor): guide them to publish availability instead of showing the
+    // member "nothing here" copy, and offer to change what the primary button opens (the Focus).
+    if (await viewerManagesSpace({ id: spaceId, ownerProfileId })) {
+      return (
+        <AdminSetupPrompt
+          icon={CalendarDays}
+          title="Your button opens booking, but your calendar is empty."
+          description="Set your weekly times so members can book you. You can also change what your button opens."
+          links={[
+            { href: `/spaces/${slug}/settings/offerings#availability`, label: 'Set up availability' },
+            {
+              href: `/spaces/${slug}/manage/mode`,
+              label: 'Change what your button opens',
+              tone: 'secondary',
+            },
+          ]}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={CalendarDays}

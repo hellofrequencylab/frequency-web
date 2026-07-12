@@ -1,6 +1,8 @@
 import { HeartHandshake } from 'lucide-react'
 import { getDonationAsk } from '@/lib/spaces/donations'
+import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
+import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { DonateCtaTracker } from '@/components/spaces/donations/donate-cta-tracker'
 
 // MEMBER DONATE SURFACE (ENTITY-SPACES-SYSTEM §2.6 "Donate", MASTER-PLAN ADMIN-04). The self-fetching
@@ -27,10 +29,36 @@ export function formatAmount(cents: number): string {
   }).format(dollars)
 }
 
-export async function DonateMember({ spaceId }: { spaceId: string }) {
+export async function DonateMember({
+  spaceId,
+  slug,
+  ownerProfileId,
+}: {
+  spaceId: string
+  slug: string
+  ownerProfileId: string | null
+}) {
   const ask = await getDonationAsk(spaceId)
 
   if (!ask) {
+    // OPERATOR (owner / admin / editor): guide them to set up the fund instead of the member empty state.
+    if (await viewerManagesSpace({ id: spaceId, ownerProfileId })) {
+      return (
+        <AdminSetupPrompt
+          icon={HeartHandshake}
+          title="Your button opens giving, but there is no fund yet."
+          description="Set up your fund and the amounts supporters can pick. You can also change what your button opens."
+          links={[
+            { href: `/spaces/${slug}/settings/offerings#donations`, label: 'Set up your fund' },
+            {
+              href: `/spaces/${slug}/manage/mode`,
+              label: 'Change what your button opens',
+              tone: 'secondary',
+            },
+          ]}
+        />
+      )
+    }
     return (
       <EmptyState
         icon={HeartHandshake}
