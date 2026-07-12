@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { IndexTemplate } from '@/components/templates'
 import { buttonClasses } from '@/components/ui/button'
 import { JsonLd } from '@/components/json-ld'
@@ -27,6 +27,10 @@ import {
 const TITLE = 'Business Spaces'
 const DESCRIPTION =
   'Every practitioner, business, and organization in the Frequency network. Find one, see what they offer, and connect.'
+// The marketing header invitation: a plain, two-part welcome (browse what is here, or add your own), sized
+// for the on-photo hero. Voice canon: plain, no em dashes, never narrate the reader's feelings.
+const HERO_INVITE =
+  'Find a practitioner, business, studio, or shop near you. Or list your own and get discovered by everyone browsing the network.'
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -69,7 +73,10 @@ export default async function PublicSpacesDirectoryPage({
   const urlBase = { q, category, sort: sortParam, per, page }
 
   return (
-    <div className="mx-auto max-w-[104rem] px-6 py-16 sm:py-20">
+    // Shared page width with the public Space profiles (~88rem, set in the (main) public chrome), so moving
+    // between the directory and a Space reads as one product. The /discover layout already clears the fixed
+    // header, so the top padding here stays small (no double gap above the hero).
+    <div className="mx-auto max-w-[88rem] px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
       <JsonLd
         data={[
           spaceListSchema(spaces, TITLE),
@@ -81,34 +88,44 @@ export default async function PublicSpacesDirectoryPage({
       />
 
       {/* Public SEO surface: no operator admin bar (that is a member-app control). Same hero grammar as the
-          in-app directory so the two read as one product. */}
+          in-app directory so the two read as one product. The header is an invitation with TWO co-equal CTAs:
+          Browse (jump to the listings) and List your business (create). */}
       <IndexTemplate
         title={TITLE}
-        description={DESCRIPTION}
+        description={HERO_INVITE}
         adminBar={false}
         heroImage="/images/site/business-directory-hero.jpg"
         heroOverlay
         heroSize="large"
         action={
-          <Link href="/spaces/new" className={buttonClasses('primary', 'md')}>
-            <Plus className="h-4 w-4" aria-hidden />
-            List your business
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href="#directory" className={buttonClasses('primary', 'md')}>
+              <Search className="h-4 w-4" aria-hidden />
+              Browse businesses
+            </Link>
+            <Link href="/spaces/new" className={buttonClasses('secondary', 'md')}>
+              <Plus className="h-4 w-4" aria-hidden />
+              List your business
+            </Link>
+          </div>
         }
         toolbar={<SpacesToolbar showFollowing={false} />}
       >
-        <SpacesResults
-          basePath={PUBLIC_BASE}
-          spaces={spaces}
-          total={total}
-          q={q}
-          category={category}
-          following={false}
-          page={page}
-          per={per}
-          urlBase={urlBase}
-          gridClassName={DIRECTORY_GRID_WIDE}
-        />
+        {/* Anchor target for the hero's Browse CTA; scroll-mt clears the fixed site header. */}
+        <div id="directory" className="scroll-mt-24">
+          <SpacesResults
+            basePath={PUBLIC_BASE}
+            spaces={spaces}
+            total={total}
+            q={q}
+            category={category}
+            following={false}
+            page={page}
+            per={per}
+            urlBase={urlBase}
+            gridClassName={DIRECTORY_GRID_WIDE}
+          />
+        </div>
       </IndexTemplate>
 
       <div className="mt-16">
