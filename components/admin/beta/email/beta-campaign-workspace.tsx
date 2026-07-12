@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { CalendarDays, CheckCircle2, Eye, Loader2, Mail, MousePointerClick, Plus, Send } from 'lucide-react'
 import { StatCard } from '@/components/ui/stat-card'
 import { SectionHeader } from '@/components/ui/section-header'
+import { EditorShell } from '@/components/ui/editor-shell'
 import { EmailEditorPane } from '@/components/admin/email-studio/editor-pane'
 import { SendPanel, type CampaignStatus, type SegmentOption } from '@/components/admin/email-studio/send-panel'
 import {
@@ -285,26 +286,28 @@ export function BetaCampaignWorkspace({
         </aside>
       </div>
 
-      {/* BELOW — the editor for the active email (settings LEFT · canvas CENTER · preview RIGHT). */}
+      {/* BELOW — the editor for the active email, on the master white EDITOR SHELL: everything inside the white
+          panel is the editor app (compose fields, block rail, live preview, send bar). */}
       <section id={EDITOR_ANCHOR} ref={editorRef} aria-label="Email editor" className="scroll-mt-24">
-        <SectionHeader title="Editor" />
-        {selectedId == null ? (
-          <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-border">
-            <p className="text-sm text-muted">Pick an email above, or start a new one.</p>
-          </div>
-        ) : loading || !loaded ? (
-          <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border">
-            <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
-          </div>
-        ) : (
-          <EmailEditorPane
-            key={loaded.id}
-            campaign={loaded}
-            onSubjectChange={onSubjectChange}
-            arrangement={canvasFlag ? 'canvas' : 'trio'}
-            sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} layout="row" />}
-          />
-        )}
+        <EditorShell eyebrow="Beta Command Center" title="Editor">
+          {selectedId == null ? (
+            <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-border">
+              <p className="text-sm text-muted">Pick an email above, or start a new one.</p>
+            </div>
+          ) : loading || !loaded ? (
+            <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border">
+              <Loader2 className="h-5 w-5 animate-spin text-subtle" aria-hidden />
+            </div>
+          ) : (
+            <EmailEditorPane
+              key={loaded.id}
+              campaign={loaded}
+              onSubjectChange={onSubjectChange}
+              arrangement={canvasFlag ? 'canvas' : 'trio'}
+              sidebar={<SendPanel campaignId={loaded.id} status={selectedStatus} segments={segments} layout="row" />}
+            />
+          )}
+        </EditorShell>
       </section>
     </div>
   )
