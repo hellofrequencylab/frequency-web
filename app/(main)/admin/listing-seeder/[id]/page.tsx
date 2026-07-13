@@ -55,7 +55,7 @@ export default async function ListingSeedReviewPage({ params }: { params: Promis
           <EmptyState
             variant="error"
             title="The extract could not finish"
-            description={review.error ?? 'A step errored. It is recoverable — start the seed again from the console.'}
+            description={review.error ?? 'A step errored. It is recoverable. Start the seed again from the console.'}
           />
         ) : (
           <EmptyState

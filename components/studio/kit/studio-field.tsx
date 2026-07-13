@@ -32,10 +32,3 @@ export function StudioField({
     </label>
   )
 }
-
-/** A small section label (e.g. a picker group heading). */
-export function StudioSectionLabel({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <p className={`text-2xs font-semibold uppercase tracking-wide text-subtle ${className ?? ''}`}>{children}</p>
-  )
-}

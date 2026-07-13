@@ -703,7 +703,7 @@ function DetailDrawer({
             )}
           </div>
           {safeOverride && (
-            <p className="-mt-2 text-xs text-primary-strong">Vera edit preview — save to keep it, or revert.</p>
+            <p className="-mt-2 text-xs text-primary-strong">Vera edit preview. Save to keep it, or revert.</p>
           )}
 
           <p className="text-xs text-subtle">
@@ -778,7 +778,7 @@ function DetailDrawer({
                   type="button"
                   onClick={() => askVera('tweak')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
-                  title="A small, surgical change — keeps the graphic nearly identical"
+                  title="A small, surgical change that keeps the graphic nearly identical"
                   className="inline-flex items-center gap-1.5 rounded-2xl bg-primary px-3 py-1.5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
                 >
                   {veraBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -788,7 +788,7 @@ function DetailDrawer({
                   type="button"
                   onClick={() => askVera('redraw')}
                   disabled={veraBusy || reviewing || !instruction.trim()}
-                  title="Rebuild the whole graphic from scratch — for bigger changes"
+                  title="Rebuild the whole graphic from scratch, for bigger changes"
                   className="inline-flex items-center gap-1.5 rounded-2xl border border-border-strong px-3 py-1.5 text-sm font-semibold text-text hover:bg-surface-elevated disabled:opacity-70"
                 >
                   <RefreshCw className="h-4 w-4" /> Redraw

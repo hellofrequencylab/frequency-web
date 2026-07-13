@@ -99,7 +99,7 @@ All four data layers + server actions **already exist**: the work is the builder
 
 1. ✅ **Journey**: the reference instance (ADR-142).
 2. ✅ **Foundation**: the kit (§2: `useStudioDraft`, `useSortable`, `StudioIdentity`
-   atoms, `StudioField`/`StudioSectionLabel`, `SaveStatus`/`StudioFooter`,
+   atoms, `StudioField`, `SaveStatus`/`StudioFooter`,
    `StudioLaunchButton`) + the registry (§3); the journey builder now composes it
    (behavior-neutral). The proof the kit fits.
 3. ✅ **Practice**: `components/studio/practice/*`: a `NewPracticeButton` launcher

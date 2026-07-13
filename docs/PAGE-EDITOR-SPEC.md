@@ -36,7 +36,7 @@ member app and without sacrificing speed.
 ## 1. Architecture
 
 ```
-EDIT (admin, /studio/pages/[slug]/edit)        PUBLIC (/, /the-lab, …)
+EDIT (admin, /edit/[slug])                     PUBLIC (/, /the-lab, …)
 ┌───────────────────────────┐                  ┌───────────────────────────┐
 │ <Puck config data         │                  │ fetch published_data       │
 │   onPublish=save+publish/> │   Supabase       │ <Render config data/>      │
@@ -104,7 +104,7 @@ and declares left-bar **categories**. Accent words use a `title` + optional
 
 ## 5. Editor (Studio, admin-only)
 
-- `/studio/pages`: list the 4 editable pages + status + "last published".
+- `/pages`: list the 4 editable pages + status + "last published".
 - `/edit/[slug]`: the Puck editor:
   - `requireStaff('marketer')`. **Puck is dynamically imported here only.**
   - Loads `data` (draft). `<Puck config data onPublish={save+publish} />`.

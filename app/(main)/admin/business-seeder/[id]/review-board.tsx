@@ -488,7 +488,7 @@ function FieldRow({
           {/* Withheld flag */}
           {field.withheld && !editing && (
             <p className="mt-1 inline-flex items-center gap-1 text-2xs text-warning">
-              <ShieldQuestion className="h-3 w-3" aria-hidden /> Withheld from the live Space — needs a source or your confirm.
+              <ShieldQuestion className="h-3 w-3" aria-hidden /> Withheld from the live Space, needs a source or your confirm.
             </p>
           )}
 

@@ -279,7 +279,7 @@ export function PracticesTable({
   function resultLine(verb: string, data: { count: number; capped: boolean }) {
     const noun = data.count === 1 ? 'practice' : 'practices'
     return data.capped
-      ? `${verb} ${data.count} ${noun} (capped — refine the filter to reach the rest).`
+      ? `${verb} ${data.count} ${noun} (capped, refine the filter to reach the rest).`
       : `${verb} ${data.count} ${noun}.`
   }
 
@@ -452,7 +452,7 @@ export function PracticesTable({
 
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <span className="text-xs text-muted">
-          {total === 0 ? 'No practices match' : `Showing ${showingFrom}–${showingTo} of ${total}`}
+          {total === 0 ? 'No practices match' : `Showing ${showingFrom} to ${showingTo} of ${total}`}
         </span>
         {/* Reach past the loaded page: apply a bulk op to EVERY match of the current filter. */}
         {moreThanPage && (

@@ -29,13 +29,21 @@ actions. Build/lint/test green; no migration drift; no known correctness or secu
 
 ## Code — the sweep (Phases 1–5, executing now)
 
-### Phase 1 — safe cleanup + bug/wiring/abandoned-code
-- ⏳ Re-verify the flagged single-symbol exports (`MapPreview`, `DeltaBadge`, `StudioSectionLabel`,
-  `canSeeMenuCategory`) — remove if truly dead, or keep with an explicit intended-surface reason.
-- ⏳ `docs/PAGE-EDITOR-SPEC.md` cites the retired `/studio/pages/[slug]/edit` route — fix + stale-pointer sweep.
-- 🟡 `_input` unused-var lint warning (`lib/importer/pipeline.test.ts:227`).
-- 🟡 Help-doc naming audit: sweep `content/help/**` for retired member terms.
-- 🟡 Em dashes in operator/admin copy + `lib/demo/engine.ts` demo content.
+### Phase 1 — safe cleanup + bug/wiring/abandoned-code ✅
+- ✅ Re-verified the flagged single-symbol exports. `MapPreview` no longer exists in the tree (only
+  stale doc mentions). `DeltaBadge`, `StudioSectionLabel`, and `canSeeMenuCategory` were genuinely
+  dead (no import/dynamic reference) and were REMOVED with their now-dead types/records/imports; the
+  kit reference docs (KIT.md, ADMIN-DESIGN-SYSTEM.md, STUDIO.md) were trimmed to match.
+- ✅ `docs/PAGE-EDITOR-SPEC.md` retired-route reference fixed (`/edit/[slug]`); stale `/studio/pages`
+  pointers corrected to `/pages` in PAGE-EDITOR-SPEC §5 + BUILD-PHASES.
+- ✅ `_input` (`lib/importer/pipeline.test.ts:227`) verified lint-clean: it is a warn-level
+  `no-unused-vars` with `argsIgnorePattern: '^_'` (already suppressed) and its TYPE is load-bearing for
+  `mock.calls[0][0]`, so no change was needed.
+- ✅ Help-doc naming audit: corpus is canon-aligned; the one retired-term swap was first-party
+  "the Shop" → "the Frequency Store" (ADR-596) in `content/help/connecting/search.md`.
+- ✅ Em/en dashes removed from operator/admin surfaced copy (prose + numeric/date ranges → "to") and
+  from `lib/demo/engine.ts` demo content. Code comments, null-value glyphs, and AI system prompts
+  left untouched (out of scope).
 
 ### Phase 2 — SEO / AIO completion ✅
 - ✅ Audit found coverage was already **complete**: every PUBLIC entity surface (`/discover/*` events,

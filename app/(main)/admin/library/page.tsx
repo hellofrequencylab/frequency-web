@@ -416,7 +416,7 @@ export default async function LoomStudioPage({
                 )}
 
                 <p className="mt-3 text-center text-xs text-subtle">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}–{(currentPage - 1) * PAGE_SIZE + assets.length} of{' '}
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1} to {(currentPage - 1) * PAGE_SIZE + assets.length} of{' '}
                   {pageResult.total}
                 </p>
               </>

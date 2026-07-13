@@ -97,7 +97,7 @@ export function CapabilityGrid({
           Per-function permissions
         </h2>
         <p className="mt-0.5 text-xs text-muted">
-          Grant or deny each staff role at the capability level — finer than the route grid above.
+          Grant or deny each staff role at the capability level, finer than the route grid above.
           Click a cell to cycle No access → Read → Write. A ringed cell differs from its default;
           set it back to default to clear the override. Changes save instantly.
         </p>
@@ -139,7 +139,7 @@ export function CapabilityGrid({
                         onClick={() => cycle(role, domain)}
                         disabled={savingKey === key}
                         aria-label={`${STAFF_ROLE_LABEL[role]} · ${STAFF_DOMAIN_LABEL[domain]}: ${ACCESS_LABEL[current]}${isDefault ? '' : ' (custom)'}`}
-                        title={`${ACCESS_LABEL[current]}${isDefault ? '' : ` — default: ${ACCESS_LABEL[defaults[role][domain]]}`}`}
+                        title={`${ACCESS_LABEL[current]}${isDefault ? '' : ` (default: ${ACCESS_LABEL[defaults[role][domain]]})`}`}
                         className={cellClasses(current, isDefault)}
                       >
                         {isDefault ? (

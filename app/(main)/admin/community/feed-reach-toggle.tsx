@@ -28,12 +28,12 @@ export function FeedReachToggle({ open }: { open: boolean }) {
       <Toggle
         checked={open}
         onChange={toggle}
-        ariaLabel="Open feed — everyone sees everyone's posts"
+        ariaLabel="Open feed: everyone sees everyone's posts"
         disabled={pending}
         saveState={pending ? 'saving' : saved ? 'saved' : 'idle'}
       />
       <span className="text-sm font-medium text-text">
-        {open ? 'Open — everyone sees everyone’s posts' : 'Reach gate on — your circles & nearby only'}
+        {open ? 'Open: everyone sees everyone’s posts' : 'Reach gate on: your circles & nearby only'}
       </span>
     </div>
   )
