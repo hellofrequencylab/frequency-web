@@ -16,15 +16,23 @@ import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 // single upload request never overflows the framework boundary. Larger files are rejected up front.
 const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
 
-/** A pasted or uploaded URL is only usable as a photo when it is a SAFE image source: http(s), a protocol-
- *  or root-relative path, or a data:image/ URI. Anything else (javascript:, data:text/html, ...) resolves
- *  to '' so a malicious pasted value can never reach the preview img src nor be committed to the block. */
+/** A pasted or uploaded URL is only usable as a photo when it parses to a SAFE image source: an http(s)
+ *  URL, a root-relative same-origin path, or a data:image/ URI. Parsing with the URL constructor and
+ *  allowlisting the resolved protocol (not a string sniff) is the robust sanitizer: any other scheme
+ *  (javascript:, data:text/html, vbscript:, ...) resolves to '' so a malicious pasted value can never
+ *  reach the preview img src nor be committed to the block. */
 function safeImageUrl(raw: string): string {
   const u = raw.trim()
   if (!u) return ''
-  if (/^https?:\/\//i.test(u)) return u
-  if (u.startsWith('//') || u.startsWith('/')) return u
-  if (/^data:image\/[a-z0-9.+-]+;/i.test(u)) return u
+  // Root-relative paths are same-origin by definition (no scheme to abuse).
+  if (u.startsWith('/') && !u.startsWith('//')) return u
+  try {
+    const parsed = new URL(u, 'https://frequencylocal.com')
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href
+    if (parsed.protocol === 'data:' && /^data:image\//i.test(u)) return u
+  } catch {
+    return ''
+  }
   return ''
 }
 
