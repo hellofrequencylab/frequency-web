@@ -16,6 +16,18 @@ import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 // single upload request never overflows the framework boundary. Larger files are rejected up front.
 const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
 
+/** A pasted or uploaded URL is only usable as a photo when it is a SAFE image source: http(s), a protocol-
+ *  or root-relative path, or a data:image/ URI. Anything else (javascript:, data:text/html, ...) resolves
+ *  to '' so a malicious pasted value can never reach the preview img src nor be committed to the block. */
+function safeImageUrl(raw: string): string {
+  const u = raw.trim()
+  if (!u) return ''
+  if (/^https?:\/\//i.test(u)) return u
+  if (u.startsWith('//') || u.startsWith('/')) return u
+  if (/^data:image\/[a-z0-9.+-]+;/i.test(u)) return u
+  return ''
+}
+
 export function SpaceImagePopup({
   open,
   currentUrl,
@@ -77,7 +89,12 @@ export function SpaceImagePopup({
   }
 
   const commit = () => {
-    onSelect(url.trim(), alt.trim())
+    const safe = safeImageUrl(url)
+    if (url.trim() && !safe) {
+      setError('Use a photo link that starts with https://')
+      return
+    }
+    onSelect(safe, alt.trim())
     onClose()
   }
   const clear = () => {
@@ -105,9 +122,9 @@ export function SpaceImagePopup({
         <div className="space-y-4 p-5">
           {/* Preview */}
           <div className="overflow-hidden rounded-xl border border-border bg-surface-elevated/30">
-            {url ? (
+            {safeImageUrl(url) ? (
               // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-              <img src={url} alt={alt} className="max-h-52 w-full object-contain" />
+              <img src={safeImageUrl(url)} alt={alt} className="max-h-52 w-full object-contain" />
             ) : (
               <p className="px-3 py-10 text-center text-xs text-muted">Upload or paste a photo to preview it here.</p>
             )}
