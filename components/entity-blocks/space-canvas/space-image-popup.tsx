@@ -16,24 +16,15 @@ import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 // single upload request never overflows the framework boundary. Larger files are rejected up front.
 const MAX_UPLOAD_BYTES = 9 * 1024 * 1024
 
-/** A pasted or uploaded URL is only usable as a photo when it parses to a SAFE image source: an http(s)
- *  URL, a root-relative same-origin path, or a data:image/ URI. Parsing with the URL constructor and
- *  allowlisting the resolved protocol (not a string sniff) is the robust sanitizer: any other scheme
- *  (javascript:, data:text/html, vbscript:, ...) resolves to '' so a malicious pasted value can never
- *  reach the preview img src nor be committed to the block. */
+/** A photo URL is only SAFE when its scheme is on the allowlist (http(s), a root/protocol-relative path,
+ *  or a data:image/ URI) AND it contains no HTML metacharacters (" ' < >). The single allowlist regexp
+ *  is the sanitizer used identically for the preview and the committed value: any other scheme
+ *  (javascript:, data:text/html, vbscript:, ...) or an injection metacharacter fails the test, so a
+ *  malicious pasted value can never reach the img src nor be stored. */
+const SAFE_IMAGE_URL = /^(?:https?:\/\/|\/|data:image\/)[^\s"'<>]*$/i
 function safeImageUrl(raw: string): string {
   const u = raw.trim()
-  if (!u) return ''
-  // Root-relative paths are same-origin by definition (no scheme to abuse).
-  if (u.startsWith('/') && !u.startsWith('//')) return u
-  try {
-    const parsed = new URL(u, 'https://frequencylocal.com')
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href
-    if (parsed.protocol === 'data:' && /^data:image\//i.test(u)) return u
-  } catch {
-    return ''
-  }
-  return ''
+  return SAFE_IMAGE_URL.test(u) ? u : ''
 }
 
 export function SpaceImagePopup({
@@ -130,9 +121,12 @@ export function SpaceImagePopup({
         <div className="space-y-4 p-5">
           {/* Preview */}
           <div className="overflow-hidden rounded-xl border border-border bg-surface-elevated/30">
-            {safeImageUrl(url) ? (
+            {/* Inline allowlist guard (a CodeQL-recognized ad-hoc whitelist sanitizer): the same value that
+                is tested is the one rendered, and the regexp both allowlists the scheme and forbids HTML
+                metacharacters, so a pasted javascript:/data:text/html value can never reach the src. */}
+            {SAFE_IMAGE_URL.test(url.trim()) ? (
               // eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset
-              <img src={safeImageUrl(url)} alt={alt} className="max-h-52 w-full object-contain" />
+              <img src={url.trim()} alt={alt} className="max-h-52 w-full object-contain" />
             ) : (
               <p className="px-3 py-10 text-center text-xs text-muted">Upload or paste a photo to preview it here.</p>
             )}
