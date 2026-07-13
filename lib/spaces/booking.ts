@@ -40,6 +40,22 @@ export interface AvailabilityWindow {
   endMinute: number
   slotMinutes: number
   timezone: string
+  /** P1 (ADR-605): optional bind to one service type. null = this window offers EVERY active service;
+   *  a set id = this window offers ONLY that service. Absent/undefined is treated as null (offers all). */
+  serviceTypeId?: string | null
+}
+
+/** A Space's reusable bookable offering (the Calendly "event type", P1). The free path uses only
+ *  name + description + durationMinutes; priceCents is display-only until P4 payments. */
+export interface ServiceType {
+  id: string
+  name: string
+  description: string | null
+  durationMinutes: number
+  /** Display-only price in cents (null = free). The free booking path never charges. */
+  priceCents: number | null
+  active: boolean
+  sortOrder: number
 }
 
 /** One open slot offered to a member: the absolute UTC instant it starts, plus its length so the
@@ -47,8 +63,31 @@ export interface AvailabilityWindow {
 export interface OpenSlot {
   /** Absolute UTC instant (ISO 8601) the slot starts at. */
   startsAt: string
-  /** Slot length in minutes (the window's slot_minutes). */
+  /** Slot length in minutes (the service duration, else the window's slot_minutes). */
   slotMinutes: number
+}
+
+/**
+ * ADDITIVE, PURE options threaded into the slot generator as the booking ladder grows (ADR-605). Each
+ * field defaults to "off", so an absent options object reproduces booking v1 exactly (every existing
+ * caller + test is unchanged). Never a fork: the same generateOpenSlots / slotLengthAt honor these.
+ *   P1: durationMinutes  — slice every window by the chosen service's duration, not window.slot_minutes.
+ * (P2 adds buffers / min-notice / overrides here in the same shape.)
+ */
+export interface SlotGenOptions {
+  /** P1 service duration: when set, slice each window by this length (and stamp it on each slot),
+   *  overriding the window's own slot_minutes. When absent, the window's slot_minutes is used. */
+  durationMinutes?: number
+}
+
+/** The effective slot length for a window under `opts` (the service duration overrides the window's
+ *  own slot_minutes when present, P1). Clamped to a sane [5, 480] so a hostile value can't run wild. */
+function effectiveSlotMinutes(window: AvailabilityWindow, opts?: SlotGenOptions): number {
+  const override = opts?.durationMinutes
+  if (typeof override === 'number' && Number.isInteger(override) && override >= 5 && override <= 480) {
+    return override
+  }
+  return window.slotMinutes
 }
 
 /** One of the owner's upcoming bookings (the owner-only list). Carries the member id plus their
@@ -150,6 +189,7 @@ export function normalizeWindow(raw: {
   endMinute?: unknown
   slotMinutes?: unknown
   timezone?: unknown
+  serviceTypeId?: unknown
 }): AvailabilityWindow | null {
   const weekday = Number(raw.weekday)
   const startMinute = Number(raw.startMinute)
@@ -157,6 +197,9 @@ export function normalizeWindow(raw: {
   let slotMinutes = Number(raw.slotMinutes)
   const timezone =
     typeof raw.timezone === 'string' && raw.timezone.trim() ? raw.timezone.trim() : 'UTC'
+  // A window may bind to one service (P1). A blank / non-string id means "offers every service" (null).
+  const serviceTypeId =
+    typeof raw.serviceTypeId === 'string' && raw.serviceTypeId.trim() ? raw.serviceTypeId.trim() : null
 
   if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return null
   if (!Number.isInteger(startMinute) || startMinute < 0 || startMinute > 1439) return null
@@ -164,15 +207,23 @@ export function normalizeWindow(raw: {
   if (endMinute <= startMinute) return null
   if (!Number.isInteger(slotMinutes) || slotMinutes < 5 || slotMinutes > 480) slotMinutes = 30
 
-  return { weekday, startMinute, endMinute, slotMinutes, timezone }
+  return { weekday, startMinute, endMinute, slotMinutes, timezone, serviceTypeId }
 }
 
 /** The candidate slot start-instants (as UTC Dates) a window produces across the next `horizonDays`
  *  days from `now`. Pure helper, used by generateOpenSlots. For each day in range whose local
  *  weekday matches the window, slice [startMinute, endMinute) by slotMinutes; a slot is emitted only
  *  if it fully fits before endMinute (a trailing partial slot is dropped). */
-function windowSlotInstants(window: AvailabilityWindow, now: Date, horizonDays: number): Date[] {
+function windowSlotInstants(
+  window: AvailabilityWindow,
+  now: Date,
+  horizonDays: number,
+  opts?: SlotGenOptions,
+): Date[] {
   const out: Date[] = []
+  // P1: slice by the service duration when supplied, else the window's own slot length. A duration
+  // wider than the window simply yields no slots for that window (nothing fully fits).
+  const step = effectiveSlotMinutes(window, opts)
   for (let dayOffset = 0; dayOffset <= horizonDays; dayOffset++) {
     // The calendar date `dayOffset` days from now, read in the window's timezone (so "today" is
     // today THERE, not in UTC).
@@ -184,8 +235,8 @@ function windowSlotInstants(window: AvailabilityWindow, now: Date, horizonDays: 
     if (localWeekday !== window.weekday) continue
     for (
       let minute = window.startMinute;
-      minute + window.slotMinutes <= window.endMinute;
-      minute += window.slotMinutes
+      minute + step <= window.endMinute;
+      minute += step
     ) {
       out.push(zonedTimeToUtc(parts.year, parts.month, parts.day, minute, window.timezone))
       if (out.length > MAX_SLOTS) return out
@@ -208,17 +259,19 @@ export function generateOpenSlots(
   bookedStartsAtMs: ReadonlySet<number>,
   now: Date,
   horizonDays: number = HORIZON_DAYS,
+  opts?: SlotGenOptions,
 ): OpenSlot[] {
   const nowMs = now.getTime()
   // Map start-instant ms to slotMinutes, so duplicate instants from overlapping windows collapse
   // (last write wins on the length, which is fine: the start uniquely identifies a slot).
   const byInstant = new Map<number, number>()
   for (const window of windows.slice(0, MAX_WINDOWS)) {
-    for (const instant of windowSlotInstants(window, now, horizonDays)) {
+    const step = effectiveSlotMinutes(window, opts)
+    for (const instant of windowSlotInstants(window, now, horizonDays, opts)) {
       const ms = instant.getTime()
       if (ms <= nowMs) continue // strictly future only: drop past + in-progress slots
       if (bookedStartsAtMs.has(ms)) continue // already taken
-      byInstant.set(ms, window.slotMinutes)
+      byInstant.set(ms, step)
       if (byInstant.size > MAX_SLOTS) break
     }
   }
@@ -235,10 +288,12 @@ export function slotLengthAt(
   startsAtMs: number,
   now: Date,
   horizonDays: number = HORIZON_DAYS,
+  opts?: SlotGenOptions,
 ): number | null {
   for (const window of windows.slice(0, MAX_WINDOWS)) {
-    for (const instant of windowSlotInstants(window, now, horizonDays)) {
-      if (instant.getTime() === startsAtMs) return window.slotMinutes
+    const step = effectiveSlotMinutes(window, opts)
+    for (const instant of windowSlotInstants(window, now, horizonDays, opts)) {
+      if (instant.getTime() === startsAtMs) return step
     }
   }
   return null
@@ -293,6 +348,17 @@ type AvailabilityRow = {
   end_minute: number
   slot_minutes: number
   timezone: string
+  service_type_id?: string | null
+}
+type ServiceTypeRow = {
+  id: string
+  space_id: string
+  name: string
+  description: string | null
+  duration_minutes: number
+  price_cents: number | null
+  active: boolean
+  sort_order: number
 }
 type BookingRow = {
   id: string
@@ -327,6 +393,19 @@ type BookingQuery = {
   ) => Promise<unknown>
 }
 
+type ServiceTypeQuery = {
+  select: (cols: string) => ServiceTypeQuery
+  eq: (col: string, val: string) => ServiceTypeQuery
+  in: (col: string, vals: string[]) => ServiceTypeQuery
+  order: (col: string, opts: { ascending: boolean }) => ServiceTypeQuery
+  update: (patch: Record<string, unknown>) => ServiceTypeQuery
+  insert: (rows: Record<string, unknown>[]) => Promise<{ error: unknown }>
+  delete: () => ServiceTypeQuery
+  then: (
+    resolve: (r: { data: ServiceTypeRow[] | null; error: unknown }) => unknown,
+  ) => Promise<unknown>
+}
+
 function availabilityTable(): AvailabilityQuery {
   const db = createAdminClient() as unknown as { from: (t: string) => AvailabilityQuery }
   return db.from('space_availability')
@@ -335,31 +414,108 @@ function bookingsTable(): BookingQuery {
   const db = createAdminClient() as unknown as { from: (t: string) => BookingQuery }
   return db.from('space_bookings')
 }
+function serviceTypesTable(): ServiceTypeQuery {
+  const db = createAdminClient() as unknown as { from: (t: string) => ServiceTypeQuery }
+  return db.from('space_service_types')
+}
 
 const AVAILABILITY_COLS = 'id, space_id, weekday, start_minute, end_minute, slot_minutes, timezone'
+const AVAILABILITY_COLS_P1 = `${AVAILABILITY_COLS}, service_type_id`
 const BOOKING_COLS = 'id, space_id, member_profile_id, starts_at, ends_at, status, note'
+const SERVICE_TYPE_COLS = 'id, space_id, name, description, duration_minutes, price_cents, active, sort_order'
 
-/** Read a Space's availability windows (service-role; FAIL-SAFE to []). Malformed rows are dropped
- *  via normalizeWindow (fail-closed). */
+/** Map a raw availability row to a clean window (drops malformed rows, fail-closed). */
+function mapAvailabilityRow(r: AvailabilityRow): AvailabilityWindow | null {
+  return normalizeWindow({
+    weekday: r.weekday,
+    startMinute: r.start_minute,
+    endMinute: r.end_minute,
+    slotMinutes: r.slot_minutes,
+    timezone: r.timezone,
+    serviceTypeId: r.service_type_id ?? null,
+  })
+}
+
+/** Read a Space's availability windows (service-role; FAIL-SAFE to []). Tries the P1 read (with
+ *  service_type_id); if that column is absent (pre-migration) the query errors, so it falls back to
+ *  the base columns so booking keeps working UNAPPLIED. Malformed rows are dropped (fail-closed). */
 async function readWindows(spaceId: string): Promise<AvailabilityWindow[]> {
-  try {
-    const { data, error } = await availabilityTable()
-      .select(AVAILABILITY_COLS)
-      .eq('space_id', spaceId)
-    if (error || !data) return []
-    return data.flatMap((r) => {
-      const w = normalizeWindow({
-        weekday: r.weekday,
-        startMinute: r.start_minute,
-        endMinute: r.end_minute,
-        slotMinutes: r.slot_minutes,
-        timezone: r.timezone,
-      })
+  const mapMany = (rows: AvailabilityRow[]): AvailabilityWindow[] =>
+    rows.flatMap((r) => {
+      const w = mapAvailabilityRow(r)
       return w ? [w] : []
     })
+  try {
+    const ext = await availabilityTable().select(AVAILABILITY_COLS_P1).eq('space_id', spaceId)
+    if (!ext.error && ext.data) return mapMany(ext.data)
+  } catch {
+    /* pre-migration column missing: fall through to the base read */
+  }
+  try {
+    const { data, error } = await availabilityTable().select(AVAILABILITY_COLS).eq('space_id', spaceId)
+    if (error || !data) return []
+    return mapMany(data)
   } catch {
     return []
   }
+}
+
+/** The windows that offer `serviceTypeId` (pure). A window with a null service_type_id offers EVERY
+ *  service; a window bound to a specific service offers only that one. When `serviceTypeId` is null
+ *  (no service chosen / legacy flat booking), every window applies. */
+export function windowsForService(
+  windows: AvailabilityWindow[],
+  serviceTypeId: string | null,
+): AvailabilityWindow[] {
+  if (!serviceTypeId) return windows
+  return windows.filter((w) => !w.serviceTypeId || w.serviceTypeId === serviceTypeId)
+}
+
+function mapServiceTypeRow(r: ServiceTypeRow): ServiceType {
+  return {
+    id: r.id,
+    name: typeof r.name === 'string' ? r.name : '',
+    description: r.description ?? null,
+    durationMinutes:
+      Number.isInteger(r.duration_minutes) && r.duration_minutes >= 5 && r.duration_minutes <= 480
+        ? r.duration_minutes
+        : 30,
+    priceCents: typeof r.price_cents === 'number' && r.price_cents >= 0 ? r.price_cents : null,
+    active: r.active !== false,
+    sortOrder: Number.isInteger(r.sort_order) ? r.sort_order : 0,
+  }
+}
+
+/** Read a Space's service types (service-role; FAIL-SAFE to [], so a missing table pre-migration is
+ *  silent). `activeOnly` filters to bookable ones for the member picker. Sorted by sort_order. */
+async function readServiceTypes(
+  spaceId: string,
+  opts: { activeOnly: boolean },
+): Promise<ServiceType[]> {
+  try {
+    const { data, error } = await serviceTypesTable()
+      .select(SERVICE_TYPE_COLS)
+      .eq('space_id', spaceId)
+      .order('sort_order', { ascending: true })
+    if (error || !data) return []
+    const mapped = data.map(mapServiceTypeRow)
+    return opts.activeOnly ? mapped.filter((s) => s.active) : mapped
+  } catch {
+    return []
+  }
+}
+
+/** Resolve the target slot duration for a booking flow: the chosen active service's duration, or
+ *  null when no service was chosen / the id does not resolve (legacy flat booking on window slots).
+ *  FAIL-SAFE to null so a bad id can never widen the surface. */
+async function resolveServiceDuration(
+  spaceId: string,
+  serviceTypeId: string | null | undefined,
+): Promise<number | null> {
+  if (!serviceTypeId) return null
+  const services = await readServiceTypes(spaceId, { activeOnly: true })
+  const svc = services.find((s) => s.id === serviceTypeId)
+  return svc ? svc.durationMinutes : null
 }
 
 /** The confirmed bookings of a Space at/after `fromISO` (service-role; FAIL-SAFE to []). */
@@ -462,7 +618,7 @@ export async function setSpaceAvailability(
       return fail('Could not save your availability. Try again.')
     }
     if (clean.length > 0) {
-      const rows = clean.map((w) => ({
+      const base = clean.map((w) => ({
         space_id: spaceId,
         weekday: w.weekday,
         start_minute: w.startMinute,
@@ -470,8 +626,22 @@ export async function setSpaceAvailability(
         slot_minutes: w.slotMinutes,
         timezone: w.timezone,
       }))
+      // Only stamp the P1 service_type_id column when a window actually binds to a service, so the
+      // insert works UNAPPLIED (the column is absent pre-migration). If a bound insert errors on the
+      // missing column, retry without the binding (fail-soft: the window is kept, just service-agnostic).
+      const anyBound = clean.some((w) => w.serviceTypeId)
+      const rows = anyBound
+        ? base.map((r, i) => ({ ...r, service_type_id: clean[i]!.serviceTypeId ?? null }))
+        : base
       const { error } = await availabilityTable().insert(rows)
-      if (error) return fail('Could not save your availability. Try again.')
+      if (error) {
+        if (anyBound) {
+          const retry = await availabilityTable().insert(base)
+          if (retry.error) return fail('Could not save your availability. Try again.')
+        } else {
+          return fail('Could not save your availability. Try again.')
+        }
+      }
     }
   } catch {
     return fail('Could not save your availability. Try again.')
@@ -496,7 +666,10 @@ export async function listSpaceAvailability(spaceId: string): Promise<Availabili
  * Space's windows plus its confirmed bookings, then runs the pure generator. Returns ONLY open slot
  * instants (never who booked anything). FAIL-SAFE to [] on any error or for an anonymous caller.
  */
-export async function listOpenSlots(spaceId: string): Promise<OpenSlot[]> {
+export async function listOpenSlots(
+  spaceId: string,
+  serviceTypeId?: string | null,
+): Promise<OpenSlot[]> {
   const profileId = await getMyProfileId()
   if (!profileId) return []
   try {
@@ -505,14 +678,27 @@ export async function listOpenSlots(spaceId: string): Promise<OpenSlot[]> {
     // waterfalling one after the other. Both readers are fail-safe to [], so Promise.all never rejects.
     // The early-return short-circuit is preserved: with no published windows there are no slots, so we
     // return [] without running the (already-overlapped, cheap) generator.
-    const [windows, booked] = await Promise.all([
+    const [windows, booked, duration] = await Promise.all([
       readWindows(spaceId),
       // Exclude confirmed AND pending holds, so a held-but-unpaid slot is not offered (matches the index).
       readBlockingBookings(spaceId, now.toISOString()),
+      // P1: resolve the chosen service's duration (null = legacy flat booking on window slot_minutes).
+      resolveServiceDuration(spaceId, serviceTypeId),
     ])
     if (windows.length === 0) return []
+    // A service was chosen but did not resolve (inactive / bad id): offer nothing rather than the
+    // wrong grid. A null serviceTypeId (no service) keeps every window at its own slot length.
+    if (serviceTypeId && duration == null) return []
+    const scoped = windowsForService(windows, serviceTypeId ?? null)
+    if (scoped.length === 0) return []
     const bookedMs = new Set(booked.map((b) => new Date(b.starts_at).getTime()))
-    return generateOpenSlots(windows, bookedMs, now)
+    return generateOpenSlots(
+      scoped,
+      bookedMs,
+      now,
+      undefined,
+      duration != null ? { durationMinutes: duration } : undefined,
+    )
   } catch {
     return []
   }
@@ -533,6 +719,157 @@ export async function getSpaceBookingTimezone(spaceId: string): Promise<string> 
   }
 }
 
+// ── P1: service types (the bookable "event types") ─────────────────────────────────────────────
+
+/** A Space's ACTIVE bookable services, for the member picker (any authenticated caller). Sorted by
+ *  sort_order. FAIL-SAFE to [] (so a Space with the P1 migration UNAPPLIED simply has no services and
+ *  the member surface falls back to the legacy flat picker). */
+export async function listBookableServices(spaceId: string): Promise<ServiceType[]> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return []
+  return readServiceTypes(spaceId, { activeOnly: true })
+}
+
+/** A Space's service types as the OWNER editor reads them back (active + inactive). Gated on
+ *  canEditProfile (owner / admin / editor) OR a platform janitor preview. FAIL-SAFE to []. */
+export async function listSpaceServiceTypes(spaceId: string): Promise<ServiceType[]> {
+  const caller = await getCallerProfile()
+  const space = await getSpaceById(spaceId)
+  if (!space) return []
+  const caps = await getSpaceCapabilities(space, caller?.id ?? null)
+  if (!caps.canEditProfile && !isJanitor(caller?.webRole)) return []
+  return readServiceTypes(spaceId, { activeOnly: false })
+}
+
+/** One service type as the owner submits it. A blank id means "insert new"; a set id updates in place
+ *  (preserving the id, so any window bound to it keeps its binding). */
+export interface ServiceTypeInput {
+  id?: string | null
+  name: string
+  description?: string | null
+  durationMinutes: number
+  priceCents?: number | null
+  active?: boolean
+  sortOrder?: number
+}
+
+/** Coerce a raw service-type input to a clean, safe row, or null if it cannot be made valid (a blank
+ *  name is dropped). Clamps duration to [5, 480] and a bad price to null. Fail-closed. */
+function cleanServiceInput(raw: ServiceTypeInput, index: number): {
+  id: string | null
+  name: string
+  description: string | null
+  duration_minutes: number
+  price_cents: number | null
+  active: boolean
+  sort_order: number
+} | null {
+  const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 120) : ''
+  if (!name) return null
+  let duration = Number(raw.durationMinutes)
+  if (!Number.isInteger(duration) || duration < 5 || duration > 480) duration = 30
+  const description =
+    typeof raw.description === 'string' && raw.description.trim()
+      ? raw.description.trim().slice(0, 1000)
+      : null
+  const price =
+    typeof raw.priceCents === 'number' && Number.isFinite(raw.priceCents) && raw.priceCents >= 0
+      ? Math.round(raw.priceCents)
+      : null
+  const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id.trim() : null
+  return {
+    id,
+    name,
+    description,
+    duration_minutes: duration,
+    price_cents: price,
+    active: raw.active !== false,
+    sort_order: Number.isInteger(raw.sortOrder) ? (raw.sortOrder as number) : index,
+  }
+}
+
+/**
+ * Replace a Space's service types with `services` (owner / admin / editor, gated on canEditProfile).
+ * Preserves ids of existing rows (updates them in place) so any availability window bound to a service
+ * keeps its binding; inserts new rows; deletes rows the owner removed. An EMPTY list clears all
+ * services (a valid "no services" state that falls back to the legacy flat picker). Returns
+ * ActionResult; fail-closed on permission, fail-soft when the P1 table is absent.
+ */
+export async function setSpaceServiceTypes(
+  spaceId: string,
+  services: ServiceTypeInput[],
+): Promise<ActionResult> {
+  const profileId = await getMyProfileId()
+  if (!profileId) return fail('Sign in to set your services.')
+
+  const space = await getSpaceById(spaceId)
+  if (!space) return fail('Space not found.')
+
+  const caps = await getSpaceCapabilities(space, profileId)
+  if (!caps.canEditProfile)
+    return fail('You do not have permission to set services for this space.')
+  if (!spaceFunctionAccess(space, 'availability', caps.role))
+    return fail('Availability is not turned on for this space, or your role cannot use it.')
+
+  const MAX_SERVICES = 40
+  const clean = (Array.isArray(services) ? services : [])
+    .slice(0, MAX_SERVICES)
+    .flatMap((s, i) => {
+      const c = cleanServiceInput(s, i)
+      return c ? [c] : []
+    })
+
+  try {
+    // Existing rows for this Space (to know which to update vs delete). FAIL-SOFT to [] if the table
+    // is absent pre-migration (the write below then no-ops with a friendly message rather than crash).
+    const existing = await readServiceTypes(spaceId, { activeOnly: false })
+    const existingIds = new Set(existing.map((s) => s.id))
+    const keptIds = new Set<string>()
+
+    for (const row of clean) {
+      if (row.id && existingIds.has(row.id)) {
+        keptIds.add(row.id)
+        const { error } = (await serviceTypesTable()
+          .update({
+            name: row.name,
+            description: row.description,
+            duration_minutes: row.duration_minutes,
+            price_cents: row.price_cents,
+            active: row.active,
+            sort_order: row.sort_order,
+          })
+          .eq('id', row.id)) as unknown as { error?: unknown }
+        if (error) return fail('Could not save your services. Try again.')
+      } else {
+        const { error } = await serviceTypesTable().insert([
+          {
+            space_id: spaceId,
+            name: row.name,
+            description: row.description,
+            duration_minutes: row.duration_minutes,
+            price_cents: row.price_cents,
+            active: row.active,
+            sort_order: row.sort_order,
+          },
+        ])
+        if (error) return fail('Could not save your services. Try again.')
+      }
+    }
+
+    // Delete the rows the owner removed (present before, absent now).
+    const toDelete = [...existingIds].filter((id) => !keptIds.has(id))
+    if (toDelete.length > 0) {
+      const { error } = (await serviceTypesTable()
+        .delete()
+        .in('id', toDelete)) as unknown as { error?: unknown }
+      if (error) return fail('Could not save your services. Try again.')
+    }
+  } catch {
+    return fail('Could not save your services. Try again.')
+  }
+  return ok()
+}
+
 /**
  * Book an open slot. Any authenticated member (resolved via getMyProfileId). The server is the
  * authority: it re-validates that `startsAtISO` is a real, still-future slot WITHIN the Space's
@@ -544,6 +881,7 @@ export async function createBooking(
   spaceId: string,
   startsAtISO: string,
   note?: string,
+  serviceTypeId?: string | null,
 ): Promise<ActionResult> {
   const profileId = await getMyProfileId()
   if (!profileId) return fail('Sign in to book a time.')
@@ -557,11 +895,23 @@ export async function createBooking(
   const now = new Date()
   if (startsAt.getTime() <= now.getTime()) return fail('That time has already passed. Pick another.')
 
-  // Re-derive the published slots and confirm the requested instant is a real, open one.
-  const windows = await readWindows(spaceId)
-  if (windows.length === 0) return fail('This space is not taking bookings right now.')
+  // Re-derive the published slots and confirm the requested instant is a real, open one. P1: when a
+  // service was chosen, validate against ITS duration and only the windows that offer it.
+  const allWindows = await readWindows(spaceId)
+  if (allWindows.length === 0) return fail('This space is not taking bookings right now.')
 
-  const slotMinutes = slotLengthAt(windows, startsAt.getTime(), now)
+  const duration = await resolveServiceDuration(spaceId, serviceTypeId)
+  if (serviceTypeId && duration == null) return fail('That service is no longer available. Pick another.')
+  const windows = windowsForService(allWindows, serviceTypeId ?? null)
+  if (windows.length === 0) return fail('That time is no longer available. Pick another.')
+
+  const slotMinutes = slotLengthAt(
+    windows,
+    startsAt.getTime(),
+    now,
+    undefined,
+    duration != null ? { durationMinutes: duration } : undefined,
+  )
   if (slotMinutes == null) return fail('That time is no longer available. Pick another.')
 
   // Already taken (confirmed or held pending)? A fast pre-check for a friendly message; the unique index

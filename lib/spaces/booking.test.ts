@@ -208,6 +208,7 @@ import {
   generateOpenSlots,
   slotLengthAt,
   summarizeAvailability,
+  windowsForService,
   zoneOffsetMinutes,
   zonedTimeToUtc,
   setSpaceAvailability,
@@ -248,6 +249,7 @@ describe('normalizeWindow (pure, fail-closed)', () => {
       endMinute: 1020,
       slotMinutes: 60,
       timezone: 'America/New_York',
+      serviceTypeId: null, // P1: unbound window offers every service
     })
   })
 
@@ -652,6 +654,78 @@ describe('listSpaceBookings (action) — owner only', () => {
     db.profiles = []
     const list = await listSpaceBookings('space-1')
     expect(list[0]!.memberName).toBe('A member')
+  })
+})
+
+// ── P1 (ADR-605): service durations slice the generator; window-to-service binding ──────────────
+describe('generateOpenSlots with a service duration (P1, pure)', () => {
+  it('slices a window by the SERVICE duration, not the window slot_minutes', () => {
+    // Window 10:00-12:00 UTC declared at 30-min slots, but a 60-min service => 10:00, 11:00 only.
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 60,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T10:00:00.000Z',
+      '2026-06-23T11:00:00.000Z',
+    ])
+    // Every emitted slot carries the SERVICE length, so the surface labels it correctly.
+    expect(slots.every((s) => s.slotMinutes === 60)).toBe(true)
+  })
+
+  it('drops the trailing partial against the SERVICE duration', () => {
+    // 10:00-11:10 with a 45-min service => 10:00 fits (ends 10:45); 10:45 would end 11:30 > 11:10, dropped.
+    const slots = generateOpenSlots([utcWindow({ endMinute: 670 })], new Set(), NOW, undefined, {
+      durationMinutes: 45,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual(['2026-06-23T10:00:00.000Z'])
+  })
+
+  it('a service longer than the window yields no slots for that window', () => {
+    // A 120-min service does not fit a 120-min window? 10:00-12:00 is exactly 120 => one slot at 10:00.
+    const exact = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 120,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(exact.map((s) => s.startsAt)).toEqual(['2026-06-23T10:00:00.000Z'])
+    // A 121-min service does not fit at all.
+    const tooLong = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 130,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(tooLong).toEqual([])
+  })
+
+  it('an out-of-range duration falls back to the window slot_minutes', () => {
+    // A bogus 0-minute duration is ignored; the window's own 30-min slicing applies (four slots).
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 0,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.length).toBe(4)
+    expect(slots.every((s) => s.slotMinutes === 30)).toBe(true)
+  })
+})
+
+describe('slotLengthAt with a service duration (P1, pure)', () => {
+  it('validates the instant against the service duration and returns it', () => {
+    const windows = [utcWindow()]
+    // With a 60-min service, 11:00 is a real boundary (10:00 + 60), 10:30 is NOT.
+    expect(slotLengthAt(windows, new Date('2026-06-23T11:00:00Z').getTime(), NOW, undefined, { durationMinutes: 60 })).toBe(60)
+    expect(slotLengthAt(windows, new Date('2026-06-23T10:30:00Z').getTime(), NOW, undefined, { durationMinutes: 60 })).toBeNull()
+  })
+})
+
+describe('windowsForService (pure)', () => {
+  const general = utcWindow({ serviceTypeId: null })
+  const boundA = utcWindow({ weekday: 3, serviceTypeId: 'svc-a' })
+  const boundB = utcWindow({ weekday: 4, serviceTypeId: 'svc-b' })
+
+  it('returns every window when no service is chosen', () => {
+    expect(windowsForService([general, boundA, boundB], null)).toHaveLength(3)
+  })
+
+  it('keeps general (unbound) windows plus windows bound to the chosen service only', () => {
+    const forA = windowsForService([general, boundA, boundB], 'svc-a')
+    expect(forA).toContain(general)
+    expect(forA).toContain(boundA)
+    expect(forA).not.toContain(boundB)
   })
 })
 

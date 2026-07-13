@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
 import { createBooking } from '@/lib/spaces/booking-actions'
 import type { OpenSlot } from '@/lib/spaces/booking'
-import type { SlotDay } from '@/components/spaces/booking-member'
+import type { SlotDay } from '@/lib/spaces/booking-format'
 import { cn } from '@/lib/utils'
 
 // MEMBER BOOKING PICKER (client). The interactive half of the Practitioner Book tab: open slots are
@@ -23,6 +23,7 @@ export function BookingPicker({
   timezone,
   tzLabel,
   sessionLabel,
+  serviceTypeId = null,
 }: {
   spaceId: string
   days: SlotDay[]
@@ -32,6 +33,8 @@ export function BookingPicker({
   tzLabel: string
   /** A plain-language session-length line, e.g. "30 minute sessions", or null when unknown. */
   sessionLabel: string | null
+  /** P1: the chosen service, threaded into createBooking so the server validates against its duration. */
+  serviceTypeId?: string | null
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<OpenSlot | null>(null)
@@ -51,7 +54,12 @@ export function BookingPicker({
     setError(null)
     const target = selected
     startBooking(async () => {
-      const result = await createBooking(spaceId, target.startsAt, note.trim() || undefined)
+      const result = await createBooking(
+        spaceId,
+        target.startsAt,
+        note.trim() || undefined,
+        serviceTypeId,
+      )
       if (isError(result)) {
         setError(result.error)
         return

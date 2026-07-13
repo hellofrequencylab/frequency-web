@@ -17,9 +17,13 @@
 
 import {
   setSpaceAvailability as setSpaceAvailabilityImpl,
+  setSpaceServiceTypes as setSpaceServiceTypesImpl,
+  listOpenSlots as listOpenSlotsImpl,
   createBooking as createBookingImpl,
   cancelBooking as cancelBookingImpl,
   type AvailabilityWindow,
+  type ServiceTypeInput,
+  type OpenSlot,
 } from '@/lib/spaces/booking'
 import { type ActionResult } from '@/lib/action-result'
 
@@ -31,13 +35,32 @@ export async function setSpaceAvailability(
   return setSpaceAvailabilityImpl(spaceId, windows)
 }
 
-/** Book an open slot. Any authenticated member; the slot is re-validated server-side. */
+/** Replace a Space's service types (the bookable "event types", P1). Gated on canEditProfile. */
+export async function setSpaceServiceTypes(
+  spaceId: string,
+  services: ServiceTypeInput[],
+): Promise<ActionResult> {
+  return setSpaceServiceTypesImpl(spaceId, services)
+}
+
+/** The open slots for a chosen service (P1), so the client service picker can load times per service
+ *  after the member picks one. Any authenticated member; FAIL-SAFE to [] in the implementation. */
+export async function listOpenSlotsForService(
+  spaceId: string,
+  serviceTypeId: string | null,
+): Promise<OpenSlot[]> {
+  return listOpenSlotsImpl(spaceId, serviceTypeId)
+}
+
+/** Book an open slot. Any authenticated member; the slot is re-validated server-side. `serviceTypeId`
+ *  (P1) validates the instant against the chosen service's duration + windows. */
 export async function createBooking(
   spaceId: string,
   startsAtISO: string,
   note?: string,
+  serviceTypeId?: string | null,
 ): Promise<ActionResult> {
-  return createBookingImpl(spaceId, startsAtISO, note)
+  return createBookingImpl(spaceId, startsAtISO, note, serviceTypeId)
 }
 
 /** Cancel a booking. The booker or a space admin only (gated in the implementation). */
