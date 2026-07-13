@@ -623,12 +623,14 @@ export async function claimEvent(
   const slug = (ev.slug as string) ?? ''
   const posterId = (ev.posted_by_profile_id as string | null) ?? null
 
+  // Keep claim_token (not nulled): claimed_at + host_id are the consumed markers the CAS filters on, and
+  // keeping the token lets the host who re-opens their used link be redirected to their event instead of
+  // hitting a 404 (mirrors lib/spaces/claim.ts).
   const { error } = await admin
     .from('events')
     .update({
       host_id: claimerProfileId,
       claimed_at: new Date().toISOString(),
-      claim_token: null,
     })
     .eq('id', eventId)
     .is('host_id', null)
