@@ -58,6 +58,11 @@ interface EntityLayoutContextValue {
   content: Record<string, Record<string, unknown>>
   /** Per-block style (ADR-528), keyed by block id. */
   style: Record<string, BlockStyle>
+  /** The block whose settings are focused in the rail — the SHARED selection for live-page edit mode: the
+   *  live grid sets it when the owner clicks a block on the page, and the in-rail builder opens that block's
+   *  settings panel for it (the email-editor click-to-select pattern). Null when nothing is selected. */
+  selectedId: string | null
+  select: (id: string | null) => void
   /** The derived "not shown" tray for the kind (palette − placed − hidden). */
   bench: string[]
   /** Apply a new working layout: repaint now, persist debounced. */
@@ -94,6 +99,9 @@ export function EntityLayoutProvider({
   const [style, setStyle] = useState<Record<string, BlockStyle>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Shared selection (live-page edit mode): the block whose settings the rail should focus. Set by the live
+  // grid on a block click and read by the in-rail builder; a plain piece of client state, persisted nowhere.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // The latest layout to persist, so a flush on unmount always writes the most recent edit.
@@ -180,11 +188,13 @@ export function EntityLayoutProvider({
     }
   }, [flush])
 
+  const select = useCallback((id: string | null) => setSelectedId(id), [])
+
   const bench = deriveBench({ rows, hidden }, kind)
 
   return (
     <EntityLayoutCtx.Provider
-      value={{ kind, seeded, rows, hidden, content, style, bench, apply, applyContent, applyStyle, seed, saving, error }}
+      value={{ kind, seeded, rows, hidden, content, style, selectedId, select, bench, apply, applyContent, applyStyle, seed, saving, error }}
     >
       {children}
     </EntityLayoutCtx.Provider>

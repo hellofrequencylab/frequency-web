@@ -53,6 +53,7 @@ import { MarginControl } from './controls/field-controls'
 import { getMemberLayoutRailData } from '@/app/(main)/settings/rail-getters'
 import { getSpaceLayoutRailData } from '@/app/(main)/spaces/[slug]/manage/rail-getters'
 import { useProfileLayout } from './profile-layout-context'
+import { setSpaceEditMode } from './space-edit-mode'
 import { BlockPicker } from './block-picker'
 import { BlockEditPanel, type UploadImage } from './block-edit-panel'
 import type { BlockPickerData } from './controls/field-controls'
@@ -192,6 +193,18 @@ export function EntityPageBuilder({
     }
   }, [store, kind, loadRailData, seed])
 
+  // LIVE-PAGE EDIT MODE (Edit Space): broadcast from THIS builder's lifecycle. It renders (past the owner /
+  // kind guard below) only on the Space profile ROOT while the rail is open — exactly when the page should be
+  // editable in place. Mounting past the guard turns the page's inline editors on; the rail closing (this
+  // unmounts) or the guard failing turns them off. Space only; the member rail never touches the signal.
+  const builderActive =
+    kind === 'space' && !loading && !!store && store.kind === 'space' && matchId != null && matchId === pageId
+  useEffect(() => {
+    if (kind !== 'space') return
+    setSpaceEditMode(builderActive)
+    return () => setSpaceEditMode(false)
+  }, [kind, builderActive])
+
   const say = useCallback((msg: string) => setAnnounce(msg), [])
   const mutate = useCallback(
     (next: BuilderLayout) => {
@@ -201,6 +214,17 @@ export function EntityPageBuilder({
     [store],
   )
 
+  // Open a block's settings. On a Space the selection is SHARED with the live page (click a block on the page
+  // OR a pill here and the same block's settings open), so it routes through the store; the member rail toggles
+  // its local editingId as before.
+  const onEditBlock = (id: string) => {
+    if (kind === 'space') {
+      if (store) store.select(store.selectedId === id ? null : id)
+    } else {
+      setEditingId((m) => (m === id ? null : id))
+    }
+  }
+
   if (loading) {
     return <div className="h-40 animate-pulse rounded-2xl border border-border bg-surface-elevated/50" />
   }
@@ -208,6 +232,11 @@ export function EntityPageBuilder({
   // the read-gated seed returned (your own /people/<handle>, or a Space you manage), and only against a
   // store of its own kind (fail-safe: a non-owner / wrong-kind store renders nothing).
   if (!store || store.kind !== kind || !matchId || matchId !== pageId) return null
+
+  // SHARED SELECTION (Space): the open settings panel follows the store's selected block, so clicking a block
+  // on the live page opens its settings HERE (and clicking a pill here highlights it on the page). Derived, not
+  // mirrored into state, so there is no effect to churn. The member rail keeps its own local editingId.
+  const activeEditId = kind === 'space' ? store.selectedId : editingId
 
   const maxColumns = maxColumnsForKind(kind)
   const lockedSet = new Set(lockedIds)
@@ -509,7 +538,7 @@ export function EntityPageBuilder({
   // The inline edit panel for a block (ADR-528): content fields (content block) / on-off + quick fields +
   // manage link (data block), plus style controls. Rendered right under the block's pill when it is open.
   const editPanelFor = (id: string) =>
-    editingId === id ? (
+    activeEditId === id ? (
       <BlockEditPanel
         id={id}
         content={store.content[id] ?? {}}
@@ -518,6 +547,9 @@ export function EntityPageBuilder({
         editHref={editHrefFor?.(id) ?? null}
         pickerData={pickerData[id]}
         uploadImage={uploadImage}
+        // A Space's page is the live editing canvas, so its rail is SETTINGS-ONLY: the block's text + single
+        // photos are edited on the page, not here (the isCoreField split). The member rail keeps text inline.
+        contentOnCanvas={kind === 'space'}
         onReseed={onReseedBlock ? (current) => onReseedBlock(id, current) : undefined}
         onContent={(props) => onEditContent(id, props)}
         onStyle={(s) => onEditStyle(id, s)}
@@ -635,7 +667,7 @@ export function EntityPageBuilder({
                     hidden={layout.hidden.includes(id)}
                     grabbed={grab?.kind === 'block' && grab.id === id}
                     menuOpen={openMenu === `block:${id}`}
-                    editing={editingId === id}
+                    editing={activeEditId === id}
                     canUp={index > 0}
                     canDown={index < memberBlocks.length - 1}
                     sections={[]}
@@ -644,7 +676,7 @@ export function EntityPageBuilder({
                     onDragStart={() => (dragBlock.current = id)}
                     onDragEnd={() => (dragBlock.current = null)}
                     onHandleKey={(e) => blockHandleKey(e, id)}
-                    onEdit={() => setEditingId((m) => (m === id ? null : id))}
+                    onEdit={() => onEditBlock(id)}
                     onUp={() => moveBlockBy(id, -1)}
                     onDown={() => moveBlockBy(id, 1)}
                     onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
@@ -849,7 +881,7 @@ export function EntityPageBuilder({
                             hidden={layout.hidden.includes(id)}
                             grabbed={grab?.kind === 'block' && grab.id === id}
                             menuOpen={openMenu === `block:${id}`}
-                            editing={editingId === id}
+                            editing={activeEditId === id}
                             canUp={slotSeq.findIndex((s) => s.id === id) > 0}
                             canDown={slotSeq.findIndex((s) => s.id === id) < slotSeq.length - 1}
                             sections={moveTargets}
@@ -858,7 +890,7 @@ export function EntityPageBuilder({
                             onDragStart={() => (dragBlock.current = id)}
                             onDragEnd={() => (dragBlock.current = null)}
                             onHandleKey={(e) => blockHandleKey(e, id)}
-                            onEdit={() => setEditingId((m) => (m === id ? null : id))}
+                            onEdit={() => onEditBlock(id)}
                             onUp={() => moveBlockBy(id, -1)}
                             onDown={() => moveBlockBy(id, 1)}
                             onToggleMenu={() => setOpenMenu((m) => (m === `block:${id}` ? null : `block:${id}`))}
