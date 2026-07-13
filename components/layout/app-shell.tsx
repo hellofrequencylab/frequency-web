@@ -58,6 +58,7 @@ import { effectiveMode, canSeeMenuItem, type MenuViewer } from '@/components/lay
 import { GhostLink } from '@/components/layout/ghost-link'
 import { BrandMark } from '@/components/layout/brand-mark'
 import { MemberFooter } from '@/components/layout/member-footer'
+import { SiteAlertBar } from '@/components/layout/site-alert-bar'
 import { AREA_ICONS, railIconFor } from '@/components/layout/nav-icons'
 import { UpgradeCrew } from '@/components/layout/upgrade-crew'
 import { DemoToggle } from '@/components/layout/demo-toggle'
@@ -1835,6 +1836,10 @@ export default function AppShell({
         </div>
       </header>
       )}
+
+      {/* Site-wide announcement strip, directly below the header (hidden on a chromeless editor
+          takeover). Dismissible; scrolls away with content. */}
+      {!editorTakeover && <SiteAlertBar />}
 
       {/* ── Admin contextual sub-nav (NAV-SYSTEM-REDESIGN §6) ── */}
       {/* The old admin MegaBar sub-header (a second dropdown layer) is GONE. On /admin* the active
