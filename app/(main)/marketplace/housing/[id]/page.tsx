@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getMyProfileId, isPlatformStaff } from '@/lib/auth'
-import { getListingWithOwner } from '@/lib/listings'
+import { getListingWithOwner, getListingClaimToken } from '@/lib/listings'
 import { amenityLabel, getHousingDetail, propertyTypeLabel } from '@/lib/listings/housing'
+import { resolveListingClaim } from '@/lib/listing-seeder/claim'
 import { buttonClasses } from '@/components/ui/button'
 import { ReportButton } from '@/components/marketplace/report-button'
+import { ListingClaimLink } from '@/components/marketplace/listing-claim-link'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
 import { listingDetailFromHousing } from '@/lib/listings-shared/detail-view'
 import { listingMetadata } from '@/lib/listings-shared/listing-seo'
@@ -47,8 +49,15 @@ function longDate(iso: string | null): string | null {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
-export default async function HousingDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function HousingDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ claim?: string; claimed?: string }>
+}) {
   const { id } = await params
+  const { claim: claimParam } = await searchParams
   const [profileId, isStaff, listing] = await Promise.all([
     getMyProfileId(),
     isPlatformStaff(),
@@ -58,6 +67,25 @@ export default async function HousingDetailPage({ params }: { params: Promise<{ 
 
   const isOwner = !!profileId && listing.ownerProfileId === profileId
   if (!isOwner && !isStaff && listing.status !== 'active') notFound()
+
+  // Claim link: a visitor arriving with ?claim=<token> that resolves to THIS still-unclaimed listing
+  // sees a "Claim listing" box instead of Contact the host. resolveListingClaim returns null for a
+  // used/unknown token or an already-claimed row, so the token self-validates and reveals nothing.
+  // (Mirrors app/(main)/classifieds/[id]/page.tsx; the claim spine already covers the housing vertical.)
+  let claimToken: string | null = null
+  if (claimParam) {
+    const resolved = await resolveListingClaim(claimParam)
+    if (resolved && resolved.listingId === id) claimToken = claimParam
+  }
+
+  // Operator (admin/janitor) shortcut: for a SEEDED, still-unclaimed housing listing, surface the
+  // shareable claim link in the Manage box so they can send it to the real host. getListingClaimToken
+  // returns null once claimed or for a member-created row, so this disappears exactly when it should.
+  let claimShareUrl: string | undefined
+  if (isStaff && listing.seededUnclaimed) {
+    const token = await getListingClaimToken(id)
+    if (token) claimShareUrl = `/marketplace/housing/${id}?claim=${token}`
+  }
 
   const [detail, comments] = await Promise.all([getHousingDetail(id), getListingComments('listing', id)])
   const view = listingDetailFromHousing(listing, detail, { isOwner })
@@ -100,27 +128,34 @@ export default async function HousingDetailPage({ params }: { params: Promise<{ 
           </div>
         ) : undefined
       }
+      claimToken={claimToken}
       ownerControls={
-        isOwner ? (
-          <div className="flex flex-wrap gap-2">
-            {listing.status === 'active' ? (
-              <form action={setListingStatusAction.bind(null, listing.id, 'closed')}>
-                <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                  Close listing
-                </button>
-              </form>
-            ) : (
-              <form action={setListingStatusAction.bind(null, listing.id, 'active')}>
-                <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                  Reopen listing
-                </button>
-              </form>
+        isOwner || claimShareUrl ? (
+          <div className="space-y-3">
+            {isOwner && (
+              <div className="flex flex-wrap gap-2">
+                {listing.status === 'active' ? (
+                  <form action={setListingStatusAction.bind(null, listing.id, 'closed')}>
+                    <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                      Close listing
+                    </button>
+                  </form>
+                ) : (
+                  <form action={setListingStatusAction.bind(null, listing.id, 'active')}>
+                    <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                      Reopen listing
+                    </button>
+                  </form>
+                )}
+                <form action={deleteListingAction.bind(null, listing.id)}>
+                  <button type="submit" className={buttonClasses('ghost', 'sm')}>
+                    Delete
+                  </button>
+                </form>
+              </div>
             )}
-            <form action={deleteListingAction.bind(null, listing.id)}>
-              <button type="submit" className={buttonClasses('ghost', 'sm')}>
-                Delete
-              </button>
-            </form>
+            {/* Platform staff on a seeded, unclaimed listing: the shareable claim link to send the host. */}
+            {claimShareUrl && <ListingClaimLink claimShareUrl={claimShareUrl} />}
           </div>
         ) : undefined
       }

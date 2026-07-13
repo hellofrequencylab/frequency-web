@@ -91,16 +91,21 @@ export interface ListingOwner {
 export async function getListingWithOwner(
   id: string,
 ): Promise<(Listing & { owner: ListingOwner | null }) | null> {
-  const { data } = await db()
-    .from('listings')
-    .select(`${LISTING_COLS}, owner:profiles!owner_profile_id(id, display_name, handle, avatar_url)`)
-    .eq('id', id)
-    .maybeSingle()
+  // Resolve the seed owner alongside the row so seededUnclaimed is populated (drives the operator
+  // claim-link surface on the detail page, mirroring lib/marketplace.ts getListing).
+  const [{ data }, seedOwnerId] = await Promise.all([
+    db()
+      .from('listings')
+      .select(`${LISTING_COLS}, owner:profiles!owner_profile_id(id, display_name, handle, avatar_url)`)
+      .eq('id', id)
+      .maybeSingle(),
+    resolveSeedOwnerProfileId(),
+  ])
   if (!data) return null
   const r = data as Record<string, unknown>
   const raw = (Array.isArray(r.owner) ? r.owner[0] : r.owner) as Record<string, unknown> | null
   return {
-    ...rowToListing(r),
+    ...rowToListing(r, seedOwnerId),
     owner: raw
       ? {
           id: raw.id as string,
@@ -110,6 +115,21 @@ export async function getListingWithOwner(
         }
       : null,
   }
+}
+
+/** The one-time claim token for a seeded, still-unclaimed base/housing listing (null when claimed or
+ *  not seeded). Reads the secret directly, so the CALLER must gate this to platform staff before
+ *  surfacing it — it builds the shareable "claim this listing" link an operator sends the real poster.
+ *  Mirrors lib/marketplace.ts getListingClaimToken (the classifieds twin). */
+export async function getListingClaimToken(id: string): Promise<string | null> {
+  const { data } = await db()
+    .from('listings')
+    .select('claim_token, claimed_at')
+    .eq('id', id)
+    .maybeSingle()
+  const row = data as { claim_token: string | null; claimed_at: string | null } | null
+  if (!row || row.claimed_at) return null
+  return row.claim_token ?? null
 }
 
 export interface ListingInput {

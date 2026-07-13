@@ -1,5 +1,7 @@
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { MarketingFooter } from '@/components/layout/marketing-footer'
+import { SiteAlertBar } from '@/components/layout/site-alert-bar'
+import { SupportLauncher } from '@/components/support/support-launcher'
 import { getMenu, getMenuSettings } from '@/lib/menus/read'
 
 // Shared chrome for the public marketing content pages (/the-lab, /how-it-works,
@@ -27,8 +29,16 @@ export default async function MarketingLayout({ children }: { children: React.Re
       <MarketingHeader headerMenu={headerMenu} menuTimings={menuTimings} detectClientAuth />
       {/* Spacer clears the now-taller fixed header (4rem + safe-area-inset-top); min-h-dvh
           tracks the iOS dynamic toolbar so landscape height doesn't glitch. */}
-      <main id="main" className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>{children}</main>
+      <main id="main" className="min-h-dvh bg-surface" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top))' }}>
+        {/* Site-wide announcement strip, directly below the fixed header (full width, above the
+            page body). Self-hides once dismissed (localStorage). */}
+        <SiteAlertBar />
+        {children}
+      </main>
       <MarketingFooter menu={footerMenu} />
+      {/* The report dialog the SiteAlertBar's "Submit a bug" button opens. This public tree has no
+          app shell, so it mounts the launcher here (it listens for the 'open-support' event). */}
+      <SupportLauncher />
     </>
   )
 }
