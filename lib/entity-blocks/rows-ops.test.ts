@@ -5,6 +5,7 @@ import {
   moveRow,
   setRowColumns,
   setRowRatio,
+  setRowSplit,
   setRowTitle,
   setRowHeaderOn,
   setRowMargin,
@@ -229,6 +230,37 @@ describe('setRowRatio', () => {
     const lead = setRowRatio(base(), 'r1', 'lead')
     const even = setRowRatio(lead, 'r1', 'even')
     expect(even.rows[1].ratio).toBeUndefined()
+  })
+})
+
+describe('setRowSplit (on-canvas layout picker)', () => {
+  it('full merges a 2-column row back to one column, folding every box in', () => {
+    const out = setRowSplit(base(), 'r1', 'full') // r1 is [['stats'],['links']]
+    const r1 = out.rows[1]
+    expect(r1.columns).toBe(1)
+    expect(r1.cells).toEqual([['stats', 'links']])
+    expect(r1.ratio).toBeUndefined()
+  })
+  it('even widens to two columns with no stored ratio (even is the default)', () => {
+    const out = setRowSplit(base(), 'r0', 'even') // r0 is 1-column ['about']
+    const r0 = out.rows[0]
+    expect(r0.columns).toBe(2)
+    expect(r0.ratio).toBeUndefined()
+  })
+  it('lead widens to two columns with the wide-first ratio', () => {
+    const out = setRowSplit(base(), 'r0', 'lead')
+    const r0 = out.rows[0]
+    expect(r0.columns).toBe(2)
+    expect(r0.ratio).toBe('lead')
+  })
+  it('sidebar is the new skinny-left / wide-right split (the trail ratio)', () => {
+    const out = setRowSplit(base(), 'r0', 'sidebar')
+    const r0 = out.rows[0]
+    expect(r0.columns).toBe(2)
+    expect(r0.ratio).toBe('trail')
+  })
+  it('is a no-op for an unknown row id', () => {
+    expect(setRowSplit(base(), 'nope', 'sidebar')).toEqual(base())
   })
 })
 

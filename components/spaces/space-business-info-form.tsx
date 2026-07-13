@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Loader2, Sparkles } from 'lucide-react'
+import { Check, ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Input, Label } from '@/components/ui/field'
@@ -11,8 +11,8 @@ import { TextareaField, FormError } from '@/components/spaces/space-form'
 import { updateSpaceProfile } from '@/lib/spaces/profile-settings'
 import { setSpaceBusinessInfo } from '@/app/(main)/spaces/[slug]/manage/layout/actions'
 import { draftSpaceBioAction } from '@/app/(main)/spaces/copilot-actions'
-import type { SpaceProfileData, SpaceSocialLink } from '@/lib/spaces/profile-data'
-import { SPACE_CATEGORIES, normalizeSpaceCategory, type SpaceCategory } from '@/lib/spaces/categories'
+import { SPACE_SOCIAL_PLATFORMS, type SpaceProfileData, type SpaceSocialLink } from '@/lib/spaces/profile-data'
+import { SPACE_CATEGORIES, normalizeSpaceCategory, spaceCategoryLabel, type SpaceCategory } from '@/lib/spaces/categories'
 
 // THE INFO & CONNECT FORM (Space rail Section 2 — the standardized rail, ADR-535). The ONE place an
 // operator writes the forward-facing marketing + connect content a Spotlight/profile shows: About (a short
@@ -21,20 +21,9 @@ import { SPACE_CATEGORIES, normalizeSpaceCategory, type SpaceCategory } from '@/
 // Settings section, so neither is here. One Save writes the two stores each field lives in — the About
 // COLUMN via updateSpaceProfile, and the profileData BLOB (Story + contact + socials) via setSpaceBusinessInfo
 // (which MERGES, so the ratings owned by Settings are preserved). Copy runs CONTENT-VOICE: no em dashes.
-
-// The branded social platforms exposed as labeled URL inputs (website has its own field above).
-const SOCIAL_PLATFORMS: { key: string; label: string }[] = [
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'facebook', label: 'Facebook' },
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'yelp', label: 'Yelp' },
-  { key: 'google', label: 'Google' },
-  { key: 'x', label: 'X' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'tiktok', label: 'TikTok' },
-  { key: 'insighttimer', label: 'Insight Timer' },
-  { key: 'spotify', label: 'Spotify' },
-]
+//
+// The branded social platforms are the ONE canonical, ordered list (SPACE_SOCIAL_PLATFORMS in
+// lib/spaces/profile-data.ts), so the inputs here, the saved order, and every public render agree.
 
 export function SpaceInfoConnectForm({
   spaceId,
@@ -61,6 +50,7 @@ export function SpaceInfoConnectForm({
   for (const s of business.socials ?? []) socialMap[s.platform] = s.url
   const [biz, setBiz] = useState({
     category: normalizeSpaceCategory(business.category),
+    categoryLabel: business.categoryLabel ?? '',
     story: business.about ?? '',
     address: business.address ?? '',
     hours: business.hours ?? '',
@@ -102,16 +92,21 @@ export function SpaceInfoConnectForm({
     setError(null)
     setSaved(false)
     startSave(async () => {
-      const socials: SpaceSocialLink[] = SOCIAL_PLATFORMS.map((p) => ({
+      const socials: SpaceSocialLink[] = SPACE_SOCIAL_PLATFORMS.map((p) => ({
         platform: p.key,
         url: (biz.socials[p.key] ?? '').trim(),
       })).filter((s) => s.url)
+      // The custom pill name only persists when it actually differs from the category's own label — a blank
+      // or "same as the category" override drops out, so the pill cleanly falls back to the category label.
+      const pill = biz.categoryLabel.trim()
+      const categoryLabel = pill && pill !== spaceCategoryLabel(biz.category) ? pill : ''
       // Two writes, one Save: the About column + the central business blob (Story + contact + socials).
       // Ratings live in the Settings section; setSpaceBusinessInfo MERGES, so omitting them preserves them.
       const [colResult, bizResult] = await Promise.all([
         updateSpaceProfile(spaceId, { about: about.trim() || null }),
         setSpaceBusinessInfo(slug, {
           category: biz.category,
+          categoryLabel,
           about: biz.story.trim(),
           address: biz.address.trim(),
           hours: biz.hours.trim(),
@@ -148,40 +143,64 @@ export function SpaceInfoConnectForm({
       onBlur={onFieldBlur}
     >
       <fieldset disabled={readOnly} className="contents">
-        {/* CATEGORY — how this Space shows up in the directory (a browse facet, not the profile chip). */}
-        <section className="space-y-3">
-          <SectionHeader title="Category" />
-          <p className="text-xs text-subtle">
-            Pick the one that fits best. It groups you in the directory so the right people find you.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {SPACE_CATEGORIES.map((c) => {
-              const selected = biz.category === c.key
-              return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => pickCategory(c.key)}
-                  aria-pressed={selected}
-                  className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
-                    selected
-                      ? 'border-primary bg-primary-bg'
-                      : 'border-border bg-surface hover:border-primary/40'
-                  }`}
-                >
-                  <c.Icon
-                    className={`mt-0.5 h-5 w-5 shrink-0 ${selected ? 'text-primary-strong' : 'text-subtle'}`}
-                    aria-hidden
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold">{c.label}</span>
-                    <span className="block text-xs text-subtle">{c.blurb}</span>
-                  </span>
-                </button>
-              )
-            })}
+        {/* CATEGORY — how this Space shows up in the directory (a browse facet, not the profile chip). A
+            clear button + dropdown (closed by default), matching the Header / Page style dropdowns. */}
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
+            Category
+            <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+          </summary>
+          <div className="space-y-3 pt-3">
+            <p className="text-xs text-subtle">
+              Pick the one that fits best. It groups you in the directory so the right people find you.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {SPACE_CATEGORIES.map((c) => {
+                const selected = biz.category === c.key
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => pickCategory(c.key)}
+                    aria-pressed={selected}
+                    className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${
+                      selected
+                        ? 'border-primary bg-primary-bg'
+                        : 'border-border bg-surface hover:border-primary/40'
+                    }`}
+                  >
+                    <c.Icon
+                      className={`mt-0.5 h-5 w-5 shrink-0 ${selected ? 'text-primary-strong' : 'text-subtle'}`}
+                      aria-hidden
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">{c.label}</span>
+                      <span className="block text-xs text-subtle">{c.blurb}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* CUSTOM PILL NAME (optional) — override just the DISPLAYED name on the public category pill
+                while keeping the category above for the directory. Blank falls back to the category label. */}
+            <div>
+              <Label htmlFor="biz-category-label" className="mb-1 block font-semibold">
+                Custom name (optional)
+              </Label>
+              <Input
+                id="biz-category-label"
+                value={biz.categoryLabel}
+                maxLength={60}
+                placeholder={spaceCategoryLabel(biz.category)}
+                onChange={(e) => setBiz((f) => ({ ...f, categoryLabel: e.target.value }))}
+              />
+              <p className="mt-1 text-xs text-subtle">
+                Shown on your card in place of the category name. Leave blank to use &ldquo;{spaceCategoryLabel(biz.category)}&rdquo;.
+              </p>
+            </div>
           </div>
-        </section>
+        </details>
 
         {/* ABOUT + STORY — the words a visitor reads. */}
         <section className="space-y-5">
@@ -250,7 +269,7 @@ export function SpaceInfoConnectForm({
           <div>
             <Label className="mb-1.5 block font-semibold">Social and business links</Label>
             <div className="grid gap-3 sm:grid-cols-2">
-              {SOCIAL_PLATFORMS.map((p) => (
+              {SPACE_SOCIAL_PLATFORMS.map((p) => (
                 <div key={p.key}>
                   <Label htmlFor={`biz-social-${p.key}`} className="mb-1 block text-2xs font-medium text-subtle">
                     {p.label}

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { Users, UserPlus, CalendarDays, Building2, ArrowUpRight } from 'lucide-react'
 import { EntityCard } from '@/components/cards/entity-card'
-import { spaceCategoryLabel } from '@/lib/spaces/categories'
 import type { NetworkedSpace } from '@/lib/spaces/discovery'
 
 // The directory card for one networked entity Space — a COVER-LED composition of the shared EntityCard
@@ -85,7 +84,7 @@ export function SpaceCard({ space }: { space: NetworkedSpace }) {
           {/* CATEGORY pill, top-left — the Space's browse subcategory (Studios / Shops / …) on a soft
               backdrop (legible over photo or gradient). */}
           <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-0.5 text-2xs font-semibold text-text shadow-sm backdrop-blur-sm">
-            {spaceCategoryLabel(space.category)}
+            {space.categoryLabel}
           </span>
           {/* LOGO, bottom-left. */}
           <span className="absolute bottom-3 left-3">

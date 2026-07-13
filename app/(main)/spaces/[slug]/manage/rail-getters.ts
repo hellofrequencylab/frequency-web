@@ -464,6 +464,52 @@ export async function getSpaceLayoutRailData(slug: string): Promise<SpaceLayoutR
 // re-gates on its own. The client SpaceRailDataProvider calls this once and distributes the slices;
 // a module that misses the provider falls back to its own getter, so nothing breaks standalone.
 
+/** One rail summary count (plus, for a metered surface, the Space's plan `tier`), keyed by surface id. */
+export type SpaceSummaryValue = { count: number; tier?: string }
+
+/** Compute EVERY rail summary count in ONE request from the already-resolved space + caps, so the summary
+ *  cards read from the shared bundle instead of each self-fetching. Before this, each of the ~7 summary
+ *  cards fired its OWN 'use server' getter on mount, and because a server action is a SEPARATE request the
+ *  per-request cache never deduped the heavy resolve (caller → visible space → manage access → caps) — so a
+ *  Space rail open ran the chain ~8 times (1 bundle + up to 7 summaries): the slow rail (ADR-550 follow-up).
+ *  Here the chain is already resolved once; this adds only the per-surface function gate + the cheap count
+ *  query, all in parallel. Keyed by the surface id the rail looks the card up by. Each read is FAIL-SAFE: a
+ *  read that throws or is gated out yields null → the card degrades to a plain link-row (never a broken card,
+ *  never a weakened gate — each summary getter still re-gates server-side when a card falls back to it). */
+async function buildSummariesData(
+  space: ResolvedSpaceRow,
+  caps: SpaceCaps,
+  staffViewing: boolean,
+): Promise<Record<string, SpaceSummaryValue | null>> {
+  const can = (fn: SpaceFunctionKey) => staffViewing || spaceFunctionAccess(space, fn, caps.role)
+  const tier = (space.plan ?? 'free').toLowerCase()
+  const safe = async <T>(run: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await run()
+    } catch {
+      return fallback
+    }
+  }
+  const [members, deals, windows, memberTiers, ticketTiers, campaigns] = await Promise.all([
+    can('members') ? safe(() => listSpaceMembers(space.id), []) : null,
+    can('crm') ? safe(() => getDeals(space.id), []) : null,
+    can('availability') ? safe(() => listSpaceAvailability(space.id), []) : null,
+    can('memberships') ? safe(() => listAllMembershipTiers(space.id), []) : null,
+    can('tickets') ? safe(() => listAllTicketTiers(space.id), []) : null,
+    can('email') ? safe(() => listSpaceCampaigns(space.id), []) : null,
+  ])
+  const services = readProfileData(space.preferences).offerings ?? []
+  return {
+    'space.people': members ? { count: members.filter((m) => m.status === 'active').length } : null,
+    'space.crm': deals ? { count: deals.length, tier } : null,
+    'space.services': { count: services.filter(isServiceListed).length },
+    'space.comms': campaigns ? { count: campaigns.length, tier } : null,
+    'space.booking': windows ? { count: windows.length } : null,
+    'space.memberships': memberTiers ? { count: memberTiers.length } : null,
+    'space.tickets': ticketTiers ? { count: ticketTiers.length } : null,
+  }
+}
+
 export interface SpaceRailBundle {
   /** Present whenever the viewer can manage (the `profile` function only toggles readOnly). */
   basics: SpaceBasicsData
@@ -473,6 +519,9 @@ export interface SpaceRailBundle {
   page: SpacePageData | null
   /** Null when the viewer is a staff previewer who cannot edit (mirrors getSpaceLayoutRailData). */
   layout: SpaceLayoutRailData | null
+  /** Every rail summary card's count, keyed by surface id. A card reads its slice from here instead of
+   *  self-fetching (the slow fan-out fix); a null slice means the viewer cannot use that surface. */
+  summaries: Record<string, SpaceSummaryValue | null>
 }
 
 /** Every Space rail module's bundle from ONE resolve, or null when the viewer cannot manage this Space
@@ -505,12 +554,18 @@ export async function getSpaceRailBundle(
     buildLayoutData(space, canManage),
   ])
 
+  // The rail summary counts fold into THIS one request too (perf: every card used to self-fetch, re-running
+  // the whole resolve chain). buildSummariesData needs `caps.role` for its per-surface gate, so it runs after
+  // caps resolves; its ~6 count queries fan out in parallel inside it, and each is fail-safe.
+  const summaries = await buildSummariesData(space, caps, staffViewing)
+
   return {
     basics: buildBasicsData(space, caps, staffViewing, extras),
     branding: buildBrandingData(space, caps, staffViewing, extras),
     settings: buildSettingsData(space, caps, staffViewing, extras),
     page: buildPageData(space, staffViewing, canManage, pageSlug),
     layout,
+    summaries,
   }
 }
 

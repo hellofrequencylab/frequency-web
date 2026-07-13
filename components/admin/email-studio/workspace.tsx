@@ -8,10 +8,46 @@ import {
   deleteEmailDraft,
   listEmailCampaigns,
   loadEmailCampaign,
+  saveEmailCampaign,
+  sendTestEmail,
   type EmailCampaignCard,
   type LoadedEmailCampaign,
 } from '@/app/(main)/admin/email-studio/actions'
-import { isError } from '@/lib/action-result'
+import { isError, type ActionResult } from '@/lib/action-result'
+import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
+import type { EntityLayout } from '@/lib/entity-blocks/layout'
+import type { EmailColors } from '@/lib/email-studio/render'
+
+// The read + write seams the workspace drives. Injectable so the SAME two-pane workspace serves the admin Email
+// Studio (its default = the admin actions) AND a per-Space Marketing editor (space-scoped, brand-compiling
+// actions bound to a spaceId on the client). We do not fork the engine — we point it at another data source.
+export interface EmailWorkspaceActions {
+  /** List the cards for the left rail. */
+  list: () => Promise<EmailCampaignCard[]>
+  /** Create a new draft; returns its id. */
+  create: () => Promise<ActionResult<{ id: string }>>
+  /** Delete a draft. */
+  remove: (id: string) => Promise<ActionResult>
+  /** Load one email into the editor. */
+  load: (id: string) => Promise<LoadedEmailCampaign | null>
+  /** Persist layout / subject / preheader (injected into the editor pane's store + fields). */
+  save: (
+    id: string,
+    patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+  ) => Promise<{ error?: string }>
+  /** Test-send to the operator (injected into the compose toolbar). */
+  sendTest: (id: string) => Promise<ActionResult<{ to: string }>>
+}
+
+/** The default action bundle: the admin Email Studio's server actions (unchanged behavior). */
+const ADMIN_ACTIONS: EmailWorkspaceActions = {
+  list: listEmailCampaigns,
+  create: createEmailDraft,
+  remove: deleteEmailDraft,
+  load: loadEmailCampaign,
+  save: saveEmailCampaign,
+  sendTest: sendTestEmail,
+}
 
 // EMAIL STUDIO WORKSPACE (Phase 2). The two-pane Campaign Workspace: a compact list of email cards on the
 // LEFT, the selected email's block editor on the RIGHT. Selecting a card loads it into the reused arranger;
@@ -42,6 +78,9 @@ export function EmailStudioWorkspace({
   templateGallery,
   sendPanel,
   analyticsPanel,
+  actions,
+  arrangement = 'stacked',
+  colors,
 }: {
   initialCampaigns: EmailCampaignCard[]
   /** Phase 3: a starter-template gallery. Receives an `onUse(id)` that adds + selects the new draft. */
@@ -50,7 +89,15 @@ export function EmailStudioWorkspace({
   sendPanel?: (campaignId: string, status: string) => ReactNode
   /** Phase 6: the per-campaign analytics panel for the selected campaign. */
   analyticsPanel?: (campaignId: string) => ReactNode
+  /** The read + write seams. Defaults to the admin Email Studio's actions; a per-Space editor injects its
+   *  own space-scoped, brand-compiling bundle. */
+  actions?: EmailWorkspaceActions
+  /** The editor arrangement (passed to EmailEditorPane). The Marketing editor uses 'canvas'. */
+  arrangement?: 'stacked' | 'trio' | 'canvas'
+  /** Brand palette for the canvas + live preview (spaceEmailColors for a Space; DAWN default otherwise). */
+  colors?: EmailColors
 }) {
+  const act = actions ?? ADMIN_ACTIONS
   const [cards, setCards] = useState<EmailCampaignCard[]>(initialCampaigns)
   const [selectedId, setSelectedId] = useState<string | null>(initialCampaigns[0]?.id ?? null)
   const [loaded, setLoaded] = useState<LoadedEmailCampaign | null>(null)
@@ -71,7 +118,7 @@ export function EmailStudioWorkspace({
       }
       setLoading(true)
       try {
-        const data = await loadEmailCampaign(selectedId)
+        const data = await act.load(selectedId)
         if (req === reqRef.current) setLoaded(data)
       } catch {
         if (req === reqRef.current) setLoaded(null)
@@ -80,13 +127,13 @@ export function EmailStudioWorkspace({
       }
     }
     void run()
-  }, [selectedId])
+  }, [selectedId, act])
 
   const refreshList = useCallback(async () => {
-    const next = await listEmailCampaigns()
+    const next = await act.list()
     setCards(next)
     return next
-  }, [])
+  }, [act])
 
   // A draft created outside the list (e.g. from the template gallery): refresh the rail and open it.
   const handleExternalSelect = useCallback(
@@ -100,7 +147,7 @@ export function EmailStudioWorkspace({
   function onNew() {
     setError(null)
     startTransition(async () => {
-      const res = await createEmailDraft()
+      const res = await act.create()
       if (isError(res)) {
         setError(res.error)
         return
@@ -113,7 +160,7 @@ export function EmailStudioWorkspace({
   function onDelete(id: string) {
     setError(null)
     startTransition(async () => {
-      const res = await deleteEmailDraft(id)
+      const res = await act.remove(id)
       if (isError(res)) {
         setError(res.error)
         return
@@ -220,7 +267,15 @@ export function EmailStudioWorkspace({
               </div>
             )}
             {templateGallery?.(handleExternalSelect)}
-            <EmailEditorPane key={loaded.id} campaign={loaded} onSubjectChange={onSubjectChange} />
+            <EmailEditorPane
+              key={loaded.id}
+              campaign={loaded}
+              onSubjectChange={onSubjectChange}
+              arrangement={arrangement}
+              colors={colors}
+              saveCampaign={act.save}
+              sendTest={act.sendTest}
+            />
           </div>
         )}
       </section>

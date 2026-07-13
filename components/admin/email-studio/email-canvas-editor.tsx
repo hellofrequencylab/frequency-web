@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 
 import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
-import { DEFAULT_EMAIL_COLORS as C } from '@/lib/email-studio/render'
+import { DEFAULT_EMAIL_COLORS, type EmailColors } from '@/lib/email-studio/render'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor } from '@/components/entity-blocks/block-edit-panel'
 import { CanvasBlock } from './canvas/canvas-block'
@@ -53,7 +53,12 @@ function isCoreField(f: FieldDef): boolean {
 
 const label = (id: string) => entityBlockById(id)?.label ?? id
 
-export function EmailCanvasEditor() {
+export function EmailCanvasEditor({ colors }: { colors?: EmailColors } = {}) {
+  // The canvas chrome (the framing canvas, the card surface/border, the brand wordmark ink) mirrors the email
+  // palette so the WYSIWYG surface reads in the same colors the email will send in. Defaults to the platform
+  // DAWN palette; a per-Space editor passes its brand-seeded palette (spaceEmailColors) so a business Space's
+  // canvas paints in its own brand.
+  const C = colors ?? DEFAULT_EMAIL_COLORS
   const store = useProfileLayout()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // Horizontal alignment: when a block is selected (usually by clicking it on the canvas), the LEFT block

@@ -706,6 +706,14 @@
   --radius-control: 8px;
 }
 
+/* modern — a crisp geometric Lexend headline over friendly Nunito body, with soft even corners. */
+[data-space-theme="modern"] {
+  --font-display: var(--font-lexend);
+  --font-body: var(--font-nunito);
+  --radius-card: 14px;
+  --radius-control: 10px;
+}
+
 /* ── Tailwind wiring ────────────────────────────────────────────────────────
    Map tokens into Tailwind v4 utility classes. Components can then say
    `bg-canvas`, `bg-surface`, `text-text`, `text-muted`, `bg-primary`,

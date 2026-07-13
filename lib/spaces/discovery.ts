@@ -17,7 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { listFollowedSpaceIds } from './follows'
 import { normalizeSpaceType } from './types'
 import type { SpaceType } from './types'
-import { spaceCategory } from './profile-data'
+import { spaceCategory, spaceCategoryPillLabel } from './profile-data'
 import { isSpaceCategory, type SpaceCategory } from './categories'
 import { readHeaderCtaPreference, resolveHeaderCta } from './header-cta'
 import { defaultPrimaryCtaLabel } from './profile-config'
@@ -40,6 +40,9 @@ export interface NetworkedSpace {
   /** The PUBLIC directory category (the "business style" browse facet). Read from
    *  preferences.profileData.category; a null / unknown value reads as 'business'. */
   category: SpaceCategory
+  /** The label the category pill DISPLAYS: the operator's custom pill-name override when set, else the
+   *  category's own label. Keeps `category` for taxonomy/filtering while the pill can read a custom word. */
+  categoryLabel: string
   /** One-line positioning. Null when the Space hasn't set one. */
   tagline: string | null
   /** Operator-supplied logo URL, or null. Rendered via a plain <img> (an arbitrary URL). */
@@ -353,6 +356,7 @@ export const listNetworkedSpaces = cache(
           name: r.brand_name?.trim() || r.name,
           type,
           category: spaceCategory({ preferences: r.preferences }),
+          categoryLabel: spaceCategoryPillLabel({ preferences: r.preferences }),
           tagline: r.tagline?.trim() || null, // Populated from the row (Wave B); the card omits it when null.
           logoUrl: r.brand_logo_url,
           coverUrl: r.cover_image_url,

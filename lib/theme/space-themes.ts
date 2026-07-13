@@ -14,7 +14,7 @@
 // preferences.profileLayout / moduleMenu). `parseSpaceTheme` is the one fail-safe reader.
 
 /** The set of authored space-theme ids. Add a theme = author its CSS block AND extend this union. */
-export type SpaceThemeId = 'bold' | 'editorial' | 'classic' | 'playful' | 'accessible'
+export type SpaceThemeId = 'bold' | 'editorial' | 'classic' | 'playful' | 'accessible' | 'modern'
 
 /** The full declaration of a space theme — its id, human copy, and the two font faces it pairs (named so
  *  the picker reads like a real font menu, not an abstract token). */
@@ -67,6 +67,13 @@ export const SPACE_THEMES: readonly SpaceThemeDef[] = [
     description: 'Readability first: a clear display over a character-disambiguating body face.',
     displayFont: 'Lexend',
     bodyFont: 'Atkinson Hyperlegible',
+  },
+  {
+    id: 'modern',
+    label: 'Modern',
+    description: 'Clean and current: a crisp geometric headline over friendly body text, with soft even corners.',
+    displayFont: 'Lexend',
+    bodyFont: 'Nunito',
   },
 ]
 

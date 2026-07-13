@@ -14,11 +14,19 @@ import { EntityPageBuilder, type BuilderRailData } from '@/components/entity-blo
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import type { SaveLayout } from '@/components/entity-blocks/profile-layout-context'
+import type { EmailColors } from '@/lib/email-studio/render'
+import type { ActionResult } from '@/lib/action-result'
 import { ComposeToolbar } from './compose-toolbar'
 import { EmailContextBar } from './context-bar'
 import { EmailPreview } from './preview'
 import { EmailCanvasEditor } from './email-canvas-editor'
-import { saveEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
+import { saveEmailCampaign, sendTestEmail, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
+
+/** The persist action shape the pane injects into the store + compose fields (matches saveEmailCampaign). */
+type SaveCampaign = (
+  id: string,
+  patch: { layout?: BuilderLayout | EntityLayout; subject?: string; preheader?: string },
+) => Promise<{ error?: string }>
 
 // EMAIL EDITOR PANE. The right pane's editor for ONE selected email. It REUSES the entity-blocks arranger
 // UNCHANGED: it mounts the shared EntityLayoutProvider with kind 'email' and an injected `save` that persists
@@ -55,16 +63,18 @@ function LivePreview({
   layout,
   subject,
   preheader,
+  colors,
 }: {
   layout: EntityLayout
   subject: string
   preheader: string
+  colors?: EmailColors
 }) {
   const store = useProfileLayout()
   const working: EntityLayout = store?.seeded
     ? { rows: store.rows, hidden: store.hidden, content: store.content, style: store.style }
     : layout
-  return <EmailPreview layout={working} subject={subject} preheader={preheader} />
+  return <EmailPreview layout={working} subject={subject} preheader={preheader} colors={colors} />
 }
 
 export function EmailEditorPane({
@@ -72,10 +82,20 @@ export function EmailEditorPane({
   onSubjectChange,
   arrangement = 'stacked',
   sidebar,
+  saveCampaign = saveEmailCampaign,
+  sendTest = sendTestEmail,
+  colors,
 }: {
   campaign: LoadedEmailCampaign
   /** Bubble a subject edit up so the left rail card relabels live. */
   onSubjectChange?: (id: string, subject: string) => void
+  /** The persist action (layout + subject/preheader). Defaults to the admin saveEmailCampaign; a per-Space
+   *  editor injects its own space-scoped, brand-compiling save (saveSpaceEmailDraft). */
+  saveCampaign?: SaveCampaign
+  /** The test-send action, injected into the compose toolbar (defaults to the admin sendTestEmail). */
+  sendTest?: (id: string) => Promise<ActionResult<{ to: string }>>
+  /** Brand palette for the canvas + live preview (spaceEmailColors for a Space). Defaults to DAWN. */
+  colors?: EmailColors
   /** 'stacked' (default): toolbar on top, canvas below, preview toggled beside it. 'trio': a full-width
    *  three-region layout — settings/controls LEFT, the block canvas CENTER, the live preview RIGHT. 'canvas'
    *  (prototype, flag-gated): the on-canvas WYSIWYG editor — block list + core settings LEFT, a live clickable
@@ -93,8 +113,8 @@ export function EmailEditorPane({
   // The arranger's injected persist: the store hands the freshest BuilderLayout here (debounced), and this
   // re-sanitizes + writes block_json server-side.
   const save = useCallback<SaveLayout>(
-    (payload: BuilderLayout) => saveEmailCampaign(id, { layout: payload }),
-    [id],
+    (payload: BuilderLayout) => saveCampaign(id, { layout: payload }),
+    [id, saveCampaign],
   )
 
   // Debounced subject / preheader save (separate from the layout store's own debounce).
@@ -103,10 +123,10 @@ export function EmailEditorPane({
     (patch: { subject?: string; preheader?: string }) => {
       if (fieldTimer.current) clearTimeout(fieldTimer.current)
       fieldTimer.current = setTimeout(() => {
-        void saveEmailCampaign(id, patch)
+        void saveCampaign(id, patch)
       }, SAVE_DEBOUNCE_MS)
     },
-    [id],
+    [id, saveCampaign],
   )
   useEffect(() => () => {
     if (fieldTimer.current) clearTimeout(fieldTimer.current)
@@ -167,8 +187,9 @@ export function EmailEditorPane({
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
+            sendTest={sendTest}
           />
-          <EmailCanvasEditor />
+          <EmailCanvasEditor colors={colors} />
           {sidebar}
         </div>
       </EntityLayoutProvider>
@@ -194,6 +215,7 @@ export function EmailEditorPane({
             previewOpen
             onTogglePreview={() => {}}
             showPreviewToggle={false}
+            sendTest={sendTest}
           />
           {/* MIDDLE — the editor: a narrow Your page rail (~30%, min 220px) on the LEFT, the live preview
               taking the rest on the RIGHT. The preview auto-scales the fixed-width email to fit, so the whole
@@ -203,7 +225,7 @@ export function EmailEditorPane({
               <EntityPageBuilder pageId={id} kind="email" loadRailData={loadRailData} seed={seed} />
             </div>
             <div className="min-w-0">
-              <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} />
+              <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} colors={colors} />
             </div>
           </div>
           {/* BOTTOM — the send / schedule panel, FULL WIDTH with all its controls in a row. */}
@@ -225,6 +247,7 @@ export function EmailEditorPane({
           onPreheader={onPreheader}
           previewOpen={previewOpen}
           onTogglePreview={() => setPreviewOpen((v) => !v)}
+          sendTest={sendTest}
         />
 
         <div className={previewOpen ? 'grid gap-4 lg:grid-cols-2' : ''}>
@@ -233,7 +256,7 @@ export function EmailEditorPane({
           </div>
           {previewOpen && (
             <div className="min-w-0">
-              <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} />
+              <LivePreview layout={campaign.layout} subject={subject} preheader={preheader} colors={colors} />
             </div>
           )}
         </div>

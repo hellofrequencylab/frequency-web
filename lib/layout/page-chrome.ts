@@ -121,6 +121,10 @@ const DASHBOARD_NONE_PATTERNS: RegExp[] = [
   // showing") — so it is NOT a full-viewport takeover (which also hides the header). The header-keeping
   // + left-nav-dropping half lives in isFullWidthEditor + the shell; this entry drops the right rail.
   /^\/spaces\/[^/]+\/edit-page$/,
+  // The Space MARKETING email editor (/spaces/<slug>/marketing, Email in the Business CRM P1): a two-pane
+  // on-canvas email editor (block list + settings LEFT, live email canvas RIGHT). Like the CRM board it reads
+  // best edge to edge, so it keeps the left menu but drops the member right rail. Pattern match (one slug deep).
+  /^\/spaces\/[^/]+\/marketing$/,
   // The MARKETING page editor (/edit/<slug>, ADR-508 U4-A) is the same kind of FULL-WIDTH editor as the
   // Space landing editor: the in-house Puck-free builder (components/page-editor/editor.tsx) fills the
   // whole width, so both rails drop, but the site header STAYS (owner directive: "fullscreen experience

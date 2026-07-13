@@ -363,7 +363,7 @@ export function useSettingsPanel(detail?: OpenAdminBarDetail): SettingsPanelMode
       // plain link-row. Data-driven + fail-safe: a card IFF SURFACE_SUMMARIES[id] exists.
       const summary = SURFACE_SUMMARIES[id]
       return summary ? (
-        <SurfaceSummaryCard key={id} app={app} href={href} entry={summary} />
+        <SurfaceSummaryCard key={id} app={app} href={href} entry={summary} surfaceId={id} />
       ) : (
         <SurfaceLinkRow key={id} app={app} href={href} />
       )
