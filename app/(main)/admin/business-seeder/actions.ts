@@ -34,6 +34,7 @@ import { runResearch, EDITABLE_PROSE_FIELDS, nextEditedProse, editedProsePaths }
 import { reframe, applyReframe } from '@/lib/importer/reframe'
 import { normalizeSeedMood, type SeedMood } from '@/lib/importer/moods'
 import { applyIntake, fileSeedImagesIntoLoom } from '@/lib/importer/materialize'
+import { mintSpaceClaimToken } from '@/lib/spaces/claim'
 import { adoptSpaceAsMasterProfile } from '@/lib/importer/adopt'
 import { planSeedImages } from '@/lib/importer/vision'
 import { withImageOrder } from '@/lib/importer/media-order'
@@ -898,6 +899,11 @@ export async function approveBusinessImport(intakeId: string): Promise<ApproveRe
   if (!result.ok || !result.spaceId) {
     return { ok: false, error: result.error ?? 'The Space could not be created.' }
   }
+
+  // Seeded Spaces are owned by the operator until the real owner claims them: mint a one-time claim
+  // token so the operator can share /spaces/claim/<token> (surfaced in the Space's QR & Share box for
+  // admin/janitor). Best-effort: a missing token just means no claim link shows.
+  await mintSpaceClaimToken(result.spaceId)
 
   const slug = result.slug
   const profileHref = slug ? `/spaces/${slug}` : `/spaces/${result.spaceId}`

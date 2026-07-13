@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { QrCode, Link2, Check, ExternalLink, Contact } from 'lucide-react'
+import { QrCode, Link2, Check, ExternalLink, Contact, Send } from 'lucide-react'
 import { Dialog } from '@/components/ui/dialog'
 import { renderStyledQrSvg } from '@/lib/qr/render-styled'
 import { DEFAULT_STYLE, withCenterLogo } from '@/lib/qr/style'
@@ -29,6 +29,7 @@ export function SpaceShareButton({
   brandLogoUrl,
   sharerProfileId,
   hasContactCard,
+  claimUrl,
   className,
   iconOnly = false,
 }: {
@@ -40,12 +41,26 @@ export function SpaceShareButton({
   sharerProfileId: string | null
   /** Whether the Space exposes a "Save contact" vCard (always true today; kept explicit + fail-soft). */
   hasContactCard: boolean
+  /** For a SEEDED, still-unclaimed Space shown to an operator (admin/janitor): the shareable claim link
+   *  (`/spaces/claim/<token>`) to send the real owner. Absent (undefined) for a normal viewer or once
+   *  claimed, so the row simply does not appear. */
+  claimUrl?: string
   className?: string
   /** Compact icon-only trigger (the mobile action band); otherwise the labelled "QR" button. */
   iconOnly?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [claimCopied, setClaimCopied] = useState(false)
+
+  function copyClaim() {
+    if (!claimUrl) return
+    const full = typeof window !== 'undefined' ? new URL(claimUrl, window.location.origin).toString() : claimUrl
+    navigator.clipboard?.writeText(full).then(() => {
+      setClaimCopied(true)
+      setTimeout(() => setClaimCopied(false), 1500)
+    })
+  }
 
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const { path, url } = publicShareUrl(origin, `/spaces/${slug}`, { ref: sharerProfileId })
@@ -132,6 +147,28 @@ export function SpaceShareButton({
                 </a>
               )}
               <p className="text-2xs text-subtle">Anyone with the link or the code lands on {brandName}.</p>
+
+              {/* Operator-only (admin/janitor): the claim link for a seeded, unclaimed Space. Sending it
+                  lets the real owner claim the Space and take ownership. Hidden for everyone else and
+                  once claimed (the parent only passes claimUrl when eligible). */}
+              {claimUrl && (
+                <div className="mt-1 border-t border-border pt-3">
+                  <p className="mb-1.5 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-subtle">
+                    <Send className="h-3.5 w-3.5" /> Claim link (staff)
+                  </p>
+                  <p className="mb-2 text-2xs text-muted">
+                    Send this to the owner. Opening it lets them claim {brandName} and take ownership.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={copyClaim}
+                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-2xs font-semibold text-text transition-colors hover:bg-surface-elevated"
+                  >
+                    {claimCopied ? <Check className="h-3.5 w-3.5 text-success" /> : <Link2 className="h-3.5 w-3.5" />}
+                    {claimCopied ? 'Copied' : 'Copy claim link'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
