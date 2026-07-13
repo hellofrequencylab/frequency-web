@@ -2,9 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Pencil, Star, Power, Archive, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Pencil, Star, Power, Archive, RotateCcw, Trash2, Check, X } from 'lucide-react'
+import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { isError, type ActionResult } from '@/lib/action-result'
 import type { ThemeKind, ThemeStatus } from '@/lib/theme/admin-types'
 import { setThemeStatus, setDefaultTheme, deleteTheme } from './actions'
@@ -70,63 +69,49 @@ export function ThemeRowActions({
   }
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-      <Button asChild variant="secondary" size="sm">
-        <Link href={`/admin/appearance/${id}`}>
-          <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
-        </Link>
-      </Button>
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+      <IconLink label="Edit" href={`/admin/appearance/${id}`}>
+        <Pencil className="h-4 w-4" aria-hidden />
+      </IconLink>
 
       {/* Lifecycle: activate a non-active theme; archive an active one; a draft restore for
           archived rows so nothing is a dead end. */}
       {status !== 'active' && (
-        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={activate}>
-          <Power className="h-3.5 w-3.5" aria-hidden /> Activate
-        </Button>
+        <IconButton label="Activate" disabled={pending} onClick={activate}>
+          <Power className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
       {status === 'active' && (
-        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={archive}>
-          <Archive className="h-3.5 w-3.5" aria-hidden /> Archive
-        </Button>
+        <IconButton label="Archive" disabled={pending} onClick={archive}>
+          <Archive className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
       {status === 'archived' && (
-        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={restoreToDraft}>
-          Restore to draft
-        </Button>
+        <IconButton label="Restore to draft" disabled={pending} onClick={restoreToDraft}>
+          <RotateCcw className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
 
       {/* Default applies to skins only and only when not already the default. */}
       {kind === 'skin' && !isDefault && (
-        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={makeDefault}>
-          <Star className="h-3.5 w-3.5" aria-hidden /> Set default
-        </Button>
+        <IconButton label="Set default" disabled={pending} onClick={makeDefault}>
+          <Star className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
 
       {confirming ? (
-        <span className="inline-flex items-center gap-1.5">
-          <Button type="button" variant="danger" size="sm" disabled={pending} onClick={remove}>
-            {pending ? 'Deleting…' : 'Confirm delete'}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            onClick={() => setConfirming(false)}
-          >
-            Cancel
-          </Button>
+        <span className="inline-flex items-center gap-1">
+          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} danger disabled={pending} onClick={remove}>
+            <Check className="h-4 w-4" aria-hidden />
+          </IconButton>
+          <IconButton label="Cancel" disabled={pending} onClick={() => setConfirming(false)}>
+            <X className="h-4 w-4" aria-hidden />
+          </IconButton>
         </span>
       ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={pending}
-          onClick={() => setConfirming(true)}
-        >
-          <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete
-        </Button>
+        <IconButton label="Delete" danger disabled={pending} onClick={() => setConfirming(true)}>
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
 
       {error && (

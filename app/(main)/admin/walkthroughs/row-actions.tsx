@@ -1,10 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { useState, useTransition } from 'react'
-import { Copy, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Check, Copy, ListChecks, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { IconButton, IconLink } from '@/components/ui/icon-button'
 import { isError } from '@/lib/action-result'
 import {
   createWalkthrough,
@@ -119,28 +119,26 @@ export function WalkthroughRowActions({ id, active }: { id: string; active: bool
         />
       </button>
 
-      <Button asChild variant="secondary" size="sm">
-        <Link href={`/admin/walkthroughs/${id}`}>
-          <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
-        </Link>
-      </Button>
-      <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={duplicate}>
-        <Copy className="h-3.5 w-3.5" aria-hidden /> Duplicate
-      </Button>
+      <IconLink label="Edit" href={`/admin/walkthroughs/${id}`}>
+        <Pencil className="h-4 w-4" aria-hidden />
+      </IconLink>
+      <IconButton label="Duplicate" disabled={pending} onClick={duplicate}>
+        <Copy className="h-4 w-4" aria-hidden />
+      </IconButton>
 
       {confirming ? (
-        <span className="inline-flex items-center gap-1.5">
-          <Button type="button" variant="danger" size="sm" disabled={pending} onClick={remove}>
-            {pending ? 'Deleting…' : 'Confirm'}
-          </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
-            Cancel
-          </Button>
+        <span className="inline-flex items-center gap-1">
+          <IconButton label={pending ? 'Deleting' : 'Confirm delete'} danger disabled={pending} onClick={remove}>
+            <Check className="h-4 w-4" aria-hidden />
+          </IconButton>
+          <IconButton label="Cancel" disabled={pending} onClick={() => setConfirming(false)}>
+            <X className="h-4 w-4" aria-hidden />
+          </IconButton>
         </span>
       ) : (
-        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setConfirming(true)}>
-          <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete
-        </Button>
+        <IconButton label="Delete" danger disabled={pending} onClick={() => setConfirming(true)}>
+          <Trash2 className="h-4 w-4" aria-hidden />
+        </IconButton>
       )}
     </div>
   )
