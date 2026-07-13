@@ -1,7 +1,7 @@
 'use client'
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, GripVertical, Loader2, Plus, Settings2, Trash2 } from 'lucide-react'
 import { emailPalette, entityBlockById } from '@/lib/entity-blocks/registry'
 import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
 import { addRow, moveRow, placeBlock, removeBlock, type BuilderLayout } from '@/lib/entity-blocks/rows-ops'
@@ -61,6 +61,11 @@ export function EmailCanvasEditor() {
   // canvas. `tileRefs` marks each left tile, `blockRefs` each canvas block, and `railOffset` is the
   // translateY applied to the tile list to line the two up. Measured from layout (not viewport), so it is
   // stable across page scroll; recomputed on selection change, on a tile expanding, and on resize.
+  // Native HTML5 drag-reorder of the LEFT block list (mirrors components/spaces/crm/stage-editor.tsx, no new
+  // library). `dragId` is the block being dragged; `overId` the tile currently hovered as the drop target.
+  // Drag is INDEPENDENT of `selectedId`, so it never disturbs click-to-select or the railOffset alignment.
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overId, setOverId] = useState<string | null>(null)
   const tileRefs = useRef<Record<string, HTMLLIElement | null>>({})
   const blockRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const gridRef = useRef<HTMLDivElement | null>(null)
@@ -126,6 +131,20 @@ export function EmailCanvasEditor() {
     store.apply(moveRow(layout, from, from + delta))
   }
 
+  // Drop the dragged block onto `targetId`: move its row to the target's row index and persist via moveRow
+  // (the same rows op the chevrons use). Each email row holds one block, so a block id maps 1:1 to its row;
+  // we resolve indices by id (never by list position) so a filtered/empty row can never misalign the move.
+  const reorderByDrag = (targetId: string) => {
+    const source = dragId
+    setDragId(null)
+    setOverId(null)
+    if (!source || source === targetId) return
+    const from = store.rows.findIndex((r) => r.cells[0]?.[0] === source)
+    const to = store.rows.findIndex((r) => r.cells[0]?.[0] === targetId)
+    if (from < 0 || to < 0) return
+    store.apply(moveRow(layout, from, to))
+  }
+
   // Add one email block: append a fresh single-column row and place the block into it, then select it so its
   // settings open. rows-ops keep a block id unique, so the same type can never double-add.
   const addBlock = (blockId: string) => {
@@ -180,12 +199,49 @@ export function EmailCanvasEditor() {
                   ref={(el) => {
                     tileRefs.current[id] = el
                   }}
+                  onDragOver={(e) => {
+                    if (!dragId || dragId === id) return
+                    e.preventDefault()
+                    setOverId(id)
+                  }}
+                  onDrop={() => reorderByDrag(id)}
+                  onDragLeave={() => setOverId((cur) => (cur === id ? null : cur))}
                   className={`rounded-lg border transition-colors ${
-                    active ? 'border-primary bg-primary-bg/40' : 'border-border bg-surface hover:border-border-strong'
-                  }`}
+                    active
+                      ? 'border-primary bg-primary-bg/40'
+                      : overId === id && dragId && dragId !== id
+                        ? 'border-primary bg-primary-bg/20'
+                        : 'border-border bg-surface hover:border-border-strong'
+                  } ${dragId === id ? 'opacity-60' : ''}`}
                 >
-                  {/* The tile's header row: select (label), reorder, and the settings expand affordance. */}
+                  {/* The tile's header row: a drag handle, the select (label), reorder chevrons (keyboard
+                      fallback), and the settings expand affordance. */}
                   <div className="flex items-center gap-1 px-1.5 py-1.5">
+                    <button
+                      type="button"
+                      draggable
+                      onDragStart={(e) => {
+                        setDragId(id)
+                        e.dataTransfer.effectAllowed = 'move'
+                      }}
+                      onDragEnd={() => {
+                        setDragId(null)
+                        setOverId(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowUp' && i > 0) {
+                          e.preventDefault()
+                          reorder(id, -1)
+                        } else if (e.key === 'ArrowDown' && i < blocks.length - 1) {
+                          e.preventDefault()
+                          reorder(id, 1)
+                        }
+                      }}
+                      aria-label={`Reorder ${label(id)}. Drag, or press the up and down arrow keys to move it.`}
+                      className="shrink-0 cursor-grab rounded p-0.5 text-subtle transition-colors hover:text-text active:cursor-grabbing"
+                    >
+                      <GripVertical className="h-3.5 w-3.5" aria-hidden />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setSelectedId(active ? null : id)}
