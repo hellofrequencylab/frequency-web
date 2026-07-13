@@ -17,8 +17,9 @@ import {
 import type { CommerceProduct } from '@/lib/commerce/types'
 import type { HousingDetail, Listing } from '@/lib/listings/types'
 
-/** The listing table a comment thread hangs off (matches listing_comments.target_kind). */
-export type ListingCommentTargetKind = 'market_listing' | 'listing' | 'product'
+/** The listing table a comment thread hangs off (matches listing_comments.target_kind). Airwaves P2
+ *  (ADR-608) reuses the same polymorphic spine for a Recording's discussion thread ('recording'). */
+export type ListingCommentTargetKind = 'market_listing' | 'listing' | 'product' | 'recording'
 
 /** A primary call to action shown on the hero + repeated in the seller row. */
 export interface ListingAction {
