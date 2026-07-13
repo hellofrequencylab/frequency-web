@@ -70,7 +70,9 @@ function parseStringArray(raw: FormDataEntryValue | null): string[] {
 /** Narrow a raw form value to a ServicePriceModel, or undefined (default-deny). */
 function asPriceModel(raw: unknown): ServicePriceModel | undefined {
   const v = String(raw ?? '')
-  return v === 'fixed' || v === 'from' || v === 'free' || v === 'contact' ? v : undefined
+  return v === 'fixed' || v === 'from' || v === 'free' || v === 'contact' || v === 'choose'
+    ? v
+    : undefined
 }
 
 /** Narrow a raw form value to a ProductCondition, or null (default-deny). A Business Space may list
@@ -86,6 +88,14 @@ function serviceConfigFromForm(formData: FormData): ServiceConfig | null {
   const cfg: ServiceConfig = {}
   const priceModel = asPriceModel(formData.get('priceModel'))
   if (priceModel) cfg.priceModel = priceModel
+  // Choose-your-price anchor + optional floor (Pricing Options P1). Stored in cents on the service
+  // config; DISPLAY / config only until the buyer render (P2) + checkout wiring (P3).
+  const suggestedDollars = Number(formData.get('suggested'))
+  if (Number.isFinite(suggestedDollars) && suggestedDollars > 0) {
+    cfg.suggestedCents = Math.round(suggestedDollars * 100)
+  }
+  const minDollars = Number(formData.get('min'))
+  if (Number.isFinite(minDollars) && minDollars > 0) cfg.minCents = Math.round(minDollars * 100)
   const durationMin = Number(formData.get('durationMin'))
   if (Number.isFinite(durationMin) && durationMin > 0) cfg.durationMin = Math.round(durationMin)
   const depositDollars = Number(formData.get('deposit'))

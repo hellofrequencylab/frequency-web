@@ -8,8 +8,12 @@ import { sendRawSms } from '@/lib/comms/sms-send'
 import { recordContactInteraction } from '@/lib/crm/interactions'
 import type { SendCategory } from '@/lib/comms/send-gate'
 import { RESEARCH_JOB_KIND, researchHandler } from '@/lib/importer/queue'
+import { BOOKING_REMINDER_KIND, runBookingReminder } from '@/lib/spaces/booking-notify'
 
 export const queueHandlers: Record<string, JobHandler> = {
+  // 1:1 booking reminder (ADR-605 P3). Idempotent: re-reads the booking and no-ops unless it is still
+  // confirmed and in the future, so a cancel / reschedule needs no job surgery.
+  [BOOKING_REMINDER_KIND]: runBookingReminder,
   // Smart Business Importer research run (harvest -> extract -> verify), a durable
   // background job (docs/BUSINESS-IMPORTER.md §6.2). Lands the intake in 'review' with a
   // verified, ledgered draft; a soft failure is recorded on the row's status.
@@ -42,6 +46,10 @@ export const queueHandlers: Record<string, JobHandler> = {
       // Resend tags (e.g. Email Studio's campaign_id) survive the outbox as serialized JSON;
       // pass them through so they reach Resend and echo back on the webhook for attribution.
       tags: Array.isArray(p.tags) ? (p.tags as { name: string; value: string }[]) : undefined,
+      // Attachments (e.g. a booking .ics; base64 content) survive the JSON outbox too.
+      attachments: Array.isArray(p.attachments)
+        ? (p.attachments as { filename: string; content: string }[])
+        : undefined,
     })
   },
   // Durable SMS (ADR-256). payload: { to, body, profileId? }. sendRawSms is itself

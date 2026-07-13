@@ -23,17 +23,16 @@ import { openAdminBar } from '@/components/admin/open-admin-bar'
 // Entity detail routes that carry a slug segment (not the bare list route) — these are
 // the shareable pages that get a QR/link kit.
 const SHAREABLE_PREFIXES = [
-  'events',
   'circles',
   'channels',
   'people',
   'hubs',
   'nexuses',
   // Entity detail pages that should share their OWN public code (their entity's image is supplied via
-  // ShareImageProvider where the page wires it). Spaces are intentionally NOT here: a Space profile
-  // carries its own dedicated "Connect" control in the header (SpaceShareButton — the entity's code +
-  // brand logo + attribution + Save contact), so the generic divider control would be a redundant
-  // second share affordance and would reintroduce a line under the space menu the owner removed.
+  // ShareImageProvider where the page wires it). Spaces and Events are intentionally NOT here: each
+  // carries its own dedicated header share control (SpaceShareButton / EventShareButton — the entity's
+  // code + link + attribution + native share), so the generic divider control would be a redundant
+  // second share affordance sitting beside it.
   'practices',
   'journeys',
   'programs',

@@ -29,6 +29,7 @@ import { type FactGuest } from '@/components/events/event-fact-panel'
 import { type RecapPhoto } from '@/components/events/recap-album'
 import { EventGallery } from '@/components/events/event-gallery'
 import { HostHovercard } from '@/components/events/host-hovercard'
+import { EventShareButton } from '@/components/events/event-share-button'
 import { ClaimEventBanner } from '@/components/events/claim-event-banner'
 import { type CohostView } from '@/components/events/cohost-manager'
 import { CohostInviteBanner } from '@/components/events/cohost-invite-banner'
@@ -1218,25 +1219,29 @@ export default async function EventDetailPage({
             event.title
           )
         }
-        // Operator/host entries, stacked: Edit (Settings drawer) then Manage (dashboard).
+        // Every viewer gets "QR & Share" (the public send-this-event control); operators/hosts
+        // additionally get Edit (Settings drawer) then Manage (dashboard), stacked beneath it.
         actions={
-          canManage ? (
-            <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <OpenAdminBarButton
-                scope={{ kind: 'event', id: event.id }}
-                caps={Array.from(eventCaps)}
-                label="Edit event"
-                icon={<Settings className="h-4 w-4" />}
-              />
-              <Link
-                href={`/events/${event.slug}/manage`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
-              >
-                <LayoutDashboard className="h-4 w-4 text-subtle" />
-                Manage event
-              </Link>
-            </div>
-          ) : undefined
+          <div className="flex flex-col items-stretch gap-2 sm:items-end">
+            <EventShareButton slug={event.slug} title={event.title} sharerProfileId={myProfileId} />
+            {canManage && (
+              <>
+                <OpenAdminBarButton
+                  scope={{ kind: 'event', id: event.id }}
+                  caps={Array.from(eventCaps)}
+                  label="Edit event"
+                  icon={<Settings className="h-4 w-4" />}
+                />
+                <Link
+                  href={`/events/${event.slug}/manage`}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text transition-colors hover:border-border-strong hover:bg-surface-elevated"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-subtle" />
+                  Manage event
+                </Link>
+              </>
+            )}
+          </div>
         }
         // [A2] attendance-mode chip.
         badges={

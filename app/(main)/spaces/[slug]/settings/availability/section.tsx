@@ -1,9 +1,11 @@
 import { Suspense } from 'react'
 import { getSpaceCapabilities } from '@/lib/spaces/entitlements'
 import { spaceFunctionAccess } from '@/lib/spaces/functions'
-import { listSpaceAvailability } from '@/lib/spaces/booking'
+import { listSpaceAvailability, listSpaceServiceTypes, getSpaceSchedule } from '@/lib/spaces/booking'
 import { BookingAvailabilityForm } from '@/components/spaces/booking-availability-form'
 import { BookingAvailabilitySummary } from '@/components/spaces/booking-availability-summary'
+import { BookingServiceTypesForm } from '@/components/spaces/booking-service-types-form'
+import { BookingScheduleForm } from '@/components/spaces/booking-schedule-form'
 import { BookingOwnerList } from '@/components/spaces/booking-owner-list'
 import { FeatureLockedNotice } from '@/components/spaces/feature-locked-notice'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -47,15 +49,31 @@ export async function AvailabilitySection({
     )
   }
 
-  const windows = await listSpaceAvailability(space.id)
-  // Seed the timezone from the saved windows, else a sensible default the owner can change.
-  const initialTimezone = windows[0]?.timezone ?? 'UTC'
+  const [windows, services, schedule] = await Promise.all([
+    listSpaceAvailability(space.id),
+    listSpaceServiceTypes(space.id),
+    getSpaceSchedule(space.id),
+  ])
+  // Seed the timezone from the schedule (P2) or the saved windows, else a sensible default.
+  const initialTimezone = schedule.settings.timezone ?? windows[0]?.timezone ?? 'UTC'
 
   return (
     <div className="space-y-8">
       {/* A read-only read of what the saved windows offer members (weekly slots, days, lengths),
           derived purely from the windows already loaded above. Renders null when none are saved. */}
       <BookingAvailabilitySummary windows={windows} />
+
+      {/* SERVICES (P1, ADR-605): the reusable "event types" a member picks before a time. A staff
+          preview stays read-only via the same disabled fieldset the availability form uses. */}
+      <section>
+        <SectionHeader title="Services" />
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Name what members can book and how long each one runs. Members pick a service, then a time.
+        </p>
+        <fieldset disabled={staffViewing} className="contents">
+          <BookingServiceTypesForm spaceId={space.id} initialServices={services} />
+        </fieldset>
+      </section>
 
       {/* A disabled fieldset renders the editor READ-ONLY for a staff preview (it natively disables
           every nested control in the form). `display: contents` keeps it out of the layout box. */}
@@ -67,6 +85,24 @@ export async function AvailabilitySection({
           initialTimezone={initialTimezone}
         />
       </fieldset>
+
+      {/* SCHEDULING RULES (P2, ADR-605): buffers, minimum notice, booking window, and date overrides.
+          The pure slot generator reads these as additive options. Staff preview stays read-only. */}
+      <section>
+        <SectionHeader title="Scheduling rules" />
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Add buffers between sessions, a minimum notice, how far ahead members can book, and any days
+          off or one-off hours.
+        </p>
+        <fieldset disabled={staffViewing} className="contents">
+          <BookingScheduleForm
+            spaceId={space.id}
+            timezone={initialTimezone}
+            initialSettings={schedule.settings}
+            initialOverrides={schedule.overrides}
+          />
+        </fieldset>
+      </section>
 
       <section>
         <SectionHeader title="Upcoming bookings" />

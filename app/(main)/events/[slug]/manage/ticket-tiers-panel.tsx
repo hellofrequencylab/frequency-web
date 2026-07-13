@@ -2,9 +2,17 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, X } from 'lucide-react'
+import { Pencil, Plus, X } from 'lucide-react'
 import { isError } from '@/lib/action-result'
-import type { TicketTierRow, TicketPricingMode } from '@/lib/events/ticket-tiers'
+import type { TicketTierRow } from '@/lib/events/ticket-tiers'
+import {
+  describePrice,
+  priceToTicketPricingMode,
+  ticketRowToPrice,
+  validatePrice,
+  type Offering,
+} from '@/lib/commerce/types'
+import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
 import {
   hostCreateTicketTier,
   hostUpdateTicketTier,
@@ -15,14 +23,10 @@ import {
 // tiers with the full range of pricing modes right from the Manage dashboard, so a
 // host no longer has to ask an operator to build anything past a single flat price.
 // Same shared writers as the /admin console; these call the host-gated actions.
-
-const PRICING_MODE_LABEL: Record<TicketPricingMode, string> = {
-  fixed: 'Fixed price',
-  free: 'Free',
-  pwyc: 'Pay what you can',
-  sliding_scale: 'Sliding scale',
-  donation: 'Donation',
-}
+//
+// PRICING (Pricing Options P1, ADR-607): the price portion is the shared PriceModeEditor. A tier is
+// already one named option, so packages are off here; the tier's Price persists through the
+// priceToTicketPricingMode adapter onto the existing columns (NO migration).
 
 const centsToDollars = (c: number | null | undefined) => (c != null ? (c / 100).toFixed(2) : '')
 
@@ -31,18 +35,10 @@ const input =
 const lbl = 'block text-xs font-medium text-muted mb-1'
 
 function modeSummary(t: TicketTierRow): string {
-  switch (t.pricing_mode) {
-    case 'free':
-      return 'Free'
-    case 'fixed':
-      return `$${centsToDollars(t.price_cents)}`
-    case 'pwyc':
-    case 'sliding_scale':
-    case 'donation':
-      return `${PRICING_MODE_LABEL[t.pricing_mode]}${
-        t.min_cents ? ` · min $${centsToDollars(t.min_cents)}` : ''
-      }`
-  }
+  const summary = describePrice(ticketRowToPrice(t))
+  return t.min_cents && t.pricing_mode !== 'fixed'
+    ? `${summary} · min $${centsToDollars(t.min_cents)}`
+    : summary
 }
 
 export function TicketTiersPanel({
@@ -185,12 +181,27 @@ function TierForm({
   onSubmit: (fd: FormData) => void
   onCancel: () => void
 }) {
-  const [mode, setMode] = useState<TicketPricingMode>(initial?.pricing_mode ?? 'fixed')
-  const buyerChosen = mode === 'pwyc' || mode === 'sliding_scale' || mode === 'donation'
+  const [offering, setOffering] = useState<Offering>(() => ({
+    price: initial ? ticketRowToPrice(initial) : { mode: 'fixed' },
+  }))
+  const [priceError, setPriceError] = useState<string | null>(null)
 
   function handle(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    onSubmit(new FormData(e.currentTarget))
+    const err = validatePrice(offering.price)
+    if (err) {
+      setPriceError(err)
+      return
+    }
+    setPriceError(null)
+    // Persist the Price through the adapter onto the columns the writer already reads (no migration).
+    const fd = new FormData(e.currentTarget)
+    const cols = priceToTicketPricingMode(offering.price)
+    fd.set('pricing_mode', cols.pricing_mode)
+    fd.set('price', cols.price_cents != null ? String(cols.price_cents / 100) : '')
+    fd.set('min', cols.min_cents != null ? String(cols.min_cents / 100) : '')
+    fd.set('suggested', cols.suggested_cents != null ? String(cols.suggested_cents / 100) : '')
+    onSubmit(fd)
   }
 
   return (
@@ -198,35 +209,17 @@ function TierForm({
       onSubmit={handle}
       className="space-y-3 rounded-xl border border-border-strong bg-surface-elevated p-4"
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className={lbl}>Tier name *</label>
-          <input
-            name="name"
-            type="text"
-            defaultValue={initial?.name ?? ''}
-            required
-            disabled={disabled}
-            className={input}
-            placeholder="e.g. General, Supporter"
-          />
-        </div>
-        <div>
-          <label className={lbl}>Pricing mode</label>
-          <select
-            name="pricing_mode"
-            value={mode}
-            onChange={(e) => setMode(e.target.value as TicketPricingMode)}
-            disabled={disabled}
-            className={input}
-          >
-            {(Object.keys(PRICING_MODE_LABEL) as TicketPricingMode[]).map((m) => (
-              <option key={m} value={m}>
-                {PRICING_MODE_LABEL[m]}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className={lbl}>Tier name *</label>
+        <input
+          name="name"
+          type="text"
+          defaultValue={initial?.name ?? ''}
+          required
+          disabled={disabled}
+          className={input}
+          placeholder="e.g. General, Supporter"
+        />
       </div>
 
       <div>
@@ -243,55 +236,16 @@ function TierForm({
         />
       </div>
 
-      {mode === 'fixed' && (
-        <div>
-          <label className={lbl}>Price (USD) *</label>
-          <input
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            defaultValue={centsToDollars(initial?.price_cents)}
-            disabled={disabled}
-            className={input}
-            placeholder="0.00"
-          />
-        </div>
-      )}
-      {buyerChosen && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label className={lbl}>
-              Minimum (USD) <span className="font-normal text-subtle">(floor)</span>
-            </label>
-            <input
-              name="min"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={centsToDollars(initial?.min_cents)}
-              disabled={disabled}
-              className={input}
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label className={lbl}>
-              Suggested (USD) <span className="font-normal text-subtle">(prefilled)</span>
-            </label>
-            <input
-              name="suggested"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={centsToDollars(initial?.suggested_cents)}
-              disabled={disabled}
-              className={input}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-      )}
+      {/* A tier is one named option, so packages are off; the Price maps onto the tier columns. */}
+      <PriceModeEditor
+        value={offering}
+        onChange={setOffering}
+        disabled={disabled}
+        idPrefix={`tier-${initial?.id ?? 'new'}`}
+        modes={['fixed', 'choose', 'free']}
+        allowPackages={false}
+      />
+      {priceError && <p className="text-sm text-danger">{priceError}</p>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>

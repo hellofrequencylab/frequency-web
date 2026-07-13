@@ -79,6 +79,7 @@ Hard rules:
 function factsFor(input: ListingCopyInput): string {
   const priceLine: Record<ServicePriceModel, string> = {
     fixed: 'It has a fixed price.',
+    choose: 'The buyer names the amount, guided by a suggested amount (it can vary).',
     from: 'Its price starts "from" a base (it can vary).',
     free: 'It is free.',
     contact: 'The buyer contacts the seller for pricing (no set price).',

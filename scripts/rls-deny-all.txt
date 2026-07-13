@@ -72,8 +72,11 @@ resonance_matches
 segments
 space_automation_rules
 space_availability
+space_availability_overrides
+space_availability_schedules
 space_bookings
 space_donation_asks
+space_service_types
 space_drip_enrollments
 space_drip_sequences
 space_drip_steps

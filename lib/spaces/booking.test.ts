@@ -208,13 +208,20 @@ import {
   generateOpenSlots,
   slotLengthAt,
   summarizeAvailability,
+  windowsForService,
   zoneOffsetMinutes,
   zonedTimeToUtc,
   setSpaceAvailability,
   listOpenSlots,
   createBooking,
   cancelBooking,
+  rescheduleBooking,
   listSpaceBookings,
+  withinModifyWindow,
+  parseQuestions,
+  parseAnswers,
+  bookingDepositsLive,
+  startServiceDeposit,
   type AvailabilityWindow,
 } from './booking'
 
@@ -248,6 +255,7 @@ describe('normalizeWindow (pure, fail-closed)', () => {
       endMinute: 1020,
       slotMinutes: 60,
       timezone: 'America/New_York',
+      serviceTypeId: null, // P1: unbound window offers every service
     })
   })
 
@@ -652,6 +660,263 @@ describe('listSpaceBookings (action) — owner only', () => {
     db.profiles = []
     const list = await listSpaceBookings('space-1')
     expect(list[0]!.memberName).toBe('A member')
+  })
+})
+
+// ── P1 (ADR-605): service durations slice the generator; window-to-service binding ──────────────
+describe('generateOpenSlots with a service duration (P1, pure)', () => {
+  it('slices a window by the SERVICE duration, not the window slot_minutes', () => {
+    // Window 10:00-12:00 UTC declared at 30-min slots, but a 60-min service => 10:00, 11:00 only.
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 60,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T10:00:00.000Z',
+      '2026-06-23T11:00:00.000Z',
+    ])
+    // Every emitted slot carries the SERVICE length, so the surface labels it correctly.
+    expect(slots.every((s) => s.slotMinutes === 60)).toBe(true)
+  })
+
+  it('drops the trailing partial against the SERVICE duration', () => {
+    // 10:00-11:10 with a 45-min service => 10:00 fits (ends 10:45); 10:45 would end 11:30 > 11:10, dropped.
+    const slots = generateOpenSlots([utcWindow({ endMinute: 670 })], new Set(), NOW, undefined, {
+      durationMinutes: 45,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual(['2026-06-23T10:00:00.000Z'])
+  })
+
+  it('a service longer than the window yields no slots for that window', () => {
+    // A 120-min service does not fit a 120-min window? 10:00-12:00 is exactly 120 => one slot at 10:00.
+    const exact = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 120,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(exact.map((s) => s.startsAt)).toEqual(['2026-06-23T10:00:00.000Z'])
+    // A 121-min service does not fit at all.
+    const tooLong = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 130,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(tooLong).toEqual([])
+  })
+
+  it('an out-of-range duration falls back to the window slot_minutes', () => {
+    // A bogus 0-minute duration is ignored; the window's own 30-min slicing applies (four slots).
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      durationMinutes: 0,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.length).toBe(4)
+    expect(slots.every((s) => s.slotMinutes === 30)).toBe(true)
+  })
+})
+
+describe('slotLengthAt with a service duration (P1, pure)', () => {
+  it('validates the instant against the service duration and returns it', () => {
+    const windows = [utcWindow()]
+    // With a 60-min service, 11:00 is a real boundary (10:00 + 60), 10:30 is NOT.
+    expect(slotLengthAt(windows, new Date('2026-06-23T11:00:00Z').getTime(), NOW, undefined, { durationMinutes: 60 })).toBe(60)
+    expect(slotLengthAt(windows, new Date('2026-06-23T10:30:00Z').getTime(), NOW, undefined, { durationMinutes: 60 })).toBeNull()
+  })
+})
+
+describe('windowsForService (pure)', () => {
+  const general = utcWindow({ serviceTypeId: null })
+  const boundA = utcWindow({ weekday: 3, serviceTypeId: 'svc-a' })
+  const boundB = utcWindow({ weekday: 4, serviceTypeId: 'svc-b' })
+
+  it('returns every window when no service is chosen', () => {
+    expect(windowsForService([general, boundA, boundB], null)).toHaveLength(3)
+  })
+
+  it('keeps general (unbound) windows plus windows bound to the chosen service only', () => {
+    const forA = windowsForService([general, boundA, boundB], 'svc-a')
+    expect(forA).toContain(general)
+    expect(forA).toContain(boundA)
+    expect(forA).not.toContain(boundB)
+  })
+})
+
+// ── P2 (ADR-605): buffers, minimum notice, booking window, date overrides (pure) ────────────────
+describe('generateOpenSlots minimum notice (P2, pure)', () => {
+  it('drops slots starting sooner than minNoticeMinutes from now', () => {
+    // now 09:00Z, window 10:00-12:00 @30. A 120-min notice makes 11:00 the earliest bookable start.
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      minNoticeMinutes: 120,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T11:00:00.000Z',
+      '2026-06-23T11:30:00.000Z',
+    ])
+  })
+})
+
+describe('generateOpenSlots buffer-aware conflict (P2, pure)', () => {
+  it('blocks slots within the before/after buffers of an existing booking', () => {
+    // A 30-min booking 10:30-11:00. With 30-min buffers both sides, 10:00 (before) and 11:00 (after)
+    // are blocked; 10:30 is the exact booked instant; only 11:30 survives today.
+    const bookedRanges = [
+      { startMs: new Date('2026-06-23T10:30:00Z').getTime(), endMs: new Date('2026-06-23T11:00:00Z').getTime() },
+    ]
+    const bookedExact = new Set([new Date('2026-06-23T10:30:00Z').getTime()])
+    const slots = generateOpenSlots([utcWindow()], bookedExact, NOW, undefined, {
+      bufferBeforeMinutes: 30,
+      bufferAfterMinutes: 30,
+      bookedRanges,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual(['2026-06-23T11:30:00.000Z'])
+  })
+
+  it('allows back-to-back slots when buffers are zero (no false block)', () => {
+    const bookedRanges = [
+      { startMs: new Date('2026-06-23T10:30:00Z').getTime(), endMs: new Date('2026-06-23T11:00:00Z').getTime() },
+    ]
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, undefined, {
+      bufferBeforeMinutes: 0,
+      bufferAfterMinutes: 0,
+      bookedRanges,
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    // 11:00 (immediately after the booking) is allowed with no buffer.
+    expect(slots.map((s) => s.startsAt)).toContain('2026-06-23T11:00:00.000Z')
+  })
+})
+
+describe('generateOpenSlots booking window horizon (P2, pure)', () => {
+  it('a shorter horizon drops the far Tuesday', () => {
+    const wide = generateOpenSlots([utcWindow()], new Set(), NOW, 14)
+    expect(wide.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(true)
+    const narrow = generateOpenSlots([utcWindow()], new Set(), NOW, 3)
+    expect(narrow.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(false)
+    // The near Tuesday (today) is still offered within the short window.
+    expect(narrow.some((s) => s.startsAt.startsWith('2026-06-23'))).toBe(true)
+  })
+})
+
+describe('generateOpenSlots date overrides (P2, pure)', () => {
+  it('a blackout removes that local date but keeps other days', () => {
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, 14, {
+      overrides: [{ date: '2026-06-23', isBlackout: true }],
+    })
+    expect(slots.some((s) => s.startsAt.startsWith('2026-06-23'))).toBe(false)
+    expect(slots.some((s) => s.startsAt.startsWith('2026-06-30'))).toBe(true)
+  })
+
+  it('an open-block override replaces that day hours with its own block', () => {
+    // Override 2026-06-23 to 14:00-15:00 UTC. The weekly 10:00-12:00 window is skipped that date;
+    // the override injects 14:00 + 14:30 (default 30-min step).
+    const slots = generateOpenSlots([utcWindow()], new Set(), NOW, 14, {
+      overrides: [{ date: '2026-06-23', isBlackout: false, startMinute: 840, endMinute: 900 }],
+      overrideTimezone: 'UTC',
+    }).filter((s) => s.startsAt.startsWith('2026-06-23'))
+    expect(slots.map((s) => s.startsAt)).toEqual([
+      '2026-06-23T14:00:00.000Z',
+      '2026-06-23T14:30:00.000Z',
+    ])
+  })
+})
+
+describe('slotLengthAt honors notice + overrides (P2, pure)', () => {
+  it('rejects a slot inside the minimum notice', () => {
+    const windows = [utcWindow()]
+    // 10:00 is a real boundary but inside a 120-min notice from 09:00 => rejected.
+    expect(slotLengthAt(windows, new Date('2026-06-23T10:00:00Z').getTime(), NOW, 14, { minNoticeMinutes: 120 })).toBeNull()
+    // 11:00 is outside the notice => valid.
+    expect(slotLengthAt(windows, new Date('2026-06-23T11:00:00Z').getTime(), NOW, 14, { minNoticeMinutes: 120 })).toBe(30)
+  })
+
+  it('rejects a slot on a blacked-out date', () => {
+    const windows = [utcWindow()]
+    expect(
+      slotLengthAt(windows, new Date('2026-06-23T10:30:00Z').getTime(), NOW, 14, {
+        overrides: [{ date: '2026-06-23', isBlackout: true }],
+      }),
+    ).toBeNull()
+  })
+})
+
+// ── P3 (ADR-605): lifecycle policy window + questions/answers parsing (pure) ─────────────────────
+describe('withinModifyWindow (P3, pure)', () => {
+  it('allows a booking far enough out and blocks one inside the notice window', () => {
+    const inThreeHours = new Date(Date.now() + 3 * 3600_000).toISOString()
+    const inThirtyMin = new Date(Date.now() + 30 * 60_000).toISOString()
+    expect(withinModifyWindow(inThreeHours, 60)).toBe(true) // 3h out, 1h notice
+    expect(withinModifyWindow(inThirtyMin, 60)).toBe(false) // 30m out, 1h notice
+  })
+  it('a zero notice always allows a future booking; a past one is never modifiable', () => {
+    expect(withinModifyWindow(new Date(Date.now() + 60_000).toISOString(), 0)).toBe(true)
+    expect(withinModifyWindow(new Date(Date.now() - 60_000).toISOString(), 0)).toBe(false)
+  })
+})
+
+describe('parseQuestions / parseAnswers (P3, pure, fail-closed)', () => {
+  it('parses well-formed questions and drops malformed ones', () => {
+    const qs = parseQuestions([
+      { id: 'q1', label: 'Focus?', type: 'long', required: true },
+      { id: '', label: 'no id' },
+      { id: 'q2', label: '', type: 'short' },
+      { id: 'q3', label: 'Goal?', type: 'weird', required: false },
+    ])
+    expect(qs).toEqual([
+      { id: 'q1', label: 'Focus?', type: 'long', required: true },
+      { id: 'q3', label: 'Goal?', type: 'short', required: false }, // unknown type -> short
+    ])
+  })
+  it('parses labeled answers and drops entries missing a label or value', () => {
+    const a = parseAnswers([
+      { id: 'q1', label: 'Focus?', value: 'shoulders' },
+      { id: 'q2', label: 'Goal?', value: '' },
+      { label: '', value: 'x' },
+    ])
+    expect(a).toEqual([{ id: 'q1', label: 'Focus?', value: 'shoulders' }])
+  })
+  it('non-array input yields empty', () => {
+    expect(parseQuestions(null)).toEqual([])
+    expect(parseAnswers('nope')).toEqual([])
+  })
+})
+
+describe('rescheduleBooking (action) — atomic new-then-cancel', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-29T08:00:00.000Z')) // Monday; next Tue is 2026-06-30
+    db.availability.push({ id: 'a0', space_id: 'space-1', weekday: 2, start_minute: 600, end_minute: 720, slot_minutes: 30, timezone: 'UTC' })
+    db.bookings.push({
+      id: 'b1',
+      space_id: 'space-1',
+      member_profile_id: 'member-0000-4000-a000-0000000membr',
+      starts_at: '2026-06-30T10:00:00.000Z',
+      ends_at: '2026-06-30T10:30:00.000Z',
+      status: 'confirmed',
+      note: null,
+    })
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('books the new slot and cancels the old (no free-then-lose)', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:30:00.000Z')
+    expect('error' in r).toBe(false)
+    // Old booking released.
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('cancelled')
+    // A new confirmed booking exists at the new time.
+    const fresh = db.bookings.find((b) => b.status === 'confirmed' && b.starts_at === '2026-06-30T10:30:00.000Z')
+    expect(fresh).toBeTruthy()
+  })
+
+  it('keeps the old booking when the new slot is invalid', async () => {
+    const r = await rescheduleBooking('b1', '2026-06-30T10:15:00.000Z') // not a slot boundary
+    expect('error' in r).toBe(true)
+    expect(db.bookings.find((b) => b.id === 'b1')!.status).toBe('confirmed') // unchanged
+  })
+})
+
+// ── P4 (ADR-605): deposits are DARK (double-gated off) ───────────────────────────────────────────
+describe('deposits stay dark (P4)', () => {
+  it('bookingDepositsLive is false with payments off', async () => {
+    expect(await bookingDepositsLive()).toBe(false)
+  })
+  it('startServiceDeposit no-ops with a "payments not on" message and writes no booking', async () => {
+    const r = await startServiceDeposit('space-1', 'svc-1', new Date('2099-06-30T10:00:00Z').toISOString())
+    expect(r.url).toBeUndefined()
+    expect(r.error).toMatch(/not turned on/i)
+    expect(db.bookings).toHaveLength(0) // no hold placed
   })
 })
 

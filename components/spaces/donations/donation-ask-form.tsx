@@ -4,36 +4,23 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input, Label, Textarea } from '@/components/ui/field'
 import { isError } from '@/lib/action-result'
+import { PriceModeEditor } from '@/components/commerce/price-mode-editor'
+import type { Offering } from '@/lib/commerce/types'
 import { setDonationAsk } from '@/lib/spaces/donations-actions'
 import type { DonationAsk } from '@/lib/spaces/donations'
 
 // OWNER DONATION ASK EDITOR (client). The Organization owner configures a single donation ask: a fund
-// label, a short description, and a set of suggested amounts. Saved through the canEditProfile-gated
-// setDonationAsk action as a replace-by-space. Amounts are entered in whole / decimal dollars and
-// converted to cents on the wire (one per line); the server re-validates + normalizes, so this form
-// is convenience, not the gate.
+// label, a short description, and a set of quick-pick amounts. Saved through the canEditProfile-gated
+// setDonationAsk action as a replace-by-space.
+//
+// UNIFIED PRICE MODE (Pricing Options P1, ADR-607): the fund ask is a `choose` + donation instance of
+// the shared PriceModeEditor (lockDonation). The fund label + blurb ride the editor's fund control;
+// the quick-pick amounts map onto the stored `suggestedAmountsCents` (NO schema change). Persistence
+// through setDonationAsk is unchanged.
 //
 // HONESTY (CONTENT-VOICE skeptic test): v1 takes no payment and there is no Stripe path. The editor
-// labels the amounts as what an owner SUGGESTS and states plainly that giving is not yet wired. Plain
-// labels, no narrated feelings, no em or en dashes (CONTENT-VOICE §10).
-
-/** Dollars string to integer cents, or null if malformed. A non-positive value reads as invalid (a
- *  "$0" suggested amount is not a meaningful chip). */
-function dollarsToCents(price: string): number | null {
-  const trimmed = price.trim()
-  if (!trimmed) return null
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null
-  const cents = Math.round(Number(trimmed) * 100)
-  return Number.isFinite(cents) && cents > 0 ? cents : null
-}
-
-/** Integer cents to a plain dollars string for the textarea (whole dollars drop the cents). */
-function centsToDollars(cents: number): string {
-  const dollars = cents / 100
-  return Number.isInteger(dollars) ? String(dollars) : dollars.toFixed(2)
-}
+// states plainly that giving is not yet wired. Plain labels, no narrated feelings, no em or en dashes.
 
 export function DonationAskForm({
   spaceId,
@@ -47,20 +34,17 @@ export function DonationAskForm({
   const router = useRouter()
   const [fundLabel, setFundLabel] = useState(initialAsk?.fundLabel ?? '')
   const [description, setDescription] = useState(initialAsk?.description ?? '')
-  const [amountsText, setAmountsText] = useState(
-    (initialAsk?.suggestedAmountsCents ?? []).map(centsToDollars).join('\n'),
-  )
+  const [offering, setOffering] = useState<Offering>(() => ({
+    price: {
+      mode: 'choose',
+      donation: true,
+      pickAmountsCents: initialAsk?.suggestedAmountsCents ?? [],
+    },
+  }))
   const [isActive, setIsActive] = useState(initialAsk?.isActive ?? true)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [pending, startSave] = useTransition()
-
-  function markDirty<T>(setter: (v: T) => void) {
-    return (v: T) => {
-      setter(v)
-      setSaved(false)
-    }
-  }
 
   function save() {
     setError(null)
@@ -72,25 +56,11 @@ export function DonationAskForm({
       return
     }
 
-    // Convert + client-validate the suggested amounts (one per line). The server is authoritative,
-    // but a clear inline message helps.
-    const suggestedAmountsCents: number[] = []
-    for (const line of amountsText.split('\n')) {
-      const trimmed = line.trim()
-      if (!trimmed) continue
-      const cents = dollarsToCents(trimmed)
-      if (cents == null) {
-        setError('Use amounts like 25 or 25.50, one per line.')
-        return
-      }
-      suggestedAmountsCents.push(cents)
-    }
-
     const ask: DonationAsk = {
       id: initialAsk?.id,
       fundLabel: label,
       description: description.trim() || null,
-      suggestedAmountsCents,
+      suggestedAmountsCents: offering.price.pickAmountsCents ?? [],
       isActive,
     }
 
@@ -114,57 +84,36 @@ export function DonationAskForm({
       }}
     >
       <div className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-sm">
-        <div>
-          <Label htmlFor="fund-label" className="font-semibold">
-            Fund label
-          </Label>
-          <Input
-            id="fund-label"
-            value={fundLabel}
-            onChange={(e) => markDirty(setFundLabel)(e.target.value)}
-            placeholder="General fund"
-            maxLength={80}
-            className="mt-1"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="fund-description" className="font-semibold">
-            Description (optional)
-          </Label>
-          <Textarea
-            id="fund-description"
-            value={description}
-            onChange={(e) => markDirty(setDescription)(e.target.value)}
-            placeholder="Where gifts go, in a line or two."
-            rows={2}
-            maxLength={500}
-            className="mt-1"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="fund-amounts" className="font-semibold">
-            Suggested amounts (one per line)
-          </Label>
-          <Textarea
-            id="fund-amounts"
-            value={amountsText}
-            onChange={(e) => markDirty(setAmountsText)(e.target.value)}
-            placeholder={'25\n50\n100'}
-            rows={3}
-            className="mt-1"
-          />
-          <p className="mt-1 text-xs text-subtle">
-            Members see these as quick-pick amounts. Enter dollars, like 25 or 25.50.
-          </p>
-        </div>
+        <PriceModeEditor
+          value={offering}
+          onChange={(next) => {
+            setOffering(next)
+            setSaved(false)
+          }}
+          idPrefix="donation"
+          lockDonation
+          fund={{
+            label: fundLabel,
+            onLabelChange: (v) => {
+              setFundLabel(v)
+              setSaved(false)
+            },
+            description,
+            onDescriptionChange: (v) => {
+              setDescription(v)
+              setSaved(false)
+            },
+          }}
+        />
 
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={isActive}
-            onChange={(e) => markDirty(setIsActive)(e.target.checked)}
+            onChange={(e) => {
+              setIsActive(e.target.checked)
+              setSaved(false)
+            }}
             className="h-4 w-4 rounded border-border text-primary focus:ring-border-strong/30"
           />
           <span className="text-sm text-muted">Show this ask to members</span>
