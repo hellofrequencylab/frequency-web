@@ -6,7 +6,7 @@ import { SpacePagePanel } from '@/components/spaces/space-page-panel'
 import { SpacePageBuilder } from '@/components/entity-blocks/profile-page-builder'
 import type { BuilderRailData } from '@/components/entity-blocks/profile-page-builder'
 import { RailModuleLoading } from './rail-module-loading'
-import { useSpaceRailData, useSpaceRailSlice } from './space-rail-data'
+import { useSpaceRailExtras, useSpaceRailSlice } from './space-rail-data'
 
 // SPACE PAGE — the inline editor module for the standardized admin bar (ADR-514). Mirrors
 // circle-settings-module: reads the Space slug from the live path (and which page's blocks to edit from
@@ -33,26 +33,29 @@ export function SpacePageModule() {
   // block editor stays on the /manage/layout page + the "Edit your profile" grid the panel links to.
   // The page slice + the builder seed both come from the ONE shared rail bundle (ADR-550); the module
   // falls back to its own getter when mounted outside the rail.
+  // The page PANEL reads the fast CORE phase, so "Your Page" opens immediately; the heavy builder SEED reads
+  // the slow EXTRAS phase and fills in when it lands (never blocking the panel).
   const { data, loading } = useSpaceRailSlice(slug, (b) => b.page, getSpacePageData)
-  const ctx = useSpaceRailData()
+  const extras = useSpaceRailExtras()
 
   if (!slug) return null
   if (loading) return <RailModuleLoading />
   if (!data) return null // not permitted / not found → no chrome
 
-  // Seed the builder from the SAME bundle when the provider supplied one, so it skips its own
-  // getSpaceLayoutRailData fetch. `undefined` (no provider / provider errored) → the builder self-fetches;
-  // an explicit `null` (viewer cannot edit the layout) → the builder skips the fetch and renders nothing.
+  // Seed the builder from the EXTRAS phase once it is ready, so it skips its own getSpaceLayoutRailData fetch.
+  // `undefined` (still loading / no provider / provider errored) → the builder self-fetches; an explicit
+  // `null` (viewer cannot edit the layout) → the builder skips the fetch and renders nothing.
+  const layout = extras?.status === 'ready' ? extras.data?.layout : undefined
   const builderSeed: BuilderRailData | null | undefined =
-    ctx?.status === 'ready'
-      ? ctx.bundle?.layout
+    extras?.status === 'ready'
+      ? layout
         ? {
-            matchId: ctx.bundle.layout.slug,
-            rows: ctx.bundle.layout.rows,
-            hidden: ctx.bundle.layout.hidden,
-            customized: ctx.bundle.layout.customized,
-            lockedIds: ctx.bundle.layout.lockedIds,
-            pickerData: ctx.bundle.layout.pickerData,
+            matchId: layout.slug,
+            rows: layout.rows,
+            hidden: layout.hidden,
+            customized: layout.customized,
+            lockedIds: layout.lockedIds,
+            pickerData: layout.pickerData,
           }
         : null
       : undefined
