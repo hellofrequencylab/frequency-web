@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Building2, Zap } from 'lucide-react'
 import { FocusTemplate } from '@/components/templates'
 import { getMyProfileId } from '@/lib/auth'
-import { resolveSpaceClaim } from '@/lib/spaces/claim'
+import { resolveSpaceClaimAny } from '@/lib/spaces/claim'
 import { getSpaceById } from '@/lib/spaces/store'
 import { ClaimSpaceButton } from './claim-button'
 
@@ -17,10 +17,17 @@ export const dynamic = 'force-dynamic'
 
 export default async function ClaimSpacePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const claim = await resolveSpaceClaim(token)
+  const [claim, myProfileId] = await Promise.all([resolveSpaceClaimAny(token), getMyProfileId()])
   if (!claim) notFound()
 
-  const [space, myProfileId] = await Promise.all([getSpaceById(claim.spaceId), getMyProfileId()])
+  // Already claimed: send the real owner who re-opens their used link straight to their Space (they
+  // asked why a second click 404s), and reveal nothing to anyone else.
+  if (claim.claimed) {
+    if (myProfileId && claim.ownerProfileId === myProfileId) redirect(`/spaces/${claim.slug}`)
+    notFound()
+  }
+
+  const space = await getSpaceById(claim.spaceId)
   const cover = space?.coverImageUrl ?? null
   const logo = space?.brandLogoUrl ?? null
   const tagline = space?.tagline ?? null

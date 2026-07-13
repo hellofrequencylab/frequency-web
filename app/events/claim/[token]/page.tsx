@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { CalendarDays, MapPin, Zap } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getMyProfileId } from '@/lib/auth'
@@ -47,7 +47,15 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
     organizer_name: string | null
   } | null
 
-  if (!ev || ev.host_id || ev.claimed_at || ev.removed_at) notFound()
+  const myProfileId = await getMyProfileId()
+  if (!ev || ev.removed_at) notFound()
+
+  // Already claimed: send the host who re-opens their used link straight to their event (they asked why a
+  // second click 404s), and reveal nothing to anyone else. (Mirrors app/spaces/claim/[token]/page.tsx.)
+  if (ev.host_id || ev.claimed_at) {
+    if (myProfileId && ev.host_id === myProfileId) redirect(`/events/${ev.slug ?? ''}`)
+    notFound()
+  }
 
   // Who put it on the map (the credit line).
   let posterName: string | null = null
@@ -61,7 +69,6 @@ export default async function ClaimEventPage({ params }: { params: Promise<{ tok
   }
 
   const coverUrl = await posterSignedUrl(ev.details?.media?.coverPath ?? ev.poster_path)
-  const myProfileId = await getMyProfileId()
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-canvas px-4 py-16">

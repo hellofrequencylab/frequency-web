@@ -107,20 +107,52 @@ export interface ClaimedSpace {
 }
 
 /**
+ * A resolved claim token REGARDLESS of claimed state, for the claim page's "already claimed" handling.
+ * Unlike resolveSpaceClaim (which hides a consumed token), this still finds the Space so the page can
+ * redirect the owner who re-opens their used link back to their Space instead of 404ing them. Returns
+ * null only when the token maps to no Space at all. Reads only.
+ */
+export interface ResolvedSpaceClaimAny extends ResolvedSpaceClaim {
+  claimed: boolean
+  ownerProfileId: string | null
+}
+export async function resolveSpaceClaimAny(token: string): Promise<ResolvedSpaceClaimAny | null> {
+  if (!token || token.length < 8) return null
+  try {
+    const { data } = await spacesTable()
+      .select('id, slug, name, claimed_at, owner_profile_id')
+      .eq('claim_token', token)
+      .maybeSingle()
+    if (!data?.id) return null
+    return {
+      spaceId: data.id as string,
+      slug: (data.slug as string) ?? '',
+      name: (data.name as string) ?? '',
+      claimed: ((data.claimed_at as string | null) ?? null) != null,
+      ownerProfileId: (data.owner_profile_id as string | null) ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Claim a seeded Space: transfer ownership to `profileId`. A COMPARE-AND-SET filtered on (token,
  * unclaimed) so it only succeeds when the Space is still unclaimed and a race lets exactly one claimer
- * win. On success the owner column flips to the claimer, claimed_by/claimed_at stamp, and the token is
- * consumed (nulled); then the claimer is seated as an 'admin' member so their owner role is consistent
- * across the owner column AND the per-Space role ladder (matching transferSpaceOwnership). Returns the
- * claimed Space, or null when the token is unknown / already used. authz-ok: bound to the claim token;
- * the caller (the claim page action) requires the claimer be signed in.
+ * win. On success the owner column flips to the claimer and claimed_by/claimed_at stamp; then the claimer
+ * is seated as an 'admin' member so their owner role is consistent across the owner column AND the
+ * per-Space role ladder (matching transferSpaceOwnership). The token is KEPT (not nulled): claimed_at is
+ * the consumed marker (the CAS filters on it), and keeping the token lets the owner who re-opens their
+ * used link be redirected back to their Space (resolveSpaceClaimAny) instead of hitting a 404. Returns
+ * the claimed Space, or null when the token is unknown / already used. authz-ok: bound to the claim
+ * token; the caller (the claim page action) requires the claimer be signed in.
  */
 export async function claimSpace(token: string, profileId: string): Promise<ClaimedSpace | null> {
   if (!token || !profileId) return null
   const nowIso = new Date().toISOString()
   try {
     const { data, error } = await spacesTable()
-      .update({ owner_profile_id: profileId, claimed_by: profileId, claimed_at: nowIso, claim_token: null })
+      .update({ owner_profile_id: profileId, claimed_by: profileId, claimed_at: nowIso })
       .eq('claim_token', token)
       .is('claimed_at', null)
       .select('id, slug')
