@@ -126,6 +126,29 @@ ranges, packages — but only down a path they chose. That is the whole design p
 | **P2 — buyer render** | The buyer side: the PWYW input with anchor + floor validation, the donation chip picker, the Good/Better/Best selector with the middle highlighted. Still no live charge. | the storefront UX |
 | **P3 — checkout wiring** | Money, behind `payoutsLive()` **and** `canTakePayments`: PWYW/donation charges, donation receipts, charitable framing routed through the voice primer (`lib/ai/voice.ts`). | live payments |
 
+## Status
+
+**P1 shipped (2026-07-13, ADR-607).** The unified config layer + owner surfaces landed. Nothing charges.
+
+| Piece | State | Where |
+|---|---|---|
+| Shared `Price` / `PriceMode` / `Offering` primitive + pure helpers (`normalizePrice`, `validatePrice`, `describePrice`, `formatPriceCents`) | ✅ shipped | `lib/commerce/types.ts` |
+| Ticket-column adapters (`priceToTicketPricingMode` / `ticketRowToPrice`), no migration | ✅ shipped | `lib/commerce/types.ts` |
+| Unit tests (modes, donation, validation, adapters round-trip) | ✅ shipped | `lib/commerce/price.test.ts` |
+| Reusable owner control with progressive disclosure + Good/Better/Best packages | ✅ shipped | `components/commerce/price-mode-editor.tsx` |
+| Ticket tier editor (host Manage panel) wired through the adapters | ✅ shipped | `app/(main)/events/[slug]/manage/ticket-tiers-panel.tsx` |
+| Donations fund ask = a `choose`+donation instance of the shared control | ✅ shipped | `components/spaces/donations/donation-ask-form.tsx` |
+| Commerce services surface `choose` (suggested anchor + optional floor) | ✅ shipped (lightweight) | `app/(main)/spaces/[slug]/settings/shop/item-form.tsx`, `shop-actions.ts` |
+
+**Deferred (with reason):**
+
+- **Package persistence for tickets/services (P1.5).** The `PriceModeEditor` fully supports Good / Better / Best, but the ticket editor keeps packages OFF because a ticket tier is *already* one named option (packages = multiple tiers). Wiring per-option price persistence end-to-end is a follow-up; the editor is ready.
+- **Admin console tier form** (`app/(main)/admin/events/[id]/event-edit-client.tsx`). A second, near-duplicate tier form still uses the legacy discrete fields. It persists through the same `parseTicketTierInput` writer, so it keeps working unchanged; migrating it to `PriceModeEditor` is a mechanical follow-up.
+- **Services via the full `PriceModeEditor` (P2).** The item-form is built around a required base `priceCents` plus a separate service config, so `choose` was surfaced with lightweight suggested / floor fields rather than dropping in the full `Offering` editor. Full unification rides the P2 buyer render.
+- **Buyer render (P2) + checkout wiring (P3).** Unchanged from the rollout plan. Money stays behind `payoutsLive()` + `canTakePayments`.
+
+**Migration status: NONE.** Every stored row still resolves via read-time narrowing (the adapters); donation pick amounts ride the existing `suggestedAmountsCents`; service `choose` fields ride `metadata.service` (jsonb).
+
 ## The one-screen summary
 
 - **One control** for every sellable thing: Fixed · Choose your price · Free · Enquire, plus **Packages**.

@@ -88,6 +88,7 @@ function seedRows(variants: CommerceVariant[], d1: string, d2: string): VariantR
 
 const PRICE_MODEL_LABEL: Record<ServicePriceModel, string> = {
   fixed: 'Fixed price',
+  choose: 'Choose your price',
   from: 'From (starting at)',
   free: 'Free',
   contact: 'Contact for pricing',
@@ -196,17 +197,23 @@ export function ItemForm({
 
   const isService = kind === 'service'
   // Cancellation + no-show only make sense when there is a charge to protect.
-  const showPolicy = isService && (priceModel === 'fixed' || priceModel === 'from')
+  const showPolicy = isService && (priceModel === 'fixed' || priceModel === 'from' || priceModel === 'choose')
+  // Choose-your-price reveals the suggested anchor (required) + optional floor.
+  const showChoose = isService && priceModel === 'choose'
   const svc = product?.service ?? null
 
   function buildServiceConfig(fd: FormData): ServiceConfig {
     const depositDollars = posNum(fd, 'deposit')
+    const suggestedDollars = posNum(fd, 'suggested')
+    const minDollars = posNum(fd, 'min')
     // Send every key (undefined for blanks) so an edit fully overwrites the authored policy; the writer
     // prunes the undefined keys and keeps sibling fields (recurrence, sliding scale) it does not author.
     return {
       priceModel,
       durationMin: posNum(fd, 'durationMin'),
       depositCents: depositDollars !== undefined ? Math.round(depositDollars * 100) : undefined,
+      suggestedCents: showChoose && suggestedDollars !== undefined ? Math.round(suggestedDollars * 100) : undefined,
+      minCents: showChoose && minDollars !== undefined ? Math.round(minDollars * 100) : undefined,
       cancellationWindowHours: showPolicy ? posNum(fd, 'cancellationWindowHours') : undefined,
       noShowFeePct: showPolicy ? Math.min(100, posNum(fd, 'noShowFeePct') ?? 0) || undefined : undefined,
     }
@@ -583,7 +590,52 @@ export function ItemForm({
                 </option>
               ))}
             </select>
+            {showChoose && (
+              <p className="mt-1 text-xs text-subtle">
+                Buyers name the amount. Set a suggested amount to anchor them, and an optional floor.
+              </p>
+            )}
           </div>
+          {showChoose && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor={`suggested-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+                  Suggested amount (USD)
+                </label>
+                <input
+                  id={`suggested-${mode}-${product?.id ?? 'new'}`}
+                  name="suggested"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className={FIELD}
+                  placeholder="e.g. 60"
+                  defaultValue={svc?.suggestedCents != null ? svc.suggestedCents / 100 : ''}
+                />
+                <p className="mt-1 text-xs text-subtle">
+                  Buyers see this filled in first. Set one so nobody starts from a blank box.
+                </p>
+              </div>
+              <div>
+                <label htmlFor={`min-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
+                  Minimum (USD)
+                </label>
+                <input
+                  id={`min-${mode}-${product?.id ?? 'new'}`}
+                  name="min"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className={FIELD}
+                  placeholder="Optional floor"
+                  defaultValue={svc?.minCents != null ? svc.minCents / 100 : ''}
+                />
+                <p className="mt-1 text-xs text-subtle">The least a buyer can pay. Leave blank for any amount.</p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor={`durationMin-${mode}-${product?.id ?? 'new'}`} className={LABEL}>
