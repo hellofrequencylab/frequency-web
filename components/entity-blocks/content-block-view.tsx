@@ -4,6 +4,7 @@ import {
   marginBottomClass,
   marginTopClass,
   safeUrl,
+  sanitizeInlineHtml,
   textByRoleClass,
   textStyleClass,
   type BlockStyle,
@@ -27,6 +28,25 @@ import { BlockIcon } from './block-icon'
 function s(props: Record<string, unknown>, key: string): string {
   const v = props[key]
   return typeof v === 'string' ? v : ''
+}
+
+/** Render an operator's inline-rich TEXT value (a `textarea` slot authored on the WYSIWYG canvas) as
+ *  sanitized inline HTML: Bold / Italic / Link marks and <br> survive, EVERYTHING else is escaped as text.
+ *  The value is re-sanitised HERE on read (defence in depth — a stored blob is user-originated and never
+ *  trusted, mirroring the email renderer), so a plain-text value round-trips unchanged and no unsafe markup
+ *  can reach the page. Returns null when nothing survives. */
+function InlineRichText({
+  as: Tag = 'p',
+  value,
+  className,
+}: {
+  as?: 'p' | 'blockquote'
+  value: string
+  className?: string
+}) {
+  const html = sanitizeInlineHtml(value)
+  if (!html) return null
+  return <Tag className={className} dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 /** The per-block STYLE frame (ADR-528 → ADR-569): an optional card background, a padding step, alignment, a
@@ -95,7 +115,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
           )}
           <div className="space-y-3 p-6">
             {title && <h3 className="text-xl font-bold text-text">{title}</h3>}
-            {body && <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{body}</p>}
+            {body && <InlineRichText value={body} className="whitespace-pre-wrap text-base leading-relaxed text-muted" />}
             {hasButton && (
               <a
                 href={buttonUrl || '#'}
@@ -197,7 +217,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       // edge in a wide single-column row. A no-op in a narrow / multi-column row (the column is already
       // shorter than the cap).
       return text ? (
-        <p className="max-w-prose whitespace-pre-wrap text-base leading-relaxed text-muted">{text}</p>
+        <InlineRichText value={text} className="max-w-prose whitespace-pre-wrap text-base leading-relaxed text-muted" />
       ) : null
     }
     case 'links': {
@@ -294,7 +314,7 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
       const by = s(props, 'by')
       return (
         <figure className="max-w-prose border-l-2 border-primary pl-4">
-          <blockquote className="text-lg font-medium italic text-text">{text}</blockquote>
+          <InlineRichText as="blockquote" value={text} className="text-lg font-medium italic text-text" />
           {by && <figcaption className="mt-2 text-sm text-muted">{by}</figcaption>}
         </figure>
       )

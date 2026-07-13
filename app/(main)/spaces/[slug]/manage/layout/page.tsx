@@ -75,12 +75,14 @@ export default async function SpacePageSettingsPage({
           <StaffPreviewBanner spaceName={brandName} />
         </div>
       )}
-      {/* The on-canvas WYSIWYG page editor: a compact settings-only section rail on the LEFT, a live
-          clickable page canvas on the RIGHT. Reads + writes the SAME persisted layout the panel below and the
-          in-rail arranger use (additive; nothing about persistence changes). */}
-      <section className="mb-8" aria-label="Page editor">
+      {/* The PRIMARY page editor (email-builder parity): the on-canvas WYSIWYG surface — a settings-only
+          section rail on the LEFT, a live clickable page canvas on the RIGHT where you edit text and photos in
+          place. Reads + writes the SAME persisted layout the settings panel below and the in-rail arranger use,
+          so the older rail arranger stays available as a fallback and nothing about persistence changes. */}
+      <section className="mb-10" aria-label="Page editor">
         <SpaceCanvasEditorSection slug={slug} />
       </section>
+      {/* Page settings (secondary): the pages list, cover, publish state, and block show / hide. */}
       <SpacePagePanel
         slug={slug}
         pages={pages}
