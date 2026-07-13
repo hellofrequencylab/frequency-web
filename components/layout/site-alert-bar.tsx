@@ -56,8 +56,10 @@ export function SiteAlertBar() {
 
   return (
     <div className="border-b border-primary/30 bg-primary-bg/70">
-      <div className="mx-auto flex w-full max-w-[105rem] items-center gap-3 px-4 py-2 sm:px-6 lg:px-8">
-        <p className="min-w-0 flex-1 text-sm text-primary-strong">
+      {/* The message + button are centered as one group; the dismiss X is pinned right so it never
+          offsets that centering. The horizontal padding clears the pinned X. */}
+      <div className="relative mx-auto flex w-full max-w-[105rem] flex-wrap items-center justify-center gap-x-3 gap-y-1 px-12 py-2">
+        <p className="text-center text-sm text-primary-strong">
           Hey Friends <span aria-hidden>👋🏼</span> Frequency will be in Beta until September 1st. Feel free to browse
           around, make some friends, and please report any bugs!
         </p>
@@ -66,7 +68,7 @@ export function SiteAlertBar() {
           type="button"
           onClick={dismiss}
           aria-label="Dismiss this announcement"
-          className="shrink-0 rounded-lg p-1.5 text-primary-strong/80 transition-colors hover:bg-primary/10 hover:text-primary-strong"
+          className="absolute right-2 top-1/2 -translate-y-1/2 shrink-0 rounded-lg p-1.5 text-primary-strong/80 transition-colors hover:bg-primary/10 hover:text-primary-strong sm:right-4"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>
