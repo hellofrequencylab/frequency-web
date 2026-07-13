@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { Ticket, Loader2 } from 'lucide-react'
 import { startTicket, refundTicketAction } from './ticket-actions'
 import { isError } from '@/lib/action-result'
+import { ticketRowToPrice, type Price } from '@/lib/commerce/types'
+import { PriceInput, type PriceSelection } from '@/components/commerce/price-input'
 
 export type TicketTierView = {
   id: string
@@ -24,6 +26,17 @@ const dollars = (cents: number | null | undefined) =>
 
 function isBuyerChosen(mode: TicketTierView['pricingMode']) {
   return mode === 'pwyc' || mode === 'sliding_scale' || mode === 'donation'
+}
+
+/** Map a tier's legacy pricing columns onto the unified buyer Price (Pricing Options P2), so the shared
+ *  PriceInput drives the buyer-chosen amount. */
+function tierToPrice(t: TicketTierView): Price {
+  return ticketRowToPrice({
+    pricing_mode: t.pricingMode,
+    price_cents: t.priceCents,
+    min_cents: t.minCents,
+    suggested_cents: t.suggestedCents,
+  })
 }
 
 function modeLabel(t: TicketTierView): string {
@@ -64,20 +77,14 @@ export function TicketButton({
     hasTiers ? (tiers!.find((t) => !t.soldOut)?.id ?? tiers![0].id) : null,
   )
   const selected = hasTiers ? tiers!.find((t) => t.id === selectedId) ?? null : null
-  const [amount, setAmount] = useState<string>(
-    selected && isBuyerChosen(selected.pricingMode)
-      ? ((selected.suggestedCents ?? selected.minCents ?? 0) / 100).toFixed(2)
-      : '',
-  )
+  // The buyer-chosen amount for a pwyc / sliding_scale / donation tier, surfaced by the shared
+  // PriceInput (which pre-fills the suggested anchor and enforces the floor). null for a fixed / free tier.
+  const [selection, setSelection] = useState<PriceSelection | null>(null)
 
   function selectTier(t: TicketTierView) {
     setSelectedId(t.id)
     setError(null)
-    setAmount(
-      isBuyerChosen(t.pricingMode)
-        ? ((t.suggestedCents ?? t.minCents ?? 0) / 100).toFixed(2)
-        : '',
-    )
+    setSelection(null)
   }
 
   function go() {
@@ -86,17 +93,11 @@ export function TicketButton({
     // Client-side floor hint (the server re-enforces it authoritatively).
     let amountCents: number | undefined
     if (tier && isBuyerChosen(tier.pricingMode)) {
-      const n = Number(amount)
-      if (!Number.isFinite(n) || n <= 0) {
-        setError('Enter an amount.')
+      if (!selection || !selection.valid || selection.amountCents == null) {
+        setError(selection?.error ?? 'Enter an amount.')
         return
       }
-      amountCents = Math.round(n * 100)
-      const floor = tier.minCents ?? 0
-      if (amountCents < floor) {
-        setError(`Minimum is ${dollars(floor)}.`)
-        return
-      }
+      amountCents = selection.amountCents
     }
     startTransition(async () => {
       const r = await startTicket(eventId, {
@@ -176,32 +177,16 @@ export function TicketButton({
         })}
       </div>
 
-      {/* Buyer-chosen amount for pwyc / sliding_scale / donation tiers. */}
+      {/* Buyer-chosen amount for pwyc / sliding_scale / donation tiers (Pricing Options P2): the shared
+          PriceInput pre-fills the suggested anchor and enforces the floor. Keyed by tier so it re-seeds. */}
       {selected && buyerChosen && !selected.soldOut && (
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted">
-            {selected.pricingMode === 'donation' ? 'Your contribution' : 'Choose your price'}
-            {selected.minCents ? (
-              <span className="font-normal text-subtle"> · min {dollars(selected.minCents)}</span>
-            ) : null}
-          </label>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-subtle">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={selected.minCents != null ? (selected.minCents / 100).toFixed(2) : '0'}
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              disabled={isPending}
-              className="w-32 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-border-strong focus:ring-2 focus:ring-border-strong/30"
-            />
-          </div>
-          {selected.suggestedCents != null && (
-            <p className="mt-1 text-xs text-subtle">Suggested: {dollars(selected.suggestedCents)}</p>
-          )}
-        </div>
+        <PriceInput
+          key={selected.id}
+          price={tierToPrice(selected)}
+          disabled={isPending}
+          idPrefix={`tier-${selected.id}`}
+          onChange={setSelection}
+        />
       )}
 
       <button

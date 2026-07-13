@@ -33,6 +33,7 @@ import { applyMergeTags, sanitizeEmailRichContent } from '@/lib/email-studio/ren
 import { MERGE_TAG_VARIABLES, MERGE_TAG_DEFAULT_FALLBACKS } from '@/lib/email-studio/types'
 import { sendRawEmail } from '@/lib/email'
 import { BETA_LAUNCH_EMAILS } from '@/lib/beta/launch-emails'
+import { BUILTIN_SEGMENTS, TRAIT_SEGMENT_PREFIX } from '@/lib/studio/campaigns'
 import { type ActionResult, ok, fail } from '@/lib/action-result'
 
 /** One campaign card for the left rail. `updatedAt` sources `created_at` (the campaigns table carries no
@@ -44,12 +45,77 @@ export interface EmailCampaignCard {
   updatedAt: string
 }
 
-/** The loaded email a card opens into the editor: the block layout plus subject + preheader. */
+/**
+ * One step's place + timing inside a multi-email sequence (the beta broadcast series today; a drip or
+ * funnel journey via the seam in `loadEmailCampaign`). `position` is 1-based, `total` the sequence length,
+ * and `timing` a plain-language cadence/trigger line for the step.
+ */
+export interface EmailSequenceStep {
+  position: number
+  total: number
+  /** The name of the sequence this email belongs to, e.g. "Beta launch sequence". */
+  sequenceName: string
+  /** A plain-language timing/trigger line, e.g. "Target send Aug 3, 2026". Null when unset. */
+  timing: string | null
+}
+
+/**
+ * The orientation an editor's info bar renders above the canvas: which campaign or sequence this email
+ * belongs to, its audience, schedule, and status, plus (when it is one step of a sequence) that step. So a
+ * writer always knows where they are. `kind` is 'sequence' for a step in a journey, 'broadcast' for a
+ * one-off send.
+ */
+export interface EmailEditorContext {
+  kind: 'broadcast' | 'sequence'
+  /** The container's display name: the sequence name for a step, else the campaign subject. */
+  campaignName: string
+  /** The lifecycle status (`campaigns.status`): draft / scheduled / sending / sent / paused / cancelled. */
+  status: string
+  /** The approval status (`campaigns.approval_status`), surfaced for beta-gated sends. */
+  approvalStatus: string
+  /** A plain-language audience label resolved from the stored segment. */
+  audience: string
+  /** A plain-language schedule line (e.g. "Scheduled for August 3, 2026" or "Not scheduled"). */
+  schedule: string
+  /** The step context when this email is part of a sequence; null for a standalone broadcast. */
+  step: EmailSequenceStep | null
+}
+
+/** The loaded email a card opens into the editor: the block layout plus subject + preheader + the editor
+ *  context (campaign/sequence orientation) the info bar renders. */
 export interface LoadedEmailCampaign {
   id: string
   subject: string
   preheader: string
   layout: EntityLayout
+  context: EmailEditorContext
+}
+
+/** A plain-language audience label from a stored `campaigns.segment` key: a built-in audience keeps its
+ *  catalog label, a trait segment (`seg:<slug>`) reads as "Segment: <slug>", an empty key reads as unset. */
+function audienceLabel(segment: string | null): string {
+  const key = (segment ?? '').trim()
+  if (!key) return 'No audience set'
+  const builtin = BUILTIN_SEGMENTS.find((b) => b.key === key)
+  if (builtin) return builtin.label
+  if (key.startsWith(TRAIT_SEGMENT_PREFIX)) return `Segment: ${key.slice(TRAIT_SEGMENT_PREFIX.length)}`
+  return key
+}
+
+/** A short human date (e.g. "August 3, 2026") for a schedule/timing line, or null when unparseable. */
+function longDate(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+/** A plain-language schedule line for the info bar, framed by lifecycle status. */
+function scheduleLabel(scheduledFor: string | null, status: string): string {
+  const when = longDate(scheduledFor)
+  if (status === 'sent') return when ? `Sent ${when}` : 'Sent'
+  if (when) return `Scheduled for ${when}`
+  return 'Not scheduled'
 }
 
 /** A fresh EMAIL layout (kind 'email') seeded from the `basic` starter — the shape a new draft is born with. */
@@ -129,15 +195,40 @@ export async function loadEmailCampaign(id: string): Promise<LoadedEmailCampaign
   const db = createAdminClient()
   const { data, error } = await db
     .from('campaigns')
-    .select('id, subject, preheader, block_json')
+    .select('id, subject, preheader, block_json, status, approval_status, segment, scheduled_for, phase_id')
     .eq('id', id)
     .maybeSingle()
   if (error || !data) return null
+
+  const subject = data.subject ?? ''
+  const status = data.status ?? 'draft'
+
+  // STEP CONTEXT. Populated today when the email belongs to the beta broadcast sequence (a non-null
+  // phase_id), computed from the SAME send-order the Campaign tab lists. A generic Studio draft (null
+  // phase_id) is a standalone broadcast, so it carries no step.
+  //
+  // SEAM — drip / funnel steps: a multi-email drip (`nurture_*` root, `space_drip_*` Space) or a funnel
+  // (`funnel_stages`) also has a `step_order` + `delay_hours` cadence, but a `campaigns` row is not yet
+  // linked to a drip/funnel step by a foreign key (the P2 plan calls out the `campaigns`<->`funnel_stages`
+  // link as the wiring to add). When that link lands, resolve the step here and return an EmailSequenceStep
+  // with `timing` built from `delay_hours` (e.g. "sends 2 days after the previous email"); the info bar
+  // already renders any EmailSequenceStep, so no UI change is needed then.
+  const step = data.phase_id ? await betaSequenceStep(db, id, scheduleLabel(data.scheduled_for, status)) : null
+
   return {
     id: data.id,
-    subject: data.subject ?? '',
+    subject,
     preheader: data.preheader ?? '',
     layout: layoutFromBlockJson(data.block_json),
+    context: {
+      kind: step ? 'sequence' : 'broadcast',
+      campaignName: step ? step.sequenceName : subject.trim() || 'Untitled campaign',
+      status,
+      approvalStatus: data.approval_status ?? 'draft',
+      audience: audienceLabel(data.segment),
+      schedule: scheduleLabel(data.scheduled_for, status),
+      step,
+    },
   }
 }
 
@@ -292,6 +383,59 @@ const BETA_BROADCAST_ORDER: Map<string, number> = new Map(
   BETA_LAUNCH_EMAILS.filter((e) => e.phaseKey !== 'P0').map((e, i) => [e.subject, i]),
 )
 
+/** The name shown for the beta broadcast sequence in the editor's info bar. */
+const BETA_SEQUENCE_NAME = 'Beta launch sequence'
+
+/** Send-order comparator for beta broadcast rows: a known launch email sorts to its authored position, an
+ *  operator-added email sorts after by creation time. Shared by the sequence list and the step lookup. */
+function compareBetaBroadcast(
+  a: { subject: string; created_at: string },
+  b: { subject: string; created_at: string },
+): number {
+  const UNKNOWN = Number.MAX_SAFE_INTEGER
+  const ia = BETA_BROADCAST_ORDER.get(a.subject) ?? UNKNOWN
+  const ib = BETA_BROADCAST_ORDER.get(b.subject) ?? UNKNOWN
+  if (ia !== ib) return ia - ib
+  return a.created_at.localeCompare(b.created_at)
+}
+
+/**
+ * Resolve one beta campaign's step within the broadcast sequence: its 1-based position and the sequence
+ * length, ordered exactly like `listBetaSequenceEmails` (launch emails first in authored order, then any
+ * operator-added beta email by creation time, P0 transactional confirm excluded). Returns null when the
+ * campaign is not in the sequence. `timing` is the step's plain-language cadence (its target-date line).
+ */
+async function betaSequenceStep(
+  db: ReturnType<typeof createAdminClient>,
+  campaignId: string,
+  timing: string,
+): Promise<EmailSequenceStep | null> {
+  const { data: phases } = await db.from('beta_phases').select('id, key')
+  const p0PhaseIds = new Set((phases ?? []).filter((p) => p.key === 'P0').map((p) => p.id))
+
+  const { data } = await db
+    .from('campaigns')
+    .select('id, subject, phase_id, created_at')
+    .not('phase_id', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(200)
+  if (!data) return null
+
+  const rows = data
+    .filter((r) => r.phase_id && !p0PhaseIds.has(r.phase_id))
+    .map((r) => ({ id: r.id, subject: r.subject ?? '', created_at: r.created_at }))
+    .sort(compareBetaBroadcast)
+
+  const index = rows.findIndex((r) => r.id === campaignId)
+  if (index < 0) return null
+  return {
+    position: index + 1,
+    total: rows.length,
+    sequenceName: BETA_SEQUENCE_NAME,
+    timing: timing === 'Not scheduled' ? null : timing,
+  }
+}
+
 /**
  * List the beta broadcast sequence in send order (read-gated). Every campaigns row with a non-null phase_id,
  * minus the P0 transactional confirm, ordered: the six launch emails first (their authored order), then any
@@ -314,13 +458,7 @@ export async function listBetaSequenceEmails(): Promise<BetaSequenceEmail[]> {
   if (error || !data) return []
 
   const rows = data.filter((r) => r.phase_id && !p0PhaseIds.has(r.phase_id))
-  const UNKNOWN = Number.MAX_SAFE_INTEGER
-  rows.sort((a, b) => {
-    const ia = BETA_BROADCAST_ORDER.get(a.subject) ?? UNKNOWN
-    const ib = BETA_BROADCAST_ORDER.get(b.subject) ?? UNKNOWN
-    if (ia !== ib) return ia - ib
-    return a.created_at.localeCompare(b.created_at)
-  })
+  rows.sort((a, b) => compareBetaBroadcast({ subject: a.subject ?? '', created_at: a.created_at }, { subject: b.subject ?? '', created_at: b.created_at }))
 
   return rows.map((r, i) => ({
     id: r.id,

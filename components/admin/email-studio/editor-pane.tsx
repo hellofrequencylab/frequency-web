@@ -15,6 +15,7 @@ import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
 import type { BuilderLayout } from '@/lib/entity-blocks/rows-ops'
 import type { SaveLayout } from '@/components/entity-blocks/profile-layout-context'
 import { ComposeToolbar } from './compose-toolbar'
+import { EmailContextBar } from './context-bar'
 import { EmailPreview } from './preview'
 import { EmailCanvasEditor } from './email-canvas-editor'
 import { saveEmailCampaign, type LoadedEmailCampaign } from '@/app/(main)/admin/email-studio/actions'
@@ -153,6 +154,10 @@ export function EmailEditorPane({
       <EntityLayoutProvider kind="email" save={save}>
         <LayoutSeeder layout={campaign.layout} />
         <div className="space-y-4">
+          {/* Ask #7: the context bar names the campaign/sequence, step, timing, audience, and status ABOVE the
+              canvas, in every arrangement. Reads the server-resolved EmailEditorContext; never touches the
+              canvas editor's rail-alignment or click-to-select. */}
+          <EmailContextBar context={campaign.context} />
           <ComposeToolbar
             campaignId={id}
             subject={subject}
@@ -175,6 +180,10 @@ export function EmailEditorPane({
       <EntityLayoutProvider kind="email" save={save}>
         <LayoutSeeder layout={campaign.layout} />
         <div className="space-y-4">
+          {/* Ask #7: the context bar names the campaign/sequence, step, timing, audience, and status ABOVE the
+              canvas, in every arrangement. Reads the server-resolved EmailEditorContext; never touches the
+              canvas editor's rail-alignment or click-to-select. */}
+          <EmailContextBar context={campaign.context} />
           {/* TOP — the subject + preheader compose fields, FULL WIDTH above Your page and preview. */}
           <ComposeToolbar
             campaignId={id}

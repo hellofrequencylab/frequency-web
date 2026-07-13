@@ -4,6 +4,8 @@ import { viewerManagesSpace } from '@/lib/spaces/operator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { AdminSetupPrompt } from '@/components/spaces/admin-setup-prompt'
 import { DonateCtaTracker } from '@/components/spaces/donations/donate-cta-tracker'
+import { PriceInput } from '@/components/commerce/price-input'
+import type { Price } from '@/lib/commerce/types'
 
 // MEMBER DONATE SURFACE (ENTITY-SPACES-SYSTEM §2.6 "Donate", MASTER-PLAN ADMIN-04). The self-fetching
 // server half of the Organization "Donate" tab: it loads this Space's single active donation ask
@@ -39,6 +41,15 @@ export async function DonateMember({
   ownerProfileId: string | null
 }) {
   const ask = await getDonationAsk(spaceId)
+
+  // The fund is a `choose` + donation offer (Pricing Options P2): the quick-pick chips are the fund's
+  // suggested amounts. DISPLAY + validation only, so the buyer control renders the gift choice but
+  // nothing charges (giving is not wired up yet; the copy below says so).
+  const donationPrice: Price = {
+    mode: 'choose',
+    donation: true,
+    pickAmountsCents: ask?.suggestedAmountsCents.length ? ask.suggestedAmountsCents : undefined,
+  }
 
   if (!ask) {
     // OPERATOR (owner / admin / editor): guide them to set up the fund instead of the member empty state.
@@ -79,21 +90,14 @@ export async function DonateMember({
           <p className="mt-2 text-sm leading-relaxed text-muted">{ask.description}</p>
         )}
 
-        {ask.suggestedAmountsCents.length > 0 && (
-          <div className="mt-4">
-            <p className="text-xs font-semibold text-text">Suggested amounts</p>
-            <ul className="mt-2 flex flex-wrap gap-2" aria-label="Suggested gift amounts">
-              {ask.suggestedAmountsCents.map((cents) => (
-                <li
-                  key={cents}
-                  className="rounded-lg border border-border bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-text"
-                >
-                  {formatAmount(cents)}
-                </li>
-              ))}
-            </ul>
+        <div className="mt-4">
+          <p className="text-xs font-semibold text-text">Pick an amount</p>
+          <div className="mt-2">
+            {/* Pricing Options P2 buyer control: quick-pick chips + a custom gift field. DISPLAY only,
+                no charge (giving is not wired up yet, per the note below). */}
+            <PriceInput price={donationPrice} idPrefix={`donate-${spaceId}`} />
           </div>
-        )}
+        </div>
       </div>
 
       <p className="text-2xs text-subtle">
