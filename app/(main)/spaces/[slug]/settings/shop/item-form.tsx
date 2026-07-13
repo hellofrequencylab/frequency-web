@@ -14,6 +14,7 @@ import type {
   VariantInput,
 } from '@/lib/commerce/types'
 import { createSpaceProductAction, updateProductAction, draftListingCopyAction } from './shop-actions'
+import { RecordingAttachManager } from '@/components/airwaves/recording-attach-manager'
 
 // Gallery photos are stored as event-media storage PATHS but read back as resolved public URLs
 // (lib/commerce/products.ts). On edit we reverse a public URL to its path so the uploader can re-seed
@@ -709,6 +710,18 @@ export function ItemForm({
             </div>
           )}
         </fieldset>
+      )}
+
+      {/* Airwaves (ADR-608, P1): attach a Recording to this product. Editable only once the product exists
+          (it needs an id to bind to); the manager persists through its own gated actions, independent of this
+          form's submit. */}
+      {mode === 'edit' && product?.id && (
+        <RecordingAttachManager
+          hostKind="product"
+          hostId={product.id}
+          spaceSlug={slug}
+          heading="Recordings on this product"
+        />
       )}
 
       <div className="flex justify-end">

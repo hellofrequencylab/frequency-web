@@ -188,6 +188,11 @@ export type FieldType =
   | 'color'
   | 'shadow'
   | 'margin'
+  // Airwaves (ADR-608, P1): a SINGLE-select picker of the current Space's Recordings. Its choices are the
+  // Space's real Recordings, fetched at edit time by the control (not a fixed enum); the stored value is one
+  // Recording id (a bounded string). The renderer resolves that id's gate server-side. Distinct from the
+  // multi-select `picker` above (which stores string[] and rides the function data-source seed).
+  | 'recordingPicker'
   // Function-aware DATA-SOURCE picker (ADR-573, item 5): a multi-select of the Space's own live items for a
   // function-backed block (which offerings / events / team members to feature). Its choices are NOT a fixed
   // enum baked into the schema — they are the Space's real data, resolved server-side (blockDataList) and
@@ -362,6 +367,25 @@ const CONTENT_FIELDS: Readonly<Record<string, readonly FieldDef[]>> = {
   ],
   embed: [
     { key: 'url', label: 'Media link', type: 'embedUrl', placeholder: 'Paste a YouTube, Spotify, SoundCloud, Vimeo, or Insight Timer link' },
+  ],
+  // Airwaves (ADR-608, P1): pick one of the Space's Recordings and choose how it sits on the page. The
+  // `recordingPicker` control lists the Space's Recordings and stores one id; the renderer (content-block-view)
+  // mounts the gated client player. Autoplay defaults OFF (respect the reader); the transcript shows by default
+  // (SEO / AIO + a11y), and an operator can hide it.
+  recording: [
+    { key: 'recordingId', label: 'Recording', type: 'recordingPicker' },
+    {
+      key: 'display',
+      label: 'Style',
+      type: 'segmented',
+      defaultValue: 'full',
+      options: [
+        { value: 'full', label: 'Full' },
+        { value: 'compact', label: 'Compact' },
+      ],
+    },
+    { key: 'autoplay', label: 'Autoplay', type: 'toggle', default: false },
+    { key: 'showTranscript', label: 'Show transcript', type: 'toggle', default: true },
   ],
   divider: [],
   // The five DESIGN blocks (2026), now editable in the rail arranger. The rail's field kit is text / textarea
@@ -915,6 +939,15 @@ export function sanitizeBlockContent(id: string, raw: unknown): Record<string, u
         const allowed = primitiveValues(field)
         const def = field.defaultValue ?? allowed?.[0]
         if (typeof v === 'string' && allowed?.includes(v) && v !== def) out[field.key] = v
+        break
+      }
+      case 'recordingPicker': {
+        // Airwaves (ADR-608): one Recording id, a bounded string. The choices are the Space's live
+        // Recordings (resolved at edit time), so no allowlist is pinned here; the id is coerced to a bounded
+        // string and the RENDERER resolves it through the gated resolve route (an unknown / stale id simply
+        // renders nothing). A blank value is dropped so the block stays sparse.
+        const id = str(v, MAX_LABEL)
+        if (id) out[field.key] = id
         break
       }
       case 'picker': {

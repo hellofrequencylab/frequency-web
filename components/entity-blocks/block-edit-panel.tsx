@@ -43,6 +43,7 @@ import {
   type HeightValue,
   type ShadowValue,
 } from './controls/field-controls'
+import { RecordingPickerControl } from '@/components/airwaves/recording-picker-control'
 
 /** A gated server upload: returns the uploaded image's public URL, or a plain error. Injected by the
  *  SPACE builder (wired to the space-scoped upload action); absent on surfaces without an upload path. */
@@ -323,6 +324,17 @@ export function FieldEditor({
         createHref={pickerData?.createHref}
         createLabel={pickerData?.createLabel}
         onChange={(next) => onChange(next.length ? next : undefined)}
+      />
+    )
+  }
+  // ── Airwaves (ADR-608): the single-select "pick a Recording" control. Its choices are the current
+  //    Space's Recordings, fetched at edit time (not a fixed enum); the stored value is one Recording id. ──
+  if (field.type === 'recordingPicker') {
+    return (
+      <RecordingPickerControl
+        label={field.label}
+        value={typeof value === 'string' ? value : ''}
+        onChange={(id) => onChange(id)}
       />
     )
   }

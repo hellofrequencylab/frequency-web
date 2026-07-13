@@ -64,6 +64,9 @@ export function hrefForSurface(id: string, slug: string): string | null {
       // The Shop console (ADR-596): Catalog / Orders / Storefront. Replaced the retired JSON Store editor
       // (the old /settings/services route now redirects here).
       return `${base}/settings/shop`
+    case 'space.airwaves':
+      // Airwaves (ADR-608, P1): the Recordings library console — upload, manage, and see where each plays.
+      return `${base}/settings/airwaves`
     case 'space.reach':
       return `${base}/settings/qr`
     case 'space.comms':

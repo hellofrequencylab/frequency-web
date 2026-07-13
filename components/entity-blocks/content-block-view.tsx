@@ -17,6 +17,7 @@ import {
   parseLinkCard,
 } from '@/lib/spotlight/embeds'
 import { BlockIcon } from './block-icon'
+import { RecordingBlockEmbed } from '@/components/airwaves/recording-block-embed'
 
 // PRESENTATIONAL renderers for the operator's inline-authored CONTENT blocks (ADR-528) + the per-block
 // STYLE frame. Server-safe (no hooks / no 'use client'), so the Server Component profile renderers drop
@@ -358,6 +359,25 @@ export function ContentBlockView({ id, props }: { id: string; props: Record<stri
         )
       }
       return null
+    }
+    case 'recording': {
+      // Airwaves (ADR-608, §6a): mount the gated client player for one Recording. Like the `embed` case, the
+      // server shell stays presentational and the interactive island does the work — here it hydrates through
+      // the resolve route, which walls a private Recording server-side (a locked card, never the src). An
+      // empty id renders nothing (the established fail-safe), so a stray block leaves no gap.
+      const recordingId = s(props, 'recordingId')
+      if (!recordingId) return null
+      const display = props.display === 'compact' ? 'compact' : 'full'
+      const autoplay = props.autoplay === true
+      const showTranscript = props.showTranscript !== false
+      return (
+        <RecordingBlockEmbed
+          recordingId={recordingId}
+          display={display}
+          autoplay={autoplay}
+          showTranscript={showTranscript}
+        />
+      )
     }
     case 'divider':
       return <hr className="border-border" />

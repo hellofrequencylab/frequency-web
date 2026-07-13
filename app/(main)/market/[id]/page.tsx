@@ -15,6 +15,8 @@ import { sellerVerifiedForProduct } from '@/lib/commerce/seller-verification'
 import { VerifiedBadge } from '@/components/ui/verified-badge'
 import { ReportButton } from '@/components/marketplace/report-button'
 import { ProductReviews } from '@/components/marketplace/product-reviews'
+import { Suspense } from 'react'
+import { AttachedRecordingsSection } from '@/components/airwaves/attached-recordings-section'
 import { ServiceBookingPicker } from '@/components/marketplace/service-booking-picker'
 import { VariantPicker } from '@/components/marketplace/variant-picker'
 import { ListingDetailTemplate } from '@/components/templates/listing-detail-template'
@@ -255,6 +257,11 @@ export default async function MarketProductPage({ params }: { params: Promise<{ 
             canReview={!!profileId && !isOwner}
             canModerate={operator}
           />
+          {/* Airwaves (ADR-608, P1): any Recordings attached to this product, gated per viewer. Renders
+              nothing when none are attached. Behind Suspense so it never blocks the detail. */}
+          <Suspense fallback={null}>
+            <AttachedRecordingsSection hostKind="product" hostId={product.id} compact />
+          </Suspense>
         </>
       }
     >
