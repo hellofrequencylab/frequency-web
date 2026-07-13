@@ -257,9 +257,10 @@ export async function searchSpaceLibraryImages(
   }
 }
 
-/** Insert a newly-uploaded image into a SPACE'S OWN Loom (space_id = thisSpace, visibility='space',
+/** Insert a newly-uploaded file into a SPACE'S OWN Loom (space_id = thisSpace, visibility='space',
  *  NEVER the shared root/public library). Returns the new asset id, or null on error. The caller has
- *  already gated on per-space edit permission and uploaded the file. */
+ *  already gated on per-space edit permission and uploaded the file. `kind` defaults to 'image' so
+ *  every existing caller is byte-identical; the Airwaves uploaders pass 'audio' | 'video' (ADR-608). */
 export async function insertSpaceLibraryImage(input: {
   spaceId: string
   title: string
@@ -269,12 +270,13 @@ export async function insertSpaceLibraryImage(input: {
   url: string
   mime: string
   bytes: number
+  kind?: 'image' | 'audio' | 'video'
 }): Promise<string | null> {
   const { data, error } = await db()
     .from('library_assets')
     .insert({
       space_id: input.spaceId,
-      kind: 'image',
+      kind: input.kind ?? 'image',
       title: input.title,
       slug: input.slug,
       status: 'approved',
