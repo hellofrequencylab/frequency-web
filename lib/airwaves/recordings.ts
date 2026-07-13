@@ -331,8 +331,11 @@ export async function deleteRecording(
   }
 }
 
-/** Internal: a Recording by id alone (no Space scope), for the gate + host resolution. null on a miss. */
-async function getRecordingById(recordingId: string): Promise<Recording | null> {
+/** A Recording by id alone (no Space scope), for the gate + host resolution. null on a miss. Exported for
+ *  the playback resolver (lib/airwaves/playback.ts), which pairs it with the Loom file url + the viewer's
+ *  membership to build a gated player payload. Service-role read; every caller applies the visibility gate
+ *  (canViewRecording) at its own surface. */
+export async function getRecordingById(recordingId: string): Promise<Recording | null> {
   const rid = (recordingId ?? '').trim()
   if (!rid) return null
   try {

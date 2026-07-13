@@ -73,10 +73,14 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   { id: 'text', label: 'Text', description: 'A paragraph of your own words.', category: 'content', kinds: ['member', 'space', 'email'], order: 210 },
   { id: 'links', label: 'Links', description: 'A row of links (the bio-link list).', category: 'content', kinds: ['member', 'space'], order: 220 },
   { id: 'image', label: 'Image', description: 'A single image.', category: 'content', kinds: ['member', 'space', 'email'], order: 230 },
-  { id: 'features', label: 'Features', description: 'A set of features, each with an icon, title, and text.', category: 'content', kinds: ['space', 'email'], order: 235 },
+  { id: 'features', label: 'Features', description: 'Highlight your offerings or your own items, in a list, columns, stats, cards, or spotlight.', category: 'content', kinds: ['space', 'email'], order: 235 },
   { id: 'gallery', label: 'Image gallery', description: 'One or many images you upload or link.', category: 'content', kinds: ['member', 'space'], order: 240 },
   { id: 'quote', label: 'Quote', description: 'A pulled quote with attribution.', category: 'content', kinds: ['member', 'space', 'email'], order: 250 },
   { id: 'embed', label: 'Music and video', description: 'Embed a YouTube, Spotify, SoundCloud, or Vimeo player, or link an Insight Timer track. Paste a link.', category: 'content', kinds: ['member', 'space'], order: 260 },
+  // Airwaves (ADR-608, P1): embed one of a Space's Recordings with the real player. Web-only (member / space,
+  // NOT email) — the player is an interactive client island, like the `embed` block above. The renderer
+  // resolves the Recording's gate server-side, so an un-entitled viewer sees a locked card, never the file.
+  { id: 'recording', label: 'Recording', description: 'Embed an audio or video recording with a player.', category: 'content', kinds: ['member', 'space'], order: 265 },
   { id: 'divider', label: 'Divider', description: 'A visual break between sections.', category: 'content', kinds: ['member', 'space', 'email'], order: 270 },
   // A first-class call-to-action BUTTON (Email Studio, 2026): a labeled link with an optional alignment.
   // Shared by web (member / space) AND email so a CTA is a real block everywhere, not a callout side effect.
@@ -90,7 +94,7 @@ const CONTENT_BLOCKS: readonly EntityBlockDef[] = [
   // profile "Top Page hero" (the cover). See ADR-571.
   { id: 'photoHero', label: 'Banner', description: 'A bold in-page banner with a headline and an optional photo.', category: 'content', kinds: ['space', 'email'], order: 280 },
   { id: 'editorial', label: 'Editorial section', description: 'A heading over a paragraph of your words.', category: 'content', kinds: ['space', 'email'], order: 282 },
-  { id: 'cardGrid', label: 'Card grid', description: 'A heading over a row of cards.', category: 'content', kinds: ['space', 'email'], order: 284 },
+  { id: 'cardGrid', label: 'Card grid', description: 'A heading over a simple row of image cards you write.', category: 'content', kinds: ['space', 'email'], order: 284 },
   { id: 'zigzag', label: 'Zigzag', description: 'A photo beside a column of text.', category: 'content', kinds: ['space'], order: 286 },
   { id: 'accentBeat', label: 'Accent beat', description: 'A splash of color with a headline and a button.', category: 'content', kinds: ['space'], order: 288 },
   // Two focused TEXT design blocks (ADR-571): a big Display heading and a Prose paragraph, each with its own
@@ -170,6 +174,7 @@ export const CORE_PROFILE_BLOCK_IDS: ReadonlySet<string> = new Set([
   'gallery',
   'features',
   'embed', // Music and video — paste a YouTube / Spotify / SoundCloud / Vimeo / Insight Timer link.
+  'recording', // Airwaves (ADR-608): embed one of the Space's Recordings with the real player.
   // SPACE design blocks (2026 → ADR-571): the reusable design sections, offered in the rail arranger.
   'photoHero',
   'editorial',

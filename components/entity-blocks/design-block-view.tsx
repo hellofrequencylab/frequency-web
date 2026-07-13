@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import { safeUrl } from '@/lib/entity-blocks/block-content'
+import { gridColumns, safeUrl } from '@/lib/entity-blocks/block-content'
 import { DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
+import { BlockIcon } from './block-icon'
 import {
   PhotoHeroBlock,
   EditorialSectionBlock,
-  CardGridBlock,
   ZigzagBlock,
   AccentBeatBlock,
   DisplayHeadingBlock,
@@ -49,12 +49,12 @@ const DESIGN_DEMO: Record<string, Record<string, unknown>> = {
     body: 'Tell your story in plain, honest sentences. Replace this with a paragraph or two about what you do.',
   },
   cardGrid: {
-    eyebrow: 'Section label',
     title: 'What you offer',
+    subtitle: 'A short line under the heading. Replace it or leave it blank.',
     cards: [
-      { icon: '◎', title: 'First thing', text: 'Describe one thing you offer in a sentence or two.' },
-      { icon: '△', title: 'Second thing', text: 'Describe another. Keep it plain and honest.' },
-      { icon: '↗', title: 'Third thing', text: 'One more. Add or remove cards as you need.' },
+      { title: 'First thing', text: 'Describe one thing you offer in a sentence or two. Add a photo above.' },
+      { title: 'Second thing', text: 'Describe another. Keep it plain and honest.' },
+      { title: 'Third thing', text: 'One more. Add or remove cards as you need.' },
     ],
   },
   zigzag: {
@@ -159,44 +159,12 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
           lead={s(props, 'body')}
         />
       )
-    case 'cardGrid': {
-      // The rail edits cards through the Cards repeater (email overhaul): each card is a photo card (image) OR
-      // a stat box ({ value, label }), plus title + text, an optional whole-card link, and an optional button.
-      // Map text → the card body and pass the richer fields through; a legacy { icon, title, text } card still
-      // renders (icon + title + body).
-      const items = Array.isArray(props.cards)
-        ? (props.cards as Array<Record<string, unknown>>)
-            .map((it) => {
-              const stat = (it.stat && typeof it.stat === 'object' ? it.stat : {}) as Record<string, unknown>
-              const button = (it.button && typeof it.button === 'object' ? it.button : {}) as Record<string, unknown>
-              const statValue = typeof stat.value === 'string' ? stat.value : undefined
-              const statLabel = typeof stat.label === 'string' ? stat.label : undefined
-              const buttonLabel = typeof button.label === 'string' ? button.label : undefined
-              return {
-                icon: typeof it.icon === 'string' ? it.icon : undefined,
-                image: safeUrl(it.image) || undefined,
-                title: typeof it.title === 'string' ? it.title : undefined,
-                body: typeof it.text === 'string' ? it.text : undefined,
-                stat: statValue || statLabel ? { value: statValue, label: statLabel } : undefined,
-                href: safeUrl(it.link) || undefined,
-                button: buttonLabel ? { label: buttonLabel, href: safeUrl(button.href) || undefined } : undefined,
-              }
-            })
-            .filter((c) => c.title || c.body || c.image || c.stat)
-        : []
-      const browseHref = safeUrl(props.browseUrl) || undefined
-      return (
-        <CardGridBlock
-          eyebrow={s(props, 'eyebrow')}
-          title={s(props, 'title')}
-          role="feature"
-          columns={3}
-          cards={items}
-          browseLabel={props.buttonOn === false ? undefined : s(props, 'browseLabel')}
-          browseHref={browseHref}
-        />
-      )
-    }
+    case 'cardGrid':
+      // The SIMPLE block (ADR-585): a heading + subheading over a manual row of image cards, with a columns
+      // choice, an image-top / image-left shape, and rounded / shadow toggles. Deliberately plain (no data
+      // source, no layouts) so it reads clearly apart from the Features highlight engine. A legacy card's
+      // extra fields (icon / stat / button) are ignored here; its image / title / text / link still render.
+      return <SimpleCardGrid props={props} />
     case 'zigzag': {
       const image = safeUrl(props.image) || undefined
       return (
@@ -238,4 +206,94 @@ export function DesignBlockView({ id, props: rawProps }: { id: string; props: Re
     default:
       return null
   }
+}
+
+// ── The SIMPLE Card grid (ADR-585) ────────────────────────────────────────────────────────────────────
+
+/** One simple card, read from the (sanitized) `cards` bag: an image (or icon fallback), a title, text, and an
+ *  optional whole-card link. The legacy stat / button fields are intentionally ignored here. */
+type SimpleCard = { icon: string; image: string; title: string; text: string; link: string }
+
+function readSimpleCards(raw: unknown): SimpleCard[] {
+  if (!Array.isArray(raw)) return []
+  return (raw as Array<Record<string, unknown>>)
+    .map((it) => ({
+      icon: typeof it.icon === 'string' ? it.icon : '',
+      image: safeUrl(it.image),
+      title: typeof it.title === 'string' ? it.title : '',
+      text: typeof it.text === 'string' ? it.text : '',
+      link: safeUrl(it.link),
+    }))
+    .filter((c) => c.title || c.text || c.image)
+}
+
+/** The responsive grid-columns utility for a 2 / 3 / 4 column count (single column on mobile). */
+function cardColsClass(n: 2 | 3 | 4): string {
+  return n === 2 ? 'sm:grid-cols-2' : n === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-2 lg:grid-cols-3'
+}
+
+/** The simple Card grid: a heading + subheading over a manual grid of image cards. Columns (2/3/4), a card
+ *  SHAPE (image on top or to the left), and rounded / shadow toggles are read from the bag. FAIL-SAFE:
+ *  nothing to show renders null. Semantic DAWN tokens only, voice canon (no em dashes). */
+function SimpleCardGrid({ props }: { props: Record<string, unknown> }): ReactNode {
+  const title = s(props, 'title')
+  const subtitle = s(props, 'subtitle')
+  const cards = readSimpleCards(props.cards)
+  const cols = gridColumns(props)
+  const imageLeft = props.shape === 'left'
+  const rounded = props.rounded !== false
+  const shadow = props.shadow !== false
+  if (!title && !subtitle && !cards.length) return null
+
+  const round = rounded ? 'rounded-2xl' : ''
+  const shade = shadow ? 'shadow-pop' : ''
+  const frame = ['overflow-hidden border border-border bg-surface', round, shade].filter(Boolean).join(' ')
+
+  return (
+    <div className="space-y-6">
+      {(title || subtitle) && (
+        <div className="space-y-1">
+          {title && <h3 className="text-2xl font-bold text-text">{title}</h3>}
+          {subtitle && <p className="whitespace-pre-wrap text-base leading-relaxed text-muted">{subtitle}</p>}
+        </div>
+      )}
+      {cards.length > 0 && (
+        <div className={`grid gap-6 ${cardColsClass(cols)}`}>
+          {cards.map((c, i) => {
+            const media = c.image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- operator-supplied image URL (safeUrl-checked)
+              <img
+                src={c.image}
+                alt=""
+                className={imageLeft ? 'h-full w-1/3 shrink-0 object-cover' : 'aspect-[4/3] w-full object-cover'}
+              />
+            ) : c.icon ? (
+              <div className="flex items-center px-5 pt-5 text-primary-strong" aria-hidden>
+                <BlockIcon name={c.icon} size={28} />
+              </div>
+            ) : null
+            const inner = (
+              <>
+                {media}
+                <div className="flex flex-1 flex-col gap-1 p-5">
+                  {c.title && <h4 className="text-base font-bold text-text">{c.title}</h4>}
+                  {c.text && <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{c.text}</p>}
+                </div>
+              </>
+            )
+            const cardCls = `flex ${imageLeft ? 'flex-row items-stretch' : 'flex-col'} ${frame}`
+            return c.link ? (
+              <a key={i} href={c.link} className={`${cardCls} transition-colors hover:border-primary`}>
+                {inner}
+              </a>
+            ) : (
+              <div key={i} className={cardCls}>
+                {inner}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
 }

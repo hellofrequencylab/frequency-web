@@ -1,25 +1,40 @@
 'use client'
 
-import { entityBlockById } from '@/lib/entity-blocks/registry'
-import { fieldsForBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
+import { useState } from 'react'
+import { ImagePlus, Pencil } from 'lucide-react'
+import { entityBlockById, DESIGN_ENTITY_BLOCK_IDS } from '@/lib/entity-blocks/registry'
+import { fieldsForBlock, isContentBlock, type FieldDef } from '@/lib/entity-blocks/block-content'
+import type { UploadImage } from '@/components/entity-blocks/block-edit-panel'
 import { SpaceEditableSlot } from './space-editable-slot'
+import { SpaceImagePopup } from './space-image-popup'
 
 // ONE SPACE BLOCK, RENDERED TO THE LIVE WYSIWYG CANVAS. A DAWN-token React approximation of the block whose
-// TEXT fields (text / textarea, plus each Features / Cards item's title + text) are inline-editable slots:
-// click the copy on the page and type. Structural fields (url / image / links / toggle / the enum
-// primitives / picker) are NOT here — they live in the settings-only LEFT rail (the isCoreField split,
-// mirroring the Email Studio canvas). A DATA block (Offerings, Events, Team...) shows its editable
-// eyebrow / title and a muted note that its live list renders on the published page (its data cannot be
-// reproduced client-side). Semantic DAWN tokens throughout (no hex), voice canon (no em dashes).
+// TEXT fields (text / textarea, plus each Features / Cards item's title + text) are inline-editable slots and
+// whose PHOTO slots open the on-canvas photo popup — click the copy or the photo on the page and edit it right
+// there (feature-for-feature with the Email Studio canvas). Structural fields (links / toggle / the enum
+// primitives / picker) are NOT here; they live in the settings-only LEFT rail (the isCoreField split). A rich
+// TEXT slot (a textarea on a block whose live render honours inline HTML — Text / Callout / Quote) pops the
+// Bold / Italic / Link formatting bubble; a plain slot does not. A DATA block (Offerings, Events, Team...)
+// shows its editable eyebrow / title and a muted note that its live list renders on the published page.
+// Semantic DAWN tokens throughout (no hex), voice canon (no em dashes).
 
 const IMAGE_KEYS = new Set(['image', 'src'])
+/** The five design blocks (framework-free ids from the registry). Their live render goes through
+ *  DesignBlockView with plain string props, so their `textarea` slots stay PLAIN on the canvas (no rich
+ *  bubble the page could not honour). Sourced from the registry (not design-block-view) to keep this client
+ *  module free of the server-side design components. */
+const DESIGN_IDS: ReadonlySet<string> = new Set(DESIGN_ENTITY_BLOCK_IDS)
 
-/** A field that is edited INLINE on the canvas (text copy) vs one that belongs in the LEFT rail. */
+/** A field that is edited INLINE on the canvas (text copy) vs one that belongs in the LEFT rail. Alt text is
+ *  NOT a canvas text slot — it is set inside the photo popup (as a sibling of the photo), so it never renders
+ *  as its own stray slot (mirrors the email canvas). */
 export function isCanvasTextField(f: FieldDef): boolean {
+  if (f.key === 'alt') return false
   return f.type === 'text' || f.type === 'textarea'
 }
-/** A single-photo field (a preview thumbnail on the canvas; its URL / upload is set in the rail). */
-function isImageField(f: FieldDef): boolean {
+/** A single-photo field edited ON the canvas via the photo popup (its URL / upload / alt live there, not in
+ *  the rail) — mirrors the email canvas ImageSlot. A gallery (`images` list) stays in the rail. */
+export function isCanvasImageField(f: FieldDef): boolean {
   return (f.type === 'url' && !!f.upload) || IMAGE_KEYS.has(f.key)
 }
 
@@ -28,22 +43,59 @@ function str(props: Record<string, unknown>, key: string): string {
   return typeof v === 'string' ? v : ''
 }
 
-/** The read-only photo preview shown on the canvas (edited in the rail). Empty renders nothing so the
- *  block stays clean until a photo is set. */
-function ImagePreview({ url }: { url: string }) {
-  if (!url) return null
+/** A clickable photo slot on the canvas: shows the current image (or a placeholder) and opens the photo popup
+ *  to upload / paste / alt. Empty value clears the slot. Mirrors the email canvas ImageSlot + Loom popup. */
+function ImageSlot({
+  url,
+  alt,
+  uploadImage,
+  onChange,
+}: {
+  url: string
+  alt: string
+  uploadImage?: UploadImage
+  onChange: (url: string, alt: string) => void
+}) {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
-      {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
-      <img src={url} alt="" className="max-h-64 w-full object-cover" />
-    </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-surface-elevated text-sm font-medium text-subtle"
+        style={{ minHeight: url ? undefined : 128 }}
+      >
+        {url ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
+            <img src={url} alt={alt} className="max-h-72 w-full object-cover" />
+            <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-surface px-2 py-1 text-xs font-semibold text-text opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+              <Pencil className="h-3.5 w-3.5" aria-hidden /> Change
+            </span>
+          </>
+        ) : (
+          <span className="flex items-center gap-2 py-8">
+            <ImagePlus className="h-4 w-4" aria-hidden /> Add photo
+          </span>
+        )}
+      </button>
+      <SpaceImagePopup
+        open={open}
+        currentUrl={url}
+        currentAlt={alt}
+        uploadImage={uploadImage}
+        onClose={() => setOpen(false)}
+        onSelect={onChange}
+      />
+    </>
   )
 }
 
 /** Editable per-item title + text for a Features / Cards repeater (the item's structural fields — icon /
  *  image / stat / link / reorder — stay in the rail). Persists the WHOLE items array through onChange,
  *  preserving every non-text field. Keyed by a structural signature so a rail add / remove / reorder
- *  remounts the slots while a plain keystroke keeps the key stable (no caret jump). */
+ *  remounts the slots while a plain keystroke keeps the key stable (no caret jump). The per-item slots are
+ *  PLAIN (no bubble), matching the email canvas Features / Cards items. */
 function ItemsTextCanvas({
   value,
   titleKey,
@@ -73,7 +125,12 @@ function ItemsTextCanvas({
         const text = typeof it.text === 'string' ? it.text : ''
         return (
           <div key={`${sig}-${i}`} className="rounded-xl border border-border p-3">
-            <ImagePreview url={image} />
+            {image && (
+              <div className="overflow-hidden rounded-lg border border-border">
+                {/* eslint-disable-next-line @next/next/no-img-element -- operator asset URL, not a build asset */}
+                <img src={image} alt="" className="max-h-40 w-full object-cover" />
+              </div>
+            )}
             <div className="mt-2 text-base font-bold text-text">
               <SpaceEditableSlot value={title} placeholder="Title" onChange={(v) => patch(i, titleKey, v)} />
             </div>
@@ -90,10 +147,13 @@ function ItemsTextCanvas({
 export function SpaceCanvasBlock({
   id,
   props,
+  uploadImage,
   onField,
 }: {
   id: string
   props: Record<string, unknown>
+  /** The Space-scoped gated upload, threaded to each on-canvas photo popup. */
+  uploadImage?: UploadImage
   /** Persist one content field; an empty value clears it. */
   onField: (key: string, value: unknown) => void
 }) {
@@ -104,14 +164,37 @@ export function SpaceCanvasBlock({
   }
 
   const isData = block.category === 'data'
+  // A block whose live render honours inline HTML: a CONTENT block rendered by ContentBlockView (Text /
+  // Callout / Quote / ...), i.e. a content-category block that is NOT one of the five design blocks (those
+  // render through DesignBlockView with plain string props). Its `textarea` fields get the rich bubble; a
+  // design / data block's textarea stays plain, so the editor never offers formatting the page cannot render.
+  const richHost = isContentBlock(block) && !DESIGN_IDS.has(id)
   const fields = fieldsForBlock(id)
+  const altKey = fields.find((f) => f.key === 'alt')?.key
   const setText = (key: string) => (next: string) => {
-    const trimmed = next.trim()
+    const trimmed = next.replace(/<br>/gi, '').trim()
     onField(key, trimmed.length ? next : undefined)
   }
 
   const nodes = fields.map((f) => {
-    // Text copy — inline-editable slots (the WYSIWYG win).
+    // A single photo — a clickable slot that opens the on-canvas photo popup (its URL / alt live there).
+    if (isCanvasImageField(f)) {
+      const url = str(props, f.key)
+      const altVal = altKey ? str(props, altKey) : ''
+      return (
+        <ImageSlot
+          key={f.key}
+          url={url}
+          alt={altVal}
+          uploadImage={uploadImage}
+          onChange={(u, a) => {
+            onField(f.key, u || undefined)
+            if (altKey) onField(altKey, a || undefined)
+          }}
+        />
+      )
+    }
+    // Text copy — inline-editable slots (the WYSIWYG win). Alt is excluded (set in the photo popup).
     if (isCanvasTextField(f)) {
       const value = str(props, f.key)
       const isTitle = f.key === 'title' || f.key === 'text' || f.key === 'label'
@@ -121,27 +204,24 @@ export function SpaceCanvasBlock({
         : isTitle
           ? 'text-xl font-bold text-text'
           : 'text-base leading-relaxed text-muted'
+      const rich = richHost && f.type === 'textarea'
       return (
         <div key={f.key} className={cls}>
           <SpaceEditableSlot
             value={value}
             placeholder={f.label}
+            rich={rich}
             multiline={f.type === 'textarea'}
             onChange={setText(f.key)}
           />
         </div>
       )
     }
-    // A single photo — a read-only preview here (its URL / upload is a rail setting).
-    if (isImageField(f)) {
-      const url = str(props, f.key)
-      return url ? <ImagePreview key={f.key} url={url} /> : null
-    }
     // Features / Cards item copy — editable on the canvas (structure stays in the rail).
     if (f.type === 'features' || f.type === 'cards') {
       return <ItemsTextCanvas key={f.key} value={props[f.key]} titleKey="title" onChange={(v) => onField(f.key, v)} />
     }
-    // Every other field (url / links / toggle / enum primitives / picker / gallery / embed) is rail-only.
+    // Every other field (links / toggle / enum primitives / picker / gallery / embed) is rail-only.
     return null
   })
 

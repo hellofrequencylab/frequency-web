@@ -392,6 +392,24 @@ interface SpaceLayoutRailData {
  *     locked until it EXISTS + has items), composed with the switch gate in partitionSpaceBlocks.
  *   • item 5 — spaceBlockPickerData(space.id, slug, PICKER_DATA_BLOCK_IDS) → the picker choices + create link
  *     for each data-source-backed block. */
+/** The pinned Top Hero's current values (operator overrides atop the Space's brand name / tagline), so the
+ *  fixed hero editor and the Identity & Branding form open showing what the cover paints. PURE + synchronous
+ *  (no query), so the fast core bundle can carry it without waiting on the layout slice's picker reads. */
+function buildHero(space: ResolvedSpaceRow): HeroEditorValues {
+  const prefs = space.preferences
+  const heroConfig = readHeroConfig(prefs)
+  const cta = heroCtaFromPreference(readHeaderCtaPreference(prefs))
+  return {
+    height: heroConfig.height,
+    buttonOrientation: heroConfig.buttonOrientation,
+    eyebrow: heroConfig.eyebrow,
+    heading: heroConfig.heading ?? space.brandName ?? space.name,
+    tagline: heroConfig.tagline ?? space.tagline ?? undefined,
+    ctaLabel: cta.label || undefined,
+    ctaUrl: cta.url || undefined,
+  }
+}
+
 async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Promise<SpaceLayoutRailData | null> {
   if (!canManage) return null
 
@@ -414,22 +432,6 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     existing,
   })
 
-  // The pinned Top Hero seed: the operator's hero overrides (preferences.hero) atop the Space's canonical
-  // brand name / tagline, plus the existing header-CTA (relocated into the hero editor, item 5) split back to
-  // the editor's flat {label, url}. A blank override falls back to the Space value, so the editor opens showing
-  // exactly what the cover paints.
-  const heroConfig = readHeroConfig(prefs)
-  const cta = heroCtaFromPreference(readHeaderCtaPreference(prefs))
-  const hero: HeroEditorValues = {
-    height: heroConfig.height,
-    buttonOrientation: heroConfig.buttonOrientation,
-    eyebrow: heroConfig.eyebrow,
-    heading: heroConfig.heading ?? space.brandName ?? space.name,
-    tagline: heroConfig.tagline ?? space.tagline ?? undefined,
-    ctaLabel: cta.label || undefined,
-    ctaUrl: cta.url || undefined,
-  }
-
   return {
     slug: space.slug,
     rows: resolveRows(saved, 'space'),
@@ -437,7 +439,8 @@ async function buildLayoutData(space: ResolvedSpaceRow, canManage: boolean): Pro
     customized: !!(saved && (saved.rows?.length || saved.template || saved.slots || saved.order)),
     lockedIds,
     pickerData,
-    hero,
+    // The pinned Top Hero seed: operator overrides atop the Space's brand name / tagline (pure; buildHero).
+    hero: buildHero(space),
   }
 }
 
@@ -567,6 +570,96 @@ export async function getSpaceRailBundle(
     layout,
     summaries,
   }
+}
+
+// ── The rail's TWO PHASES: fast core + slow extras (ADR-550 follow-up) ────────────────────────────────
+// getSpaceRailBundle resolves EVERYTHING before it returns — including the layout picker reads (2 queries)
+// and every summary count (6 queries). The provider awaits the whole thing, so the three EDITOR sections
+// (Identity & Branding / Info & Connect / Your Page) — which need only the pure basics/branding/settings/
+// page slices off the shared resolve — were blocked on 8 queries they never read: the slow editor rail.
+// Splitting the resolve in two lets the provider fetch both IN PARALLEL and unblock the editor sections on
+// the fast half:
+//   • CORE  — resolve chain + caps + extras, then the pure builders + the pure hero seed. No extra query,
+//             so it returns as fast as any other admin rail's module. The editor sections gate on this.
+//   • EXTRAS — the SLOW half: the layout picker/gate reads (the page builder seed) + the summary counts.
+// Each SELF-GATES identically to getSpaceRailBundle (null for a non-manager). The duplicated resolve chain
+// (caller → space → access) is the same the individual getters ran and runs concurrently across the two, so
+// it adds no wall-clock; getSpaceRailBundle stays for the one-shot standalone path + the drift test.
+
+export interface SpaceRailCore {
+  basics: SpaceBasicsData
+  branding: SpaceBrandingData
+  settings: SpaceSettingsData
+  /** Null when the Space type has no console (mirrors getSpacePageData). */
+  page: SpacePageData | null
+  /** The Top Hero seed (height / buttons / copy) for the Identity & Branding form; null for a staff previewer
+   *  who cannot edit (mirrors buildLayoutData's canManage gate). Pure, so it rides the fast core. */
+  hero: HeroEditorValues | null
+}
+
+/** The FAST half of the Space rail: every editor section's slice from ONE resolve, with no summary/picker
+ *  query. Null when the viewer cannot manage this Space (fail-safe). Re-gates exactly like getSpaceRailBundle. */
+export async function getSpaceRailCore(
+  slug: string,
+  pageSlug?: string,
+): Promise<SpaceRailCore | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  const [caps, extras] = await Promise.all([
+    getSpaceCapabilities(space, viewerProfileId),
+    readProfileExtras(space.id),
+  ])
+
+  return {
+    basics: buildBasicsData(space, caps, staffViewing, extras),
+    branding: buildBrandingData(space, caps, staffViewing, extras),
+    settings: buildSettingsData(space, caps, staffViewing, extras),
+    page: buildPageData(space, staffViewing, canManage, pageSlug),
+    hero: canManage ? buildHero(space) : null,
+  }
+}
+
+export interface SpaceRailExtras {
+  /** Null when the viewer is a staff previewer who cannot edit (mirrors getSpaceLayoutRailData). */
+  layout: SpaceLayoutRailData | null
+  /** Every rail summary card's count, keyed by surface id (mirrors getSpaceRailBundle.summaries). */
+  summaries: Record<string, SpaceSummaryValue | null>
+}
+
+/** The SLOW half of the Space rail: the page-builder seed + every summary count, from ONE resolve. Null when
+ *  the viewer cannot manage this Space (fail-safe). Fetched in parallel with the core so it never blocks the
+ *  editor sections; the page builder + summary cards fill in when it lands. */
+export async function getSpaceRailExtras(slug: string): Promise<SpaceRailExtras | null> {
+  const caller = await getCallerProfile()
+  const viewerProfileId = caller?.id ?? null
+
+  const space = await getVisibleSpaceBySlug(slug, viewerProfileId)
+  if (!space) return null
+
+  const { canManage, staffViewing } = await resolveSpaceManageAccess(
+    space,
+    viewerProfileId,
+    caller?.webRole,
+  )
+  if (!canManage && !staffViewing) return null
+
+  const caps = await getSpaceCapabilities(space, viewerProfileId)
+  const [layout, summaries] = await Promise.all([
+    buildLayoutData(space, canManage),
+    buildSummariesData(space, caps, staffViewing),
+  ])
+  return { layout, summaries }
 }
 
 // NOTE: Space Mode is a creation-time PRESET (framing/labels/pipeline seed) and is edited on the full

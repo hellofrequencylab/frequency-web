@@ -20,7 +20,7 @@ import {
 } from '@/lib/entity-blocks/rows-ops'
 import { useProfileLayout } from '@/components/entity-blocks/profile-layout-context'
 import { FieldEditor, type UploadImage } from '@/components/entity-blocks/block-edit-panel'
-import { SpaceCanvasBlock, isCanvasTextField } from './space-canvas-block'
+import { SpaceCanvasBlock, isCanvasTextField, isCanvasImageField } from './space-canvas-block'
 
 // THE ON-CANVAS WYSIWYG SPACE PAGE EDITOR — the space mirror of the Email Studio canvas editor. A two-pane
 // surface over the SHARED entity-layout store (same provider, seed, debounced save + sanitize as the
@@ -40,11 +40,15 @@ import { SpaceCanvasBlock, isCanvasTextField } from './space-canvas-block'
 
 const label = (id: string) => entityBlockById(id)?.label ?? id
 
-/** A field belongs in the settings-only rail when it is NOT inline-editable text on the canvas. Mirrors the
- *  email `isCoreField` split: text / textarea move to the canvas; everything structural (url / image / links
- *  / toggle / the enum primitives / picker) — and the Features / Cards item STRUCTURE — stays in the rail. */
+/** A field belongs in the settings-only rail when it is NOT edited on the canvas. Mirrors the email
+ *  `isCoreField` split: text / textarea copy AND single photos (with their alt) move to the canvas;
+ *  everything structural (links / toggle / the enum primitives / picker / gallery) — and the Features /
+ *  Cards item STRUCTURE — stays in the rail. */
 function isRailField(f: FieldDef): boolean {
-  return !isCanvasTextField(f)
+  if (isCanvasTextField(f)) return false // inline text edited on the canvas
+  if (isCanvasImageField(f)) return false // single photo edited on the canvas via the popup
+  if (f.key === 'alt') return false // photo alt is set inside the on-canvas photo popup
+  return true
 }
 
 /** The canvas column grid for a section, matching the live EntityGrid (even 50/50, lead 66/33, trail
@@ -315,7 +319,12 @@ export function SpaceCanvasEditor({ uploadImage }: { uploadImage?: UploadImage }
                             id === selectedId ? 'bg-primary-bg/30' : 'hover:bg-surface-elevated/40'
                           }`}
                         >
-                          <SpaceCanvasBlock id={id} props={store.content[id] ?? {}} onField={(k, v) => setField(id, k, v)} />
+                          <SpaceCanvasBlock
+                            id={id}
+                            props={store.content[id] ?? {}}
+                            uploadImage={uploadImage}
+                            onField={(k, v) => setField(id, k, v)}
+                          />
                         </div>
                       ))}
                     </div>

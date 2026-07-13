@@ -38,3 +38,52 @@ describe('ContentBlockView callout button (Fix 8)', () => {
     expect(ContentBlockView({ id: 'callout', props: {} })).toBeNull()
   })
 })
+
+// Email-builder parity: a `textarea` slot authored on the WYSIWYG space canvas stores allowlisted inline HTML
+// (Bold / Italic / Link), which the live render re-sanitises and paints. Plain text round-trips unchanged, and
+// any disallowed markup is escaped as inert text (defence in depth — the render is a trust boundary).
+describe('ContentBlockView inline rich text', () => {
+  it('renders Bold / Italic marks in a Text block', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="text" props={{ text: 'Hello <strong>world</strong> and <em>more</em>' }} />,
+    )
+    expect(html).toContain('<strong>world</strong>')
+    expect(html).toContain('<em>more</em>')
+  })
+
+  it('renders a safe Link in a Text block', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="text" props={{ text: 'See <a href="https://x.com">this</a>' }} />,
+    )
+    expect(html).toContain('href="https://x.com"')
+    expect(html).toContain('rel="noopener noreferrer"')
+  })
+
+  it('escapes disallowed markup as inert text (no script tag reaches the page)', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="text" props={{ text: 'safe <script>alert(1)</script>' }} />,
+    )
+    expect(html).not.toContain('<script')
+    expect(html).toContain('safe')
+  })
+
+  it('drops a javascript: link (unsafe href) but keeps the text', () => {
+    const unsafe = 'x <a href="' + 'javascript:' + 'alert(1)">nope</a>'
+    const html = renderToStaticMarkup(<ContentBlockView id="text" props={{ text: unsafe }} />)
+    expect(html).not.toContain('javascript:')
+    expect(html).toContain('nope')
+  })
+
+  it('renders Italic marks in a Quote block', () => {
+    const html = renderToStaticMarkup(
+      <ContentBlockView id="quote" props={{ text: 'A <em>bold</em> claim', by: 'Someone' }} />,
+    )
+    expect(html).toContain('<em>bold</em>')
+    expect(html).toContain('Someone')
+  })
+
+  it('round-trips plain text unchanged', () => {
+    const html = renderToStaticMarkup(<ContentBlockView id="text" props={{ text: 'just plain words' }} />)
+    expect(html).toContain('just plain words')
+  })
+})

@@ -15,6 +15,7 @@ import {
   DoorOpen,
   Store,
   QrCode,
+  Radio,
   Mail,
   Megaphone,
   Paintbrush,
@@ -125,6 +126,9 @@ export const SPACE_MODULES: readonly SpaceModule[] = [
   // be turned off, role-gated, and entitlement-gated (the `storefront` tier key) like every sibling
   // offering — it is no longer the always-on outlier. Same label/render/deepLink/order/tier/priority.
   { id: 'space.services', label: 'Shop', desc: 'Your catalog, orders, and storefront.', Icon: Store, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'shop' }, featureKey: 'shop', render: 'link', deepLink: (s) => `${base(s)}/settings/shop`, order: 70, tier: 'primary', priority: 40 },
+  // Airwaves (ADR-608, P1): the Space's audio/video Recordings library. Upload a Recording into the Loom,
+  // manage the catalog, and attach a Recording to any offering, journey, event, or the Space itself.
+  { id: 'space.airwaves', label: 'Airwaves', desc: 'Your recordings, and where each one plays.', Icon: Radio, family: 'offerings', slot: 'engage', gate: { kind: 'feature', fn: 'airwaves' }, featureKey: 'airwaves', render: 'link', deepLink: (s) => `${base(s)}/settings/airwaves`, order: 72, tier: 'primary', priority: 41 },
 
   // ── Reach & comms ────────────────────────────────────────────────────────────────────────────────────
   { id: 'space.reach', label: 'QR codes', desc: 'Create codes for this space and the pages they open.', Icon: QrCode, family: 'reach', slot: 'reach', gate: { kind: 'feature', fn: 'qr' }, featureKey: 'qr', render: 'panel', deepLink: (s) => `${base(s)}/settings/qr`, order: 75, tier: 'primary', priority: 50, placement: 'bank' },

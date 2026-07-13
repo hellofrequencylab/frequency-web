@@ -6,7 +6,8 @@ import { resolveSpaceAuthoredContent } from '@/lib/spaces/authored-content'
 import { type SpaceProfileContext } from '@/lib/spaces/profile-modules'
 import { effectiveProfileLayout } from '@/lib/spaces/profile-layout'
 import { resolveRows, type EntityLayout } from '@/lib/entity-blocks/layout'
-import { resolveDataHeader, pickerSelection } from '@/lib/entity-blocks/block-content'
+import { resolveDataHeader, pickerSelection, isFeatureDataSource, featureSource } from '@/lib/entity-blocks/block-content'
+import { resolveFeatureSourceItems } from '@/lib/entity-blocks/block-data-sources'
 import { blocksForKind, entityBlockById } from '@/lib/entity-blocks/registry'
 import { EntityGrid } from '@/components/entity-blocks/entity-grid'
 import { OwnerBlockFrame } from '@/components/entity-blocks/owner-block-frame'
@@ -94,6 +95,23 @@ function toProfileBlockId(id: string): ProfileBlockId | null {
 
 type SpaceAuthored = ReturnType<typeof resolveSpaceAuthoredContent>
 
+/** The Features block sourced from a Space DATA source (ADR-585): await the resolved items (offerings /
+ *  events / memberships / tickets) and inject them as the block's `items`, then render through the shared
+ *  ContentBlockView so a sourced Features looks identical to an authored one. FAIL-SAFE: the resolver returns
+ *  [] on any miss, so the block degrades to its header (or nothing). Async server component. */
+async function FeaturesSourceView({
+  spaceId,
+  source,
+  props,
+}: {
+  spaceId: string
+  source: string
+  props: Record<string, unknown>
+}) {
+  const items = await resolveFeatureSourceItems(source, spaceId)
+  return <ContentBlockView id="features" props={{ ...props, items }} />
+}
+
 /** Render ONE space block by unified id into its fail-safe <Suspense> node (no owner frame), wrapped in its
  *  per-block STYLE frame (ADR-528). CONTENT ids render the operator's inline-authored content (from the
  *  layout's `content` bag, falling back to any legacy Puck-doc content); DATA ids render live space data
@@ -119,7 +137,13 @@ function renderSpaceBlock(
     // block has no live-data fallback, so an empty bag renders the component's own honest-empty state.
     inner = <DesignBlockView id={id} props={contentProps ?? {}} />
   } else if (block && block.category === 'content') {
-    if (hasContent(id, contentProps)) {
+    if (id === 'features' && isFeatureDataSource(contentProps)) {
+      // The Features highlight engine (ADR-585) pulls its items from a Space DATA source (offerings / events /
+      // memberships / tickets). Resolve them server-side and inject them as the block's `items` so the shared
+      // ContentBlockView renders them exactly like authored items. Async so it can await the resolver; it sits
+      // in the block's own <Suspense> below, so a slow read never blocks the rest of the page.
+      inner = <FeaturesSourceView spaceId={space.id} source={featureSource(contentProps)} props={contentProps ?? {}} />
+    } else if (hasContent(id, contentProps)) {
       inner = <ContentBlockView id={id} props={contentProps ?? {}} />
     } else {
       const ContentBlock = (SPACE_CONTENT_BLOCKS as Record<string, SpaceContentBlockComponent | undefined>)[id]

@@ -37,7 +37,7 @@ import {
   type SpaceFunctionKey,
 } from '@/lib/spaces/functions'
 import { hrefForSurface } from '@/lib/spaces/surface-hrefs'
-import { readProfileData, isServiceListed } from '@/lib/spaces/profile-data'
+import { readProfileData, isServiceListed, formatServicePrice } from '@/lib/spaces/profile-data'
 import {
   getSpaceUpcomingEvents,
   getSpaceTeam,
@@ -63,6 +63,13 @@ export interface BlockDataItem {
   id: string
   label: string
   href?: string
+  /** OPTIONAL display extras a rich block (the Features highlight engine, ADR-585) shows when it sources its
+   *  items from this function: a one-line blurb, a formatted price label, and a thumbnail image. Each is
+   *  present only when the underlying item has it; absent for a source that carries none (e.g. tickets have no
+   *  price). A picker never needs these, so they stay optional + additive. */
+  blurb?: string
+  price?: string
+  image?: string
 }
 
 // ── The source contract each function-backed block implements ───────────────────────────────────────
@@ -152,9 +159,16 @@ async function listOfferings(spaceId: string): Promise<BlockDataItem[]> {
   if (!space) return []
   const offerings = (readProfileData(space.preferences).offerings ?? []).filter(isServiceListed)
   return offerings
-    .map((o) => o.title?.trim())
-    .filter((t): t is string => Boolean(t))
-    .map((title) => ({ id: title, label: title }))
+    .filter((o) => Boolean(o.title?.trim()))
+    .map((o) => {
+      const title = o.title.trim()
+      // The Features highlight engine (ADR-585) shows the offering's blurb + price; the picker ignores them.
+      const item: BlockDataItem = { id: title, label: title }
+      if (o.blurb?.trim()) item.blurb = o.blurb.trim()
+      const price = formatServicePrice(o)
+      if (price) item.price = price
+      return item
+    })
 }
 
 async function listEvents(spaceId: string): Promise<BlockDataItem[]> {
@@ -171,11 +185,26 @@ async function listTeam(spaceId: string): Promise<BlockDataItem[]> {
   }))
 }
 
+/** A membership tier's display price for the Features engine (ADR-585): "$20/mo", "$200/yr", "$50", or ''
+ *  for a free tier. priceCents is DISPLAY ONLY in v1 (no billing). */
+function membershipPriceLabel(priceCents: number, interval: 'month' | 'year' | 'once'): string {
+  if (!priceCents || priceCents <= 0) return ''
+  const dollars = priceCents / 100
+  const amount = Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`
+  return interval === 'month' ? `${amount}/mo` : interval === 'year' ? `${amount}/yr` : amount
+}
+
 async function listMemberships(spaceId: string): Promise<BlockDataItem[]> {
   const tiers = await listMembershipTiers(spaceId)
   return tiers
     .filter((t) => Boolean(t.id))
-    .map((t) => ({ id: t.id as string, label: t.name }))
+    .map((t) => {
+      const item: BlockDataItem = { id: t.id as string, label: t.name }
+      if (t.description?.trim()) item.blurb = t.description.trim()
+      const price = membershipPriceLabel(t.priceCents, t.interval)
+      if (price) item.price = price
+      return item
+    })
 }
 
 async function listTickets(spaceId: string): Promise<BlockDataItem[]> {
@@ -459,4 +488,59 @@ export async function spaceEnabledFunctions(spaceId: string): Promise<Set<SpaceF
     if (spaceFunctionEnabled(space, fn)) enabled.add(fn.key)
   }
   return enabled
+}
+
+// ── The Features highlight-engine source resolver (ADR-585) ───────────────────────────────────────────
+
+/** One item the Features block renders when it sources from a Space DATA source. The shape matches the
+ *  renderer's item bag (content-block-view readFeatureItems): a title + text + optional price + link + CTA
+ *  label. Plain data, safe to inject into the content props that cross into the render. */
+export interface FeatureSourceItem {
+  title: string
+  text: string
+  price: string
+  link: string
+  cta: string
+}
+
+/** The Features `source` values that pull from a Space DATA source (everything but `custom`). Each value IS
+ *  the data-source block id, so the resolver reads blockDataList(source) directly. */
+const FEATURE_SOURCE_BLOCKS = ['offerings', 'events', 'memberships', 'tickets'] as const
+type FeatureSourceBlock = (typeof FEATURE_SOURCE_BLOCKS)[number]
+
+/** The CTA label a sourced item shows over its link, per source (voice canon, no em dashes). An item with no
+ *  link shows no CTA regardless. */
+const FEATURE_SOURCE_CTA: Record<FeatureSourceBlock, string> = {
+  offerings: 'View',
+  events: 'See event',
+  memberships: 'Join',
+  tickets: 'Get tickets',
+}
+
+/** Whether a Features `source` string names a resolvable Space DATA source. Pure. */
+export function isFeatureSourceBlock(source: string): source is FeatureSourceBlock {
+  return (FEATURE_SOURCE_BLOCKS as readonly string[]).includes(source)
+}
+
+/**
+ * Resolve a Features block's DATA source (ADR-585) into render-ready items for a Space: the source's live
+ * items (blockDataList, already fail-safe + tenant-bound) mapped to the Features item bag — title + blurb +
+ * price + link + a source-appropriate CTA. `max` caps the count (the block is a highlight, not a full list).
+ * Returns [] for `custom` / an unknown source / an empty function, so the render simply shows the header (or
+ * nothing). AUTHORIZATION is the caller's job; this is a scoped reader. FAIL-SAFE, server-only.
+ */
+export async function resolveFeatureSourceItems(
+  source: string,
+  spaceId: string,
+  max = 12,
+): Promise<FeatureSourceItem[]> {
+  if (!isFeatureSourceBlock(source)) return []
+  const items = await blockDataList(source, spaceId)
+  return items.slice(0, Math.max(0, max)).map((it) => ({
+    title: it.label,
+    text: it.blurb ?? '',
+    price: it.price ?? '',
+    link: it.href ?? '',
+    cta: it.href ? FEATURE_SOURCE_CTA[source] : '',
+  }))
 }

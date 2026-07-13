@@ -50,6 +50,26 @@ export function heroHeightClass(height: HeroHeight): string {
   return HERO_HEIGHT_CLASS[height]
 }
 
+// ── The hero ASPECT RATIO (width / height) at each height ──────────────────────────────────────────────────
+// The Space header banner paints full-bleed at ~1344px on desktop (the `sizes` the profile cover requests)
+// over its band height. A rail preview that used a FIXED pixel height (heroHeightClass) read far too TALL in
+// the narrow rail, because the same `h-72` box is short beside a 1344px hero but nearly square beside a ~320px
+// rail. Previewing at the WIDTH:HEIGHT ratio instead makes the focus-picker box the same SHAPE as the live
+// header at the chosen height (wide + short for Short, taller for Tall), so "this preview matches your header
+// height" is literally true whatever the rail width. Desktop band heights: short sm:h-72 (18rem/288px), medium
+// sm:h-[22rem] (352px), tall sm:h-[32rem] (512px).
+const HERO_ASPECT: Record<HeroHeight, number> = {
+  short: 1344 / 288,
+  medium: 1344 / 352,
+  tall: 1344 / 512,
+}
+
+/** The width:height aspect ratio of the Hero cover at a resolved height, for a shape-accurate crop preview
+ *  (the rail's header-image focus picker). Pure + total. */
+export function heroAspect(height: HeroHeight): number {
+  return HERO_ASPECT[height]
+}
+
 // ── The hero BUTTON ORIENTATION (reusing the `buttonOrientation` primitive) ───────────────────────────────
 // `row` (default) lays the hero action buttons side by side (the shipped desktop row); `stacked` lays them
 // in a column. The render frame maps this onto the flex direction of the action cluster.

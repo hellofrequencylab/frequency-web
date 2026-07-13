@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, Loader2, X } from 'lucide-react'
+import { Check, ChevronDown, Loader2, PanelTop, Type, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isError, type ActionResult } from '@/lib/action-result'
 import { SectionHeader } from '@/components/ui/section-header'
@@ -30,7 +30,7 @@ import {
   type HeaderCtaFunction,
   type HeaderCtaPreference,
 } from '@/lib/spaces/header-cta'
-import { heroHeightClass, type HeroHeight, type HeroButtonOrientation } from '@/lib/spaces/hero-config'
+import { heroAspect, type HeroHeight, type HeroButtonOrientation } from '@/lib/spaces/hero-config'
 
 // The hero LOOK controls that moved into Identity & Branding (item 5): Short/Medium/Tall height + the
 // button orientation. Compact segmented buttons, matching Cover style / Page style. Each saves the moment
@@ -258,12 +258,12 @@ export function SpaceBrandingForm({
       </section>
 
       {/* IMAGES — the header banner as ONE control (upload + reposition, previewed at the hero's set
-          height) + the logo beneath at a square size. */}
+          height RATIO) + the profile image with the header-height picker BESIDE it (item 4). */}
       <section className="space-y-4">
         <SectionHeader title="Pictures" />
         <HeaderImageField
           coverUrl={coverUrl}
-          heightClassName={heroHeightClass(hHeight)}
+          aspect={heroAspect(hHeight)}
           focus={focus}
           onFocusChange={onFocusChange}
           disabled={readOnly}
@@ -277,63 +277,71 @@ export function SpaceBrandingForm({
             run(() => setSpaceImages(slug, { coverImageUrl: v }))
           }}
         />
-        <div className="max-w-[12rem]">
-          <ImageUpload
-            value={logoUrl}
-            onChange={(v) => {
-              setLogoUrl(v)
-              run(() => setSpaceImages(slug, { brandLogoUrl: v }))
-            }}
-            label="Logo or Profile Image"
-            hint="Your profile image. A square reads best."
-            folder="space-logos"
-            disabled={readOnly}
-            uploadFn={(file) => {
-              const fd = new FormData()
-              fd.append('file', file)
-              return uploadSpaceImage(slug, 'logo', fd)
-            }}
-          />
+        {/* The profile image on the left, the header HEIGHT picker beside it: the control that sizes the
+            header banner sits with the pictures it governs (restored + relocated, item 4). */}
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="w-[11rem] shrink-0">
+            <ImageUpload
+              value={logoUrl}
+              onChange={(v) => {
+                setLogoUrl(v)
+                run(() => setSpaceImages(slug, { brandLogoUrl: v }))
+              }}
+              label="Logo or Profile Image"
+              hint="Your profile image. A square reads best."
+              folder="space-logos"
+              disabled={readOnly}
+              uploadFn={(file) => {
+                const fd = new FormData()
+                fd.append('file', file)
+                return uploadSpaceImage(slug, 'logo', fd)
+              }}
+            />
+          </div>
+          <div className="min-w-0 flex-1 space-y-2">
+            <Label className="block font-semibold">Header height</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {HERO_HEIGHTS.map((h) => {
+                const active = hHeight === h.value
+                return (
+                  <button
+                    key={h.value}
+                    type="button"
+                    disabled={readOnly || pending || active}
+                    onClick={() => {
+                      setHHeight(h.value)
+                      run(() => setSpaceHeroLook(slug, { height: h.value }))
+                    }}
+                    aria-pressed={active}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
+                      active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
+                    )}
+                  >
+                    <span className="flex items-center justify-center gap-1.5">
+                      {h.label}
+                      {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted">How tall the header banner sits at the top of your page.</p>
+          </div>
         </div>
       </section>
 
-      {/* HEADER — every header/hero style folded into ONE dropdown (item 1): height, buttons, shade, and
-          the header button. Each control autosaves on pick / blur (no Save button). */}
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
-          Header
+      {/* HEADER STYLE — a differentiated fold-open EDIT button (border + surface + icon so it reads as a
+          button on all-white), CLOSED by default. Folds open to reveal buttons, shade, and the header button.
+          Height lives beside the profile image now (item 4). Each control autosaves on pick / blur. */}
+      <details className="group rounded-xl border border-border bg-surface-elevated">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+          <PanelTop className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span className="flex-1">Header style</span>
+          <span className="text-2xs font-medium text-subtle group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
-        <div className="space-y-5 pt-3">
-        <div className="space-y-2">
-          <Label className="block font-semibold">Height</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {HERO_HEIGHTS.map((h) => {
-              const active = hHeight === h.value
-              return (
-                <button
-                  key={h.value}
-                  type="button"
-                  disabled={readOnly || pending || active}
-                  onClick={() => {
-                    setHHeight(h.value)
-                    run(() => setSpaceHeroLook(slug, { height: h.value }))
-                  }}
-                  aria-pressed={active}
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-default motion-reduce:transition-none',
-                    active ? 'border-primary bg-primary-bg text-text' : 'border-border bg-surface text-muted hover:border-border-strong',
-                  )}
-                >
-                  <span className="flex items-center justify-center gap-1.5">
-                    {h.label}
-                    {active && <Check className="h-3.5 w-3.5 text-primary" aria-hidden />}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <div className="space-y-5 px-4 pb-4 pt-1">
         <div className="space-y-2">
           <Label className="block font-semibold">Buttons</Label>
           <div className="grid grid-cols-2 gap-2">
@@ -545,12 +553,14 @@ export function SpaceBrandingForm({
       {/* PAGE STYLE — the typography + shape identity the whole page renders in. A clear button + dropdown
           (closed by default, matching Header): the presets stay tucked away until the operator opens it. The
           accent colour is set separately below. Optimistic buttons, each saves the moment it is picked. */}
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-1 text-sm font-bold text-text [&::-webkit-details-marker]:hidden">
-          Page style
+      <details className="group rounded-xl border border-border bg-surface-elevated">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 rounded-xl px-4 py-3 text-sm font-semibold text-text outline-none transition-colors hover:border-border-strong hover:bg-surface focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
+          <Type className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span className="flex-1">Page style</span>
+          <span className="text-2xs font-medium text-subtle group-open:hidden">Edit</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-subtle transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         </summary>
-        <div className="space-y-2 pt-3">
+        <div className="space-y-2 px-4 pb-4 pt-1">
           <p className="text-xs text-muted">
             The fonts and shapes for your whole page. Your colours stay the same. Pick the feel that fits.
           </p>
@@ -602,13 +612,14 @@ export function SpaceBrandingForm({
 
 // THE COMBINED HEADER IMAGE CONTROL — one control for the header/hero photo (upload + reposition), so the
 // image, its crop, and the focus all live together instead of a separate upload box and focus card. When a
-// photo is set, the preview renders IN THE RAIL at the HERO'S SET HEIGHT (heightClassName) with the drag-to-
-// focus marker on it (the same reusable ImageFocalPicker the event rail uses) plus Replace / Remove. Empty,
-// it falls back to the shared ImageUpload dropzone (upload or paste a URL). Server-side upload (uploadFn),
-// so it never depends on a live browser Storage token. Copy runs CONTENT-VOICE: plain, no em dashes.
+// photo is set, the preview renders IN THE RAIL at the HERO'S SET HEIGHT RATIO (`aspect`, not a fixed pixel
+// height) with the drag-to-focus marker on it (the same reusable ImageFocalPicker the event rail uses) plus
+// Replace / Remove — so the box is the same SHAPE as the live header (wide + short for Short, taller for Tall)
+// whatever the rail width. Empty, it falls back to the shared ImageUpload dropzone (upload or paste a URL).
+// Server-side upload (uploadFn), so it never depends on a live browser Storage token. Copy runs CONTENT-VOICE.
 function HeaderImageField({
   coverUrl,
-  heightClassName,
+  aspect,
   focus,
   onFocusChange,
   disabled = false,
@@ -616,8 +627,9 @@ function HeaderImageField({
   onChange,
 }: {
   coverUrl: string | null
-  /** The Tailwind height class of the hero at its current height, so the preview matches the live crop. */
-  heightClassName: string
+  /** The width:height aspect ratio of the hero at its current height, so the preview matches the live crop
+   *  shape at any rail width (heroAspect). */
+  aspect: number
   /** The saved cover focal point ("x% y%") and its debounced setter (owned by the parent form). */
   focus: string
   onFocusChange: (v: string) => void
@@ -679,7 +691,7 @@ function HeaderImageField({
           label="Header image"
           hint="Drag to choose which part of your header photo stays in frame. This preview matches your header height."
           showSliders={false}
-          heightClassName={heightClassName}
+          aspect={aspect}
         />
         {/* Replace / Remove sit top-right over the preview; the focal marker owns the rest of the frame. */}
         <div className="absolute right-2 top-9 flex gap-1.5">
